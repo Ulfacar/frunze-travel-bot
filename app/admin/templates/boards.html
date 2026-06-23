@@ -197,6 +197,7 @@
       {% endfor %}
     </nav>
     <span class="spacer"></span>
+    <a href="/admin/analytics" class="btn btn-ghost" style="margin-right:12px;text-decoration:none;padding:7px 12px">📊 Аналитика</a>
     <div class="me"><span>{{ manager.name if manager else 'Менеджер' }}</span>
       <span class="av"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
       <form method="post" action="/admin/logout" style="margin-left:10px">

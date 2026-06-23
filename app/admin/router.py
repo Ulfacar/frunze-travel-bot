@@ -216,6 +216,17 @@ async def index(request: Request):
                                       headers={"Cache-Control": "no-store"})
 
 
+@router.get("/analytics", response_class=HTMLResponse)
+async def analytics(request: Request, manager: dict = Depends(require_admin)):
+    """Дашборд «ИИ vs менеджер»: containment, исходы, воронки, время ответа/перехвата."""
+    from app.integrations.panel.analytics import compute_analytics
+    convs = await get_conversation_store().all_conversations()
+    data = compute_analytics(convs)
+    return templates.TemplateResponse(request, "analytics.html",
+                                      {"a": data, "manager": manager, "funnels": FUNNELS},
+                                      headers={"Cache-Control": "no-store"})
+
+
 @router.get("/board/{funnel}", response_class=HTMLResponse)
 async def board(funnel: str, request: Request, _: dict = Depends(require_admin)):
     """HTMX-партиал одной доски: колонки по стадиям с карточками."""

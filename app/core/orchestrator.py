@@ -23,6 +23,18 @@ GREETING = (
     "Подскажите, что вас интересует — тур, виза или авиабилеты?"
 )
 
+# Авто-исход диалога из стадии (ручные won/lost не перетираются — см. store).
+_OFFICE_STAGES = {"office", "office_consultation"}
+_MANAGER_STAGES = {"manager", "manager_handoff"}
+
+
+def _auto_outcome(stage: str) -> str:
+    if stage in _OFFICE_STAGES:
+        return "office"
+    if stage in _MANAGER_STAGES:
+        return "manager"
+    return "in_progress"
+
 NON_TEXT_FALLBACK = (
     "Пока я понимаю только текстовые сообщения 🙏 Напишите, пожалуйста, словами — "
     "или скажите «нужен менеджер», и я позову человека."
@@ -143,6 +155,7 @@ class Orchestrator:
             panel = get_conversation_store()
             brief = build_manager_brief(state)
             await panel.update_meta(msg.user_id, funnel=state.funnel, stage=state.stage,
-                                    qualification=state.qualification, **brief)
+                                    qualification=state.qualification,
+                                    outcome=_auto_outcome(state.stage), **brief)
         except Exception:  # noqa: BLE001
             log.warning("panel sync_card failed", exc_info=True)

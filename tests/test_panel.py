@@ -292,3 +292,57 @@ def test_busy_warning_for_other_manager():
     resp = client.get("/admin/conversation/u-busy-1")
     assert resp.status_code == 200
     assert "medina" in resp.text and "уже ведёт" in resp.text   # мягкое предупреждение
+
+
+# ---------------- Wave 3: исход + аналитика ----------------
+def test_outcome_manual_sticky_over_auto():
+    """Ручной исход (won/lost) не перезатирается авто-исходом из стадии."""
+    async def scenario():
+        engine = create_async_engine("sqlite+aiosqlite://",
+                                     connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        await init_models(engine)
+        sm = async_sessionmaker(engine, expire_on_commit=False)
+        store = PostgresConversationStore(sessionmaker=sm)
+        await store.add_message("u-w", "client", "оплатил", channel="whatsapp")
+        await store.update_meta("u-w", funnel="tours", outcome="won")     # менеджер отметил
+        await store.update_meta("u-w", stage="manager", outcome="manager")  # авто из стадии
+        conv = await store.get("u-w")
+        assert conv.outcome == "won"   # ручной финал устоял
+        await engine.dispose()
+    asyncio.run(scenario())
+
+
+def test_compute_analytics_basic():
+    from datetime import datetime, timedelta, timezone
+    from app.integrations.panel.analytics import compute_analytics
+    from app.integrations.panel.store import ConversationView, MessageView
+
+    t0 = datetime(2026, 6, 24, 10, 0, tzinfo=timezone.utc)
+    # Диалог 1: только бот (contained), оплатил.
+    c1 = ConversationView(user_id="a", funnel="visa", stage="office", outcome="won",
+                          messages=[MessageView("client", "привет", t0),
+                                    MessageView("bot", "здравствуйте", t0 + timedelta(minutes=1))])
+    # Диалог 2: подключался менеджер, ответил через 5 мин.
+    c2 = ConversationView(user_id="b", funnel="tours", stage="manager", outcome="manager",
+                          intercepted=True, escalation_reason="Готов оплатить",
+                          messages=[MessageView("client", "вопрос", t0),
+                                    MessageView("manager", "отвечаю", t0 + timedelta(minutes=5))])
+    data = compute_analytics([c1, c2])
+    assert data["total"] == 2
+    assert data["contained"] == 1                 # только c1 без менеджера
+    assert data["containment_rate"] == 50
+    assert data["outcomes"]["won"] == 1
+    assert data["avg_response_min"] == 5.0
+    assert data["handoff_reasons"][0] == ("Готов оплатить", 1)
+
+
+def test_analytics_endpoint_renders():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("u-an-1", "client", "привет", channel="whatsapp"))
+    asyncio.run(store.update_meta("u-an-1", funnel="visa", stage="office", outcome="won"))
+    client = _auth_client()
+    resp = client.get("/admin/analytics")
+    assert resp.status_code == 200
+    assert "Containment" in resp.text
+    assert "Оплатили" in resp.text

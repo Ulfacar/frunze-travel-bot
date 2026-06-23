@@ -55,6 +55,15 @@ class ConversationView:
     messages: list[MessageView] = field(default_factory=list)
 
 
+_AUTO_OUTCOMES = {"in_progress", "office", "manager"}
+_MANUAL_OUTCOMES = {"won", "lost"}
+
+
+def _is_auto_downgrade(new_outcome: str, current: str) -> bool:
+    """True, если авто-исход пытается перезатереть ручной финал (won/lost) — не даём."""
+    return new_outcome in _AUTO_OUTCOMES and current in _MANUAL_OUTCOMES
+
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -137,11 +146,14 @@ class MemoryConversationStore:
             conv.lead_temperature = lead_temperature
         if assigned_to is not None:
             conv.assigned_to = assigned_to
-        if outcome is not None:
+        if outcome is not None and not _is_auto_downgrade(outcome, conv.outcome):
             conv.outcome = outcome
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
         await self.update_meta(user_id, intercepted=value)
+
+    async def all_conversations(self) -> list[ConversationView]:
+        return list(self._conv.values())
 
     async def claim(self, user_id: str, manager: str) -> bool:
         """Закрепить диалог за менеджером, если свободен или уже его. True — владеет manager."""
@@ -272,7 +284,7 @@ class PostgresConversationStore:
             if assigned_to is not None:
                 conv.assigned_to = assigned_to
                 conv.assigned_at = _now() if assigned_to else None
-            if outcome is not None:
+            if outcome is not None and not _is_auto_downgrade(outcome, conv.outcome or ""):
                 conv.outcome = outcome
             await session.commit()
 
@@ -293,6 +305,24 @@ class PostgresConversationStore:
 
     async def release_claim(self, user_id: str) -> None:
         await self.update_meta(user_id, assigned_to="")
+
+    async def all_conversations(self) -> list[ConversationView]:
+        """Все диалоги с сообщениями — для аналитики."""
+        from app.integrations.crm.db import Conversation
+        async with self._sm()() as session:
+            rows = (await session.execute(
+                select(Conversation).options(selectinload(Conversation.messages))
+            )).scalars().all()
+            views = []
+            for conv in rows:
+                v = _view(conv)
+                v.messages = [
+                    MessageView(sender=m.sender, text=m.text, created_at=m.created_at,
+                                id=m.id, status=getattr(m, "status", "") or "")
+                    for m in conv.messages
+                ]
+                views.append(v)
+            return views
 
     async def add_audit(self, manager: str, action: str, user_id: str = "", detail: str = "") -> None:
         from app.integrations.crm.db import AuditLog
