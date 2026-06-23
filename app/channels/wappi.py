@@ -23,8 +23,18 @@ _TEXT_TYPE = "chat"  # Wappi: тип текстового сообщения (о
 
 
 def is_incoming_user_message(raw: dict) -> bool:
-    """True только для входящих сообщений от клиента (не наши эхо `is_me`, не статусы)."""
-    return raw.get("wh_type") == "incoming_message" and not raw.get("is_me", False)
+    """True только для входящих сообщений клиента в ЛИЧНОМ чате.
+
+    Отсекаем: наши эхо (`is_me`), статусы доставки/авторизации (`wh_type` != incoming_message),
+    реакции (`type` == reaction) и групповые чаты (`chat_type` == group) — в группах бот молчит.
+    `chat_type` может отсутствовать в синтетических событиях → по умолчанию считаем личным.
+    """
+    return (
+        raw.get("wh_type") == "incoming_message"
+        and not raw.get("is_me", False)
+        and raw.get("type") != "reaction"
+        and raw.get("chat_type", "dialog") != "group"
+    )
 
 
 def _recipient(chat_id: str) -> str:

@@ -98,18 +98,29 @@ async def bitrix_webhook(request: Request) -> dict:
 async def wappi_webhook(request: Request) -> dict:
     """Прямой WhatsApp-канал (Wappi). Маршрут к боту по profile_id события.
 
-    Игнорируем не-входящие и наши эхо (`is_me`), иначе бот ответит сам себе.
+    Wappi оборачивает события в `{"messages": [ {...}, ... ]}`; обрабатываем каждое.
+    Игнорируем не-входящие, наши эхо (`is_me`), реакции и групповые чаты — отвечаем
+    только в личных диалогах, иначе бот ответит сам себе или зафлудит группу.
     """
-    raw = await request.json()
-    if not is_incoming_user_message(raw):
-        return {"ok": True, "skipped": "not_incoming"}
+    payload = await request.json()
+    # Wappi: события в payload["messages"]; на всякий случай поддерживаем и плоский формат.
+    events = payload.get("messages") if isinstance(payload, dict) else None
+    if not events:
+        events = [payload]
 
-    profile_id = str(raw.get("profile_id", ""))
-    orchestrator = _wappi_orchestrators.get(profile_id)
-    if orchestrator is None:
-        log.warning("Wappi-событие без сопоставленного бота (profile_id=%s)", profile_id)
-        return {"ok": False, "reason": "unknown_profile"}
+    handled = 0
+    for raw in events:
+        if not isinstance(raw, dict) or not is_incoming_user_message(raw):
+            continue
 
-    msg = await orchestrator.channel.parse(raw)
-    await orchestrator.handle(msg)
-    return {"ok": True, "bot": orchestrator.bot.id if orchestrator.bot else None}
+        profile_id = str(raw.get("profile_id", ""))
+        orchestrator = _wappi_orchestrators.get(profile_id)
+        if orchestrator is None:
+            log.warning("Wappi-событие без сопоставленного бота (profile_id=%s)", profile_id)
+            continue
+
+        msg = await orchestrator.channel.parse(raw)
+        await orchestrator.handle(msg)
+        handled += 1
+
+    return {"ok": True, "handled": handled}

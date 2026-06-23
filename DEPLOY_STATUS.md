@@ -1,110 +1,61 @@
 # Frunze Travel Bot: Deploy Status
 
-## Done
+## LIVE (deployed 2026-06-23)
 
-- Repository is prepared for Coolify Docker Compose deploy.
-- `docker-compose.yml` defines:
-  - `app` service on port `8000`;
-  - Postgres service;
-  - Redis service;
-  - persistent volumes for Postgres and Redis.
-- Wappi webhook route is implemented:
-  - `POST /webhook/wappi`
-- One shared Wappi webhook is used for both WhatsApp profiles. The backend routes messages by `profile_id`.
-- Wappi webhook URL was set in both Wappi accounts:
-  - `FrunzeTravel2`, profile_id `02a4708d-ec6c`
-  - `GetVisa`, profile_id `2f099bc3-478d`
+Развёрнут на собственном VPS (не Coolify — от Coolify отказались, потом клиент купит свой хостинг).
 
-## Verified Locally
+- **Сервер:** `62.171.185.155` (Ubuntu 24.04), SSH `root` по ключу.
+- **Путь:** `/root/frunze-travel` (НЕ /opt — там snap-docker не видит файлы).
+- **Docker:** snap-версия (Canonical). Работает только из `$HOME` (/root) и не читает
+  скрытые файлы → `.env` переименован в `prod.env`, запуск с `--env-file prod.env`.
+- **Стек:** `app` (uvicorn, слушает только `127.0.0.1:8077`) + postgres16 + redis7.
+  Публичный порт наружу НЕ открыт — наружу смотрит host-nginx.
+- **Reverse-proxy + TLS:** системный nginx (`/etc/nginx/sites-available/frunzetravel.kg`)
+  проксирует `frunzetravel.kg` → `127.0.0.1:8077`; сертификат Let's Encrypt (certbot,
+  до 2026-09-21, автопродление). HTTP→HTTPS редирект включён.
+- **DNS:** Cloudflare A `frunzetravel.kg` и `www` → `62.171.185.155` (DNS only / серое облако).
 
-- Docker Compose config is valid:
-  - `docker compose config`
-- Test suite passes with local Python path:
-  - command: `$env:PYTHONPATH='.'; $env:PYTEST_ADDOPTS='-p no:cacheprovider'; pytest`
-  - result: `69 passed`
-- Git repository is clean and `main` is synced with `origin/main`.
+### Проверено вживую (снаружи)
 
-## Public URLs
+- `https://frunzetravel.kg/health` → `{"status":"ok"}`
+- `https://frunzetravel.kg/admin/board/tours` → 401 без авторизации, 200 с Basic-auth
+- HTTP → HTTPS 301 редирект
+- `POST /webhook/wappi`: эхо `is_me` → skipped; неизвестный profile → unknown_profile
 
-After DNS and Coolify deploy are working:
+### Wappi (оба профиля авторизованы, webhook указывает на наш домен)
 
-```text
-https://frunzetravel.kg/health
-https://frunzetravel.kg/webhook/wappi
-https://frunzetravel.kg/admin/board/tours
-https://frunzetravel.kg/admin/board/visa
+- FrunzeTravel2 (туры) `02a4708d-ec6c`, номер **+996707660009**, оплата до 2026-07-16
+- GetVisa (визы) `2f099bc3-478d`, номер **+996706660009**, оплата до 2026-07-17
+- `webhook_url = https://frunzetravel.kg/webhook/wappi` у обоих, тип `incoming_message`.
+
+## Команды эксплуатации (на сервере)
+
+```bash
+cd /root/frunze-travel
+# редеплой после обновления кода:
+docker compose -f docker-compose.yml -f docker-compose.vps.yml --env-file prod.env up -d --build
+# логи приложения:
+docker compose -f docker-compose.yml -f docker-compose.vps.yml logs app -f
+# рестарт:
+docker compose -f docker-compose.yml -f docker-compose.vps.yml --env-file prod.env restart app
 ```
 
-The Wappi webhook URL for both accounts:
+## Доступы
 
-```text
-https://frunzetravel.kg/webhook/wappi
-```
+- Админка (полная страница со стилями): **`https://frunzetravel.kg/admin`** — логин `admin`,
+  пароль в `prod.env` (`ADMIN_PASSWORD`). Сгенерирован при деплое.
+  ⚠ `/admin/board/{funnel}` — это HTMX-ФРАГМЕНТ (без `<head>`/CSS), не открывать напрямую.
+- `POSTGRES_PASSWORD` / `WAPPI_TOKEN` / `TOURVISOR_*` — в `prod.env` на сервере (chmod 600).
 
-## Current Blockers
+## Осталось
 
-- `frunzetravel.kg` currently does not resolve to an app server IP/CNAME.
-- Coolify deploy API returned `401 Unauthorized` with the available token, so deploy could not be triggered from the CLI.
-
-## DNS Needed In Cloudflare
-
-If Coolify/VPS provides a public IPv4 address:
-
-```text
-Type: A
-Name: @
-Content: <COOLIFY_SERVER_IP>
-Proxy status: DNS only first
-TTL: Auto
-```
-
-```text
-Type: CNAME
-Name: www
-Target: frunzetravel.kg
-Proxy status: DNS only first
-TTL: Auto
-```
-
-If Coolify provides a hostname instead of an IP:
-
-```text
-Type: CNAME
-Name: @
-Target: <COOLIFY_HOSTNAME>
-Proxy status: DNS only first
-TTL: Auto
-```
-
-## Next Steps
-
-1. Add DNS records in Cloudflare.
-2. Deploy the app in Coolify using Docker Compose.
-3. Set Coolify public service:
-   - service: `app`
-   - port: `8000`
-   - health endpoint: `/health`
-4. Set required environment variables in Coolify:
-   - `OPENROUTER_API_KEY`
-   - `WAPPI_TOKEN`
-   - `POSTGRES_PASSWORD`
-   - `ADMIN_PASSWORD`
-   - `CRM_BACKEND=postgres`
-   - `STATE_BACKEND=redis`
-   - `PANEL_BACKEND=postgres`
-5. Check:
-
-```text
-https://frunzetravel.kg/health
-```
-
-Expected response:
-
-```json
-{"status":"ok"}
-```
-
-6. Send WhatsApp test messages:
-   - to `FrunzeTravel2`: `Хочу тур в Турцию`
-   - to `GetVisa`: `Хочу визу в США`
-
+- **Живой ИИ включён ✅** (2026-06-23): `OPENROUTER_API_KEY` прописан в `prod.env`,
+  `LLM_MODEL_MAIN=anthropic/claude-sonnet-4.6`, `LLM_MODEL_CHEAP=anthropic/claude-haiku-4.5`.
+  Проверено внутри контейнера: `llm_enabled=True`, модель отвечает по-русски.
+  (Старые слаги `anthropic/claude-3.5-sonnet` на OpenRouter уже 404 — нужны новые.)
+- **Живой тест менеджерами:** написать в WhatsApp на +996707660009 (туры) и +996706660009 (визы),
+  проверить карточки в админке и перехват.
+- **Bitrix24** (CRM-зеркало) — после теста: `CRM_BACKEND=bitrix24` + webhook/категории/стадии.
+- **TourVisor** — активировать XML-поиск (сейчас `Authorisation Error`).
+- ⚠ **Отозвать токены, засвеченные в чате:** Cloudflare API token и Coolify token (Coolify больше
+  не нужен).

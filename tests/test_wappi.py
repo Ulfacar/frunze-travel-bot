@@ -15,7 +15,7 @@ from app.core.orchestrator import Orchestrator
 PROFILE = "6a74fb33-16aa"
 
 
-def _incoming(body="привет", type_="chat", is_me=False):
+def _incoming(body="привет", type_="chat", is_me=False, chat_type="dialog"):
     return {
         "wh_type": "incoming_message",
         "profile_id": PROFILE,
@@ -26,7 +26,13 @@ def _incoming(body="привет", type_="chat", is_me=False):
         "chatId": "996700123456@c.us",
         "senderName": "Клиент",
         "is_me": is_me,
+        "chat_type": chat_type,
     }
+
+
+def _wrapped(*events):
+    """Реальный формат Wappi: события приходят в массиве payload["messages"]."""
+    return {"messages": list(events)}
 
 
 # ---------------- фильтр входящих ----------------
@@ -34,6 +40,8 @@ def test_is_incoming_filters_echo_and_status():
     assert is_incoming_user_message(_incoming()) is True
     assert is_incoming_user_message(_incoming(is_me=True)) is False          # наше эхо
     assert is_incoming_user_message({"wh_type": "message_ack"}) is False     # статус-событие
+    assert is_incoming_user_message(_incoming(type_="reaction")) is False    # реакция 👍
+    assert is_incoming_user_message(_incoming(chat_type="group")) is False   # группа — молчим
 
 
 # ---------------- parse ----------------
@@ -118,10 +126,10 @@ def test_wappi_webhook_routes_and_replies(monkeypatch):
     channel = _wire_wappi_bot(monkeypatch)
     client = TestClient(main.app)
 
-    resp = client.post("/webhook/wappi", json=_incoming("хочу тур"))
+    resp = client.post("/webhook/wappi", json=_wrapped(_incoming("хочу тур")))
 
     assert resp.status_code == 200
-    assert resp.json() == {"ok": True, "bot": "frunze_tours_1"}
+    assert resp.json() == {"ok": True, "handled": 1}
     assert channel.sent == [("996700123456@c.us", "echo:хочу тур")]
 
 
@@ -129,7 +137,20 @@ def test_wappi_webhook_ignores_own_echo(monkeypatch):
     channel = _wire_wappi_bot(monkeypatch)
     client = TestClient(main.app)
 
-    resp = client.post("/webhook/wappi", json=_incoming("это наше сообщение", is_me=True))
+    resp = client.post("/webhook/wappi", json=_wrapped(_incoming("это наше сообщение", is_me=True)))
 
-    assert resp.json() == {"ok": True, "skipped": "not_incoming"}
+    assert resp.json() == {"ok": True, "handled": 0}
     assert channel.sent == []  # на эхо не отвечаем — нет цикла
+
+
+def test_wappi_webhook_ignores_group_and_reaction(monkeypatch):
+    channel = _wire_wappi_bot(monkeypatch)
+    client = TestClient(main.app)
+
+    resp = client.post("/webhook/wappi", json=_wrapped(
+        _incoming("сообщение в группе", chat_type="group"),
+        _incoming("👍", type_="reaction"),
+    ))
+
+    assert resp.json() == {"ok": True, "handled": 0}
+    assert channel.sent == []  # ни на группу, ни на реакцию не отвечаем

@@ -11,4 +11,5 @@ alembic==1.13.*
 redis==5.*
 python-dotenv==1.*
 jinja2==3.*             # шаблоны админ-панели (канбан + чат)
+python-multipart==0.0.* # парсинг форм: ответ менеджера из панели + form-urlencoded вебхук Bitrix
 aiosqlite==0.20.*       # dev/тесты: async SQLite вместо сетевого Postgres

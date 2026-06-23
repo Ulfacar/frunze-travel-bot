@@ -82,6 +82,13 @@ class Orchestrator:
 
         funnel = get_funnel(state.funnel)
         reply = await funnel.handle(msg, state)
+
+        # Передача менеджеру = бот замолкает (решение заказчика 23.06.2026): прощальную
+        # реплику этого хода ещё отправляем, но дальше в этом чате отвечает только человек.
+        # Менеджер видит карточку в «У менеджера» и может «Вернуть боту» из панели.
+        if state.stage == "manager":
+            state.intercepted = True
+
         await store.save(state)
         await self._sync_card(msg, state)
         if reply:
