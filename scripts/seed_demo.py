@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""Наполнить админ-панель демо-диалогами (чтобы доски не были пустыми на показе).
+
+Создаёт реалистичные диалоги по обоим брендам и всем колонкам канбана. Демо-номера
+начинаются с 996555000 — по нему же всё легко удалить (идемпотентно: при повторном
+запуске старые демо-данные сносятся и создаются заново).
+
+Запуск (на сервере, ВНУТРИ контейнера app — там есть БД и зависимости):
+    docker compose -f docker-compose.yml -f docker-compose.vps.yml exec -T app \
+        python scripts/seed_demo.py
+Удалить демо-данные:
+    ... exec -T app python scripts/seed_demo.py --clear
+"""
+import asyncio
+import sys
+
+from sqlalchemy import text
+
+from app.integrations.crm.db import get_sessionmaker, init_db
+from app.integrations.panel.store import PostgresConversationStore
+
+DEMO_PREFIX = "996555000"  # демо-номера; реальные клиентские так не начинаются
+
+# (bot_id, phone, funnel, stage, temp, assigned, intercepted, outcome, summary, next_step, qual, msgs)
+D = [
+    # ---------- ВИЗЫ (getvisa, Медина) ----------
+    ("getvisa", "996555000101", "visa", "greeting", "new", "", False, "", "", "", {},
+     [("client", "Здравствуйте, можно узнать про визу в США?"),
+      ("bot", "Здравствуйте! Меня зовут Медина, я ваш личный визовый эксперт 😊 Подскажите, как вас зовут?")]),
+    ("getvisa", "996555000102", "visa", "qualification", "new", "", False, "", "", "",
+     {"name": "Гульнара", "Страна": "Шенген"},
+     [("bot", "Очень приятно! В какую страну планируете и были ли уже визы?"),
+      ("client", "Шенген, виз раньше не было")]),
+    ("getvisa", "996555000103", "visa", "scoring", "warm", "", False, "",
+     "Визовый лид. Канада, ИП, без отказов.", "Проверить данные и пригласить на консультацию.",
+     {"name": "Нурлан", "Страна": "Канада", "Работа": "ИП", "Отказы": "нет"},
+     [("client", "Виза в Канаду, я ИП, отказов не было"),
+      ("bot", "Спасибо! Ситуация в целом неплохая. Предлагаю разобрать ваш кейс детально на консультации 🙏")]),
+    ("getvisa", "996555000104", "visa", "office", "warm", "", False, "office",
+     "Визовый лид готов к консультации.", "Согласовать удобное время в офисе.",
+     {"name": "Эльмира", "Страна": "США"},
+     [("bot", "Будем рады видеть вас в офисе: г. Бишкек, ул. Токтогула 108, БЦ «312», 9 этаж 📍"),
+      ("client", "А завтра во сколько можно подойти?")]),
+    ("getvisa", "996555000105", "visa", "manager", "hot", "medina", True, "manager",
+     "Горячий лид: готов записаться.", "Подключиться и записать на консультацию.",
+     {"name": "Азамат", "Страна": "Китай"},
+     [("client", "Готов записаться, когда можно прийти?"),
+      ("bot", "Передаю вас менеджеру — он подберёт удобное время 🙏"),
+      ("manager", "Азамат, это Медина. Завтра в 12:30 вам удобно?")]),
+    ("getvisa", "996555000106", "visa", "follow_up", "warm", "", False, "",
+     "Думает над консультацией.", "Сделать короткое повторное касание.",
+     {"name": "Дамир", "Страна": "Великобритания"},
+     [("client", "Спасибо, я подумаю"),
+      ("bot", "Конечно! Будут вопросы — пишите, помогу 😊")]),
+
+    # ---------- ТУРЫ (frunze_tours, Сезим) ----------
+    ("frunze_tours", "996555000201", "tours", "greeting", "new", "", False, "", "", "", {},
+     [("client", "Хочу тур"),
+      ("bot", "Здравствуйте! Меня зовут Сезим 😊 Куда хотите поехать?")]),
+    ("frunze_tours", "996555000202", "tours", "qualification", "new", "", False, "",
+     "Лид на тур: Турция, 2 взрослых.", "Уточнить даты и бюджет.",
+     {"Направление": "Турция", "Туристы": "2 взрослых"},
+     [("bot", "Турция — отличный выбор! На какие даты и какой бюджет ориентируетесь?"),
+      ("client", "В июле, бюджет посмотрим")]),
+    ("frunze_tours", "996555000203", "tours", "search", "warm", "", False, "",
+     "Лид на тур: Египет, июль, до 2000$, вылет Бишкек.", "Подобрать варианты, довести до брони.",
+     {"Направление": "Египет", "Даты": "июль", "Бюджет": "до 2000$", "Вылет": "Бишкек"},
+     [("client", "Египет, июль, из Бишкека, до 2000 долларов на двоих"),
+      ("bot", "Поняла! Подберу варианты и пришлю — цену подтвердим при бронировании 🙏")]),
+    ("frunze_tours", "996555000204", "tours", "office", "warm", "", False, "office",
+     "Готов смотреть варианты в офисе.", "Пригласить в офис на подбор.",
+     {"Направление": "ОАЭ", "Туристы": "семья"},
+     [("bot", "Удобнее подобрать тур вместе в офисе — подходите, покажем актуальные варианты 😊"),
+      ("client", "Хорошо, подойдём в выходные")]),
+    ("frunze_tours", "996555000205", "tours", "manager", "hot", "sezim", True, "won",
+     "Горячий: готов оплатить.", "Оформить бронь и оплату.",
+     {"Направление": "Турция", "Отель": "5*", "Даты": "12 июля"},
+     [("client", "Всё нравится, готов оплатить"),
+      ("bot", "Отлично! Подключаю менеджера для брони 👍"),
+      ("manager", "Это Сезим, оформляю бронь — отправьте, пожалуйста, паспорта 🙏")]),
+    ("frunze_tours", "996555000206", "tours", "follow_up", "warm", "", False, "",
+     "Думает над вариантами.", "Напомнить через день.",
+     {"Направление": "Вьетнам"},
+     [("bot", "Прислала варианты по Вьетнаму — как посмотрите, напишите 😊"),
+      ("client", "Ок, спасибо, посмотрю")]),
+
+    # ---------- БИЛЕТЫ (frunze_tours, воронка tickets) ----------
+    ("frunze_tours", "996555000301", "tickets", "qualification", "new", "", False, "",
+     "Билеты: Бишкек→Москва, 2 чел.", "Подобрать рейсы, передать менеджеру.",
+     {"Маршрут": "Бишкек — Москва", "Пассажиры": "2", "Даты": "18–21"},
+     [("client", "Нужны билеты Бишкек-Москва, на двоих"),
+      ("bot", "Поняла! На какие числа туда и обратно?"),
+      ("client", "С 18 по 21")]),
+]
+
+
+async def clear(sm):
+    async with sm() as s:
+        await s.execute(text("DELETE FROM messages WHERE conversation_id IN "
+                             "(SELECT id FROM conversations WHERE phone LIKE :p)"),
+                        {"p": DEMO_PREFIX + "%"})
+        await s.execute(text("DELETE FROM conversations WHERE phone LIKE :p"),
+                        {"p": DEMO_PREFIX + "%"})
+        await s.commit()
+
+
+async def main(clear_only: bool):
+    await init_db()
+    sm = get_sessionmaker()
+    store = PostgresConversationStore(sessionmaker=sm)
+    await clear(sm)
+    if clear_only:
+        print("Демо-диалоги удалены.")
+        return
+    for (bot_id, phone, funnel, stage, temp, assigned, intercepted, outcome,
+         summary, nxt, qual, msgs) in D:
+        key = f"{bot_id}:{phone}"
+        for sender, txt in msgs:
+            status = "delivered" if sender in ("bot", "manager") else ""
+            await store.add_message(key, sender, txt, channel="whatsapp", bot_id=bot_id,
+                                    chat_id=phone + "@c.us", phone=phone, status=status)
+        await store.update_meta(key, funnel=funnel, stage=stage, qualification=qual,
+                                lead_temperature=temp, assigned_to=assigned,
+                                intercepted=intercepted, outcome=outcome,
+                                ai_summary=summary, manager_next_step=nxt)
+    print(f"Создано демо-диалогов: {len(D)}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main("--clear" in sys.argv))
