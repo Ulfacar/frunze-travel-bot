@@ -162,12 +162,33 @@ def _check_credentials(login: str, password: str) -> dict | None:
     return None
 
 
+def _demo_managers() -> list[dict]:
+    """Список менеджеров для кнопок быстрого входа (только при demo_login)."""
+    if not settings.demo_login:
+        return []
+    return [{"login": m.login, "name": m.name or m.login} for m in settings.manager_list()]
+
+
 @router.get("/login", response_class=HTMLResponse)
 async def login_form(request: Request):
     if current_manager(request):
         return RedirectResponse("/admin", status_code=303)
-    return templates.TemplateResponse(request, "login.html", {"error": None},
+    return templates.TemplateResponse(request, "login.html",
+                                      {"error": None, "demo_managers": _demo_managers()},
                                       headers={"Cache-Control": "no-store"})
+
+
+@router.post("/login/demo")
+async def login_demo(request: Request, login: str = Form(...)):
+    """Быстрый вход для демо (без пароля). Доступен ТОЛЬКО при settings.demo_login."""
+    if not settings.demo_login:
+        raise HTTPException(status_code=404, detail="not found")
+    mgr = next((m for m in settings.manager_list() if m.login == login), None)
+    if mgr is None:
+        raise HTTPException(status_code=404, detail="manager not found")
+    request.session["manager"] = {"login": mgr.login, "name": mgr.name or mgr.login}
+    await get_conversation_store().add_audit(mgr.login, "login")
+    return RedirectResponse("/admin", status_code=303)
 
 
 @router.post("/login", response_class=HTMLResponse)
@@ -175,7 +196,8 @@ async def login_submit(request: Request, login: str = Form(...), password: str =
     manager = _check_credentials(login.strip(), password)
     if manager is None:
         return templates.TemplateResponse(request, "login.html",
-                                          {"error": "Неверный логин или пароль"}, status_code=401)
+                                          {"error": "Неверный логин или пароль",
+                                           "demo_managers": _demo_managers()}, status_code=401)
     request.session["manager"] = manager
     await get_conversation_store().add_audit(manager["login"], "login")
     return RedirectResponse("/admin", status_code=303)

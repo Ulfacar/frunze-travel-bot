@@ -31,6 +31,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       MANAGERS: ${MANAGERS:-[]}
       SESSION_SECRET: ${SESSION_SECRET:-change-me-frunze-session-secret}
+      DEMO_LOGIN: ${DEMO_LOGIN:-false}
     ports:
       - "8000:8000"
     depends_on:

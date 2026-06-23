@@ -96,6 +96,9 @@ class Settings(BaseSettings):
     managers: list[ManagerConfig] = []
     # Секрет подписи cookie-сессии (Starlette SessionMiddleware). ПРОД: SESSION_SECRET!
     session_secret: str = "change-me-frunze-session-secret"
+    # Быстрый вход на странице логина (кнопки «войти как …» без пароля) — ТОЛЬКО для демо.
+    # Выключить (DEMO_LOGIN=false) перед боевым запуском с реальными клиентами.
+    demo_login: bool = False
 
     def manager_list(self) -> list[ManagerConfig]:
         """Эффективный список менеджеров (с дефолтом из admin_user/admin_password)."""

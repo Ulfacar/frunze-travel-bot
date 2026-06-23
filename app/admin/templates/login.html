@@ -27,6 +27,12 @@
              transition:background 180ms; }
     button:hover { background:var(--accent-2); }
     .err { margin-top:14px; color:var(--hot); font-size:13px; text-align:center; }
+    .demo { margin-top:20px; padding-top:16px; border-top:1px dashed var(--border); }
+    .demo-l { text-align:center; color:var(--muted); font-size:12px; margin-bottom:10px; }
+    .demo-btns { display:flex; flex-direction:column; gap:8px; }
+    .demo-btns button { margin:0; padding:10px; background:#F8FAFC; color:var(--text);
+                        border:1px solid var(--border); font-weight:600; }
+    .demo-btns button:hover { background:#EEF2FF; border-color:var(--accent); }
   </style>
 </head>
 <body>
@@ -41,5 +47,18 @@
     <button type="submit">Войти</button>
     {% if error %}<div class="err">{{ error }}</div>{% endif %}
   </form>
+  {% if demo_managers %}
+  <div class="card demo" style="margin-top:14px">
+    <div class="demo-l">⚡ Быстрый вход (демо)</div>
+    <div class="demo-btns">
+      {% for m in demo_managers %}
+      <form method="post" action="/admin/login/demo">
+        <input type="hidden" name="login" value="{{ m.login }}">
+        <button type="submit">Войти как {{ m.name }}</button>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 </body>
 </html>

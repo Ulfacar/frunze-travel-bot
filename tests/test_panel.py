@@ -373,3 +373,20 @@ def test_conversations_separated_by_bot(monkeypatch):
     from app.admin.router import _set_intercept
     asyncio.run(_set_intercept(f"frunze_tours:{phone}", True))
     assert asyncio.run(get_state_store().load(f"getvisa:{phone}")).intercepted is False
+
+
+# ---------------- быстрый вход для демо ----------------
+def test_demo_login_gated_by_setting(monkeypatch):
+    # Выключено по умолчанию → эндпоинт недоступен, кнопок нет.
+    monkeypatch.setattr("app.config.settings.demo_login", False)
+    client = TestClient(main.app)
+    assert "Быстрый вход" not in client.get("/admin/login").text
+    assert client.post("/admin/login/demo", data={"login": "admin"}).status_code == 404
+
+    # Включено → кнопки есть и вход без пароля работает.
+    monkeypatch.setattr("app.config.settings.demo_login", True)
+    page = client.get("/admin/login").text
+    assert "Быстрый вход" in page and "Войти как" in page
+    r = client.post("/admin/login/demo", data={"login": "admin"})
+    assert r.status_code == 200  # редирект на /admin → 200
+    assert client.get("/admin/board/visa").status_code == 200  # сессия установлена
