@@ -1,7 +1,8 @@
 """Роутер админ-панели (FastAPI + Jinja2 + HTMX).
 
-MVP: смотреть канбан-доски диалогов, открыть полный контекст переписки, перехватить
-(бот замолкает). Двусторонняя отправка из панели — следующая фаза.
+Канбан-доски диалогов, полный контекст переписки, перехват (бот замолкает),
+ответ менеджера клиенту, исход сделки. Аккаунты менеджеров — сессия (cookie),
+список логинов в settings.managers. Действия пишутся в аудит-лог.
 """
 from __future__ import annotations
 
@@ -10,9 +11,8 @@ import secrets
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.channels import outbound
@@ -24,7 +24,6 @@ log = logging.getLogger("admin")
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
-_security = HTTPBasic()
 
 # Доски (вкладки) — по воронкам. Визы и Туры основные, Билеты — третья.
 FUNNELS = [("visa", "Визы (GetVisa)"), ("tours", "Туры"), ("tickets", "Билеты")]
@@ -47,6 +46,9 @@ STAGE_TO_COLUMN = {
     "follow_up": "follow_up", "followup": "follow_up", "callback": "follow_up",
 }
 
+# Стадии, в которых ждут живого менеджера (для сигнала «требуют ответа»).
+HUMAN_STAGES = {"office", "office_consultation", "manager", "manager_handoff"}
+
 # Палитра градиентов для аватаров (детерминированно по имени/номеру).
 AVATAR_GRADIENTS = [
     "linear-gradient(135deg,#2dd4bf,#0d9488)",
@@ -59,6 +61,9 @@ AVATAR_GRADIENTS = [
 ]
 WAIT_WARM_MIN = 5    # клиент ждёт дольше — карточка теплеет
 WAIT_HOT_MIN = 20    # ждёт долго — горит
+
+# Исходы диалога для ручной отметки менеджером.
+OUTCOMES = [("won", "✅ Оплатил"), ("office", "🏢 Дошёл в офис"), ("lost", "❌ Слился")]
 
 
 def _now() -> datetime:
@@ -82,6 +87,10 @@ def _initials(name: str | None, user_id: str) -> str:
     return user_id[-2:]
 
 
+def _avatar(user_id: str) -> str:
+    return AVATAR_GRADIENTS[sum(user_id.encode()) % len(AVATAR_GRADIENTS)]
+
+
 def _time_label(mins: float | None) -> str:
     if mins is None:
         return ""
@@ -95,7 +104,7 @@ def _time_label(mins: float | None) -> str:
 
 
 def _card_model(conv, now: datetime) -> dict:
-    """Обогащённая карточка для доски: аватар, сигналы срочности, время."""
+    """Обогащённая карточка для доски: аватар, сигналы срочности, время, «кто ведёт»."""
     name = conv.qualification.get("name")
     since = _minutes_since(conv.last_message_at, now)
     # «Клиент ждёт» = последним писал клиент и ему ещё не ответили (ни бот, ни менеджер).
@@ -109,56 +118,104 @@ def _card_model(conv, now: datetime) -> dict:
         level = "warm"
     else:
         level = "fresh"
+    # «Требуют ответа человека» = клиент ждёт И диалог у менеджера/перехвачен.
+    needs_reply = waiting and (conv.intercepted or conv.stage in HUMAN_STAGES)
     return {
         "user_id": conv.user_id, "name": name or conv.user_id,
         "initials": _initials(name, conv.user_id),
-        "avatar": AVATAR_GRADIENTS[sum(conv.user_id.encode()) % len(AVATAR_GRADIENTS)],
+        "avatar": _avatar(conv.user_id),
         "channel": conv.channel, "stage": conv.stage, "intercepted": conv.intercepted,
+        "assigned_to": conv.assigned_to, "outcome": conv.outcome,
         "last_text": conv.last_text, "last_sender": conv.last_sender,
         "time_label": _time_label(since),
         "wait_label": _time_label(wait_min) if wait_min is not None else "",
         "wait_level": level,                       # none|fresh|warm|hot
+        "needs_reply": needs_reply,
         "lead_temperature": conv.lead_temperature,
         "sort_key": (wait_min if wait_min is not None else -1),
     }
 
 
-def require_admin(creds: HTTPBasicCredentials = Depends(_security)) -> None:
-    """HTTP Basic для всех эндпоинтов панели."""
-    ok = (secrets.compare_digest(creds.username, settings.admin_user)
-          and secrets.compare_digest(creds.password, settings.admin_password))
-    if not ok:
-        raise HTTPException(status_code=401, detail="Unauthorized",
-                            headers={"WWW-Authenticate": "Basic"})
+# ---------------- авторизация (сессия менеджера) ----------------
+def current_manager(request: Request) -> dict | None:
+    """Текущий менеджер из cookie-сессии (или None)."""
+    m = request.session.get("manager")
+    return m if isinstance(m, dict) else None
+
+
+def require_admin(request: Request) -> dict:
+    """Зависимость: пускаем только залогиненного менеджера, иначе 401."""
+    m = current_manager(request)
+    if not m:
+        raise HTTPException(status_code=401, detail="login required")
+    return m
+
+
+def _check_credentials(login: str, password: str) -> dict | None:
+    for mgr in settings.manager_list():
+        if (secrets.compare_digest(login, mgr.login)
+                and secrets.compare_digest(password, mgr.password)):
+            return {"login": mgr.login, "name": mgr.name or mgr.login}
+    return None
+
+
+@router.get("/login", response_class=HTMLResponse)
+async def login_form(request: Request):
+    if current_manager(request):
+        return RedirectResponse("/admin", status_code=303)
+    return templates.TemplateResponse(request, "login.html", {"error": None},
+                                      headers={"Cache-Control": "no-store"})
+
+
+@router.post("/login", response_class=HTMLResponse)
+async def login_submit(request: Request, login: str = Form(...), password: str = Form(...)):
+    manager = _check_credentials(login.strip(), password)
+    if manager is None:
+        return templates.TemplateResponse(request, "login.html",
+                                          {"error": "Неверный логин или пароль"}, status_code=401)
+    request.session["manager"] = manager
+    await get_conversation_store().add_audit(manager["login"], "login")
+    return RedirectResponse("/admin", status_code=303)
+
+
+@router.post("/logout")
+async def logout(request: Request):
+    request.session.pop("manager", None)
+    return RedirectResponse("/admin/login", status_code=303)
 
 
 def _build_board(cards: list, now: datetime) -> tuple[list[dict], dict]:
     """Колонки канбана (карточки обогащены и отсортированы: ждут дольше — наверх) + метрики."""
     buckets: dict[str, list] = {key: [] for key, _ in BOARD_COLUMNS}
-    for c in cards:
-        col = STAGE_TO_COLUMN.get(c.stage, "greeting")
-        buckets[col].append(_card_model(c, now))
+    models = [_card_model(c, now) for c in cards]
+    for m in models:
+        buckets[STAGE_TO_COLUMN.get(m["stage"], "greeting")].append(m)
     for col in buckets.values():
         col.sort(key=lambda m: m["sort_key"], reverse=True)  # горячие наверх
     columns = [{"key": key, "label": label, "cards": buckets[key], "is_empty": not buckets[key]}
                for key, label in BOARD_COLUMNS]
     metrics = {
         "total": len(cards),
-        "waiting": sum(1 for col in buckets.values() for m in col if m["wait_level"] != "none"),
+        "waiting": sum(1 for m in models if m["wait_level"] != "none"),
+        "needs_reply": sum(1 for m in models if m["needs_reply"]),
         "intercepted": sum(1 for c in cards if c.intercepted),
     }
     return columns, metrics
 
 
 @router.get("", response_class=HTMLResponse)
-async def index(request: Request, _: None = Depends(require_admin)):
-    """Главная страница панели с вкладками-досками."""
-    return templates.TemplateResponse(request, "boards.html", {"funnels": FUNNELS},
+async def index(request: Request):
+    """Главная страница панели с вкладками-досками. Без сессии — на форму логина."""
+    manager = current_manager(request)
+    if not manager:
+        return RedirectResponse("/admin/login", status_code=303)
+    return templates.TemplateResponse(request, "boards.html",
+                                      {"funnels": FUNNELS, "manager": manager},
                                       headers={"Cache-Control": "no-store"})
 
 
 @router.get("/board/{funnel}", response_class=HTMLResponse)
-async def board(funnel: str, request: Request, _: None = Depends(require_admin)):
+async def board(funnel: str, request: Request, _: dict = Depends(require_admin)):
     """HTMX-партиал одной доски: колонки по стадиям с карточками."""
     panel = get_conversation_store()
     cards = await panel.list_cards(funnel)
@@ -168,52 +225,104 @@ async def board(funnel: str, request: Request, _: None = Depends(require_admin))
     })
 
 
-@router.get("/conversation/{user_id}", response_class=HTMLResponse)
-async def conversation(user_id: str, request: Request, _: None = Depends(require_admin)):
-    """HTMX-партиал: полный контекст диалога + квалификация + кнопка перехвата."""
+async def _render_conversation(user_id: str, request: Request, manager: dict):
     panel = get_conversation_store()
     conv = await panel.get(user_id)
     if conv is None:
         raise HTTPException(status_code=404, detail="conversation not found")
     name = conv.qualification.get("name")
+    # Кем занят, если не нами (мягкое предупреждение — не блок).
+    busy_by = conv.assigned_to if conv.assigned_to and conv.assigned_to != manager["login"] else ""
     return templates.TemplateResponse(request, "_conversation.html", {
         "c": conv,
         "initials": _initials(name, conv.user_id),
-        "avatar": AVATAR_GRADIENTS[sum(conv.user_id.encode()) % len(AVATAR_GRADIENTS)],
+        "avatar": _avatar(conv.user_id),
+        "manager": manager,
+        "busy_by": busy_by,
+        "outcomes": OUTCOMES,
     })
 
 
+@router.get("/conversation/{user_id}", response_class=HTMLResponse)
+async def conversation(user_id: str, request: Request, manager: dict = Depends(require_admin)):
+    """HTMX-партиал: полный контекст диалога + квалификация + действия менеджера."""
+    return await _render_conversation(user_id, request, manager)
+
+
 @router.post("/conversation/{user_id}/takeover", response_class=HTMLResponse)
-async def takeover(user_id: str, request: Request, _: None = Depends(require_admin)):
-    """Менеджер перехватывает диалог: бот замолкает (флаг в состоянии + в карточке)."""
+async def takeover(user_id: str, request: Request, manager: dict = Depends(require_admin)):
+    """Менеджер перехватывает диалог: бот замолкает, диалог закрепляется за менеджером."""
     await _set_intercept(user_id, True)
-    return await conversation(user_id, request)
+    await get_conversation_store().update_meta(user_id, assigned_to=manager["login"])
+    await get_conversation_store().add_audit(manager["login"], "takeover", user_id)
+    return await _render_conversation(user_id, request, manager)
 
 
 @router.post("/conversation/{user_id}/release", response_class=HTMLResponse)
-async def release(user_id: str, request: Request, _: None = Depends(require_admin)):
-    """Вернуть диалог боту."""
+async def release(user_id: str, request: Request, manager: dict = Depends(require_admin)):
+    """Вернуть диалог боту (снять перехват и закрепление)."""
     await _set_intercept(user_id, False)
-    return await conversation(user_id, request)
+    await get_conversation_store().release_claim(user_id)
+    await get_conversation_store().add_audit(manager["login"], "release", user_id)
+    return await _render_conversation(user_id, request, manager)
 
 
 @router.post("/conversation/{user_id}/send", response_class=HTMLResponse)
-async def send_message(user_id: str, request: Request, _: None = Depends(require_admin)):
+async def send_message(user_id: str, request: Request, manager: dict = Depends(require_admin),
+                       text: str = Form("")):
     """Менеджер отвечает клиенту прямо из панели. Ручная отправка авто-перехватывает диалог."""
-    form = await request.form()
-    text = (form.get("text") or "").strip()
+    text = text.strip()
     panel = get_conversation_store()
     conv = await panel.get(user_id)
     if conv is None:
         raise HTTPException(status_code=404, detail="conversation not found")
     if text:
         await _set_intercept(user_id, True)  # отвечает человек → бот молчит
+        await panel.update_meta(user_id, assigned_to=manager["login"])
+        msg_id = await panel.add_message(user_id, "manager", text, status="pending")
         try:
-            await outbound.send_to_client(conv.channel, conv.bot_id, conv.chat_id or user_id, text)
+            provider = await outbound.send_to_client(
+                conv.channel, conv.bot_id, conv.chat_id or user_id, text)
+            await panel.mark_message_status(message_id=msg_id, status="sent",
+                                            set_provider_msg_id=(provider or None))
         except Exception:  # noqa: BLE001 — не теряем сообщение в логе при сбое канала
+            await panel.mark_message_status(message_id=msg_id, status="failed")
             log.warning("manager send failed (channel=%s)", conv.channel, exc_info=True)
-        await panel.add_message(user_id, "manager", text)
-    return await conversation(user_id, request)
+        await panel.add_audit(manager["login"], "send", user_id, text[:120])
+    return await _render_conversation(user_id, request, manager)
+
+
+@router.post("/conversation/{user_id}/resend/{message_id}", response_class=HTMLResponse)
+async def resend(user_id: str, message_id: int, request: Request,
+                 manager: dict = Depends(require_admin)):
+    """Повторить отправку сообщения, помеченного failed."""
+    panel = get_conversation_store()
+    conv = await panel.get(user_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    target = next((m for m in conv.messages if m.id == message_id), None)
+    if target is not None and target.text:
+        try:
+            provider = await outbound.send_to_client(
+                conv.channel, conv.bot_id, conv.chat_id or user_id, target.text)
+            await panel.mark_message_status(message_id=message_id, status="sent",
+                                            set_provider_msg_id=(provider or None))
+        except Exception:  # noqa: BLE001
+            await panel.mark_message_status(message_id=message_id, status="failed")
+            log.warning("resend failed (channel=%s)", conv.channel, exc_info=True)
+        await panel.add_audit(manager["login"], "resend", user_id)
+    return await _render_conversation(user_id, request, manager)
+
+
+@router.post("/conversation/{user_id}/outcome", response_class=HTMLResponse)
+async def set_outcome(user_id: str, request: Request, manager: dict = Depends(require_admin),
+                      outcome: str = Form(...)):
+    """Менеджер отмечает исход диалога (оплатил / дошёл / слился)."""
+    valid = {key for key, _ in OUTCOMES}
+    if outcome in valid:
+        await get_conversation_store().update_meta(user_id, outcome=outcome)
+        await get_conversation_store().add_audit(manager["login"], "outcome", user_id, outcome)
+    return await _render_conversation(user_id, request, manager)
 
 
 async def _set_intercept(user_id: str, value: bool) -> None:

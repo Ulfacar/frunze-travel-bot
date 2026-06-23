@@ -86,13 +86,23 @@ class Orchestrator:
         # Передача менеджеру = бот замолкает (решение заказчика 23.06.2026): прощальную
         # реплику этого хода ещё отправляем, но дальше в этом чате отвечает только человек.
         # Менеджер видит карточку в «У менеджера» и может «Вернуть боту» из панели.
-        if state.stage == "manager":
+        auto_handoff = state.stage == "manager"
+        if auto_handoff:
+            state.intercepted = True
+
+        # Перехват «на лету»: менеджер мог нажать «Перехватить», пока генерировался ответ.
+        # Перечитываем свежее состояние; если перехвачено не нами (не хендофф) — не отвечаем.
+        fresh = await store.load(msg.user_id)
+        intercepted_midflight = fresh.intercepted and not auto_handoff
+        if intercepted_midflight:
             state.intercepted = True
 
         await store.save(state)
         await self._sync_card(msg, state)
-        if reply:
+        if reply and not intercepted_midflight:
             await self._reply(msg, reply)
+        elif intercepted_midflight:
+            log.info("reply dropped: intercepted mid-flight (user=%s)", msg.user_id)
 
     # ---- лог панели (сбои глушим, чтобы не ронять бота) ----
     async def _log_in(self, msg: Message, text: str) -> None:
@@ -106,13 +116,27 @@ class Orchestrator:
             log.warning("panel log_in failed", exc_info=True)
 
     async def _reply(self, msg: Message, text: str) -> None:
-        await self.channel.send(msg.chat_id, text)
+        # Логируем исходящее как pending → шлём → отмечаем доставку (sent/failed).
+        panel = get_conversation_store()
+        msg_id = 0
         try:
-            panel = get_conversation_store()
-            await panel.add_message(msg.user_id, "bot", text,
-                                    channel=msg.channel, bot_id=self._bot_id)
+            msg_id = await panel.add_message(msg.user_id, "bot", text,
+                                             channel=msg.channel, bot_id=self._bot_id,
+                                             status="pending")
         except Exception:  # noqa: BLE001
             log.warning("panel log_out failed", exc_info=True)
+        try:
+            provider = await self.channel.send(msg.chat_id, text)
+            if msg_id:
+                await panel.mark_message_status(message_id=msg_id, status="sent",
+                                                set_provider_msg_id=(provider or None))
+        except Exception:  # noqa: BLE001 — сбой канала: помечаем failed, диалог не роняем
+            if msg_id:
+                try:
+                    await panel.mark_message_status(message_id=msg_id, status="failed")
+                except Exception:  # noqa: BLE001
+                    pass
+            log.warning("bot send failed (channel=%s)", msg.channel, exc_info=True)
 
     async def _sync_card(self, msg: Message, state) -> None:
         try:

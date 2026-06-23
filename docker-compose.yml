@@ -29,6 +29,8 @@ services:
       ADMIN_ENABLED: ${ADMIN_ENABLED:-true}
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      MANAGERS: ${MANAGERS:-[]}
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-frunze-session-secret}
     ports:
       - "8000:8000"
     depends_on:

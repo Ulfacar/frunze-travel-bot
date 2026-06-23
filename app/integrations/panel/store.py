@@ -28,6 +28,9 @@ class MessageView:
     sender: str           # client | bot | manager
     text: str
     created_at: datetime | None = None
+    id: int = 0
+    status: str = ""              # "" (входящее) | pending|sent|delivered|failed
+    provider_msg_id: str = ""
 
 
 @dataclass
@@ -44,6 +47,8 @@ class ConversationView:
     manager_next_step: str = ""
     escalation_reason: str = ""
     lead_temperature: str = "new"
+    assigned_to: str = ""         # логин менеджера, ведущего диалог
+    outcome: str = ""             # in_progress|office|manager|won|lost
     last_text: str = ""
     last_sender: str = ""
     last_message_at: datetime | None = None
@@ -59,6 +64,8 @@ class MemoryConversationStore:
 
     def __init__(self) -> None:
         self._conv: dict[str, ConversationView] = {}
+        self._mid = 0
+        self._audit: list[dict] = []
 
     async def ensure(self, user_id: str, channel: str = "", bot_id: str = "",
                      chat_id: str = "") -> ConversationView:
@@ -72,12 +79,35 @@ class MemoryConversationStore:
         return conv
 
     async def add_message(self, user_id: str, sender: str, text: str,
-                          channel: str = "", bot_id: str = "", chat_id: str = "") -> None:
+                          channel: str = "", bot_id: str = "", chat_id: str = "",
+                          status: str = "", provider_msg_id: str = "",
+                          idempotency_key: str = "") -> int:
         conv = await self.ensure(user_id, channel, bot_id, chat_id)
-        conv.messages.append(MessageView(sender=sender, text=text, created_at=_now()))
+        if idempotency_key:  # дедуп: повтор той же отправки не создаёт второй записи
+            for m in conv.messages:
+                if getattr(m, "_idem", "") == idempotency_key:
+                    return m.id
+        self._mid += 1
+        msg = MessageView(sender=sender, text=text, created_at=_now(), id=self._mid,
+                          status=status, provider_msg_id=provider_msg_id)
+        msg._idem = idempotency_key  # type: ignore[attr-defined]
+        conv.messages.append(msg)
         conv.last_text = text
         conv.last_sender = sender
         conv.last_message_at = _now()
+        return msg.id
+
+    async def mark_message_status(self, *, message_id: int | None = None,
+                                  provider_msg_id: str | None = None, status: str,
+                                  set_provider_msg_id: str | None = None) -> None:
+        for conv in self._conv.values():
+            for m in conv.messages:
+                if (message_id is not None and m.id == message_id) or (
+                        provider_msg_id and m.provider_msg_id == provider_msg_id):
+                    m.status = status
+                    if set_provider_msg_id:
+                        m.provider_msg_id = set_provider_msg_id
+                    return
 
     async def update_meta(self, user_id: str, *, funnel: str | None = None,
                           stage: str | None = None, qualification: dict | None = None,
@@ -85,7 +115,9 @@ class MemoryConversationStore:
                           ai_summary: str | None = None,
                           manager_next_step: str | None = None,
                           escalation_reason: str | None = None,
-                          lead_temperature: str | None = None) -> None:
+                          lead_temperature: str | None = None,
+                          assigned_to: str | None = None,
+                          outcome: str | None = None) -> None:
         conv = await self.ensure(user_id)
         if funnel is not None:
             conv.funnel = funnel
@@ -103,9 +135,29 @@ class MemoryConversationStore:
             conv.escalation_reason = escalation_reason
         if lead_temperature is not None:
             conv.lead_temperature = lead_temperature
+        if assigned_to is not None:
+            conv.assigned_to = assigned_to
+        if outcome is not None:
+            conv.outcome = outcome
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
         await self.update_meta(user_id, intercepted=value)
+
+    async def claim(self, user_id: str, manager: str) -> bool:
+        """Закрепить диалог за менеджером, если свободен или уже его. True — владеет manager."""
+        conv = await self.ensure(user_id)
+        if conv.assigned_to in ("", manager):
+            conv.assigned_to = manager
+            return True
+        return False
+
+    async def release_claim(self, user_id: str) -> None:
+        conv = await self.ensure(user_id)
+        conv.assigned_to = ""
+
+    async def add_audit(self, manager: str, action: str, user_id: str = "", detail: str = "") -> None:
+        self._audit.append({"manager": manager, "action": action, "user_id": user_id,
+                            "detail": detail, "created_at": _now()})
 
     async def list_cards(self, funnel: str) -> list[ConversationView]:
         items = [c for c in self._conv.values() if c.funnel == funnel]
@@ -148,14 +200,46 @@ class PostgresConversationStore:
             await session.commit()
 
     async def add_message(self, user_id: str, sender: str, text: str,
-                          channel: str = "", bot_id: str = "", chat_id: str = "") -> None:
+                          channel: str = "", bot_id: str = "", chat_id: str = "",
+                          status: str = "", provider_msg_id: str = "",
+                          idempotency_key: str = "") -> int:
         from app.integrations.crm.db import ConvMessage
         async with self._sm()() as session:
             conv = await self._ensure_row(session, user_id, channel, bot_id, chat_id)
-            session.add(ConvMessage(conversation_id=conv.id, sender=sender, text=text))
+            if idempotency_key:  # дедуп повторной отправки
+                existing = (await session.execute(
+                    select(ConvMessage).where(ConvMessage.idempotency_key == idempotency_key)
+                )).scalar_one_or_none()
+                if existing is not None:
+                    return existing.id
+            msg = ConvMessage(conversation_id=conv.id, sender=sender, text=text,
+                              status=status, provider_msg_id=provider_msg_id,
+                              idempotency_key=idempotency_key)
+            session.add(msg)
             conv.last_text = text
             conv.last_sender = sender
             conv.last_message_at = _now()
+            await session.commit()
+            return msg.id
+
+    async def mark_message_status(self, *, message_id: int | None = None,
+                                  provider_msg_id: str | None = None, status: str,
+                                  set_provider_msg_id: str | None = None) -> None:
+        from app.integrations.crm.db import ConvMessage
+        async with self._sm()() as session:
+            q = select(ConvMessage)
+            if message_id is not None:
+                q = q.where(ConvMessage.id == message_id)
+            elif provider_msg_id:
+                q = q.where(ConvMessage.provider_msg_id == provider_msg_id)
+            else:
+                return
+            msg = (await session.execute(q.limit(1))).scalar_one_or_none()
+            if msg is None:
+                return
+            msg.status = status
+            if set_provider_msg_id:
+                msg.provider_msg_id = set_provider_msg_id
             await session.commit()
 
     async def update_meta(self, user_id: str, *, funnel: str | None = None,
@@ -164,7 +248,9 @@ class PostgresConversationStore:
                           ai_summary: str | None = None,
                           manager_next_step: str | None = None,
                           escalation_reason: str | None = None,
-                          lead_temperature: str | None = None) -> None:
+                          lead_temperature: str | None = None,
+                          assigned_to: str | None = None,
+                          outcome: str | None = None) -> None:
         async with self._sm()() as session:
             conv = await self._ensure_row(session, user_id, "", "")
             if funnel is not None:
@@ -183,10 +269,36 @@ class PostgresConversationStore:
                 conv.escalation_reason = escalation_reason
             if lead_temperature is not None:
                 conv.lead_temperature = lead_temperature
+            if assigned_to is not None:
+                conv.assigned_to = assigned_to
+                conv.assigned_at = _now() if assigned_to else None
+            if outcome is not None:
+                conv.outcome = outcome
             await session.commit()
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
         await self.update_meta(user_id, intercepted=value)
+
+    async def claim(self, user_id: str, manager: str) -> bool:
+        """Атомарно закрепить диалог за менеджером, если свободен или уже его."""
+        from app.integrations.crm.db import Conversation
+        async with self._sm()() as session:
+            conv = await self._ensure_row(session, user_id, "", "")
+            if (conv.assigned_to or "") in ("", manager):
+                conv.assigned_to = manager
+                conv.assigned_at = _now()
+                await session.commit()
+                return True
+            return False
+
+    async def release_claim(self, user_id: str) -> None:
+        await self.update_meta(user_id, assigned_to="")
+
+    async def add_audit(self, manager: str, action: str, user_id: str = "", detail: str = "") -> None:
+        from app.integrations.crm.db import AuditLog
+        async with self._sm()() as session:
+            session.add(AuditLog(manager=manager, action=action, user_id=user_id, detail=detail))
+            await session.commit()
 
     async def list_cards(self, funnel: str) -> list[ConversationView]:
         from app.integrations.crm.db import Conversation
@@ -208,7 +320,9 @@ class PostgresConversationStore:
                 return None
             view = _view(conv)
             view.messages = [
-                MessageView(sender=m.sender, text=m.text, created_at=m.created_at)
+                MessageView(sender=m.sender, text=m.text, created_at=m.created_at,
+                            id=m.id, status=getattr(m, "status", "") or "",
+                            provider_msg_id=getattr(m, "provider_msg_id", "") or "")
                 for m in conv.messages
             ]
             return view
@@ -224,6 +338,8 @@ def _view(conv) -> ConversationView:
         manager_next_step=getattr(conv, "manager_next_step", "") or "",
         escalation_reason=getattr(conv, "escalation_reason", "") or "",
         lead_temperature=getattr(conv, "lead_temperature", "new") or "new",
+        assigned_to=getattr(conv, "assigned_to", "") or "",
+        outcome=getattr(conv, "outcome", "") or "",
         last_text=conv.last_text,
         last_sender=conv.last_sender, last_message_at=conv.last_message_at,
     )

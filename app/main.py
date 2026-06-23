@@ -4,14 +4,24 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
+import time
+from collections import OrderedDict
+
 from fastapi import FastAPI, Request
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.channels.bitrix_openlines import BitrixOpenLinesAdapter, bot_id_from_event, nest_form
 from app.channels.telegram import TelegramAdapter
-from app.channels.wappi import WappiAdapter, is_incoming_user_message
+from app.channels.wappi import (
+    WappiAdapter,
+    is_delivery_status,
+    is_incoming_user_message,
+    parse_delivery_status,
+)
 from app.config import settings
 from app.core.bots import registry
 from app.core.orchestrator import Orchestrator
+from app.integrations.panel.store import get_conversation_store
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -28,6 +38,26 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Frunze Travel Bot", lifespan=lifespan)
+# Сессии менеджеров (подписанная cookie) — для логина в админ-панель.
+app.add_middleware(SessionMiddleware, secret_key=settings.session_secret, max_age=14 * 24 * 3600)
+
+# Наблюдаемость: время последнего входящего сообщения клиента (детектор «тишины»).
+_LAST_INBOUND: dict[str, float] = {"ts": 0.0}
+# Дедуп входящих Wappi по id события (повторная доставка вебхука не плодит ответы).
+_seen_wappi_ids: "OrderedDict[str, None]" = OrderedDict()
+_SEEN_MAX = 2000
+
+
+def _seen_before(event_id: str) -> bool:
+    """True, если событие с таким id уже обрабатывали (защита от дублей доставки)."""
+    if not event_id:
+        return False
+    if event_id in _seen_wappi_ids:
+        return True
+    _seen_wappi_ids[event_id] = None
+    if len(_seen_wappi_ids) > _SEEN_MAX:
+        _seen_wappi_ids.popitem(last=False)
+    return False
 
 # Админ-панель (канбан диалогов + чат + перехват).
 if settings.admin_enabled:
@@ -55,7 +85,11 @@ _wappi_orchestrators: dict[str, Orchestrator] = {
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok"}
+    last = _LAST_INBOUND["ts"]
+    return {
+        "status": "ok",
+        "last_inbound_seconds_ago": round(time.time() - last, 1) if last else None,
+    }
 
 
 @app.post("/webhook/telegram")
@@ -110,8 +144,25 @@ async def wappi_webhook(request: Request) -> dict:
 
     handled = 0
     for raw in events:
-        if not isinstance(raw, dict) or not is_incoming_user_message(raw):
+        if not isinstance(raw, dict):
             continue
+
+        # Статус доставки/прочтения нашего исходящего → обновляем галочку в панели.
+        if is_delivery_status(raw):
+            provider_msg_id, status = parse_delivery_status(raw)
+            if provider_msg_id and status:
+                try:
+                    await get_conversation_store().mark_message_status(
+                        provider_msg_id=provider_msg_id, status=status)
+                except Exception:  # noqa: BLE001
+                    log.warning("delivery-status update failed", exc_info=True)
+            continue
+
+        if not is_incoming_user_message(raw):
+            continue
+
+        if _seen_before(str(raw.get("id", ""))):
+            continue  # дубль доставки вебхука — уже обработали
 
         profile_id = str(raw.get("profile_id", ""))
         orchestrator = _wappi_orchestrators.get(profile_id)
@@ -119,6 +170,7 @@ async def wappi_webhook(request: Request) -> dict:
             log.warning("Wappi-событие без сопоставленного бота (profile_id=%s)", profile_id)
             continue
 
+        _LAST_INBOUND["ts"] = time.time()
         msg = await orchestrator.channel.parse(raw)
         await orchestrator.handle(msg)
         handled += 1

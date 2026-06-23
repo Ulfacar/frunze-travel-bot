@@ -22,6 +22,26 @@ logger = logging.getLogger("channel.wappi")
 _TEXT_TYPE = "chat"  # Wappi: тип текстового сообщения (остальное — медиа/вложения)
 
 
+def is_delivery_status(raw: dict) -> bool:
+    """True для событий статуса доставки/прочтения (не входящее сообщение клиента)."""
+    return raw.get("wh_type") in {"messages_status", "message_status", "delivery_status", "ack"}
+
+
+# Маппинг статусов Wappi → наши (pending|sent|delivered|failed).
+_STATUS_MAP = {
+    "sent": "sent", "server": "sent", "send": "sent",
+    "delivered": "delivered", "device": "delivered", "read": "delivered", "played": "delivered",
+    "failed": "failed", "error": "failed", "canceled": "failed",
+}
+
+
+def parse_delivery_status(raw: dict) -> tuple[str, str]:
+    """(provider_msg_id, наш_статус) из события статуса Wappi. Пустой статус — если неизвестно."""
+    provider_msg_id = str(raw.get("id") or raw.get("message_id") or raw.get("msg_id") or "")
+    wappi_status = str(raw.get("status") or raw.get("ack") or "").lower()
+    return provider_msg_id, _STATUS_MAP.get(wappi_status, "")
+
+
 def is_incoming_user_message(raw: dict) -> bool:
     """True только для входящих сообщений клиента в ЛИЧНОМ чате.
 
@@ -74,11 +94,11 @@ class WappiAdapter:
             raw=raw,
         )
 
-    async def send(self, chat_id: str, text: str, **kwargs) -> None:
-        """Отправить ответ клиенту через Wappi sync-API."""
+    async def send(self, chat_id: str, text: str, **kwargs) -> str:
+        """Отправить ответ клиенту через Wappi sync-API. Возвращает provider_msg_id (или "")."""
         if not self._token or not self._profile_id:
             logger.warning("Wappi send пропущен: не заданы token/profile_id")
-            return
+            return ""
 
         owns = self._client is None
         client = self._client or httpx.AsyncClient(timeout=20)
@@ -90,7 +110,29 @@ class WappiAdapter:
                 json={"recipient": _recipient(chat_id), "body": text},
             )
             resp.raise_for_status()
+            provider_msg_id = _extract_msg_id(resp)
         finally:
             if owns:
                 await client.aclose()
-        logger.info("Wappi send to=%s profile=%s", _recipient(chat_id), self._profile_id)
+        logger.info("Wappi send to=%s profile=%s msg_id=%s",
+                    _recipient(chat_id), self._profile_id, provider_msg_id)
+        return provider_msg_id
+
+
+def _extract_msg_id(resp: httpx.Response) -> str:
+    """Вытащить id отправленного сообщения из ответа Wappi (ключ варьируется)."""
+    try:
+        data = resp.json()
+    except Exception:  # noqa: BLE001 — тело не JSON
+        return ""
+    if not isinstance(data, dict):
+        return ""
+    for key in ("message_id", "msg_id", "id"):
+        if data.get(key):
+            return str(data[key])
+    msg = data.get("message")
+    if isinstance(msg, dict):
+        for key in ("id", "message_id"):
+            if msg.get(key):
+                return str(msg[key])
+    return ""

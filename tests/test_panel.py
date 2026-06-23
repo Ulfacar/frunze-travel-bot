@@ -19,6 +19,7 @@ from app.integrations.panel.store import PostgresConversationStore
 def _clear_memory():
     """Очистить процесс-глобальные in-memory стораджи между тестами."""
     panel_store._memory_store._conv.clear()
+    panel_store._memory_store._audit.clear()
     from app.core.state import state_store
     state_store._store.clear()
 
@@ -35,6 +36,14 @@ class _FakeChannel:
 
 def _msg(user_id, text):
     return Message(channel="whatsapp", user_id=user_id, chat_id=user_id, text=text)
+
+
+def _auth_client():
+    """TestClient с залогиненным менеджером (дефолт admin/frunze) — cookie-сессия."""
+    client = TestClient(main.app)
+    r = client.post("/admin/login", data={"login": "admin", "password": "frunze"})
+    assert r.status_code == 200  # редирект на /admin отрабатывает, сессия установлена
+    return client
 
 
 # ---------------- store (Postgres на SQLite) ----------------
@@ -152,8 +161,8 @@ def test_board_renders_card_with_auth(monkeypatch):
     asyncio.run(store.update_meta("996700222", funnel="visa", stage="qualification",
                                   qualification={"name": "Адам"}))
 
-    client = TestClient(main.app)
-    resp = client.get("/admin/board/visa", auth=("admin", "frunze"))
+    client = _auth_client()
+    resp = client.get("/admin/board/visa")
     assert resp.status_code == 200
     assert "996700222" in resp.text
     assert "Адам" in resp.text
@@ -170,11 +179,12 @@ def test_manager_send_replies_and_takes_over(monkeypatch):
     sent = []
     async def fake_send(channel, bot_id, chat_id, text):
         sent.append((channel, bot_id, chat_id, text))
+        return "wappi-msg-1"
     monkeypatch.setattr("app.channels.outbound.send_to_client", fake_send)
 
-    client = TestClient(main.app)
+    client = _auth_client()
     resp = client.post("/admin/conversation/996700333/send",
-                       data={"text": "Это менеджер Медина, помогу вам"}, auth=("admin", "frunze"))
+                       data={"text": "Это менеджер Медина, помогу вам"})
     assert resp.status_code == 200
 
     # Адаптер вызван с правильным адресом ответа (chat_id, не user_id).
@@ -183,7 +193,10 @@ def test_manager_send_replies_and_takes_over(monkeypatch):
     conv = asyncio.run(store.get("996700333"))
     assert conv.messages[-1].sender == "manager"
     assert conv.messages[-1].text == "Это менеджер Медина, помогу вам"
+    assert conv.messages[-1].status == "sent"               # доставка отслежена
+    assert conv.messages[-1].provider_msg_id == "wappi-msg-1"
     assert conv.intercepted is True  # ручная отправка перехватила диалог
+    assert conv.assigned_to == "admin"  # диалог закреплён за менеджером
 
 
 def test_conversation_renders_manager_brief(monkeypatch):
@@ -201,8 +214,8 @@ def test_conversation_renders_manager_brief(monkeypatch):
         lead_temperature="warm",
     ))
 
-    client = TestClient(main.app)
-    resp = client.get("/admin/conversation/996700444", auth=("admin", "frunze"))
+    client = _auth_client()
+    resp = client.get("/admin/conversation/996700444")
 
     assert resp.status_code == 200
     assert "AI для менеджера" in resp.text
@@ -226,3 +239,56 @@ def test_manager_brief_marks_hot_payment_signal():
     assert brief["lead_temperature"] == "hot"
     assert "Горячий клиент" in brief["manager_next_step"]
     assert "готовность" in brief["escalation_reason"]
+
+
+# ---------------- Wave 1: логин, claim+аудит, исход ----------------
+def test_admin_requires_login():
+    client = TestClient(main.app)
+    assert client.get("/admin/board/visa").status_code == 401          # без сессии
+    bad = client.post("/admin/login", data={"login": "admin", "password": "wrong"})
+    assert bad.status_code == 401
+    ok = client.post("/admin/login", data={"login": "admin", "password": "frunze"})
+    assert ok.status_code == 200
+    assert client.get("/admin/board/visa").status_code == 200          # после логина
+
+
+def test_takeover_assigns_and_audits():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("u-claim-1", "client", "привет", channel="whatsapp", bot_id="getvisa"))
+    asyncio.run(store.update_meta("u-claim-1", funnel="visa"))
+
+    client = _auth_client()
+    resp = client.post("/admin/conversation/u-claim-1/takeover")
+    assert resp.status_code == 200
+
+    conv = asyncio.run(store.get("u-claim-1"))
+    assert conv.assigned_to == "admin"      # закреплён за менеджером
+    assert conv.intercepted is True
+    assert any(a["action"] == "takeover" and a["user_id"] == "u-claim-1"
+               for a in panel_store._memory_store._audit)
+
+
+def test_set_outcome_button():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("u-out-1", "client", "оплатил", channel="whatsapp"))
+    asyncio.run(store.update_meta("u-out-1", funnel="tours"))
+
+    client = _auth_client()
+    resp = client.post("/admin/conversation/u-out-1/outcome", data={"outcome": "won"})
+    assert resp.status_code == 200
+    conv = asyncio.run(store.get("u-out-1"))
+    assert conv.outcome == "won"
+
+
+def test_busy_warning_for_other_manager():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("u-busy-1", "client", "вопрос", channel="whatsapp"))
+    asyncio.run(store.update_meta("u-busy-1", funnel="visa", assigned_to="medina"))
+
+    client = _auth_client()  # вошли как admin
+    resp = client.get("/admin/conversation/u-busy-1")
+    assert resp.status_code == 200
+    assert "medina" in resp.text and "уже ведёт" in resp.text   # мягкое предупреждение

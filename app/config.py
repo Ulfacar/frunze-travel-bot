@@ -26,6 +26,16 @@ class BotConfig(BaseModel):
     category_id: str = ""                # CRM CATEGORY_ID воронки этого бота
 
 
+class ManagerConfig(BaseModel):
+    """Аккаунт менеджера админ-панели. Список задаётся в env MANAGERS (JSON),
+    как и BOTS. Пароль в открытом виде (как admin_password) — для простой команды
+    из нескольких человек; хеширование можно добавить позже."""
+
+    login: str
+    name: str = ""
+    password: str = ""
+
+
 # Дефолтный реестр — 2 стартовых Wappi-бота. Реальные секреты приходят из .env
 # (через JSON-переменную BOTS) либо проставляются в Фазе 0 после imbot.register.
 DEFAULT_BOTS: list[BotConfig] = [
@@ -81,6 +91,17 @@ class Settings(BaseSettings):
     admin_enabled: bool = True
     admin_user: str = "admin"
     admin_password: str = "frunze"  # ПРОД: переопределить ADMIN_PASSWORD!
+    # Аккаунты менеджеров: JSON в env MANAGERS='[{"login":"sezim","name":"Сезим","password":"..."}]'.
+    # Пусто → один менеджер из admin_user/admin_password (обратная совместимость).
+    managers: list[ManagerConfig] = []
+    # Секрет подписи cookie-сессии (Starlette SessionMiddleware). ПРОД: SESSION_SECRET!
+    session_secret: str = "change-me-frunze-session-secret"
+
+    def manager_list(self) -> list[ManagerConfig]:
+        """Эффективный список менеджеров (с дефолтом из admin_user/admin_password)."""
+        if self.managers:
+            return self.managers
+        return [ManagerConfig(login=self.admin_user, name="Менеджер", password=self.admin_password)]
 
 
 settings = Settings()

@@ -70,6 +70,9 @@ class Conversation(Base):
     manager_next_step: Mapped[str] = mapped_column(Text, default="")
     escalation_reason: Mapped[str] = mapped_column(Text, default="")
     lead_temperature: Mapped[str] = mapped_column(String(16), default="new")
+    assigned_to: Mapped[str] = mapped_column(String(64), default="")   # логин менеджера, ведущего диалог
+    assigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    outcome: Mapped[str] = mapped_column(String(24), default="")       # in_progress|office|manager|won|lost
     last_text: Mapped[str] = mapped_column(Text, default="")  # превью последней реплики для карточки
     last_sender: Mapped[str] = mapped_column(String(16), default="")  # client|bot|manager — для сигналов
     created_at: Mapped[datetime] = mapped_column(
@@ -85,7 +88,12 @@ class Conversation(Base):
 
 
 class ConvMessage(Base):
-    """Одно сообщение в диалоге (для чат-окна панели — чистый человекочитаемый лог)."""
+    """Одно сообщение в диалоге (для чат-окна панели — чистый человекочитаемый лог).
+
+    Для исходящих (bot|manager) дополнительно трекаем доставку: status переходит
+    pending→sent→delivered/failed; provider_msg_id — id сообщения у Wappi (для сверки
+    с delivery-status вебхуками); idempotency_key защищает от двойной отправки.
+    """
 
     __tablename__ = "messages"
 
@@ -93,11 +101,29 @@ class ConvMessage(Base):
     conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id"), index=True)
     sender: Mapped[str] = mapped_column(String(16))          # client | bot | manager
     text: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(16), default="")       # "" (входящее) | pending|sent|delivered|failed
+    provider_msg_id: Mapped[str] = mapped_column(String(128), default="", index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), default="", index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+
+class AuditLog(Base):
+    """Журнал действий менеджеров (кто/что/когда над каким диалогом) — подотчётность."""
+
+    __tablename__ = "audit_log"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    manager: Mapped[str] = mapped_column(String(64), default="")
+    action: Mapped[str] = mapped_column(String(32))          # login|takeover|release|send|outcome|resend
+    user_id: Mapped[str] = mapped_column(String(128), default="", index=True)
+    detail: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
 
 _engine: AsyncEngine | None = None
@@ -117,23 +143,30 @@ async def init_models(engine: AsyncEngine) -> None:
     """Создать таблицы (дев/тесты без Alembic). В проде схему ведёт Alembic."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        await _ensure_conversation_columns(conn)
+        await _ensure_columns(conn, "conversations", {
+            "ai_summary": "TEXT DEFAULT ''",
+            "manager_next_step": "TEXT DEFAULT ''",
+            "escalation_reason": "TEXT DEFAULT ''",
+            "lead_temperature": "VARCHAR(16) DEFAULT 'new'",
+            "assigned_to": "VARCHAR(64) DEFAULT ''",
+            "assigned_at": "TIMESTAMPTZ",
+            "outcome": "VARCHAR(24) DEFAULT ''",
+        })
+        await _ensure_columns(conn, "messages", {
+            "status": "VARCHAR(16) DEFAULT ''",
+            "provider_msg_id": "VARCHAR(128) DEFAULT ''",
+            "idempotency_key": "VARCHAR(128) DEFAULT ''",
+        })
 
 
-async def _ensure_conversation_columns(conn) -> None:
-    """Small idempotent schema upgrade for installs created before manager brief fields."""
+async def _ensure_columns(conn, table: str, additions: dict[str, str]) -> None:
+    """Идемпотентно добавить недостающие колонки (апгрейд старых инсталляций без Alembic)."""
     existing = await conn.run_sync(
-        lambda sync_conn: {c["name"] for c in inspect(sync_conn).get_columns("conversations")}
+        lambda sync_conn: {c["name"] for c in inspect(sync_conn).get_columns(table)}
     )
-    additions = {
-        "ai_summary": "TEXT DEFAULT ''",
-        "manager_next_step": "TEXT DEFAULT ''",
-        "escalation_reason": "TEXT DEFAULT ''",
-        "lead_temperature": "VARCHAR(16) DEFAULT 'new'",
-    }
     for column, ddl in additions.items():
         if column not in existing:
-            await conn.execute(text(f"ALTER TABLE conversations ADD COLUMN {column} {ddl}"))
+            await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
 
 
 async def init_db() -> None:

@@ -93,3 +93,39 @@ def test_handoff_to_manager_auto_intercepts(monkeypatch):
     msg2 = Message(channel="telegram", user_id="handoff-user", chat_id="77", text="ещё вопрос")
     asyncio.run(orchestrator.handle(msg2))
     assert sent == []
+
+
+def test_reply_dropped_when_intercepted_mid_flight(monkeypatch):
+    """Менеджер перехватил, пока генерировался ответ → бот НЕ отправляет этот ответ."""
+    import app.core.orchestrator as orch
+    from app.channels.base import Message
+    from app.core.orchestrator import Orchestrator
+    from app.core.state import state_store
+
+    sent = []
+
+    class FakeChannel:
+        channel = "telegram"
+
+        async def parse(self, raw):  # pragma: no cover
+            ...
+
+        async def send(self, chat_id, text, **kw):
+            sent.append((chat_id, text))
+
+    class MidFlightInterceptFunnel:
+        async def handle(self, msg, state):
+            # имитируем: менеджер нажал «Перехватить» во время генерации ответа
+            state.intercepted = True
+            return "ответ, который не должен уйти"
+
+    monkeypatch.setattr(orch, "get_funnel", lambda name: MidFlightInterceptFunnel())
+
+    state = asyncio.run(state_store.load("midflight-user"))
+    state.funnel = "visa"
+    state.intercepted = False
+
+    msg = Message(channel="telegram", user_id="midflight-user", chat_id="55", text="вопрос")
+    asyncio.run(Orchestrator(channel=FakeChannel()).handle(msg))
+
+    assert sent == []  # ответ дропнут — отвечает менеджер

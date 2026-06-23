@@ -13,6 +13,16 @@
     </div>
   </div>
 
+  {% if busy_by %}
+  <div class="status paused" style="background:rgba(245,158,11,.14);color:#f59e0b">
+    ⚠ Диалог уже ведёт менеджер <b>{{ busy_by }}</b> — действуйте аккуратно
+  </div>
+  {% elif c.assigned_to %}
+  <div class="status active" style="background:rgba(45,212,191,.10)">
+    🔒 Ведёт: {{ c.assigned_to }}{% if c.assigned_to == manager.login %} (вы){% endif %}
+  </div>
+  {% endif %}
+
   <div class="ph-actions">
     {% if c.intercepted %}
       <div class="status paused">
@@ -33,6 +43,16 @@
         Перехватить (бот замолчит)
       </button>
     {% endif %}
+  </div>
+
+  <div class="outcome-bar" style="display:flex;gap:8px;align-items:center;margin:10px 0;flex-wrap:wrap">
+    <span style="color:var(--muted);font-size:12px">Исход:</span>
+    {% for key, label in outcomes %}
+    <button class="btn {% if c.outcome == key %}btn-brand{% else %}btn-ghost{% endif %}"
+            style="padding:5px 10px;font-size:13px"
+            hx-post="/admin/conversation/{{ c.user_id }}/outcome" hx-vals='{"outcome":"{{ key }}"}'
+            hx-target="#chat" hx-swap="innerHTML">{{ label }}</button>
+    {% endfor %}
   </div>
 
   {% if c.ai_summary or c.manager_next_step or c.escalation_reason %}
@@ -62,7 +82,18 @@
   <div class="msgs">
     {% for m in c.messages %}
     <div class="msg {{ m.sender }}">
-      <div class="who">{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(m.sender, m.sender) }}{% if m.created_at %} · {{ m.created_at.strftime('%H:%M') }}{% endif %}</div>
+      <div class="who">{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(m.sender, m.sender) }}{% if m.created_at %} · {{ m.created_at.strftime('%H:%M') }}{% endif %}
+        {% if m.status %}
+          {% if m.status == 'pending' %}<span title="отправляется">⏳</span>
+          {% elif m.status == 'sent' %}<span title="отправлено">✓</span>
+          {% elif m.status == 'delivered' %}<span title="доставлено">✓✓</span>
+          {% elif m.status == 'failed' %}<span title="не доставлено" style="color:#f87171">✗ не доставлено</span>
+            <button class="btn btn-ghost" style="padding:2px 8px;font-size:12px"
+                    hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}"
+                    hx-target="#chat" hx-swap="innerHTML">Повторить</button>
+          {% endif %}
+        {% endif %}
+      </div>
       <div class="bubble">{{ m.text }}</div>
     </div>
     {% else %}

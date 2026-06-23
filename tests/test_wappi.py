@@ -154,3 +154,20 @@ def test_wappi_webhook_ignores_group_and_reaction(monkeypatch):
 
     assert resp.json() == {"ok": True, "handled": 0}
     assert channel.sent == []  # ни на группу, ни на реакцию не отвечаем
+
+
+# ---------------- статусы доставки (delivery status) ----------------
+def test_delivery_status_helpers():
+    from app.channels.wappi import is_delivery_status, parse_delivery_status
+
+    ev = {"wh_type": "messages_status", "id": "ABC123", "status": "delivered"}
+    assert is_delivery_status(ev) is True
+    assert parse_delivery_status(ev) == ("ABC123", "delivered")
+
+    failed = {"wh_type": "message_status", "message_id": "Z9", "status": "failed"}
+    assert parse_delivery_status(failed) == ("Z9", "failed")
+
+    # входящее — не статус доставки
+    assert is_delivery_status({"wh_type": "incoming_message"}) is False
+    # неизвестный статус → пустая строка (не трогаем сообщение)
+    assert parse_delivery_status({"wh_type": "ack", "id": "x", "status": "weird"}) == ("x", "")
