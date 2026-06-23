@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+*.egg-info/
+.claude/
+.agents/
+Frunze travel/
+*.docx
+_bmad/
+_bmad-output/
+design-artifacts/

@@ -1,0 +1,82 @@
+{# Чат: статус бота + бриф + полный контекст + перехват + ответ. Авто-обновление 5с. #}
+<div class="panel" hx-get="/admin/conversation/{{ c.user_id }}" hx-trigger="every 5s" hx-swap="outerHTML" hx-target="this">
+  <div class="ph-head">
+    <span class="avatar" style="background: {{ avatar }}">{{ initials }}</span>
+    <div class="meta">
+      <div class="nm">{{ c.qualification.get('name') or c.user_id }}</div>
+      <div class="ph-sub">
+        <span class="tag">{{ c.user_id }}</span>
+        <span class="tag">{{ c.channel or '—' }}</span>
+        <span class="tag">{{ c.funnel or '—' }} · {{ c.stage }}</span>
+        <span class="tag temp-{{ c.lead_temperature }}">{{ {'new':'новый','warm':'тёплый','hot':'горячий'}.get(c.lead_temperature, c.lead_temperature) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ph-actions">
+    {% if c.intercepted %}
+      <div class="status paused">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+        Бот на паузе — диалог ведёт менеджер
+      </div>
+      <button class="btn btn-ghost" hx-post="/admin/conversation/{{ c.user_id }}/release" hx-target="#chat" hx-swap="innerHTML">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 4 4v2"/></svg>
+        Вернуть боту
+      </button>
+    {% else %}
+      <div class="status active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+        Бот ведёт диалог
+      </div>
+      <button class="btn btn-danger" hx-post="/admin/conversation/{{ c.user_id }}/takeover" hx-target="#chat" hx-swap="innerHTML">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2a8 8 0 0 1-7-4l-2-3"/></svg>
+        Перехватить (бот замолчит)
+      </button>
+    {% endif %}
+  </div>
+
+  {% if c.ai_summary or c.manager_next_step or c.escalation_reason %}
+  <div class="brief manager-brief">
+    <div class="brief-title">AI для менеджера</div>
+    {% if c.ai_summary %}
+    <div class="brief-row"><span class="k">Контекст</span><span>{{ c.ai_summary }}</span></div>
+    {% endif %}
+    {% if c.manager_next_step %}
+    <div class="brief-row"><span class="k">Следующий шаг</span><span>{{ c.manager_next_step }}</span></div>
+    {% endif %}
+    {% if c.escalation_reason %}
+    <div class="brief-row"><span class="k">Почему важно</span><span>{{ c.escalation_reason }}</span></div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if c.qualification %}
+  <div class="brief">
+    <div class="brief-title">Что узнал бот</div>
+    {% for k, v in c.qualification.items() %}
+    <div class="brief-row"><span class="k">{{ k }}</span><span>{{ v }}</span></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="msgs">
+    {% for m in c.messages %}
+    <div class="msg {{ m.sender }}">
+      <div class="who">{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(m.sender, m.sender) }}{% if m.created_at %} · {{ m.created_at.strftime('%H:%M') }}{% endif %}</div>
+      <div class="bubble">{{ m.text }}</div>
+    </div>
+    {% else %}
+    <div class="msgs-empty">Сообщений пока нет</div>
+    {% endfor %}
+  </div>
+
+  <form class="composer" hx-post="/admin/conversation/{{ c.user_id }}/send"
+        hx-target="#chat" hx-swap="innerHTML" hx-on::after-request="this.reset()">
+    <input name="text" placeholder="Ответить клиенту…" autocomplete="off" aria-label="Ответить клиенту">
+    <button class="btn btn-brand" type="submit" aria-label="Отправить">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      Отправить
+    </button>
+  </form>
+  <div class="hint">Отправка ответа перехватывает диалог — бот замолкает.</div>
+</div>
