@@ -35,7 +35,8 @@ class MessageView:
 
 @dataclass
 class ConversationView:
-    user_id: str
+    user_id: str              # КЛЮЧ диалога "<bot_id>:<номер>" (или просто номер в дев-демо)
+    phone: str = ""           # номер клиента для отображения (fallback — user_id)
     channel: str = ""
     chat_id: str = ""
     bot_id: str = ""
@@ -77,21 +78,24 @@ class MemoryConversationStore:
         self._audit: list[dict] = []
 
     async def ensure(self, user_id: str, channel: str = "", bot_id: str = "",
-                     chat_id: str = "") -> ConversationView:
+                     chat_id: str = "", phone: str = "") -> ConversationView:
         conv = self._conv.get(user_id)
         if conv is None:
-            conv = ConversationView(user_id=user_id, channel=channel, bot_id=bot_id,
-                                    chat_id=chat_id, last_message_at=_now())
+            conv = ConversationView(user_id=user_id, phone=phone or user_id, channel=channel,
+                                    bot_id=bot_id, chat_id=chat_id, last_message_at=_now())
             self._conv[user_id] = conv
-        elif chat_id and not conv.chat_id:
-            conv.chat_id = chat_id
+        else:
+            if chat_id and not conv.chat_id:
+                conv.chat_id = chat_id
+            if phone and not conv.phone:
+                conv.phone = phone
         return conv
 
     async def add_message(self, user_id: str, sender: str, text: str,
                           channel: str = "", bot_id: str = "", chat_id: str = "",
                           status: str = "", provider_msg_id: str = "",
-                          idempotency_key: str = "") -> int:
-        conv = await self.ensure(user_id, channel, bot_id, chat_id)
+                          idempotency_key: str = "", phone: str = "") -> int:
+        conv = await self.ensure(user_id, channel, bot_id, chat_id, phone)
         if idempotency_key:  # дедуп: повтор той же отправки не создаёт второй записи
             for m in conv.messages:
                 if getattr(m, "_idem", "") == idempotency_key:
@@ -192,32 +196,37 @@ class PostgresConversationStore:
             self._sessionmaker = get_sessionmaker()
         return self._sessionmaker
 
-    async def _ensure_row(self, session, user_id: str, channel: str, bot_id: str, chat_id: str = ""):
+    async def _ensure_row(self, session, user_id: str, channel: str, bot_id: str,
+                          chat_id: str = "", phone: str = ""):
         from app.integrations.crm.db import Conversation
         conv = (await session.execute(
             select(Conversation).where(Conversation.user_id == user_id)
         )).scalar_one_or_none()
         if conv is None:
-            conv = Conversation(user_id=user_id, channel=channel, bot_id=bot_id, chat_id=chat_id)
+            conv = Conversation(user_id=user_id, phone=phone or user_id, channel=channel,
+                                bot_id=bot_id, chat_id=chat_id)
             session.add(conv)
             await session.flush()
-        elif chat_id and not conv.chat_id:
-            conv.chat_id = chat_id
+        else:
+            if chat_id and not conv.chat_id:
+                conv.chat_id = chat_id
+            if phone and not (conv.phone or ""):
+                conv.phone = phone
         return conv
 
     async def ensure(self, user_id: str, channel: str = "", bot_id: str = "",
-                     chat_id: str = "") -> None:
+                     chat_id: str = "", phone: str = "") -> None:
         async with self._sm()() as session:
-            await self._ensure_row(session, user_id, channel, bot_id, chat_id)
+            await self._ensure_row(session, user_id, channel, bot_id, chat_id, phone)
             await session.commit()
 
     async def add_message(self, user_id: str, sender: str, text: str,
                           channel: str = "", bot_id: str = "", chat_id: str = "",
                           status: str = "", provider_msg_id: str = "",
-                          idempotency_key: str = "") -> int:
+                          idempotency_key: str = "", phone: str = "") -> int:
         from app.integrations.crm.db import ConvMessage
         async with self._sm()() as session:
-            conv = await self._ensure_row(session, user_id, channel, bot_id, chat_id)
+            conv = await self._ensure_row(session, user_id, channel, bot_id, chat_id, phone)
             if idempotency_key:  # дедуп повторной отправки
                 existing = (await session.execute(
                     select(ConvMessage).where(ConvMessage.idempotency_key == idempotency_key)
@@ -361,7 +370,8 @@ class PostgresConversationStore:
 def _view(conv) -> ConversationView:
     """ORM Conversation → ConversationView (без сообщений)."""
     return ConversationView(
-        user_id=conv.user_id, channel=conv.channel, chat_id=conv.chat_id, bot_id=conv.bot_id,
+        user_id=conv.user_id, phone=(getattr(conv, "phone", "") or conv.user_id),
+        channel=conv.channel, chat_id=conv.chat_id, bot_id=conv.bot_id,
         funnel=conv.funnel, stage=conv.stage, intercepted=conv.intercepted,
         qualification=dict(conv.qualification or {}),
         ai_summary=getattr(conv, "ai_summary", "") or "",

@@ -55,12 +55,18 @@ class Orchestrator:
     def _bot_id(self) -> str:
         return self.bot.id if self.bot else ""
 
+    def _key(self, msg: Message) -> str:
+        """Ключ диалога: <bot_id>:<номер>. Один номер у разных ботов = разные диалоги
+        (раздельные состояние/перехват/карточка). В дев-демо без bot — просто номер."""
+        return f"{self._bot_id}:{msg.user_id}" if self.bot else msg.user_id
+
     async def handle(self, msg: Message) -> None:
         if not msg.user_id:
             return  # служебный/пустой апдейт
 
+        key = self._key(msg)
         store = get_state_store()
-        state = await store.load(msg.user_id)
+        state = await store.load(key)
 
         # Не-текст (голос/фото/медиа): бот пока не умеет — честный fallback.
         if msg.kind == "non_text":
@@ -104,7 +110,7 @@ class Orchestrator:
 
         # Перехват «на лету»: менеджер мог нажать «Перехватить», пока генерировался ответ.
         # Перечитываем свежее состояние; если перехвачено не нами (не хендофф) — не отвечаем.
-        fresh = await store.load(msg.user_id)
+        fresh = await store.load(key)
         intercepted_midflight = fresh.intercepted and not auto_handoff
         if intercepted_midflight:
             state.intercepted = True
@@ -114,16 +120,16 @@ class Orchestrator:
         if reply and not intercepted_midflight:
             await self._reply(msg, reply)
         elif intercepted_midflight:
-            log.info("reply dropped: intercepted mid-flight (user=%s)", msg.user_id)
+            log.info("reply dropped: intercepted mid-flight (key=%s)", key)
 
     # ---- лог панели (сбои глушим, чтобы не ронять бота) ----
     async def _log_in(self, msg: Message, text: str) -> None:
         try:
             panel = get_conversation_store()
-            await panel.add_message(msg.user_id, "client", text,
-                                    channel=msg.channel, bot_id=self._bot_id, chat_id=msg.chat_id)
+            await panel.add_message(self._key(msg), "client", text, channel=msg.channel,
+                                    bot_id=self._bot_id, chat_id=msg.chat_id, phone=msg.user_id)
             if self.bot is not None:
-                await panel.update_meta(msg.user_id, funnel=self.bot.scenario)
+                await panel.update_meta(self._key(msg), funnel=self.bot.scenario)
         except Exception:  # noqa: BLE001 — лог не критичен для диалога
             log.warning("panel log_in failed", exc_info=True)
 
@@ -132,9 +138,9 @@ class Orchestrator:
         panel = get_conversation_store()
         msg_id = 0
         try:
-            msg_id = await panel.add_message(msg.user_id, "bot", text,
+            msg_id = await panel.add_message(self._key(msg), "bot", text,
                                              channel=msg.channel, bot_id=self._bot_id,
-                                             status="pending")
+                                             status="pending", phone=msg.user_id)
         except Exception:  # noqa: BLE001
             log.warning("panel log_out failed", exc_info=True)
         try:
@@ -154,7 +160,7 @@ class Orchestrator:
         try:
             panel = get_conversation_store()
             brief = build_manager_brief(state)
-            await panel.update_meta(msg.user_id, funnel=state.funnel, stage=state.stage,
+            await panel.update_meta(self._key(msg), funnel=state.funnel, stage=state.stage,
                                     qualification=state.qualification,
                                     outcome=_auto_outcome(state.stage), **brief)
         except Exception:  # noqa: BLE001

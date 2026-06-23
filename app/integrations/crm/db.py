@@ -58,7 +58,10 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    # user_id — КЛЮЧ диалога вида "<bot_id>:<номер>": один номер у разных ботов = разные
+    # диалоги (перехват/состояние/карточка раздельные). Телефон для показа — в `phone`.
+    user_id: Mapped[str] = mapped_column(String(160), unique=True, index=True)
+    phone: Mapped[str] = mapped_column(String(64), default="")      # номер клиента для отображения
     channel: Mapped[str] = mapped_column(String(32), default="")
     chat_id: Mapped[str] = mapped_column(String(128), default="")  # адрес ответа (Bitrix DIALOG_ID ≠ user_id)
     bot_id: Mapped[str] = mapped_column(String(64), default="")
@@ -144,6 +147,7 @@ async def init_models(engine: AsyncEngine) -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await _ensure_columns(conn, "conversations", {
+            "phone": "VARCHAR(64) DEFAULT ''",
             "ai_summary": "TEXT DEFAULT ''",
             "manager_next_step": "TEXT DEFAULT ''",
             "escalation_reason": "TEXT DEFAULT ''",

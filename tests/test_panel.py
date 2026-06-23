@@ -113,8 +113,10 @@ def test_orchestrator_logs_client_and_bot(monkeypatch):
     bot = BotConfig(id="frunze_tours_1", scenario="tours")
     asyncio.run(Orchestrator(channel=ch, bot=bot).handle(_msg("u-log-1", "хочу тур")))
 
-    conv = asyncio.run(panel_store.get_conversation_store().get("u-log-1"))
+    # Диалог хранится по композитному ключу bot_id:номер; сам номер — в phone.
+    conv = asyncio.run(panel_store.get_conversation_store().get("frunze_tours_1:u-log-1"))
     assert conv is not None
+    assert conv.phone == "u-log-1"
     assert conv.funnel == "tours"
     assert [m.sender for m in conv.messages] == ["client", "bot"]
     assert conv.messages[0].text == "хочу тур"
@@ -131,17 +133,18 @@ def test_takeover_mutes_bot_but_logs_client(monkeypatch):
     ch = _FakeChannel()
     orch = Orchestrator(channel=ch, bot=BotConfig(id="frunze_tours_1", scenario="tours"))
 
+    key = "frunze_tours_1:u-int-1"  # ключ диалога = bot_id:номер
     asyncio.run(orch.handle(_msg("u-int-1", "здравствуйте")))
     assert len(ch.sent) == 1  # бот ответил на первое
 
-    # Менеджер перехватывает.
+    # Менеджер перехватывает (по ключу диалога).
     from app.admin.router import _set_intercept
-    asyncio.run(_set_intercept("u-int-1", True))
+    asyncio.run(_set_intercept(key, True))
 
     asyncio.run(orch.handle(_msg("u-int-1", "второе сообщение")))
     assert len(ch.sent) == 1  # бот молчит — нового ответа нет
 
-    conv = asyncio.run(panel_store.get_conversation_store().get("u-int-1"))
+    conv = asyncio.run(panel_store.get_conversation_store().get(key))
     # Но входящее клиента залогировано (менеджер должен видеть).
     assert conv.messages[-1].text == "второе сообщение"
     assert conv.messages[-1].sender == "client"
@@ -346,3 +349,27 @@ def test_analytics_endpoint_renders():
     assert resp.status_code == 200
     assert "Containment" in resp.text
     assert "Оплатили" in resp.text
+
+
+def test_conversations_separated_by_bot(monkeypatch):
+    """Один номер у тур-бота и виза-бота = ДВА отдельных диалога (ключ bot_id:номер)."""
+    _clear_memory()
+    monkeypatch.setattr("app.agent.llm.settings.openrouter_api_key", "")
+    from app.core.state import get_state_store
+    store = panel_store.get_conversation_store()
+    phone = "996555000111"
+    tours = Orchestrator(channel=_FakeChannel(), bot=BotConfig(id="frunze_tours", scenario="tours"))
+    visa = Orchestrator(channel=_FakeChannel(), bot=BotConfig(id="getvisa", scenario="visa"))
+    asyncio.run(tours.handle(_msg(phone, "хочу тур")))
+    asyncio.run(visa.handle(_msg(phone, "хочу визу")))
+
+    t = asyncio.run(store.get(f"frunze_tours:{phone}"))
+    v = asyncio.run(store.get(f"getvisa:{phone}"))
+    assert t is not None and v is not None
+    assert t.funnel == "tours" and v.funnel == "visa"   # воронки не смешались
+    assert t.phone == phone and v.phone == phone        # показываем один номер
+
+    # Перехват одного бота НЕ глушит другого (раздельное состояние).
+    from app.admin.router import _set_intercept
+    asyncio.run(_set_intercept(f"frunze_tours:{phone}", True))
+    assert asyncio.run(get_state_store().load(f"getvisa:{phone}")).intercepted is False

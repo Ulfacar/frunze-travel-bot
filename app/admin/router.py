@@ -108,6 +108,7 @@ def _time_label(mins: float | None) -> str:
 def _card_model(conv, now: datetime) -> dict:
     """Обогащённая карточка для доски: аватар, сигналы срочности, время, «кто ведёт»."""
     name = conv.qualification.get("name")
+    phone = conv.phone or conv.user_id
     since = _minutes_since(conv.last_message_at, now)
     # «Клиент ждёт» = последним писал клиент и ему ещё не ответили (ни бот, ни менеджер).
     waiting = conv.last_sender == "client"
@@ -123,9 +124,9 @@ def _card_model(conv, now: datetime) -> dict:
     # «Требуют ответа человека» = клиент ждёт И диалог у менеджера/перехвачен.
     needs_reply = waiting and (conv.intercepted or conv.stage in HUMAN_STAGES)
     return {
-        "user_id": conv.user_id, "name": name or conv.user_id,
-        "initials": _initials(name, conv.user_id),
-        "avatar": _avatar(conv.user_id),
+        "user_id": conv.user_id, "phone": phone, "name": name or phone,
+        "initials": _initials(name, phone),
+        "avatar": _avatar(phone),
         "channel": conv.channel, "stage": conv.stage, "intercepted": conv.intercepted,
         "assigned_to": conv.assigned_to, "outcome": conv.outcome,
         "last_text": conv.last_text, "last_sender": conv.last_sender,
@@ -244,12 +245,13 @@ async def _render_conversation(user_id: str, request: Request, manager: dict):
     if conv is None:
         raise HTTPException(status_code=404, detail="conversation not found")
     name = conv.qualification.get("name")
+    conv.phone = conv.phone or conv.user_id   # старые карточки без phone → ключ как номер
     # Кем занят, если не нами (мягкое предупреждение — не блок).
     busy_by = conv.assigned_to if conv.assigned_to and conv.assigned_to != manager["login"] else ""
     return templates.TemplateResponse(request, "_conversation.html", {
         "c": conv,
-        "initials": _initials(name, conv.user_id),
-        "avatar": _avatar(conv.user_id),
+        "initials": _initials(name, conv.phone),
+        "avatar": _avatar(conv.phone),
         "manager": manager,
         "busy_by": busy_by,
         "outcomes": OUTCOMES,

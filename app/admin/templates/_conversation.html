@@ -4,9 +4,9 @@
   <div class="ph-head">
     <span class="avatar" style="background: {{ avatar }}">{{ initials }}</span>
     <div class="meta">
-      <div class="nm">{{ c.qualification.get('name') or c.user_id }}</div>
+      <div class="nm">{{ c.qualification.get('name') or c.phone }}</div>
       <div class="ph-sub">
-        <span class="tag">{{ c.user_id }}</span>
+        <span class="tag">{{ c.phone }}</span>
         <span class="tag">{{ c.channel or '—' }}</span>
         <span class="tag">{{ c.funnel or '—' }} · {{ c.stage }}</span>
         <span class="tag temp-{{ c.lead_temperature }}">{{ {'new':'новый','warm':'тёплый','hot':'горячий'}.get(c.lead_temperature, c.lead_temperature) }}</span>
