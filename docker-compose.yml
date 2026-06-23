@@ -5,14 +5,30 @@ services:
   app:
     build: .
     restart: unless-stopped
-    env_file: .env
-    # Эти значения переопределяют localhost из .env — внутри сети ходим по именам сервисов.
     environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      OPENROUTER_SITE_URL: ${OPENROUTER_SITE_URL:-}
+      OPENROUTER_APP_NAME: ${OPENROUTER_APP_NAME:-Frunze Travel Bot}
+      LLM_MODEL_MAIN: ${LLM_MODEL_MAIN:-anthropic/claude-3.5-sonnet}
+      LLM_MODEL_CHEAP: ${LLM_MODEL_CHEAP:-anthropic/claude-3-haiku}
+      WAPPI_BASE_URL: ${WAPPI_BASE_URL:-https://wappi.pro}
+      WAPPI_TOKEN: ${WAPPI_TOKEN:-}
+      WAPPI_PROFILE_ID: ${WAPPI_PROFILE_ID:-}
+      BOTS: ${BOTS:-[{"id":"frunze_tours","scenario":"tours","title":"FrunzeTravel2","wappi_profile_id":"02a4708d-ec6c"},{"id":"getvisa","scenario":"visa","title":"GetVisa","wappi_profile_id":"2f099bc3-478d"}]}
+      TOURVISOR_LOGIN: ${TOURVISOR_LOGIN:-}
+      TOURVISOR_PASS: ${TOURVISOR_PASS:-}
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/frunze
       REDIS_URL: redis://redis:6379/0
       CRM_BACKEND: ${CRM_BACKEND:-postgres}
+      BITRIX24_WEBHOOK_URL: ${BITRIX24_WEBHOOK_URL:-}
+      BITRIX_CATEGORY_BY_FUNNEL: ${BITRIX_CATEGORY_BY_FUNNEL:-{}}
+      BITRIX_STAGE_MAP: ${BITRIX_STAGE_MAP:-{}}
       STATE_BACKEND: ${STATE_BACKEND:-redis}
       PANEL_BACKEND: ${PANEL_BACKEND:-postgres}
+      ADMIN_ENABLED: ${ADMIN_ENABLED:-true}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
       - "8000:8000"
     depends_on:
