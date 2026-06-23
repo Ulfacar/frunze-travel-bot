@@ -12,11 +12,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app.agent.llm import chat, llm_enabled
 from app.channels import outbound
 from app.config import settings
+from app.core.branding import quick_replies_for
 from app.core.state import get_state_store
 from app.integrations.panel.store import get_conversation_store
 
@@ -240,6 +242,7 @@ async def _render_conversation(user_id: str, request: Request, manager: dict):
         "manager": manager,
         "busy_by": busy_by,
         "outcomes": OUTCOMES,
+        "quick_replies": quick_replies_for(conv.funnel),
     })
 
 
@@ -312,6 +315,36 @@ async def resend(user_id: str, message_id: int, request: Request,
             log.warning("resend failed (channel=%s)", conv.channel, exc_info=True)
         await panel.add_audit(manager["login"], "resend", user_id)
     return await _render_conversation(user_id, request, manager)
+
+
+@router.post("/conversation/{user_id}/suggest", response_class=PlainTextResponse)
+async def suggest_reply(user_id: str, request: Request, _: dict = Depends(require_admin)):
+    """Сгенерировать черновик ответа клиенту (Claude) из контекста — менеджер правит и шлёт."""
+    conv = await get_conversation_store().get(user_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    if not llm_enabled():
+        return "ИИ недоступен (нет ключа OpenRouter) — ответьте вручную."
+    # История диалога → формат чата (client=user, bot/manager=assistant).
+    history = [{"role": "user" if m.sender == "client" else "assistant", "content": m.text}
+               for m in conv.messages if m.text]
+    if not history or history[-1]["role"] != "user":
+        history.append({"role": "user", "content": "(Предложи уместный следующий шаг.)"})
+    persona = "GetVisa (Медина, визовый эксперт)" if conv.funnel == "visa" else "Frunze Travel (Сезим)"
+    system = (
+        f"Ты — менеджер {persona}. Предложи ОДИН следующий ответ клиенту по контексту "
+        f"переписки: тепло, кратко, по-русски, в стиле бренда, без выдуманных цен. "
+        f"Контекст для тебя: {conv.ai_summary or '—'}. Следующий шаг: {conv.manager_next_step or '—'}. "
+        f"Верни ТОЛЬКО текст ответа клиенту, без пояснений."
+    )
+    try:
+        resp = await chat(system, history)
+        text = " ".join(b.get("text", "") for b in resp.get("content", [])
+                        if b.get("type") == "text").strip()
+        return text or "Не удалось сгенерировать черновик — попробуйте ещё раз."
+    except Exception:  # noqa: BLE001
+        log.warning("suggest failed", exc_info=True)
+        return "Не удалось сгенерировать черновик — попробуйте ещё раз."
 
 
 @router.post("/conversation/{user_id}/outcome", response_class=HTMLResponse)

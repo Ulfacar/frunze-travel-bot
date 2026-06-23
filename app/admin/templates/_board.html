@@ -1,8 +1,10 @@
-{# Доска: метрики + колонки канбана. Авто-обновление каждые 5с. #}
-<div hx-get="/admin/board/{{ funnel }}" hx-trigger="every 5s" hx-swap="outerHTML" hx-target="this">
+{# Доска: метрики + колонки канбана. Авто-обновление каждые 15с (только на видимой вкладке). #}
+<div hx-get="/admin/board/{{ funnel }}" hx-trigger="every 15s [document.visibilityState==='visible']" hx-swap="outerHTML" hx-target="this" data-board>
   <div class="metrics">
     <div class="stat"><div class="n">{{ metrics.total }}</div><div class="l">Всего диалогов</div></div>
     <div class="stat waiting"><div class="n">{{ metrics.waiting }}</div><div class="l">Ждут ответа</div></div>
+    <div class="stat needs-reply" onclick="toggleNeedsReply(this)" title="Показать только требующие ответа" style="cursor:pointer">
+      <div class="n">{{ metrics.needs_reply }}</div><div class="l">Требуют ответа ⚑</div></div>
     <div class="stat intercepted"><div class="n">{{ metrics.intercepted }}</div><div class="l">Перехвачено</div></div>
   </div>
 
@@ -14,7 +16,7 @@
         <span class="count">{{ col.cards|length }}</span>
       </div>
       {% for c in col.cards %}
-      <div class="card" tabindex="0" data-wait="{{ c.wait_level }}"
+      <div class="card" tabindex="0" data-wait="{{ c.wait_level }}" data-needs="{{ '1' if c.needs_reply else '0' }}"
            hx-get="/admin/conversation/{{ c.user_id }}" hx-target="#chat" hx-swap="innerHTML">
         <div class="card-top">
           <span class="avatar" style="background: {{ c.avatar }}">{{ c.initials }}</span>
@@ -41,6 +43,12 @@
           <span class="badge hot-lead">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17h2a2.5 2.5 0 0 0 2.5-2.5c0-1.7-1.2-2.4-2.8-3.2-1.5-.8-2.7-1.5-2.7-3.1A2.2 2.2 0 0 1 12.2 6h1.4A2.4 2.4 0 0 1 16 8.4"/><path d="M12 3v3"/><path d="M12 17v4"/></svg>
             горячий
+          </span>
+          {% endif %}
+          {% if c.needs_reply %}
+          <span class="badge wait-hot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+            ваш ход
           </span>
           {% endif %}
           {% if c.intercepted %}

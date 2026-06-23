@@ -224,6 +224,48 @@
       document.querySelectorAll('.card.active').forEach(c => c.classList.remove('active'));
       card.classList.add('active');
     });
+
+    // Текущее поле ответа в открытом чате.
+    function _composerInput() {
+      return document.querySelector('#chat form.composer input[name="text"]');
+    }
+    // Быстрый ответ: подставить (или дополнить) текст в поле ввода.
+    function fillReply(text) {
+      var inp = _composerInput();
+      if (!inp) return;
+      inp.value = inp.value ? (inp.value.trim() + ' ' + text) : text;
+      inp.focus();
+    }
+    // «Предложить ответ»: запросить черновик у ИИ и вставить в поле.
+    async function suggestReply(userId, btn) {
+      var inp = _composerInput();
+      if (!inp) return;
+      var old = btn.textContent; btn.textContent = '…думаю'; btn.disabled = true;
+      try {
+        var r = await fetch('/admin/conversation/' + encodeURIComponent(userId) + '/suggest',
+                            { method: 'POST' });
+        inp.value = (await r.text()).trim();
+        inp.focus();
+      } catch (_) { /* игнор */ }
+      btn.textContent = old; btn.disabled = false;
+    }
+    // Фильтр доски «только требующие ответа».
+    function toggleNeedsReply(stat) {
+      var board = stat.closest('[data-board]');
+      var on = board.classList.toggle('only-needs');
+      stat.classList.toggle('active-filter', on);
+    }
+    // Автоскролл переписки вниз после обновления, если менеджер уже был у низа.
+    document.body.addEventListener('htmx:afterSwap', function (e) {
+      var msgs = (e.target || document).querySelector ? e.target.querySelector('.msgs') : null;
+      if (!msgs) { msgs = document.querySelector('#chat .msgs'); }
+      if (msgs) { msgs.scrollTop = msgs.scrollHeight; }
+    });
   </script>
+  <style>
+    [data-board].only-needs .card[data-needs="0"] { display: none; }
+    .stat.needs-reply.active-filter { outline: 2px solid var(--warm); border-radius: 8px; }
+    .stat.needs-reply .n { color: var(--warm); }
+  </style>
 </body>
 </html>

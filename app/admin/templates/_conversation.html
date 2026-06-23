@@ -1,5 +1,6 @@
-{# Чат: статус бота + бриф + полный контекст + перехват + ответ. Авто-обновление 5с. #}
-<div class="panel" hx-get="/admin/conversation/{{ c.user_id }}" hx-trigger="every 5s" hx-swap="outerHTML" hx-target="this">
+{# Чат: статус бота + бриф + полный контекст + перехват + ответ. Авто-обновление 4с
+   (поле ввода сохраняется через hx-preserve — текст и фокус не слетают при опросе). #}
+<div class="panel" hx-get="/admin/conversation/{{ c.user_id }}" hx-trigger="every 4s [document.visibilityState==='visible']" hx-swap="outerHTML" hx-target="this">
   <div class="ph-head">
     <span class="avatar" style="background: {{ avatar }}">{{ initials }}</span>
     <div class="meta">
@@ -79,7 +80,11 @@
   </div>
   {% endif %}
 
-  <div class="msgs">
+  <details class="chat-details" open>
+  <summary style="cursor:pointer;color:var(--muted);font-size:12px;margin:6px 0;user-select:none">
+    Переписка ({{ c.messages|length }})
+  </summary>
+  <div class="msgs" id="msgs-{{ c.user_id }}">
     {% for m in c.messages %}
     <div class="msg {{ m.sender }}">
       <div class="who">{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(m.sender, m.sender) }}{% if m.created_at %} · {{ m.created_at.strftime('%H:%M') }}{% endif %}
@@ -100,8 +105,22 @@
     <div class="msgs-empty">Сообщений пока нет</div>
     {% endfor %}
   </div>
+  </details>
 
-  <form class="composer" hx-post="/admin/conversation/{{ c.user_id }}/send"
+  {# Быстрые ответы + черновик от ИИ. Кнопки подставляют текст в поле ниже (JS из boards.html). #}
+  <div class="quick-replies" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px">
+    {% for label, text in quick_replies.items() %}
+    <button type="button" class="btn btn-ghost" style="padding:4px 9px;font-size:12px"
+            onclick="fillReply(this.dataset.t)" data-t="{{ text|e }}">{{ label }}</button>
+    {% endfor %}
+    <button type="button" class="btn btn-ghost" style="padding:4px 9px;font-size:12px"
+            onclick="suggestReply('{{ c.user_id }}', this)">✨ Предложить ответ</button>
+  </div>
+
+  {# id уникален на диалог: при опросе того же чата поле сохраняется (hx-preserve),
+     а при переключении на другой диалог рендерится свежее пустое поле. #}
+  <form class="composer" id="composer-{{ c.user_id }}" hx-preserve="true"
+        hx-post="/admin/conversation/{{ c.user_id }}/send"
         hx-target="#chat" hx-swap="innerHTML" hx-on::after-request="this.reset()">
     <input name="text" placeholder="Ответить клиенту…" autocomplete="off" aria-label="Ответить клиенту">
     <button class="btn btn-brand" type="submit" aria-label="Отправить">
