@@ -224,6 +224,7 @@
       if (!card) return;
       document.querySelectorAll('.card.active').forEach(c => c.classList.remove('active'));
       card.classList.add('active');
+      _chatScroll.atBottom = true;   // открыли новый диалог → показать последние сообщения
     });
 
     // Текущее поле ответа в открытом чате.
@@ -256,11 +257,24 @@
       var on = board.classList.toggle('only-needs');
       stat.classList.toggle('active-filter', on);
     }
-    // Автоскролл переписки вниз после обновления, если менеджер уже был у низа.
-    document.body.addEventListener('htmx:afterSwap', function (e) {
-      var msgs = (e.target || document).querySelector ? e.target.querySelector('.msgs') : null;
-      if (!msgs) { msgs = document.querySelector('#chat .msgs'); }
-      if (msgs) { msgs.scrollTop = msgs.scrollHeight; }
+    // Прокрутка переписки: НЕ дёргаем менеджера вниз, если он листает вверх.
+    // Перед обновлением запоминаем позицию и был ли он у низа; после — восстанавливаем.
+    var _chatScroll = { top: 0, atBottom: true };
+    document.body.addEventListener('htmx:beforeSwap', function () {
+      var m = document.querySelector('#chat .msgs');
+      if (m) {
+        _chatScroll.top = m.scrollTop;
+        _chatScroll.atBottom = (m.scrollHeight - m.scrollTop - m.clientHeight) < 60;
+      }
+    });
+    document.body.addEventListener('htmx:afterSwap', function () {
+      var m = document.querySelector('#chat .msgs');
+      if (!m) return;
+      if (_chatScroll.atBottom) {
+        m.scrollTop = m.scrollHeight;     // был внизу → показываем новые сообщения
+      } else {
+        m.scrollTop = _chatScroll.top;    // листал историю → оставляем где был
+      }
     });
   </script>
   <style>
