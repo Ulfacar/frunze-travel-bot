@@ -15,11 +15,11 @@
   </div>
 
   {% if busy_by %}
-  <div class="status paused" style="background:rgba(245,158,11,.14);color:#f59e0b">
+  <div class="status" style="background:var(--warm-soft);color:var(--warm)">
     ⚠ Диалог уже ведёт менеджер <b>{{ busy_by }}</b> — действуйте аккуратно
   </div>
   {% elif c.assigned_to %}
-  <div class="status active" style="background:rgba(45,212,191,.10)">
+  <div class="status active">
     🔒 Ведёт: {{ c.assigned_to }}{% if c.assigned_to == manager.login %} (вы){% endif %}
   </div>
   {% endif %}
@@ -92,7 +92,7 @@
           {% if m.status == 'pending' %}<span title="отправляется">⏳</span>
           {% elif m.status == 'sent' %}<span title="отправлено">✓</span>
           {% elif m.status == 'delivered' %}<span title="доставлено">✓✓</span>
-          {% elif m.status == 'failed' %}<span title="не доставлено" style="color:#f87171">✗ не доставлено</span>
+          {% elif m.status == 'failed' %}<span title="не доставлено" style="color:var(--hot)">✗ не доставлено</span>
             <button class="btn btn-ghost" style="padding:2px 8px;font-size:12px"
                     hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}"
                     hx-target="#chat" hx-swap="innerHTML">Повторить</button>

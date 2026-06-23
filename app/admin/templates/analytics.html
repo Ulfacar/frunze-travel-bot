@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Frunze — аналитика</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root { --bg:#0c0d0e; --surface:#161718; --elev:#1d1e20; --border:#26282c; --text:#e8e9eb;
-            --muted:#8a8f98; --accent:#2dd4bf; --warm:#f59e0b; --hot:#f87171; --green:#34d399; }
+    :root { --bg:#F1F5F9; --surface:#FFFFFF; --elev:#F1F5F9; --border:#E2E8F0; --text:#0F172A;
+            --muted:#64748B; --accent:#2563EB; --warm:#D97706; --hot:#DC2626; --green:#059669;
+            --mono:'Fira Code', ui-monospace, monospace; }
     * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,sans-serif; font-size:14px; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:'Fira Sans',system-ui,sans-serif; font-size:14px; }
     .topbar { display:flex; align-items:center; gap:16px; padding:0 20px; height:58px;
               background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; }
     .topbar a { color:var(--accent); text-decoration:none; font-weight:600; }
@@ -18,7 +19,7 @@
     .sub { color:var(--muted); margin:0 0 22px; font-size:13px; }
     .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:24px; }
     .kpi { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
-    .kpi .n { font-size:30px; font-weight:700; }
+    .kpi .n { font-family:var(--mono); font-size:30px; font-weight:700; letter-spacing:-.02em; }
     .kpi .l { color:var(--muted); font-size:12.5px; margin-top:4px; }
     .kpi.good .n { color:var(--green); } .kpi.warm .n { color:var(--warm); }
     .panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:18px; }
