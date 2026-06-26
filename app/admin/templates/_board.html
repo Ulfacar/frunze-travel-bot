@@ -1,5 +1,5 @@
 {# Доска: метрики + колонки канбана. Авто-обновление каждые 15с (только на видимой вкладке). #}
-<div hx-get="/admin/board/{{ funnel }}" hx-trigger="every 15s [document.visibilityState==='visible']" hx-swap="outerHTML" hx-target="this" data-board>
+<div hx-get="/admin/board/{{ funnel }}" hx-trigger="every 15s [document.visibilityState==='visible']" hx-swap="outerHTML" hx-target="this" data-board data-funnel="{{ funnel }}">
   <div class="metrics">
     <div class="stat"><div class="n">{{ metrics.total }}</div><div class="l">Всего диалогов</div></div>
     <div class="stat waiting"><div class="n">{{ metrics.waiting }}</div><div class="l">Ждут ответа</div></div>
@@ -17,6 +17,7 @@
       </div>
       {% for c in col.cards %}
       <div class="card" tabindex="0" data-wait="{{ c.wait_level }}" data-needs="{{ '1' if c.needs_reply else '0' }}"
+           data-uid="{{ c.user_id }}"
            hx-get="/admin/conversation/{{ c.user_id }}" hx-target="#chat" hx-swap="innerHTML">
         <div class="card-top">
           <span class="avatar" style="background: {{ c.avatar }}">{{ c.initials }}</span>

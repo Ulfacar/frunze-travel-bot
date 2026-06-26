@@ -22,6 +22,10 @@ def _clear_memory():
     panel_store._memory_store._audit.clear()
     from app.core.state import state_store
     state_store._store.clear()
+    from app.admin import ratelimit
+    ratelimit.reset()
+    from app.core import flags
+    flags.reset()
 
 
 class _FakeChannel:
@@ -39,8 +43,9 @@ def _msg(user_id, text):
 
 
 def _auth_client():
-    """TestClient с залогиненным менеджером (дефолт admin/frunze) — cookie-сессия."""
-    client = TestClient(main.app)
+    """TestClient с залогиненным менеджером (дефолт admin/frunze) — cookie-сессия.
+    base_url=https — cookie сессии Secure (https_only), иначе по http не сохранится."""
+    client = TestClient(main.app, base_url="https://testserver")
     r = client.post("/admin/login", data={"login": "admin", "password": "frunze"})
     assert r.status_code == 200  # редирект на /admin отрабатывает, сессия установлена
     return client
@@ -246,7 +251,7 @@ def test_manager_brief_marks_hot_payment_signal():
 
 # ---------------- Wave 1: логин, claim+аудит, исход ----------------
 def test_admin_requires_login():
-    client = TestClient(main.app)
+    client = TestClient(main.app, base_url="https://testserver")       # Secure-cookie сессии
     assert client.get("/admin/board/visa").status_code == 401          # без сессии
     bad = client.post("/admin/login", data={"login": "admin", "password": "wrong"})
     assert bad.status_code == 401
@@ -351,6 +356,123 @@ def test_analytics_endpoint_renders():
     assert "Оплатили" in resp.text
 
 
+def test_analytics_period_and_by_manager():
+    """Период принимается, разрез по менеджерам считается по assigned_to."""
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("u-an-2", "client", "привет", channel="whatsapp"))
+    asyncio.run(store.update_meta("u-an-2", funnel="tours", stage="manager",
+                                  outcome="won", assigned_to="sezim"))
+    client = _auth_client()
+    resp = client.get("/admin/analytics?period=7d")
+    assert resp.status_code == 200
+    assert "По менеджерам" in resp.text
+    assert "sezim" in resp.text
+
+
+def test_inbox_lists_waiting_across_funnels():
+    """Инбокс показывает ждущих ответа клиентов из разных воронок в одном списке."""
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("getvisa:996700111", "client", "нужна виза", channel="whatsapp"))
+    asyncio.run(store.update_meta("getvisa:996700111", funnel="visa", stage="qualification"))
+    asyncio.run(store.add_message("frunze:996700222", "client", "хочу тур", channel="whatsapp"))
+    asyncio.run(store.update_meta("frunze:996700222", funnel="tours", stage="qualification"))
+    client = _auth_client()
+    resp = client.get("/admin/inbox")
+    assert resp.status_code == 200
+    assert "Ждут ответа" in resp.text
+    assert "996700111" in resp.text and "996700222" in resp.text
+
+
+def test_search_finds_by_phone_and_empty_returns_inbox():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("getvisa:996700333", "client", "вопрос", channel="whatsapp"))
+    asyncio.run(store.update_meta("getvisa:996700333", funnel="visa", stage="qualification"))
+    client = _auth_client()
+    hit = client.get("/admin/search", params={"q": "0333"})
+    assert hit.status_code == 200 and "996700333" in hit.text and "Поиск" in hit.text
+    miss = client.get("/admin/search", params={"q": "нетакого"})
+    assert "Ничего не найдено" in miss.text
+    empty = client.get("/admin/search", params={"q": "  "})
+    assert "Ждут ответа" in empty.text   # пустой запрос → инбокс
+
+
+def test_manager_can_move_card_stage():
+    """Drag-and-drop: ручной перенос карточки в другую колонку меняет стадию диалога."""
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    uid = "getvisa:996700555"
+    asyncio.run(store.add_message(uid, "client", "привет", channel="whatsapp"))
+    asyncio.run(store.update_meta(uid, funnel="visa", stage="qualification"))
+    client = _auth_client()
+
+    r = client.post(f"/admin/conversation/{uid}/stage", data={"stage": "office"})
+    assert r.status_code == 200 and r.text == "ok"
+    assert asyncio.run(store.get(uid)).stage == "office"
+
+    # Доска кладёт карточку в колонку office (стадия-ключ round-trip-ит в свою колонку).
+    board = client.get("/admin/board/visa")
+    assert board.status_code == 200 and "996700555" in board.text
+
+    # Неизвестная колонка отклоняется.
+    bad = client.post(f"/admin/conversation/{uid}/stage", data={"stage": "nope"})
+    assert bad.status_code == 400
+
+
+def test_stats_endpoint_counts_waiting():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("getvisa:996700444", "client", "жду", channel="whatsapp"))
+    asyncio.run(store.update_meta("getvisa:996700444", funnel="visa", stage="qualification"))
+    client = _auth_client()
+    resp = client.get("/admin/stats")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["waiting"] >= 1 and "needs_reply" in data
+
+    # Без сессии — 401 (счётчик не светим публично).
+    assert TestClient(main.app).get("/admin/stats").status_code == 401
+
+
+def test_feature_toggle_buttons():
+    """Тумблеры вкл/выкл (автодожим, алерты) меняют рантайм-флаги и переживают рестарт."""
+    _clear_memory()
+    from app.core import flags
+    client = _auth_client()
+    # автодожим по умолчанию выключен
+    assert "Автодожим" in client.get("/admin/system").text
+    r = client.post("/admin/flags/followup_enabled", data={"on": "1"})
+    assert r.status_code == 200 and "ВКЛ" in r.text
+    assert asyncio.run(flags.get_flag("followup_enabled", False)) is True
+    assert "ВКЛ" in client.get("/admin/system").text          # сохранилось
+    # выключаем обратно
+    assert "ВЫКЛ" in client.post("/admin/flags/followup_enabled", data={"on": "0"}).text
+    assert asyncio.run(flags.get_flag("followup_enabled", True)) is False
+    # второй тумблер — watchdog-алерты (дефолт вкл)
+    assert "Watchdog" in client.get("/admin/system").text
+    assert asyncio.run(flags.get_flag("alerts_enabled", True)) is True
+    client.post("/admin/flags/alerts_enabled", data={"on": "0"})
+    assert asyncio.run(flags.get_flag("alerts_enabled", True)) is False
+    # неизвестный флаг → 404
+    assert client.post("/admin/flags/nope", data={"on": "1"}).status_code == 404
+
+
+def test_system_and_audit_pages():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_audit("admin", "takeover", "getvisa:1", "перехват"))
+    client = _auth_client()
+    sysr = client.get("/admin/system")
+    assert sysr.status_code == 200 and "Статус системы" in sysr.text
+    aud = client.get("/admin/audit")
+    assert aud.status_code == 200 and "takeover" in aud.text and "admin" in aud.text
+    # без сессии — закрыто
+    assert TestClient(main.app).get("/admin/system").status_code == 401
+    assert TestClient(main.app).get("/admin/audit").status_code == 401
+
+
 def test_conversations_separated_by_bot(monkeypatch):
     """Один номер у тур-бота и виза-бота = ДВА отдельных диалога (ключ bot_id:номер)."""
     _clear_memory()
@@ -379,7 +501,7 @@ def test_conversations_separated_by_bot(monkeypatch):
 def test_demo_login_gated_by_setting(monkeypatch):
     # Выключено по умолчанию → эндпоинт недоступен, кнопок нет.
     monkeypatch.setattr("app.config.settings.demo_login", False)
-    client = TestClient(main.app)
+    client = TestClient(main.app, base_url="https://testserver")  # Secure-cookie сессии
     assert "Быстрый вход" not in client.get("/admin/login").text
     assert client.post("/admin/login/demo", data={"login": "admin"}).status_code == 404
 

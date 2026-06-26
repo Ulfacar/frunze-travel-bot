@@ -6,7 +6,10 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+# Поддерживаемые окна периода для дашборда (ключ → длительность; None = всё время).
+PERIODS = [("today", "Сегодня"), ("7d", "7 дней"), ("30d", "30 дней"), ("all", "Всё время")]
 
 
 def _aware(dt: datetime | None) -> datetime | None:
@@ -23,9 +26,44 @@ def _avg(values: list[float]) -> float | None:
     return round(sum(values) / len(values), 1) if values else None
 
 
-def compute_analytics(convs: list) -> dict:
-    """Свод метрик по диалогам: containment, исходы, воронки, время ответа/перехвата."""
+def _period_start(period: str, now: datetime) -> datetime | None:
+    """Начало окна периода. None — без фильтра (всё время / неизвестный ключ)."""
+    if period == "today":
+        return now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if period == "7d":
+        return now - timedelta(days=7)
+    if period == "30d":
+        return now - timedelta(days=30)
+    return None
+
+
+def _activity(convs: list, now: datetime) -> list[dict]:
+    """Активность за последние 7 дней (диалогов с сообщением в этот день) — для мини-графика."""
+    days = [(now - timedelta(days=i)).date() for i in range(6, -1, -1)]
+    counts = {d: 0 for d in days}
+    for c in convs:
+        dt = _aware(c.last_message_at)
+        if dt and dt.date() in counts:
+            counts[dt.date()] += 1
+    peak = max(counts.values()) if counts else 0
+    return [{"label": d.strftime("%d.%m"), "count": counts[d],
+             "pct": round(100 * counts[d] / peak) if peak else 0} for d in days]
+
+
+def compute_analytics(convs: list, period: str = "all", now: datetime | None = None) -> dict:
+    """Свод метрик по диалогам: containment, исходы, воронки, время ответа/перехвата.
+
+    period — окно ('today'|'7d'|'30d'|'all'); фильтрует диалоги по last_message_at.
+    by_manager — разрез исходов по закреплённому менеджеру (assigned_to).
+    """
+    now = _aware(now) or datetime.now(timezone.utc)
+    start = _period_start(period, now)
+    if start is not None:
+        convs = [c for c in convs if (_aware(c.last_message_at) or now) >= start]
+
     total = len(convs)
+    # Разрез по менеджерам: сколько диалогов вёл и с каким исходом.
+    by_manager: dict[str, Counter] = {}
     contained = 0                      # диалоги без единого сообщения менеджера (вёл только бот)
     outcomes: Counter = Counter()
     by_funnel: dict[str, Counter] = {}
@@ -40,6 +78,10 @@ def compute_analytics(convs: list) -> dict:
             contained += 1
         outcomes[c.outcome or "in_progress"] += 1
         by_funnel.setdefault(c.funnel or "—", Counter())[c.stage or "greeting"] += 1
+        if getattr(c, "assigned_to", ""):
+            mc = by_manager.setdefault(c.assigned_to, Counter())
+            mc["handled"] += 1
+            mc[c.outcome or "in_progress"] += 1
 
         # Время ответа менеджера: для каждого manager-сообщения — пауза с предыдущего client.
         last_client_at = None
@@ -70,4 +112,8 @@ def compute_analytics(convs: list) -> dict:
         "avg_response_min": _avg(response_gaps),
         "avg_handoff_min": _avg(handoff_gaps),
         "handoff_reasons": handoff_reasons.most_common(5),
+        "by_manager": {m: dict(c) for m, c in sorted(
+            by_manager.items(), key=lambda kv: kv[1]["handled"], reverse=True)},
+        "activity": _activity(convs, now),
+        "period": period,
     }

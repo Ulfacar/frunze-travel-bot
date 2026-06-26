@@ -29,6 +29,24 @@
     th { color:var(--muted); font-weight:500; }
     .pill { display:inline-block; padding:2px 9px; border-radius:20px; font-size:12px; background:var(--elev); }
     .muted { color:var(--muted); }
+    /* Фильтр периода */
+    .periods { display:flex; gap:6px; margin:0 0 20px; }
+    .periods a { padding:6px 13px; border-radius:9px; border:1px solid var(--border); background:var(--surface);
+                 color:var(--muted); font-size:13px; font-weight:600; }
+    .periods a.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+    /* Мини-график активности (CSS-бары) */
+    .chart { display:flex; align-items:flex-end; gap:10px; height:130px; padding-top:8px; }
+    .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+    .bar { width:100%; max-width:46px; background:linear-gradient(180deg,#2563EB,#1D4ED8); border-radius:6px 6px 0 0;
+           min-height:3px; position:relative; transition:height .3s; }
+    .bar .v { position:absolute; top:-18px; left:0; right:0; text-align:center; font-family:var(--mono);
+              font-size:11px; font-weight:700; color:var(--text); }
+    .bar-col .d { font-size:11px; color:var(--muted); font-family:var(--mono); }
+    /* Горизонтальные бары исходов */
+    .obar { display:grid; grid-template-columns:120px 1fr 40px; align-items:center; gap:10px; margin-bottom:8px; }
+    .obar .track { background:var(--elev); border-radius:6px; height:18px; overflow:hidden; }
+    .obar .fill { height:100%; border-radius:6px; }
+    .obar .n { font-family:var(--mono); font-weight:700; text-align:right; }
   </style>
 </head>
 <body>
@@ -42,6 +60,12 @@
     <h1>Сводка по {{ a.total }} диалогам</h1>
     <p class="sub">Containment = доля диалогов, которые бот провёл без менеджера. Время — медиана по сообщениям.</p>
 
+    <div class="periods">
+      {% for key, label in periods %}
+      <a href="/admin/analytics?period={{ key }}" class="{% if key == period %}on{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+
     <div class="cards">
       <div class="kpi good"><div class="n">{{ a.containment_rate }}%</div><div class="l">Containment (бот без менеджера)</div></div>
       <div class="kpi"><div class="n">{{ a.contained }}/{{ a.total }}</div><div class="l">Диалогов вёл только бот</div></div>
@@ -53,13 +77,45 @@
     </div>
 
     <div class="panel">
+      <h2>Активность за 7 дней</h2>
+      {% if a.activity %}
+      <div class="chart">
+        {% for d in a.activity %}
+        <div class="bar-col">
+          <div class="bar" style="height:{{ d.pct }}%"><span class="v">{{ d.count or '' }}</span></div>
+          <div class="d">{{ d.label }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}<div class="muted">Нет данных</div>{% endif %}
+    </div>
+
+    <div class="panel">
       <h2>Исходы</h2>
+      {% set colors = {'won':'#059669','office':'#2563EB','manager':'#D97706','lost':'#DC2626','in_progress':'#94A3B8'} %}
+      {% for key, label in [('won','✅ Оплатил'),('office','🏢 Дошёл в офис'),('manager','👤 У менеджера'),('lost','❌ Слился'),('in_progress','⏳ В работе')] %}
+      {% set n = a.outcomes.get(key, 0) %}
+      <div class="obar">
+        <span>{{ label }}</span>
+        <span class="track"><span class="fill" style="width:{{ (100 * n / a.total)|round if a.total else 0 }}%;background:{{ colors[key] }}"></span></span>
+        <span class="n">{{ n }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="panel">
+      <h2>По менеджерам</h2>
+      {% if a.by_manager %}
       <table>
-        <tr><th>Исход</th><th>Кол-во</th></tr>
-        {% for key, label in [('won','✅ Оплатил'),('office','🏢 Дошёл в офис'),('manager','👤 У менеджера'),('lost','❌ Слился'),('in_progress','⏳ В работе')] %}
-        <tr><td>{{ label }}</td><td>{{ a.outcomes.get(key, 0) }}</td></tr>
+        <tr><th>Менеджер</th><th>Вёл диалогов</th><th>✅ Оплат</th><th>🏢 Офис</th><th>❌ Слив</th></tr>
+        {% for mgr, st in a.by_manager.items() %}
+        <tr><td><b>{{ mgr }}</b></td><td>{{ st.get('handled', 0) }}</td>
+            <td>{{ st.get('won', 0) }}</td><td>{{ st.get('office', 0) }}</td><td>{{ st.get('lost', 0) }}</td></tr>
         {% endfor %}
       </table>
+      {% else %}
+      <div class="muted">Пока никто из менеджеров не вёл диалоги в этом периоде</div>
+      {% endif %}
     </div>
 
     <div class="panel">

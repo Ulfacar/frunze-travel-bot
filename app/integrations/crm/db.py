@@ -78,6 +78,7 @@ class Conversation(Base):
     outcome: Mapped[str] = mapped_column(String(24), default="")       # in_progress|office|manager|won|lost
     last_text: Mapped[str] = mapped_column(Text, default="")  # превью последней реплики для карточки
     last_sender: Mapped[str] = mapped_column(String(16), default="")  # client|bot|manager — для сигналов
+    followup_sent: Mapped[bool] = mapped_column(default=False)  # автодожим уже отправлен (один раз)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -129,6 +130,18 @@ class AuditLog(Base):
     )
 
 
+class AppFlag(Base):
+    """Рантайм-флаги фич (вкл/выкл из админки), переживающие рестарт."""
+
+    __tablename__ = "app_flags"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[bool] = mapped_column(default=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 _engine: AsyncEngine | None = None
 _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
@@ -155,6 +168,7 @@ async def init_models(engine: AsyncEngine) -> None:
             "assigned_to": "VARCHAR(64) DEFAULT ''",
             "assigned_at": "TIMESTAMPTZ",
             "outcome": "VARCHAR(24) DEFAULT ''",
+            "followup_sent": "BOOLEAN DEFAULT FALSE",
         })
         await _ensure_columns(conn, "messages", {
             "status": "VARCHAR(16) DEFAULT ''",

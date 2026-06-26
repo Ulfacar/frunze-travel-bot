@@ -53,6 +53,7 @@ class ConversationView:
     last_text: str = ""
     last_sender: str = ""
     last_message_at: datetime | None = None
+    followup_sent: bool = False       # автодожим уже отправлен (один раз)
     messages: list[MessageView] = field(default_factory=list)
 
 
@@ -130,7 +131,8 @@ class MemoryConversationStore:
                           escalation_reason: str | None = None,
                           lead_temperature: str | None = None,
                           assigned_to: str | None = None,
-                          outcome: str | None = None) -> None:
+                          outcome: str | None = None,
+                          followup_sent: bool | None = None) -> None:
         conv = await self.ensure(user_id)
         if funnel is not None:
             conv.funnel = funnel
@@ -152,12 +154,18 @@ class MemoryConversationStore:
             conv.assigned_to = assigned_to
         if outcome is not None and not _is_auto_downgrade(outcome, conv.outcome):
             conv.outcome = outcome
+        if followup_sent is not None:
+            conv.followup_sent = followup_sent
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
         await self.update_meta(user_id, intercepted=value)
 
     async def all_conversations(self) -> list[ConversationView]:
         return list(self._conv.values())
+
+    async def list_audit(self, limit: int = 200) -> list[dict]:
+        """Последние записи аудита (новые сверху)."""
+        return list(reversed(self._audit[-limit:]))
 
     async def claim(self, user_id: str, manager: str) -> bool:
         """Закрепить диалог за менеджером, если свободен или уже его. True — владеет manager."""
@@ -271,7 +279,8 @@ class PostgresConversationStore:
                           escalation_reason: str | None = None,
                           lead_temperature: str | None = None,
                           assigned_to: str | None = None,
-                          outcome: str | None = None) -> None:
+                          outcome: str | None = None,
+                          followup_sent: bool | None = None) -> None:
         async with self._sm()() as session:
             conv = await self._ensure_row(session, user_id, "", "")
             if funnel is not None:
@@ -295,6 +304,8 @@ class PostgresConversationStore:
                 conv.assigned_at = _now() if assigned_to else None
             if outcome is not None and not _is_auto_downgrade(outcome, conv.outcome or ""):
                 conv.outcome = outcome
+            if followup_sent is not None:
+                conv.followup_sent = followup_sent
             await session.commit()
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
@@ -339,6 +350,15 @@ class PostgresConversationStore:
             session.add(AuditLog(manager=manager, action=action, user_id=user_id, detail=detail))
             await session.commit()
 
+    async def list_audit(self, limit: int = 200) -> list[dict]:
+        from app.integrations.crm.db import AuditLog
+        async with self._sm()() as session:
+            rows = (await session.execute(
+                select(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit)
+            )).scalars().all()
+            return [{"manager": r.manager, "action": r.action, "user_id": r.user_id,
+                     "detail": r.detail, "created_at": r.created_at} for r in rows]
+
     async def list_cards(self, funnel: str) -> list[ConversationView]:
         from app.integrations.crm.db import Conversation
         async with self._sm()() as session:
@@ -382,6 +402,7 @@ def _view(conv) -> ConversationView:
         outcome=getattr(conv, "outcome", "") or "",
         last_text=conv.last_text,
         last_sender=conv.last_sender, last_message_at=conv.last_message_at,
+        followup_sent=getattr(conv, "followup_sent", False) or False,
     )
 
 

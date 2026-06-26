@@ -26,6 +26,7 @@ class DialogState:
     history: list[dict] = field(default_factory=list)  # для контекста LLM
     intercepted: bool = False  # менеджер перехватил диалог в Bitrix → бот молчит
     pending_field: str | None = None  # какой вопрос задан в fallback-режиме (ждём ответ)
+    wait_ack_sent: bool = False  # после авто-хендоффа клиенту разово подтвердили ожидание
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False)

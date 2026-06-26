@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Frunze — диалоги</title>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -49,7 +50,19 @@
            transition: background var(--t), color var(--t); }
     .tab:hover { background: var(--surface-2); color: var(--text); }
     .tab.active { background: var(--accent-soft); color: var(--accent); }
+    .tab-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px;
+                 margin-left: 4px; border-radius: 9px; background: var(--hot); color: #fff;
+                 font-family: var(--mono); font-size: 10.5px; font-weight: 700; vertical-align: middle; }
     .spacer { flex: 1; }
+
+    /* ---------- Search ---------- */
+    .search { position: relative; display: flex; align-items: center; }
+    .search svg { position: absolute; left: 11px; width: 15px; height: 15px; color: var(--faint); pointer-events: none; }
+    .search input { width: 230px; padding: 8px 12px 8px 34px; background: var(--surface-2); color: var(--text);
+                    border: 1px solid var(--border-2); border-radius: 9px; font: inherit; font-size: 13px;
+                    transition: border-color var(--t), box-shadow var(--t), width var(--t); }
+    .search input::placeholder { color: var(--faint); }
+    .search input:focus { outline: none; width: 280px; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
     .me { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px; font-weight: 500; }
     .me .av { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-2);
               border: 1px solid var(--border-2); display: grid; place-items: center; color: var(--muted); }
@@ -88,6 +101,26 @@
              font-family: var(--mono); font-size: 11px; font-weight: 700; min-width: 20px; height: 19px; padding: 0 6px;
              border-radius: 20px; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
     .col-empty { color: var(--faint); font-size: 18px; text-align: center; padding: 10px 6px; }
+    /* Drag-and-drop: карточки доски можно таскать между колонками. */
+    .board .card { cursor: grab; }
+    .board .card:active { cursor: grabbing; }
+    .card-ghost { opacity: .35; }
+    .card-drag { box-shadow: 0 12px 28px rgba(15,23,42,.18); transform: rotate(1.5deg); }
+    .col.drop-target { background: var(--accent-soft); outline: 2px dashed var(--accent); outline-offset: -2px; }
+
+    /* ---------- Inbox / Search (вертикальный список по всем воронкам) ---------- */
+    .inbox-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .inbox-title { font-size: 15px; font-weight: 700; }
+    .inbox-sub { color: var(--muted); font-size: 12px; }
+    .inbox-head .tab { padding: 4px 10px; font-size: 12px; }
+    .inbox-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; align-items: start; }
+    .inbox-empty { color: var(--muted); background: var(--col); border: 1px dashed var(--border-2);
+                   border-radius: var(--r); padding: 28px; text-align: center; font-size: 14px; }
+    .inbox-list .card { margin-bottom: 0; }
+    .funnel-badge { margin-left: auto; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+    .funnel-badge[data-funnel="visa"] { background: var(--accent-soft); color: var(--accent); border-color: rgba(37,99,235,.20); }
+    .funnel-badge[data-funnel="tours"] { background: var(--green-soft); color: var(--green); border-color: rgba(5,150,105,.20); }
+    .funnel-badge[data-funnel="tickets"] { background: var(--warm-soft); color: var(--warm); border-color: rgba(217,119,6,.20); }
 
     /* ---------- Card ---------- */
     .card { background: var(--elev); border: 1px solid var(--border); border-radius: var(--r-sm);
@@ -192,16 +225,28 @@
       <span>Frunze<small>диалоги</small></span>
     </div>
     <nav class="tabs">
+      <button class="tab active" data-tab="inbox"
+              hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML" onclick="setTab(this)">
+        📥 Инбокс <span class="tab-badge" id="inbox-badge" hidden>0</span>
+      </button>
       {% for key, label in funnels %}
-      <button class="tab {% if loop.first %}active{% endif %}" data-funnel="{{ key }}"
-              hx-get="/admin/board/{{ key }}" hx-target="#board" hx-swap="innerHTML"
-              onclick="document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));this.classList.add('active')">
+      <button class="tab" data-funnel="{{ key }}"
+              hx-get="/admin/board/{{ key }}" hx-target="#board" hx-swap="innerHTML" onclick="setTab(this)">
         {{ label }}
       </button>
       {% endfor %}
     </nav>
     <span class="spacer"></span>
-    <a href="/admin/analytics" class="btn btn-ghost" style="margin-right:12px;text-decoration:none;padding:7px 12px">📊 Аналитика</a>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="search" name="q" placeholder="Поиск по имени или номеру…" autocomplete="off"
+             aria-label="Поиск диалогов"
+             hx-get="/admin/search" hx-trigger="keyup changed delay:300ms, search"
+             hx-target="#board" hx-swap="innerHTML">
+    </div>
+    <a href="/admin/analytics" class="btn btn-ghost" style="margin:0 4px 0 12px;text-decoration:none;padding:7px 12px">📊 Аналитика</a>
+    <a href="/admin/system" class="btn btn-ghost" style="margin-right:4px;text-decoration:none;padding:7px 12px" title="Статус системы">⚙️</a>
+    <a href="/admin/audit" class="btn btn-ghost" style="margin-right:8px;text-decoration:none;padding:7px 12px" title="Аудит-лог">📋</a>
     <div class="me"><span>{{ manager.name if manager else 'Менеджер' }}</span>
       <span class="av"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
       <form method="post" action="/admin/logout" style="margin-left:10px">
@@ -211,7 +256,7 @@
   </header>
 
   <main class="layout">
-    <section id="board" hx-get="/admin/board/{{ funnels[0][0] }}" hx-trigger="load" hx-swap="innerHTML"></section>
+    <section id="board" hx-get="/admin/inbox" hx-trigger="load" hx-swap="innerHTML"></section>
     <aside id="chat">
       <div class="panel">
         <div class="panel-empty">
@@ -223,6 +268,19 @@
   </main>
 
   <script>
+    // Подсветка активного таба + сброс поля поиска при переключении доски.
+    function setTab(el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      var s = document.querySelector('.search input'); if (s) s.value = '';
+    }
+    // «✕ Сбросить» в результатах поиска: чистим поле и подсвечиваем Инбокс.
+    function clearSearch() {
+      var s = document.querySelector('.search input'); if (s) s.value = '';
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      var inbox = document.querySelector('.tab[data-tab="inbox"]'); if (inbox) inbox.classList.add('active');
+    }
+
     document.addEventListener('click', function (e) {
       var card = e.target.closest('.card');
       if (!card) return;
@@ -280,6 +338,71 @@
         m.scrollTop = _chatScroll.top;    // листал историю → оставляем где был
       }
     });
+
+    // ---- Уведомления: бейдж счётчика «ждут ответа» + звук при росте очереди ----
+    var _waiting = null;
+    function _beep() {
+      try {
+        var Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
+        var a = new Ctx(), o = a.createOscillator(), g = a.createGain();
+        o.connect(g); g.connect(a.destination); o.type = 'sine'; o.frequency.value = 880;
+        g.gain.setValueAtTime(0.0001, a.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.18, a.currentTime + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.45);
+        o.start(); o.stop(a.currentTime + 0.45);
+      } catch (_) { /* autoplay не разрешён до первого клика — это ок */ }
+    }
+    async function _pollStats() {
+      try {
+        var r = await fetch('/admin/stats', { headers: { 'HX-Request': 'true' } });
+        if (!r.ok) return;
+        var s = await r.json(), n = s.waiting || 0;
+        var badge = document.getElementById('inbox-badge');
+        if (badge) { badge.textContent = n; badge.hidden = (n === 0); }
+        document.title = n > 0 ? '(' + n + ') Frunze — диалоги' : 'Frunze — диалоги';
+        if (_waiting !== null && n > _waiting) _beep();   // в очереди прибавилось → сигнал
+        _waiting = n;
+      } catch (_) { /* сеть моргнула — молча ждём следующего тика */ }
+    }
+    setInterval(_pollStats, 12000); _pollStats();
+
+    // ---- Drag-and-drop: перенос карточки в другую колонку = смена стадии ----
+    function initBoardDnD() {
+      if (typeof Sortable === 'undefined') return;
+      document.querySelectorAll('#board .board .col').forEach(function (col) {
+        if (col._sortable) return;                 // уже инициализирована
+        col._sortable = Sortable.create(col, {
+          group: 'board', draggable: '.card', animation: 150,
+          ghostClass: 'card-ghost', chosenClass: 'card-drag', forceFallback: true,
+          onStart: function () { _dragging = true; },
+          onEnd: onCardMoved,
+        });
+      });
+    }
+    var _dragging = false;
+    async function onCardMoved(evt) {
+      _dragging = false;
+      if (evt.to === evt.from) return;             // колонку не сменили
+      var card = evt.item;
+      var toCol = evt.to.closest('.col');
+      var uid = card.getAttribute('data-uid');
+      var stage = toCol && toCol.getAttribute('data-col');
+      if (!uid || !stage) return;
+      try {
+        await fetch('/admin/conversation/' + encodeURIComponent(uid) + '/stage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'HX-Request': 'true' },
+          body: 'stage=' + encodeURIComponent(stage),
+        });
+      } catch (_) { /* офлайн — следующее авто-обновление подтянет истину с сервера */ }
+      // Перерисовать доску: пересчитать счётчики колонок и порядок (ждут дольше — наверх).
+      var board = document.querySelector('#board [data-board]');
+      var funnel = board && board.getAttribute('data-funnel');
+      if (funnel && window.htmx) htmx.ajax('GET', '/admin/board/' + funnel, { target: '#board', swap: 'innerHTML' });
+    }
+    // (Пере)инициализируем DnD после каждой подгрузки доски; не дёргаем во время перетаскивания.
+    document.body.addEventListener('htmx:afterSettle', function () { if (!_dragging) initBoardDnD(); });
+    initBoardDnD();
   </script>
   <style>
     [data-board].only-needs .card[data-needs="0"] { display: none; }

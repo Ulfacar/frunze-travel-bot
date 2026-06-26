@@ -12,7 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
+                               RedirectResponse)
 from fastapi.templating import Jinja2Templates
 
 from app.agent.llm import chat, llm_enabled
@@ -29,6 +30,8 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 # Доски (вкладки) — по воронкам. Визы и Туры основные, Билеты — третья.
 FUNNELS = [("visa", "Визы (GetVisa)"), ("tours", "Туры"), ("tickets", "Билеты")]
+# Короткие ярлыки воронок для бейджа в инбоксе/поиске (где смешаны все воронки).
+FUNNEL_LABELS = {"visa": "Визы", "tours": "Туры", "tickets": "Билеты"}
 
 # Колонки канбана и маппинг внутренних стадий диалога в колонку.
 BOARD_COLUMNS = [
@@ -42,11 +45,14 @@ BOARD_COLUMNS = [
 STAGE_TO_COLUMN = {
     "greeting": "greeting", "new": "greeting",
     "qualification": "qualification",
-    "scoring": "progress", "search": "progress", "visa_scoring": "progress",
+    "progress": "progress", "scoring": "progress", "search": "progress", "visa_scoring": "progress",
     "office": "office", "office_consultation": "office",
     "manager": "manager", "manager_handoff": "manager",
     "follow_up": "follow_up", "followup": "follow_up", "callback": "follow_up",
 }
+# Обратный маппинг для ручного переноса (drag-and-drop): колонка → каноническая стадия.
+# Стадии-ключи = ключи колонок, чтобы карточка осталась в той колонке, куда её положили.
+COLUMN_TO_STAGE = {key: key for key, _ in BOARD_COLUMNS}
 
 # Стадии, в которых ждут живого менеджера (для сигнала «требуют ответа»).
 HUMAN_STAGES = {"office", "office_consultation", "manager", "manager_handoff"}
@@ -128,6 +134,7 @@ def _card_model(conv, now: datetime) -> dict:
         "initials": _initials(name, phone),
         "avatar": _avatar(phone),
         "channel": conv.channel, "stage": conv.stage, "intercepted": conv.intercepted,
+        "funnel": conv.funnel or "", "funnel_label": FUNNEL_LABELS.get(conv.funnel, conv.funnel or "—"),
         "assigned_to": conv.assigned_to, "outcome": conv.outcome,
         "last_text": conv.last_text, "last_sender": conv.last_sender,
         "time_label": _time_label(since),
@@ -193,8 +200,15 @@ async def login_demo(request: Request, login: str = Form(...)):
 
 @router.post("/login", response_class=HTMLResponse)
 async def login_submit(request: Request, login: str = Form(...), password: str = Form(...)):
+    from app.admin import ratelimit
+    ip = request.client.host if request.client else "unknown"
+    if ratelimit.is_blocked(ip):
+        return templates.TemplateResponse(request, "login.html",
+                                          {"error": "Слишком много попыток. Подождите минуту.",
+                                           "demo_managers": _demo_managers()}, status_code=429)
     manager = _check_credentials(login.strip(), password)
     if manager is None:
+        ratelimit.note_failure(ip)        # к блокировке ведут только провалы
         return templates.TemplateResponse(request, "login.html",
                                           {"error": "Неверный логин или пароль",
                                            "demo_managers": _demo_managers()}, status_code=401)
@@ -240,13 +254,111 @@ async def index(request: Request):
 
 
 @router.get("/analytics", response_class=HTMLResponse)
-async def analytics(request: Request, manager: dict = Depends(require_admin)):
-    """Дашборд «ИИ vs менеджер»: containment, исходы, воронки, время ответа/перехвата."""
-    from app.integrations.panel.analytics import compute_analytics
+async def analytics(request: Request, period: str = "all",
+                    manager: dict = Depends(require_admin)):
+    """Дашборд «ИИ vs менеджер»: containment, исходы, воронки, время ответа/перехвата.
+    period — окно периода (today|7d|30d|all)."""
+    from app.integrations.panel.analytics import PERIODS, compute_analytics
     convs = await get_conversation_store().all_conversations()
-    data = compute_analytics(convs)
+    data = compute_analytics(convs, period=period, now=_now())
     return templates.TemplateResponse(request, "analytics.html",
-                                      {"a": data, "manager": manager, "funnels": FUNNELS},
+                                      {"a": data, "manager": manager, "funnels": FUNNELS,
+                                       "periods": PERIODS, "period": period},
+                                      headers={"Cache-Control": "no-store"})
+
+
+@router.get("/system", response_class=HTMLResponse)
+async def system(request: Request, manager: dict = Depends(require_admin)):
+    """Статус системы: LLM, тишина вебхуков, бэкенды, счётчики сбоев, боты."""
+    from app.core import observ
+    from app.core.bots import registry
+    snap = observ.snapshot()
+    flag_views = await _flag_views()
+    data = {
+        "llm_enabled": llm_enabled(),
+        "last_inbound_ago": observ.last_inbound_ago(),
+        "state_backend": settings.state_backend,
+        "panel_backend": settings.panel_backend,
+        "crm_backend": settings.crm_backend,
+        "followup_enabled": settings.followup_enabled,
+        "alerts_configured": bool(settings.alert_whatsapp_to and settings.alert_bot_id),
+        "webhook_secret_set": bool(settings.webhook_secret),
+        "llm_failures": snap.get("llm_failures", 0),
+        "send_failures": snap.get("send_failures", 0),
+        "llm_failure_ago": snap.get("llm_failure_ago"),
+        "send_failure_ago": snap.get("send_failure_ago"),
+        "bots": [{"id": b.id, "scenario": b.scenario, "wappi": bool(b.wappi_profile_id)}
+                 for b in registry.all()],
+    }
+    return templates.TemplateResponse(request, "system.html",
+                                      {"s": data, "manager": manager, "flags": flag_views},
+                                      headers={"Cache-Control": "no-store"})
+
+
+# Тумблеры фич для менеджера: ключ → заголовок, описание, дефолт (из env), примечание.
+FEATURE_FLAGS = {
+    "bots_enabled": {
+        "title": "Авто-ответы бота (главный рубильник)",
+        "desc": ("Если выключить — бот перестаёт отвечать клиентам во всех воронках "
+                 "(туры / визы / билеты). Входящие сообщения по-прежнему попадают в панель, "
+                 "и менеджеры ведут диалоги вручную. Включите обратно, чтобы бот снова "
+                 "отвечал автоматически."),
+        "default": lambda: True,
+        "note": lambda: "",
+    },
+    "followup_enabled": {
+        "title": "Автодожим молчащих клиентов",
+        "desc": ("Если клиент замолчал на этапе квалификации дольше 24 часов, бот сам отправит "
+                 "один мягкий напоминающий месседж и переместит карточку в «Повторное касание». "
+                 "Ночью (22:00–09:00 по Бишкеку) не беспокоит. Каждому клиенту — не больше одного "
+                 "раза; как только клиент ответит, диалог продолжается обычным образом."),
+        "default": lambda: settings.followup_enabled,
+        "note": lambda: "",
+    },
+    "alerts_enabled": {
+        "title": "Watchdog-алерты",
+        "desc": ("Уведомлять администратора в WhatsApp, если бот не получает входящих дольше "
+                 "30 минут или пошёл всплеск сбоев (LLM/отправка). Помогает заметить, что бот "
+                 "«отвалился», раньше, чем начнут жаловаться клиенты."),
+        "default": lambda: True,
+        "note": lambda: ("" if (settings.alert_whatsapp_to and settings.alert_bot_id)
+                         else "⚠️ Чтобы алерты отправлялись, задайте в prod.env номер админа "
+                              "(ALERT_WHATSAPP_TO) и бота (ALERT_BOT_ID)."),
+    },
+}
+
+
+async def _flag_views() -> list[dict]:
+    """Состояние всех тумблеров для рендера (значение из БД, дефолт из env)."""
+    from app.core import flags
+    views = []
+    for key, spec in FEATURE_FLAGS.items():
+        on = await flags.get_flag(key, spec["default"]())
+        views.append({"key": key, "title": spec["title"], "desc": spec["desc"],
+                      "on": on, "note": spec["note"]()})
+    return views
+
+
+@router.post("/flags/{key}", response_class=HTMLResponse)
+async def toggle_flag(key: str, request: Request, manager: dict = Depends(require_admin),
+                      on: str = Form("0")):
+    """Менеджер включает/выключает фичу кнопкой в панели (рантайм-флаг в БД, без рестарта)."""
+    if key not in FEATURE_FLAGS:
+        raise HTTPException(status_code=404, detail="unknown flag")
+    from app.core import flags
+    value = on in ("1", "true", "on", "True")
+    await flags.set_flag(key, value)
+    await get_conversation_store().add_audit(
+        manager["login"], "flag", "", f"{key}={'on' if value else 'off'}")
+    return templates.TemplateResponse(request, "_automation.html", {"flags": await _flag_views()})
+
+
+@router.get("/audit", response_class=HTMLResponse)
+async def audit(request: Request, manager: dict = Depends(require_admin)):
+    """Журнал действий менеджеров (перехват/ответ/исход/перенос/логин)."""
+    rows = await get_conversation_store().list_audit(200)
+    return templates.TemplateResponse(request, "audit.html",
+                                      {"rows": rows, "manager": manager},
                                       headers={"Cache-Control": "no-store"})
 
 
@@ -258,6 +370,57 @@ async def board(funnel: str, request: Request, _: dict = Depends(require_admin))
     columns, metrics = _build_board(cards, _now())
     return templates.TemplateResponse(request, "_board.html", {
         "funnel": funnel, "columns": columns, "metrics": metrics,
+    })
+
+
+async def _all_models(now: datetime) -> list[dict]:
+    """Обогащённые карточки по ВСЕМ воронкам (для инбокса, поиска, счётчиков)."""
+    convs = await get_conversation_store().all_conversations()
+    return [_card_model(c, now) for c in convs]
+
+
+def _waiting_sorted(models: list[dict]) -> list[dict]:
+    """Кто ждёт ответа (последним писал клиент), дольше всех — наверх."""
+    cards = [m for m in models if m["wait_level"] != "none"]
+    cards.sort(key=lambda m: m["sort_key"], reverse=True)
+    return cards
+
+
+@router.get("/inbox", response_class=HTMLResponse)
+async def inbox(request: Request, _: dict = Depends(require_admin)):
+    """Единый инбокс: все ждущие ответа диалоги по всем воронкам в одном списке."""
+    cards = _waiting_sorted(await _all_models(_now()))
+    return templates.TemplateResponse(request, "_attention.html",
+                                      {"mode": "inbox", "cards": cards, "query": ""})
+
+
+@router.get("/search", response_class=HTMLResponse)
+async def search(request: Request, q: str = "", _: dict = Depends(require_admin)):
+    """Поиск по имени / номеру / последнему сообщению across все воронки.
+    Пустой запрос возвращает инбокс — так очистка поля возвращает менеджера к списку."""
+    q = q.strip()
+    models = await _all_models(_now())
+    if not q:
+        return templates.TemplateResponse(request, "_attention.html",
+                                          {"mode": "inbox", "cards": _waiting_sorted(models),
+                                           "query": ""})
+    ql = q.lower()
+    cards = [m for m in models
+             if ql in (m["name"] or "").lower() or ql in (m["phone"] or "").lower()
+             or ql in (m["last_text"] or "").lower()]
+    cards.sort(key=lambda m: m["sort_key"], reverse=True)
+    return templates.TemplateResponse(request, "_attention.html",
+                                      {"mode": "search", "cards": cards, "query": q})
+
+
+@router.get("/stats", response_class=JSONResponse)
+async def stats(_: dict = Depends(require_admin)):
+    """Лёгкий счётчик для звуковых уведомлений и бейджа в заголовке вкладки."""
+    models = await _all_models(_now())
+    return JSONResponse({
+        "waiting": sum(1 for m in models if m["wait_level"] != "none"),
+        "needs_reply": sum(1 for m in models if m["needs_reply"]),
+        "total": len(models),
     })
 
 
@@ -380,6 +543,18 @@ async def suggest_reply(user_id: str, request: Request, _: dict = Depends(requir
     except Exception:  # noqa: BLE001
         log.warning("suggest failed", exc_info=True)
         return "Не удалось сгенерировать черновик — попробуйте ещё раз."
+
+
+@router.post("/conversation/{user_id}/stage", response_class=PlainTextResponse)
+async def set_stage(user_id: str, manager: dict = Depends(require_admin),
+                    stage: str = Form(...)):
+    """Ручной перенос карточки в другую колонку канбана (drag-and-drop менеджером)."""
+    target = COLUMN_TO_STAGE.get(stage)
+    if target is None:
+        raise HTTPException(status_code=400, detail="unknown column")
+    await get_conversation_store().update_meta(user_id, stage=target)
+    await get_conversation_store().add_audit(manager["login"], "stage", user_id, target)
+    return PlainTextResponse("ok")
 
 
 @router.post("/conversation/{user_id}/outcome", response_class=HTMLResponse)

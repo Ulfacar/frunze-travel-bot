@@ -18,7 +18,9 @@ from app.agent.prompts.tickets import SYSTEM as TICKETS_SYSTEM
 from app.agent.prompts.tours import SYSTEM as TOURS_SYSTEM
 from app.agent.prompts.visa import SYSTEM as VISA_SYSTEM
 from app.agent.tools import tools_for
+from app.agent.validator import validate_reply
 from app.config import settings
+from app.core import observ
 from app.core.branding import GETVISA_EMAIL, GETVISA_OFFICE_ADDRESS, PRICE_DISCLAIMER
 from app.core.state import DialogState
 from app.funnels.visa import score_visa, visa_category
@@ -69,6 +71,12 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
             continue
 
         text = "".join(b.text for b in resp.content if b.type == "text")
+        # Валидатор: чиним безопасное (markdown, дисклеймер цен туров), мягко логируем риски.
+        text, violations = validate_reply(text, spec.name)
+        if violations:
+            logger.info("validator (%s): %s", spec.name, ", ".join(violations))
+            for v in violations:
+                observ.note_validation(v)
         state.history.append({"role": "assistant", "content": text})
         return text or "Расскажите, пожалуйста, подробнее."
 
@@ -94,7 +102,8 @@ async def _tours_exec_tool(name: str, args: dict, state: DialogState, crm) -> st
         if state.deal_id:
             await crm.update_stage(state.deal_id, "manager_handoff")
         state.stage = "manager"
-        return "Менеджер подключён к диалогу."
+        return ("Передано менеджеру. Скажи клиенту КОРОТКО и честно: запрос передал(а) "
+                "менеджеру, он ответит в этом чате; НЕ утверждай, что менеджер уже онлайн.")
 
     if name == "escalate_to_office":
         if state.deal_id:
@@ -129,23 +138,26 @@ async def _visa_exec_tool(name: str, args: dict, state: DialogState, crm) -> str
         await crm.update_stage(state.deal_id, "visa_scoring")
         category = visa_category(score_visa(state.qualification))
         # Категория — ВНУТРЕННИЙ ориентир для тона. Клиенту НЕ обещаем визу/процент,
-        # цены не называем, всегда ведём на консультацию (escalate_to_office).
+        # всегда ведём на консультацию (escalate_to_office).
         return (f"[внутренний сигнал силы кейса: {category}] Не называй клиенту процент и не "
                 f"обещай визу. Подай мягко и честно (грамотная анкета и подготовка к интервью "
-                f"решают многое) и пригласи на консультацию в офис или онлайн. Цены не называй.")
+                f"решают многое) и пригласи на консультацию в офис или онлайн. Цену услуги "
+                f"можешь назвать по официальному прайсу; депозиты/итоговую сумму — не называй.")
 
     if name == "handoff_to_manager":
         if state.deal_id:
             await crm.update_stage(state.deal_id, "manager_handoff")
         state.stage = "manager"
-        return "Менеджер подключён к диалогу."
+        return ("Передано менеджеру. Скажи клиенту КОРОТКО и честно: запрос передал(а) "
+                "менеджеру, он ответит в этом чате; НЕ утверждай, что менеджер уже онлайн.")
 
     if name == "escalate_to_office":
         if state.deal_id:
             await crm.update_stage(state.deal_id, "office_consultation")
         state.stage = "office"
         return (f"Пригласи клиента на консультацию. Адрес офиса: {GETVISA_OFFICE_ADDRESS}. "
-                f"Можно начать и онлайн. Почта для документов: {GETVISA_EMAIL}. Цены не называй.")
+                f"Можно начать и онлайн. Почта для документов: {GETVISA_EMAIL}. Цену услуги "
+                f"можешь назвать по официальному прайсу; депозиты/итоговую сумму — не называй.")
 
     return "ok"
 

@@ -6,11 +6,14 @@
 """
 from __future__ import annotations
 
+import asyncio
 import logging
+from dataclasses import replace
 
 from app.channels.base import ChannelAdapter, Message
-from app.config import BotConfig
+from app.config import BotConfig, settings
 from app.core.manager_brief import build_manager_brief
+from app.core.observ import record_failure
 from app.core.router import detect_funnel
 from app.core.state import get_state_store
 from app.funnels import get_funnel
@@ -19,13 +22,27 @@ from app.integrations.panel.store import get_conversation_store
 log = logging.getLogger("orchestrator")
 
 GREETING = (
-    "Здравствуйте! 😊 Это Frunze Travel. "
+    "Здравствуйте! 😊 Я виртуальный ассистент Frunze Travel (отвечаю текстом). "
     "Подскажите, что вас интересует — тур, виза или авиабилеты?"
 )
 
 # Авто-исход диалога из стадии (ручные won/lost не перетираются — см. store).
 _OFFICE_STAGES = {"office", "office_consultation"}
 _MANAGER_STAGES = {"manager", "manager_handoff"}
+
+
+# Сериализация обработки в рамках одного диалога. Два быстрых сообщения клиента подряд —
+# это два параллельных запроса FastAPI; без лока оба читают/пишут одно состояние и оба
+# отвечают → гонка истории и дубли ответов (видели в проде). Лок на ключ диалога гонит
+# их строго по очереди: второй ход видит уже обновлённую историю и состояние.
+_key_locks: dict[str, asyncio.Lock] = {}
+
+
+def _lock_for(key: str) -> asyncio.Lock:
+    lock = _key_locks.get(key)
+    if lock is None:
+        lock = _key_locks.setdefault(key, asyncio.Lock())
+    return lock
 
 
 def _auto_outcome(stage: str) -> str:
@@ -36,8 +53,13 @@ def _auto_outcome(stage: str) -> str:
     return "in_progress"
 
 NON_TEXT_FALLBACK = (
-    "Пока я понимаю только текстовые сообщения 🙏 Напишите, пожалуйста, словами — "
-    "или скажите «нужен менеджер», и я позову человека."
+    "Я виртуальный ассистент и голосовые сообщения пока не распознаю 🙏 Напишите, "
+    "пожалуйста, словами — или скажите «нужен менеджер», и я позову человека."
+)
+# Мягкий фолбэк, если ход не удалось обработать (сбой LLM/инструмента) — клиент НЕ
+# должен получать тишину или 500. Диалог не роняем, состояние сохраняем.
+LLM_ERROR_FALLBACK = (
+    "Секундочку, уточню детали и вернусь к вам 🙏"
 )
 
 
@@ -50,6 +72,10 @@ class Orchestrator:
     def __init__(self, channel: ChannelAdapter, bot: BotConfig | None = None) -> None:
         self.channel = channel
         self.bot = bot
+        # Дебаунс: буфер быстрых реплик клиента и таймер тихого окна на диалог. В пределах
+        # процесса (как и _lock_for) — допущение «один воркер / sticky», как у остального стейта.
+        self._buffers: dict[str, list[Message]] = {}
+        self._timers: dict[str, asyncio.Task] = {}
 
     @property
     def _bot_id(self) -> str:
@@ -60,30 +86,91 @@ class Orchestrator:
         (раздельные состояние/перехват/карточка). В дев-демо без bot — просто номер."""
         return f"{self._bot_id}:{msg.user_id}" if self.bot else msg.user_id
 
+    async def _bots_on(self) -> bool:
+        """Главный рубильник авто-ответов (флаг в БД, переключается из панели)."""
+        from app.core import flags
+        return await flags.get_flag("bots_enabled", True)
+
     async def handle(self, msg: Message) -> None:
         if not msg.user_id:
             return  # служебный/пустой апдейт
-
         key = self._key(msg)
-        store = get_state_store()
-        state = await store.load(key)
 
-        # Не-текст (голос/фото/медиа): бот пока не умеет — честный fallback.
+        # Не-текст (голос/фото/медиа): бот не распознаёт — логируем и сразу честный fallback,
+        # без дебаунса (склеивать нечего).
         if msg.kind == "non_text":
-            await self._log_in(msg, "[медиа/голос]")
-            if state.intercepted:
-                return  # перехвачено — лог записали, бот молчит
-            await self._reply(msg, NON_TEXT_FALLBACK)
+            async with _lock_for(key):
+                await self._handle_non_text(msg)
             return
 
         if not msg.text:
             return  # пустой апдейт без содержимого
 
-        # Входящее логируем ВСЕГДА — даже если перехвачено (менеджер должен видеть).
+        # Входящее логируем СРАЗУ (вне обработки) — менеджер видит реплику живьём, даже если
+        # перехвачено / рубильник off / идёт окно дебаунса.
         await self._log_in(msg, msg.text)
 
-        # Перехват: бот молчит во всех воронках (сообщение клиента уже в логе).
+        # Дебаунс выключен (0) — синхронная обработка под локом, как раньше.
+        if settings.debounce_seconds <= 0:
+            async with _lock_for(key):
+                await self._run_turn(msg)
+            return
+
+        # Дебаунс включён: копим быстрые реплики клиента и перезапускаем таймер тихого окна.
+        # По его истечении обработаем склеенный текст одним ходом LLM (без задвоений ответов).
+        self._buffers.setdefault(key, []).append(msg)
+        old = self._timers.get(key)
+        if old is not None:
+            old.cancel()
+        self._timers[key] = asyncio.create_task(self._debounce_flush(key))
+
+    async def _handle_non_text(self, msg: Message) -> None:
+        """Голос/медиа: лог + честный фолбэк (бот не распознаёт). Под локом диалога."""
+        await self._log_in(msg, "[медиа/голос]")
+        state = await get_state_store().load(self._key(msg))
+        if state.intercepted or not await self._bots_on():
+            return  # перехвачено / рубильник off — лог записали, бот молчит
+        await self._reply(msg, NON_TEXT_FALLBACK)
+
+    async def _debounce_flush(self, key: str) -> None:
+        """По истечении тихого окна склеить буфер и обработать одним ходом."""
+        try:
+            await asyncio.sleep(settings.debounce_seconds)
+        except asyncio.CancelledError:
+            return  # пришла новая реплика — этот таймер заменён свежим
+        async with _lock_for(key):
+            msgs = self._buffers.pop(key, [])
+            self._timers.pop(key, None)
+            if not msgs:
+                return
+            combined = "\n".join(m.text for m in msgs if m.text)
+            combined_msg = replace(msgs[-1], text=combined)
+            try:
+                await self._run_turn(combined_msg)
+            except Exception:  # noqa: BLE001 — фон: не роняем процесс, входящие уже в логе
+                log.error("debounce flush failed (key=%s)", key, exc_info=True)
+
+    async def _run_turn(self, msg: Message) -> None:
+        """Обработать ход (выбор воронки → LLM → ответ) для уже залогированного входящего.
+
+        Вызывается ПОД локом диалога: синхронно из handle (дебаунс off) либо из
+        _debounce_flush со склеенным текстом. Входящее в панель уже записано в handle.
+        """
+        key = self._key(msg)
+        store = get_state_store()
+        state = await store.load(key)
+
+        # Главный рубильник: если авто-ответы выключены из панели — бот молчит во всех
+        # воронках (сообщение клиента уже в логе, менеджер ведёт диалог вручную).
+        if not await self._bots_on():
+            return
+
+        # Перехват: бот молчит во всех воронках. НО при авто-хендоффе (stage=manager), пока
+        # менеджер не подключился, один раз честно подтверждаем клиенту, что запрос передан и
+        # когда ответят — иначе клиент висит в тишине («Алло… когда звонок?» по 15 сообщений).
         if state.intercepted:
+            if state.stage == "manager":
+                await self._maybe_wait_ack(msg, state, store)
             return
 
         # Выбор воронки, если ещё не определена.
@@ -99,7 +186,14 @@ class Orchestrator:
                 state.funnel = detected
 
         funnel = get_funnel(state.funnel)
-        reply = await funnel.handle(msg, state)
+        try:
+            reply = await funnel.handle(msg, state)
+        except Exception:  # noqa: BLE001 — сбой LLM/инструмента: не роняем вебхук, мягкий фолбэк
+            log.error("funnel handle failed (key=%s)", key, exc_info=True)
+            record_failure("llm")
+            await store.save(state)               # сохраняем то, что успело накопиться в ходе
+            await self._reply(msg, LLM_ERROR_FALLBACK)
+            return
 
         # Передача менеджеру = бот замолкает (решение заказчика 23.06.2026): прощальную
         # реплику этого хода ещё отправляем, но дальше в этом чате отвечает только человек.
@@ -121,6 +215,30 @@ class Orchestrator:
             await self._reply(msg, reply)
         elif intercepted_midflight:
             log.info("reply dropped: intercepted mid-flight (key=%s)", key)
+
+    async def _maybe_wait_ack(self, msg: Message, state, store) -> None:
+        """Разовое подтверждение клиенту после авто-хендоффа, пока менеджер молчит.
+
+        Не вмешиваемся, если менеджер уже подключился (закрепил диалог или ответил) —
+        тогда бот молчит, чтобы не говорить поверх человека. Анти-спам: один ack на период
+        ожидания; флаг сбрасывается, когда менеджер отвечает (новая пауза → новое ack)."""
+        from app.core.branding import wait_ack_for
+        try:
+            conv = await get_conversation_store().get(self._key(msg))
+        except Exception:  # noqa: BLE001 — нет данных панели: лучше промолчать
+            return
+        manager_engaged = bool(conv and (conv.assigned_to or any(
+            m.sender == "manager" for m in conv.messages)))
+        if manager_engaged:
+            if state.wait_ack_sent:        # менеджер на связи — сбросим, чтобы при новой
+                state.wait_ack_sent = False  # паузе подтвердить заново
+                await store.save(state)
+            return
+        if state.wait_ack_sent:
+            return  # уже подтвердили — дальше о брошенном клиенте напомнит awaiting-джоба
+        await self._reply(msg, wait_ack_for(state.funnel))
+        state.wait_ack_sent = True
+        await store.save(state)
 
     # ---- лог панели (сбои глушим, чтобы не ронять бота) ----
     async def _log_in(self, msg: Message, text: str) -> None:
@@ -149,6 +267,7 @@ class Orchestrator:
                 await panel.mark_message_status(message_id=msg_id, status="sent",
                                                 set_provider_msg_id=(provider or None))
         except Exception:  # noqa: BLE001 — сбой канала: помечаем failed, диалог не роняем
+            record_failure("send")
             if msg_id:
                 try:
                     await panel.mark_message_status(message_id=msg_id, status="failed")
