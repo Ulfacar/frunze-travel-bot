@@ -26,6 +26,20 @@ class BotConfig(BaseModel):
     category_id: str = ""                # CRM CATEGORY_ID воронки этого бота
 
 
+class TelegramBotConfig(BaseModel):
+    """Тестовый Telegram-бот — песочница («черновик») для обкатки правок, чтобы не
+    экспериментировать на живых WhatsApp-номерах, где сидят реальные клиенты.
+
+    Каждый бот = свой токен @BotFather + ЖЁСТКО заданный сценарий (как WhatsApp-бот):
+    одна копия воронки туров, другая — виз. Поведение 1:1 с продакшн-ботами.
+    """
+
+    id: str                              # frunze_tours_tg | getvisa_tg
+    scenario: Literal["tours", "visa"]
+    token: str                           # токен бота от @BotFather
+    title: str = ""                      # человекочитаемое имя (для логов/панели)
+
+
 class ManagerConfig(BaseModel):
     """Аккаунт менеджера админ-панели. Список задаётся в env MANAGERS (JSON),
     как и BOTS. Пароль в открытом виде (как admin_password) — для простой команды
@@ -58,7 +72,17 @@ class Settings(BaseSettings):
     llm_model_cheap: str = "anthropic/claude-3-haiku"
 
     # Каналы
-    telegram_bot_token: str = ""
+    telegram_bot_token: str = ""         # дев-демо: один бот с keyword-детектом воронки (легаси)
+    # Тестовые Telegram-боты (песочница «черновик»): по боту на сценарий, жёсткая воронка.
+    # JSON в env: TELEGRAM_BOTS='[{"id":"frunze_tours_tg","scenario":"tours","token":"123:abc"},
+    #                             {"id":"getvisa_tg","scenario":"visa","token":"456:def"}]'.
+    # Вебхук каждого: POST /webhook/telegram/<id>.
+    telegram_bots: list[TelegramBotConfig] = []
+
+    # Секрет проверки входящих вебхуков (defense-in-depth поверх IP-фильтра nginx).
+    # Пусто → проверка выключена (обратная совместимость). Wappi/Bitrix: ?s=<secret>
+    # или заголовок X-Webhook-Secret; Telegram: заголовок X-Telegram-Bot-Api-Secret-Token.
+    webhook_secret: str = ""
 
     # Wappi Pro (WhatsApp): token аккаунтовый, profile_id — на каждого бота (см. bots)
     wappi_base_url: str = "https://wappi.pro"
@@ -94,6 +118,26 @@ class Settings(BaseSettings):
     # Аккаунты менеджеров: JSON в env MANAGERS='[{"login":"sezim","name":"Сезим","password":"..."}]'.
     # Пусто → один менеджер из admin_user/admin_password (обратная совместимость).
     managers: list[ManagerConfig] = []
+    # Watchdog-алерты: уведомлять админа в WhatsApp при тишине вебхуков / всплеске сбоев.
+    # Пусто → алерты выключены. alert_bot_id — id бота (профиля), от чьего имени слать.
+    alert_whatsapp_to: str = ""          # номер админа (chat_id), напр. 996700...@c.us или 996700...
+    alert_bot_id: str = ""               # с какого бота слать (frunze_tours|getvisa)
+    alert_silence_minutes: int = 30      # тишина дольше → алерт
+    alert_fail_threshold: int = 5        # столько новых сбоев за тик → алерт
+    alert_cooldown_minutes: int = 60     # не повторять один и тот же алерт чаще
+    alert_awaiting_minutes: int = 10     # клиент ждёт живого менеджера дольше → алерт команде
+
+    # Дебаунс входящих: клиенты пишут дробно (несколько коротких сообщений подряд). Бот ждёт
+    # «тихое окно» этой длины, склеивает реплики и отвечает одним ходом LLM (без задвоений).
+    # 0 = выключено (синхронная обработка как раньше). Прод: DEBOUNCE_SECONDS=8.
+    debounce_seconds: float = 0.0
+
+    # Автодожим: проактивный пинг клиентам, замолчавшим на этапе квалификации.
+    followup_enabled: bool = False
+    followup_after_hours: int = 24       # молчит дольше → один мягкий пинг
+    followup_quiet_from: int = 22        # «тихие часы» (Бишкек, UTC+6): не слать с 22:00…
+    followup_quiet_to: int = 9           # …до 09:00
+
     # Секрет подписи cookie-сессии (Starlette SessionMiddleware). ПРОД: SESSION_SECRET!
     session_secret: str = "change-me-frunze-session-secret"
     # Быстрый вход на странице логина (кнопки «войти как …» без пароля) — ТОЛЬКО для демо.

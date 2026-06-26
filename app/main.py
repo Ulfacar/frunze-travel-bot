@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import logging
+import secrets
 from contextlib import asynccontextmanager
 
-import time
 from collections import OrderedDict
 
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.channels.bitrix_openlines import BitrixOpenLinesAdapter, bot_id_from_event, nest_form
@@ -18,7 +19,8 @@ from app.channels.wappi import (
     is_incoming_user_message,
     parse_delivery_status,
 )
-from app.config import settings
+from app.config import BotConfig, settings
+from app.core import observ
 from app.core.bots import registry
 from app.core.orchestrator import Orchestrator
 from app.integrations.panel.store import get_conversation_store
@@ -34,15 +36,40 @@ async def lifespan(app: FastAPI):
         from app.integrations.crm.db import init_db
         await init_db()
         log.info("Postgres: схема (сделки/диалоги) готова")
-    yield
+    # Фоновые джобы: watchdog-алерты + автодожим. Автодожим регистрируем всегда —
+    # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
+    from app.core import awaiting, followup, scheduler, watchdog
+    scheduler.register("watchdog", watchdog.run)
+    scheduler.register("awaiting", awaiting.run)
+    scheduler.register("followup", followup.run)
+    scheduler.start()
+    try:
+        yield
+    finally:
+        await scheduler.stop()
 
 
 app = FastAPI(title="Frunze Travel Bot", lifespan=lifespan)
 # Сессии менеджеров (подписанная cookie) — для логина в админ-панель.
-app.add_middleware(SessionMiddleware, secret_key=settings.session_secret, max_age=14 * 24 * 3600)
+# https_only=True ставит Secure-флаг (TLS терминирует nginx, ходим по https);
+# same_site=lax — базовая защита от CSRF.
+app.add_middleware(SessionMiddleware, secret_key=settings.session_secret,
+                   max_age=14 * 24 * 3600, https_only=True, same_site="lax")
 
-# Наблюдаемость: время последнего входящего сообщения клиента (детектор «тишины»).
-_LAST_INBOUND: dict[str, float] = {"ts": 0.0}
+
+def _verify_webhook(request: Request, *, telegram: bool = False) -> bool:
+    """Проверка секрета входящего вебхука. Пустой settings.webhook_secret → пропускаем
+    (обратная совместимость, чтобы не уронить прод до обновления URL у провайдера)."""
+    expected = settings.webhook_secret
+    if not expected:
+        return True
+    if telegram:
+        got = request.headers.get("x-telegram-bot-api-secret-token", "")
+    else:
+        got = request.query_params.get("s", "") or request.headers.get("x-webhook-secret", "")
+    return bool(got) and secrets.compare_digest(got, expected)
+
+# Наблюдаемость «тишины» вебхуков живёт в app.core.observ (общий доступ с watchdog).
 # Дедуп входящих Wappi по id события (повторная доставка вебхука не плодит ответы).
 _seen_wappi_ids: "OrderedDict[str, None]" = OrderedDict()
 _SEEN_MAX = 2000
@@ -69,6 +96,15 @@ if settings.admin_enabled:
 _telegram = TelegramAdapter() if settings.telegram_bot_token else None
 _telegram_orchestrator = Orchestrator(channel=_telegram) if _telegram else None
 
+# Тестовые Telegram-боты (песочница): по оркестратору на каждого, со своим токеном и
+# ЖЁСТКИМ сценарием (как WhatsApp-боты). Маршрут — /webhook/telegram/<id>. Ключ диалога
+# bot_id:user_id, поэтому туры и визы в Telegram не пересекаются.
+_telegram_test: dict[str, tuple[TelegramAdapter, Orchestrator]] = {}
+for _tb in settings.telegram_bots:
+    _tg_bot = BotConfig(id=_tb.id, scenario=_tb.scenario, title=_tb.title)
+    _tg_adapter = TelegramAdapter(token=_tb.token)
+    _telegram_test[_tb.id] = (_tg_adapter, Orchestrator(channel=_tg_adapter, bot=_tg_bot))
+
 # Прод: по оркестратору на каждого настроенного бота (свой канал + сценарий).
 _bot_orchestrators: dict[str, Orchestrator] = {
     bot.id: Orchestrator(channel=BitrixOpenLinesAdapter(bot=bot), bot=bot)
@@ -85,20 +121,36 @@ _wappi_orchestrators: dict[str, Orchestrator] = {
 
 @app.get("/health")
 async def health() -> dict:
-    last = _LAST_INBOUND["ts"]
     return {
         "status": "ok",
-        "last_inbound_seconds_ago": round(time.time() - last, 1) if last else None,
+        "last_inbound_seconds_ago": observ.last_inbound_ago(),
     }
 
 
 @app.post("/webhook/telegram")
-async def telegram_webhook(request: Request) -> dict:
+async def telegram_webhook(request: Request):
+    if not _verify_webhook(request, telegram=True):
+        return JSONResponse({"ok": False, "reason": "forbidden"}, status_code=403)
     if _telegram_orchestrator is None:
         return {"ok": False, "reason": "telegram_disabled"}
     raw = await request.json()
     msg = await _telegram.parse(raw)
     await _telegram_orchestrator.handle(msg)  # не-текст/перехват — внутри оркестратора
+    return {"ok": True}
+
+
+@app.post("/webhook/telegram/{bot_id}")
+async def telegram_test_webhook(bot_id: str, request: Request):
+    """Тестовый Telegram-бот (песочница): свой токен + жёсткий сценарий (туры/визы)."""
+    if not _verify_webhook(request, telegram=True):
+        return JSONResponse({"ok": False, "reason": "forbidden"}, status_code=403)
+    entry = _telegram_test.get(bot_id)
+    if entry is None:
+        return JSONResponse({"ok": False, "reason": "unknown_bot"}, status_code=404)
+    adapter, orchestrator = entry
+    raw = await request.json()
+    msg = await adapter.parse(raw)
+    await orchestrator.handle(msg)
     return {"ok": True}
 
 
@@ -109,6 +161,8 @@ async def bitrix_webhook(request: Request) -> dict:
     Bitrix шлёт событие form-urlencoded (`data[PARAMS][...]`); JSON принимаем тоже
     (тесты/ручная отладка). `nest_form` приводит оба к вложенному dict.
     """
+    if not _verify_webhook(request):
+        return JSONResponse({"ok": False, "reason": "forbidden"}, status_code=403)
     ctype = request.headers.get("content-type", "")
     if "application/json" in ctype:
         flat: object = await request.json()
@@ -136,6 +190,8 @@ async def wappi_webhook(request: Request) -> dict:
     Игнорируем не-входящие, наши эхо (`is_me`), реакции и групповые чаты — отвечаем
     только в личных диалогах, иначе бот ответит сам себе или зафлудит группу.
     """
+    if not _verify_webhook(request):
+        return JSONResponse({"ok": False, "reason": "forbidden"}, status_code=403)
     payload = await request.json()
     # Wappi: события в payload["messages"]; на всякий случай поддерживаем и плоский формат.
     events = payload.get("messages") if isinstance(payload, dict) else None
@@ -170,7 +226,7 @@ async def wappi_webhook(request: Request) -> dict:
             log.warning("Wappi-событие без сопоставленного бота (profile_id=%s)", profile_id)
             continue
 
-        _LAST_INBOUND["ts"] = time.time()
+        observ.note_inbound()
         msg = await orchestrator.channel.parse(raw)
         await orchestrator.handle(msg)
         handled += 1
