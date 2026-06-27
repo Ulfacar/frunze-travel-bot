@@ -87,9 +87,16 @@ class Orchestrator:
         return f"{self._bot_id}:{msg.user_id}" if self.bot else msg.user_id
 
     async def _bots_on(self) -> bool:
-        """Главный рубильник авто-ответов (флаг в БД, переключается из панели)."""
+        """Рубильник авто-ответов (флаг в БД, переключается из панели).
+
+        Per-bot ключ `bots_enabled:<bot_id>` переопределяет глобальный `bots_enabled`:
+        позволяет включить тест-ботов в Telegram, не будя боевой WhatsApp (его боты
+        персональный ключ не задают → наследуют глобальный, сейчас OFF)."""
         from app.core import flags
-        return await flags.get_flag("bots_enabled", True)
+        global_on = await flags.get_flag("bots_enabled", True)
+        if self._bot_id:
+            return await flags.get_flag(f"bots_enabled:{self._bot_id}", global_on)
+        return global_on
 
     async def handle(self, msg: Message) -> None:
         if not msg.user_id:

@@ -15,6 +15,14 @@ WhatsApp. Поведение 1:1 с продакшн-ботами (тот же �
    ```
    Перезапустить приложение (`docker compose ... up -d`).
 
+   **Включить тест-ботов, не будя WhatsApp** — персональным флагом (глобальный
+   `bots_enabled` оставляем OFF, см. раздел про рубильник ниже):
+   ```
+   docker compose exec <app> python -c "import asyncio; from app.core import flags; \
+     asyncio.run(flags.set_flag('bots_enabled:frunze_tours_tg', True)); \
+     asyncio.run(flags.set_flag('bots_enabled:getvisa_tg', True))"
+   ```
+
 3. **Зарегистрировать вебхук** каждого бота у Telegram (один раз):
    ```
    curl "https://api.telegram.org/bot<токен1>/setWebhook?url=https://<домен>/webhook/telegram/frunze_tours_tg"
@@ -31,5 +39,8 @@ WhatsApp. Поведение 1:1 с продакшн-ботами (тот же �
 - Старый одиночный `/webhook/telegram` (keyword-детект) оставлен для обратной совместимости.
 - Тесты: `tests/test_telegram_routing.py`.
 
-> Главный рубильник `bots_enabled` общий — если он OFF, тест-боты тоже молчат. Для песочницы
-> держать его ON (на тест-окружении), а боевой WhatsApp гейтить отдельно.
+> **Рубильник `bots_enabled` — per-bot.** `_bots_on()` сначала смотрит персональный ключ
+> `bots_enabled:<bot_id>`, при его отсутствии наследует глобальный `bots_enabled`. Это и есть
+> механизм изоляции: глобальный держим **OFF** (боевой WhatsApp молчит — его боты персональный
+> ключ не задают), а тест-ботам выставляем `bots_enabled:frunze_tours_tg=true` /
+> `bots_enabled:getvisa_tg=true` (команда в шаге 2). Отдельный staging-контейнер не нужен.
