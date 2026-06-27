@@ -16,6 +16,9 @@ services:
       WAPPI_TOKEN: ${WAPPI_TOKEN:-}
       WAPPI_PROFILE_ID: ${WAPPI_PROFILE_ID:-}
       BOTS: ${BOTS:-[{"id":"frunze_tours","scenario":"tours","title":"FrunzeTravel2","wappi_profile_id":"02a4708d-ec6c"},{"id":"getvisa","scenario":"visa","title":"GetVisa","wappi_profile_id":"2f099bc3-478d"}]}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_BOTS: ${TELEGRAM_BOTS:-[]}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
       TOURVISOR_LOGIN: ${TOURVISOR_LOGIN:-}
       TOURVISOR_PASS: ${TOURVISOR_PASS:-}
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/frunze
