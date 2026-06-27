@@ -6,9 +6,8 @@
   3) парсим отели/туры в читаемые строки для агента
 
 Справочники (list.php: departure/country/operator) работают сразу.
-ВНИМАНИЕ: на аккаунте Frunze Travel модуль поиска (search.php) пока НЕ активирован
-(возвращает "Authorisation Error"); list.php/result.php — доступны. Код готов, заработает
-сразу после включения XML-поиска на стороне TourVisor. Док: http://tourvisor.ru/xml/
+Модуль поиска (search.php) на аккаунте Frunze Travel АКТИВИРОВАН и отдаёт живые отели с
+ценами (проверено 27.06.2026: search.php → requestid, result.php → отели). Док: http://tourvisor.ru/xml/
 """
 from __future__ import annotations
 
