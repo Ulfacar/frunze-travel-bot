@@ -36,6 +36,11 @@ async def lifespan(app: FastAPI):
         from app.integrations.crm.db import init_db
         await init_db()
         log.info("Postgres: схема (сделки/диалоги) готова")
+    try:
+        from app.core.faq import seed_defaults
+        await seed_defaults()
+    except Exception:  # noqa: BLE001
+        log.warning("FAQ defaults seed failed", exc_info=True)
     # Фоновые джобы: watchdog-алерты + автодожим. Автодожим регистрируем всегда —
     # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
     from app.core import awaiting, followup, scheduler, watchdog

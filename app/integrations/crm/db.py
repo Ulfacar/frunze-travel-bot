@@ -142,6 +142,30 @@ class AppFlag(Base):
     )
 
 
+class FaqEntry(Base):
+    """Deterministic FAQ rule managed from the admin panel."""
+
+    __tablename__ = "faq_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    funnel: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    enabled: Mapped[bool] = mapped_column(default=True, index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    title: Mapped[str] = mapped_column(String(160), default="")
+    patterns: Mapped[list[str]] = mapped_column(JSON, default=list)
+    negative_terms: Mapped[list[str]] = mapped_column(JSON, default=list)
+    answer: Mapped[str] = mapped_column(Text, default="")
+    handoff_only: Mapped[bool] = mapped_column(default=False)
+    allow_during_qualification: Mapped[bool] = mapped_column(default=True)
+    updated_by: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 _engine: AsyncEngine | None = None
 _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
@@ -174,6 +198,18 @@ async def init_models(engine: AsyncEngine) -> None:
             "status": "VARCHAR(16) DEFAULT ''",
             "provider_msg_id": "VARCHAR(128) DEFAULT ''",
             "idempotency_key": "VARCHAR(128) DEFAULT ''",
+        })
+        await _ensure_columns(conn, "faq_entries", {
+            "funnel": "VARCHAR(32)",
+            "enabled": "BOOLEAN DEFAULT TRUE",
+            "priority": "INTEGER DEFAULT 0",
+            "title": "VARCHAR(160) DEFAULT ''",
+            "patterns": "JSON DEFAULT '[]'",
+            "negative_terms": "JSON DEFAULT '[]'",
+            "answer": "TEXT DEFAULT ''",
+            "handoff_only": "BOOLEAN DEFAULT FALSE",
+            "allow_during_qualification": "BOOLEAN DEFAULT TRUE",
+            "updated_by": "VARCHAR(64) DEFAULT ''",
         })
 
 

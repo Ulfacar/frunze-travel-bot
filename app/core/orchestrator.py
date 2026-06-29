@@ -22,7 +22,7 @@ from app.integrations.panel.store import get_conversation_store
 log = logging.getLogger("orchestrator")
 
 GREETING = (
-    "Здравствуйте! 😊 Я виртуальный ассистент Frunze Travel (отвечаю текстом). "
+    "Здравствуйте! 😊 Это Frunze Travel. "
     "Подскажите, что вас интересует — тур, виза или авиабилеты?"
 )
 
@@ -53,8 +53,8 @@ def _auto_outcome(stage: str) -> str:
     return "in_progress"
 
 NON_TEXT_FALLBACK = (
-    "Я виртуальный ассистент и голосовые сообщения пока не распознаю 🙏 Напишите, "
-    "пожалуйста, словами — или скажите «нужен менеджер», и я позову человека."
+    "Голосовые сообщения пока не распознаём 🙏 Напишите, пожалуйста, словами — "
+    "или скажите «нужен менеджер», и я позову человека."
 )
 # Мягкий фолбэк, если ход не удалось обработать (сбой LLM/инструмента) — клиент НЕ
 # должен получать тишину или 500. Диалог не роняем, состояние сохраняем.
@@ -192,6 +192,10 @@ class Orchestrator:
                     return
                 state.funnel = detected
 
+        faq_reply = await self._maybe_faq_reply(msg, state, store)
+        if faq_reply:
+            return
+
         funnel = get_funnel(state.funnel)
         try:
             reply = await funnel.handle(msg, state)
@@ -291,3 +295,36 @@ class Orchestrator:
                                     outcome=_auto_outcome(state.stage), **brief)
         except Exception:  # noqa: BLE001
             log.warning("panel sync_card failed", exc_info=True)
+
+    async def _maybe_faq_reply(self, msg: Message, state, store) -> bool:
+        """Try deterministic FAQ before LLM/funnel logic. Fail open to the normal flow."""
+        try:
+            from app.core.faq import get_faq_store, match_faq, qualification_question
+            faq_store = get_faq_store()
+            entries = await faq_store.candidates(state.funnel)
+            faq = match_faq(
+                msg.text, state.funnel, entries, pending_field=state.pending_field
+            )
+        except Exception:  # noqa: BLE001
+            log.warning("faq lookup failed", exc_info=True)
+            return False
+        if faq is None:
+            return False
+
+        answer = faq.answer
+        pending_question = None
+        if state.pending_field and faq.allow_during_qualification:
+            pending_question = qualification_question(state.funnel, state.pending_field)
+            if pending_question:
+                answer = f"{answer}\n\n{pending_question}"
+
+        if faq.handoff_only:
+            state.stage = "manager"
+            state.intercepted = True
+
+        state.history.append({"role": "user", "content": msg.text})
+        state.history.append({"role": "assistant", "content": answer})
+        await store.save(state)
+        await self._sync_card(msg, state)
+        await self._reply(msg, answer)
+        return True

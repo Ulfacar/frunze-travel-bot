@@ -32,6 +32,7 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 FUNNELS = [("visa", "Визы (GetVisa)"), ("tours", "Туры"), ("tickets", "Билеты")]
 # Короткие ярлыки воронок для бейджа в инбоксе/поиске (где смешаны все воронки).
 FUNNEL_LABELS = {"visa": "Визы", "tours": "Туры", "tickets": "Билеты"}
+FAQ_TABS = FUNNELS + [("common", "Общие")]
 
 # Колонки канбана и маппинг внутренних стадий диалога в колонку.
 BOARD_COLUMNS = [
@@ -360,6 +361,93 @@ async def audit(request: Request, manager: dict = Depends(require_admin)):
     return templates.TemplateResponse(request, "audit.html",
                                       {"rows": rows, "manager": manager},
                                       headers={"Cache-Control": "no-store"})
+
+
+def _lines(raw: str) -> list[str]:
+    return [line.strip() for line in (raw or "").splitlines() if line.strip()]
+
+
+def _faq_scope(scope: str) -> str | None:
+    return scope if scope in FUNNEL_LABELS else None
+
+
+@router.get("/faq", response_class=HTMLResponse)
+async def faq_page(request: Request, scope: str = "visa",
+                   manager: dict = Depends(require_admin)):
+    """Редактор FAQ-правил: детерминированные ответы до LLM."""
+    from app.core.faq import get_faq_store
+    scope = scope if scope in {"visa", "tours", "tickets", "common"} else "visa"
+    store = get_faq_store()
+    rows = await store.list(scope)
+    edit_id = int(request.query_params.get("edit") or 0)
+    edit = await store.get(edit_id) if edit_id else None
+    return templates.TemplateResponse(request, "faq.html", {
+        "manager": manager, "tabs": FAQ_TABS, "scope": scope, "rows": rows,
+        "edit": edit, "funnels": FUNNELS,
+    }, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/faq/save", response_class=HTMLResponse)
+async def faq_save(request: Request, manager: dict = Depends(require_admin),
+                   entry_id: int = Form(0), scope: str = Form("common"),
+                   title: str = Form(""), patterns: str = Form(""),
+                   negative_terms: str = Form(""), answer: str = Form(""),
+                   priority: int = Form(0), enabled: str = Form("0"),
+                   handoff_only: str = Form("0"),
+                   allow_during_qualification: str = Form("0")):
+    """Создать или обновить FAQ-правило."""
+    from app.core.faq import get_faq_store
+    data = {
+        "id": entry_id,
+        "funnel": _faq_scope(scope),
+        "enabled": enabled in ("1", "true", "on", "True"),
+        "priority": priority,
+        "title": title,
+        "patterns": _lines(patterns),
+        "negative_terms": _lines(negative_terms),
+        "answer": answer,
+        "handoff_only": handoff_only in ("1", "true", "on", "True"),
+        "allow_during_qualification": allow_during_qualification in ("1", "true", "on", "True"),
+    }
+    if not data["title"] or not data["patterns"] or not data["answer"]:
+        raise HTTPException(status_code=400, detail="title, patterns and answer are required")
+    row = await get_faq_store().upsert(data, manager["login"])
+    action = "faq_update" if entry_id else "faq_create"
+    await get_conversation_store().add_audit(manager["login"], action, "", f"{row.id}: {row.title}")
+    return RedirectResponse(f"/admin/faq?scope={scope}", status_code=303)
+
+
+@router.post("/faq/{entry_id}/toggle")
+async def faq_toggle(entry_id: int, scope: str = Form("common"),
+                     enabled: str = Form("0"), manager: dict = Depends(require_admin)):
+    """Включить/выключить FAQ-правило."""
+    from app.core.faq import get_faq_store
+    value = enabled in ("1", "true", "on", "True")
+    store = get_faq_store()
+    row = await store.get(entry_id)
+    await store.set_enabled(entry_id, value, manager["login"])
+    await get_conversation_store().add_audit(
+        manager["login"], "faq_update" if value else "faq_disable", "",
+        f"{entry_id}: {(row.title if row else '')}"
+    )
+    return RedirectResponse(f"/admin/faq?scope={scope}", status_code=303)
+
+
+@router.post("/faq/test", response_class=HTMLResponse)
+async def faq_test(request: Request, manager: dict = Depends(require_admin),
+                   scope: str = Form("common"), text: str = Form("")):
+    """Проверить фразу через тот же матчинг, без отправки клиенту."""
+    from app.core.faq import get_faq_store, match_faq
+    scope = scope if scope in {"visa", "tours", "tickets", "common"} else "common"
+    funnel = _faq_scope(scope)
+    store = get_faq_store()
+    entries = await store.candidates(funnel)
+    hit = match_faq(text, funnel, entries)
+    return templates.TemplateResponse(request, "faq.html", {
+        "manager": manager, "tabs": FAQ_TABS, "scope": scope,
+        "rows": await store.list(scope), "edit": None, "funnels": FUNNELS,
+        "test_text": text, "test_hit": hit, "tested": True,
+    }, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/board/{funnel}", response_class=HTMLResponse)
