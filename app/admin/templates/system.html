@@ -85,6 +85,8 @@
 
     {% include "_automation.html" %}
 
+    {% include "_bot_toggles.html" %}
+
     <div class="panel">
       <h2>Конфигурация</h2>
       <table>
@@ -97,15 +99,6 @@
       </table>
     </div>
 
-    <div class="panel">
-      <h2>Боты</h2>
-      <table>
-        <tr><th>ID</th><th>Сценарий</th><th>WhatsApp (Wappi)</th></tr>
-        {% for b in s.bots %}
-        <tr><td class="mono">{{ b.id }}</td><td>{{ b.scenario }}</td><td>{{ '✅' if b.wappi else '—' }}</td></tr>
-        {% endfor %}
-      </table>
-    </div>
   </div>
 </body>
 </html>

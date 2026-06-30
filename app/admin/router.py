@@ -292,9 +292,9 @@ async def analytics(request: Request, period: str = "all",
 async def system(request: Request, manager: dict = Depends(require_admin)):
     """Статус системы: LLM, тишина вебхуков, бэкенды, счётчики сбоев, боты."""
     from app.core import observ
-    from app.core.bots import registry
     snap = observ.snapshot()
     flag_views = await _flag_views()
+    bot_flags = await _bot_flag_views()
     data = {
         "llm_enabled": llm_enabled(),
         "last_inbound_ago": observ.last_inbound_ago(),
@@ -308,11 +308,10 @@ async def system(request: Request, manager: dict = Depends(require_admin)):
         "send_failures": snap.get("send_failures", 0),
         "llm_failure_ago": snap.get("llm_failure_ago"),
         "send_failure_ago": snap.get("send_failure_ago"),
-        "bots": [{"id": b.id, "scenario": b.scenario, "wappi": bool(b.wappi_profile_id)}
-                 for b in registry.all()],
     }
     return templates.TemplateResponse(request, "system.html",
-                                      {"s": data, "manager": manager, "flags": flag_views},
+                                      {"s": data, "manager": manager,
+                                       "flags": flag_views, "bot_flags": bot_flags},
                                       headers={"Cache-Control": "no-store"})
 
 
@@ -360,6 +359,32 @@ async def _flag_views() -> list[dict]:
     return views
 
 
+SCENARIO_LABELS = {"tours": "туры", "visa": "визы", "tickets": "билеты"}
+
+
+async def _bot_flag_views() -> list[dict]:
+    """Эффективное состояние per-bot тумблеров с наследованием от главного рубильника."""
+    from app.core import flags
+    from app.core.bots import registry
+    global_on = await flags.get_flag("bots_enabled", True)
+    views = []
+    for bot in registry.all():
+        on = await flags.get_flag(f"bots_enabled:{bot.id}", global_on)
+        channel = "WhatsApp" if bot.wappi_profile_id else "Telegram"
+        profile = bot.wappi_profile_id or bot.bitrix_bot_id or bot.bitrix_line_id or ""
+        views.append({
+            "id": bot.id,
+            "key": f"bots_enabled:{bot.id}",
+            "title": bot.title or bot.id,
+            "scenario": bot.scenario,
+            "scenario_label": SCENARIO_LABELS.get(bot.scenario, bot.scenario),
+            "channel": channel,
+            "profile": profile,
+            "on": on,
+        })
+    return views
+
+
 @router.post("/flags/{key}", response_class=HTMLResponse)
 async def toggle_flag(key: str, request: Request, manager: dict = Depends(require_admin),
                       on: str = Form("0")):
@@ -372,6 +397,24 @@ async def toggle_flag(key: str, request: Request, manager: dict = Depends(requir
     await get_conversation_store().add_audit(
         manager["login"], "flag", "", f"{key}={'on' if value else 'off'}")
     return templates.TemplateResponse(request, "_automation.html", {"flags": await _flag_views()})
+
+
+@router.post("/bots/{bot_id}/toggle", response_class=HTMLResponse)
+async def toggle_bot_flag(bot_id: str, request: Request, manager: dict = Depends(require_admin),
+                          on: str = Form("0")):
+    """Менеджер включает/выключает авто-ответы конкретного бота."""
+    from app.core import flags
+    from app.core.bots import registry
+    bot = registry.by_id(bot_id)
+    if bot is None:
+        raise HTTPException(status_code=404, detail="unknown bot")
+    value = on in ("1", "true", "on", "True")
+    key = f"bots_enabled:{bot_id}"
+    await flags.set_flag(key, value)
+    await get_conversation_store().add_audit(
+        manager["login"], "flag", "", f"{key}={'on' if value else 'off'}")
+    return templates.TemplateResponse(request, "_bot_toggles.html",
+                                      {"bot_flags": await _bot_flag_views()})
 
 
 @router.get("/audit", response_class=HTMLResponse)

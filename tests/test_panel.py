@@ -533,6 +533,33 @@ def test_feature_toggle_buttons():
     assert client.post("/admin/flags/nope", data={"on": "1"}).status_code == 404
 
 
+def test_per_bot_toggle_sets_flag_and_orchestrator_uses_it():
+    """Админский тумблер конкретного бота пишет bots_enabled:<id>, оркестратор читает его."""
+    _clear_memory()
+    from app.core import flags
+
+    asyncio.run(flags.set_flag("bots_enabled", False))
+    client = _auth_client()
+
+    resp = client.post("/admin/bots/frunze_tours/toggle", data={"on": "1"})
+
+    assert resp.status_code == 200
+    assert "frunze_tours" in resp.text
+    assert asyncio.run(flags.get_flag("bots_enabled:frunze_tours", False)) is True
+    assert asyncio.run(Orchestrator(
+        channel=_FakeChannel(),
+        bot=BotConfig(id="frunze_tours", scenario="tours"),
+    )._bots_on()) is True
+    assert asyncio.run(Orchestrator(
+        channel=_FakeChannel(),
+        bot=BotConfig(id="getvisa", scenario="visa"),
+    )._bots_on()) is False
+    assert any(a["action"] == "flag" and "bots_enabled:frunze_tours=on" in a["detail"]
+               for a in panel_store._memory_store._audit)
+
+    assert client.post("/admin/bots/nope/toggle", data={"on": "1"}).status_code == 404
+
+
 def test_system_and_audit_pages():
     _clear_memory()
     store = panel_store.get_conversation_store()
