@@ -46,6 +46,7 @@
     {% endif %}
   </div>
 
+  <div class="panel-scroll">
   <div class="outcome-bar" style="display:flex;gap:8px;align-items:center;margin:10px 0;flex-wrap:wrap">
     <span style="color:var(--muted);font-size:12px">Исход:</span>
     {% for key, label in outcomes %}
@@ -119,6 +120,7 @@
 
   {# id уникален на диалог: при опросе того же чата поле сохраняется (hx-preserve),
      а при переключении на другой диалог рендерится свежее пустое поле. #}
+  </div>
   <form class="composer" id="composer-{{ c.user_id }}" hx-preserve="true"
         hx-post="/admin/conversation/{{ c.user_id }}/send"
         hx-target="#chat" hx-swap="innerHTML" hx-on::after-request="this.reset()">

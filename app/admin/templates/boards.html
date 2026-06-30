@@ -70,8 +70,8 @@
     /* ---------- Layout ---------- */
     .layout { display: grid; grid-template-columns: 1fr 410px; gap: 16px; padding: 16px; align-items: start; }
     #board { min-width: 0; }
-    #chat { position: sticky; top: 74px; }
-    @media (max-width: 1180px) { .layout { grid-template-columns: 1fr; } #chat { position: static; } }
+    #chat { position: sticky; top: 74px; max-height: calc(100vh - 90px); }
+    @media (max-width: 1180px) { .layout { grid-template-columns: 1fr; } #chat { position: static; max-height: none; } #chat .panel { max-height: none; } }
 
     /* ---------- Metrics ---------- */
     .metrics { display: flex; gap: 10px; margin-bottom: 14px; }
@@ -102,8 +102,13 @@
              border-radius: 20px; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
     .col-empty { color: var(--faint); font-size: 18px; text-align: center; padding: 10px 6px; }
     /* Drag-and-drop: карточки доски можно таскать между колонками. */
-    .board .card { cursor: grab; }
-    .board .card:active { cursor: grabbing; }
+    .board .card { cursor: pointer; }
+    .drag-handle { width: 22px; height: 28px; flex-shrink: 0; display: grid; place-items: center;
+                   margin-left: -3px; border: 0; border-radius: 6px; background: transparent;
+                   color: var(--faint); cursor: grab; touch-action: none; }
+    .drag-handle:hover, .drag-handle:focus-visible { color: var(--accent); background: var(--accent-soft); }
+    .drag-handle:active { cursor: grabbing; }
+    .drag-handle svg { width: 14px; height: 16px; fill: currentColor; pointer-events: none; }
     .card-ghost { opacity: .35; }
     .card-drag { box-shadow: 0 12px 28px rgba(15,23,42,.18); transform: rotate(1.5deg); }
     .col.drop-target { background: var(--accent-soft); outline: 2px dashed var(--accent); outline-offset: -2px; }
@@ -153,10 +158,11 @@
 
     /* ---------- Chat panel ---------- */
     .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
-             box-shadow: var(--shadow); overflow: hidden; }
+             box-shadow: var(--shadow); overflow: hidden; max-height: inherit;
+             display: flex; flex-direction: column; }
     .panel-empty { display: grid; place-items: center; gap: 12px; padding: 72px 24px; color: var(--faint); text-align: center; }
     .panel-empty svg { width: 40px; height: 40px; opacity: .5; }
-    .ph-head { display: flex; align-items: center; gap: 11px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .ph-head { display: flex; align-items: center; gap: 11px; padding: 14px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .ph-head .meta { min-width: 0; }
     .ph-head .nm { font-weight: 700; font-size: 15px; }
     .ph-sub { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
@@ -165,7 +171,7 @@
     .tag.temp-new { color: var(--muted); }
     .tag.temp-warm { color: var(--warm); background: var(--warm-soft); border-color: rgba(245,158,11,.22); }
     .tag.temp-hot { color: var(--hot); background: var(--hot-soft); border-color: rgba(248,113,113,.22); }
-    .ph-actions { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .ph-actions { padding: 12px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .status { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600;
               padding: 8px 11px; border-radius: 9px; margin-bottom: 10px; }
     .status.paused { color: var(--hot); background: var(--hot-soft); }
@@ -192,7 +198,9 @@
     .brief-row + .brief-row { border-top: 1px solid var(--border); }
     .brief-row .k { color: var(--muted); font-weight: 500; }
 
-    .msgs { display: flex; flex-direction: column; gap: 9px; padding: 16px; max-height: 46vh; overflow-y: auto; }
+    .panel-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+    .panel-scroll > .outcome-bar, .panel-scroll > .quick-replies, .chat-details { margin-left: 16px !important; margin-right: 16px !important; }
+    .msgs { display: flex; flex-direction: column; gap: 9px; padding: 16px; max-height: none; overflow: visible; }
     .msg { max-width: 84%; }
     .msg .who { font-size: 10.5px; color: var(--faint); margin: 0 3px 3px; font-weight: 600; }
     .bubble { padding: 9px 12px; border-radius: 13px; font-size: 13px; white-space: pre-wrap; word-wrap: break-word; }
@@ -206,7 +214,7 @@
     .msg.manager .bubble { background: var(--green-soft); border: 1px solid rgba(5,150,105,.25); color: #065F46; border-bottom-right-radius: 4px; }
     .msgs-empty { color: var(--faint); text-align: center; padding: 30px; font-size: 13px; }
 
-    .composer { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); align-items: flex-end; }
+    .composer { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); align-items: flex-end; flex-shrink: 0; }
     .composer input, .composer textarea { flex: 1; padding: 10px 13px; background: var(--surface-2); color: var(--text);
                       border: 1px solid var(--border-2); border-radius: 10px; font: inherit; font-size: 13px;
                       transition: border-color var(--t), box-shadow var(--t); }
@@ -283,7 +291,17 @@
       var inbox = document.querySelector('.tab[data-tab="inbox"]'); if (inbox) inbox.classList.add('active');
     }
 
+    window.__boardDragging = false;
+    var _suppressCardClickUntil = 0;
     document.addEventListener('click', function (e) {
+      if (e.target.closest('.drag-handle') || window.__boardDragging || Date.now() < _suppressCardClickUntil) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+
+    document.addEventListener('click', function (e) {
+      if (window.__boardDragging || Date.now() < _suppressCardClickUntil || e.target.closest('.drag-handle')) return;
       var card = e.target.closest('.card');
       if (!card) return;
       document.querySelectorAll('.card.active').forEach(c => c.classList.remove('active'));
@@ -353,15 +371,18 @@
     // Прокрутка переписки: НЕ дёргаем менеджера вниз, если он листает вверх.
     // Перед обновлением запоминаем позицию и был ли он у низа; после — восстанавливаем.
     var _chatScroll = { top: 0, atBottom: true };
+    function _chatScrollEl() {
+      return document.querySelector('#chat .panel-scroll') || document.querySelector('#chat .msgs');
+    }
     document.body.addEventListener('htmx:beforeSwap', function () {
-      var m = document.querySelector('#chat .msgs');
+      var m = _chatScrollEl();
       if (m) {
         _chatScroll.top = m.scrollTop;
         _chatScroll.atBottom = (m.scrollHeight - m.scrollTop - m.clientHeight) < 60;
       }
     });
     document.body.addEventListener('htmx:afterSwap', function () {
-      var m = document.querySelector('#chat .msgs');
+      var m = _chatScrollEl();
       if (!m) return;
       if (_chatScroll.atBottom) {
         m.scrollTop = m.scrollHeight;     // был внизу → показываем новые сообщения
@@ -403,9 +424,9 @@
       document.querySelectorAll('#board .board .col').forEach(function (col) {
         if (col._sortable) return;                 // уже инициализирована
         col._sortable = Sortable.create(col, {
-          group: 'board', draggable: '.card', animation: 150,
+          group: 'board', draggable: '.card', handle: '.drag-handle', animation: 150,
           ghostClass: 'card-ghost', chosenClass: 'card-drag', forceFallback: true,
-          onStart: function () { _dragging = true; },
+          onStart: function () { _dragging = true; window.__boardDragging = true; },
           onEnd: onCardMoved,
         });
       });
@@ -413,6 +434,8 @@
     var _dragging = false;
     async function onCardMoved(evt) {
       _dragging = false;
+      window.__boardDragging = false;
+      _suppressCardClickUntil = Date.now() + 450;
       if (evt.to === evt.from) return;             // колонку не сменили
       var card = evt.item;
       var toCol = evt.to.closest('.col');
@@ -432,7 +455,7 @@
       if (funnel && window.htmx) htmx.ajax('GET', '/admin/board/' + funnel, { target: '#board', swap: 'innerHTML' });
     }
     // (Пере)инициализируем DnD после каждой подгрузки доски; не дёргаем во время перетаскивания.
-    document.body.addEventListener('htmx:afterSettle', function () { if (!_dragging) initBoardDnD(); });
+    document.body.addEventListener('htmx:afterSettle', function () { if (!_dragging && !window.__boardDragging) initBoardDnD(); });
     initBoardDnD();
   </script>
   <style>
