@@ -27,8 +27,24 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "destination": {"type": "string"},
+                "region": {
+                    "type": "string",
+                    "description": ("Курорт/регион внутри страны (напр. «Анталья», «Кемер», "
+                                    "«Аланья», «Сиде»). Для пляжного отдыха указывай конкретный "
+                                    "курорт, иначе поиск выдаст города (Стамбул), а не море."),
+                },
+                "meal": {
+                    "type": "string",
+                    "description": ("Тип питания: «всё включено», «ультра всё включено», "
+                                    "«завтраки», «полупансион», «полный пансион»."),
+                },
                 "dates": {"type": "string"},
                 "tourists": {"type": "string"},
+                "children_ages": {
+                    "type": "string",
+                    "description": ("Возраст КАЖДОГО ребёнка через запятую, напр. «10, 8, 5». "
+                                    "Обязательно, если едут дети — без возрастов поиск вернёт пусто."),
+                },
                 "budget": {"type": "string"},
                 "departure_city": {"type": "string"},
             },
@@ -61,7 +77,21 @@ TOOLS = [
         "description": "Пригласить клиента в офис (сложный/проблемный случай).",
         "input_schema": {
             "type": "object",
-            "properties": {"reason": {"type": "string"}},
+            "properties": {
+                "reason": {"type": "string"},
+                "name": {
+                    "type": "string",
+                    "description": "Имя клиента, если уже спросили и клиент его назвал.",
+                },
+                "visit_time": {
+                    "type": "string",
+                    "description": "Когда клиент планирует прийти/созвониться, например «завтра в 15:00».",
+                },
+                "selected_option": {
+                    "type": "string",
+                    "description": "Выбранный тур/отель или кратко что клиент хочет обсудить в офисе.",
+                },
+            },
             "required": ["reason"],
         },
     },

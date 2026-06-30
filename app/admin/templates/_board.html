@@ -5,6 +5,7 @@
     <div class="stat waiting"><div class="n">{{ metrics.waiting }}</div><div class="l">Ждут ответа</div></div>
     <div class="stat needs-reply" onclick="toggleNeedsReply(this)" title="Показать только требующие ответа" style="cursor:pointer">
       <div class="n">{{ metrics.needs_reply }}</div><div class="l">Требуют ответа ⚑</div></div>
+    <div class="stat silent"><div class="n">{{ metrics.silent }}</div><div class="l">Молчат</div></div>
     <div class="stat noise-filter" onclick="toggleNoise(this)" title="Скрыть рекламу и диалоги без переписки" style="cursor:pointer">
       <div class="n">{{ metrics.noise }}</div><div class="l">Скрыть рекламу/без диалога</div></div>
     <div class="stat intercepted"><div class="n">{{ metrics.intercepted }}</div><div class="l">Перехвачено</div></div>
@@ -57,6 +58,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
             ваш ход
           </span>
+          {% endif %}
+          {% if c.is_silent %}
+          <span class="badge silent">молчит {{ c.time_label }}</span>
           {% endif %}
           {% if c.intercepted %}
           <span class="badge intercepted push">

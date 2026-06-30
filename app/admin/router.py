@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import logging
-import re
 import secrets
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +20,7 @@ from app.agent.llm import chat, llm_enabled
 from app.channels import outbound
 from app.config import settings
 from app.core.branding import quick_replies_for
+from app.core.leadstate import HUMAN_STAGES, STAGE_TO_COLUMN, is_noise, is_silent
 from app.core.state import get_state_store
 from app.integrations.panel.store import get_conversation_store
 
@@ -42,28 +42,12 @@ BOARD_COLUMNS = [
     ("progress", "Подбор / оценка"),
     ("office", "В офис / консультация"),
     ("manager", "У менеджера"),
+    ("silent", "Молчат (на дожим)"),
     ("follow_up", "Повторное касание"),
 ]
-STAGE_TO_COLUMN = {
-    "greeting": "greeting", "new": "greeting",
-    "qualification": "qualification",
-    "progress": "progress", "scoring": "progress", "search": "progress", "visa_scoring": "progress",
-    "office": "office", "office_consultation": "office",
-    "manager": "manager", "manager_handoff": "manager",
-    "follow_up": "follow_up", "followup": "follow_up", "callback": "follow_up",
-}
 # Обратный маппинг для ручного переноса (drag-and-drop): колонка → каноническая стадия.
 # Стадии-ключи = ключи колонок, чтобы карточка осталась в той колонке, куда её положили.
-COLUMN_TO_STAGE = {key: key for key, _ in BOARD_COLUMNS}
-
-# Стадии, в которых ждут живого менеджера (для сигнала «требуют ответа»).
-HUMAN_STAGES = {"office", "office_consultation", "manager", "manager_handoff"}
-NOISE_STAGES = {"greeting", "new"}
-NOISE_LINK_RE = re.compile(
-    r"(https?://|instagram\.com|fb\.me|facebook\.com|wa\.me|api\.whatsapp)",
-    re.IGNORECASE,
-)
-NOISE_MEDIA_TERMS = ("[media", "[медиа", "[голос", "голос", "voice", "audio")
+COLUMN_TO_STAGE = {key: key for key, _ in BOARD_COLUMNS if key != "silent"}
 
 # Палитра градиентов для аватаров (детерминированно по имени/номеру).
 AVATAR_GRADIENTS = [
@@ -137,17 +121,8 @@ def _card_model(conv, now: datetime) -> dict:
         level = "fresh"
     # «Требуют ответа человека» = клиент ждёт И диалог у менеджера/перехвачен.
     needs_reply = waiting and (conv.intercepted or conv.stage in HUMAN_STAGES)
-    text = (conv.last_text or "").strip()
-    lower = text.lower()
-    link_or_media = bool(NOISE_LINK_RE.search(lower)) or any(term in lower for term in NOISE_MEDIA_TERMS)
-    is_noise = (
-        conv.last_sender == "client"
-        and conv.stage in NOISE_STAGES
-        and link_or_media
-        and not conv.intercepted
-        and not conv.assigned_to
-        and not conv.qualification
-    )
+    noise = is_noise(conv, now, settings)
+    silent = is_silent(conv, now, settings)
     return {
         "user_id": conv.user_id, "phone": phone, "name": name or phone,
         "initials": _initials(name, phone),
@@ -160,7 +135,8 @@ def _card_model(conv, now: datetime) -> dict:
         "wait_label": _time_label(wait_min) if wait_min is not None else "",
         "wait_level": level,                       # none|fresh|warm|hot
         "needs_reply": needs_reply,
-        "is_noise": is_noise,
+        "is_noise": noise,
+        "is_silent": silent,
         "lead_temperature": conv.lead_temperature,
         "sort_key": (wait_min if wait_min is not None else -1),
     }
@@ -248,7 +224,8 @@ def _build_board(cards: list, now: datetime) -> tuple[list[dict], dict]:
     buckets: dict[str, list] = {key: [] for key, _ in BOARD_COLUMNS}
     models = [_card_model(c, now) for c in cards]
     for m in models:
-        buckets[STAGE_TO_COLUMN.get(m["stage"], "greeting")].append(m)
+        column = "silent" if m["is_silent"] else STAGE_TO_COLUMN.get(m["stage"], "greeting")
+        buckets[column].append(m)
     for col in buckets.values():
         col.sort(key=lambda m: m["sort_key"], reverse=True)  # горячие наверх
     columns = [{"key": key, "label": label, "cards": buckets[key], "is_empty": not buckets[key]}
@@ -258,6 +235,7 @@ def _build_board(cards: list, now: datetime) -> tuple[list[dict], dict]:
         "waiting": sum(1 for m in models if m["wait_level"] != "none"),
         "needs_reply": sum(1 for m in models if m["needs_reply"]),
         "noise": sum(1 for m in models if m["is_noise"]),
+        "silent": sum(1 for m in models if m["is_silent"]),
         "intercepted": sum(1 for c in cards if c.intercepted),
     }
     return columns, metrics

@@ -106,10 +106,36 @@ async def _tours_exec_tool(name: str, args: dict, state: DialogState, crm) -> st
                 "менеджеру, он ответит в этом чате; НЕ утверждай, что менеджер уже онлайн.")
 
     if name == "escalate_to_office":
+        state.qualification.update({
+            k: v for k, v in args.items()
+            if k in {"name", "visit_time", "office_visit", "selected_option"} and v
+        })
+        client_name = args.get("name") or state.qualification.get("name")
+        visit_time = (
+            args.get("visit_time")
+            or state.qualification.get("visit_time")
+            or state.qualification.get("office_visit")
+        )
+        if not client_name:
+            return (
+                "Клиент хочет в офис, но имя ещё не собрано. НЕ вызывай офис как записанный "
+                "визит и НЕ говори «менеджер уже ждёт». Сначала ответь на текущий вопрос клиента "
+                "по туру, затем спроси: «Как могу к вам обращаться, чтобы менеджер понимал, "
+                "по какой заявке вы придёте?»"
+            )
+        if not visit_time:
+            return (
+                "Имя клиента уже есть, но время визита не подтверждено. НЕ говори «менеджер уже "
+                "ждёт». Спроси, на какое время завтра/в выбранный день клиенту удобно подойти."
+            )
         if state.deal_id:
             await crm.update_stage(state.deal_id, "office_consultation")
         state.stage = "office"
-        return "Клиент приглашён в офис на консультацию."
+        return (
+            "Визит можно подтверждать. Коротко зафиксируй имя, время и выбранный вариант; "
+            "дай адрес офиса, если клиент его ещё не получил. Паспорт упомяни мягко: для брони "
+            "лучше взять загранпаспорта. Не утверждай, что менеджер уже ждёт."
+        )
 
     return "ok"
 

@@ -31,6 +31,10 @@ POLL_TIMEOUT = 20.0
 # Дефолты, если из текста не удалось распарсить
 DEFAULT_NIGHTS = (7, 10)
 DEFAULT_ADULTS = 2
+# TourVisor ТРЕБУЕТ возраст КАЖДОГО ребёнка (childage1..N) — без него поиск с детьми
+# возвращает 0 отелей. Если возраст неизвестен — подставляем дефолт, чтобы не сломать выдачу.
+DEFAULT_CHILD_AGE = 7
+MAX_CHILDREN = 4  # лимит TourVisor (childage1..childage4)
 
 
 class TourVisorError(Exception):
@@ -101,6 +105,28 @@ class TourVisorClient:
     async def resolve_country(self, client: httpx.AsyncClient, text: str) -> str | None:
         return self._match_id(await self._ref(client, "country", "countries", "country"), text)
 
+    async def _region_ref(self, client: httpx.AsyncClient, country_id: str) -> list[dict]:
+        """Справочник курортов/регионов конкретной страны (кэшируется по стране)."""
+        cache_key = f"region:{country_id}"
+        if cache_key in self._ref_cache:
+            return self._ref_cache[cache_key]
+        data = await self._call(client, "list.php", {"type": "region", "regcountry": country_id})
+        items = _as_list((data.get("lists", {}).get("regions", {}) or {}).get("region"))
+        self._ref_cache[cache_key] = items
+        return items
+
+    async def resolve_regions(self, client: httpx.AsyncClient, country_id: str, text: str) -> str | None:
+        """Свободный текст («Анталья», «Кемер, Сиде») → id курортов через запятую для regions."""
+        if not text or not country_id:
+            return None
+        items = await self._region_ref(client, country_id)
+        ids: list[str] = []
+        for part in re.split(r"[,/;]|\sи\s", text):
+            rid = self._match_id(items, part.strip())
+            if rid and rid not in ids:
+                ids.append(rid)
+        return ",".join(ids) if ids else None
+
     # ---------- поиск ----------
     async def search(self, params: dict) -> list[str]:
         """Подбор туров по параметрам квалификации. Возвращает читаемые строки для агента."""
@@ -121,6 +147,17 @@ class TourVisorClient:
                     logger.warning("TourVisor: пустой requestid, ответ=%s", started)
                     return []
                 hotels = await self._poll(client, request_id)
+                # Бюджет мал → пустая выдача. Один повторный проход без ценового потолка и честно про мин. цену.
+                if not hotels and query.get("priceto"):
+                    budget = query["priceto"]
+                    for key in ("priceto", "pricefrom", "pricetype"):
+                        query.pop(key, None)
+                    retried = await self._call(client, "search.php", query)
+                    request_id = str(retried.get("result", {}).get("requestid") or retried.get("requestid", ""))
+                    if request_id:
+                        hotels = await self._poll(client, request_id)
+                        if hotels:
+                            return _format_over_budget(hotels, budget)
                 return _format_hotels(hotels)
             except TourVisorError as e:
                 logger.warning("TourVisor API: %s", e)
@@ -137,6 +174,15 @@ class TourVisorClient:
         country = await self.resolve_country(client, params.get("destination", ""))
         if country:
             query["country"] = country
+            # Курорт: из отдельного поля region + из текста направления («Турция, Кемер»).
+            region_text = " ".join(t for t in (params.get("region", ""), params.get("destination", "")) if t)
+            regions = await self.resolve_regions(client, country, region_text)
+            if regions:
+                query["regions"] = regions
+
+        meal = _parse_meal(" ".join(t for t in (params.get("meal", ""), params.get("destination", "")) if t))
+        if meal:
+            query["meal"] = meal  # TourVisor ищет указанное питание и лучше
 
         date_from, date_to = _parse_dates(params.get("dates", ""))
         if date_from:
@@ -146,10 +192,14 @@ class TourVisorClient:
         nights_from, nights_to = _parse_nights(params.get("dates", "") + " " + str(params.get("nights", "")))
         query["nightsfrom"], query["nightsto"] = nights_from, nights_to
 
-        adults, kids = _parse_tourists(params.get("tourists", ""))
+        adults, child_ages = _parse_tourists(
+            params.get("tourists", ""), params.get("children_ages", "")
+        )
         query["adults"] = adults
-        if kids:
-            query["child"] = kids
+        if child_ages:
+            query["child"] = len(child_ages)
+            for i, age in enumerate(child_ages, 1):
+                query[f"childage{i}"] = age  # TourVisor: возраст обязателен для каждого ребёнка
 
         stars = _parse_stars(params.get("hotel_stars", ""))
         if stars:
@@ -203,6 +253,16 @@ def _parse_dates(text: str) -> tuple[str | None, str | None]:
         d2 = to_date(found[1]) if len(found) > 1 else d1 + timedelta(days=14)
     except ValueError:
         return None, None
+
+    # Дата в прошлом (LLM подставил прошлый год или год не указан, а месяц уже прошёл) →
+    # переносим на ближайший будущий год. TourVisor на прошлые даты отвечает "bad format".
+    today = date.today()
+    while d1 < today:
+        try:
+            d1, d2 = d1.replace(year=d1.year + 1), d2.replace(year=d2.year + 1)
+        except ValueError:  # 29 февраля в невисокосный год
+            d1, d2 = d1 + timedelta(days=365), d2 + timedelta(days=365)
+
     return d1.strftime("%d.%m.%Y"), d2.strftime("%d.%m.%Y")
 
 
@@ -221,23 +281,66 @@ def _parse_nights(text: str) -> tuple[int, int]:
     return DEFAULT_NIGHTS
 
 
-def _parse_tourists(text: str) -> tuple[int, int]:
-    """«2 взрослых 1 ребёнок» → (2,1). Если непонятно — (2,0)."""
+def _parse_tourists(text: str, ages_text: str = "") -> tuple[int, list[int]]:
+    """«2 взрослых, дети 10 и 5» → (2, [10, 5]). Возвращает (взрослые, возрасты_детей).
+
+    Возрасты детей ОБЯЗАТЕЛЬНЫ для TourVisor. Источники в порядке приоритета:
+      1) отдельное поле инструмента `children_ages` (напр. «10, 8, 5»);
+      2) числа после слова «дети/ребёнок» в свободном тексте;
+      3) если известно только число детей без возрастов — подставляем DEFAULT_CHILD_AGE.
+    Так поиск с детьми перестаёт возвращать пусто.
+    """
     t = (text or "").lower()
+
     adults_m = re.search(r"(\d+)\s*взросл", t)
-    kids_m = re.search(r"(\d+)\s*(?:реб|дет)", t)
-    if adults_m or kids_m:
-        return (int(adults_m.group(1)) if adults_m else DEFAULT_ADULTS,
-                int(kids_m.group(1)) if kids_m else 0)
-    nums = [int(n) for n in re.findall(r"\d+", t)]
-    if nums:
-        return nums[0], 0
-    return DEFAULT_ADULTS, 0
+    adults = int(adults_m.group(1)) if adults_m else DEFAULT_ADULTS
+
+    # Кол-во детей: число ПЕРЕД словом «дети/ребёнок» («3 детей», «1 ребёнок»).
+    kids_m = re.search(r"(\d+)\s*(?:дет|реб)", t)
+    kids_count = int(kids_m.group(1)) if kids_m else 0
+
+    # Явные возрасты из отдельного поля имеют приоритет.
+    ages = [int(n) for n in re.findall(r"\d+", ages_text or "")]
+    if not ages:
+        # Возрасты из свободного текста: числа ПОСЛЕ слова «дети/ребёнок/малыш»
+        # («дети 10, 12 и 2 года»). Число-счётчик стоит до слова и сюда не попадает.
+        kw = re.search(r"(?:дет\w*|реб[её]\w*|малыш\w*)", t)
+        if kw:
+            ages = [int(n) for n in re.findall(r"\d+", t[kw.end():])]
+
+    # Нет ни взрослых, ни детей по ключевым словам — старое поведение «первое число = взрослые».
+    if not adults_m and not kids_m and not ages:
+        nums = [int(n) for n in re.findall(r"\d+", t)]
+        return (nums[0] if nums else DEFAULT_ADULTS), []
+
+    n = min(max(kids_count, len(ages)), MAX_CHILDREN)
+    if n == 0:
+        return adults, []
+    ages = (ages + [DEFAULT_CHILD_AGE] * n)[:n]  # дополняем дефолтом / обрезаем под кол-во
+    return adults, ages
 
 
 def _parse_stars(text: str) -> int | None:
     m = re.search(r"(\d)\s*\*", text or "") or re.search(r"(\d)\s*звёзд", (text or "").lower())
     return int(m.group(1)) if m else None
+
+
+def _parse_meal(text: str) -> int | None:
+    """Тип питания → код TourVisor (2 RO, 3 BB, 4 HB, 5 FB, 7 AI, 9 UAI)."""
+    t = (text or "").lower()
+    if "ультра" in t or "uai" in t:
+        return 9
+    if "всё включ" in t or "все включ" in t or "all incl" in t or re.search(r"\bai\b", t):
+        return 7
+    if "полный пансион" in t or "fb" in t:
+        return 5
+    if "полупансион" in t or "hb" in t or ("завтрак" in t and "ужин" in t):
+        return 4
+    if "завтрак" in t or "bb" in t:
+        return 3
+    if "без питания" in t or "room only" in t or re.search(r"\bro\b", t):
+        return 2
+    return None
 
 
 def _parse_budget(text: str) -> tuple[int | None, int | None]:
@@ -250,6 +353,29 @@ def _parse_budget(text: str) -> tuple[int | None, int | None]:
 
 
 # ---------- форматирование результата ----------
+def _hotel_price(h: dict) -> int:
+    """Числовая цена лучшего тура отеля — для сортировки «самые дешёвые». Нечитаемое → +∞."""
+    best = (_as_list((h.get("tours", {}) or {}).get("tour")) or [{}])[0]
+    try:
+        return int(str(best.get("price", "")).replace(" ", ""))
+    except (TypeError, ValueError):
+        return 10**9
+
+
+def _format_over_budget(hotels: list[dict], budget: int) -> list[str]:
+    """Бюджет мал: 2–3 самые дешёвые + приписка-инструкция агенту про честную мин. цену."""
+    cheapest = sorted(hotels, key=_hotel_price)
+    lines = _format_hotels(cheapest, limit=3)
+    best = (_as_list((cheapest[0].get("tours", {}) or {}).get("tour")) or [{}])[0]
+    mn, cur = best.get("price", ""), best.get("currency", "")
+    notice = (
+        f"⚠️ Под бюджет {budget} вариантов нет. Минимальная реальная цена — от {mn} {cur}. "
+        "Покажи клиенту эти 2–3 самые дешёвые, честно скажи, что в бюджет пока не укладывается, "
+        "и предложи поднять бюджет или сменить даты/курорт. Цены не выдумывай."
+    )
+    return [notice] + lines
+
+
 def _format_hotels(hotels: list[dict], limit: int = 5) -> list[str]:
     out: list[str] = []
     for h in hotels[:limit]:

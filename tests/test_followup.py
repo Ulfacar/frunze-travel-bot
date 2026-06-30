@@ -10,6 +10,7 @@ from app.integrations.panel.store import ConversationView
 class _Cfg:
     followup_enabled = True
     followup_after_hours = 24
+    noise_stale_days = 3
     followup_quiet_from = 22
     followup_quiet_to = 9
     alert_silence_minutes = 30
@@ -36,16 +37,18 @@ def test_select_followup_targets():
 
     convs = [
         conv("t1"),                                   # ← цель
-        conv("c2", last_sender="client"),             # клиент ждёт нас — не дожим
+        conv("c2", last_sender="client"),             # ← цель: широкое «молчит», даже client-last
         conv("s3", stage="manager"),                  # терминальная стадия
         conv("o4", outcome="won"),                    # завершён
         conv("f5", last_message_at=fresh),            # ещё не намолчался
         conv("d6", followup_sent=True),               # уже пинговали
         conv("i7", intercepted=True),                 # ведёт менеджер
         conv("ch8", channel="telegram"),              # не whatsapp
+        conv("n9", stage="greeting", last_sender="client",
+             last_text="https://instagram.com/ad"),   # шум не пингуем
     ]
     targets = followup.select_followup_targets(convs, now, _Cfg())
-    assert [c.user_id for c in targets] == ["t1"]
+    assert [c.user_id for c in targets] == ["t1", "c2"]
 
 
 def test_quiet_hours_wrap_midnight():

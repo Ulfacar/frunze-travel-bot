@@ -12,16 +12,12 @@ from datetime import datetime, timedelta, timezone
 from app.channels import outbound
 from app.config import settings
 from app.core.branding import followup_ping_for
+from app.core.leadstate import is_silent
 from app.integrations.panel.store import get_conversation_store
 
 log = logging.getLogger("followup")
 
 BISHKEK_UTC_OFFSET = 6  # Кыргызстан UTC+6 (без перехода на летнее время)
-
-# Стадии/исходы, на которых дожим не нужен (уже у человека/в офисе/завершён).
-_TERMINAL_STAGES = {"manager", "manager_handoff", "office", "office_consultation"}
-_TERMINAL_OUTCOMES = {"won", "lost"}
-
 
 def _aware(dt: datetime | None) -> datetime | None:
     if dt is None:
@@ -40,24 +36,14 @@ def is_quiet_hour(local_hour: int, cfg) -> bool:
 
 
 def select_followup_targets(convs: list, now: datetime, cfg) -> list:
-    """Кого пора дожать: клиент молчит дольше порога на не-терминальной стадии."""
+    """Кого пора дожать: единая формула «молчит» + ограничения живого WhatsApp."""
     now = _aware(now)
-    cutoff = now - timedelta(hours=cfg.followup_after_hours)
     out = []
     for c in convs:
-        if getattr(c, "followup_sent", False):
-            continue                                   # уже пинговали — один раз
-        if c.intercepted:
-            continue                                   # ведёт менеджер
-        if c.last_sender == "client":
-            continue                                   # клиент ждёт нас (это инбокс, не дожим)
-        if (c.stage in _TERMINAL_STAGES) or (c.outcome in _TERMINAL_OUTCOMES):
+        if not is_silent(c, now, cfg):
             continue
         if c.channel != "whatsapp" or not (c.chat_id or c.user_id) or not c.bot_id:
             continue                                   # дожимаем только живой WhatsApp-канал
-        last = _aware(c.last_message_at)
-        if last is None or last > cutoff:
-            continue                                   # ещё не намолчался
         out.append(c)
     return out
 

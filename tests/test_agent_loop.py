@@ -90,6 +90,72 @@ def test_search_tool_graceful_degrade(monkeypatch):
     assert "менеджер" in out.lower()
 
 
+def test_tours_office_gate_asks_name_before_escalation():
+    """Горячий тур-лид без имени не уезжает в офис преждевременно."""
+    state = DialogState(
+        user_id="u-office-name",
+        funnel="tours",
+        qualification={"selected_option": "PALMORA LARA HOTEL 4*"},
+    )
+    crm = get_crm()
+
+    out = asyncio.run(runner._tours_exec_tool(
+        "escalate_to_office",
+        {"reason": "клиент думает завтра прийти в офис"},
+        state,
+        crm,
+    ))
+
+    assert state.stage == "greeting"
+    assert "имя" in out.lower()
+    assert "менеджер уже ждёт" in out
+
+
+def test_tours_office_gate_asks_visit_time_before_escalation():
+    """Имя без времени ещё не считается подтверждённой записью в офис."""
+    state = DialogState(
+        user_id="u-office-time",
+        funnel="tours",
+        qualification={"name": "Alan", "selected_option": "PALMORA LARA HOTEL 4*"},
+    )
+    crm = get_crm()
+
+    out = asyncio.run(runner._tours_exec_tool(
+        "escalate_to_office",
+        {"reason": "клиент хочет в офис"},
+        state,
+        crm,
+    ))
+
+    assert state.stage == "greeting"
+    assert "время" in out.lower()
+    assert "менеджер уже ждёт" in out
+
+
+def test_tours_office_escalates_after_name_and_visit_time():
+    """После имени и времени визита executor фиксирует офисную стадию и данные карточки."""
+    state = DialogState(user_id="u-office-ok", funnel="tours")
+    crm = get_crm()
+
+    out = asyncio.run(runner._tours_exec_tool(
+        "escalate_to_office",
+        {
+            "reason": "клиент придёт завтра в офис",
+            "name": "Alan",
+            "visit_time": "завтра в 15:00",
+            "selected_option": "PALMORA LARA HOTEL 4*",
+        },
+        state,
+        crm,
+    ))
+
+    assert state.stage == "office"
+    assert state.qualification["name"] == "Alan"
+    assert state.qualification["visit_time"] == "завтра в 15:00"
+    assert state.qualification["selected_option"] == "PALMORA LARA HOTEL 4*"
+    assert "загранпаспорта" in out
+
+
 def test_visa_turn_scores_and_replies(monkeypatch):
     """Воронка «Визы» на общем run_turn: score_visa отрабатывает → финальный текст."""
     state = DialogState(user_id="v1", funnel="visa")

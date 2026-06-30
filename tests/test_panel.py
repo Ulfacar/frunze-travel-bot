@@ -205,6 +205,35 @@ def test_board_maps_follow_up_stage():
     assert follow_up["cards"][0]["user_id"] == "996700888"
 
 
+def test_board_routes_silent_leads_to_computed_column():
+    """Старый застрявший лид вынимается из обычной стадии в колонку «Молчат»."""
+    from datetime import datetime, timedelta, timezone
+    from app.admin.router import COLUMN_TO_STAGE, _build_board
+    from app.integrations.panel.store import ConversationView
+
+    now = datetime(2026, 6, 30, 12, 0, tzinfo=timezone.utc)
+    conv = ConversationView(
+        user_id="silent-1",
+        funnel="tours",
+        stage="qualification",
+        channel="whatsapp",
+        bot_id="frunze_tours",
+        chat_id="silent-1@c.us",
+        last_sender="client",
+        last_text="а что по туру?",
+        last_message_at=now - timedelta(hours=30),
+    )
+
+    columns, metrics = _build_board([conv], now)
+
+    silent = next(c for c in columns if c["key"] == "silent")
+    qualification = next(c for c in columns if c["key"] == "qualification")
+    assert silent["cards"][0]["user_id"] == "silent-1"
+    assert qualification["cards"] == []
+    assert metrics["silent"] == 1
+    assert "silent" not in COLUMN_TO_STAGE
+
+
 # ---------------- логирование оркестратором ----------------
 def test_orchestrator_logs_client_and_bot(monkeypatch):
     _clear_memory()
