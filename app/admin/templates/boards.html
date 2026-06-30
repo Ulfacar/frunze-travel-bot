@@ -124,23 +124,23 @@
 
     /* ---------- Card ---------- */
     .card { background: var(--elev); border: 1px solid var(--border); border-radius: var(--r-sm);
-            padding: 11px; margin-bottom: 8px; cursor: pointer; position: relative; overflow: hidden;
+            padding: 8px 9px; margin-bottom: 5px; cursor: pointer; position: relative; overflow: hidden;
             transition: background var(--t), border-color var(--t), transform var(--t); }
     .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: transparent; }
     .card[data-wait="warm"]::before { background: var(--warm); }
     .card[data-wait="hot"]::before { background: var(--hot); }
     .card:hover { background: var(--elev-hover); border-color: var(--border-2); transform: translateY(-1px); }
     .card:focus-visible, .card.active { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-    .card-top { display: flex; align-items: center; gap: 10px; }
-    .avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
-              font-weight: 700; font-size: 13px; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.25); }
+    .card-top { display: flex; align-items: center; gap: 8px; }
+    .avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
+              font-weight: 700; font-size: 11px; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.25); }
     .card-id { min-width: 0; }
-    .card-id .nm { font-weight: 600; font-size: 13.5px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-id .ph { color: var(--faint); font-size: 11.5px; font-family: var(--mono); }
-    .card .last { color: var(--muted); font-size: 12.5px; margin-top: 8px;
-                  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-id .nm { font-weight: 600; font-size: 12.5px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-id .ph { color: var(--faint); font-size: 11px; font-family: var(--mono); line-height: 1.1; }
+    .card .last { color: var(--muted); font-size: 12px; margin-top: 5px;
+                  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
     .card .last b { color: #334155; font-weight: 600; }
-    .card-foot { display: flex; align-items: center; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+    .card-foot { display: flex; align-items: center; gap: 6px; margin-top: 5px; flex-wrap: nowrap; overflow: hidden; }
     .time { color: var(--faint); font-size: 11px; display: inline-flex; align-items: center; gap: 4px; }
     .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600;
              padding: 2px 7px; border-radius: 6px; }

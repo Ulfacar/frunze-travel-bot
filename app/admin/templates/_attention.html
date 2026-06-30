@@ -26,7 +26,7 @@
         <span class="avatar" style="background: {{ c.avatar }}">{{ c.initials }}</span>
         <div class="card-id">
           <div class="nm">{{ c.name }}</div>
-          <div class="ph">{{ c.phone }}</div>
+          {% if c.name != c.phone %}<div class="ph">{{ c.phone }}</div>{% endif %}
         </div>
         <span class="badge funnel-badge" data-funnel="{{ c.funnel }}">{{ c.funnel_label }}</span>
       </div>

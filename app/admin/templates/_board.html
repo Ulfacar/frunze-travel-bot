@@ -23,7 +23,7 @@
           <span class="avatar" style="background: {{ c.avatar }}">{{ c.initials }}</span>
           <div class="card-id">
             <div class="nm">{{ c.name }}</div>
-            <div class="ph">{{ c.phone }}</div>
+            {% if c.name != c.phone %}<div class="ph">{{ c.phone }}</div>{% endif %}
           </div>
         </div>
         {% if c.last_text %}
