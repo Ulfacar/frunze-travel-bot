@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import json
 import logging
 
 import httpx
@@ -84,6 +85,14 @@ class WappiAdapter:
             kind, text = "text", body
         else:
             kind, text = "non_text", ""  # медиа/голос — бот пока понимает только текст
+            # M1-capture: логируем сырой payload медиа, чтобы узнать реальный формат Wappi
+            # (ссылка на файл/голос, mime, длительность) — на этом строим плеер в панели.
+            try:
+                logger.info("Wappi non-text raw [media-capture]: %s",
+                            json.dumps(raw, ensure_ascii=False)[:1200])
+            except Exception:  # noqa: BLE001 — лог не должен мешать обработке
+                logger.info("Wappi non-text raw [media-capture]: type=%s keys=%s",
+                            raw.get("type"), sorted(raw.keys()))
 
         return Message(
             channel=self.channel,
