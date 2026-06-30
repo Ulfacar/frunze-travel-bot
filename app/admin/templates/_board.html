@@ -20,14 +20,6 @@
            data-uid="{{ c.user_id }}"
            hx-get="/admin/conversation/{{ c.user_id }}" hx-target="#chat" hx-swap="innerHTML">
         <div class="card-top">
-          <button type="button" class="drag-handle" aria-label="Перетащить карточку" title="Перетащить"
-                  onclick="event.preventDefault(); event.stopPropagation();">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <circle cx="5" cy="3" r="1.25"/><circle cx="11" cy="3" r="1.25"/>
-              <circle cx="5" cy="8" r="1.25"/><circle cx="11" cy="8" r="1.25"/>
-              <circle cx="5" cy="13" r="1.25"/><circle cx="11" cy="13" r="1.25"/>
-            </svg>
-          </button>
           <span class="avatar" style="background: {{ c.avatar }}">{{ c.initials }}</span>
           <div class="card-id">
             <div class="nm">{{ c.name }}</div>

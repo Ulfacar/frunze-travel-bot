@@ -102,15 +102,12 @@
              border-radius: 20px; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
     .col-empty { color: var(--faint); font-size: 18px; text-align: center; padding: 10px 6px; }
     /* Drag-and-drop: карточки доски можно таскать между колонками. */
-    .board .card { cursor: pointer; }
-    .drag-handle { width: 22px; height: 28px; flex-shrink: 0; display: grid; place-items: center;
-                   margin-left: -3px; border: 0; border-radius: 6px; background: transparent;
-                   color: var(--faint); cursor: grab; touch-action: none; }
-    .drag-handle:hover, .drag-handle:focus-visible { color: var(--accent); background: var(--accent-soft); }
-    .drag-handle:active { cursor: grabbing; }
-    .drag-handle svg { width: 14px; height: 16px; fill: currentColor; pointer-events: none; }
-    .card-ghost { opacity: .35; }
-    .card-drag { box-shadow: 0 12px 28px rgba(15,23,42,.18); transform: rotate(1.5deg); }
+    .board .card { cursor: grab; }
+    .board .card:active { cursor: grabbing; }
+    .card-ghost { background: var(--accent-soft); border: 1px dashed var(--accent); box-shadow: none; }
+    .card-ghost > * { visibility: hidden; }
+    .card-fallback { box-shadow: 0 14px 32px rgba(15,23,42,.22); transform: scale(1.03);
+                     border-color: var(--accent); opacity: .98; cursor: grabbing; }
     .col.drop-target { background: var(--accent-soft); outline: 2px dashed var(--accent); outline-offset: -2px; }
 
     /* ---------- Inbox / Search (вертикальный список по всем воронкам) ---------- */
@@ -424,8 +421,9 @@
       document.querySelectorAll('#board .board .col').forEach(function (col) {
         if (col._sortable) return;                 // уже инициализирована
         col._sortable = Sortable.create(col, {
-          group: 'board', draggable: '.card', handle: '.drag-handle', animation: 150,
-          ghostClass: 'card-ghost', chosenClass: 'card-drag', forceFallback: true,
+          group: 'board', draggable: '.card', animation: 220, easing: 'cubic-bezier(0.2, 0, 0, 1)',
+          fallbackTolerance: 6,
+          ghostClass: 'card-ghost', fallbackClass: 'card-fallback', forceFallback: true,
           onStart: function () { _dragging = true; window.__boardDragging = true; },
           onEnd: onCardMoved,
         });
