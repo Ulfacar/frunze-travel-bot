@@ -298,7 +298,7 @@
     }, true);
 
     document.addEventListener('click', function (e) {
-      if (window.__boardDragging || Date.now() < _suppressCardClickUntil || e.target.closest('.drag-handle, .card-archive')) return;
+      if (window.__boardDragging || Date.now() < _suppressCardClickUntil || e.target.closest('.drag-handle, .card-archive, .card-select, .bulk-checkbox')) return;
       var card = e.target.closest('.card');
       if (!card) return;
       document.querySelectorAll('.card.active').forEach(c => c.classList.remove('active'));
@@ -392,6 +392,83 @@
     function refreshCurrentList() {
       if (window.htmx) htmx.ajax('GET', _activeBoardUrl(), { target: '#board', swap: 'innerHTML' });
       _pollStats();
+    }
+    function _attentionRoot(el) {
+      return (el && el.closest && el.closest('[data-attention]')) || document.querySelector('[data-attention]');
+    }
+    function _visibleInboxCards(root) {
+      root = root || _attentionRoot();
+      if (!root) return [];
+      return Array.from(root.querySelectorAll('.inbox-list .card')).filter(function (card) {
+        return card.offsetParent !== null;
+      });
+    }
+    function _selectedInboxBoxes(root) {
+      root = root || _attentionRoot();
+      return root ? Array.from(root.querySelectorAll('.bulk-checkbox:checked')) : [];
+    }
+    window.hasInboxSelection = function () {
+      return _selectedInboxBoxes().length > 0;
+    };
+    function updateInboxSelection(el) {
+      var root = _attentionRoot(el);
+      if (!root) return;
+      var count = _selectedInboxBoxes(root).length;
+      var counter = root.querySelector('[data-selected-count]');
+      var bulk = root.querySelector('.bulk-archive');
+      if (counter) counter.textContent = String(count);
+      if (bulk) bulk.disabled = count === 0;
+      root.classList.toggle('has-selection', count > 0);
+    }
+    function selectVisibleInboxCards(el) {
+      var root = _attentionRoot(el);
+      _visibleInboxCards(root).forEach(function (card) {
+        var box = card.querySelector('.bulk-checkbox');
+        if (box) box.checked = true;
+      });
+      updateInboxSelection(root);
+    }
+    function clearInboxSelection(el) {
+      var root = _attentionRoot(el);
+      if (!root) return;
+      root.querySelectorAll('.bulk-checkbox').forEach(function (box) { box.checked = false; });
+      updateInboxSelection(root);
+    }
+    function _replaceAttention(html) {
+      var root = _attentionRoot();
+      if (!root) return;
+      root.outerHTML = html;
+      var fresh = _attentionRoot();
+      if (window.htmx && fresh) htmx.process(fresh);
+      _applyNoiseFilter(fresh);
+      updateInboxSelection(fresh);
+      _pollStats();
+    }
+    async function archiveSelectedInbox(el) {
+      var root = _attentionRoot(el);
+      var ids = _selectedInboxBoxes(root).map(function (box) { return box.value; });
+      if (!ids.length) return;
+      var body = new URLSearchParams();
+      ids.forEach(function (id) { body.append('user_ids', id); });
+      try {
+        var r = await fetch('/admin/conversations/archive', {
+          method: 'POST',
+          headers: { 'HX-Request': 'true', 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: body.toString(),
+        });
+        if (r.ok) _replaceAttention(await r.text());
+      } catch (_) { /* следующий автоопрос подтянет состояние */ }
+    }
+    async function archiveNoiseInbox(el) {
+      var n = parseInt((el && el.getAttribute('data-noise-count')) || '0', 10) || 0;
+      if (!n || !confirm('Заархивировать ' + n + ' рекламных/без диалога?')) return;
+      try {
+        var r = await fetch('/admin/conversations/archive-noise', {
+          method: 'POST',
+          headers: { 'HX-Request': 'true' },
+        });
+        if (r.ok) _replaceAttention(await r.text());
+      } catch (_) { /* следующий автоопрос подтянет состояние */ }
     }
     async function archiveConversation(userId, ev) {
       if (ev) {
@@ -499,7 +576,7 @@
       if (funnel && window.htmx) htmx.ajax('GET', '/admin/board/' + funnel, { target: '#board', swap: 'innerHTML' });
     }
     // (Пере)инициализируем DnD после каждой подгрузки доски; не дёргаем во время перетаскивания.
-    document.body.addEventListener('htmx:afterSettle', function () { _applyNoiseFilter(); if (!_dragging && !window.__boardDragging) initBoardDnD(); });
+    document.body.addEventListener('htmx:afterSettle', function () { _applyNoiseFilter(); updateInboxSelection(); if (!_dragging && !window.__boardDragging) initBoardDnD(); });
     initBoardDnD();
   </script>
   <style>
@@ -516,6 +593,15 @@
     .card:hover .card-archive, .card:focus-within .card-archive { opacity: 1; }
     .card-archive:hover { color: var(--hot); border-color: rgba(220,38,38,.25); background: var(--hot-soft); }
     .card-archive svg { width: 13px; height: 13px; }
+    .card-select { position: absolute; top: 6px; right: 34px; z-index: 3; width: 24px; height: 24px;
+                   display: grid; place-items: center; border: 1px solid var(--border); border-radius: 7px;
+                   background: rgba(255,255,255,.92); cursor: pointer; opacity: 0;
+                   transition: opacity var(--t), border-color var(--t), background var(--t); }
+    .card:hover .card-select, .card:focus-within .card-select, .card:has(.bulk-checkbox:checked) .card-select { opacity: 1; }
+    .card-select:hover { border-color: rgba(37,99,235,.28); background: rgba(239,246,255,.96); }
+    .card-select input { width: 14px; height: 14px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+    .inbox-list .card:has(.bulk-checkbox:checked) { outline: 2px solid var(--accent); outline-offset: 0; }
+    .bulk-archive:disabled, .bulk-noise:disabled { opacity: .45; cursor: default; }
   </style>
 </body>
 </html>

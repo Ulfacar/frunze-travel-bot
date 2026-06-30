@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import selectinload
 
@@ -164,6 +164,15 @@ class MemoryConversationStore:
     async def set_archived(self, user_id: str, value: bool) -> None:
         conv = await self.ensure(user_id)
         conv.archived = value
+
+    async def set_archived_many(self, user_ids: list[str], value: bool = True) -> int:
+        count = 0
+        for user_id in dict.fromkeys(user_ids):
+            conv = self._conv.get(user_id)
+            if conv is not None and conv.archived != value:
+                conv.archived = value
+                count += 1
+        return count
 
     async def all_conversations(self) -> list[ConversationView]:
         return [c for c in self._conv.values() if not c.archived]
@@ -321,6 +330,21 @@ class PostgresConversationStore:
             conv = await self._ensure_row(session, user_id, "", "")
             conv.archived = value
             await session.commit()
+
+    async def set_archived_many(self, user_ids: list[str], value: bool = True) -> int:
+        ids = list(dict.fromkeys(user_ids))
+        if not ids:
+            return 0
+        from app.integrations.crm.db import Conversation
+        async with self._sm()() as session:
+            result = await session.execute(
+                update(Conversation)
+                .where(Conversation.user_id.in_(ids))
+                .where(Conversation.archived.is_not(value))
+                .values(archived=value)
+            )
+            await session.commit()
+            return int(result.rowcount or 0)
 
     async def claim(self, user_id: str, manager: str) -> bool:
         """Атомарно закрепить диалог за менеджером, если свободен или уже его."""

@@ -537,13 +537,28 @@ def _waiting_sorted(models: list[dict]) -> list[dict]:
     return cards
 
 
+async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query: str = ""):
+    models = await _all_models(_now())
+    query = query.strip()
+    if mode == "search" and query:
+        ql = query.lower()
+        cards = [m for m in models
+                 if ql in (m["name"] or "").lower() or ql in (m["phone"] or "").lower()
+                 or ql in (m["last_text"] or "").lower()]
+        cards.sort(key=lambda m: m["sort_key"], reverse=True)
+    else:
+        cards = _waiting_sorted(models)
+        mode = "inbox"
+        query = ""
+    return templates.TemplateResponse(request, "_attention.html",
+                                      {"mode": mode, "cards": cards, "query": query,
+                                       "noise_count": sum(1 for c in cards if c["is_noise"])})
+
+
 @router.get("/inbox", response_class=HTMLResponse)
 async def inbox(request: Request, _: dict = Depends(require_admin)):
     """Единый инбокс: все ждущие ответа диалоги по всем воронкам в одном списке."""
-    cards = _waiting_sorted(await _all_models(_now()))
-    return templates.TemplateResponse(request, "_attention.html",
-                                      {"mode": "inbox", "cards": cards, "query": "",
-                                       "noise_count": sum(1 for c in cards if c["is_noise"])})
+    return await _render_inbox_partial(request)
 
 
 @router.get("/search", response_class=HTMLResponse)
@@ -551,20 +566,9 @@ async def search(request: Request, q: str = "", _: dict = Depends(require_admin)
     """Поиск по имени / номеру / последнему сообщению across все воронки.
     Пустой запрос возвращает инбокс — так очистка поля возвращает менеджера к списку."""
     q = q.strip()
-    models = await _all_models(_now())
     if not q:
-        cards = _waiting_sorted(models)
-        return templates.TemplateResponse(request, "_attention.html",
-                                          {"mode": "inbox", "cards": cards, "query": "",
-                                           "noise_count": sum(1 for c in cards if c["is_noise"])})
-    ql = q.lower()
-    cards = [m for m in models
-             if ql in (m["name"] or "").lower() or ql in (m["phone"] or "").lower()
-             or ql in (m["last_text"] or "").lower()]
-    cards.sort(key=lambda m: m["sort_key"], reverse=True)
-    return templates.TemplateResponse(request, "_attention.html",
-                                      {"mode": "search", "cards": cards, "query": q,
-                                       "noise_count": sum(1 for c in cards if c["is_noise"])})
+        return await _render_inbox_partial(request)
+    return await _render_inbox_partial(request, mode="search", query=q)
 
 
 @router.get("/stats", response_class=JSONResponse)
@@ -603,6 +607,38 @@ async def _render_conversation(user_id: str, request: Request, manager: dict):
 async def conversation(user_id: str, request: Request, manager: dict = Depends(require_admin)):
     """HTMX-партиал: полный контекст диалога + квалификация + действия менеджера."""
     return await _render_conversation(user_id, request, manager)
+
+
+def _normalize_user_ids(user_ids: list[str], user_ids_csv: str = "") -> list[str]:
+    items: list[str] = []
+    for value in user_ids:
+        items.extend(part.strip() for part in value.split(","))
+    if user_ids_csv:
+        items.extend(part.strip() for part in user_ids_csv.split(","))
+    return [item for item in dict.fromkeys(items) if item]
+
+
+@router.post("/conversations/archive", response_class=HTMLResponse)
+async def archive_conversations(request: Request, manager: dict = Depends(require_admin),
+                                user_ids: list[str] = Form(default=[]),
+                                user_ids_csv: str = Form(default="")):
+    """Soft-hide a batch of conversations and return the refreshed inbox partial."""
+    ids = _normalize_user_ids(user_ids, user_ids_csv)
+    panel = get_conversation_store()
+    count = await panel.set_archived_many(ids, True)
+    await panel.add_audit(manager["login"], "archive_many", "", f"count={count}")
+    return await _render_inbox_partial(request)
+
+
+@router.post("/conversations/archive-noise", response_class=HTMLResponse)
+async def archive_noise_conversations(request: Request, manager: dict = Depends(require_admin)):
+    """Archive all current noise conversations using the same card model as the inbox."""
+    models = await _all_models(_now())
+    ids = [m["user_id"] for m in models if m["is_noise"]]
+    panel = get_conversation_store()
+    count = await panel.set_archived_many(ids, True)
+    await panel.add_audit(manager["login"], "archive_noise", "", f"count={count}")
+    return await _render_inbox_partial(request)
 
 
 @router.post("/conversation/{user_id}/archive", response_class=JSONResponse)

@@ -103,6 +103,28 @@ def test_archived_conversation_hidden_from_lists():
     asyncio.run(scenario())
 
 
+def test_postgres_bulk_archive_hides_from_lists():
+    async def scenario():
+        engine = create_async_engine("sqlite+aiosqlite://",
+                                     connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        await init_models(engine)
+        sm = async_sessionmaker(engine, expire_on_commit=False)
+        store = PostgresConversationStore(sessionmaker=sm)
+
+        for uid in ("u-active", "u-bulk-1", "u-bulk-2"):
+            await store.add_message(uid, "client", "hello", channel="whatsapp")
+            await store.update_meta(uid, funnel="visa")
+
+        changed = await store.set_archived_many(["u-bulk-1", "u-bulk-2"], True)
+
+        assert changed == 2
+        assert [c.user_id for c in await store.list_cards("visa")] == ["u-active"]
+        assert [c.user_id for c in await store.all_conversations()] == ["u-active"]
+        await engine.dispose()
+
+    asyncio.run(scenario())
+
+
 def test_memory_archived_conversation_hidden_from_lists():
     async def scenario():
         store = panel_store.MemoryConversationStore()
@@ -112,6 +134,22 @@ def test_memory_archived_conversation_hidden_from_lists():
         await store.update_meta("u-archived", funnel="visa")
         await store.set_archived("u-archived", True)
 
+        assert [c.user_id for c in await store.list_cards("visa")] == ["u-active"]
+        assert [c.user_id for c in await store.all_conversations()] == ["u-active"]
+
+    asyncio.run(scenario())
+
+
+def test_memory_bulk_archive_hides_from_lists():
+    async def scenario():
+        store = panel_store.MemoryConversationStore()
+        for uid in ("u-active", "u-bulk-1", "u-bulk-2"):
+            await store.add_message(uid, "client", "hello", channel="whatsapp")
+            await store.update_meta(uid, funnel="visa")
+
+        changed = await store.set_archived_many(["u-bulk-1", "u-bulk-2"], True)
+
+        assert changed == 2
         assert [c.user_id for c in await store.list_cards("visa")] == ["u-active"]
         assert [c.user_id for c in await store.all_conversations()] == ["u-active"]
 
@@ -252,6 +290,48 @@ def test_archive_endpoint_hides_card_and_audits():
 
 
 # ---------------- ответ менеджера из панели (двусторонняя отправка) ----------------
+def test_bulk_archive_endpoint_hides_cards_and_audits():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    for uid in ("u-live", "u-bulk-a", "u-bulk-b"):
+        asyncio.run(store.add_message(uid, "client", "archive me", channel="whatsapp"))
+        asyncio.run(store.update_meta(uid, funnel="visa", stage="qualification"))
+
+    client = _auth_client()
+    resp = client.post("/admin/conversations/archive",
+                       data={"user_ids_csv": "u-bulk-a,u-bulk-b"})
+
+    assert resp.status_code == 200
+    assert 'data-user-id="u-bulk-a"' not in resp.text and 'data-user-id="u-bulk-b"' not in resp.text
+    board = client.get("/admin/board/visa").text
+    assert "u-live" in board
+    assert "u-bulk-a" not in board
+    assert any(a["action"] == "archive_many" and a["detail"] == "count=2"
+               for a in panel_store._memory_store._audit)
+
+
+def test_archive_noise_endpoint_uses_card_noise_logic_and_audits():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("noise-1", "client", "https://instagram.com/ad", channel="whatsapp"))
+    asyncio.run(store.update_meta("noise-1", funnel="tours", stage="greeting"))
+    asyncio.run(store.add_message("noise-2", "client", "https://t.me/ad", channel="whatsapp"))
+    asyncio.run(store.update_meta("noise-2", funnel="visa", stage="greeting"))
+    asyncio.run(store.add_message("real-1", "client", "https://instagram.com/ad", channel="whatsapp"))
+    asyncio.run(store.update_meta("real-1", funnel="visa", stage="qualification",
+                                  qualification={"name": "Lead"}))
+
+    client = _auth_client()
+    resp = client.post("/admin/conversations/archive-noise")
+
+    assert resp.status_code == 200
+    assert 'data-user-id="noise-1"' not in client.get("/admin/search", params={"q": "noise-1"}).text
+    assert 'data-user-id="noise-2"' not in client.get("/admin/search", params={"q": "noise-2"}).text
+    assert 'data-user-id="real-1"' in client.get("/admin/search", params={"q": "real-1"}).text
+    assert any(a["action"] == "archive_noise" and a["detail"] == "count=2"
+               for a in panel_store._memory_store._audit)
+
+
 def test_manager_send_replies_and_takes_over(monkeypatch):
     _clear_memory()
     store = panel_store.get_conversation_store()
