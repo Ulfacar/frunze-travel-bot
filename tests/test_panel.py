@@ -79,6 +79,45 @@ def test_postgres_conversation_store_round_trip():
     asyncio.run(scenario())
 
 
+def test_archived_conversation_hidden_from_lists():
+    async def scenario():
+        engine = create_async_engine("sqlite+aiosqlite://",
+                                     connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        await init_models(engine)
+        sm = async_sessionmaker(engine, expire_on_commit=False)
+        store = PostgresConversationStore(sessionmaker=sm)
+
+        await store.add_message("u-active", "client", "нужна виза", channel="whatsapp")
+        await store.update_meta("u-active", funnel="visa")
+        await store.add_message("u-archived", "client", "https://instagram.com/ad", channel="whatsapp")
+        await store.update_meta("u-archived", funnel="visa")
+        await store.set_archived("u-archived", True)
+
+        assert [c.user_id for c in await store.list_cards("visa")] == ["u-active"]
+        assert [c.user_id for c in await store.all_conversations()] == ["u-active"]
+
+        await store.set_archived("u-archived", False)
+        assert {c.user_id for c in await store.list_cards("visa")} == {"u-active", "u-archived"}
+        await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+def test_memory_archived_conversation_hidden_from_lists():
+    async def scenario():
+        store = panel_store.MemoryConversationStore()
+        await store.add_message("u-active", "client", "нужна виза", channel="whatsapp")
+        await store.update_meta("u-active", funnel="visa")
+        await store.add_message("u-archived", "client", "https://instagram.com/ad", channel="whatsapp")
+        await store.update_meta("u-archived", funnel="visa")
+        await store.set_archived("u-archived", True)
+
+        assert [c.user_id for c in await store.list_cards("visa")] == ["u-active"]
+        assert [c.user_id for c in await store.all_conversations()] == ["u-active"]
+
+    asyncio.run(scenario())
+
+
 def test_card_model_flags_client_waiting():
     """Карточка с последней репликой клиента → сигнал ожидания (waiting)."""
     from datetime import datetime, timedelta, timezone
@@ -95,6 +134,24 @@ def test_card_model_flags_client_waiting():
     assert m["wait_level"] == "hot"       # ждёт 25 мин (> 20)
     assert "мин" in m["wait_label"]
     assert m["last_sender"] == "client"
+
+
+def test_card_model_marks_link_only_greeting_as_noise():
+    from datetime import datetime, timezone
+    from app.admin.router import _card_model
+    from app.integrations.panel.store import ConversationView
+
+    now = datetime(2026, 6, 22, 12, 0, tzinfo=timezone.utc)
+    noise = ConversationView(user_id="spam", funnel="tours", stage="greeting",
+                             last_sender="client", last_text="https://instagram.com/promo",
+                             last_message_at=now)
+    qualified = ConversationView(user_id="real", funnel="tours", stage="greeting",
+                                 last_sender="client", last_text="https://instagram.com/profile",
+                                 qualification={"name": "Айгуль"},
+                                 last_message_at=now)
+
+    assert _card_model(noise, now)["is_noise"] is True
+    assert _card_model(qualified, now)["is_noise"] is False
 
 
 def test_board_maps_follow_up_stage():
@@ -175,6 +232,23 @@ def test_board_renders_card_with_auth(monkeypatch):
     assert "996700222" in resp.text
     assert "Адам" in resp.text
     assert "Квалификация" in resp.text  # колонка канбана
+
+
+def test_archive_endpoint_hides_card_and_audits():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("u-archive-1", "client", "https://instagram.com/ad", channel="whatsapp"))
+    asyncio.run(store.update_meta("u-archive-1", funnel="visa", stage="greeting"))
+
+    client = _auth_client()
+    assert "u-archive-1" in client.get("/admin/board/visa").text
+    resp = client.post("/admin/conversation/u-archive-1/archive")
+    assert resp.status_code == 200 and resp.json()["ok"] is True
+
+    assert "u-archive-1" not in client.get("/admin/board/visa").text
+    assert "u-archive-1" not in client.get("/admin/search", params={"q": "archive"}).text
+    assert any(a["action"] == "archive" and a["user_id"] == "u-archive-1"
+               for a in panel_store._memory_store._audit)
 
 
 # ---------------- ответ менеджера из панели (двусторонняя отправка) ----------------

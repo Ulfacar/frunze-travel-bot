@@ -1,6 +1,6 @@
 {# Единый список «ждут ответа» (инбокс) и результаты поиска — по всем воронкам.
    mode: 'inbox' (авто-обновление 10с) | 'search'. cards — обогащённые карточки. #}
-<div {% if mode == 'inbox' %}hx-get="/admin/inbox" hx-trigger="every 10s [document.visibilityState==='visible']" hx-swap="outerHTML" hx-target="this"{% endif %}>
+<div data-attention {% if mode == 'inbox' %}hx-get="/admin/inbox" hx-trigger="every 10s [document.visibilityState==='visible']" hx-swap="outerHTML" hx-target="this"{% endif %}>
   <div class="inbox-head">
     {% if mode == 'search' %}
       <div class="inbox-title">Поиск: «{{ query }}» — {{ cards|length }}</div>
@@ -10,6 +10,9 @@
       <div class="inbox-title">Ждут ответа — {{ cards|length }}</div>
       <span class="inbox-sub">Все воронки · кто дольше ждёт — выше</span>
     {% endif %}
+    <button type="button" class="tab noise-filter" onclick="toggleNoise(this)">
+      Скрыть рекламу/без диалога · {{ noise_count or 0 }}
+    </button>
   </div>
 
   {% if not cards %}
@@ -20,8 +23,12 @@
 
   <div class="inbox-list">
     {% for c in cards %}
-    <div class="card" tabindex="0" data-wait="{{ c.wait_level }}"
+    <div class="card" tabindex="0" data-wait="{{ c.wait_level }}" data-noise="{{ '1' if c.is_noise else '0' }}"
          hx-get="/admin/conversation/{{ c.user_id }}" hx-target="#chat" hx-swap="innerHTML">
+      <button type="button" class="card-archive" title="Архивировать"
+              onclick="archiveConversation('{{ c.user_id }}', event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
       <div class="card-top">
         <span class="avatar" style="background: {{ c.avatar }}">{{ c.initials }}</span>
         <div class="card-id">

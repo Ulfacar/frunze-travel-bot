@@ -5,6 +5,8 @@
     <div class="stat waiting"><div class="n">{{ metrics.waiting }}</div><div class="l">Ждут ответа</div></div>
     <div class="stat needs-reply" onclick="toggleNeedsReply(this)" title="Показать только требующие ответа" style="cursor:pointer">
       <div class="n">{{ metrics.needs_reply }}</div><div class="l">Требуют ответа ⚑</div></div>
+    <div class="stat noise-filter" onclick="toggleNoise(this)" title="Скрыть рекламу и диалоги без переписки" style="cursor:pointer">
+      <div class="n">{{ metrics.noise }}</div><div class="l">Скрыть рекламу/без диалога</div></div>
     <div class="stat intercepted"><div class="n">{{ metrics.intercepted }}</div><div class="l">Перехвачено</div></div>
   </div>
 
@@ -16,9 +18,13 @@
         <span class="count">{{ col.cards|length }}</span>
       </div>
       {% for c in col.cards %}
-      <div class="card" tabindex="0" data-wait="{{ c.wait_level }}" data-needs="{{ '1' if c.needs_reply else '0' }}"
+      <div class="card" tabindex="0" data-wait="{{ c.wait_level }}" data-needs="{{ '1' if c.needs_reply else '0' }}" data-noise="{{ '1' if c.is_noise else '0' }}"
            data-uid="{{ c.user_id }}"
            hx-get="/admin/conversation/{{ c.user_id }}" hx-target="#chat" hx-swap="innerHTML">
+        <button type="button" class="card-archive" title="Архивировать"
+                onclick="archiveConversation('{{ c.user_id }}', event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
         <div class="card-top">
           <span class="avatar" style="background: {{ c.avatar }}">{{ c.initials }}</span>
           <div class="card-id">

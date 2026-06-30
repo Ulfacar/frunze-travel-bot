@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, func, inspect, text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, func, inspect, text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -68,6 +68,7 @@ class Conversation(Base):
     funnel: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
     stage: Mapped[str] = mapped_column(String(64), default="greeting")
     intercepted: Mapped[bool] = mapped_column(default=False)
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
     qualification: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     ai_summary: Mapped[str] = mapped_column(Text, default="")
     manager_next_step: Mapped[str] = mapped_column(Text, default="")
@@ -193,6 +194,7 @@ async def init_models(engine: AsyncEngine) -> None:
             "assigned_at": "TIMESTAMPTZ",
             "outcome": "VARCHAR(24) DEFAULT ''",
             "followup_sent": "BOOLEAN DEFAULT FALSE",
+            "archived": "BOOLEAN DEFAULT FALSE",
         })
         await _ensure_columns(conn, "messages", {
             "status": "VARCHAR(16) DEFAULT ''",

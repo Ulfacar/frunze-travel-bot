@@ -298,7 +298,7 @@
     }, true);
 
     document.addEventListener('click', function (e) {
-      if (window.__boardDragging || Date.now() < _suppressCardClickUntil || e.target.closest('.drag-handle')) return;
+      if (window.__boardDragging || Date.now() < _suppressCardClickUntil || e.target.closest('.drag-handle, .card-archive')) return;
       var card = e.target.closest('.card');
       if (!card) return;
       document.querySelectorAll('.card.active').forEach(c => c.classList.remove('active'));
@@ -365,6 +365,52 @@
       var on = board.classList.toggle('only-needs');
       stat.classList.toggle('active-filter', on);
     }
+    function _filterRoot(el) {
+      return el.closest('[data-board]') || el.closest('[data-attention]');
+    }
+    function _applyNoiseFilter(root) {
+      if (!root) root = document.querySelector('#board [data-board], #board [data-attention]');
+      if (!root) return;
+      var on = localStorage.getItem('hideNoise') === '1';
+      root.classList.toggle('hide-noise', on);
+      var btn = root.querySelector('.noise-filter');
+      if (btn) btn.classList.toggle('active-filter', on);
+    }
+    function toggleNoise(el) {
+      var root = _filterRoot(el);
+      var on = !(root && root.classList.contains('hide-noise'));
+      localStorage.setItem('hideNoise', on ? '1' : '0');
+      _applyNoiseFilter(root);
+    }
+    function _activeBoardUrl() {
+      var s = document.querySelector('.search input');
+      if (s && s.value.trim()) return '/admin/search?q=' + encodeURIComponent(s.value.trim());
+      var active = document.querySelector('.tab.active');
+      var funnel = active && active.getAttribute('data-funnel');
+      return funnel ? '/admin/board/' + encodeURIComponent(funnel) : '/admin/inbox';
+    }
+    function refreshCurrentList() {
+      if (window.htmx) htmx.ajax('GET', _activeBoardUrl(), { target: '#board', swap: 'innerHTML' });
+      _pollStats();
+    }
+    async function archiveConversation(userId, ev) {
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+      try {
+        var r = await fetch('/admin/conversation/' + encodeURIComponent(userId) + '/archive', {
+          method: 'POST',
+          headers: { 'HX-Request': 'true' },
+        });
+        if (!r.ok) return;
+        refreshCurrentList();
+        var panel = document.querySelector('#chat .panel');
+        if (panel && document.getElementById('composer-' + userId)) {
+          document.getElementById('chat').innerHTML = '<div class="panel"><div class="panel-empty"><span>Диалог архивирован</span></div></div>';
+        }
+      } catch (_) { /* сеть моргнула — следующий автообновление подтянет состояние */ }
+    }
     // Прокрутка переписки: НЕ дёргаем менеджера вниз, если он листает вверх.
     // Перед обновлением запоминаем позицию и был ли он у низа; после — восстанавливаем.
     var _chatScroll = { top: 0, atBottom: true };
@@ -421,7 +467,7 @@
       document.querySelectorAll('#board .board .col').forEach(function (col) {
         if (col._sortable) return;                 // уже инициализирована
         col._sortable = Sortable.create(col, {
-          group: 'board', draggable: '.card', animation: 220, easing: 'cubic-bezier(0.2, 0, 0, 1)',
+          group: 'board', draggable: '.card', filter: '.card-archive', preventOnFilter: true, animation: 220, easing: 'cubic-bezier(0.2, 0, 0, 1)',
           fallbackTolerance: 6,
           ghostClass: 'card-ghost', fallbackClass: 'card-fallback', forceFallback: true,
           onStart: function () { _dragging = true; window.__boardDragging = true; },
@@ -453,13 +499,23 @@
       if (funnel && window.htmx) htmx.ajax('GET', '/admin/board/' + funnel, { target: '#board', swap: 'innerHTML' });
     }
     // (Пере)инициализируем DnD после каждой подгрузки доски; не дёргаем во время перетаскивания.
-    document.body.addEventListener('htmx:afterSettle', function () { if (!_dragging && !window.__boardDragging) initBoardDnD(); });
+    document.body.addEventListener('htmx:afterSettle', function () { _applyNoiseFilter(); if (!_dragging && !window.__boardDragging) initBoardDnD(); });
     initBoardDnD();
   </script>
   <style>
     [data-board].only-needs .card[data-needs="0"] { display: none; }
+    [data-board].hide-noise .card[data-noise="1"], [data-attention].hide-noise .card[data-noise="1"] { display: none; }
     .stat.needs-reply.active-filter { outline: 2px solid var(--warm); border-radius: 8px; }
+    .stat.noise-filter.active-filter, .tab.noise-filter.active-filter { outline: 2px solid var(--accent); border-radius: 8px; }
     .stat.needs-reply .n { color: var(--warm); }
+    .stat.noise-filter .n { color: var(--accent); }
+    .card-archive { position: absolute; top: 6px; right: 6px; z-index: 3; width: 24px; height: 24px;
+                    display: grid; place-items: center; border: 1px solid var(--border); border-radius: 7px;
+                    background: rgba(255,255,255,.92); color: var(--faint); cursor: pointer; opacity: 0;
+                    transition: opacity var(--t), color var(--t), border-color var(--t), background var(--t); }
+    .card:hover .card-archive, .card:focus-within .card-archive { opacity: 1; }
+    .card-archive:hover { color: var(--hot); border-color: rgba(220,38,38,.25); background: var(--hot-soft); }
+    .card-archive svg { width: 13px; height: 13px; }
   </style>
 </body>
 </html>

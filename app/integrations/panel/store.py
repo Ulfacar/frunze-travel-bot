@@ -43,6 +43,7 @@ class ConversationView:
     funnel: str | None = None
     stage: str = "greeting"
     intercepted: bool = False
+    archived: bool = False
     qualification: dict[str, Any] = field(default_factory=dict)
     ai_summary: str = ""
     manager_next_step: str = ""
@@ -160,8 +161,12 @@ class MemoryConversationStore:
     async def set_intercepted(self, user_id: str, value: bool) -> None:
         await self.update_meta(user_id, intercepted=value)
 
+    async def set_archived(self, user_id: str, value: bool) -> None:
+        conv = await self.ensure(user_id)
+        conv.archived = value
+
     async def all_conversations(self) -> list[ConversationView]:
-        return list(self._conv.values())
+        return [c for c in self._conv.values() if not c.archived]
 
     async def list_audit(self, limit: int = 200) -> list[dict]:
         """Последние записи аудита (новые сверху)."""
@@ -184,7 +189,7 @@ class MemoryConversationStore:
                             "detail": detail, "created_at": _now()})
 
     async def list_cards(self, funnel: str) -> list[ConversationView]:
-        items = [c for c in self._conv.values() if c.funnel == funnel]
+        items = [c for c in self._conv.values() if c.funnel == funnel and not c.archived]
         items.sort(key=lambda c: c.last_message_at or _now(), reverse=True)
         return items
 
@@ -311,6 +316,12 @@ class PostgresConversationStore:
     async def set_intercepted(self, user_id: str, value: bool) -> None:
         await self.update_meta(user_id, intercepted=value)
 
+    async def set_archived(self, user_id: str, value: bool) -> None:
+        async with self._sm()() as session:
+            conv = await self._ensure_row(session, user_id, "", "")
+            conv.archived = value
+            await session.commit()
+
     async def claim(self, user_id: str, manager: str) -> bool:
         """Атомарно закрепить диалог за менеджером, если свободен или уже его."""
         from app.integrations.crm.db import Conversation
@@ -332,6 +343,7 @@ class PostgresConversationStore:
         async with self._sm()() as session:
             rows = (await session.execute(
                 select(Conversation).options(selectinload(Conversation.messages))
+                .where(Conversation.archived.is_not(True))
             )).scalars().all()
             views = []
             for conv in rows:
@@ -364,6 +376,7 @@ class PostgresConversationStore:
         async with self._sm()() as session:
             rows = (await session.execute(
                 select(Conversation).where(Conversation.funnel == funnel)
+                .where(Conversation.archived.is_not(True))
                 .order_by(Conversation.last_message_at.desc())
             )).scalars().all()
             return [_view(r) for r in rows]
@@ -393,6 +406,7 @@ def _view(conv) -> ConversationView:
         user_id=conv.user_id, phone=(getattr(conv, "phone", "") or conv.user_id),
         channel=conv.channel, chat_id=conv.chat_id, bot_id=conv.bot_id,
         funnel=conv.funnel, stage=conv.stage, intercepted=conv.intercepted,
+        archived=getattr(conv, "archived", False) or False,
         qualification=dict(conv.qualification or {}),
         ai_summary=getattr(conv, "ai_summary", "") or "",
         manager_next_step=getattr(conv, "manager_next_step", "") or "",

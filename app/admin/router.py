@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import secrets
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,6 +58,12 @@ COLUMN_TO_STAGE = {key: key for key, _ in BOARD_COLUMNS}
 
 # Стадии, в которых ждут живого менеджера (для сигнала «требуют ответа»).
 HUMAN_STAGES = {"office", "office_consultation", "manager", "manager_handoff"}
+NOISE_STAGES = {"greeting", "new"}
+NOISE_LINK_RE = re.compile(
+    r"(https?://|instagram\.com|fb\.me|facebook\.com|wa\.me|api\.whatsapp)",
+    re.IGNORECASE,
+)
+NOISE_MEDIA_TERMS = ("[media", "[медиа", "[голос", "голос", "voice", "audio")
 
 # Палитра градиентов для аватаров (детерминированно по имени/номеру).
 AVATAR_GRADIENTS = [
@@ -130,6 +137,17 @@ def _card_model(conv, now: datetime) -> dict:
         level = "fresh"
     # «Требуют ответа человека» = клиент ждёт И диалог у менеджера/перехвачен.
     needs_reply = waiting and (conv.intercepted or conv.stage in HUMAN_STAGES)
+    text = (conv.last_text or "").strip()
+    lower = text.lower()
+    link_or_media = bool(NOISE_LINK_RE.search(lower)) or any(term in lower for term in NOISE_MEDIA_TERMS)
+    is_noise = (
+        conv.last_sender == "client"
+        and conv.stage in NOISE_STAGES
+        and link_or_media
+        and not conv.intercepted
+        and not conv.assigned_to
+        and not conv.qualification
+    )
     return {
         "user_id": conv.user_id, "phone": phone, "name": name or phone,
         "initials": _initials(name, phone),
@@ -142,6 +160,7 @@ def _card_model(conv, now: datetime) -> dict:
         "wait_label": _time_label(wait_min) if wait_min is not None else "",
         "wait_level": level,                       # none|fresh|warm|hot
         "needs_reply": needs_reply,
+        "is_noise": is_noise,
         "lead_temperature": conv.lead_temperature,
         "sort_key": (wait_min if wait_min is not None else -1),
     }
@@ -238,6 +257,7 @@ def _build_board(cards: list, now: datetime) -> tuple[list[dict], dict]:
         "total": len(cards),
         "waiting": sum(1 for m in models if m["wait_level"] != "none"),
         "needs_reply": sum(1 for m in models if m["needs_reply"]),
+        "noise": sum(1 for m in models if m["is_noise"]),
         "intercepted": sum(1 for c in cards if c.intercepted),
     }
     return columns, metrics
@@ -479,7 +499,8 @@ async def inbox(request: Request, _: dict = Depends(require_admin)):
     """Единый инбокс: все ждущие ответа диалоги по всем воронкам в одном списке."""
     cards = _waiting_sorted(await _all_models(_now()))
     return templates.TemplateResponse(request, "_attention.html",
-                                      {"mode": "inbox", "cards": cards, "query": ""})
+                                      {"mode": "inbox", "cards": cards, "query": "",
+                                       "noise_count": sum(1 for c in cards if c["is_noise"])})
 
 
 @router.get("/search", response_class=HTMLResponse)
@@ -489,16 +510,18 @@ async def search(request: Request, q: str = "", _: dict = Depends(require_admin)
     q = q.strip()
     models = await _all_models(_now())
     if not q:
+        cards = _waiting_sorted(models)
         return templates.TemplateResponse(request, "_attention.html",
-                                          {"mode": "inbox", "cards": _waiting_sorted(models),
-                                           "query": ""})
+                                          {"mode": "inbox", "cards": cards, "query": "",
+                                           "noise_count": sum(1 for c in cards if c["is_noise"])})
     ql = q.lower()
     cards = [m for m in models
              if ql in (m["name"] or "").lower() or ql in (m["phone"] or "").lower()
              or ql in (m["last_text"] or "").lower()]
     cards.sort(key=lambda m: m["sort_key"], reverse=True)
     return templates.TemplateResponse(request, "_attention.html",
-                                      {"mode": "search", "cards": cards, "query": q})
+                                      {"mode": "search", "cards": cards, "query": q,
+                                       "noise_count": sum(1 for c in cards if c["is_noise"])})
 
 
 @router.get("/stats", response_class=JSONResponse)
@@ -508,6 +531,7 @@ async def stats(_: dict = Depends(require_admin)):
     return JSONResponse({
         "waiting": sum(1 for m in models if m["wait_level"] != "none"),
         "needs_reply": sum(1 for m in models if m["needs_reply"]),
+        "noise": sum(1 for m in models if m["is_noise"]),
         "total": len(models),
     })
 
@@ -536,6 +560,28 @@ async def _render_conversation(user_id: str, request: Request, manager: dict):
 async def conversation(user_id: str, request: Request, manager: dict = Depends(require_admin)):
     """HTMX-партиал: полный контекст диалога + квалификация + действия менеджера."""
     return await _render_conversation(user_id, request, manager)
+
+
+@router.post("/conversation/{user_id}/archive", response_class=JSONResponse)
+async def archive_conversation(user_id: str, manager: dict = Depends(require_admin)):
+    """Soft-hide a conversation from boards, inbox, search and counters."""
+    panel = get_conversation_store()
+    if await panel.get(user_id) is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    await panel.set_archived(user_id, True)
+    await panel.add_audit(manager["login"], "archive", user_id)
+    return JSONResponse({"ok": True})
+
+
+@router.post("/conversation/{user_id}/unarchive", response_class=JSONResponse)
+async def unarchive_conversation(user_id: str, manager: dict = Depends(require_admin)):
+    """Return a conversation from archive."""
+    panel = get_conversation_store()
+    if await panel.get(user_id) is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    await panel.set_archived(user_id, False)
+    await panel.add_audit(manager["login"], "unarchive", user_id)
+    return JSONResponse({"ok": True})
 
 
 @router.post("/conversation/{user_id}/takeover", response_class=HTMLResponse)
