@@ -26,6 +26,8 @@ from app.core.orchestrator import Orchestrator
 from app.integrations.panel.store import get_conversation_store
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
