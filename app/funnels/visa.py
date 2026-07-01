@@ -1,4 +1,4 @@
-"""Воронка «Визы» (бренд GetVisa, менеджер Медина).
+"""Воронка «Визы» (бренд Frunze Travel, менеджер Медина).
 
 Этапы: приветствие → опросник → мягкая честная подача → приглашение в офис/онлайн → CRM.
 Главная цель — довести клиента до консультации эксперта. БЕЗ обещаний по визе; цены не называем.
@@ -13,7 +13,7 @@ from app.core.state import DialogState
 from app.funnels.base import collect_qualification
 from app.integrations.crm import get_crm
 
-# Опросник GetVisa из реальных диалогов Медины.
+# Опросник Frunze Travel из реальных диалогов Медины.
 REQUIRED_FIELDS = [
     "name", "country", "age", "marital_status", "occupation",
     "prior_countries", "companions", "english_level", "dates", "prior_refusal",
@@ -89,7 +89,7 @@ def visa_category(pct: int) -> str:
 
 def _ask_for(field: str) -> str:
     questions = {
-        "name": "Здравствуйте! Меня зовут Медина, я ваш личный визовый эксперт 😊 Как могу к вам обращаться?",
+        "name": "Здравствуйте! Меня зовут Медина, я ваш личный визовый эксперт Frunze Travel 😊 Как могу к вам обращаться?",
         "country": "Виза в какую страну вас интересует?",
         "age": "Подскажите, сколько вам лет?",
         "marital_status": "Ваше семейное положение? (в браке / не в браке, есть ли дети)",

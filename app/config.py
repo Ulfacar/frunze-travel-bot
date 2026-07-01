@@ -54,7 +54,7 @@ class ManagerConfig(BaseModel):
 # (через JSON-переменную BOTS) либо проставляются в Фазе 0 после imbot.register.
 DEFAULT_BOTS: list[BotConfig] = [
     BotConfig(id="frunze_tours", scenario="tours", title="FrunzeTravel2", wappi_profile_id="02a4708d-ec6c"),
-    BotConfig(id="getvisa", scenario="visa", title="GetVisa", wappi_profile_id="2f099bc3-478d"),
+    BotConfig(id="getvisa", scenario="visa", title="FrunzeTravel Visa", wappi_profile_id="2f099bc3-478d"),
 ]
 
 

@@ -6,6 +6,8 @@ import app.integrations.tourvisor.client as tv
 from app.integrations.tourvisor.client import (
     TourVisorClient,
     _format_over_budget,
+    _format_hotels,
+    _hotel_link,
     _hotel_price,
     _parse_dates,
 )
@@ -69,6 +71,17 @@ def test_format_over_budget_sorts_and_adds_notice():
     assert "Cheap" in lines[1]
     assert "Middle" in lines[2]
     assert "Expensive" in lines[3]
+
+
+def test_format_hotels_adds_clickable_hotel_search_link():
+    lines = _format_hotels([_hotel("Palmora Lara", "2612")])
+
+    assert "ссылка: https://www.google.com/search?q=Palmora+Lara" in lines[0]
+    assert "Хургада" in lines[0]
+
+
+def test_hotel_link_skips_empty_default_name():
+    assert _hotel_link("Отель", "Анталья") == ""
 
 
 def test_search_retries_once_without_price_limit_when_budget_is_too_low(monkeypatch):

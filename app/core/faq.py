@@ -281,7 +281,7 @@ async def seed_defaults() -> None:
             "negative_terms": [],
             "answer": (
                 f"Frunze Travel (туры/билеты): {FRUNZE_WORKING_HOURS}. "
-                f"GetVisa (визы): {GETVISA_WORKING_HOURS}."
+                f"Frunze Travel (визы): {GETVISA_WORKING_HOURS}."
             ),
             "handoff_only": False,
             "allow_during_qualification": True,

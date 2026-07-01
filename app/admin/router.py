@@ -30,7 +30,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 # Доски (вкладки) — по воронкам. Визы и Туры основные, Билеты — третья.
-FUNNELS = [("visa", "Визы (GetVisa)"), ("tours", "Туры"), ("tickets", "Билеты")]
+FUNNELS = [("visa", "Визы"), ("tours", "Туры"), ("tickets", "Билеты")]
 # Короткие ярлыки воронок для бейджа в инбоксе/поиске (где смешаны все воронки).
 FUNNEL_LABELS = {"visa": "Визы", "tours": "Туры", "tickets": "Билеты"}
 FAQ_TABS = FUNNELS + [("common", "Общие")]
@@ -719,7 +719,7 @@ async def suggest_reply(user_id: str, request: Request, _: dict = Depends(requir
                for m in conv.messages if m.text]
     if not history or history[-1]["role"] != "user":
         history.append({"role": "user", "content": "(Предложи уместный следующий шаг.)"})
-    persona = "GetVisa (Медина, визовый эксперт)" if conv.funnel == "visa" else "Frunze Travel (Сезим)"
+    persona = "Frunze Travel (Медина, визовый эксперт)" if conv.funnel == "visa" else "Frunze Travel (Адеми)"
     system = (
         f"Ты — менеджер {persona}. Предложи ОДИН следующий ответ клиенту по контексту "
         f"переписки: тепло, кратко, по-русски, в стиле бренда, без выдуманных цен. "

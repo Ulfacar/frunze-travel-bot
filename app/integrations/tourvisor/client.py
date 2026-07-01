@@ -15,6 +15,7 @@ import asyncio
 import logging
 import re
 from datetime import date, timedelta
+from urllib.parse import quote_plus
 
 import httpx
 
@@ -403,8 +404,20 @@ def _format_hotels(hotels: list[dict], limit: int = 5) -> list[str]:
             tail.append(f"от {price} {currency}".strip())
         if operator:
             tail.append(f"({operator})")
+        link = _hotel_link(name, region)
+        if link:
+            tail.append(f"ссылка: {link}")
         line = " ".join(parts)
         if tail:
             line += " — " + ", ".join(tail)
         out.append(line)
     return out
+
+
+def _hotel_link(name: str, region: str = "") -> str:
+    """TourVisor XML не даёт публичный URL карточки, поэтому даём кликабельный поиск по отелю."""
+    clean_name = " ".join(str(name or "").split())
+    if not clean_name or clean_name == "Отель":
+        return ""
+    query = " ".join(part for part in (clean_name, region, "hotel") if part)
+    return f"https://www.google.com/search?q={quote_plus(query)}"
