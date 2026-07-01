@@ -409,7 +409,7 @@ def _format_hotels(hotels: list[dict], limit: int = 5) -> list[str]:
             tail.append(f"ссылка: {link}")
         line = " ".join(parts)
         if tail:
-            line += " — " + ", ".join(tail)
+            line += ". " + ", ".join(tail)
         out.append(line)
     return out
 

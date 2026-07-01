@@ -26,6 +26,7 @@ _UNDERSCORE = re.compile(r"__(.+?)__", re.DOTALL)
 _HEADER = re.compile(r"^\s{0,3}#{1,6}\s*", re.MULTILINE)     # # Заголовок
 _BULLET = re.compile(r"^\s{0,3}[-*•]\s+", re.MULTILINE)      # «- пункт» / «* пункт»
 _MULTINL = re.compile(r"\n{3,}")
+_SPACED_DASH = re.compile(r"\s+[—–]\s+")
 
 # деньги: 250$, $300, 5000 сом, 185 usd, 5 тыс$
 _PRICE = re.compile(
@@ -48,6 +49,7 @@ def strip_markdown(text: str) -> str:
     text = _HEADER.sub("", text)
     text = _BULLET.sub("", text)
     text = _MULTINL.sub("\n\n", text)
+    text = _SPACED_DASH.sub(". ", text)
     return text.strip()
 
 

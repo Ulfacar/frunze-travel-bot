@@ -171,6 +171,34 @@ def test_visa_turn_scores_and_replies(monkeypatch):
     assert fake.messages.create.await_count == 2
 
 
+def test_visa_price_preempts_llm_and_returns_single_country(monkeypatch):
+    """Вопрос цены по США не должен уходить в LLM, чтобы не выдать весь прайс."""
+    state = DialogState(user_id="v-price", funnel="visa")
+    fake = _patch_client(monkeypatch, _text("не должно использоваться"))
+
+    reply = asyncio.run(runner.run_visa_turn(state, "Сколько стоит виза в США?"))
+
+    assert "250$" in reply
+    assert "185$" in reply
+    assert "Шенген" not in reply
+    assert fake.messages.create.await_count == 0
+
+
+def test_visa_self_apply_retention_then_handoff(monkeypatch):
+    """Self-visa один раз удерживаем мягко, на повторе передаём менеджеру."""
+    state = DialogState(user_id="v-self", funnel="visa")
+    fake = _patch_client(monkeypatch, _text("не должно использоваться"))
+
+    first = asyncio.run(runner.run_visa_turn(state, "Я сам оформлю визу"))
+    second = asyncio.run(runner.run_visa_turn(state, "Нет, точно без вас сделаю"))
+
+    assert "проверяем анкету" in first
+    assert "Передам менеджеру" in second
+    assert state.stage == "manager"
+    assert state.intercepted is True
+    assert fake.messages.create.await_count == 0
+
+
 def test_visa_category_thresholds():
     """Категории шансов по порогам."""
     from app.funnels.visa import visa_category

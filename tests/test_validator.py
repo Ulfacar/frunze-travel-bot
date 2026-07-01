@@ -21,6 +21,13 @@ def test_markdown_flagged_as_violation():
     assert "markdown" in violations
 
 
+def test_spaced_long_dash_is_normalized():
+    clean, violations = validate_reply("США — сопровождение 250$.", "visa")
+
+    assert clean == "США. сопровождение 250$."
+    assert "markdown" in violations
+
+
 def test_tours_price_gets_disclaimer_appended():
     clean, violations = validate_reply("Отель 5*, 7 ночей — от 1000$", "tours")
     assert PRICE_DISCLAIMER in clean

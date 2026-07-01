@@ -23,6 +23,7 @@ from app.config import settings
 from app.core import observ
 from app.core.branding import GETVISA_EMAIL, GETVISA_OFFICE_ADDRESS, PRICE_DISCLAIMER
 from app.core.state import DialogState
+from app.core.visa_pricing import self_visa_reply, visa_price_reply
 from app.funnels.visa import score_visa, visa_category
 from app.integrations.crm import get_crm
 from app.integrations.tourvisor.client import TourVisorClient, TourVisorError
@@ -200,6 +201,26 @@ VISA_SPEC = FunnelSpec(
 
 async def run_visa_turn(state: DialogState, user_text: str) -> str | None:
     """Один ход клиента в воронке «Визы»."""
+    price_reply = visa_price_reply(user_text)
+    if price_reply:
+        state.history.append({"role": "user", "content": user_text})
+        state.history.append({"role": "assistant", "content": price_reply})
+        return price_reply
+
+    retention = self_visa_reply(
+        user_text,
+        already_sent=bool(state.qualification.get("self_visa_retention_sent")),
+    )
+    if retention:
+        state.history.append({"role": "user", "content": user_text})
+        state.history.append({"role": "assistant", "content": retention})
+        if state.qualification.get("self_visa_retention_sent"):
+            state.stage = "manager"
+            state.intercepted = True
+        else:
+            state.qualification["self_visa_retention_sent"] = True
+        return retention
+
     return await run_turn(state, user_text, VISA_SPEC)
 
 
