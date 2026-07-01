@@ -107,6 +107,7 @@ class MemoryConversationStore:
                           status=status, provider_msg_id=provider_msg_id)
         msg._idem = idempotency_key  # type: ignore[attr-defined]
         conv.messages.append(msg)
+        conv.archived = False  # новое сообщение возвращает диалог в рабочие списки
         conv.last_text = text
         conv.last_sender = sender
         conv.last_message_at = _now()
@@ -259,6 +260,7 @@ class PostgresConversationStore:
                               status=status, provider_msg_id=provider_msg_id,
                               idempotency_key=idempotency_key)
             session.add(msg)
+            conv.archived = False  # новое сообщение возвращает диалог в рабочие списки
             conv.last_text = text
             conv.last_sender = sender
             conv.last_message_at = _now()

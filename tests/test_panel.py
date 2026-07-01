@@ -125,6 +125,28 @@ def test_postgres_bulk_archive_hides_from_lists():
     asyncio.run(scenario())
 
 
+def test_postgres_add_message_unarchives_existing_dialog():
+    async def scenario():
+        engine = create_async_engine("sqlite+aiosqlite://",
+                                     connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        await init_models(engine)
+        sm = async_sessionmaker(engine, expire_on_commit=False)
+        store = PostgresConversationStore(sessionmaker=sm)
+
+        await store.add_message("u-return", "client", "old", channel="whatsapp")
+        await store.update_meta("u-return", funnel="tours")
+        await store.set_archived("u-return", True)
+
+        await store.add_message("u-return", "client", "new", channel="whatsapp")
+
+        conv = await store.get("u-return")
+        assert conv.archived is False
+        assert [c.user_id for c in await store.list_cards("tours")] == ["u-return"]
+        await engine.dispose()
+
+    asyncio.run(scenario())
+
+
 def test_memory_archived_conversation_hidden_from_lists():
     async def scenario():
         store = panel_store.MemoryConversationStore()
@@ -136,6 +158,22 @@ def test_memory_archived_conversation_hidden_from_lists():
 
         assert [c.user_id for c in await store.list_cards("visa")] == ["u-active"]
         assert [c.user_id for c in await store.all_conversations()] == ["u-active"]
+
+    asyncio.run(scenario())
+
+
+def test_memory_add_message_unarchives_existing_dialog():
+    async def scenario():
+        store = panel_store.MemoryConversationStore()
+        await store.add_message("u-return", "client", "old", channel="whatsapp")
+        await store.update_meta("u-return", funnel="tours")
+        await store.set_archived("u-return", True)
+
+        await store.add_message("u-return", "client", "new", channel="whatsapp")
+
+        conv = await store.get("u-return")
+        assert conv.archived is False
+        assert [c.user_id for c in await store.list_cards("tours")] == ["u-return"]
 
     asyncio.run(scenario())
 
