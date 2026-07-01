@@ -9,13 +9,13 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import httpx
 
 from app.agent.llm import client
 from app.agent.prompts.tickets import SYSTEM as TICKETS_SYSTEM
-from app.agent.prompts.tours import SYSTEM as TOURS_SYSTEM
+from app.agent.prompts.tours import SYSTEM as TOURS_SYSTEM, system_for_manager as tours_system_for_manager
 from app.agent.prompts.visa import SYSTEM as VISA_SYSTEM
 from app.agent.tools import tools_for
 from app.agent.validator import validate_reply
@@ -151,7 +151,10 @@ TOURS_SPEC = FunnelSpec(
 
 async def run_tours_turn(state: DialogState, user_text: str) -> str | None:
     """Один ход клиента в воронке «Туры»."""
-    return await run_turn(state, user_text, TOURS_SPEC)
+    spec = TOURS_SPEC
+    if state.manager_name:
+        spec = replace(TOURS_SPEC, system=tours_system_for_manager(state.manager_name))
+    return await run_turn(state, user_text, spec)
 
 
 # ---------------- Визы ----------------

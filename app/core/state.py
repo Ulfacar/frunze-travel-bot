@@ -20,6 +20,8 @@ from app.config import settings
 class DialogState:
     user_id: str
     funnel: str | None = None          # tours | visa | tickets
+    bot_id: str = ""
+    manager_name: str = ""
     stage: str = "greeting"
     qualification: dict[str, Any] = field(default_factory=dict)
     deal_id: str | None = None

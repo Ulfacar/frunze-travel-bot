@@ -20,6 +20,7 @@ class BotConfig(BaseModel):
     id: str                              # frunze_tours | getvisa
     scenario: Literal["tours", "visa"]
     title: str = ""                      # человекочитаемое имя профиля (FrunzeTravel…)
+    manager_name: str = ""               # имя персоны в клиентских ответах
     wappi_profile_id: str = ""           # профиль Wappi Pro (WhatsApp)
     bitrix_bot_id: str = ""              # imbot BOT_ID — ключ маршрутизации входящих
     bitrix_line_id: str = ""             # CONFIG_ID Открытой линии
@@ -53,8 +54,9 @@ class ManagerConfig(BaseModel):
 # Дефолтный реестр — 2 стартовых Wappi-бота. Реальные секреты приходят из .env
 # (через JSON-переменную BOTS) либо проставляются в Фазе 0 после imbot.register.
 DEFAULT_BOTS: list[BotConfig] = [
-    BotConfig(id="frunze_tours", scenario="tours", title="FrunzeTravel2", wappi_profile_id="02a4708d-ec6c"),
-    BotConfig(id="getvisa", scenario="visa", title="FrunzeTravel Visa", wappi_profile_id="2f099bc3-478d"),
+    BotConfig(id="frunze_tours", scenario="tours", title="FrunzeTravel2", manager_name="Адеми", wappi_profile_id="02a4708d-ec6c"),
+    BotConfig(id="frunze_tours_sezim", scenario="tours", title="FrunzeTravel", manager_name="Сезим", wappi_profile_id="6a74fb33-16aa"),
+    BotConfig(id="getvisa", scenario="visa", title="FrunzeTravel Visa", manager_name="Медина", wappi_profile_id="2f099bc3-478d"),
 ]
 
 

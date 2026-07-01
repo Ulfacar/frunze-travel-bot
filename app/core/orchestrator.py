@@ -52,6 +52,18 @@ def _auto_outcome(stage: str) -> str:
         return "manager"
     return "in_progress"
 
+
+def _default_manager_name(bot: BotConfig) -> str:
+    if bot.manager_name:
+        return bot.manager_name
+    if bot.scenario == "visa":
+        return "Медина"
+    if bot.id.endswith("sezim") or "sezim" in bot.id.lower():
+        return "Сезим"
+    if bot.scenario == "tours":
+        return "Адеми"
+    return "Сезим"
+
 NON_TEXT_FALLBACK = (
     "Голосовые сообщения пока не распознаём 🙏 Напишите, пожалуйста, словами — "
     "или скажите «нужен менеджер», и я позову человека."
@@ -166,6 +178,9 @@ class Orchestrator:
         key = self._key(msg)
         store = get_state_store()
         state = await store.load(key)
+        if self.bot is not None:
+            state.bot_id = self.bot.id
+            state.manager_name = _default_manager_name(self.bot)
 
         # Главный рубильник: если авто-ответы выключены из панели — бот молчит во всех
         # воронках (сообщение клиента уже в логе, менеджер ведёт диалог вручную).

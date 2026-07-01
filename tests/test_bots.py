@@ -35,9 +35,12 @@ def test_default_bots_match_starting_wappi_profiles():
 
     reg = BotRegistry(DEFAULT_BOTS)
 
-    assert [bot.id for bot in reg.all()] == ["frunze_tours", "getvisa"]
+    assert [bot.id for bot in reg.all()] == ["frunze_tours", "frunze_tours_sezim", "getvisa"]
     assert reg.by_wappi_profile_id("02a4708d-ec6c").id == "frunze_tours"
+    assert reg.by_wappi_profile_id("6a74fb33-16aa").id == "frunze_tours_sezim"
     assert reg.by_wappi_profile_id("2f099bc3-478d").id == "getvisa"
+    assert reg.by_id("frunze_tours").manager_name == "Адеми"
+    assert reg.by_id("frunze_tours_sezim").manager_name == "Сезим"
 
 
 def test_registry_ignores_unconfigured_bots():

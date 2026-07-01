@@ -67,6 +67,19 @@ def test_tool_use_then_text(monkeypatch):
     assert fake.messages.create.await_count == 2
 
 
+def test_tours_turn_uses_bot_specific_manager_name(monkeypatch):
+    """Второй тур-бот может говорить от имени Сезим, не меняя общий сценарий туров."""
+    state = DialogState(user_id="u-sezim", funnel="tours", manager_name="Сезим")
+    fake = _patch_client(monkeypatch, _text("Ок"))
+
+    reply = asyncio.run(runner.run_tours_turn(state, "хочу тур"))
+
+    assert reply == "Ок"
+    system = fake.messages.create.await_args.kwargs["system"]
+    assert "Я Сезим, ваш менеджер Frunze Travel" in system
+    assert "Я Адеми, ваш менеджер Frunze Travel" not in system
+
+
 def test_max_iterations_guard(monkeypatch):
     """Если Claude бесконечно зовёт инструменты — выходим по лимиту с безопасным ответом."""
     state = DialogState(user_id="u2", funnel="tours")

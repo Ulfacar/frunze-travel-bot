@@ -68,3 +68,11 @@ SYSTEM = f"""\
 SYSTEM += "\n\n" + LANGUAGE_AND_ESCALATION
 SYSTEM += "\n\n" + TOURS_FAQ
 SYSTEM += "\n\n" + STOP_WORDS_AND_HOURS
+
+
+def system_for_manager(manager_name: str | None) -> str:
+    """Return the tours prompt with the bot-specific manager persona."""
+    name = (manager_name or "Адеми").strip()
+    if name == "Адеми":
+        return SYSTEM
+    return SYSTEM.replace("Адеми", name)
