@@ -298,6 +298,30 @@ class Orchestrator:
 
     async def _maybe_faq_reply(self, msg: Message, state, store) -> bool:
         """Try deterministic FAQ before LLM/funnel logic. Fail open to the normal flow."""
+        if state.funnel == "visa":
+            try:
+                from app.core.visa_pricing import self_visa_reply, visa_price_reply
+                answer = visa_price_reply(msg.text)
+                if answer is None:
+                    answer = self_visa_reply(
+                        msg.text,
+                        already_sent=bool(state.qualification.get("self_visa_retention_sent")),
+                    )
+                    if answer and state.qualification.get("self_visa_retention_sent"):
+                        state.stage = "manager"
+                        state.intercepted = True
+                    elif answer:
+                        state.qualification["self_visa_retention_sent"] = True
+                if answer:
+                    state.history.append({"role": "user", "content": msg.text})
+                    state.history.append({"role": "assistant", "content": answer})
+                    await store.save(state)
+                    await self._sync_card(msg, state)
+                    await self._reply(msg, answer)
+                    return True
+            except Exception:  # noqa: BLE001
+                log.warning("visa deterministic reply failed", exc_info=True)
+
         try:
             from app.core.faq import get_faq_store, match_faq, qualification_question
             faq_store = get_faq_store()

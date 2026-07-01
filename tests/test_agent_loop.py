@@ -184,6 +184,54 @@ def test_visa_price_preempts_llm_and_returns_single_country(monkeypatch):
     assert fake.messages.create.await_count == 0
 
 
+def test_orchestrator_visa_price_preempts_faq_and_llm(monkeypatch):
+    """Orchestrator checks scoped visa pricing before generic FAQ rules."""
+    from app.channels.base import ChannelAdapter, Message
+    from app.config import BotConfig
+    from app.core import flags
+    from app.core.faq import reset as reset_faq, seed_defaults
+    from app.core.orchestrator import Orchestrator
+    from app.core.state import get_state_store
+
+    class RecordingChannel(ChannelAdapter):
+        channel = "whatsapp"
+
+        def __init__(self):
+            self.sent = []
+
+        async def parse(self, raw):  # pragma: no cover
+            raise NotImplementedError
+
+        async def send(self, chat_id, text, **kwargs):
+            self.sent.append(text)
+            return "msg-id"
+
+    async def scenario():
+        reset_faq()
+        await seed_defaults()
+        await flags.set_flag("bots_enabled:visa-test", True)
+        state = await get_state_store().load("visa-test:996700001")
+        state.funnel = "visa"
+        await get_state_store().save(state)
+        ch = RecordingChannel()
+        orch = Orchestrator(ch, bot=BotConfig(id="visa-test", scenario="visa", title="Visa"))
+        await orch.handle(Message(
+            channel="whatsapp",
+            user_id="996700001",
+            chat_id="996700001@c.us",
+            text="Сколько стоит виза в США?",
+        ))
+        return ch.sent
+
+    fake = _patch_client(monkeypatch, _text("не должно использоваться"))
+    sent = asyncio.run(scenario())
+
+    assert len(sent) == 1
+    assert "250$" in sent[0]
+    assert "Шенген" not in sent[0]
+    assert fake.messages.create.await_count == 0
+
+
 def test_visa_self_apply_retention_then_handoff(monkeypatch):
     """Self-visa один раз удерживаем мягко, на повторе передаём менеджеру."""
     state = DialogState(user_id="v-self", funnel="visa")

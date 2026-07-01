@@ -14,6 +14,8 @@ from app.core.branding import (
     FRUNZE_OFFICE_ADDRESS,
     FRUNZE_WORKING_HOURS,
     GETVISA_WORKING_HOURS,
+    PRICE_DISCLAIMER,
+    TOUR_BOOKING_TERMS,
     VISA_SERVICE_PRICES,
 )
 
@@ -251,15 +253,14 @@ def get_faq_store():
 
 
 async def seed_defaults() -> None:
-    """Засеять стартовые FAQ-правила в пустой стор.
+    """Засеять/дополнить стартовые FAQ-правила.
 
-    Идемпотентность намеренно грубая: если менеджер уже создал хотя бы одно
-    правило, сидер больше ничего не добавляет и не переписывает.
+    Не трогаем правила, которые менеджер уже редактировал вручную. Системные правила
+    (`updated_by=system:seed`) можно обновлять, чтобы прод получал новые знания без
+    ручной чистки таблицы.
     """
     store = get_faq_store()
     existing = await store.list(include_disabled=True)
-    if existing:
-        return
 
     defaults = [
         {
@@ -320,8 +321,8 @@ async def seed_defaults() -> None:
             ],
             "negative_terms": ["тур", "билет", "авиа", "отел"],
             "answer": (
-                f"Официальный прайс визовых услуг: {VISA_SERVICE_PRICES} "
-                "Итоговую сумму по стране, типу визы и записи подтвердит менеджер."
+                "Подскажите, по какой стране нужна цена? Напишите страну, и я назову "
+                "официальный прайс только по ней."
             ),
             "handoff_only": False,
             "allow_during_qualification": True,
@@ -344,9 +345,128 @@ async def seed_defaults() -> None:
             "handoff_only": False,
             "allow_during_qualification": True,
         },
+        {
+            "funnel": "visa",
+            "enabled": True,
+            "priority": 35,
+            "title": "Self-visa удержание",
+            "patterns": [
+                "сам оформлю",
+                "сама оформлю",
+                "сам подам",
+                "без вас",
+                "селф виза",
+                "self visa",
+                "самостоятельно оформлю",
+            ],
+            "negative_terms": [],
+            "answer": (
+                "Понимаю, можно попробовать самостоятельно. Мы полезны тем, что проверяем анкету, "
+                "снижаем риск ошибок и готовим к интервью. Хотите, я передам менеджеру на короткую консультацию?"
+            ),
+            "handoff_only": False,
+            "allow_during_qualification": True,
+        },
+        {
+            "funnel": "visa",
+            "enabled": True,
+            "priority": 25,
+            "title": "Гарантии по визе",
+            "patterns": [
+                "гарантия визы",
+                "гарантируете",
+                "точно дадут",
+                "100 процентов",
+                "шансы",
+            ],
+            "negative_terms": [],
+            "answer": (
+                "Визу мы не гарантируем, решение принимает консульство. Мы помогаем грамотно заполнить анкету, "
+                "подготовиться к интервью и снизить риск ошибок."
+            ),
+            "handoff_only": False,
+            "allow_during_qualification": True,
+        },
+        {
+            "funnel": "visa",
+            "enabled": True,
+            "priority": 25,
+            "title": "Документы для визы США",
+            "patterns": [
+                "документы сша",
+                "что нужно для сша",
+                "какие документы для визы сша",
+                "документы на американскую визу",
+            ],
+            "negative_terms": [],
+            "answer": (
+                "Для туристической визы США обычно нужны загранпаспорт и справка с работы. "
+                "Полный набор зависит от вашей ситуации, его уточнит эксперт на консультации."
+            ),
+            "handoff_only": False,
+            "allow_during_qualification": True,
+        },
+        {
+            "funnel": "visa",
+            "enabled": True,
+            "priority": 25,
+            "title": "Отказ в визе",
+            "patterns": [
+                "был отказ",
+                "отказали в визе",
+                "после отказа",
+                "отказ сша",
+            ],
+            "negative_terms": [],
+            "answer": (
+                "После отказа подаваться повторно можно, обычно важно показать изменения в ситуации. "
+                "Скажите, пожалуйста, в какой стране и в каком году был отказ?"
+            ),
+            "handoff_only": False,
+            "allow_during_qualification": True,
+        },
+        {
+            "funnel": "tours",
+            "enabled": True,
+            "priority": 25,
+            "title": "Бронь и оплата тура",
+            "patterns": [
+                "как забронировать",
+                "что нужно для брони",
+                "предоплата",
+                "оплата тура",
+                "паспорт для тура",
+            ],
+            "negative_terms": [],
+            "answer": f"Для брони нужен загранпаспорт. {TOUR_BOOKING_TERMS}",
+            "handoff_only": False,
+            "allow_during_qualification": True,
+        },
+        {
+            "funnel": "tours",
+            "enabled": True,
+            "priority": 25,
+            "title": "Почему цена тура меняется",
+            "patterns": [
+                "почему цена меняется",
+                "цена изменилась",
+                "актуальная цена",
+                "почему дороже",
+            ],
+            "negative_terms": [],
+            "answer": PRICE_DISCLAIMER,
+            "handoff_only": False,
+            "allow_during_qualification": True,
+        },
     ]
+    existing_by_key = {(row.funnel, row.title): row for row in existing}
     for row in defaults:
-        await store.upsert(row, updated_by="system:seed")
+        current = existing_by_key.get((row["funnel"], row["title"]))
+        if current is None:
+            await store.upsert(row, updated_by="system:seed")
+            continue
+        if current.updated_by in {"", "system:seed"}:
+            await store.upsert({**row, "id": current.id}, updated_by="system:seed")
 
 
 def reset() -> None:

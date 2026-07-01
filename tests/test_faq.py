@@ -76,18 +76,24 @@ def test_seed_defaults_adds_expected_rules_to_empty_memory_store():
 
         rows = await get_faq_store().list(include_disabled=True)
 
-        assert len(rows) == 4
+        assert len(rows) == 10
         by_title = {row.title: row for row in rows}
         assert set(by_title) == {
             "Часы работы",
             "Адрес офиса",
             "Стоимость визовых услуг",
             "Направления туров",
+            "Self-visa удержание",
+            "Гарантии по визе",
+            "Документы для визы США",
+            "Отказ в визе",
+            "Бронь и оплата тура",
+            "Почему цена тура меняется",
         }
         assert FRUNZE_WORKING_HOURS in by_title["Часы работы"].answer
         assert GETVISA_WORKING_HOURS in by_title["Часы работы"].answer
         assert FRUNZE_OFFICE_ADDRESS in by_title["Адрес офиса"].answer
-        assert VISA_SERVICE_PRICES in by_title["Стоимость визовых услуг"].answer
+        assert "по какой стране" in by_title["Стоимость визовых услуг"].answer
         assert FRUNZE_DESTINATIONS in by_title["Направления туров"].answer
         assert all(row.allow_during_qualification for row in rows)
         assert not any(row.handoff_only for row in rows)
@@ -105,8 +111,8 @@ def test_seed_defaults_is_idempotent_for_non_empty_store():
         await seed_defaults()
         second = await store.list(include_disabled=True)
 
-        assert len(first) == 4
-        assert len(second) == 4
+        assert len(first) == 10
+        assert len(second) == 10
         assert [row.id for row in second] == [row.id for row in first]
 
     asyncio.run(scenario())
@@ -126,5 +132,33 @@ def test_seeded_defaults_match_common_and_scoped_questions():
         assert match_faq("сколько стоит виза в США?", "visa", visa_entries).title == "Стоимость визовых услуг"
         assert match_faq("сколько стоит тур", "tours", tours_entries) is None
         assert match_faq("сколько стоит тур", "visa", visa_entries) is None
+        assert match_faq("я сам оформлю визу", "visa", visa_entries).title == "Self-visa удержание"
+        assert match_faq("гарантируете визу?", "visa", visa_entries).title == "Гарантии по визе"
+        assert match_faq("что нужно для брони тура?", "tours", tours_entries).title == "Бронь и оплата тура"
+
+    asyncio.run(scenario())
+
+
+def test_seed_defaults_adds_missing_rules_without_overwriting_manual_edits():
+    async def scenario():
+        reset()
+        store = get_faq_store()
+        manual = await store.upsert({
+            "funnel": None,
+            "enabled": True,
+            "priority": 99,
+            "title": "Часы работы",
+            "patterns": ["ручной график"],
+            "answer": "Ручной ответ",
+        }, updated_by="admin")
+
+        await seed_defaults()
+        rows = await store.list(include_disabled=True)
+        by_title = {row.title: row for row in rows}
+
+        assert len(rows) == 10
+        assert by_title["Часы работы"].id == manual.id
+        assert by_title["Часы работы"].answer == "Ручной ответ"
+        assert by_title["Self-visa удержание"].updated_by == "system:seed"
 
     asyncio.run(scenario())
