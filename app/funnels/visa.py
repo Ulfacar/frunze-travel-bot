@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from app.channels.base import Message
 from app.agent.llm import llm_enabled
-from app.core.branding import GETVISA_EMAIL, GETVISA_OFFICE_ADDRESS
+from app.core.branding import GETVISA_OFFICE_ADDRESS
 from app.core.state import DialogState
 from app.funnels.base import collect_qualification
 from app.integrations.crm import get_crm
@@ -56,7 +56,7 @@ def office_invitation(category: str) -> str:
         f"{opener} Многое зависит от грамотно заполненной анкеты и подготовки к интервью — "
         "именно это мы и берём на себя. Давайте пригласим вас на консультацию к эксперту: "
         f"можно подойти к нам в офис ({GETVISA_OFFICE_ADDRESS}) или начать онлайн. "
-        f"Документы можно прислать на {GETVISA_EMAIL}. Когда вам удобно? 🙏"
+        "Документы и детали подскажет менеджер. Когда вам удобно? 🙏"
     )
 
 

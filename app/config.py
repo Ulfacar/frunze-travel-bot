@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     llm_model_main: str = "anthropic/claude-3.5-sonnet"
     llm_model_cheap: str = "anthropic/claude-3-haiku"
+    llm_max_tokens: int = 512
+    llm_temperature: float = 0.3
 
     # Каналы
     telegram_bot_token: str = ""         # дев-демо: один бот с keyword-детектом воронки (легаси)

@@ -4,6 +4,7 @@ from app.core.branding import (
     FRUNZE_DESTINATIONS,
     FRUNZE_OFFICE_ADDRESS,
     FRUNZE_WORKING_HOURS,
+    GETVISA_OFFICE_ADDRESS,
     GETVISA_WORKING_HOURS,
     VISA_SERVICE_PRICES,
 )
@@ -76,7 +77,7 @@ def test_seed_defaults_adds_expected_rules_to_empty_memory_store():
 
         rows = await get_faq_store().list(include_disabled=True)
 
-        assert len(rows) == 10
+        assert len(rows) == 19
         by_title = {row.title: row for row in rows}
         assert set(by_title) == {
             "Часы работы",
@@ -89,14 +90,24 @@ def test_seed_defaults_adds_expected_rules_to_empty_memory_store():
             "Отказ в визе",
             "Бронь и оплата тура",
             "Почему цена тура меняется",
+            "Рабочие визы",
+            "Сроки оформления визы",
+            "Адрес визового офиса",
+            "Какие визы делаем",
+            "Что входит в сопровождение",
+            "Страна вне данных — к менеджеру",
+            "Срочность визы",
+            "Порядок оплаты",
+            "Документы для визы (общее)",
         }
         assert FRUNZE_WORKING_HOURS in by_title["Часы работы"].answer
         assert GETVISA_WORKING_HOURS in by_title["Часы работы"].answer
         assert FRUNZE_OFFICE_ADDRESS in by_title["Адрес офиса"].answer
+        assert GETVISA_OFFICE_ADDRESS in by_title["Адрес визового офиса"].answer
         assert "по какой стране" in by_title["Стоимость визовых услуг"].answer
         assert FRUNZE_DESTINATIONS in by_title["Направления туров"].answer
         assert all(row.allow_during_qualification for row in rows)
-        assert not any(row.handoff_only for row in rows)
+        assert [r.title for r in rows if r.handoff_only] == ["Страна вне данных — к менеджеру"]
 
     asyncio.run(scenario())
 
@@ -111,8 +122,8 @@ def test_seed_defaults_is_idempotent_for_non_empty_store():
         await seed_defaults()
         second = await store.list(include_disabled=True)
 
-        assert len(first) == 10
-        assert len(second) == 10
+        assert len(first) == 19
+        assert len(second) == 19
         assert [row.id for row in second] == [row.id for row in first]
 
     asyncio.run(scenario())
@@ -139,6 +150,31 @@ def test_seeded_defaults_match_common_and_scoped_questions():
     asyncio.run(scenario())
 
 
+def test_seeded_visa_faq_new_rules():
+    async def scenario():
+        reset()
+        await seed_defaults()
+        store = get_faq_store()
+
+        visa_entries = await store.candidates("visa")
+
+        assert match_faq("делаете рабочую визу?", "visa", visa_entries).title == "Рабочие визы"
+        assert match_faq("как долго делают визу", "visa", visa_entries).title == "Сроки оформления визы"
+        assert match_faq("это делается онлайн?", "visa", visa_entries) is None
+        outside_scope = match_faq("виза в Бразилию", "visa", visa_entries)
+        assert outside_scope.title == "Страна вне данных — к менеджеру"
+        assert outside_scope.handoff_only is True
+        assert (
+            match_faq("какие документы нужны для визы", "visa", visa_entries).title
+            == "Документы для визы (общее)"
+        )
+        assert match_faq(
+            "делаете рабочую визу?", "tours", await store.candidates("tours")
+        ) is None
+
+    asyncio.run(scenario())
+
+
 def test_seed_defaults_adds_missing_rules_without_overwriting_manual_edits():
     async def scenario():
         reset()
@@ -156,7 +192,7 @@ def test_seed_defaults_adds_missing_rules_without_overwriting_manual_edits():
         rows = await store.list(include_disabled=True)
         by_title = {row.title: row for row in rows}
 
-        assert len(rows) == 10
+        assert len(rows) == 19
         assert by_title["Часы работы"].id == manual.id
         assert by_title["Часы работы"].answer == "Ручной ответ"
         assert by_title["Self-visa удержание"].updated_by == "system:seed"

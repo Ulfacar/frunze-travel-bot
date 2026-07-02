@@ -29,9 +29,10 @@ class FakeBlock:
 
 
 class FakeResp:
-    def __init__(self, stop_reason, content):
+    def __init__(self, stop_reason, content, usage=None):
         self.stop_reason = stop_reason
         self.content = content
+        self.usage = usage
 
 
 def _tool_use(name="search_tours", inp=None, id="t1"):
@@ -65,6 +66,70 @@ def test_tool_use_then_text(monkeypatch):
     runner._tourvisor.search.assert_awaited()
     assert state.deal_id is not None  # лид создан по ходу search_tours
     assert fake.messages.create.await_count == 2
+
+
+def test_tours_turn_escalates_model_after_search_tours(monkeypatch):
+    """Туры стартуют на cheap, после search_tours следующий LLM-вызов идёт на main."""
+    monkeypatch.setattr(runner.settings, "llm_model_cheap", "cheap-model")
+    monkeypatch.setattr(runner.settings, "llm_model_main", "main-model")
+    state = DialogState(user_id="u-route", funnel="tours")
+    fake = _patch_client(monkeypatch, _tool_use(), _text("Вот варианты"))
+    monkeypatch.setattr(runner._tourvisor, "search", AsyncMock(return_value=["Отель X 5*"]))
+
+    reply = asyncio.run(runner.run_tours_turn(state, "хочу тур в Турцию"))
+
+    assert reply == "Вот варианты"
+    assert fake.messages.create.await_args_list[0].kwargs["model"] == "cheap-model"
+    assert fake.messages.create.await_args_list[1].kwargs["model"] == "main-model"
+
+
+def test_tours_turn_precheck_starts_escalated_on_commercial_terms(monkeypatch):
+    """Коммерческие слова в тур-запросе сразу выбирают main-модель."""
+    monkeypatch.setattr(runner.settings, "llm_model_cheap", "cheap-model")
+    monkeypatch.setattr(runner.settings, "llm_model_main", "main-model")
+    state = DialogState(user_id="u-route-price", funnel="tours")
+    fake = _patch_client(monkeypatch, _text("Цена такая-то"))
+
+    reply = asyncio.run(runner.run_tours_turn(state, "какая стоимость и есть ли скидка?"))
+
+    assert reply == "Цена такая-то"
+    assert fake.messages.create.await_args.kwargs["model"] == "main-model"
+
+
+def test_visa_turn_uses_cheap_model(monkeypatch):
+    """Визы всегда идут на cheap-модель."""
+    monkeypatch.setattr(runner.settings, "llm_model_cheap", "cheap-model")
+    monkeypatch.setattr(runner.settings, "llm_model_main", "main-model")
+    state = DialogState(user_id="v-route", funnel="visa")
+    fake = _patch_client(monkeypatch, _text("Ок"))
+
+    reply = asyncio.run(runner.run_visa_turn(state, "нужна виза"))
+
+    assert reply == "Ок"
+    assert fake.messages.create.await_args.kwargs["model"] == "cheap-model"
+
+
+def test_runner_records_usage(monkeypatch):
+    """Usage из LLM response прокидывается в observ.record_usage."""
+    monkeypatch.setattr(runner.settings, "llm_model_cheap", "cheap-model")
+    state = DialogState(user_id="bot:phone", bot_id="bot", funnel="tickets")
+    calls = []
+    fake = _patch_client(
+        monkeypatch,
+        FakeResp(
+            "end_turn",
+            [FakeBlock("text", text="Ок")],
+            usage={"prompt_tokens": 11, "completion_tokens": 7, "total_tokens": 18, "cost": 0.001},
+        ),
+    )
+    monkeypatch.setattr(runner.observ, "record_usage", lambda *args, **kwargs: calls.append((args, kwargs)))
+
+    reply = asyncio.run(runner.run_tickets_turn(state, "нужен билет"))
+
+    assert reply == "Ок"
+    assert fake.messages.create.await_count == 1
+    assert calls[0][0] == ("cheap-model", 11, 7, 0.001, "bot", "bot:phone")
+    assert calls[0][1]["usage"]["total_tokens"] == 18
 
 
 def test_tours_turn_uses_bot_specific_manager_name(monkeypatch):

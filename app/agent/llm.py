@@ -41,9 +41,16 @@ class LLMBlock:
 class LLMResponse:
     stop_reason: str
     content: list[LLMBlock]
+    usage: dict[str, Any] | None = None
 
     def model_dump(self) -> dict[str, Any]:
-        return {"stop_reason": self.stop_reason, "content": [b.model_dump() for b in self.content]}
+        data: dict[str, Any] = {
+            "stop_reason": self.stop_reason,
+            "content": [b.model_dump() for b in self.content],
+        }
+        if self.usage is not None:
+            data["usage"] = self.usage
+        return data
 
 
 class OpenRouterMessages:
@@ -52,22 +59,26 @@ class OpenRouterMessages:
         *,
         model: str,
         max_tokens: int,
+        temperature: float | None = None,
         system: str,
         tools: list[dict] | None,
         messages: list[dict],
+        cacheable_system: bool = True,
     ) -> LLMResponse:
         if not settings.openrouter_api_key:
             raise RuntimeError("OPENROUTER_API_KEY is not configured")
 
-        payload: dict[str, Any] = {
-            "model": model,
-            "max_tokens": max_tokens,
-            "messages": [{"role": "system", "content": system}, *_to_openai_messages(messages)],
-        }
+        payload: dict[str, Any] = {"model": model, "max_tokens": max_tokens}
+        if temperature is not None:
+            payload["temperature"] = temperature
         converted_tools = _to_openai_tools(tools or [])
         if converted_tools:
             payload["tools"] = converted_tools
             payload["tool_choice"] = "auto"
+        payload["messages"] = [
+            {"role": "system", "content": _system_content_for_model(system, model, cacheable=cacheable_system)},
+            *_to_openai_messages(messages),
+        ]
 
         headers = {
             "Authorization": f"Bearer {settings.openrouter_api_key}",
@@ -103,16 +114,51 @@ def client() -> OpenRouterClient:
     return _client
 
 
-async def chat(system: str, messages: list[dict], model: str | None = None) -> dict:
+async def chat(
+    system: str,
+    messages: list[dict],
+    model: str | None = None,
+    *,
+    bot_id: str = "",
+    user_id: str = "",
+    tools: list[dict] | None = None,
+    cacheable_system: bool = True,
+) -> dict:
     """Run one LLM turn with tools and return an Anthropic-like dump."""
+    selected_model = model or settings.llm_model_main
     resp = await client().messages.create(
-        model=model or settings.llm_model_main,
-        max_tokens=1024,
+        model=selected_model,
+        max_tokens=settings.llm_max_tokens,
+        temperature=settings.llm_temperature,
         system=system,
-        tools=TOOLS,
+        tools=TOOLS if tools is None else tools,
         messages=messages,
+        cacheable_system=cacheable_system,
     )
+    if resp.usage:
+        from app.core.observ import record_usage
+        record_usage(
+            selected_model,
+            resp.usage.get("prompt_tokens"),
+            resp.usage.get("completion_tokens"),
+            resp.usage.get("cost"),
+            bot_id,
+            user_id,
+            usage=resp.usage,
+        )
     return resp.model_dump()
+
+
+def _system_content_for_model(system: str, model: str, *, cacheable: bool = True) -> str | list[dict[str, Any]]:
+    if not cacheable or not model.startswith("anthropic/"):
+        return system
+    return [
+        {
+            "type": "text",
+            "text": system,
+            "cache_control": {"type": "ephemeral"},
+        }
+    ]
 
 
 def _to_openai_tools(tools: list[dict]) -> list[dict]:
@@ -207,4 +253,20 @@ def _from_openai_response(data: dict[str, Any]) -> LLMResponse:
         stop_reason = "tool_use"
     else:
         stop_reason = "end_turn"
-    return LLMResponse(stop_reason=stop_reason, content=blocks)
+    usage = _parse_usage(data.get("usage"))
+    return LLMResponse(stop_reason=stop_reason, content=blocks, usage=usage)
+
+
+def _parse_usage(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    keys = (
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "cost",
+        "cache_read_input_tokens",
+        "cache_creation_input_tokens",
+    )
+    usage = {key: raw[key] for key in keys if key in raw}
+    return usage or None

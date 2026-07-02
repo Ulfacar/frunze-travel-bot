@@ -17,11 +17,12 @@ from app.agent.llm import client
 from app.agent.prompts.tickets import SYSTEM as TICKETS_SYSTEM
 from app.agent.prompts.tours import SYSTEM as TOURS_SYSTEM, system_for_manager as tours_system_for_manager
 from app.agent.prompts.visa import SYSTEM as VISA_SYSTEM
+from app.agent.routing import choose_model, should_escalate_tours_input
 from app.agent.tools import tools_for
 from app.agent.validator import validate_reply
 from app.config import settings
 from app.core import observ
-from app.core.branding import GETVISA_EMAIL, GETVISA_OFFICE_ADDRESS, PRICE_DISCLAIMER
+from app.core.branding import GETVISA_OFFICE_ADDRESS, PRICE_DISCLAIMER
 from app.core.state import DialogState
 from app.core.visa_pricing import self_visa_reply, visa_price_reply
 from app.funnels.visa import score_visa, visa_category
@@ -51,22 +52,28 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
         return None  # менеджер перехватил диалог — бот молчит
     state.history.append({"role": "user", "content": user_text})
     crm = get_crm()
+    escalated = spec.name == "tours" and should_escalate_tours_input(user_text)
 
     for _ in range(MAX_TOOL_ITERATIONS):
+        model = choose_model(spec.name, escalated)
         resp = await client().messages.create(
-            model=settings.llm_model_main,
-            max_tokens=1024,
+            model=model,
+            max_tokens=settings.llm_max_tokens,
+            temperature=settings.llm_temperature,
             system=spec.system,
             tools=spec.tools,
             messages=state.history,
         )
+        _record_llm_usage(model, resp, state)
 
         if resp.stop_reason == "tool_use":
             state.history.append({"role": "assistant", "content": [b.model_dump() for b in resp.content]})
             results = []
             for block in resp.content:
                 if block.type == "tool_use":
-                    out = await spec.exec_tool(block.name, dict(block.input), state, crm)
+                    if spec.name == "tours" and block.name == "search_tours":
+                        escalated = True
+                    out = await spec.exec_tool(block.name, dict(block.input or {}), state, crm)
                     results.append({"type": "tool_result", "tool_use_id": block.id, "content": out})
             state.history.append({"role": "user", "content": results})
             continue
@@ -82,6 +89,21 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
         return text or "Расскажите, пожалуйста, подробнее."
 
     return "Давайте уточню детали ещё раз, чтобы подобрать лучший вариант."
+
+
+def _record_llm_usage(model: str, resp: object, state: DialogState) -> None:
+    usage = getattr(resp, "usage", None)
+    if not usage:
+        return
+    observ.record_usage(
+        model,
+        usage.get("prompt_tokens"),
+        usage.get("completion_tokens"),
+        usage.get("cost"),
+        state.bot_id,
+        state.user_id,
+        usage=usage,
+    )
 
 
 # ---------------- Туры ----------------
@@ -187,7 +209,7 @@ async def _visa_exec_tool(name: str, args: dict, state: DialogState, crm) -> str
             await crm.update_stage(state.deal_id, "office_consultation")
         state.stage = "office"
         return (f"Пригласи клиента на консультацию. Адрес офиса: {GETVISA_OFFICE_ADDRESS}. "
-                f"Можно начать и онлайн. Почта для документов: {GETVISA_EMAIL}. Цену услуги "
+                f"Можно начать и онлайн. Документы и детали уточнит менеджер. Цену услуги "
                 f"называй по официальному прайсу только если клиент спросил; депозиты/итоговую "
                 f"сумму — не называй.")
 

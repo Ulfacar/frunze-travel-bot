@@ -65,6 +65,18 @@ WAIT_HOT_MIN = 20    # ждёт долго — горит
 # Исходы диалога для ручной отметки менеджером.
 OUTCOMES = [("won", "✅ Оплатил"), ("office", "🏢 Дошёл в офис"), ("lost", "❌ Слился")]
 
+BOT_SCOPE_BY_MANAGER = {
+    "ademi": {"frunze_tours", "frunze_tours_tg"},
+    "адеми": {"frunze_tours", "frunze_tours_tg"},
+    "sezim": {"frunze_tours_sezim"},
+    "сезим": {"frunze_tours_sezim"},
+    "medina": {"getvisa", "getvisa_tg"},
+    "медина": {"getvisa", "getvisa_tg"},
+    "eliza": {"getvisa", "getvisa_tg"},
+    "элиза": {"getvisa", "getvisa_tg"},
+    "getvisa": {"getvisa", "getvisa_tg"},
+}
+
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
@@ -125,6 +137,7 @@ def _card_model(conv, now: datetime) -> dict:
     silent = is_silent(conv, now, settings)
     return {
         "user_id": conv.user_id, "phone": phone, "name": name or phone,
+        "bot_id": conv.bot_id,
         "initials": _initials(name, phone),
         "avatar": _avatar(phone),
         "channel": conv.channel, "stage": conv.stage, "intercepted": conv.intercepted,
@@ -165,11 +178,52 @@ def _check_credentials(login: str, password: str) -> dict | None:
     return None
 
 
+def _manager_bot_scope(manager: dict | None) -> set[str] | None:
+    """Return bot ids visible to this manager. None means unrestricted admin view."""
+    if not manager:
+        return set()
+    login = str(manager.get("login") or "").strip().lower()
+    name = str(manager.get("name") or "").strip().lower()
+    admin_login = str(settings.admin_user or "").strip().lower()
+    if login in {"admin", "administrator", admin_login} or "админ" in name:
+        return None
+    return BOT_SCOPE_BY_MANAGER.get(login) or BOT_SCOPE_BY_MANAGER.get(name) or set()
+
+
+def _can_view_conversation(conv, manager: dict | None) -> bool:
+    scope = _manager_bot_scope(manager)
+    if scope is None:
+        return True
+    if not scope:
+        return False
+    bot_id = getattr(conv, "bot_id", "") or ""
+    user_id = getattr(conv, "user_id", "") or ""
+    return bot_id in scope or any(user_id.startswith(f"{allowed}:") for allowed in scope)
+
+
+def _filter_conversations(convs: list, manager: dict | None) -> list:
+    return [c for c in convs if _can_view_conversation(c, manager)]
+
+
+def _demo_profiles() -> list[dict]:
+    """Virtual demo logins for per-manager views, even if MANAGERS lacks the account."""
+    return [
+        {"login": "ademi", "name": "Адеми"},
+        {"login": "sezim", "name": "Сезим"},
+        {"login": "medina", "name": "Медина"},
+        {"login": "eliza", "name": "Элиза"},
+    ]
+
+
 def _demo_managers() -> list[dict]:
     """Список менеджеров для кнопок быстрого входа (только при demo_login)."""
     if not settings.demo_login:
         return []
-    return [{"login": m.login, "name": m.name or m.login} for m in settings.manager_list()]
+    rows = [{"login": m.login, "name": m.name or m.login} for m in settings.manager_list()]
+    by_login = {row["login"]: row for row in rows}
+    for row in _demo_profiles():
+        by_login.setdefault(row["login"], row)
+    return list(by_login.values())
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -188,7 +242,12 @@ async def login_demo(request: Request, login: str = Form(...)):
         raise HTTPException(status_code=404, detail="not found")
     mgr = next((m for m in settings.manager_list() if m.login == login), None)
     if mgr is None:
-        raise HTTPException(status_code=404, detail="manager not found")
+        demo = next((m for m in _demo_profiles() if m["login"] == login), None)
+        if demo is None:
+            raise HTTPException(status_code=404, detail="manager not found")
+        request.session["manager"] = demo
+        await get_conversation_store().add_audit(demo["login"], "login")
+        return RedirectResponse("/admin", status_code=303)
     request.session["manager"] = {"login": mgr.login, "name": mgr.name or mgr.login}
     await get_conversation_store().add_audit(mgr.login, "login")
     return RedirectResponse("/admin", status_code=303)
@@ -258,7 +317,7 @@ async def analytics(request: Request, period: str = "all",
     """Дашборд «ИИ vs менеджер»: containment, исходы, воронки, время ответа/перехвата.
     period — окно периода (today|7d|30d|all)."""
     from app.integrations.panel.analytics import PERIODS, compute_analytics
-    convs = await get_conversation_store().all_conversations()
+    convs = _filter_conversations(await get_conversation_store().all_conversations(), manager)
     data = compute_analytics(convs, period=period, now=_now())
     return templates.TemplateResponse(request, "analytics.html",
                                       {"a": data, "manager": manager, "funnels": FUNNELS,
@@ -492,20 +551,20 @@ async def faq_test(request: Request, manager: dict = Depends(require_admin),
 
 
 @router.get("/board/{funnel}", response_class=HTMLResponse)
-async def board(funnel: str, request: Request, _: dict = Depends(require_admin)):
+async def board(funnel: str, request: Request, manager: dict = Depends(require_admin)):
     """HTMX-партиал одной доски: колонки по стадиям с карточками."""
     panel = get_conversation_store()
-    cards = await panel.list_cards(funnel)
+    cards = _filter_conversations(await panel.list_cards(funnel), manager)
     columns, metrics = _build_board(cards, _now())
     return templates.TemplateResponse(request, "_board.html", {
         "funnel": funnel, "columns": columns, "metrics": metrics,
     })
 
 
-async def _all_models(now: datetime) -> list[dict]:
+async def _all_models(now: datetime, manager: dict | None = None) -> list[dict]:
     """Обогащённые карточки по ВСЕМ воронкам (для инбокса, поиска, счётчиков)."""
     convs = await get_conversation_store().all_conversations()
-    return [_card_model(c, now) for c in convs]
+    return [_card_model(c, now) for c in _filter_conversations(convs, manager)]
 
 
 def _waiting_sorted(models: list[dict]) -> list[dict]:
@@ -516,7 +575,7 @@ def _waiting_sorted(models: list[dict]) -> list[dict]:
 
 
 async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query: str = ""):
-    models = await _all_models(_now())
+    models = await _all_models(_now(), current_manager(request))
     query = query.strip()
     if mode == "search" and query:
         ql = query.lower()
@@ -550,9 +609,9 @@ async def search(request: Request, q: str = "", _: dict = Depends(require_admin)
 
 
 @router.get("/stats", response_class=JSONResponse)
-async def stats(_: dict = Depends(require_admin)):
+async def stats(manager: dict = Depends(require_admin)):
     """Лёгкий счётчик для звуковых уведомлений и бейджа в заголовке вкладки."""
-    models = await _all_models(_now())
+    models = await _all_models(_now(), manager)
     return JSONResponse({
         "waiting": sum(1 for m in models if m["wait_level"] != "none"),
         "needs_reply": sum(1 for m in models if m["needs_reply"]),
@@ -565,6 +624,8 @@ async def _render_conversation(user_id: str, request: Request, manager: dict):
     panel = get_conversation_store()
     conv = await panel.get(user_id)
     if conv is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    if not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
     name = conv.qualification.get("name")
     conv.phone = conv.phone or conv.user_id   # старые карточки без phone → ключ как номер
@@ -579,6 +640,13 @@ async def _render_conversation(user_id: str, request: Request, manager: dict):
         "outcomes": OUTCOMES,
         "quick_replies": quick_replies_for(conv.funnel),
     })
+
+
+async def _require_visible_conversation(user_id: str, manager: dict):
+    conv = await get_conversation_store().get(user_id)
+    if conv is None or not _can_view_conversation(conv, manager):
+        raise HTTPException(status_code=404, detail="conversation not found")
+    return conv
 
 
 @router.get("/conversation/{user_id}", response_class=HTMLResponse)
@@ -603,7 +671,12 @@ async def archive_conversations(request: Request, manager: dict = Depends(requir
     """Soft-hide a batch of conversations and return the refreshed inbox partial."""
     ids = _normalize_user_ids(user_ids, user_ids_csv)
     panel = get_conversation_store()
-    count = await panel.set_archived_many(ids, True)
+    allowed = []
+    for item in ids:
+        conv = await panel.get(item)
+        if conv is not None and _can_view_conversation(conv, manager):
+            allowed.append(item)
+    count = await panel.set_archived_many(allowed, True)
     await panel.add_audit(manager["login"], "archive_many", "", f"count={count}")
     return await _render_inbox_partial(request)
 
@@ -611,7 +684,7 @@ async def archive_conversations(request: Request, manager: dict = Depends(requir
 @router.post("/conversations/archive-noise", response_class=HTMLResponse)
 async def archive_noise_conversations(request: Request, manager: dict = Depends(require_admin)):
     """Archive all current noise conversations using the same card model as the inbox."""
-    models = await _all_models(_now())
+    models = await _all_models(_now(), manager)
     ids = [m["user_id"] for m in models if m["is_noise"]]
     panel = get_conversation_store()
     count = await panel.set_archived_many(ids, True)
@@ -623,7 +696,8 @@ async def archive_noise_conversations(request: Request, manager: dict = Depends(
 async def archive_conversation(user_id: str, manager: dict = Depends(require_admin)):
     """Soft-hide a conversation from boards, inbox, search and counters."""
     panel = get_conversation_store()
-    if await panel.get(user_id) is None:
+    conv = await panel.get(user_id)
+    if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
     await panel.set_archived(user_id, True)
     await panel.add_audit(manager["login"], "archive", user_id)
@@ -634,7 +708,8 @@ async def archive_conversation(user_id: str, manager: dict = Depends(require_adm
 async def unarchive_conversation(user_id: str, manager: dict = Depends(require_admin)):
     """Return a conversation from archive."""
     panel = get_conversation_store()
-    if await panel.get(user_id) is None:
+    conv = await panel.get(user_id)
+    if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
     await panel.set_archived(user_id, False)
     await panel.add_audit(manager["login"], "unarchive", user_id)
@@ -644,6 +719,7 @@ async def unarchive_conversation(user_id: str, manager: dict = Depends(require_a
 @router.post("/conversation/{user_id}/takeover", response_class=HTMLResponse)
 async def takeover(user_id: str, request: Request, manager: dict = Depends(require_admin)):
     """Менеджер перехватывает диалог: бот замолкает, диалог закрепляется за менеджером."""
+    await _require_visible_conversation(user_id, manager)
     await _set_intercept(user_id, True)
     await get_conversation_store().update_meta(user_id, assigned_to=manager["login"])
     await get_conversation_store().add_audit(manager["login"], "takeover", user_id)
@@ -653,6 +729,7 @@ async def takeover(user_id: str, request: Request, manager: dict = Depends(requi
 @router.post("/conversation/{user_id}/release", response_class=HTMLResponse)
 async def release(user_id: str, request: Request, manager: dict = Depends(require_admin)):
     """Вернуть диалог боту (снять перехват и закрепление)."""
+    await _require_visible_conversation(user_id, manager)
     await _set_intercept(user_id, False)
     await get_conversation_store().release_claim(user_id)
     await get_conversation_store().add_audit(manager["login"], "release", user_id)
@@ -666,7 +743,7 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
     text = text.strip()
     panel = get_conversation_store()
     conv = await panel.get(user_id)
-    if conv is None:
+    if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
     if text:
         await _set_intercept(user_id, True)  # отвечает человек → бот молчит
@@ -690,7 +767,7 @@ async def resend(user_id: str, message_id: int, request: Request,
     """Повторить отправку сообщения, помеченного failed."""
     panel = get_conversation_store()
     conv = await panel.get(user_id)
-    if conv is None:
+    if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
     target = next((m for m in conv.messages if m.id == message_id), None)
     if target is not None and target.text:
@@ -707,10 +784,10 @@ async def resend(user_id: str, message_id: int, request: Request,
 
 
 @router.post("/conversation/{user_id}/suggest", response_class=PlainTextResponse)
-async def suggest_reply(user_id: str, request: Request, _: dict = Depends(require_admin)):
+async def suggest_reply(user_id: str, request: Request, manager: dict = Depends(require_admin)):
     """Сгенерировать черновик ответа клиенту (Claude) из контекста — менеджер правит и шлёт."""
     conv = await get_conversation_store().get(user_id)
-    if conv is None:
+    if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
     if not llm_enabled():
         return "ИИ недоступен (нет ключа OpenRouter) — ответьте вручную."
@@ -727,7 +804,15 @@ async def suggest_reply(user_id: str, request: Request, _: dict = Depends(requir
         f"Верни ТОЛЬКО текст ответа клиенту, без пояснений."
     )
     try:
-        resp = await chat(system, history)
+        resp = await chat(
+            system,
+            history,
+            model=settings.llm_model_cheap,
+            bot_id=conv.bot_id,
+            user_id=conv.user_id,
+            tools=[],
+            cacheable_system=False,
+        )
         text = " ".join(b.get("text", "") for b in resp.get("content", [])
                         if b.get("type") == "text").strip()
         return text or "Не удалось сгенерировать черновик — попробуйте ещё раз."
@@ -743,6 +828,7 @@ async def set_stage(user_id: str, manager: dict = Depends(require_admin),
     target = COLUMN_TO_STAGE.get(stage)
     if target is None:
         raise HTTPException(status_code=400, detail="unknown column")
+    await _require_visible_conversation(user_id, manager)
     await get_conversation_store().update_meta(user_id, stage=target)
     await get_conversation_store().add_audit(manager["login"], "stage", user_id, target)
     return PlainTextResponse("ok")
@@ -752,6 +838,7 @@ async def set_stage(user_id: str, manager: dict = Depends(require_admin),
 async def set_outcome(user_id: str, request: Request, manager: dict = Depends(require_admin),
                       outcome: str = Form(...)):
     """Менеджер отмечает исход диалога (оплатил / дошёл / слился)."""
+    await _require_visible_conversation(user_id, manager)
     valid = {key for key, _ in OUTCOMES}
     if outcome in valid:
         await get_conversation_store().update_meta(user_id, outcome=outcome)

@@ -28,7 +28,7 @@ def test_visa_invitation_drives_to_office_without_promising_percent():
     text = office_invitation("низкие")
     assert "консультаци" in text.lower()
     assert GETVISA_OFFICE_ADDRESS in text
-    assert GETVISA_EMAIL in text
+    assert GETVISA_EMAIL not in text
     # Не обещаем визу и не называем процент.
     assert "%" not in text
     assert "гарант" not in text.lower()

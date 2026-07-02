@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 import app.main as main
 from app.channels.base import Message
-from app.config import BotConfig
+from app.config import BotConfig, ManagerConfig
 from app.core.orchestrator import Orchestrator
 from app.integrations.crm.db import init_models
 from app.integrations.panel import store as panel_store
@@ -760,3 +760,92 @@ def test_demo_login_gated_by_setting(monkeypatch):
     r = client.post("/admin/login/demo", data={"login": "admin"})
     assert r.status_code == 200  # редирект на /admin → 200
     assert client.get("/admin/board/visa").status_code == 200  # сессия установлена
+
+
+def test_demo_login_has_separate_ademi_and_scopes_dialogs(monkeypatch):
+    _clear_memory()
+    monkeypatch.setattr("app.config.settings.demo_login", True)
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("frunze_tours:996707660009", "client", "ademi chat",
+                                  channel="whatsapp", bot_id="frunze_tours"))
+    asyncio.run(store.update_meta("frunze_tours:996707660009", funnel="tours"))
+    asyncio.run(store.add_message("frunze_tours_sezim:996554660009", "client", "sezim chat",
+                                  channel="whatsapp", bot_id="frunze_tours_sezim"))
+    asyncio.run(store.update_meta("frunze_tours_sezim:996554660009", funnel="tours"))
+
+    client = TestClient(main.app, base_url="https://testserver")
+    page = client.get("/admin/login").text
+    assert "ademi" in page
+    assert "sezim" in page
+
+    assert client.post("/admin/login/demo", data={"login": "ademi"}).status_code == 200
+    board = client.get("/admin/board/tours").text
+    assert "ademi chat" in board
+    assert "sezim chat" not in board
+    assert client.get("/admin/conversation/frunze_tours_sezim:996554660009").status_code == 404
+
+
+def test_demo_login_sezim_scope_hides_ademi(monkeypatch):
+    _clear_memory()
+    monkeypatch.setattr("app.config.settings.demo_login", True)
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("frunze_tours:996707660009", "client", "ademi chat",
+                                  channel="whatsapp", bot_id="frunze_tours"))
+    asyncio.run(store.update_meta("frunze_tours:996707660009", funnel="tours"))
+    asyncio.run(store.add_message("frunze_tours_sezim:996554660009", "client", "sezim chat",
+                                  channel="whatsapp", bot_id="frunze_tours_sezim"))
+    asyncio.run(store.update_meta("frunze_tours_sezim:996554660009", funnel="tours"))
+
+    client = TestClient(main.app, base_url="https://testserver")
+    assert client.post("/admin/login/demo", data={"login": "sezim"}).status_code == 200
+    board = client.get("/admin/board/tours").text
+    assert "sezim chat" in board
+    assert "ademi chat" not in board
+    assert client.get("/admin/conversation/frunze_tours:996707660009").status_code == 404
+
+
+def test_demo_login_medina_and_eliza_scope_getvisa_only(monkeypatch):
+    _clear_memory()
+    monkeypatch.setattr("app.config.settings.demo_login", True)
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("getvisa:996700111", "client", "visa chat",
+                                  channel="whatsapp", bot_id="getvisa"))
+    asyncio.run(store.update_meta("getvisa:996700111", funnel="visa"))
+    asyncio.run(store.add_message("frunze_tours:996700222", "client", "tour chat",
+                                  channel="whatsapp", bot_id="frunze_tours"))
+    asyncio.run(store.update_meta("frunze_tours:996700222", funnel="tours"))
+
+    for login in ("medina", "eliza"):
+        client = TestClient(main.app, base_url="https://testserver")
+        page = client.get("/admin/login").text
+        assert login in page
+        assert client.post("/admin/login/demo", data={"login": login}).status_code == 200
+        assert "visa chat" in client.get("/admin/board/visa").text
+        assert "tour chat" not in client.get("/admin/board/tours").text
+        assert client.get("/admin/conversation/frunze_tours:996700222").status_code == 404
+
+
+def test_unknown_non_admin_manager_scope_is_fail_closed(monkeypatch):
+    _clear_memory()
+    monkeypatch.setattr("app.config.settings.managers", [
+        ManagerConfig(login="admin", name="Админ", password="frunze"),
+        ManagerConfig(login="unknown", name="Новый менеджер", password="pw"),
+    ])
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("getvisa:996700111", "client", "visa chat",
+                                  channel="whatsapp", bot_id="getvisa"))
+    asyncio.run(store.update_meta("getvisa:996700111", funnel="visa"))
+    asyncio.run(store.add_message("frunze_tours:996700222", "client", "tour chat",
+                                  channel="whatsapp", bot_id="frunze_tours"))
+    asyncio.run(store.update_meta("frunze_tours:996700222", funnel="tours"))
+
+    unknown = TestClient(main.app, base_url="https://testserver")
+    assert unknown.post("/admin/login", data={"login": "unknown", "password": "pw"}).status_code == 200
+    assert "visa chat" not in unknown.get("/admin/board/visa").text
+    assert "tour chat" not in unknown.get("/admin/board/tours").text
+    assert unknown.get("/admin/conversation/getvisa:996700111").status_code == 404
+
+    admin = TestClient(main.app, base_url="https://testserver")
+    assert admin.post("/admin/login", data={"login": "admin", "password": "frunze"}).status_code == 200
+    assert "visa chat" in admin.get("/admin/board/visa").text
+    assert "tour chat" in admin.get("/admin/board/tours").text

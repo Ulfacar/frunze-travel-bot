@@ -9,7 +9,6 @@ from app.agent.prompts.common import LANGUAGE_AND_ESCALATION
 from app.agent.prompts.knowledge import STOP_WORDS_AND_HOURS, VISA_FAQ
 from app.core.branding import (
     GETVISA_COUNTRIES,
-    GETVISA_EMAIL,
     GETVISA_OFFICE_ADDRESS,
     GETVISA_VISA_SCOPE,
 )
@@ -49,8 +48,8 @@ Frunze Travel помогает получать визы в {GETVISA_COUNTRIES} 
    что грамотно подготовленная анкета и подготовка к интервью сильно влияют на результат —
    именно поэтому и нужна консультация эксперта.
 5. ВЕДИ В ОФИС/ОНЛАЙН: вызови escalate_to_office и КОРОТКО пригласи на консультацию (онлайн
-   или в офисе). Адрес и почту дай только если клиент согласился/спросил — одной строкой
-   ({GETVISA_OFFICE_ADDRESS}; {GETVISA_EMAIL}). Не вываливай длинный разбор кейса списком.
+   или в офисе). Адрес дай только если клиент согласился/спросил — одной строкой
+   ({GETVISA_OFFICE_ADDRESS}). Не вываливай длинный разбор кейса списком.
 6. Если клиент уже готов оформляться/хочет вести дело с человеком — handoff_to_manager.
 
 ДИСЦИПЛИНА ВИЗОВОГО ДИАЛОГА:
