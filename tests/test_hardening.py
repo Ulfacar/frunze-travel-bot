@@ -85,7 +85,12 @@ def test_llm_failure_sends_soft_fallback(monkeypatch):
             raise RuntimeError("OpenRouter 503")
 
     monkeypatch.setattr(orch_mod, "get_funnel", lambda *_: _F())
-    msg = Message(channel="whatsapp", user_id="996555000999", chat_id="996555000999", text="привет")
+    msg = Message(
+        channel="whatsapp",
+        user_id="996555000999",
+        chat_id="996555000999",
+        text="нужна консультация",
+    )
     asyncio.run(orch.handle(msg))
 
     assert ch.sent and ch.sent[-1][1] == LLM_ERROR_FALLBACK

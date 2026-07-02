@@ -207,6 +207,9 @@ class Orchestrator:
                     return
                 state.funnel = detected
 
+        if await self._maybe_persona_greeting(msg, state, store):
+            return
+
         faq_reply = await self._maybe_faq_reply(msg, state, store)
         if faq_reply:
             return
@@ -310,6 +313,33 @@ class Orchestrator:
                                     outcome=_auto_outcome(state.stage), **brief)
         except Exception:  # noqa: BLE001
             log.warning("panel sync_card failed", exc_info=True)
+
+    async def _maybe_persona_greeting(self, msg: Message, state, store) -> bool:
+        """Send deterministic persona greeting for a first bare greeting. Fail open."""
+        try:
+            if state.history:
+                return False
+            if state.pending_field:
+                return False
+
+            from app.core.branding import persona_greeting
+            from app.core.faq import is_bare_greeting
+
+            if not is_bare_greeting(msg.text):
+                return False
+            greeting = persona_greeting(state.funnel, state.manager_name)
+            if not greeting:
+                return False
+
+            state.history.append({"role": "user", "content": msg.text})
+            state.history.append({"role": "assistant", "content": greeting})
+            await store.save(state)
+            await self._sync_card(msg, state)
+            await self._reply(msg, greeting)
+            return True
+        except Exception:  # noqa: BLE001
+            log.warning("persona greeting failed", exc_info=True)
+            return False
 
     async def _maybe_faq_reply(self, msg: Message, state, store) -> bool:
         """Try deterministic FAQ before LLM/funnel logic. Fail open to the normal flow."""

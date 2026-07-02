@@ -97,7 +97,7 @@ def test_debounce_off_is_inline(monkeypatch):
     ch = FakeChannel()
     orchestrator = Orchestrator(channel=ch)
     asyncio.run(orchestrator.handle(
-        Message(channel="telegram", user_id="inl-user", chat_id="9", text="привет")))
+        Message(channel="telegram", user_id="inl-user", chat_id="9", text="подскажите")))
 
-    assert funnel.calls == ["привет"]
-    assert ch.sent == [("9", "ответ на: привет")]
+    assert funnel.calls == ["подскажите"]
+    assert ch.sent == [("9", "ответ на: подскажите")]

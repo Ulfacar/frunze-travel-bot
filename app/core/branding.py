@@ -116,6 +116,21 @@ def quick_replies_for(funnel: str | None) -> dict[str, str]:
     return QUICK_REPLIES.get(funnel or "", _COMMON_QUICK)
 
 
+def persona_greeting(funnel: str | None, manager_name: str) -> str | None:
+    name = (manager_name or "").strip() or ("Медина" if funnel == "visa" else "Адеми")
+    if funnel == "tours":
+        return (
+            f"Здравствуйте! 😊 Я {name}, менеджер Frunze Travel по турам. "
+            f"Какое направление рассматриваете? (страна или «помогите выбрать»)"
+        )
+    if funnel == "visa":
+        return (
+            f"Здравствуйте! 😊 Меня зовут {name}, я ваш визовый эксперт Frunze Travel. "
+            f"Как могу к вам обращаться?"
+        )
+    return None
+
+
 # --- Автодожим: мягкий проактивный пинг клиенту, который замолчал на квалификации ---
 FOLLOWUP_PINGS = {
     "visa": ("Здравствуйте! 😊 Это Frunze Travel. Вы ещё рассматриваете оформление визы? "

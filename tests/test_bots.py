@@ -80,7 +80,7 @@ def test_tours_bot_forces_funnel_without_keywords(monkeypatch):
     state = asyncio.run(state_store.load("bot-user-tours"))
     state.funnel = None
     msg = Message(channel="bitrix_openlines", user_id="bot-user-tours", chat_id="9",
-                  text="здравствуйте")  # без ключевых слов про тур
+                  text="подскажите пожалуйста")  # без ключевых слов про тур
     asyncio.run(Orchestrator(channel=FakeChannel(), bot=bot).handle(msg))
 
     assert seen["funnel"] == "tours"
@@ -108,7 +108,7 @@ def test_visa_bot_forces_visa_funnel(monkeypatch):
     state = asyncio.run(state_store.load("bot-user-visa"))
     state.funnel = None
     msg = Message(channel="bitrix_openlines", user_id="bot-user-visa", chat_id="9",
-                  text="добрый день")
+                  text="подскажите пожалуйста")
     asyncio.run(Orchestrator(channel=FakeChannel(), bot=bot).handle(msg))
 
     assert seen["funnel"] == "visa"

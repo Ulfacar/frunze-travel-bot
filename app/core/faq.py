@@ -48,6 +48,19 @@ def normalize_text(text: str) -> str:
     return text
 
 
+_GREETING_ONLY_RE = re.compile(
+    r"^(?:здравствуйте|здравствуй|привет|приветствую|салам(?: алейкум)?|"
+    r"ассалам(?:у алейкум)?|assalam(?:u alaikum)?|hi|hello|добрый день|"
+    r"доброе утро|добрый вечер|саламатсызбы|start)"
+    r"(?:\s+(?:можно узнать(?: об этом)? подробнее|можно подробнее|подробнее))?$",
+    re.IGNORECASE,
+)
+
+
+def is_bare_greeting(text: str) -> bool:
+    return bool(_GREETING_ONLY_RE.match(normalize_text(text)))
+
+
 def match_faq(text: str, funnel: str | None, entries: list[FaqEntryView],
               *, pending_field: str | None = None) -> FaqEntryView | None:
     """Return the best matching FAQ entry, or None on no match / priority tie.

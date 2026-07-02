@@ -44,13 +44,13 @@ def test_webhook_form_event_routes_and_replies(monkeypatch):
     resp = client.post("/webhook/bitrix", data={
         "data[BOT][999][BOT_ID]": "999",
         "data[PARAMS][DIALOG_ID]": "chat1",
-        "data[PARAMS][MESSAGE]": "привет",
+        "data[PARAMS][MESSAGE]": "подскажите",
         "data[PARAMS][FROM_USER_ID]": "u-e2e-1",
     })
 
     assert resp.status_code == 200
     assert resp.json() == {"ok": True, "bot": "t1"}
-    assert channel.sent == [("chat1", "echo:привет")]
+    assert channel.sent == [("chat1", "echo:подскажите")]
 
 
 def test_webhook_unknown_bot_is_ignored(monkeypatch):
