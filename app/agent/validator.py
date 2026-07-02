@@ -41,6 +41,83 @@ _GUARANTEE = re.compile(
 _DISCLAIMER_MARK = re.compile(
     r"варьир|зависит от дат|может меня|уточним|подтвердим", re.IGNORECASE)
 
+SAFE_FLIGHT_REPLY = (
+    "По прямым рейсам и наличию мест лучше проверить актуальность по конкретным датам — "
+    "уточним и подскажем точный вариант."
+)
+SAFE_WORKVISA_REPLY = (
+    "К сожалению, рабочими визами мы не занимаемся. Можем подсказать по туристическим, "
+    "гостевым и деловым визам по направлениям, с которыми работаем."
+)
+
+_SENTENCE_SPLIT = re.compile(r"([^.!?\n]+)([.!?\n]+|$)")
+_AFFIRM_FLIGHT = re.compile(
+    r"(?:\b(?:есть|доступн\w*)\s+прям\w*[^.!?\n]*(?:рейс|вылет|перел[её]т|чартер))|"
+    r"(?:\b(?:летают|выполняются|доступны)\s+прям\w*)|"
+    r"(?:\bпрям\w*[^.!?\n]*(?:рейс|вылет|перел[её]т)[^.!?\n]*"
+    r"(?:есть|доступн\w*|летают|выполняются))|"
+    r"(?:\b(?:есть|доступн\w*)\s+чартер\w*)|"
+    r"(?:\bчартер\w*[^.!?\n]*(?:есть|доступн\w*|летают|выполняются))|"
+    r"(?:\b(?:есть|доступн\w*)\s+(?:свободн\w*\s+)?мест\w*[^.!?\n]*"
+    r"(?:рейс|вылет|чартер))|"
+    r"(?:\b(?:рейс|вылет|чартер)[^.!?\n]*"
+    r"(?:есть|доступн\w*)\s+(?:свободн\w*\s+)?мест\w*)",
+    re.IGNORECASE,
+)
+_NEG_FLIGHT = re.compile(
+    r"\b(?:нет|не|без)\b|пересадк|уточн|провер|актуальн|скорее всего|возможно|"
+    r"обычно|ближе к осени|под вопросом|к сожалению",
+    re.IGNORECASE,
+)
+_AFFIRM_WORKVISA = re.compile(r"рабоч\w*\s+виз", re.IGNORECASE)
+_NEG_WORKVISA = re.compile(
+    r"\bне\b|не\s+занимаемся|не\s+делаем|не\s+оформляем|к сожалению|нельзя",
+    re.IGNORECASE,
+)
+
+
+def _replace_sentences(
+    text: str,
+    *,
+    affirm: re.Pattern[str],
+    neg: re.Pattern[str],
+    safe_text: str,
+) -> tuple[str, bool]:
+    """Replace unsafe affirmative sentences with one safe sentence, preserving others."""
+    parts: list[str] = []
+    blocked = False
+    safe_inserted = False
+    pos = 0
+
+    for match in _SENTENCE_SPLIT.finditer(text):
+        if match.start() > pos:
+            parts.append(text[pos:match.start()])
+        pos = match.end()
+
+        body, sep = match.group(1), match.group(2)
+        if not body:
+            parts.append(sep)
+            continue
+
+        sent = body.strip()
+        if sent and affirm.search(sent) and not neg.search(sent):
+            blocked = True
+            if not safe_inserted:
+                parts.append(safe_text)
+                safe_inserted = True
+            continue
+
+        parts.append(body + sep)
+
+    if pos < len(text):
+        parts.append(text[pos:])
+
+    if not blocked:
+        return text, False
+
+    replaced = " ".join("".join(parts).split())
+    return replaced, blocked
+
 
 def strip_markdown(text: str) -> str:
     """Снять markdown-разметку → обычный текст мессенджера."""
@@ -71,6 +148,25 @@ def validate_reply(text: str, funnel: str | None) -> tuple[str, list[str]]:
     if funnel == "tours" and has_price and not _DISCLAIMER_MARK.search(clean):
         clean = f"{clean}\n\n{PRICE_DISCLAIMER}"
         violations.append("tours_price_disclaimer_added")
+
+    if funnel == "tours":
+        clean, blocked = _replace_sentences(
+            clean,
+            affirm=_AFFIRM_FLIGHT,
+            neg=_NEG_FLIGHT,
+            safe_text=SAFE_FLIGHT_REPLY,
+        )
+        if blocked:
+            violations.append("direct_flight_claim_blocked")
+    elif funnel == "visa":
+        clean, blocked = _replace_sentences(
+            clean,
+            affirm=_AFFIRM_WORKVISA,
+            neg=_NEG_WORKVISA,
+            safe_text=SAFE_WORKVISA_REPLY,
+        )
+        if blocked:
+            violations.append("work_visa_offer_blocked")
 
     # --- мягкие сигналы (только лог, без правки текста) ---
     # Визы теперь называют официальный прайс услуг → цена тут НЕ нарушение. Билеты — цену
