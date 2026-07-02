@@ -17,12 +17,17 @@ from app.channels.wappi import (
     WappiAdapter,
     is_delivery_status,
     is_incoming_user_message,
+    is_outgoing_echo,
+    outgoing_echo_phone,
+    outgoing_echo_text,
     parse_delivery_status,
 )
 from app.config import BotConfig, settings
 from app.core import observ
 from app.core.bots import registry
+from app.core.intercept import set_intercept
 from app.core.orchestrator import Orchestrator
+from app.core.own_outbound import is_own
 from app.integrations.panel.store import get_conversation_store
 
 logging.basicConfig(level=logging.INFO)
@@ -126,6 +131,42 @@ _wappi_orchestrators: dict[str, Orchestrator] = {
 }
 
 
+async def _handle_manager_echo(raw: dict) -> None:
+    event_id = str(raw.get("id", ""))
+    if _seen_before(event_id):
+        return
+    if is_own(event_id):
+        return
+
+    profile_id = str(raw.get("profile_id", ""))
+    orchestrator = _wappi_orchestrators.get(profile_id)
+    if orchestrator is None or orchestrator.bot is None:
+        log.warning("Wappi manager echo without mapped bot (profile_id=%s)", profile_id)
+        return
+
+    phone = outgoing_echo_phone(raw)
+    text = outgoing_echo_text(raw)
+    if not phone or not text:
+        return
+
+    bot = orchestrator.bot
+    key = f"{bot.id}:{phone}"
+    panel = get_conversation_store()
+    await panel.add_message(
+        key,
+        "manager",
+        text,
+        channel="whatsapp",
+        bot_id=bot.id,
+        chat_id=str(raw.get("chatId") or raw.get("to") or ""),
+        status="sent",
+        provider_msg_id=event_id,
+        phone=phone,
+    )
+    await panel.update_meta(key, funnel=bot.scenario, assigned_to="whatsapp")
+    await set_intercept(key, True)
+
+
 @app.get("/health")
 async def health() -> dict:
     return {
@@ -219,6 +260,13 @@ async def wappi_webhook(request: Request) -> dict:
                         provider_msg_id=provider_msg_id, status=status)
                 except Exception:  # noqa: BLE001
                     log.warning("delivery-status update failed", exc_info=True)
+            continue
+
+        if settings.capture_manager_echo and is_outgoing_echo(raw):
+            try:
+                await _handle_manager_echo(raw)
+            except Exception:  # noqa: BLE001
+                log.warning("manager echo capture failed", exc_info=True)
             continue
 
         if not is_incoming_user_message(raw):

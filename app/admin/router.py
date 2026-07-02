@@ -21,8 +21,9 @@ from app.channels import outbound
 from app.config import settings
 from app.core import budget
 from app.core.branding import quick_replies_for
+from app.core.intercept import set_intercept
 from app.core.leadstate import HUMAN_STAGES, STAGE_TO_COLUMN, is_noise, is_silent
-from app.core.state import get_state_store
+from app.core.own_outbound import mark_own
 from app.integrations.panel.store import get_conversation_store
 
 log = logging.getLogger("admin")
@@ -756,6 +757,7 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
         try:
             provider = await outbound.send_to_client(
                 conv.channel, conv.bot_id, conv.chat_id or user_id, text)
+            mark_own(provider)
             await panel.mark_message_status(message_id=msg_id, status="sent",
                                             set_provider_msg_id=(provider or None))
         except Exception:  # noqa: BLE001 — не теряем сообщение в логе при сбое канала
@@ -778,6 +780,7 @@ async def resend(user_id: str, message_id: int, request: Request,
         try:
             provider = await outbound.send_to_client(
                 conv.channel, conv.bot_id, conv.chat_id or user_id, target.text)
+            mark_own(provider)
             await panel.mark_message_status(message_id=message_id, status="sent",
                                             set_provider_msg_id=(provider or None))
         except Exception:  # noqa: BLE001
@@ -851,10 +854,4 @@ async def set_outcome(user_id: str, request: Request, manager: dict = Depends(re
 
 
 async def _set_intercept(user_id: str, value: bool) -> None:
-    # Источник правды для глушения бота — DialogState.intercepted (его читает оркестратор).
-    store = get_state_store()
-    state = await store.load(user_id)
-    state.intercepted = value
-    await store.save(state)
-    # Отражаем в карточке панели.
-    await get_conversation_store().set_intercepted(user_id, value)
+    await set_intercept(user_id, value)

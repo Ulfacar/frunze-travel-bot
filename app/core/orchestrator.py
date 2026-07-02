@@ -14,6 +14,7 @@ from app.channels.base import ChannelAdapter, Message
 from app.config import BotConfig, settings
 from app.core.manager_brief import build_manager_brief
 from app.core.observ import record_failure
+from app.core.own_outbound import mark_own
 from app.core.router import detect_funnel
 from app.core.state import get_state_store
 from app.funnels import get_funnel
@@ -292,6 +293,7 @@ class Orchestrator:
             log.warning("panel log_out failed", exc_info=True)
         try:
             provider = await self.channel.send(msg.chat_id, text)
+            mark_own(provider)
             if msg_id:
                 await panel.mark_message_status(message_id=msg_id, status="sent",
                                                 set_provider_msg_id=(provider or None))

@@ -95,6 +95,7 @@ class Settings(BaseSettings):
     wappi_base_url: str = "https://wappi.pro"
     wappi_token: str = ""
     wappi_profile_id: str = ""           # дев-демо: одиночный профиль (легаси)
+    capture_manager_echo: bool = False
 
     # TourVisor — кабинетные креды подходят и для XML API (проверено 19.06.2026)
     tourvisor_login: str = ""

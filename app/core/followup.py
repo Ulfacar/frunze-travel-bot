@@ -13,6 +13,7 @@ from app.channels import outbound
 from app.config import settings
 from app.core.branding import followup_ping_for
 from app.core.leadstate import is_silent
+from app.core.own_outbound import mark_own
 from app.integrations.panel.store import get_conversation_store
 
 log = logging.getLogger("followup")
@@ -66,6 +67,7 @@ async def run() -> None:
         try:
             provider = await outbound.send_to_client(
                 c.channel, c.bot_id, c.chat_id or c.user_id, text)
+            mark_own(provider)
             await store.add_message(c.user_id, "bot", text, status="sent",
                                     provider_msg_id=provider or "")
             await store.update_meta(c.user_id, stage="follow_up", followup_sent=True)

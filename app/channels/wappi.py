@@ -58,6 +58,26 @@ def is_incoming_user_message(raw: dict) -> bool:
     )
 
 
+def is_outgoing_echo(raw: dict) -> bool:
+    return (
+        raw.get("wh_type") == "incoming_message"
+        and raw.get("is_me") is True
+        and raw.get("type") != "reaction"
+        and raw.get("chat_type", "dialog") != "group"
+    )
+
+
+def outgoing_echo_text(raw: dict) -> str:
+    if raw.get("type") != _TEXT_TYPE:
+        return ""
+    return str(raw.get("body") or "").strip()
+
+
+def outgoing_echo_phone(raw: dict) -> str:
+    chat_id = str(raw.get("to") or raw.get("chatId") or "")
+    return _recipient(chat_id)
+
+
 def _recipient(chat_id: str) -> str:
     """`996700...@c.us` → `996700...` (Wappi recipient = номер); группы (@g.us) как есть."""
     return chat_id.split("@")[0] if chat_id.endswith("@c.us") else chat_id
