@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     llm_model_cheap: str = "anthropic/claude-3-haiku"
     llm_max_tokens: int = 512
     llm_temperature: float = 0.3
+    llm_history_max_messages: int = 40  # 0 = no window; send full history
     llm_daily_budget_usd: float = 0.0
     llm_daily_budget_soft_ratio: float = 0.8
 

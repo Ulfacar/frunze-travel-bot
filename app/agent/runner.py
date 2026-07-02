@@ -37,6 +37,35 @@ _tourvisor = TourVisorClient()
 ToolExec = Callable[[str, dict, DialogState, object], Awaitable[str]]
 
 
+def _windowed_history(history: list[dict], max_n: int) -> list[dict]:
+    """Return a safe history tail that starts at a user text boundary."""
+    if max_n <= 0 or len(history) <= max_n:
+        return history
+
+    bounds = [
+        i for i, message in enumerate(history)
+        if message.get("role") == "user" and isinstance(message.get("content"), str)
+    ]
+    if not bounds:
+        return history
+
+    target = len(history) - max_n
+    later = [i for i in bounds if i >= target]
+    start = later[0] if later else bounds[-1]
+    return history[start:]
+
+
+def _qual_context_message(qual: dict) -> dict | None:
+    """Compact known qualification facts as a separate user message."""
+    parts = [f"{key}={value}" for key, value in (qual or {}).items() if value]
+    if not parts:
+        return None
+    return {
+        "role": "user",
+        "content": "[Уже известно от клиента: " + ", ".join(parts) + "]",
+    }
+
+
 @dataclass
 class FunnelSpec:
     """Описание воронки для агентного цикла."""
@@ -58,13 +87,16 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
         model = choose_model(spec.name, escalated)
         if await budget.soft_capped():
             model = settings.llm_model_cheap
+        window = _windowed_history(state.history, settings.llm_history_max_messages)
+        qual_msg = _qual_context_message(state.qualification)
+        messages = ([qual_msg] + window) if qual_msg else window
         resp = await client().messages.create(
             model=model,
             max_tokens=settings.llm_max_tokens,
             temperature=settings.llm_temperature,
             system=spec.system,
             tools=spec.tools,
-            messages=state.history,
+            messages=messages,
         )
         await _record_llm_usage(model, resp, state)
 
