@@ -14,6 +14,7 @@ import httpx
 
 from app.agent.tools import TOOLS
 from app.config import settings
+from app.core import budget
 
 
 @dataclass
@@ -68,7 +69,7 @@ class OpenRouterMessages:
         if not settings.openrouter_api_key:
             raise RuntimeError("OPENROUTER_API_KEY is not configured")
 
-        payload: dict[str, Any] = {"model": model, "max_tokens": max_tokens}
+        payload: dict[str, Any] = {"model": model, "max_tokens": max_tokens, "usage": {"include": True}}
         if temperature is not None:
             payload["temperature"] = temperature
         converted_tools = _to_openai_tools(tools or [])
@@ -107,6 +108,10 @@ def llm_enabled() -> bool:
     return bool(settings.openrouter_api_key)
 
 
+async def llm_available() -> bool:
+    return llm_enabled() and not await budget.hard_capped()
+
+
 def client() -> OpenRouterClient:
     global _client
     if _client is None:
@@ -137,15 +142,19 @@ async def chat(
     )
     if resp.usage:
         from app.core.observ import record_usage
+        cost = budget.cost_from_usage(selected_model, resp.usage)
+        usage = {**resp.usage, "cost": cost}
         record_usage(
             selected_model,
-            resp.usage.get("prompt_tokens"),
-            resp.usage.get("completion_tokens"),
-            resp.usage.get("cost"),
+            usage.get("prompt_tokens"),
+            usage.get("completion_tokens"),
+            cost,
             bot_id,
             user_id,
-            usage=resp.usage,
+            usage=usage,
         )
+        resp.usage = usage
+        await budget.add_spend(cost)
     return resp.model_dump()
 
 

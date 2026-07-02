@@ -74,6 +74,8 @@ class Settings(BaseSettings):
     llm_model_cheap: str = "anthropic/claude-3-haiku"
     llm_max_tokens: int = 512
     llm_temperature: float = 0.3
+    llm_daily_budget_usd: float = 0.0
+    llm_daily_budget_soft_ratio: float = 0.8
 
     # Каналы
     telegram_bot_token: str = ""         # дев-демо: один бот с keyword-детектом воронки (легаси)

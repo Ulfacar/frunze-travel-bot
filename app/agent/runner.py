@@ -21,7 +21,7 @@ from app.agent.routing import choose_model, should_escalate_tours_input
 from app.agent.tools import tools_for
 from app.agent.validator import validate_reply
 from app.config import settings
-from app.core import observ
+from app.core import budget, observ
 from app.core.branding import GETVISA_OFFICE_ADDRESS, PRICE_DISCLAIMER
 from app.core.state import DialogState
 from app.core.visa_pricing import self_visa_reply, visa_price_reply
@@ -56,6 +56,8 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
 
     for _ in range(MAX_TOOL_ITERATIONS):
         model = choose_model(spec.name, escalated)
+        if await budget.soft_capped():
+            model = settings.llm_model_cheap
         resp = await client().messages.create(
             model=model,
             max_tokens=settings.llm_max_tokens,
@@ -64,7 +66,7 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
             tools=spec.tools,
             messages=state.history,
         )
-        _record_llm_usage(model, resp, state)
+        await _record_llm_usage(model, resp, state)
 
         if resp.stop_reason == "tool_use":
             state.history.append({"role": "assistant", "content": [b.model_dump() for b in resp.content]})
@@ -91,19 +93,22 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
     return "Давайте уточню детали ещё раз, чтобы подобрать лучший вариант."
 
 
-def _record_llm_usage(model: str, resp: object, state: DialogState) -> None:
+async def _record_llm_usage(model: str, resp: object, state: DialogState) -> None:
     usage = getattr(resp, "usage", None)
     if not usage:
         return
+    cost = budget.cost_from_usage(model, usage)
+    usage = {**usage, "cost": cost}
     observ.record_usage(
         model,
         usage.get("prompt_tokens"),
         usage.get("completion_tokens"),
-        usage.get("cost"),
+        cost,
         state.bot_id,
         state.user_id,
         usage=usage,
     )
+    await budget.add_spend(cost)
 
 
 # ---------------- Туры ----------------

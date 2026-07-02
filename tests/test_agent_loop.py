@@ -132,6 +132,27 @@ def test_runner_records_usage(monkeypatch):
     assert calls[0][1]["usage"]["total_tokens"] == 18
 
 
+def test_runner_estimates_missing_usage_cost(monkeypatch):
+    monkeypatch.setattr(runner.settings, "llm_model_cheap", "anthropic/claude-haiku-4.5")
+    state = DialogState(user_id="bot:phone", bot_id="bot", funnel="tickets")
+    calls = []
+    _patch_client(
+        monkeypatch,
+        FakeResp(
+            "end_turn",
+            [FakeBlock("text", text="РћРє")],
+            usage={"prompt_tokens": 1000, "completion_tokens": 2000, "total_tokens": 3000},
+        ),
+    )
+    monkeypatch.setattr(runner.observ, "record_usage", lambda *args, **kwargs: calls.append((args, kwargs)))
+
+    reply = asyncio.run(runner.run_tickets_turn(state, "РЅСѓР¶РµРЅ Р±РёР»РµС‚"))
+
+    assert reply == "РћРє"
+    assert calls[0][0] == ("anthropic/claude-haiku-4.5", 1000, 2000, 0.011, "bot", "bot:phone")
+    assert calls[0][1]["usage"]["cost"] == 0.011
+
+
 def test_tours_turn_uses_bot_specific_manager_name(monkeypatch):
     """Второй тур-бот может говорить от имени Сезим, не меняя общий сценарий туров."""
     state = DialogState(user_id="u-sezim", funnel="tours", manager_name="Сезим")

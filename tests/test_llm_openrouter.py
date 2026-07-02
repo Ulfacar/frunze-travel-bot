@@ -1,6 +1,13 @@
 import asyncio
 
-from app.agent.llm import OpenRouterMessages, _from_openai_response, _to_openai_messages, _to_openai_tools, llm_enabled
+from app.agent.llm import (
+    OpenRouterMessages,
+    _from_openai_response,
+    _to_openai_messages,
+    _to_openai_tools,
+    llm_available,
+    llm_enabled,
+)
 
 
 def test_openrouter_tool_schema_conversion():
@@ -157,6 +164,7 @@ def test_openrouter_payload_adds_cache_control_for_anthropic_system(monkeypatch)
     assert content[0]["cache_control"] == {"type": "ephemeral"}
     assert payloads[0]["max_tokens"] == 123
     assert payloads[0]["temperature"] == 0.2
+    assert payloads[0]["usage"] == {"include": True}
 
 
 def test_openrouter_payload_can_skip_cache_control_for_volatile_system(monkeypatch):
@@ -200,6 +208,7 @@ def test_openrouter_payload_can_skip_cache_control_for_volatile_system(monkeypat
 
     assert payloads[0]["messages"][0]["content"] == "volatile system prompt"
     assert "tools" not in payloads[0]
+    assert payloads[0]["usage"] == {"include": True}
 
 
 def test_openrouter_payload_keeps_non_anthropic_system_as_string(monkeypatch):
@@ -241,6 +250,7 @@ def test_openrouter_payload_keeps_non_anthropic_system_as_string(monkeypatch):
     ))
 
     assert payloads[0]["messages"][0]["content"] == "system prompt"
+    assert payloads[0]["usage"] == {"include": True}
 
 
 def test_llm_enabled_uses_openrouter_key_only(monkeypatch):
@@ -252,3 +262,27 @@ def test_llm_enabled_uses_openrouter_key_only(monkeypatch):
 
     monkeypatch.setattr(llm.settings, "openrouter_api_key", "or-key")
     assert llm_enabled() is True
+
+
+def test_llm_available_respects_hard_cap(monkeypatch):
+    from app.agent import llm
+
+    async def hard_capped():
+        return True
+
+    monkeypatch.setattr(llm.settings, "openrouter_api_key", "or-key")
+    monkeypatch.setattr(llm.budget, "hard_capped", hard_capped)
+
+    assert asyncio.run(llm_available()) is False
+
+
+def test_llm_available_matches_enabled_when_guard_allows(monkeypatch):
+    from app.agent import llm
+
+    async def hard_capped():
+        return False
+
+    monkeypatch.setattr(llm.settings, "openrouter_api_key", "or-key")
+    monkeypatch.setattr(llm.budget, "hard_capped", hard_capped)
+
+    assert asyncio.run(llm_available()) is True

@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from app.channels.base import Message
-from app.agent.llm import llm_enabled
+from app.agent.llm import llm_available
 from app.core.branding import PRICE_DISCLAIMER
 from app.core.state import DialogState
 from app.funnels.base import collect_qualification
@@ -21,7 +21,7 @@ class TicketsFunnel:
 
     async def handle(self, msg: Message, state: DialogState) -> str | None:
         # Боевой режим: живой AI-диалог через OpenRouter (tool-use).
-        if llm_enabled():
+        if await llm_available():
             from app.agent.runner import run_tickets_turn
             return await run_tickets_turn(state, msg.text)
 

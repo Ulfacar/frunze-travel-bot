@@ -12,7 +12,7 @@ from app.funnels.base import collect_qualification
 from app.integrations.crm import get_crm
 import httpx
 
-from app.agent.llm import llm_enabled
+from app.agent.llm import llm_available
 from app.integrations.tourvisor.client import TourVisorClient, TourVisorError
 
 # Порядок вопросов выровнен под реальный флоу менеджеров Frunze (см.
@@ -31,7 +31,7 @@ class ToursFunnel:
 
     async def handle(self, msg: Message, state: DialogState) -> str | None:
         # Боевой режим: живой AI-диалог через OpenRouter (tool-use).
-        if llm_enabled():
+        if await llm_available():
             from app.agent.runner import run_tours_turn
             return await run_tours_turn(state, msg.text)
 

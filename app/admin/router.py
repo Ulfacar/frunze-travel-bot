@@ -19,6 +19,7 @@ from fastapi.templating import Jinja2Templates
 from app.agent.llm import chat, llm_enabled
 from app.channels import outbound
 from app.config import settings
+from app.core import budget
 from app.core.branding import quick_replies_for
 from app.core.leadstate import HUMAN_STAGES, STAGE_TO_COLUMN, is_noise, is_silent
 from app.core.state import get_state_store
@@ -334,6 +335,9 @@ async def system(request: Request, manager: dict = Depends(require_admin)):
     bot_flags = await _bot_flag_views()
     data = {
         "llm_enabled": llm_enabled(),
+        "spend_today": await budget.spend_today(),
+        "budget_usd": settings.llm_daily_budget_usd,
+        "budget_status": await budget.status(),
         "last_inbound_ago": observ.last_inbound_ago(),
         "state_backend": settings.state_backend,
         "panel_backend": settings.panel_backend,

@@ -60,6 +60,14 @@
     <h1>Состояние сервиса</h1>
     <div class="grid">
       <div class="card">
+        <div class="l">Расход сегодня</div>
+        <div class="v">
+          <span class="dot {{ 'ok' if s.budget_status == 'ok' else 'warn' if s.budget_status == 'soft' else 'bad' if s.budget_status == 'hard' else 'off' }}"></span>
+          <span class="mono">${{ '%.4f'|format(s.spend_today) }} / ${{ '%.2f'|format(s.budget_usd) }}</span>
+          <span class="muted mono" style="font-size:12px">{{ s.budget_status }}</span>
+        </div>
+      </div>
+      <div class="card">
         <div class="l">LLM (OpenRouter)</div>
         <div class="v"><span class="dot {{ 'ok' if s.llm_enabled else 'bad' }}"></span>{{ 'подключён' if s.llm_enabled else 'нет ключа' }}</div>
       </div>

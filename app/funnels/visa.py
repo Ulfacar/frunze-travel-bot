@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from app.channels.base import Message
-from app.agent.llm import llm_enabled
+from app.agent.llm import llm_available
 from app.core.branding import GETVISA_OFFICE_ADDRESS
 from app.core.state import DialogState
 from app.funnels.base import collect_qualification
@@ -25,7 +25,7 @@ class VisaFunnel:
 
     async def handle(self, msg: Message, state: DialogState) -> str | None:
         # Боевой режим: живой AI-диалог через OpenRouter (tool-use).
-        if llm_enabled():
+        if await llm_available():
             from app.agent.runner import run_visa_turn
             return await run_visa_turn(state, msg.text)
 
