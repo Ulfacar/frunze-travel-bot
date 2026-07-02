@@ -32,6 +32,15 @@ def _bishkek_day(now: datetime | None = None) -> str:
     return (base.astimezone(timezone.utc) + timedelta(hours=6)).date().isoformat()
 
 
+def bishkek_day_start_utc(now: datetime | None = None) -> datetime:
+    base = now if now is not None else datetime.now(timezone.utc)
+    if base.tzinfo is None:
+        base = base.replace(tzinfo=timezone.utc)
+    local = base.astimezone(timezone.utc) + timedelta(hours=6)
+    local_midnight = local.replace(hour=0, minute=0, second=0, microsecond=0)
+    return local_midnight - timedelta(hours=6)
+
+
 def _key(day: str | None = None) -> str:
     return f"llm_spend:{day or _bishkek_day()}"
 

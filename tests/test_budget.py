@@ -57,3 +57,9 @@ def test_budget_off_disables_caps(monkeypatch):
 def test_bishkek_day_uses_utc_plus_six():
     assert budget._bishkek_day(datetime(2026, 7, 1, 17, 59, tzinfo=timezone.utc)) == "2026-07-01"
     assert budget._bishkek_day(datetime(2026, 7, 1, 18, 0, tzinfo=timezone.utc)) == "2026-07-02"
+
+
+def test_bishkek_day_start_utc_returns_local_midnight_in_utc():
+    assert budget.bishkek_day_start_utc(
+        datetime(2026, 7, 2, 5, 0, tzinfo=timezone.utc)
+    ) == datetime(2026, 7, 1, 18, 0, tzinfo=timezone.utc)

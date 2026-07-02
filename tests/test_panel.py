@@ -565,6 +565,59 @@ def test_compute_analytics_basic():
     assert data["handoff_reasons"][0] == ("Готов оплатить", 1)
 
 
+def test_compute_today_stats_uses_bishkek_day_and_ignores_yesterday_messages():
+    from datetime import datetime, timezone
+    from app.integrations.panel.analytics import compute_today_stats
+    from app.integrations.panel.store import ConversationView, MessageView
+
+    now = datetime(2026, 7, 2, 5, 0, tzinfo=timezone.utc)
+    yesterday = datetime(2026, 7, 1, 17, 59, tzinfo=timezone.utc)
+    today = datetime(2026, 7, 1, 18, 1, tzinfo=timezone.utc)
+
+    c1 = ConversationView(
+        user_id="today-visa",
+        funnel="visa",
+        last_sender="client",
+        last_message_at=today,
+        messages=[
+            MessageView("client", "hello", today),
+            MessageView("bot", "hi", today),
+        ],
+    )
+    c2 = ConversationView(
+        user_id="yesterday-tours",
+        funnel="tours",
+        archived=True,
+        last_sender="client",
+        last_message_at=yesterday,
+        messages=[
+            MessageView("client", "old", yesterday),
+            MessageView("bot", "old reply", yesterday),
+        ],
+    )
+    c3 = ConversationView(
+        user_id="today-tours",
+        funnel="tours",
+        last_sender="manager",
+        last_message_at=today,
+        messages=[MessageView("manager", "today reply", today)],
+    )
+    c4 = ConversationView(
+        user_id="today-tickets",
+        funnel="tickets",
+        last_sender="client",
+        last_message_at=today,
+    )
+
+    data = compute_today_stats([c1, c2, c3, c4], now)
+
+    assert data["dialogs_active"] == 3
+    assert data["dialogs_new"] == 2
+    assert data["messages"] == {"client": 1, "bot": 1, "manager": 1}
+    assert data["by_funnel"] == {"tours": 1, "visa": 1, "tickets": 1}
+    assert data["waiting"] == 2
+
+
 def test_analytics_endpoint_renders():
     _clear_memory()
     store = panel_store.get_conversation_store()

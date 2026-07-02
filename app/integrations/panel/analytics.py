@@ -8,6 +8,8 @@ from __future__ import annotations
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
+from app.core.budget import bishkek_day_start_utc
+
 # Поддерживаемые окна периода для дашборда (ключ → длительность; None = всё время).
 PERIODS = [("today", "Сегодня"), ("7d", "7 дней"), ("30d", "30 дней"), ("all", "Всё время")]
 
@@ -29,7 +31,7 @@ def _avg(values: list[float]) -> float | None:
 def _period_start(period: str, now: datetime) -> datetime | None:
     """Начало окна периода. None — без фильтра (всё время / неизвестный ключ)."""
     if period == "today":
-        return now.replace(hour=0, minute=0, second=0, microsecond=0)
+        return bishkek_day_start_utc(now)
     if period == "7d":
         return now - timedelta(days=7)
     if period == "30d":
@@ -48,6 +50,64 @@ def _activity(convs: list, now: datetime) -> list[dict]:
     peak = max(counts.values()) if counts else 0
     return [{"label": d.strftime("%d.%m"), "count": counts[d],
              "pct": round(100 * counts[d] / peak) if peak else 0} for d in days]
+
+
+def _conversation_created_at(conv) -> datetime | None:
+    direct = _aware(getattr(conv, "created_at", None))
+    if direct is not None:
+        return direct
+    dates = [_aware(m.created_at) for m in getattr(conv, "messages", []) if _aware(m.created_at)]
+    return min(dates) if dates else None
+
+
+def compute_today_stats(convs: list, now: datetime | None = None) -> dict:
+    """Read-only operational stats for the current Bishkek day.
+
+    The input conversations are expected to be already loaded and scope-filtered.
+    """
+    now = _aware(now) or datetime.now(timezone.utc)
+    start = bishkek_day_start_utc(now)
+    messages = {"client": 0, "bot": 0, "manager": 0}
+    by_funnel = {"tours": 0, "visa": 0, "tickets": 0}
+    dialogs_active = 0
+    dialogs_new = 0
+    waiting = 0
+
+    for c in convs:
+        today_msgs = [
+            m for m in getattr(c, "messages", [])
+            if (_aware(getattr(m, "created_at", None)) or datetime.min.replace(tzinfo=timezone.utc)) >= start
+        ]
+        active = bool(today_msgs)
+        if not active:
+            last_message_at = _aware(getattr(c, "last_message_at", None))
+            active = bool(last_message_at and last_message_at >= start)
+        if active:
+            dialogs_active += 1
+            funnel = getattr(c, "funnel", "") or ""
+            if funnel in by_funnel:
+                by_funnel[funnel] += 1
+
+        created_at = _conversation_created_at(c)
+        if created_at is not None and created_at >= start:
+            dialogs_new += 1
+
+        for m in today_msgs:
+            sender = getattr(m, "sender", "")
+            if sender in messages:
+                messages[sender] += 1
+
+        if getattr(c, "last_sender", "") == "client" and not getattr(c, "archived", False):
+            waiting += 1
+
+    return {
+        "start_utc": start,
+        "dialogs_active": dialogs_active,
+        "dialogs_new": dialogs_new,
+        "messages": messages,
+        "by_funnel": by_funnel,
+        "waiting": waiting,
+    }
 
 
 def compute_analytics(convs: list, period: str = "all", now: datetime | None = None) -> dict:

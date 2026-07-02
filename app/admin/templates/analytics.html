@@ -21,7 +21,7 @@
     .kpi { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
     .kpi .n { font-family:var(--mono); font-size:30px; font-weight:700; letter-spacing:-.02em; }
     .kpi .l { color:var(--muted); font-size:12.5px; margin-top:4px; }
-    .kpi.good .n { color:var(--green); } .kpi.warm .n { color:var(--warm); }
+    .kpi.good .n { color:var(--green); } .kpi.warm .n { color:var(--warm); } .kpi.bad .n { color:var(--hot); }
     .panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:18px; }
     .panel h2 { font-size:14px; margin:0 0 14px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
     table { width:100%; border-collapse:collapse; }
@@ -64,6 +64,25 @@
       {% for key, label in periods %}
       <a href="/admin/analytics?period={{ key }}" class="{% if key == period %}on{% endif %}">{{ label }}</a>
       {% endfor %}
+    </div>
+
+    <div class="panel">
+      <h2>Сегодня</h2>
+      <div class="cards" style="margin-bottom:0">
+        <div class="kpi good"><div class="n">{{ today.dialogs_active }}</div><div class="l">Диалоги сегодня, новых: {{ today.dialogs_new }}</div></div>
+        <div class="kpi"><div class="n">{{ today.messages.client }}</div><div class="l">Сообщения клиента</div></div>
+        <div class="kpi"><div class="n">{{ today.messages.bot }}</div><div class="l">Сообщения бота</div></div>
+        <div class="kpi"><div class="n">{{ today.messages.manager }}</div><div class="l">Сообщения менеджера</div></div>
+        <div class="kpi"><div class="n">{{ today.by_funnel.tours }}</div><div class="l">Туры сегодня</div></div>
+        <div class="kpi"><div class="n">{{ today.by_funnel.visa }}</div><div class="l">Визы сегодня</div></div>
+        <div class="kpi"><div class="n">{{ today.by_funnel.tickets }}</div><div class="l">Билеты сегодня</div></div>
+        <div class="kpi {% if today.waiting > 0 %}warm{% endif %}"><div class="n">{{ today.waiting }}</div><div class="l">Клиент ждёт</div></div>
+        {% if today.spend_today is defined %}
+        {% set budget_cls = 'good' if today.budget_status == 'ok' else ('warm' if today.budget_status == 'soft' else ('bad' if today.budget_status == 'hard' else '')) %}
+        <div class="kpi {{ budget_cls }}"><div class="n">${{ '%.2f'|format(today.spend_today) }}</div><div class="l">Расход сегодня / лимит ${{ '%.2f'|format(today.budget_usd) }} ({{ today.budget_status }})</div></div>
+        <div class="kpi"><div class="n">{{ today.llm_calls }}</div><div class="l">Вызовов LLM сегодня, ${{ '%.2f'|format(today.llm_cost) }}</div></div>
+        {% endif %}
+      </div>
     </div>
 
     <div class="cards">

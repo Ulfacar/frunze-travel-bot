@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import secrets
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -318,12 +318,24 @@ async def analytics(request: Request, period: str = "all",
                     manager: dict = Depends(require_admin)):
     """Дашборд «ИИ vs менеджер»: containment, исходы, воронки, время ответа/перехвата.
     period — окно периода (today|7d|30d|all)."""
-    from app.integrations.panel.analytics import PERIODS, compute_analytics
+    from app.core import observ
+    from app.integrations.panel.analytics import PERIODS, compute_analytics, compute_today_stats
     convs = _filter_conversations(await get_conversation_store().all_conversations(), manager)
-    data = compute_analytics(convs, period=period, now=_now())
+    now = _now()
+    data = compute_analytics(convs, period=period, now=now)
+    today = compute_today_stats(convs, now)
+    if _manager_bot_scope(manager) is None:
+        usage_today = observ.snapshot().get("usage_daily", {}).get(date.today().isoformat(), {})
+        today.update({
+            "spend_today": await budget.spend_today(),
+            "budget_usd": settings.llm_daily_budget_usd,
+            "budget_status": await budget.status(),
+            "llm_calls": usage_today.get("calls", 0),
+            "llm_cost": usage_today.get("cost", 0.0),
+        })
     return templates.TemplateResponse(request, "analytics.html",
                                       {"a": data, "manager": manager, "funnels": FUNNELS,
-                                       "periods": PERIODS, "period": period},
+                                       "periods": PERIODS, "period": period, "today": today},
                                       headers={"Cache-Control": "no-store"})
 
 
