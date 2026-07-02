@@ -21,6 +21,34 @@ def test_markdown_flagged_as_violation():
     assert "markdown" in violations
 
 
+def test_google_hotel_link_is_preserved():
+    text = "Palmora Lara: ссылка: https://www.google.com/search?q=Palmora+Lara+hotel"
+    clean, violations = validate_reply(text, "tours")
+
+    assert clean == text
+    assert "https://www.google.com/search?q=Palmora+Lara+hotel" in clean
+    assert "invented_url_stripped" not in violations
+
+
+def test_invented_booking_url_is_stripped_and_text_preserved():
+    clean, violations = validate_reply(
+        "Забронируйте тут: https://booking-fake.com/tour123",
+        "tours",
+    )
+
+    assert clean == "Забронируйте тут:"
+    assert "https://booking-fake.com/tour123" not in clean
+    assert "invented_url_stripped" in violations
+
+
+def test_reply_without_url_is_unchanged_by_url_guardrail():
+    text = "Подберу варианты по Турции и уточню актуальные цены."
+    clean, violations = validate_reply(text, "tours")
+
+    assert clean == text
+    assert "invented_url_stripped" not in violations
+
+
 def test_spaced_long_dash_is_normalized():
     clean, violations = validate_reply("США — сопровождение 250$.", "visa")
 

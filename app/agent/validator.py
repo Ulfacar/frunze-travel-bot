@@ -19,6 +19,10 @@ import re
 from app.core.branding import PRICE_DISCLAIMER
 
 MAX_LEN = 600  # мягкий лимит длины реплики (символов) — только для лога, текст не режем
+_URL = re.compile(r"https?://[^\s>)\]]+", re.IGNORECASE)
+_SAFE_URL_PREFIXES = (
+    "https://www.google.com/search?q=",
+)
 
 # --- markdown-разметка, неуместная в мессенджере ---
 _BOLD = re.compile(r"\*{1,3}(.+?)\*{1,3}", re.DOTALL)       # **жирный** / *курсив*
@@ -130,6 +134,24 @@ def strip_markdown(text: str) -> str:
     return text.strip()
 
 
+def _strip_unknown_urls(text: str) -> tuple[str, bool]:
+    """Убрать любой URL, кроме безопасных google-поисков отеля."""
+    stripped = False
+
+    def _rep(match: re.Match[str]) -> str:
+        nonlocal stripped
+        url = match.group(0)
+        if url.startswith(_SAFE_URL_PREFIXES):
+            return url
+        stripped = True
+        return ""
+
+    new = _URL.sub(_rep, text)
+    if stripped:
+        new = " ".join(new.split())
+    return new, stripped
+
+
 def validate_reply(text: str, funnel: str | None) -> tuple[str, list[str]]:
     """Вернуть (очищенный_текст, список_нарушений).
 
@@ -141,6 +163,10 @@ def validate_reply(text: str, funnel: str | None) -> tuple[str, list[str]]:
     clean = strip_markdown(text)
     if clean != text.strip():
         violations.append("markdown")
+
+    clean, url_stripped = _strip_unknown_urls(clean)
+    if url_stripped:
+        violations.append("invented_url_stripped")
 
     has_price = bool(_PRICE.search(clean))
 
