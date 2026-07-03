@@ -1010,9 +1010,12 @@ def test_analytics_blends_inferred_outcome_when_manual_absent():
     c1 = ConversationView(user_id="a", funnel="tours", outcome="", outcome_inferred="won", messages=m)
     c2 = ConversationView(user_id="b", funnel="tours", outcome="", outcome_inferred="ghosted", messages=m)
     c3 = ConversationView(user_id="c", funnel="tours", outcome="lost", outcome_inferred="won", messages=m)
-    d = compute_analytics([c1, c2, c3])
+    # c4 — реальный случай (blocker от ревьюера): авто-плейсхолдер office перебивается ИИ-исходом
+    c4 = ConversationView(user_id="d", funnel="tours", outcome="office", outcome_inferred="ghosted", messages=m)
+    d = compute_analytics([c1, c2, c3, c4])
     assert d["outcomes"].get("won", 0) == 1      # c1 (ИИ)
-    assert d["outcomes"].get("lost", 0) == 2      # c2 (ghosted→lost) + c3 (ручной lost побеждает ИИ won)
+    assert d["outcomes"].get("lost", 0) == 3      # c2 (ghosted) + c3 (ручной lost) + c4 (office→ИИ ghosted)
+    assert d["outcomes"].get("office", 0) == 0    # office перебит ИИ, не остался плейсхолдером
 
 
 def test_containment_excludes_takeover_without_manager_message():

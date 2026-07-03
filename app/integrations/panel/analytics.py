@@ -28,17 +28,20 @@ def _avg(values: list[float]) -> float | None:
     return round(sum(values) / len(values), 1) if values else None
 
 
-# ИИ-исход (outcome_inferred) → исход для аналитики, если менеджер не проставил вручную.
-# Ручной outcome всегда авторитетнее. ghosted (пропал) = не купил → lost для win-rate.
+# ИИ-исход (outcome_inferred) → исход для аналитики. Авторитетны ТОЛЬКО ручные финалы won/lost:
+# office/manager/in_progress — авто-плейсхолдеры стадии (их _sync_card ставит на каждом ходу), НЕ
+# решение менеджера, поэтому их перебиваем ИИ-исходом. ghosted (пропал) = не купил → lost для win-rate.
 _INFERRED_TO_OUTCOME = {"won": "won", "lost": "lost", "ghosted": "lost", "active": "in_progress"}
 
 
 def _effective_outcome(conv) -> str:
     manual = getattr(conv, "outcome", "") or ""
-    if manual:
+    if manual in ("won", "lost"):                 # настоящий ручной финал — авторитетнее ИИ
         return manual
     inferred = getattr(conv, "outcome_inferred", "") or ""
-    return _INFERRED_TO_OUTCOME.get(inferred, "in_progress")
+    if inferred:
+        return _INFERRED_TO_OUTCOME.get(inferred, manual or "in_progress")
+    return manual or "in_progress"                # нет ИИ → авто-плейсхолдер стадии как есть
 
 
 def _median(values: list[float]) -> float | None:
