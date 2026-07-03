@@ -24,10 +24,6 @@ def _minutes(a: datetime, b: datetime) -> float:
     return max(0.0, (_aware(b) - _aware(a)).total_seconds() / 60)
 
 
-def _avg(values: list[float]) -> float | None:
-    return round(sum(values) / len(values), 1) if values else None
-
-
 # ИИ-исход (outcome_inferred) → исход для аналитики. Авторитетны ТОЛЬКО ручные финалы won/lost:
 # office/manager/in_progress — авто-плейсхолдеры стадии (их _sync_card ставит на каждом ходу), НЕ
 # решение менеджера, поэтому их перебиваем ИИ-исходом. ghosted (пропал) = не купил → lost для win-rate.

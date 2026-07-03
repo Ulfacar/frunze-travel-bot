@@ -52,7 +52,9 @@ async def run() -> None:
         new = ghost_downgrade(tier, getattr(c, "readiness_signals", None) or {},
                               _ghost_hours(c, now), getattr(c, "last_sender", "") or "")
         if new != tier:
-            await store.update_meta(c.user_id, readiness_tier=new)
+            await store.update_meta(
+                c.user_id, readiness_tier=new,
+                readiness_reason="Шум: клиент пропал после ответа бота (застой >24ч)")
             changed += 1
     if changed:
         log.info("readiness rescore: %d застойных диалогов → noise", changed)

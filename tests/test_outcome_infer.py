@@ -51,6 +51,49 @@ def test_candidates_selection_rules():
     assert picked == ["stale_new"]
 
 
+def test_candidates_reevaluates_active_but_freezes_terminal():
+    """codex-review MAJOR: 'active' не терминальный → переоцениваем; won/lost/ghosted — заморожены.
+    Приоритет — сперва ни разу не размеченным."""
+    now = datetime.now(timezone.utc)
+    convs = [
+        _cv("fresh_active", inferred="active", hours_stale=30),   # active → кандидат (переоценка)
+        _cv("frozen_ghosted", inferred="ghosted", hours_stale=99),  # терминал → пропуск
+        _cv("never_judged", inferred="", hours_stale=40),          # "" → кандидат, приоритет
+    ]
+    picked = [c.user_id for c in outcome_infer._candidates(convs, now, stale_hours=24, limit=10)]
+    assert "frozen_ghosted" not in picked
+    assert picked == ["never_judged", "fresh_active"]             # не-размеченный первым
+
+
+def test_run_stops_when_budget_capped_mid_sweep(monkeypatch):
+    """codex-review MAJOR: бюджет исчерпался в процессе — sweep не жжёт вызовы дальше."""
+    panel_store._memory_store._conv.clear()
+    from app.core import flags
+    flags.reset()
+    outcome_infer._last_run = 0.0
+    monkeypatch.setattr("app.config.settings.outcome_infer_enabled", True)
+
+    async def avail():
+        return True
+
+    async def capped():
+        return True
+
+    async def boom(*a, **k):
+        raise AssertionError("не должны классифицировать при исчерпанном бюджете")
+
+    monkeypatch.setattr("app.agent.llm.llm_available", avail)   # прошли пред-цикловую проверку
+    monkeypatch.setattr("app.core.budget.hard_capped", capped)  # но в цикле — уже capped
+    monkeypatch.setattr("app.agent.llm.chat", boom)
+
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("frunze_tours:oi3", "client", "оплатить", channel="whatsapp", bot_id="frunze_tours"))
+    conv = asyncio.run(store.get("frunze_tours:oi3"))
+    conv.last_message_at = datetime.now(timezone.utc) - timedelta(hours=48)
+    asyncio.run(outcome_infer.run())
+    assert (asyncio.run(store.get("frunze_tours:oi3")).outcome_inferred or "") == ""
+
+
 def test_candidates_oldest_first_and_capped():
     now = datetime.now(timezone.utc)
     convs = [_cv("a", hours_stale=30), _cv("b", hours_stale=99), _cv("c", hours_stale=50)]

@@ -61,6 +61,7 @@ def _direction(conv) -> str:
 
 def _card(conv, now: datetime) -> dict:
     wait = _wait_minutes(conv, now)
+    dt = _aware(getattr(conv, "last_message_at", None))
     return {
         "user_id": getattr(conv, "user_id", ""),
         "name": _name(conv),
@@ -70,6 +71,7 @@ def _card(conv, now: datetime) -> dict:
         "reason": getattr(conv, "readiness_reason", "") or "",
         "wait": int(wait),
         "wait_state": _wait_state(wait),
+        "_recent": dt.timestamp() if dt else 0.0,   # тайбрейк по свежести (не рендерится)
     }
 
 
@@ -96,7 +98,8 @@ def compute_buyers(convs: list, now: datetime | None = None) -> dict:
              and not (getattr(c, "assigned_to", "") or "")
              and not getattr(c, "intercepted", False)]
     cards = [_card(c, now) for c in green]
-    cards.sort(key=lambda c: (c["wait"], c["value"] or 0), reverse=True)
+    # ожидание desc → чек desc → свежесть desc (среди равных выше тот, кто писал недавно)
+    cards.sort(key=lambda c: (c["wait"], c["value"] or 0, c["_recent"]), reverse=True)
 
     value_by_currency: dict[str, float] = {}
     for c in cards:

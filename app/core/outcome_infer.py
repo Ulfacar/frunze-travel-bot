@@ -20,7 +20,8 @@ log = logging.getLogger("outcome_infer")
 _RUN_EVERY_SECONDS = 3600
 _last_run = 0.0
 _VALID = {"won", "lost", "ghosted", "active"}
-_MANUAL_FINAL = {"won", "lost"}   # ручной финал — не переклассифицируем
+_MANUAL_FINAL = {"won", "lost"}          # ручной финал — не переклассифицируем
+_TERMINAL_INFERRED = {"won", "lost", "ghosted"}  # ИИ-финал заморожен; "active" — переоцениваем позже
 
 _SYSTEM = (
     "Ты классифицируешь ИСХОД диалога турагентства/визового центра по переписке.\n"
@@ -48,14 +49,16 @@ def _candidates(convs: list, now: datetime, stale_hours: int, limit: int) -> lis
     for c in convs:
         if (getattr(c, "outcome", "") or "") in _MANUAL_FINAL:
             continue                                   # менеджер уже отметил — не трогаем
-        if getattr(c, "outcome_inferred", "") or "":
-            continue                                   # уже классифицировали
+        if (getattr(c, "outcome_inferred", "") or "") in _TERMINAL_INFERRED:
+            continue                                   # терминальный ИИ-исход заморожен ("active" — нет)
         if _ghost_hours(c, now) < stale_hours:
             continue                                   # ещё живой/свежий
         if not getattr(c, "messages", None):
             continue
         out.append(c)
-    out.sort(key=lambda c: getattr(c, "last_message_at", now) or now)  # старые первыми
+    # приоритет: сперва ни разу не размеченные (""), потом "active" на переоценку; внутри — старые первыми
+    out.sort(key=lambda c: ((getattr(c, "outcome_inferred", "") or "") != "",
+                            getattr(c, "last_message_at", now) or now))
     return out[:limit]
 
 
@@ -103,6 +106,7 @@ async def run() -> None:
     _last_run = now_ts
 
     from app.agent.llm import llm_available
+    from app.core import budget
     if not await llm_available():
         return  # LLM выключен или дневной бюджет исчерпан — не тратим
 
@@ -114,6 +118,8 @@ async def run() -> None:
                         settings.outcome_infer_max_per_run)
     done = 0
     for c in cands:
+        if await budget.hard_capped():
+            break  # бюджет исчерпался в процессе — не конкурируем с живым ботом
         try:
             result = await _classify(c)
         except Exception:  # noqa: BLE001

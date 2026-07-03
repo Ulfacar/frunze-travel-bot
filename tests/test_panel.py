@@ -1156,4 +1156,6 @@ def test_rescore_sweep_marks_ghosted_dialog_as_noise():
     conv.last_message_at = datetime.now(timezone.utc) - timedelta(hours=30)  # застой 30ч
     conv.last_sender = "bot"                                                  # клиент не ответил
     asyncio.run(rescore.run())
-    assert asyncio.run(store.get(uid)).readiness_tier == "noise"
+    got = asyncio.run(store.get(uid))
+    assert got.readiness_tier == "noise"
+    assert "пропал" in got.readiness_reason      # reason обновлён под noise, не остался «тёплым»
