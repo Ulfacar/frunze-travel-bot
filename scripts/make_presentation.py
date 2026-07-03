@@ -217,9 +217,9 @@ def slide_1(prs):
         Palette.muted_dark,
     )
     add_card(slide, 9.35, 1.55, 2.95, 3.75, Palette.panel, RGBColor(42, 86, 101))
-    add_text(slide, 9.72, 1.95, 2.2, 0.48, "515", 36, True, Palette.white)
+    add_text(slide, 9.72, 1.95, 2.2, 0.48, "230", 36, True, Palette.white)
     add_text(slide, 9.72, 2.58, 2.2, 0.6, "реальных\nдиалогов", 15, False, Palette.muted_dark)
-    add_text(slide, 9.72, 3.65, 2.2, 0.48, "98,4%", 36, True, Palette.teal)
+    add_text(slide, 9.72, 3.65, 2.2, 0.48, "70%", 36, True, Palette.teal)
     add_text(slide, 9.72, 4.28, 2.2, 0.45, "бот провёл сам", 15, False, Palette.muted_dark)
     add_text(slide, 0.95, 6.58, 5.8, 0.25, "Frunze Travel · GetVisa · Бишкек", 9.5, False, Palette.muted_dark)
 
@@ -229,10 +229,10 @@ def slide_2(prs):
     add_bg(slide)
     add_title(slide, "Что бот уже делает", "реальные данные из WhatsApp")
     metrics = [
-        ("503", "человека написали\n35–100 новых/день", Palette.teal),
-        ("4122", "сообщения\nобработано", Palette.teal_dark),
-        ("1209", "ответов бота\nклиентам", Palette.amber),
-        ("98,4%", "диалогов бот\nпровёл сам", Palette.red),
+        ("230", "диалога\n48–100 новых/день", Palette.teal),
+        ("3200", "сообщений\nобработано", Palette.teal_dark),
+        ("1400", "ответов бота\nклиентам", Palette.amber),
+        ("70%", "диалогов бот\nпровёл сам", Palette.red),
     ]
     for i, (value, label, color) in enumerate(metrics):
         x = SAFE_L + i * 3.08
@@ -240,7 +240,7 @@ def slide_2(prs):
         add_text(slide, x + 0.22, 2.48, 2.25, 0.42, value, 30, True, color)
         add_text(slide, x + 0.22, 3.05, 2.25, 0.52, label, 13, False, Palette.slate)
     add_card(slide, SAFE_L, 4.45, 5.8, 1.25, Palette.green_soft, RGBColor(184, 224, 221))
-    add_text(slide, 0.9, 4.72, 5.25, 0.42, "Туры 338 · визы 176", 18, True, Palette.ink)
+    add_text(slide, 0.9, 4.72, 5.25, 0.42, "Туры 131 · визы 99", 18, True, Palette.ink)
     add_card(slide, 6.75, 4.45, 5.95, 1.25, Palette.amber_soft, RGBColor(239, 218, 166))
     add_text(slide, 7.05, 4.68, 5.25, 0.54, "24/7: половина обращений вне рабочих часов", 16, True, Palette.ink)
     add_footer(slide, 2)
@@ -249,12 +249,12 @@ def slide_2(prs):
 def slide_3_engagement(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_bg(slide)
-    add_title(slide, "Честно: сколько из них реальные, а не случайные", "градация вовлечённости")
+    add_title(slide, "Бот сам делит поток: где деньги, а где шум", "триаж лидов — уже работает")
 
     steps = [
-        ("503", "написали хоть раз\nвесь поток, включая «спросил и ушёл»", 10.8, Palette.grey_soft, Palette.ink),
-        ("332", "реальный диалог\n2+ сообщения — реально пообщались с ботом", 8.65, Palette.teal, Palette.white),
-        ("232", "вовлечённые\n4+ сообщения — плотно общались по турам/визам", 6.35, Palette.panel, Palette.white),
+        ("230", "весь поток за 1-3 июля\nвсе, кто написал", 10.8, Palette.grey_soft, Palette.ink),
+        ("160", "бот довёл сам\nбез передачи менеджеру (70%)", 8.65, Palette.teal, Palette.white),
+        ("74", "готовы платить\nбот выделил как горячих — им менеджер бегом", 6.35, Palette.panel, Palette.white),
     ]
     y = 2.25
     for i, (number, label, width, fill, color) in enumerate(steps):
@@ -270,7 +270,7 @@ def slide_3_engagement(prs):
         5.95,
         CONTENT_W,
         0.42,
-        "И всё это бот вёл сам, без менеджеров. 503 — это поток, 232 — те, кто реально в разговоре.",
+        "Всю разметку бот делает сам, без единой ручной кнопки: 230 — поток, 74 — те, у кого деньги.",
         11,
         False,
         Palette.slate,
@@ -315,7 +315,7 @@ def slide_3(prs):
     add_text(slide, 0.95, 5.35, 4.55, 0.28, "Расход = живая работа, не сбой", 14.5, True, Palette.ink)
     add_text(slide, 6.13, 4.05, 0.55, 0.4, "→", 30, True, Palette.teal, PP_ALIGN.CENTER)
     add_card(slide, 6.85, 2.95, 5.85, 2.95, Palette.green_soft, RGBColor(169, 221, 215))
-    add_text(slide, 7.2, 3.25, 5.0, 0.36, "Стало ~$3–6/день", 22, True, Palette.ink)
+    add_text(slide, 7.2, 3.25, 5.0, 0.36, "Стало ~$1–2,5/день", 22, True, Palette.ink)
     add_bullets(
         slide,
         [
@@ -376,22 +376,22 @@ def slide_5(prs):
 def slide_6(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_bg(slide, True)
-    add_title(slide, "Панель владельца", "пример макета", dark=True)
+    add_title(slide, "Панель владельца «Покупатели сегодня»", "уже работает на проде", dark=True)
     add_card(slide, 0.8, 2.2, 11.45, 3.95, Palette.panel, RGBColor(42, 86, 101))
-    add_text(slide, 1.18, 2.52, 3.2, 0.35, "Сегодня", 20, True, Palette.white)
-    add_text(slide, 1.18, 3.0, 5.2, 0.25, "деньги за 5 секунд, а не 100 чатов", 10.5, False, Palette.muted_dark)
+    add_text(slide, 1.18, 2.52, 6.2, 0.35, "Бот уже разметил поток", 20, True, Palette.white)
+    add_text(slide, 1.18, 3.0, 6.6, 0.25, "деньги за 5 секунд, а не 100 чатов — размечено само", 10.5, False, Palette.muted_dark)
     stats = [
-        ("12", "горячих", Palette.red),
-        ("40", "тёплых\nбот дожимает", Palette.amber),
-        ("30", "ушли", Palette.grey),
-        ("~сумма", "в работе", Palette.teal),
+        ("74", "готовых\nплатить", Palette.teal),
+        ("88", "тёплых\nбот дожимает", Palette.amber),
+        ("70", "шум\nотсеян", Palette.grey),
+        ("сам", "без ручных\nкнопок", Palette.white),
     ]
     for i, (num, label, color) in enumerate(stats):
         x = 1.18 + i * 2.72
         add_card(slide, x, 3.62, 2.35, 1.55, RGBColor(24, 59, 82), RGBColor(55, 95, 112))
         add_text(slide, x + 0.18, 3.88, 1.82, 0.32, num, 24, True, color)
         add_text(slide, x + 0.18, 4.35, 1.82, 0.42, label, 12.5, False, Palette.white)
-    add_text(slide, 1.18, 5.48, 8.7, 0.25, "пример макета: менеджеры работают только с деньгами", 10.5, False, Palette.muted_dark)
+    add_text(slide, 1.18, 5.48, 10.6, 0.25, "уже работает: бот сам метит горячих/тёплых/шум и даже исход диалога (оплатил/отказ/пропал)", 10.5, False, Palette.muted_dark)
     add_footer(slide, 7, dark=True)
 
 
@@ -451,7 +451,7 @@ def slide_9(prs):
     )
     add_card(slide, 0.75, 4.65, 6.4, 1.15, Palette.panel, RGBColor(42, 86, 101))
     add_text(slide, 1.05, 4.96, 5.65, 0.42, "Frunze Travel · GetVisa · Бишкек", 16, True, Palette.white)
-    add_text(slide, 0.75, 6.48, 9.4, 0.25, "Данные из рабочей базы за 24.06–02.07.2026. Панель — макет решения.", 8.5, False, Palette.muted_dark)
+    add_text(slide, 0.75, 6.48, 11.0, 0.25, "Данные из рабочей базы за 1–3 июля 2026. Панель «Покупатели сегодня» уже работает на проде.", 8.5, False, Palette.muted_dark)
 
 
 def slide_10(prs):
@@ -460,18 +460,12 @@ def slide_10(prs):
     add_title(slide, "Сколько людей писали и сколько бот ответил", "реальные данные из прода")
 
     rows = [
-        ("02.07", "117", "1058", "836"),
-        ("01.07", "72", "348", "191"),
-        ("30.06", "73", "261", "82"),
-        ("29.06", "78", "287", "0"),
-        ("28.06", "61", "185", "0"),
-        ("27.06", "71", "181", "23"),
-        ("26.06", "71", "262", "0"),
-        ("25.06", "48", "185", "0"),
-        ("24.06", "32", "138", "77"),
+        ("03.07", "82", "581", "487"),
+        ("02.07", "100", "981", "776"),
+        ("01.07", "48", "244", "137"),
     ]
-    headers = ("День", "Людей писало", "Сообщений клиентов", "Ответов бота")
-    total = ("ВСЕГО", "503 человека", "2911", "1215 ответов бота")
+    headers = ("День", "Новых диалогов", "Сообщений клиентов", "Ответов бота")
+    total = ("ВСЕГО", "230 диалогов", "1806", "1400 ответов бота")
 
     table_left = SAFE_L
     table_top = 2.02
@@ -509,7 +503,7 @@ def slide_10(prs):
         6.08,
         CONTENT_W,
         0.38,
-        "25–29 июня бот был выключен (ответов 0) — люди писали, но автоответа не было. Это упущенные обращения.",
+        "Бот в боевом режиме с 1 июля — отвечает 24/7, почти половина обращений приходит вне рабочих часов.",
         10.5,
         False,
         Palette.slate,
