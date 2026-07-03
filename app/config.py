@@ -49,6 +49,7 @@ class ManagerConfig(BaseModel):
     login: str
     name: str = ""
     password: str = ""
+    admin: bool = False  # True → полный доступ ко всем воронкам и статистике (как admin_user)
 
 
 # Дефолтный реестр — 2 стартовых Wappi-бота. Реальные секреты приходят из .env
@@ -141,6 +142,12 @@ class Settings(BaseSettings):
     debounce_seconds: float = 0.0
 
     # Автодожим: проактивный пинг клиентам, замолчавшим на этапе квалификации.
+    readiness_rescore_enabled: bool = True   # ghost-ре-скоринг тира (застойный неготовый → noise)
+    # Авто-исход через LLM (advisory): классифицирует won/lost/ghosted по переписке. ВЫКЛ по умолчанию
+    # (стоит денег + пишет в отдельное поле outcome_inferred, ручной outcome не трогает).
+    outcome_infer_enabled: bool = False
+    outcome_infer_stale_hours: int = 24      # диалог без активности дольше → кандидат на классификацию
+    outcome_infer_max_per_run: int = 20      # потолок вызовов LLM за прогон (бюджет)
     followup_enabled: bool = False
     followup_after_hours: int = 24       # молчит дольше → один мягкий пинг
     noise_stale_days: int = 3            # пустой greeting без ответа бота старше N дней = мусор

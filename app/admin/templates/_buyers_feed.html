@@ -1,0 +1,50 @@
+{# Партиал: hero владельца + лента 🟢. Рендерится и в странице, и в поллинге every 30s. #}
+<section class="hero">
+  <div class="hero-date">Покупатели сегодня · {{ b.date_label }}</div>
+  <div class="hero-green"><b>🟢 {{ b.hero.green_count }}</b> готовы купить</div>
+  {% if b.hero.value_by_currency %}
+  <div class="hero-money">~
+    {% for cur, val in b.hero.value_by_currency.items() -%}
+      {{ '{:,.0f}'.format(val).replace(',', ' ') }}&nbsp;{{ cur }}{% if not loop.last %} · {% endif %}
+    {%- endfor %} потенциал</div>
+  {% endif %}
+  {% if b.hero.waiting_late %}
+  <div class="hero-sla">⏱ {{ b.hero.waiting_late }} ждут ответа &gt;15 мин 🔴</div>
+  {% endif %}
+  {% if b.hero.total_today %}
+  <div class="noise">Шум отфильтрован: <b>{{ b.hero.filtered }}</b> из {{ b.hero.total_today }}
+    <div class="noise-bar"><div class="noise-bar__fill" style="width:{{ b.hero.noise_pct }}%"></div></div>
+  </div>
+  {% endif %}
+  <div class="tiers">
+    <span class="muted" style="font-size:12px;align-self:center;margin-right:2px">Сегодня:</span>
+    <span class="chip chip-green">🟢 {{ b.hero.tiers.green }}</span>
+    <span class="chip chip-warm">🟡 {{ b.hero.tiers.warm }}</span>
+    <span class="chip chip-noise">⚫ {{ b.hero.tiers.noise }}</span>
+    <span class="chip chip-unknown">❔ {{ b.hero.tiers.insufficient }}</span>
+  </div>
+</section>
+
+<section class="feed">
+  {% for c in b.feed %}
+  <div class="lead-card" id="lead-{{ loop.index }}">
+    <div class="lc-top">
+      <span class="lc-name">🟢 {{ c.name }}</span>
+      <span class="lc-dir">{{ c.direction }}</span>
+    </div>
+    <div class="lc-val">
+      {% if c.value %}{{ '{:,.0f}'.format(c.value).replace(',', ' ') }}&nbsp;{{ c.currency or '' }}
+      {%- else %}<span class="muted">чек ?</span>{% endif %}
+    </div>
+    <div class="lc-reason" title="{{ c.reason }}">{{ c.reason }}</div>
+    <div class="lc-bottom">
+      <span class="wait wait--{{ c.wait_state }}">⏱ ждёт {{ c.wait }} мин</span>
+      <button class="claim" hx-post="/admin/buyers/{{ c.user_id }}/claim"
+              hx-target="closest .lead-card" hx-swap="outerHTML swap:180ms">Взять в работу</button>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty">Пока нет готовых покупателей 🟢 — бот собирает и дожимает поток.</div>
+  {% endfor %}
+  {% if b.more %}<div class="more muted">…и ещё {{ b.more }} готовых сверх ёмкости (топ-15 показаны)</div>{% endif %}
+</section>

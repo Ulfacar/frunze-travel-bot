@@ -61,9 +61,12 @@
     {% endfor %}
   </div>
 
-  {% if c.ai_summary or c.manager_next_step or c.escalation_reason %}
+  {% if c.ai_summary or c.manager_next_step or c.escalation_reason or c.outcome_inferred %}
   <div class="brief manager-brief">
     <div class="brief-title">AI для менеджера</div>
+    {% if c.outcome_inferred %}
+    <div class="brief-row"><span class="k">ИИ-исход</span><span>{{ {'won':'✅ похоже оплатил','lost':'❌ похоже отказ','ghosted':'💤 пропал','active':'⏳ в работе'}.get(c.outcome_inferred, c.outcome_inferred) }}{% if c.outcome_inferred_reason %} — {{ c.outcome_inferred_reason }}{% endif %} <i>(оценка ИИ, поправьте кнопкой)</i></span></div>
+    {% endif %}
     {% if c.ai_summary %}
     <div class="brief-row"><span class="k">Контекст</span><span>{{ c.ai_summary }}</span></div>
     {% endif %}

@@ -28,6 +28,29 @@ def _avg(values: list[float]) -> float | None:
     return round(sum(values) / len(values), 1) if values else None
 
 
+# ИИ-исход (outcome_inferred) → исход для аналитики, если менеджер не проставил вручную.
+# Ручной outcome всегда авторитетнее. ghosted (пропал) = не купил → lost для win-rate.
+_INFERRED_TO_OUTCOME = {"won": "won", "lost": "lost", "ghosted": "lost", "active": "in_progress"}
+
+
+def _effective_outcome(conv) -> str:
+    manual = getattr(conv, "outcome", "") or ""
+    if manual:
+        return manual
+    inferred = getattr(conv, "outcome_inferred", "") or ""
+    return _INFERRED_TO_OUTCOME.get(inferred, "in_progress")
+
+
+def _median(values: list[float]) -> float | None:
+    """Медиана — устойчива к выбросам (овернайт-ответ на сутки не задирает метрику)."""
+    if not values:
+        return None
+    s = sorted(values)
+    n = len(s)
+    mid = n // 2
+    return round(s[mid] if n % 2 else (s[mid - 1] + s[mid]) / 2, 1)
+
+
 def _period_start(period: str, now: datetime) -> datetime | None:
     """Начало окна периода. None — без фильтра (всё время / неизвестный ключ)."""
     if period == "today":
@@ -124,6 +147,7 @@ def compute_analytics(convs: list, period: str = "all", now: datetime | None = N
     total = len(convs)
     # Разрез по менеджерам: сколько диалогов вёл и с каким исходом.
     by_manager: dict[str, Counter] = {}
+    mgr_response_gaps: dict[str, list[float]] = {}  # паузы «клиент→ответ» на каждого менеджера
     contained = 0                      # диалоги без единого сообщения менеджера (вёл только бот)
     outcomes: Counter = Counter()
     by_funnel: dict[str, Counter] = {}
@@ -133,17 +157,23 @@ def compute_analytics(convs: list, period: str = "all", now: datetime | None = N
 
     for c in convs:
         msgs = sorted(c.messages, key=lambda m: (m.created_at or datetime.min.replace(tzinfo=timezone.utc)))
-        has_manager = any(m.sender == "manager" for m in msgs)
-        if not has_manager:
+        # «Человек вмешался» = менеджер написал ИЛИ забрал диалог (перехват/закрепление).
+        # Иначе containment врёт: менеджер перехватил, но не написал — и диалог считался «бот сам».
+        has_human = (any(m.sender == "manager" for m in msgs)
+                     or getattr(c, "intercepted", False)
+                     or bool(getattr(c, "assigned_to", "")))
+        if not has_human:
             contained += 1
-        outcomes[c.outcome or "in_progress"] += 1
+        eff_outcome = _effective_outcome(c)
+        outcomes[eff_outcome] += 1
         by_funnel.setdefault(c.funnel or "—", Counter())[c.stage or "greeting"] += 1
         if getattr(c, "assigned_to", ""):
             mc = by_manager.setdefault(c.assigned_to, Counter())
             mc["handled"] += 1
-            mc[c.outcome or "in_progress"] += 1
+            mc[eff_outcome] += 1
 
         # Время ответа менеджера: для каждого manager-сообщения — пауза с предыдущего client.
+        conv_gaps: list[float] = []
         last_client_at = None
         first_manager_at = None
         first_at = msgs[0].created_at if msgs else None
@@ -154,8 +184,11 @@ def compute_analytics(convs: list, period: str = "all", now: datetime | None = N
                 if first_manager_at is None:
                     first_manager_at = m.created_at
                 if last_client_at and m.created_at:
-                    response_gaps.append(_minutes(last_client_at, m.created_at))
+                    conv_gaps.append(_minutes(last_client_at, m.created_at))
                 last_client_at = None
+        response_gaps.extend(conv_gaps)
+        if getattr(c, "assigned_to", ""):
+            mgr_response_gaps.setdefault(c.assigned_to, []).extend(conv_gaps)
         if first_at and first_manager_at:
             handoff_gaps.append(_minutes(first_at, first_manager_at))
 
@@ -163,17 +196,28 @@ def compute_analytics(convs: list, period: str = "all", now: datetime | None = N
                 and c.escalation_reason:
             handoff_reasons[c.escalation_reason.strip()] += 1
 
+    # Разрез по сотрудникам с обогащением: win-rate, доля нагрузки, своё время ответа.
+    sum_handled = sum(mc["handled"] for mc in by_manager.values())
+    by_manager_out: dict[str, dict] = {}
+    for m, mc in sorted(by_manager.items(), key=lambda kv: kv[1]["handled"], reverse=True):
+        handled = mc["handled"]
+        row = dict(mc)
+        row["won_rate"] = round(100 * mc.get("won", 0) / handled) if handled else 0
+        row["share"] = round(100 * handled / sum_handled) if sum_handled else 0
+        row["median_response_min"] = _median(mgr_response_gaps.get(m, []))
+        by_manager_out[m] = row
+
     return {
         "total": total,
         "contained": contained,
         "containment_rate": round(100 * contained / total) if total else 0,
         "outcomes": dict(outcomes),
         "by_funnel": {f: dict(stages) for f, stages in by_funnel.items()},
-        "avg_response_min": _avg(response_gaps),
-        "avg_handoff_min": _avg(handoff_gaps),
+        "funnel_totals": {f: sum(stages.values()) for f, stages in by_funnel.items()},
+        "median_response_min": _median(response_gaps),
+        "median_handoff_min": _median(handoff_gaps),
         "handoff_reasons": handoff_reasons.most_common(5),
-        "by_manager": {m: dict(c) for m, c in sorted(
-            by_manager.items(), key=lambda kv: kv[1]["handled"], reverse=True)},
+        "by_manager": by_manager_out,
         "activity": _activity(convs, now),
         "period": period,
     }

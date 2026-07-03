@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frunze Travel · следующий шаг бота</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5b6572;
+      --line: #d8dee6;
+      --paper: #f6f8fa;
+      --white: #ffffff;
+      --navy: #16324f;
+      --blue: #2364aa;
+      --cyan: #1c8a9e;
+      --red: #d33f3f;
+      --yellow: #d6a21f;
+      --gray: #4f5965;
+      --green: #16805d;
+      --shadow: 0 18px 55px rgba(22, 50, 79, .12);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.48;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(22, 50, 79, .055) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(22, 50, 79, .045) 1px, transparent 1px),
+        var(--paper);
+      background-size: 42px 42px;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+    }
+
+    header {
+      min-height: 92vh;
+      display: grid;
+      align-items: center;
+      padding: 46px 0 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+      margin-bottom: 54px;
+      color: var(--muted);
+      font-size: 14px;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .brand {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      color: var(--navy);
+      font-weight: 800;
+    }
+
+    .mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+      background: var(--navy);
+      border-radius: 7px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(330px, .92fr);
+      gap: 46px;
+      align-items: end;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      margin-bottom: 22px;
+      max-width: 900px;
+      font-size: clamp(46px, 7vw, 92px);
+      line-height: .93;
+      letter-spacing: 0;
+      color: var(--navy);
+    }
+
+    .lead {
+      max-width: 720px;
+      margin-bottom: 30px;
+      font-size: clamp(19px, 2.2vw, 26px);
+      line-height: 1.28;
+      color: #273443;
+    }
+
+    .promise {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 36px;
+    }
+
+    .promise div,
+    .panel,
+    .card,
+    .metric,
+    .quote,
+    .summary {
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .promise div {
+      padding: 18px;
+      min-height: 112px;
+    }
+
+    .eyebrow {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .promise strong {
+      display: block;
+      font-size: 17px;
+      line-height: 1.25;
+      color: var(--ink);
+    }
+
+    .hero-panel {
+      align-self: stretch;
+      display: grid;
+      align-content: end;
+      gap: 14px;
+    }
+
+    .signal-board {
+      padding: 24px;
+      background: var(--navy);
+      color: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .signal-board h2 {
+      margin-bottom: 18px;
+      font-size: 22px;
+      color: var(--white);
+    }
+
+    .signal-row {
+      display: grid;
+      grid-template-columns: 16px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 13px 0;
+      border-top: 1px solid rgba(255,255,255,.18);
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--gray);
+    }
+
+    .dot.red { background: var(--red); }
+    .dot.yellow { background: var(--yellow); }
+    .dot.gray { background: #89919b; }
+
+    .signal-row strong {
+      font-size: 18px;
+    }
+
+    .signal-row span:last-child {
+      color: rgba(255,255,255,.75);
+      font-size: 14px;
+    }
+
+    main {
+      padding: 36px 0 80px;
+    }
+
+    section {
+      padding: 58px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 34px;
+      margin-bottom: 28px;
+      align-items: start;
+    }
+
+    .section-kicker {
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin-bottom: 12px;
+      color: var(--navy);
+      font-size: clamp(30px, 4vw, 50px);
+      line-height: 1.03;
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 20px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .metric {
+      min-height: 158px;
+      padding: 20px;
+    }
+
+    .metric .number {
+      display: block;
+      margin-bottom: 9px;
+      color: var(--navy);
+      font-size: clamp(32px, 4vw, 48px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .metric p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .metric.wide {
+      grid-column: span 2;
+    }
+
+    .bars {
+      display: grid;
+      grid-template-columns: 1.38fr 1fr;
+      gap: 8px;
+      align-items: end;
+      height: 112px;
+      margin-top: 12px;
+      padding-top: 6px;
+      border-top: 1px solid var(--line);
+    }
+
+    .bar {
+      display: grid;
+      align-items: end;
+      color: var(--white);
+      min-width: 0;
+      border-radius: 5px 5px 0 0;
+      padding: 8px;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .bar.tours { height: 98px; background: var(--blue); }
+    .bar.visas { height: 71px; background: var(--cyan); }
+    .bar.tickets { height: 8px; background: var(--gray); padding: 0; }
+
+    .mgr-stats { margin-top: 26px; display: grid; gap: 10px; }
+    .mgr-row { display: grid; grid-template-columns: 210px 1fr; align-items: center; gap: 14px; }
+    .mgr-name { color: var(--ink); font-weight: 700; font-size: 15px; }
+    .mgr-track { background: rgba(0,0,0,.05); border-radius: 6px; }
+    .mgr-bar {
+      display: inline-flex; align-items: center; justify-content: flex-end;
+      min-width: 46px; height: 30px; padding: 0 12px; border-radius: 6px;
+      color: var(--white); font-weight: 800; font-size: 14px; white-space: nowrap;
+    }
+    @media (max-width: 620px) { .mgr-row { grid-template-columns: 1fr; gap: 4px; } }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(330px, .9fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .summary {
+      padding: 28px;
+    }
+
+    .summary h3 {
+      margin-bottom: 18px;
+      color: var(--navy);
+      font-size: 26px;
+      line-height: 1.12;
+    }
+
+    .split-line {
+      display: grid;
+      grid-template-columns: 20% 80%;
+      height: 34px;
+      overflow: hidden;
+      border-radius: 5px;
+      margin: 18px 0 14px;
+      background: var(--line);
+    }
+
+    .split-line div:first-child { background: var(--green); }
+    .split-line div:last-child { background: #b8c1cc; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .legend b { color: var(--ink); }
+
+    .quote {
+      padding: 30px;
+      display: grid;
+      align-content: center;
+      border-left: 6px solid var(--blue);
+    }
+
+    .quote blockquote {
+      margin: 0;
+      color: var(--navy);
+      font-size: clamp(24px, 3vw, 36px);
+      line-height: 1.14;
+      font-style: italic;
+      font-weight: 700;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      padding: 24px;
+      min-height: 245px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: var(--gray);
+    }
+
+    .card.hot:before { background: var(--red); }
+    .card.warm:before { background: var(--yellow); }
+    .card.cold:before { background: var(--gray); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .badge .dot { width: 11px; height: 11px; }
+
+    .card h3 {
+      margin-bottom: 12px;
+      color: var(--navy);
+      font-size: 25px;
+    }
+
+    .card p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .owner-panel {
+      display: grid;
+      grid-template-columns: 1fr 330px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 26px;
+    }
+
+    .panel-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-top h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 28px;
+    }
+
+    .mock-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .traffic {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .traffic-item {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: #fbfcfd;
+    }
+
+    .traffic-item strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 42px;
+      line-height: 1;
+      color: var(--navy);
+    }
+
+    .traffic-item span {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .traffic-item.hot { border-top: 5px solid var(--red); }
+    .traffic-item.warm { border-top: 5px solid var(--yellow); }
+    .traffic-item.cold { border-top: 5px solid var(--gray); }
+
+    .money-strip {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+      padding: 18px;
+      color: var(--white);
+      background: var(--navy);
+      border-radius: var(--radius);
+    }
+
+    .money-strip strong {
+      font-size: 22px;
+    }
+
+    .money-strip span {
+      color: rgba(255,255,255,.78);
+    }
+
+    .side-note {
+      padding: 26px;
+      color: var(--white);
+      background: var(--blue);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .side-note h3 {
+      margin-bottom: 14px;
+      font-size: 26px;
+      line-height: 1.15;
+    }
+
+    .side-note p {
+      margin-bottom: 0;
+      color: rgba(255,255,255,.86);
+      font-size: 17px;
+    }
+
+    .change-list,
+    .metrics-list {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .change-list li,
+    .metrics-list li {
+      min-height: 176px;
+      padding: 22px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .index {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      margin-bottom: 18px;
+      color: var(--white);
+      background: var(--navy);
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .change-list strong,
+    .metrics-list strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--navy);
+      font-size: 19px;
+      line-height: 1.22;
+    }
+
+    .change-list span,
+    .metrics-list span {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .final {
+      padding: 64px 0 26px;
+      border-bottom: 0;
+    }
+
+    .final-box {
+      padding: clamp(28px, 5vw, 54px);
+      color: var(--white);
+      background: var(--navy);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .final-box h2 {
+      max-width: 1040px;
+      color: var(--white);
+      font-size: clamp(32px, 5vw, 62px);
+    }
+
+    .final-box p {
+      max-width: 950px;
+      margin-bottom: 0;
+      color: rgba(255,255,255,.84);
+      font-size: 20px;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding: 26px 0 54px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    footer strong {
+      color: var(--navy);
+    }
+
+    @media (max-width: 980px) {
+      header { min-height: auto; }
+      .hero-grid,
+      .section-head,
+      .problem-grid,
+      .owner-panel {
+        grid-template-columns: 1fr;
+      }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .cards,
+      .change-list,
+      .metrics-list {
+        grid-template-columns: 1fr 1fr;
+      }
+      .promise,
+      .traffic {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .page { width: min(100% - 24px, 1180px); }
+      header { padding-top: 28px; }
+      .topline {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-bottom: 34px;
+      }
+      .metrics,
+      .cards,
+      .change-list,
+      .metrics-list {
+        grid-template-columns: 1fr;
+      }
+      .metric.wide { grid-column: auto; }
+      .panel-top,
+      .money-strip {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .mock-label { white-space: normal; }
+      section { padding: 42px 0; }
+      .quote blockquote { font-size: 25px; }
+      .metric,
+      .card,
+      .panel,
+      .summary,
+      .quote,
+      .side-note {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="page">
+      <div class="topline">
+        <div class="brand"><span class="mark">FT</span><span>Frunze Travel · GetVisa</span></div>
+        <div>Бишкек · следующий шаг AI-менеджера первой линии</div>
+      </div>
+
+      <div class="hero-grid">
+        <div>
+          <h1>Видеть деньги, а не 100 чатов</h1>
+          <p class="lead">Бот уже держит первый контакт с клиентами Frunze Travel. Следующий шаг — сделать из него фильтр продаж: отделять горячих клиентов, дожимать тёплых и не отдавать менеджерам шум.</p>
+          <div class="promise" aria-label="Ключевые результаты">
+            <div>
+              <span class="eyebrow">Поток</span>
+              <strong>35–100 новых клиентов в день можно разбирать без ручной очереди.</strong>
+            </div>
+            <div>
+              <span class="eyebrow">Фокус</span>
+              <strong>Менеджеры работают с теми, где есть даты, бюджет, люди и намерение платить.</strong>
+            </div>
+            <div>
+              <span class="eyebrow">Результат</span>
+              <strong>Больше оплат из того же потока: горячие не теряются, тёплые не остывают.</strong>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-panel" aria-label="Светофор лидов">
+          <div class="signal-board">
+            <h2>Новая роль бота: светофор для продаж</h2>
+            <div class="signal-row"><span class="dot red"></span><strong>Горячий</strong><span>сразу менеджеру</span></div>
+            <div class="signal-row"><span class="dot yellow"></span><strong>Тёплый</strong><span>бот дожимает</span></div>
+            <div class="signal-row"><span class="dot gray"></span><strong>Просто спросил</strong><span>без нагрузки на офис</span></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section>
+      <div class="section-head">
+        <div class="section-kicker">Сейчас в проде</div>
+        <div>
+          <h2>Это уже не тест: бот работает с живыми клиентами из WhatsApp</h2>
+          <p>Данные из рабочей базы за 1–3 июля 2026 (первые дни боевой работы) показывают реальный поток: люди пишут, бот отвечает, большая часть первичного общения проходит без участия менеджера.</p>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <article class="metric">
+          <span class="number">221</span>
+          <p><strong>реальных диалогов</strong> с живыми клиентами из WhatsApp за 1–3 июля 2026. Это реальные люди, не тесты.</p>
+        </article>
+        <article class="metric">
+          <span class="number">3562</span>
+          <p><strong>сообщения</strong> обработано в переписках клиентов за три дня.</p>
+        </article>
+        <article class="metric">
+          <span class="number">1506</span>
+          <p><strong>ответов бота</strong> уже ушло клиентам вместо ручной первичной обработки.</p>
+        </article>
+        <article class="metric">
+          <span class="number">68%</span>
+          <p><strong>диалогов бот провёл сам</strong>, без менеджера: 151 из 221.</p>
+        </article>
+        <article class="metric wide">
+          <span class="number">24/7 · 45%</span>
+          <p><strong>ответов вне рабочих часов</strong>, когда офис закрыт. Почти половина клиентов пишет вечером или ночью, и первый контакт не ждёт утра.</p>
+        </article>
+        <article class="metric wide">
+          <span class="number">128 / 93</span>
+          <p><strong>туры — 128 диалогов</strong>, визы — 93. По 48–100 новых клиентов в день.</p>
+          <div class="bars" aria-label="Направления: туры 128, визы 93">
+            <div class="bar tours">туры 128</div>
+            <div class="bar visas">визы 93</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="section-kicker">Нагрузка на менеджеров</div>
+        <div>
+          <h2>Бот снял с команды рутину: две трети диалогов он закрыл сам</h2>
+          <p>Из 221 диалога за 1–3 июля бот полностью провёл 151 (68%). Живой менеджер понадобился лишь в 70 — это те, кого стоило забрать вручную, а не вся очередь. Ниже — кто сколько диалогов забрал себе.</p>
+        </div>
+      </div>
+
+      <div class="mgr-stats">
+        <div class="mgr-row"><span class="mgr-name">Бот сам, без передачи</span><span class="mgr-bar" style="width:100%;background:var(--navy)">151</span></div>
+        <div class="mgr-row"><span class="mgr-name">Медина · визы</span><span class="mgr-bar" style="width:15%;background:var(--cyan)">21</span></div>
+        <div class="mgr-row"><span class="mgr-name">Сезим · туры</span><span class="mgr-bar" style="width:15%;background:var(--blue)">21</span></div>
+        <div class="mgr-row"><span class="mgr-name">Админ / владелец</span><span class="mgr-bar" style="width:14%;background:var(--gray)">20</span></div>
+        <div class="mgr-row"><span class="mgr-name">Адеми · туры</span><span class="mgr-bar" style="width:8%;background:var(--blue)">8</span></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="section-kicker">Проблема владельца</div>
+        <div>
+          <h2>В потоке много шума, а деньги могут утонуть</h2>
+          <p>Из 100 человек в день реальные деньги — примерно 15–20. Остальное: праздные «сколько стоит?» и пропал, болтуны, реклама. Если всё выглядит одинаково, горячего клиента находят через сутки или не находят вовсе.</p>
+        </div>
+      </div>
+
+      <div class="problem-grid">
+        <div class="summary">
+          <h3>Главная задача — не отвечать всем вручную, а быстро увидеть тех, кто готов покупать.</h3>
+          <div class="split-line" aria-label="Из 100 клиентов 15-20 с реальными деньгами, остальное шум">
+            <div></div>
+            <div></div>
+          </div>
+          <div class="legend">
+            <span><b>15–20</b> с реальными деньгами</span>
+            <span><b>80+</b> шум и слабые намерения</span>
+          </div>
+        </div>
+        <div class="quote">
+          <blockquote>«Мне не нужно читать 100 чатов. Мне нужно видеть: вот эти 12 — с деньгами, к ним бегом».</blockquote>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="section-kicker">Решение</div>
+        <div>
+          <h2>Бот-светофор: каждому клиенту свой цвет и своё действие</h2>
+          <p>Бот не просто отвечает. Он классифицирует намерение клиента и решает, что должно произойти дальше: передать менеджеру, мягко напомнить или закрыть вопрос без нагрузки на команду.</p>
+        </div>
+      </div>
+
+      <div class="cards">
+        <article class="card hot">
+          <span class="badge"><span class="dot red"></span>красный</span>
+          <h3>Горячий</h3>
+          <p>Клиент назвал даты, бюджет, людей или просит оформить. Бот сразу передаёт менеджеру готовое резюме и сигнал: «тут деньги».</p>
+        </article>
+        <article class="card warm">
+          <span class="badge"><span class="dot yellow"></span>жёлтый</span>
+          <h3>Тёплый</h3>
+          <p>Клиент интересуется, спросил цену, думает. Бот сам напоминает через день-два: вежливо, один раз, чтобы интерес не остыл.</p>
+        </article>
+        <article class="card cold">
+          <span class="badge"><span class="dot gray"></span>серый</span>
+          <h3>Просто спросил</h3>
+          <p>Праздный вопрос, поболтать или реклама. Бот отвечает сам тепло, сохраняет репутацию и не трогает менеджеров.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="section-kicker">Панель владельца</div>
+        <div>
+          <h2>Владелец открывает не 100 переписок, а дневную сводку</h2>
+          <p>Панель должна показывать, где деньги сегодня, что бот дожимает сам и какой шум уже отфильтрован. Ниже — пример макета предлагаемого решения.</p>
+        </div>
+      </div>
+
+      <div class="owner-panel">
+        <div class="panel">
+          <div class="panel-top">
+            <h3>Сегодня в работе</h3>
+            <span class="mock-label">пример макета</span>
+          </div>
+          <div class="traffic">
+            <div class="traffic-item hot">
+              <strong>12</strong>
+              <span>горячих: к ним менеджеру бегом</span>
+            </div>
+            <div class="traffic-item warm">
+              <strong>40</strong>
+              <span>тёплых: бот дожимает</span>
+            </div>
+            <div class="traffic-item cold">
+              <strong>30</strong>
+              <span>спросили и ушли: без нагрузки на офис</span>
+            </div>
+          </div>
+          <div class="money-strip">
+            <strong>Примерная сумма разговоров в работе</strong>
+            <span>владелец видит не чат-лист, а коммерческую картину дня</span>
+          </div>
+        </div>
+
+        <aside class="side-note">
+          <h3>Для менеджера это не ещё одна система, а очередь приоритетов.</h3>
+          <p>Адеми, Сезим, Медина и Элиза получают клиентов с деньгами и кратким резюме, а не перелопачивают весь входящий поток.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="section-kicker">Что изменится</div>
+        <div>
+          <h2>Больше оплат из того же потока и меньше ручной суеты</h2>
+          <p>Ценность не в том, что бот «умный». Ценность в том, что он помогает быстрее довести до оплаты тех, кто уже пришёл, и не портит впечатление тем, кто пока просто спрашивает.</p>
+        </div>
+      </div>
+
+      <ul class="change-list">
+        <li><span class="index">1</span><strong>Горячие не теряются</strong><span>Клиенты с датами, бюджетом и намерением быстрее попадают к менеджеру.</span></li>
+        <li><span class="index">2</span><strong>Тёплые не остывают</strong><span>Бот аккуратно напоминает сам, когда менеджеру рано подключаться.</span></li>
+        <li><span class="index">3</span><strong>Команда работает на деньгах</strong><span>Менеджеры не тратят день на шум и слабые запросы.</span></li>
+        <li><span class="index">4</span><strong>Репутация цела</strong><span>Даже «просто спросившему» отвечают тепло: сегодня не купил, через полгода может вернуться за свадебным туром.</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="section-kicker">Честные метрики</div>
+        <div>
+          <h2>Как поймём, что следующий шаг работает</h2>
+          <p>Оценивать нужно не технологию, а влияние на продажи и управляемость потока. Метрики простые и понятные владельцу.</p>
+        </div>
+      </div>
+
+      <ul class="metrics-list">
+        <li><span class="index">A</span><strong>Время реакции на горячего лида</strong><span>Цель: минуты, не часы.</span></li>
+        <li><span class="index">B</span><strong>Конверсия в оплату</strong><span>Каждый диалог получает исход, чтобы было видно, что приносит деньги.</span></li>
+        <li><span class="index">C</span><strong>Сколько горячих в день выделил бот</strong><span>Владелец видит ежедневный объём реальных возможностей.</span></li>
+        <li><span class="index">D</span><strong>Сколько шума не попало к менеджерам</strong><span>Команда освобождается для клиентов с намерением покупать.</span></li>
+      </ul>
+    </section>
+
+    <section class="final">
+      <div class="final-box">
+        <h2>Бот перестаёт быть «умным собеседником» и становится фильтром продаж.</h2>
+        <p>Он пропускает шум через себя, а владельцу и менеджерам подаёт только людей с деньгами, вовремя и с сохранённой репутацией.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page">
+    <div><strong>Frunze Travel · GetVisa</strong> — Бишкек · AI-менеджер первой линии</div>
+    <div>Данные из рабочей базы за 1–3 июля 2026 (первые дни боевой работы). Панель — макет предлагаемого решения.</div>
+  </footer>
+</body>
+</html>

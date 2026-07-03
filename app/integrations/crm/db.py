@@ -12,7 +12,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, func, inspect, text
+from sqlalchemy import (JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text,
+                        func, inspect, text)
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -80,11 +81,24 @@ class Conversation(Base):
     last_text: Mapped[str] = mapped_column(Text, default="")  # превью последней реплики для карточки
     last_sender: Mapped[str] = mapped_column(String(16), default="")  # client|bot|manager — для сигналов
     followup_sent: Mapped[bool] = mapped_column(default=False)  # автодожим уже отправлен (один раз)
+    # Мотор готовности «Покупатели сегодня» (детерминированный, из app/core/readiness.py).
+    readiness_tier: Mapped[str] = mapped_column(String(16), default="")       # green|warm|noise|insufficient
+    readiness_reason: Mapped[str] = mapped_column(Text, default="")
+    readiness_signals: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    readiness_scored_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    estimated_value: Mapped[float | None] = mapped_column(Float, nullable=True)   # оценка чека
+    estimated_value_currency: Mapped[str] = mapped_column(String(8), default="")
+    # Авто-исход через LLM (advisory, НЕ затирает ручной outcome). Пусто, пока фича выключена.
+    outcome_inferred: Mapped[str] = mapped_column(String(16), default="")       # won|lost|ghosted|active
+    outcome_inferred_reason: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    # last_message_at = время последнего СООБЩЕНИЯ (ставит add_message явно), НЕ последнего
+    # апдейта строки. Без onupdate: иначе фоновый sweep/исход/перехват двигали бы его на «сейчас»
+    # и застойные диалоги ложно всплывали бы как активные сегодня.
     last_message_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now()
     )
 
     messages: Mapped[list["ConvMessage"]] = relationship(
@@ -195,6 +209,14 @@ async def init_models(engine: AsyncEngine) -> None:
             "outcome": "VARCHAR(24) DEFAULT ''",
             "followup_sent": "BOOLEAN DEFAULT FALSE",
             "archived": "BOOLEAN DEFAULT FALSE",
+            "readiness_tier": "VARCHAR(16) DEFAULT ''",
+            "readiness_reason": "TEXT DEFAULT ''",
+            "readiness_signals": "JSON DEFAULT '{}'",
+            "readiness_scored_at": "TIMESTAMPTZ",
+            "estimated_value": "DOUBLE PRECISION",
+            "estimated_value_currency": "VARCHAR(8) DEFAULT ''",
+            "outcome_inferred": "VARCHAR(16) DEFAULT ''",
+            "outcome_inferred_reason": "TEXT DEFAULT ''",
         })
         await _ensure_columns(conn, "messages", {
             "status": "VARCHAR(16) DEFAULT ''",

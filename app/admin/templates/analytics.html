@@ -47,6 +47,24 @@
     .obar .track { background:var(--elev); border-radius:6px; height:18px; overflow:hidden; }
     .obar .fill { height:100%; border-radius:6px; }
     .obar .n { font-family:var(--mono); font-weight:700; text-align:right; }
+    /* Горизонтальные бары по сотрудникам */
+    .hbar { display:grid; grid-template-columns:130px 1fr auto; align-items:center; gap:10px; margin-bottom:10px; }
+    .hbar .track { background:var(--elev); border-radius:6px; height:22px; overflow:hidden; }
+    .hbar .fill { height:100%; border-radius:6px; min-width:22px; background:linear-gradient(90deg,#2563EB,#1D4ED8);
+                  display:flex; align-items:center; justify-content:flex-end; padding-right:8px;
+                  color:#fff; font-family:var(--mono); font-size:12px; font-weight:700; }
+    .hbar .meta { font-size:12px; color:var(--muted); white-space:nowrap; font-family:var(--mono); }
+    .hbar .meta b { color:var(--green); }
+    /* Донат «бот vs менеджер» */
+    .donut-wrap { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+    .donut-legend span { display:block; font-size:13px; margin-bottom:6px; }
+    .donut-legend b { font-family:var(--mono); }
+    .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+    /* Сплит по воронкам */
+    .fsplit { display:flex; gap:3px; height:24px; border-radius:6px; overflow:hidden; margin:8px 0 12px; }
+    .fsplit i { display:flex; align-items:center; justify-content:center; color:#fff;
+                font-size:12px; font-weight:700; font-family:var(--mono); min-width:24px; }
+    .fleg span { margin-right:16px; font-size:13px; color:var(--muted); }
   </style>
 </head>
 <body>
@@ -91,8 +109,43 @@
       <div class="kpi good"><div class="n">{{ a.outcomes.get('won', 0) }}</div><div class="l">✅ Оплатили</div></div>
       <div class="kpi"><div class="n">{{ a.outcomes.get('office', 0) }}</div><div class="l">🏢 Дошли в офис</div></div>
       <div class="kpi warm"><div class="n">{{ a.outcomes.get('lost', 0) }}</div><div class="l">❌ Слились</div></div>
-      <div class="kpi"><div class="n">{{ a.avg_response_min if a.avg_response_min is not none else '—' }}{% if a.avg_response_min is not none %} мин{% endif %}</div><div class="l">Среднее время ответа менеджера</div></div>
-      <div class="kpi"><div class="n">{{ a.avg_handoff_min if a.avg_handoff_min is not none else '—' }}{% if a.avg_handoff_min is not none %} мин{% endif %}</div><div class="l">Среднее время до подключения менеджера</div></div>
+      <div class="kpi"><div class="n">{{ a.median_response_min if a.median_response_min is not none else '—' }}{% if a.median_response_min is not none %} мин{% endif %}</div><div class="l">Медиана времени ответа менеджера</div></div>
+      <div class="kpi"><div class="n">{{ a.median_handoff_min if a.median_handoff_min is not none else '—' }}{% if a.median_handoff_min is not none %} мин{% endif %}</div><div class="l">Медиана времени до подключения менеджера</div></div>
+    </div>
+
+    <div class="cards" style="grid-template-columns:1fr 1fr">
+      <div class="panel" style="margin-bottom:0">
+        <h2>Бот vs менеджер</h2>
+        <div class="donut-wrap">
+          {% set circ = 326.7 %}
+          {% set dash = (a.containment_rate / 100 * circ)|round(1) %}
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--elev)" stroke-width="14"/>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--green)" stroke-width="14"
+                    stroke-dasharray="{{ dash }} {{ circ }}" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+            <text x="60" y="58" text-anchor="middle" font-size="24" font-weight="700" fill="var(--text)" font-family="var(--mono)">{{ a.containment_rate }}%</text>
+            <text x="60" y="76" text-anchor="middle" font-size="10" fill="var(--muted)">бот сам</text>
+          </svg>
+          <div class="donut-legend">
+            <span><span class="dot" style="background:var(--green)"></span>Бот сам: <b>{{ a.contained }}</b></span>
+            <span><span class="dot" style="background:#CBD5E1"></span>Передано менеджеру: <b>{{ a.total - a.contained }}</b></span>
+            <span class="muted" style="margin-top:8px">Всего: {{ a.total }} диалогов</span>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:0">
+        <h2>Воронки: доля диалогов</h2>
+        {% set fcolors = {'tours':'#2563EB','visa':'#1c8a9e','tickets':'#94A3B8'} %}
+        {% set ftot = a.funnel_totals.values()|sum %}
+        {% if ftot %}
+        <div class="fsplit">
+          {% for f, n in a.funnel_totals.items() %}{% if n %}<i style="flex:{{ n }};background:{{ fcolors.get(f, '#94A3B8') }}" title="{{ f }}: {{ n }}">{{ n }}</i>{% endif %}{% endfor %}
+        </div>
+        <div class="fleg">
+          {% for f, n in a.funnel_totals.items() %}{% if n %}<span><span class="dot" style="background:{{ fcolors.get(f, '#94A3B8') }}"></span>{{ f }} — {{ n }} ({{ (100 * n / ftot)|round }}%)</span>{% endif %}{% endfor %}
+        </div>
+        {% else %}<div class="muted">Нет данных</div>{% endif %}
+      </div>
     </div>
 
     <div class="panel">
@@ -123,13 +176,22 @@
     </div>
 
     <div class="panel">
-      <h2>По менеджерам</h2>
+      <h2>По сотрудникам</h2>
       {% if a.by_manager %}
-      <table>
-        <tr><th>Менеджер</th><th>Вёл диалогов</th><th>✅ Оплат</th><th>🏢 Офис</th><th>❌ Слив</th></tr>
+      {% set maxh = a.by_manager.values()|map(attribute='handled')|max %}
+      {% for mgr, st in a.by_manager.items() %}
+      <div class="hbar">
+        <span><b>{{ mgr }}</b></span>
+        <span class="track"><span class="fill" style="width:{{ (100 * st.handled / maxh)|round if maxh else 0 }}%">{{ st.handled }}</span></span>
+        <span class="meta">win <b>{{ st.won_rate }}%</b> · {{ st.share }}% нагрузки · ответ {{ st.median_response_min if st.median_response_min is not none else '—' }}{% if st.median_response_min is not none %}м{% endif %}</span>
+      </div>
+      {% endfor %}
+      <table style="margin-top:14px">
+        <tr><th>Сотрудник</th><th>Вёл диалогов</th><th>✅ Оплат</th><th>🏢 Офис</th><th>❌ Слив</th><th>Win-rate</th></tr>
         {% for mgr, st in a.by_manager.items() %}
         <tr><td><b>{{ mgr }}</b></td><td>{{ st.get('handled', 0) }}</td>
-            <td>{{ st.get('won', 0) }}</td><td>{{ st.get('office', 0) }}</td><td>{{ st.get('lost', 0) }}</td></tr>
+            <td>{{ st.get('won', 0) }}</td><td>{{ st.get('office', 0) }}</td><td>{{ st.get('lost', 0) }}</td>
+            <td>{{ st.won_rate }}%</td></tr>
         {% endfor %}
       </table>
       {% else %}

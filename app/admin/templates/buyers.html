@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frunze — покупатели сегодня</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Fira+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <style>
+    :root { --bg:#F1F5F9; --surface:#FFFFFF; --border:#E2E8F0; --text:#0F172A; --muted:#64748B;
+            --accent:#2563EB; --green:#059669; --amber:#D97706; --red:#DC2626; --gray:#94A3B8;
+            --mono:'Fira Code', ui-monospace, monospace; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:'Fira Sans',system-ui,sans-serif; }
+    .topbar { display:flex; align-items:center; gap:14px; padding:0 18px; height:56px; background:var(--surface);
+              border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5; }
+    .topbar a { color:var(--accent); text-decoration:none; font-weight:600; }
+    .topbar b { font-size:15px; }
+    .muted { color:var(--muted); }
+    .wrap { max-width:640px; margin:0 auto; padding:16px; }
+
+    /* --- HERO владельца --- */
+    .hero { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:22px; margin-bottom:18px; }
+    .hero-date { color:var(--muted); font-size:13px; margin-bottom:12px; }
+    .hero-green { font-size:20px; color:var(--text); margin-bottom:6px; }
+    .hero-green b { font-size:52px; font-weight:800; color:var(--green); line-height:1; vertical-align:-6px; margin-right:6px; }
+    .hero-money { font-family:var(--mono); font-size:26px; font-weight:700; color:var(--text);
+                  font-variant-numeric:tabular-nums; margin:8px 0 2px; }
+    .hero-sla { display:inline-block; margin-top:12px; padding:6px 12px; border-radius:10px;
+                background:#FEF2F2; color:var(--red); font-weight:700; font-size:14px; }
+    .noise { margin-top:16px; color:var(--muted); font-size:14px; }
+    .noise b { color:var(--text); }
+    .noise-bar { margin-top:6px; height:10px; background:#EEF2F7; border-radius:6px; overflow:hidden; }
+    .noise-bar__fill { height:100%; background:linear-gradient(90deg,#94A3B8,#64748B); border-radius:6px; transition:width .5s; }
+    .tiers { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+    .chip { font-family:var(--mono); font-weight:700; font-size:13px; padding:5px 11px; border-radius:20px; background:#EEF2F7; }
+    .chip-green { color:#065F46; background:#D1FAE5; } .chip-warm { color:#92400E; background:#FEF3C7; }
+    .chip-noise { color:#334155; } .chip-unknown { color:#475569; }
+
+    /* --- ЛЕНТА покупателей --- */
+    .feed { display:flex; flex-direction:column; gap:12px; }
+    .lead-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;
+                 box-shadow:0 1px 2px rgba(15,23,42,.04); }
+    .lead-card.taken { color:var(--muted); font-weight:600; text-align:center; }
+    .lc-top { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+    .lc-name { font-weight:700; font-size:16px; }
+    .lc-dir { color:var(--muted); font-size:13px; white-space:nowrap; }
+    .lc-val { font-family:var(--mono); font-size:22px; font-weight:700; color:var(--text);
+              font-variant-numeric:tabular-nums; margin:6px 0; }
+    .lc-reason { color:var(--muted); font-size:14px; font-style:italic; margin-bottom:12px;
+                 display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .lc-bottom { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .wait { font-family:var(--mono); font-size:13px; font-weight:700; display:inline-flex; align-items:center; gap:6px; }
+    .wait::before { content:''; width:9px; height:9px; border-radius:50%; background:currentColor; display:inline-block; }
+    .wait--ok { color:var(--green); } .wait--warn { color:var(--amber); }
+    .wait--late { color:var(--red); animation:pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .claim { border:none; background:var(--accent); color:#fff; font-weight:700; font-size:14px;
+             padding:10px 16px; border-radius:10px; cursor:pointer; font-family:inherit; }
+    .claim:active { transform:scale(.97); }
+    .empty, .more { text-align:center; padding:22px; color:var(--muted); font-size:14px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="/admin">← Доски</a>
+    <b>Покупатели сегодня</b>
+    <span style="flex:1"></span>
+    <span class="muted">{{ manager.name if manager else '' }}</span>
+  </header>
+  <div class="wrap">
+    <div id="buyers-live" hx-get="/admin/buyers/feed" hx-trigger="every 30s" hx-swap="innerHTML">
+      {% include "_buyers_feed.html" %}
+    </div>
+  </div>
+</body>
+</html>

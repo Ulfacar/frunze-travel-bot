@@ -253,10 +253,11 @@
              hx-get="/admin/search" hx-trigger="keyup changed delay:300ms, search"
              hx-target="#board" hx-swap="innerHTML">
     </div>
-    <a href="/admin/analytics" class="btn btn-ghost" style="margin:0 4px 0 12px;text-decoration:none;padding:7px 12px">📊 Аналитика</a>
+    <a href="/admin/buyers" class="btn btn-ghost" style="margin:0 4px 0 12px;text-decoration:none;padding:7px 12px">🎯 Покупатели</a>
+    {% if is_admin %}<a href="/admin/analytics" class="btn btn-ghost" style="margin:0 4px;text-decoration:none;padding:7px 12px">📊 Аналитика</a>{% endif %}
     <a href="/admin/faq" class="btn btn-ghost" style="margin-right:4px;text-decoration:none;padding:7px 12px" title="FAQ-правила">FAQ</a>
-    <a href="/admin/system" class="btn btn-ghost" style="margin-right:4px;text-decoration:none;padding:7px 12px" title="Статус системы">⚙️</a>
-    <a href="/admin/audit" class="btn btn-ghost" style="margin-right:8px;text-decoration:none;padding:7px 12px" title="Аудит-лог">📋</a>
+    {% if is_admin %}<a href="/admin/system" class="btn btn-ghost" style="margin-right:4px;text-decoration:none;padding:7px 12px" title="Статус системы">⚙️</a>
+    <a href="/admin/audit" class="btn btn-ghost" style="margin-right:8px;text-decoration:none;padding:7px 12px" title="Аудит-лог">📋</a>{% endif %}
     <div class="me"><span>{{ manager.name if manager else 'Менеджер' }}</span>
       <span class="av"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
       <form method="post" action="/admin/logout" style="margin-left:10px">

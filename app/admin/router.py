@@ -172,11 +172,22 @@ def require_admin(request: Request) -> dict:
     return m
 
 
+def require_full_admin(request: Request) -> dict:
+    """Зависимость: только полный админ (видит все воронки). Скоуп-менеджер → 403.
+
+    Статистика, статус системы и аудит — админские: скоуп-менеджеру там делать нечего.
+    """
+    m = require_admin(request)                 # сперва проверка логина (401)
+    if _manager_bot_scope(m) is not None:
+        raise HTTPException(status_code=403, detail="admin only")
+    return m
+
+
 def _check_credentials(login: str, password: str) -> dict | None:
     for mgr in settings.manager_list():
         if (secrets.compare_digest(login, mgr.login)
                 and secrets.compare_digest(password, mgr.password)):
-            return {"login": mgr.login, "name": mgr.name or mgr.login}
+            return {"login": mgr.login, "name": mgr.name or mgr.login, "admin": bool(mgr.admin)}
     return None
 
 
@@ -184,6 +195,8 @@ def _manager_bot_scope(manager: dict | None) -> set[str] | None:
     """Return bot ids visible to this manager. None means unrestricted admin view."""
     if not manager:
         return set()
+    if manager.get("admin"):            # явный флаг admin:true из ManagerConfig
+        return None
     login = str(manager.get("login") or "").strip().lower()
     name = str(manager.get("name") or "").strip().lower()
     admin_login = str(settings.admin_user or "").strip().lower()
@@ -250,7 +263,8 @@ async def login_demo(request: Request, login: str = Form(...)):
         request.session["manager"] = demo
         await get_conversation_store().add_audit(demo["login"], "login")
         return RedirectResponse("/admin", status_code=303)
-    request.session["manager"] = {"login": mgr.login, "name": mgr.name or mgr.login}
+    request.session["manager"] = {"login": mgr.login, "name": mgr.name or mgr.login,
+                                   "admin": bool(mgr.admin)}
     await get_conversation_store().add_audit(mgr.login, "login")
     return RedirectResponse("/admin", status_code=303)
 
@@ -309,13 +323,14 @@ async def index(request: Request):
     if not manager:
         return RedirectResponse("/admin/login", status_code=303)
     return templates.TemplateResponse(request, "boards.html",
-                                      {"funnels": FUNNELS, "manager": manager},
+                                      {"funnels": FUNNELS, "manager": manager,
+                                       "is_admin": _manager_bot_scope(manager) is None},
                                       headers={"Cache-Control": "no-store"})
 
 
 @router.get("/analytics", response_class=HTMLResponse)
 async def analytics(request: Request, period: str = "all",
-                    manager: dict = Depends(require_admin)):
+                    manager: dict = Depends(require_full_admin)):
     """Дашборд «ИИ vs менеджер»: containment, исходы, воронки, время ответа/перехвата.
     period — окно периода (today|7d|30d|all)."""
     from app.core import observ
@@ -339,8 +354,45 @@ async def analytics(request: Request, period: str = "all",
                                       headers={"Cache-Control": "no-store"})
 
 
+@router.get("/buyers", response_class=HTMLResponse)
+async def buyers(request: Request, manager: dict = Depends(require_admin)):
+    """«Покупатели сегодня»: авто-триаж 🟢 + сводка владельца. Скоуп-фильтр по ботам менеджера."""
+    from app.integrations.panel.buyers import compute_buyers
+    convs = _filter_conversations(await get_conversation_store().all_conversations_light(), manager)
+    data = compute_buyers(convs, _now())
+    return templates.TemplateResponse(request, "buyers.html",
+                                      {"b": data, "manager": manager},
+                                      headers={"Cache-Control": "no-store"})
+
+
+@router.get("/buyers/feed", response_class=HTMLResponse)
+async def buyers_feed(request: Request, manager: dict = Depends(require_admin)):
+    """HTMX-partial ленты 🟢 (поллинг every 30s): сервер владеет сортировкой и цветом ожидания."""
+    from app.integrations.panel.buyers import compute_buyers
+    convs = _filter_conversations(await get_conversation_store().all_conversations_light(), manager)
+    data = compute_buyers(convs, _now())
+    return templates.TemplateResponse(request, "_buyers_feed.html",
+                                      {"b": data, "manager": manager},
+                                      headers={"Cache-Control": "no-store"})
+
+
+@router.post("/buyers/{user_id}/claim", response_class=HTMLResponse)
+async def buyers_claim(user_id: str, manager: dict = Depends(require_admin)):
+    """«Взять в работу» из ленты: атомарный claim (гонка менеджеров) + перехват. Карточка исчезает."""
+    await _require_visible_conversation(user_id, manager)
+    ok = await get_conversation_store().claim(user_id, manager["login"])
+    if not ok:
+        from html import escape
+        conv = await get_conversation_store().get(user_id)
+        who = escape(getattr(conv, "assigned_to", "") or "другой менеджер")
+        return HTMLResponse(f'<div class="lead-card taken">Уже взял: {who}</div>')
+    await _set_intercept(user_id, True)
+    await get_conversation_store().add_audit(manager["login"], "takeover", user_id)
+    return HTMLResponse("")  # успешный claim → карточка убирается из ленты
+
+
 @router.get("/system", response_class=HTMLResponse)
-async def system(request: Request, manager: dict = Depends(require_admin)):
+async def system(request: Request, manager: dict = Depends(require_full_admin)):
     """Статус системы: LLM, тишина вебхуков, бэкенды, счётчики сбоев, боты."""
     from app.core import observ
     snap = observ.snapshot()
@@ -472,7 +524,7 @@ async def toggle_bot_flag(bot_id: str, request: Request, manager: dict = Depends
 
 
 @router.get("/audit", response_class=HTMLResponse)
-async def audit(request: Request, manager: dict = Depends(require_admin)):
+async def audit(request: Request, manager: dict = Depends(require_full_admin)):
     """Журнал действий менеджеров (перехват/ответ/исход/перенос/логин)."""
     rows = await get_conversation_store().list_audit(200)
     return templates.TemplateResponse(request, "audit.html",

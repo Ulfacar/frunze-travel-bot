@@ -13,6 +13,7 @@ from dataclasses import replace
 from app.channels.base import ChannelAdapter, Message
 from app.config import BotConfig, settings
 from app.core.manager_brief import build_manager_brief
+from app.core.readiness import compute_readiness
 from app.core.observ import record_failure
 from app.core.own_outbound import mark_own
 from app.core.router import detect_funnel
@@ -310,9 +311,10 @@ class Orchestrator:
         try:
             panel = get_conversation_store()
             brief = build_manager_brief(state)
+            readiness = compute_readiness(state)
             await panel.update_meta(self._key(msg), funnel=state.funnel, stage=state.stage,
                                     qualification=state.qualification,
-                                    outcome=_auto_outcome(state.stage), **brief)
+                                    outcome=_auto_outcome(state.stage), **brief, **readiness)
         except Exception:  # noqa: BLE001
             log.warning("panel sync_card failed", exc_info=True)
 

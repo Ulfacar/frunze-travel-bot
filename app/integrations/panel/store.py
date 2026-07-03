@@ -55,6 +55,15 @@ class ConversationView:
     last_sender: str = ""
     last_message_at: datetime | None = None
     followup_sent: bool = False       # автодожим уже отправлен (один раз)
+    # Мотор готовности «Покупатели сегодня» (детерминированный, из readiness.py).
+    readiness_tier: str = ""          # green|warm|noise|insufficient|"" (не считался)
+    readiness_reason: str = ""
+    readiness_signals: dict[str, Any] = field(default_factory=dict)
+    readiness_scored_at: datetime | None = None
+    estimated_value: float | None = None
+    estimated_value_currency: str = ""
+    outcome_inferred: str = ""            # LLM-исход (advisory, не затирает ручной outcome)
+    outcome_inferred_reason: str = ""
     messages: list[MessageView] = field(default_factory=list)
 
 
@@ -134,7 +143,14 @@ class MemoryConversationStore:
                           lead_temperature: str | None = None,
                           assigned_to: str | None = None,
                           outcome: str | None = None,
-                          followup_sent: bool | None = None) -> None:
+                          followup_sent: bool | None = None,
+                          readiness_tier: str | None = None,
+                          readiness_reason: str | None = None,
+                          readiness_signals: dict | None = None,
+                          estimated_value: float | None = None,
+                          estimated_value_currency: str | None = None,
+                          outcome_inferred: str | None = None,
+                          outcome_inferred_reason: str | None = None) -> None:
         conv = await self.ensure(user_id)
         if funnel is not None:
             conv.funnel = funnel
@@ -158,6 +174,21 @@ class MemoryConversationStore:
             conv.outcome = outcome
         if followup_sent is not None:
             conv.followup_sent = followup_sent
+        if readiness_tier is not None:
+            conv.readiness_tier = readiness_tier
+            conv.readiness_scored_at = _now()
+        if readiness_reason is not None:
+            conv.readiness_reason = readiness_reason
+        if readiness_signals is not None:
+            conv.readiness_signals = dict(readiness_signals)
+        if estimated_value is not None:
+            conv.estimated_value = estimated_value
+            # валюту пишем только вместе со значением (иначе рассинхрон: число $800, валюта "")
+            conv.estimated_value_currency = estimated_value_currency or ""
+        if outcome_inferred is not None:
+            conv.outcome_inferred = outcome_inferred
+        if outcome_inferred_reason is not None:
+            conv.outcome_inferred_reason = outcome_inferred_reason
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
         await self.update_meta(user_id, intercepted=value)
@@ -176,6 +207,10 @@ class MemoryConversationStore:
         return count
 
     async def all_conversations(self) -> list[ConversationView]:
+        return [c for c in self._conv.values() if not c.archived]
+
+    async def all_conversations_light(self) -> list[ConversationView]:
+        """То же, но без гарантии сообщений — для сводок (buyers), где текст не нужен."""
         return [c for c in self._conv.values() if not c.archived]
 
     async def list_audit(self, limit: int = 200) -> list[dict]:
@@ -296,7 +331,14 @@ class PostgresConversationStore:
                           lead_temperature: str | None = None,
                           assigned_to: str | None = None,
                           outcome: str | None = None,
-                          followup_sent: bool | None = None) -> None:
+                          followup_sent: bool | None = None,
+                          readiness_tier: str | None = None,
+                          readiness_reason: str | None = None,
+                          readiness_signals: dict | None = None,
+                          estimated_value: float | None = None,
+                          estimated_value_currency: str | None = None,
+                          outcome_inferred: str | None = None,
+                          outcome_inferred_reason: str | None = None) -> None:
         async with self._sm()() as session:
             conv = await self._ensure_row(session, user_id, "", "")
             if funnel is not None:
@@ -322,6 +364,20 @@ class PostgresConversationStore:
                 conv.outcome = outcome
             if followup_sent is not None:
                 conv.followup_sent = followup_sent
+            if readiness_tier is not None:
+                conv.readiness_tier = readiness_tier
+                conv.readiness_scored_at = _now()
+            if readiness_reason is not None:
+                conv.readiness_reason = readiness_reason
+            if readiness_signals is not None:
+                conv.readiness_signals = dict(readiness_signals)
+            if estimated_value is not None:
+                conv.estimated_value = estimated_value
+                conv.estimated_value_currency = estimated_value_currency or ""
+            if outcome_inferred is not None:
+                conv.outcome_inferred = outcome_inferred
+            if outcome_inferred_reason is not None:
+                conv.outcome_inferred_reason = outcome_inferred_reason
             await session.commit()
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
@@ -381,6 +437,16 @@ class PostgresConversationStore:
                 ]
                 views.append(v)
             return views
+
+    async def all_conversations_light(self) -> list[ConversationView]:
+        """Как all_conversations, но БЕЗ загрузки сообщений — для сводок (лента покупателей).
+        `_view` читает только скалярные колонки, поэтому selectinload не нужен."""
+        from app.integrations.crm.db import Conversation
+        async with self._sm()() as session:
+            rows = (await session.execute(
+                select(Conversation).where(Conversation.archived.is_not(True))
+            )).scalars().all()
+            return [_view(conv) for conv in rows]
 
     async def add_audit(self, manager: str, action: str, user_id: str = "", detail: str = "") -> None:
         from app.integrations.crm.db import AuditLog
@@ -443,6 +509,14 @@ def _view(conv) -> ConversationView:
         last_text=conv.last_text,
         last_sender=conv.last_sender, last_message_at=conv.last_message_at,
         followup_sent=getattr(conv, "followup_sent", False) or False,
+        readiness_tier=getattr(conv, "readiness_tier", "") or "",
+        readiness_reason=getattr(conv, "readiness_reason", "") or "",
+        readiness_signals=dict(getattr(conv, "readiness_signals", None) or {}),
+        readiness_scored_at=getattr(conv, "readiness_scored_at", None),
+        estimated_value=getattr(conv, "estimated_value", None),
+        estimated_value_currency=getattr(conv, "estimated_value_currency", "") or "",
+        outcome_inferred=getattr(conv, "outcome_inferred", "") or "",
+        outcome_inferred_reason=getattr(conv, "outcome_inferred_reason", "") or "",
     )
 
 

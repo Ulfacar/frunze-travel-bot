@@ -79,6 +79,25 @@ def test_postgres_conversation_store_round_trip():
     asyncio.run(scenario())
 
 
+def test_update_meta_does_not_bump_last_message_at():
+    """Регресс: фоновый апдейт (readiness/исход/перехват) НЕ омолаживает last_message_at —
+    иначе застойные диалоги ложно всплывают как активные сегодня."""
+    async def scenario():
+        engine = create_async_engine("sqlite+aiosqlite://",
+                                     connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        await init_models(engine)
+        sm = async_sessionmaker(engine, expire_on_commit=False)
+        store = PostgresConversationStore(sessionmaker=sm)
+        await store.add_message("u1", "client", "оплатить", channel="whatsapp", bot_id="frunze_tours")
+        before = (await store.get("u1")).last_message_at
+        await store.update_meta("u1", readiness_tier="noise", outcome="lost")  # фоновый sweep/исход
+        after = (await store.get("u1")).last_message_at
+        assert after == before
+        await engine.dispose()
+
+    asyncio.run(scenario())
+
+
 def test_archived_conversation_hidden_from_lists():
     async def scenario():
         engine = create_async_engine("sqlite+aiosqlite://",
@@ -561,7 +580,7 @@ def test_compute_analytics_basic():
     assert data["contained"] == 1                 # только c1 без менеджера
     assert data["containment_rate"] == 50
     assert data["outcomes"]["won"] == 1
-    assert data["avg_response_min"] == 5.0
+    assert data["median_response_min"] == 5.0
     assert data["handoff_reasons"][0] == ("Готов оплатить", 1)
 
 
@@ -640,7 +659,7 @@ def test_analytics_period_and_by_manager():
     client = _auth_client()
     resp = client.get("/admin/analytics?period=7d")
     assert resp.status_code == 200
-    assert "По менеджерам" in resp.text
+    assert "По сотрудникам" in resp.text
     assert "sezim" in resp.text
 
 
@@ -902,3 +921,236 @@ def test_unknown_non_admin_manager_scope_is_fail_closed(monkeypatch):
     assert admin.post("/admin/login", data={"login": "admin", "password": "frunze"}).status_code == 200
     assert "visa chat" in admin.get("/admin/board/visa").text
     assert "tour chat" in admin.get("/admin/board/tours").text
+
+
+def test_analytics_is_admin_only(monkeypatch):
+    """Статистика/статус/аудит — только полный админ; скоуп-менеджер получает 403."""
+    _clear_memory()
+    monkeypatch.setattr("app.config.settings.demo_login", True)
+
+    scoped = TestClient(main.app, base_url="https://testserver")
+    assert scoped.post("/admin/login/demo", data={"login": "sezim"}).status_code == 200
+    assert scoped.get("/admin/analytics").status_code == 403
+    assert scoped.get("/admin/system").status_code == 403
+    assert scoped.get("/admin/audit").status_code == 403
+    # Ссылки на аналитику/систему/аудит скрыты у не-админа в шапке досок.
+    boards = scoped.get("/admin").text
+    assert "/admin/analytics" not in boards
+
+    admin = TestClient(main.app, base_url="https://testserver")
+    assert admin.post("/admin/login", data={"login": "admin", "password": "frunze"}).status_code == 200
+    assert admin.get("/admin/analytics").status_code == 200
+    assert "/admin/analytics" in admin.get("/admin").text
+
+
+def test_manager_config_admin_flag_grants_full_scope(monkeypatch):
+    """Аккаунт с admin:true из MANAGERS видит все воронки и статистику."""
+    _clear_memory()
+    monkeypatch.setattr("app.config.settings.managers", [
+        ManagerConfig(login="grisha", name="Гриша", password="pw", admin=True),
+    ])
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("getvisa:996700111", "client", "visa chat",
+                                  channel="whatsapp", bot_id="getvisa"))
+    asyncio.run(store.update_meta("getvisa:996700111", funnel="visa"))
+    asyncio.run(store.add_message("frunze_tours:996700222", "client", "tour chat",
+                                  channel="whatsapp", bot_id="frunze_tours"))
+    asyncio.run(store.update_meta("frunze_tours:996700222", funnel="tours"))
+
+    client = TestClient(main.app, base_url="https://testserver")
+    assert client.post("/admin/login", data={"login": "grisha", "password": "pw"}).status_code == 200
+    # Видит обе воронки и допущен к аналитике (полный админ).
+    assert "visa chat" in client.get("/admin/board/visa").text
+    assert "tour chat" in client.get("/admin/board/tours").text
+    assert client.get("/admin/analytics").status_code == 200
+
+
+def test_compute_analytics_by_manager_enriched_and_funnel_totals():
+    """by_manager обогащён win-rate/долей/временем ответа; есть funnel_totals."""
+    from datetime import datetime, timedelta, timezone
+    from app.integrations.panel.analytics import compute_analytics
+    from app.integrations.panel.store import ConversationView, MessageView
+
+    t0 = datetime(2026, 7, 1, 10, 0, tzinfo=timezone.utc)
+    # Сезим: 2 диалога (1 оплата) — win-rate 50%, ответ 4 мин в одном.
+    s1 = ConversationView(user_id="s1", funnel="tours", stage="manager", outcome="won",
+                          assigned_to="sezim",
+                          messages=[MessageView("client", "?", t0),
+                                    MessageView("manager", "!", t0 + timedelta(minutes=4))])
+    s2 = ConversationView(user_id="s2", funnel="tours", stage="manager", outcome="lost",
+                          assigned_to="sezim",
+                          messages=[MessageView("client", "?", t0),
+                                    MessageView("manager", "!", t0 + timedelta(minutes=6))])
+    # Медина: 1 диалог, визы.
+    m1 = ConversationView(user_id="m1", funnel="visa", stage="manager", outcome="office",
+                          assigned_to="medina",
+                          messages=[MessageView("client", "?", t0),
+                                    MessageView("manager", "!", t0 + timedelta(minutes=2))])
+    data = compute_analytics([s1, s2, m1])
+
+    sez = data["by_manager"]["sezim"]
+    assert sez["handled"] == 2
+    assert sez["won_rate"] == 50            # 1 из 2 оплат
+    assert sez["share"] == 67               # 2 из 3 переданных диалогов ≈ 67%
+    assert sez["median_response_min"] == 5.0    # медиана (4, 6)
+    med = data["by_manager"]["medina"]
+    assert med["won_rate"] == 0
+    assert med["median_response_min"] == 2.0
+    assert data["funnel_totals"] == {"tours": 2, "visa": 1}
+
+
+def test_analytics_blends_inferred_outcome_when_manual_absent():
+    """ИИ-исход заполняет win-rate, где менеджер не проставил; ручной исход — авторитетнее."""
+    from datetime import datetime, timezone
+    from app.integrations.panel.analytics import compute_analytics
+    from app.integrations.panel.store import ConversationView, MessageView
+
+    t0 = datetime(2026, 7, 1, 10, 0, tzinfo=timezone.utc)
+    m = [MessageView("client", "привет", t0)]
+    c1 = ConversationView(user_id="a", funnel="tours", outcome="", outcome_inferred="won", messages=m)
+    c2 = ConversationView(user_id="b", funnel="tours", outcome="", outcome_inferred="ghosted", messages=m)
+    c3 = ConversationView(user_id="c", funnel="tours", outcome="lost", outcome_inferred="won", messages=m)
+    d = compute_analytics([c1, c2, c3])
+    assert d["outcomes"].get("won", 0) == 1      # c1 (ИИ)
+    assert d["outcomes"].get("lost", 0) == 2      # c2 (ghosted→lost) + c3 (ручной lost побеждает ИИ won)
+
+
+def test_containment_excludes_takeover_without_manager_message():
+    """Перехваченный/закреплённый диалог без сообщения менеджера — НЕ «бот сам»."""
+    from datetime import datetime, timezone
+    from app.integrations.panel.analytics import compute_analytics
+    from app.integrations.panel.store import ConversationView, MessageView
+
+    t0 = datetime(2026, 7, 1, 10, 0, tzinfo=timezone.utc)
+    # Бот вёл сам: без менеджера, без перехвата, без закрепления.
+    bot_only = ConversationView(user_id="b", funnel="tours",
+                                messages=[MessageView("client", "?", t0),
+                                          MessageView("bot", "!", t0)])
+    # Менеджер перехватил, но ещё ничего не написал — человек уже вмешался.
+    taken = ConversationView(user_id="t", funnel="tours", intercepted=True, assigned_to="sezim",
+                             messages=[MessageView("client", "?", t0),
+                                       MessageView("bot", "!", t0)])
+    data = compute_analytics([bot_only, taken])
+    assert data["total"] == 2
+    assert data["contained"] == 1              # только bot_only, не taken
+    assert data["containment_rate"] == 50
+
+
+# ---------------- «Покупатели сегодня» (Фаза 2) ----------------
+
+def test_compute_buyers_feed_sorting_and_hero():
+    from datetime import datetime, timedelta, timezone
+    from app.integrations.panel.buyers import compute_buyers
+    from app.integrations.panel.store import ConversationView
+
+    now = datetime(2026, 7, 3, 12, 0, tzinfo=timezone.utc)
+
+    def cv(uid, tier, wait=0, val=None, sender="client", outcome=""):
+        return ConversationView(user_id=uid, funnel="tours", readiness_tier=tier,
+                                estimated_value=val, estimated_value_currency=("$" if val else ""),
+                                last_sender=sender, last_message_at=now - timedelta(minutes=wait),
+                                outcome=outcome, readiness_reason="ok")
+
+    convs = [cv("g1", "green", wait=20, val=500), cv("g2", "green", wait=3, val=900),
+             cv("gw", "green", wait=99, val=7, outcome="won"),  # закрыт → не в ленте
+             cv("w", "warm"), cv("n", "noise"), cv("i", "insufficient")]
+    d = compute_buyers(convs, now)
+
+    assert [c["user_id"] for c in d["feed"]] == ["g1", "g2"]   # won исключён, сорт по ожиданию
+    assert d["hero"]["green_count"] == 2
+    assert d["hero"]["value_by_currency"] == {"$": 1400.0}
+    assert d["hero"]["waiting_late"] == 1                       # g1 ждёт 20 ≥ 15
+    assert d["hero"]["tiers"] == {"green": 3, "warm": 1, "noise": 1, "insufficient": 1}
+    assert d["hero"]["total_today"] == 6
+    assert d["hero"]["filtered"] == 2                           # noise + insufficient
+    assert d["feed"][0]["wait_state"] == "late"
+
+
+def test_buyers_wait_zero_when_ball_not_on_us():
+    from datetime import datetime, timedelta, timezone
+    from app.integrations.panel.buyers import compute_buyers
+    from app.integrations.panel.store import ConversationView
+    now = datetime(2026, 7, 3, 12, 0, tzinfo=timezone.utc)
+    conv = ConversationView(user_id="g", funnel="tours", readiness_tier="green",
+                            last_sender="bot", last_message_at=now - timedelta(hours=5))
+    d = compute_buyers([conv], now)
+    assert d["feed"][0]["wait"] == 0 and d["feed"][0]["wait_state"] == "ok"
+
+
+def test_buyers_page_and_feed_render():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("frunze_tours:996700555", "client", "хочу тур",
+                                  channel="whatsapp", bot_id="frunze_tours"))
+    asyncio.run(store.update_meta("frunze_tours:996700555", funnel="tours", readiness_tier="green",
+                                  readiness_reason="готов оформить", estimated_value=800.0,
+                                  estimated_value_currency="$"))
+    client = _auth_client()
+    page = client.get("/admin/buyers")
+    assert page.status_code == 200
+    assert "Покупатели сегодня" in page.text
+    feed = client.get("/admin/buyers/feed")
+    assert feed.status_code == 200
+    assert "готов оформить" in feed.text
+
+
+def test_buyers_claim_takes_over():
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("frunze_tours:996700556", "client", "как оплатить",
+                                  channel="whatsapp", bot_id="frunze_tours"))
+    asyncio.run(store.update_meta("frunze_tours:996700556", funnel="tours", readiness_tier="green"))
+    client = _auth_client()  # admin
+    r = client.post("/admin/buyers/frunze_tours:996700556/claim")
+    assert r.status_code == 200 and r.text.strip() == ""     # claimed → карточка убрана
+    conv = asyncio.run(store.get("frunze_tours:996700556"))
+    assert conv.intercepted is True and conv.assigned_to == "admin"
+
+
+def test_buyers_feed_excludes_already_claimed():
+    """MAJOR-регресс: взятый 🟢 уходит из очереди «на разбор» (не возвращается на поллинге)."""
+    _clear_memory()
+    store = panel_store.get_conversation_store()
+    for uid, assigned in (("frunze_tours:900free", ""), ("frunze_tours:900taken", "admin")):
+        asyncio.run(store.add_message(uid, "client", "оплатить", channel="whatsapp", bot_id="frunze_tours"))
+        asyncio.run(store.update_meta(uid, funnel="tours", readiness_tier="green", assigned_to=assigned))
+    feed = _auth_client().get("/admin/buyers/feed").text
+    assert "900free" in feed         # свободный 🟢 — в очереди
+    assert "900taken" not in feed    # уже взят — не в очереди
+
+
+def test_buyers_scope_isolation(monkeypatch):
+    """Скоуп-менеджер видит 🟢 только своих ботов; claim чужого → 404."""
+    _clear_memory()
+    monkeypatch.setattr("app.config.settings.demo_login", True)
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("frunze_tours_sezim:900sez", "client", "оплатить",
+                                  channel="whatsapp", bot_id="frunze_tours_sezim"))
+    asyncio.run(store.update_meta("frunze_tours_sezim:900sez", funnel="tours", readiness_tier="green"))
+    asyncio.run(store.add_message("getvisa:900vis", "client", "оплатить",
+                                  channel="whatsapp", bot_id="getvisa"))
+    asyncio.run(store.update_meta("getvisa:900vis", funnel="visa", readiness_tier="green"))
+
+    client = TestClient(main.app, base_url="https://testserver")
+    assert client.post("/admin/login/demo", data={"login": "sezim"}).status_code == 200
+    feed = client.get("/admin/buyers/feed").text
+    assert "900sez" in feed and "900vis" not in feed          # только свой бот
+    assert client.post("/admin/buyers/getvisa:900vis/claim").status_code == 404  # чужой → 404
+
+
+def test_rescore_sweep_marks_ghosted_dialog_as_noise():
+    """Фоновый ghost-sweep: застойный неготовый (клиент пропал после бота) → noise."""
+    from datetime import datetime, timedelta, timezone
+    from app.core import rescore
+    _clear_memory()
+    rescore._last_run = 0.0
+    store = panel_store.get_conversation_store()
+    uid = "frunze_tours:ghost1"
+    asyncio.run(store.add_message(uid, "client", "сколько стоит тур", channel="whatsapp", bot_id="frunze_tours"))
+    asyncio.run(store.add_message(uid, "bot", "уточните даты?", channel="whatsapp", bot_id="frunze_tours"))
+    asyncio.run(store.update_meta(uid, funnel="tours", readiness_tier="insufficient"))
+    conv = asyncio.run(store.get(uid))
+    conv.last_message_at = datetime.now(timezone.utc) - timedelta(hours=30)  # застой 30ч
+    conv.last_sender = "bot"                                                  # клиент не ответил
+    asyncio.run(rescore.run())
+    assert asyncio.run(store.get(uid)).readiness_tier == "noise"
