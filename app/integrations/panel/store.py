@@ -64,6 +64,12 @@ class ConversationView:
     estimated_value_currency: str = ""
     outcome_inferred: str = ""            # LLM-исход (advisory, не затирает ручной outcome)
     outcome_inferred_reason: str = ""
+    # Источник лида (Click-to-WhatsApp Ads) — первое касание, write-once.
+    source: str = ""                      # ad | post | "" (organic/неизвестно)
+    source_id: str = ""
+    source_headline: str = ""
+    source_url: str = ""
+    source_payload: dict[str, Any] = field(default_factory=dict)
     messages: list[MessageView] = field(default_factory=list)
 
 
@@ -74,6 +80,24 @@ _MANUAL_OUTCOMES = {"won", "lost"}
 def _is_auto_downgrade(new_outcome: str, current: str) -> bool:
     """True, если авто-исход пытается перезатереть ручной финал (won/lost) — не даём."""
     return new_outcome in _AUTO_OUTCOMES and current in _MANUAL_OUTCOMES
+
+
+def _apply_source(conv, source: str | None, source_id: str | None,
+                  source_headline: str | None, source_url: str | None,
+                  source_payload: dict | None) -> None:
+    """Записать источник лида ОДНИМ блоком и только если он ещё пуст (write-once).
+
+    Повторная доставка вебхука / второй клик по рекламе не перетирают первое касание;
+    блок целиком — чтобы не было рассинхрона «headline есть, source пуст»."""
+    if source is None:
+        return
+    if (getattr(conv, "source", "") or ""):
+        return
+    conv.source = source
+    conv.source_id = source_id or ""
+    conv.source_headline = source_headline or ""
+    conv.source_url = source_url or ""
+    conv.source_payload = dict(source_payload or {})
 
 
 def _now() -> datetime:
@@ -150,7 +174,10 @@ class MemoryConversationStore:
                           estimated_value: float | None = None,
                           estimated_value_currency: str | None = None,
                           outcome_inferred: str | None = None,
-                          outcome_inferred_reason: str | None = None) -> None:
+                          outcome_inferred_reason: str | None = None,
+                          source: str | None = None, source_id: str | None = None,
+                          source_headline: str | None = None, source_url: str | None = None,
+                          source_payload: dict | None = None) -> None:
         conv = await self.ensure(user_id)
         if funnel is not None:
             conv.funnel = funnel
@@ -189,6 +216,7 @@ class MemoryConversationStore:
             conv.outcome_inferred = outcome_inferred
         if outcome_inferred_reason is not None:
             conv.outcome_inferred_reason = outcome_inferred_reason
+        _apply_source(conv, source, source_id, source_headline, source_url, source_payload)
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
         await self.update_meta(user_id, intercepted=value)
@@ -338,7 +366,10 @@ class PostgresConversationStore:
                           estimated_value: float | None = None,
                           estimated_value_currency: str | None = None,
                           outcome_inferred: str | None = None,
-                          outcome_inferred_reason: str | None = None) -> None:
+                          outcome_inferred_reason: str | None = None,
+                          source: str | None = None, source_id: str | None = None,
+                          source_headline: str | None = None, source_url: str | None = None,
+                          source_payload: dict | None = None) -> None:
         async with self._sm()() as session:
             conv = await self._ensure_row(session, user_id, "", "")
             if funnel is not None:
@@ -378,6 +409,7 @@ class PostgresConversationStore:
                 conv.outcome_inferred = outcome_inferred
             if outcome_inferred_reason is not None:
                 conv.outcome_inferred_reason = outcome_inferred_reason
+            _apply_source(conv, source, source_id, source_headline, source_url, source_payload)
             await session.commit()
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
@@ -517,6 +549,11 @@ def _view(conv) -> ConversationView:
         estimated_value_currency=getattr(conv, "estimated_value_currency", "") or "",
         outcome_inferred=getattr(conv, "outcome_inferred", "") or "",
         outcome_inferred_reason=getattr(conv, "outcome_inferred_reason", "") or "",
+        source=getattr(conv, "source", "") or "",
+        source_id=getattr(conv, "source_id", "") or "",
+        source_headline=getattr(conv, "source_headline", "") or "",
+        source_url=getattr(conv, "source_url", "") or "",
+        source_payload=dict(getattr(conv, "source_payload", None) or {}),
     )
 
 

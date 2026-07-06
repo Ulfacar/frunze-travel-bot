@@ -14,6 +14,7 @@ class Message:
     text: str
     kind: str = "text"      # text | non_text (голос/фото/медиа — бот пока понимает только текст)
     raw: dict[str, Any] = field(default_factory=dict)
+    referral: dict[str, Any] = field(default_factory=dict)  # CTWA-источник (реклама), {} если нет
 
 
 class ChannelAdapter(Protocol):

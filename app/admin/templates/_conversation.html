@@ -10,6 +10,7 @@
         <span class="tag">{{ c.channel or '—' }}</span>
         <span class="tag">{{ c.funnel or '—' }} · {{ c.stage }}</span>
         <span class="tag temp-{{ c.lead_temperature }}">{{ {'new':'новый','warm':'тёплый','hot':'горячий'}.get(c.lead_temperature, c.lead_temperature) }}</span>
+        {% if c.source %}<span class="tag">📣 {{ 'реклама' if c.source == 'ad' else 'пост' }}{% if c.source_headline %}: {{ c.source_headline }}{% endif %}</span>{% endif %}
       </div>
     </div>
   </div>
@@ -76,6 +77,16 @@
     {% if c.escalation_reason %}
     <div class="brief-row"><span class="k">Почему важно</span><span>{{ c.escalation_reason }}</span></div>
     {% endif %}
+  </div>
+  {% endif %}
+
+  {% if c.source %}
+  <div class="brief">
+    <div class="brief-title">Откуда лид</div>
+    <div class="brief-row"><span class="k">Источник</span><span>{{ '📣 Реклама (Click-to-WhatsApp)' if c.source == 'ad' else '📣 Пост' }}</span></div>
+    {% if c.source_headline %}<div class="brief-row"><span class="k">Объявление</span><span>{{ c.source_headline }}</span></div>{% endif %}
+    {% if c.source_url and c.source_url.startswith('http') %}<div class="brief-row"><span class="k">Ссылка</span><span><a href="{{ c.source_url }}" target="_blank" rel="noopener">{{ c.source_url }}</a></span></div>{% endif %}
+    {% if c.source_id %}<div class="brief-row"><span class="k">ID</span><span>{{ c.source_id }}</span></div>{% endif %}
   </div>
   {% endif %}
 

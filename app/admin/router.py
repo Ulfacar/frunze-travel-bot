@@ -153,6 +153,8 @@ def _card_model(conv, now: datetime) -> dict:
         "is_noise": noise,
         "is_silent": silent,
         "lead_temperature": conv.lead_temperature,
+        "source": getattr(conv, "source", "") or "",
+        "source_headline": getattr(conv, "source_headline", "") or "",
         "sort_key": (wait_min if wait_min is not None else -1),
     }
 
@@ -184,9 +186,13 @@ def require_full_admin(request: Request) -> dict:
 
 
 def _check_credentials(login: str, password: str) -> dict | None:
+    # Стрипаем обе стороны: случайный пробел вокруг логина/пароля (в форме ИЛИ
+    # в env prod.env при копипасте) не должен ронять вход. compare_digest — от таймингов.
+    login = (login or "").strip()
+    password = (password or "").strip()
     for mgr in settings.manager_list():
-        if (secrets.compare_digest(login, mgr.login)
-                and secrets.compare_digest(password, mgr.password)):
+        if (secrets.compare_digest(login, (mgr.login or "").strip())
+                and secrets.compare_digest(password, (mgr.password or "").strip())):
             return {"login": mgr.login, "name": mgr.name or mgr.login, "admin": bool(mgr.admin)}
     return None
 

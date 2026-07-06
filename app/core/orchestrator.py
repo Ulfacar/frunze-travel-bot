@@ -165,7 +165,10 @@ class Orchestrator:
             if not msgs:
                 return
             combined = "\n".join(m.text for m in msgs if m.text)
-            combined_msg = replace(msgs[-1], text=combined)
+            # referral почти всегда на первом сообщении пачки — берём первый непустой,
+            # а не из msgs[-1], иначе рекламный контекст потерялся бы при склейке.
+            referral = next((m.referral for m in msgs if m.referral), {})
+            combined_msg = replace(msgs[-1], text=combined, referral=referral)
             try:
                 await self._run_turn(combined_msg)
             except Exception:  # noqa: BLE001 — фон: не роняем процесс, входящие уже в логе
@@ -183,6 +186,8 @@ class Orchestrator:
         if self.bot is not None:
             state.bot_id = self.bot.id
             state.manager_name = _default_manager_name(self.bot)
+        if msg.referral and not state.ad_referral:
+            state.ad_referral = dict(msg.referral)  # write-once: источник = первое касание
 
         # Главный рубильник: если авто-ответы выключены из панели — бот молчит во всех
         # воронках (сообщение клиента уже в логе, менеджер ведёт диалог вручную).
@@ -279,6 +284,16 @@ class Orchestrator:
                                     bot_id=self._bot_id, chat_id=msg.chat_id, phone=msg.user_id)
             if self.bot is not None:
                 await panel.update_meta(self._key(msg), funnel=self.bot.scenario)
+            if msg.referral:
+                # Источник виден менеджеру сразу (даже при выключенном боте/перехвате); store — write-once.
+                await panel.update_meta(
+                    self._key(msg),
+                    source=("post" if msg.referral.get("source_type") == "post" else "ad"),
+                    source_id=msg.referral.get("source_id", ""),
+                    source_headline=msg.referral.get("headline", ""),
+                    source_url=msg.referral.get("source_url", ""),
+                    source_payload=msg.referral,
+                )
         except Exception:  # noqa: BLE001 — лог не критичен для диалога
             log.warning("panel log_in failed", exc_info=True)
 
@@ -326,12 +341,15 @@ class Orchestrator:
             if state.pending_field:
                 return False
 
-            from app.core.branding import persona_greeting
+            from app.core.branding import ad_greeting, persona_greeting
             from app.core.faq import is_bare_greeting
 
             if not is_bare_greeting(msg.text):
                 return False
-            greeting = persona_greeting(state.funnel, state.manager_name)
+            # Пришёл по рекламе → контекстное приветствие (подтверждаем оффер, не спрашиваем с нуля).
+            greeting = ad_greeting(state.funnel, state.manager_name,
+                                   (state.ad_referral or {}).get("headline", "")) \
+                or persona_greeting(state.funnel, state.manager_name)
             if not greeting:
                 return False
 

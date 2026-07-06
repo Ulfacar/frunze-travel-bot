@@ -60,6 +60,9 @@
           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
           {{ c.time_label }}
         </span>
+        {% if c.source %}
+        <span class="badge ad-source" title="{{ c.source_headline or 'Пришёл по рекламе' }}">📣 {{ 'реклама' if c.source == 'ad' else 'пост' }}</span>
+        {% endif %}
         {% if c.wait_level in ('warm','hot') %}
         <span class="badge wait-{{ c.wait_level }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg>

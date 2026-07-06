@@ -66,6 +66,23 @@ def _qual_context_message(qual: dict) -> dict | None:
     }
 
 
+def _ad_context_message(referral: dict) -> dict | None:
+    """Рекламный контекст (Click-to-WhatsApp Ads) отдельным user-сообщением.
+
+    Клиент пришёл по объявлению — не спрашиваем с нуля «что вас интересует», а
+    подтверждаем оффер. Подмешивается на каждый ход (в state.history не пишется)."""
+    if not referral:
+        return None
+    offer = " — ".join(p for p in (referral.get("headline"), referral.get("body")) if p).strip()
+    if not offer:
+        return None
+    return {
+        "role": "user",
+        "content": (f"[Клиент пришёл по рекламе: «{offer[:300]}». Учитывай это: не спрашивай "
+                    f"с нуля, что его интересует — подтверди контекст объявления и веди к деталям.]"),
+    }
+
+
 @dataclass
 class FunnelSpec:
     """Описание воронки для агентного цикла."""
@@ -88,8 +105,9 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
         if await budget.soft_capped():
             model = settings.llm_model_cheap
         window = _windowed_history(state.history, settings.llm_history_max_messages)
-        qual_msg = _qual_context_message(state.qualification)
-        messages = ([qual_msg] + window) if qual_msg else window
+        prefix = [m for m in (_ad_context_message(state.ad_referral),
+                              _qual_context_message(state.qualification)) if m]
+        messages = prefix + window
         resp = await client().messages.create(
             model=model,
             max_tokens=settings.llm_max_tokens,

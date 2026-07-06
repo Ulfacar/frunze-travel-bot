@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from typing import Any
 
 from app.config import settings
@@ -29,13 +29,18 @@ class DialogState:
     intercepted: bool = False  # менеджер перехватил диалог в Bitrix → бот молчит
     pending_field: str | None = None  # какой вопрос задан в fallback-режиме (ждём ответ)
     wait_ack_sent: bool = False  # после авто-хендоффа клиенту разово подтвердили ожидание
+    ad_referral: dict[str, Any] = field(default_factory=dict)  # источник первого касания (CTWA), write-once
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False)
 
     @classmethod
     def from_json(cls, raw: str) -> "DialogState":
-        return cls(**json.loads(raw))
+        # Толерантно к незнакомым ключам: при откате прода на старые файлы состояние,
+        # записанное новым кодом (напр. ad_referral), не должно ронять load (TypeError).
+        data = json.loads(raw)
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
 
 class StateStore:

@@ -131,6 +131,30 @@ def persona_greeting(funnel: str | None, manager_name: str) -> str | None:
     return None
 
 
+def ad_greeting(funnel: str | None, manager_name: str, headline: str) -> str | None:
+    """Контекстное приветствие для клиента, пришедшего по рекламе (Click-to-WhatsApp Ads).
+
+    Подтверждаем оффер объявления и сразу двигаем к квалификации, а не спрашиваем «что
+    вас интересует» с нуля. Пустой заголовок → None (fallback на обычный persona_greeting)."""
+    headline = (headline or "").strip()
+    if not headline:
+        return None
+    if len(headline) > 80:
+        headline = headline[:79].rstrip() + "…"
+    name = (manager_name or "").strip() or ("Медина" if funnel == "visa" else "Адеми")
+    if funnel == "tours":
+        return (f"Здравствуйте! 😊 Я {name}, менеджер Frunze Travel. Вижу, вы по нашему "
+                f"предложению «{headline}» — отличный выбор! Подскажите, на какие даты и "
+                f"сколько человек планируете поездку?")
+    if funnel == "visa":
+        return (f"Здравствуйте! 😊 Меня зовут {name}, я ваш визовый эксперт Frunze Travel. "
+                f"Вижу, вы по нашему предложению «{headline}». Как могу к вам обращаться?")
+    if funnel == "tickets":
+        return (f"Здравствуйте! 😊 Я {name}, менеджер Frunze Travel. Вижу, вы по нашему "
+                f"предложению «{headline}». Подскажите маршрут и даты — подберу удобный рейс ✈️")
+    return None
+
+
 # --- Автодожим: мягкий проактивный пинг клиенту, который замолчал на квалификации ---
 FOLLOWUP_PINGS = {
     "visa": ("Здравствуйте! 😊 Это Frunze Travel. Вы ещё рассматриваете оформление визы? "

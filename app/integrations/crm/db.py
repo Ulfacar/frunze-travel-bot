@@ -91,6 +91,12 @@ class Conversation(Base):
     # Авто-исход через LLM (advisory, НЕ затирает ручной outcome). Пусто, пока фича выключена.
     outcome_inferred: Mapped[str] = mapped_column(String(16), default="")       # won|lost|ghosted|active
     outcome_inferred_reason: Mapped[str] = mapped_column(Text, default="")
+    # Источник лида (Click-to-WhatsApp Ads): откуда пришёл клиент. Write-once — первое касание.
+    source: Mapped[str] = mapped_column(String(16), default="")        # ad | post | "" (organic/неизвестно)
+    source_id: Mapped[str] = mapped_column(String(128), default="")    # id объявления/поста
+    source_headline: Mapped[str] = mapped_column(String(300), default="")
+    source_url: Mapped[str] = mapped_column(Text, default="")
+    source_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # весь нормализованный referral
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -217,6 +223,11 @@ async def init_models(engine: AsyncEngine) -> None:
             "estimated_value_currency": "VARCHAR(8) DEFAULT ''",
             "outcome_inferred": "VARCHAR(16) DEFAULT ''",
             "outcome_inferred_reason": "TEXT DEFAULT ''",
+            "source": "VARCHAR(16) DEFAULT ''",
+            "source_id": "VARCHAR(128) DEFAULT ''",
+            "source_headline": "VARCHAR(300) DEFAULT ''",
+            "source_url": "TEXT DEFAULT ''",
+            "source_payload": "JSON DEFAULT '{}'",
         })
         await _ensure_columns(conn, "messages", {
             "status": "VARCHAR(16) DEFAULT ''",

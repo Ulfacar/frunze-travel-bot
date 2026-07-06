@@ -43,6 +43,54 @@ def parse_delivery_status(raw: dict) -> tuple[str, str]:
     return provider_msg_id, _STATUS_MAP.get(wappi_status, "")
 
 
+# Максимальные длины полей рекламного контекста (защита от мусора в БД/промпте).
+_REF_LIMITS = {"source_type": 16, "source_id": 128, "source_url": 500,
+               "ctwa_clid": 256, "headline": 300, "body": 1000, "media_type": 32}
+# Синонимы ключей у разных провайдеров (Cloud API snake_case vs web/whatsmeow camelCase).
+_REF_ALIASES = {
+    "source_type": ("source_type", "sourceType"),
+    "source_id": ("source_id", "sourceId"),
+    "source_url": ("source_url", "sourceUrl"),
+    "ctwa_clid": ("ctwa_clid", "ctwaClid"),
+    "headline": ("headline", "title"),
+    "body": ("body", "description"),
+    "media_type": ("media_type", "mediaType"),
+}
+
+
+def extract_ad_referral(raw: dict) -> dict:
+    """Нормализованный рекламный referral (Click-to-WhatsApp Ads) или {} если его нет.
+
+    Точный формат Wappi для CTWA не зафиксирован в фикстурах — пробуем известные
+    варианты вложения (WhatsApp Cloud API `referral`, web/whatsmeow `externalAdReply`).
+    Максимально защитно: любой сюрприз/не-dict → {}. Никогда не бросает исключение.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    containers = (
+        raw.get("referral"),
+        raw.get("adReply"),
+        raw.get("ad_reply"),
+        raw.get("externalAdReply"),
+        (raw.get("contextInfo") or {}).get("externalAdReply") if isinstance(raw.get("contextInfo"), dict) else None,
+        (raw.get("context") or {}).get("referral") if isinstance(raw.get("context"), dict) else None,
+    )
+    src = next((c for c in containers if isinstance(c, dict) and c), None)
+    if src is None:
+        return {}
+    out: dict[str, str] = {}
+    for canon, aliases in _REF_ALIASES.items():
+        for alias in aliases:
+            val = src.get(alias)
+            if val not in (None, "", [], {}):
+                out[canon] = str(val)[:_REF_LIMITS[canon]]
+                break
+    # Считаем referral валидным, только если есть хоть один опознавательный признак.
+    if not any(out.get(k) for k in ("source_id", "ctwa_clid", "source_url", "headline")):
+        return {}
+    return out
+
+
 def is_incoming_user_message(raw: dict) -> bool:
     """True только для входящих сообщений клиента в ЛИЧНОМ чате.
 
@@ -101,6 +149,16 @@ class WappiAdapter:
         user_id = (sender or chat_id).split("@")[0]
         body = str(raw.get("body") or "")
 
+        referral = extract_ad_referral(raw)
+        if referral:
+            # Capture: логируем сырой payload рекламного касания, чтобы подтвердить реальный
+            # формат CTWA от Wappi на живом трафике (как [media-capture] для медиа).
+            try:
+                logger.info("Wappi ad-referral raw [referral-capture]: %s",
+                            json.dumps(raw, ensure_ascii=False)[:1500])
+            except Exception:  # noqa: BLE001 — лог не должен мешать обработке
+                logger.info("Wappi ad-referral [referral-capture]: keys=%s", sorted(raw.keys()))
+
         if raw.get("type") == _TEXT_TYPE and body:
             kind, text = "text", body
         else:
@@ -121,6 +179,7 @@ class WappiAdapter:
             text=text,
             kind=kind,
             raw=raw,
+            referral=referral,
         )
 
     async def send(self, chat_id: str, text: str, **kwargs) -> str:
