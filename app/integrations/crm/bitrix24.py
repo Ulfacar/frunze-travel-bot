@@ -1,15 +1,17 @@
-"""Bitrix24Crm — реальная интеграция (ФАЗА 2).
+"""Bitrix24Crm — интеграция через входящий вебхук портала (getvisakg.bitrix24.kz).
 
-Реализует CRMPort через Bitrix24 REST (входящий вебхук портала).
+Бот создаёт ЛИД (не сделку!) на каждый диалог и льёт в него реплики комментариями.
+Почему лид, а не сделка: воронки Bitrix у клиента начинаются ПОСЛЕ оплаты (стадия 1 =
+«подписан договор / оплата получена»), поэтому неоплаченный поток идёт в Лиды, а менеджер
+конвертит Лид → Сделку после оплаты (согласовано 06.07).
+
 Методы Bitrix REST:
-  crm.deal.add                 — создать сделку (CATEGORY_ID = воронка, STAGE_ID)
-  crm.deal.update              — двигать по канбану (STAGE_ID)
-  crm.timeline.comment.add     — заметка к сделке
-  imbot.message.add            — сообщение в Открытые линии от бота
+  crm.lead.add                 — создать лид (NAME/PHONE/COMMENTS/SOURCE_DESCRIPTION)
+  crm.duplicate.findbycomm     — найти существующий лид по телефону (антидубли)
+  crm.lead.update              — обновить статус лида (STATUS_ID)
+  crm.timeline.comment.add     — комментарий в таймлайн лида (ENTITY_TYPE=lead)
+  imbot.message.add            — сообщение в Открытые линии (если заведём линию Bitrix; пока не используется)
 
-Страховка: реальные CATEGORY_ID/STAGE_ID приходят от заказчика (карты в settings).
-Пока карта пустая — деградируем мягко (сделка в воронку по умолчанию, апдейт стадии
-пропускаем с предупреждением), чтобы не слать в портал несуществующие id.
 HTTP-клиент инъектируется (тесты) — иначе создаётся по `bitrix24_webhook_url`.
 """
 from __future__ import annotations
@@ -42,38 +44,53 @@ class Bitrix24Crm:
                 await client.aclose()
 
     async def create_lead(self, contact: dict[str, Any], funnel: str, data: dict) -> str:
+        """Создать ЛИД (crm.lead.add). Возвращает ID лида (строкой)."""
+        phone = str(contact.get("phone") or contact.get("user_id") or "")
+        name = str(contact.get("name") or "").strip()
         fields: dict[str, Any] = {
-            "TITLE": f"{funnel}: {contact.get('user_id', 'lead')}",
+            "TITLE": f"{funnel or 'lead'}: {name or phone or 'WhatsApp'}",
+            "NAME": name,
             "COMMENTS": _format_qualification(data),
+            "SOURCE_DESCRIPTION": f"WhatsApp бот ({funnel})" if funnel else "WhatsApp бот",
         }
-        category_id = settings.bitrix_category_by_funnel.get(funnel)
-        if category_id:
-            fields["CATEGORY_ID"] = category_id
-        else:
-            logger.warning("Bitrix create_lead: нет CATEGORY_ID для воронки %s — воронка по умолчанию", funnel)
+        if phone:
+            fields["PHONE"] = [{"VALUE": phone, "VALUE_TYPE": "WORK"}]
+        resp = await self._call("crm.lead.add", {"fields": fields})
+        lead_id = str(resp.get("result", ""))
+        logger.info("Bitrix create_lead lead=%s funnel=%s", lead_id, funnel)
+        return lead_id
 
-        resp = await self._call("crm.deal.add", {"fields": fields})
-        deal_id = str(resp.get("result", ""))
-        logger.info("Bitrix create_lead deal=%s funnel=%s", deal_id, funnel)
-        return deal_id
+    async def find_lead_id_by_phone(self, phone: str) -> str:
+        """Найти ID существующего лида по телефону (антидубли). "" если не найден."""
+        phone = str(phone or "").strip()
+        if not phone:
+            return ""
+        resp = await self._call(
+            "crm.duplicate.findbycomm",
+            {"type": "PHONE", "values": [phone], "entity_type": "LEAD"})
+        leads = ((resp.get("result") or {}).get("LEAD")) or []
+        return str(leads[0]) if leads else ""
 
     async def update_stage(self, deal_id: str, stage: str) -> None:
-        stage_id = settings.bitrix_stage_map.get(stage)
-        if not stage_id:
-            logger.warning("Bitrix update_stage: нет STAGE_ID для стадии '%s' — пропуск", stage)
+        """Обновить STATUS_ID лида (если стадия замаплена; иначе мягко пропустить)."""
+        status_id = settings.bitrix_stage_map.get(stage)
+        if not status_id:
+            logger.warning("Bitrix update_stage: нет STATUS_ID для стадии '%s' — пропуск", stage)
             return
-        await self._call("crm.deal.update", {"id": deal_id, "fields": {"STAGE_ID": stage_id}})
-        logger.info("Bitrix update_stage deal=%s -> %s (%s)", deal_id, stage, stage_id)
+        await self._call("crm.lead.update", {"id": deal_id, "fields": {"STATUS_ID": status_id}})
+        logger.info("Bitrix update_stage lead=%s -> %s (%s)", deal_id, stage, status_id)
 
     async def add_note(self, deal_id: str, text: str) -> None:
+        """Комментарий в таймлайн ЛИДА."""
+        entity_id: Any = int(deal_id) if str(deal_id).isdigit() else deal_id
         await self._call(
             "crm.timeline.comment.add",
-            {"fields": {"ENTITY_ID": deal_id, "ENTITY_TYPE": "deal", "COMMENT": text}},
+            {"fields": {"ENTITY_ID": entity_id, "ENTITY_TYPE": "lead", "COMMENT": text}},
         )
-        logger.info("Bitrix add_note deal=%s", deal_id)
+        logger.info("Bitrix add_note lead=%s", deal_id)
 
     async def send_message(self, chat_id: str, text: str, bot_id: str | None = None) -> None:
-        """Отправить сообщение клиенту в Открытую линию от имени чат-бота."""
+        """Отправить сообщение клиенту в Открытую линию от имени чат-бота (если заведём линию)."""
         payload: dict[str, Any] = {"DIALOG_ID": chat_id, "MESSAGE": text}
         if bot_id:
             payload["BOT_ID"] = bot_id
@@ -82,7 +99,7 @@ class Bitrix24Crm:
 
 
 def _format_qualification(data: dict) -> str:
-    """Свернуть собранные поля квалификации в текст комментария к сделке."""
+    """Свернуть собранные поля квалификации в текст комментария к лиду."""
     if not data:
         return ""
     return "\n".join(f"{k}: {v}" for k, v in data.items())

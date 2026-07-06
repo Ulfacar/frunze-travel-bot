@@ -330,6 +330,10 @@ class Orchestrator:
                 )
         except Exception:  # noqa: BLE001 — лог не критичен для диалога
             log.warning("panel log_in failed", exc_info=True)
+        # Зеркало в Bitrix (best-effort, фоном — не блокирует и не роняет обработку).
+        from app.integrations.crm import bitrix_mirror
+        bitrix_mirror.fire(self._key(msg), sender="client", text=text, phone=msg.user_id,
+                           funnel=self.bot.scenario if self.bot else None)
 
     async def _reply(self, msg: Message, text: str) -> None:
         # Логируем исходящее как pending → шлём → отмечаем доставку (sent/failed).
@@ -341,6 +345,10 @@ class Orchestrator:
                                              status="pending", phone=msg.user_id)
         except Exception:  # noqa: BLE001
             log.warning("panel log_out failed", exc_info=True)
+        # Зеркало ответа бота в Bitrix (best-effort, фоном).
+        from app.integrations.crm import bitrix_mirror
+        bitrix_mirror.fire(self._key(msg), sender="bot", text=text, phone=msg.user_id,
+                           funnel=self.bot.scenario if self.bot else None)
         try:
             provider = await self.channel.send(msg.chat_id, text)
             mark_own(provider)

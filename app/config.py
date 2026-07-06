@@ -115,6 +115,9 @@ class Settings(BaseSettings):
     bitrix_category_by_funnel: dict[str, str] = {}
     # [?] Внутренняя стадия бота → STAGE_ID канбана Bitrix (category-specific, напр. "C2:NEW").
     bitrix_stage_map: dict[str, str] = {}
+    # Зеркалирование диалога в Bitrix как ЛИД + комментарии (ТЗ 02.07 п.3). Отдельный
+    # best-effort сайд-канал, НЕ зависит от crm_backend. Дефолт OFF — включается флагом из БД.
+    bitrix_mirror_enabled: bool = False
 
     # Реестр ботов. Переопределяется JSON-строкой в env BOTS='[{...}, ...]'.
     bots: list[BotConfig] = DEFAULT_BOTS

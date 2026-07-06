@@ -98,39 +98,64 @@ def test_send_skipped_without_webhook_url(monkeypatch):
     assert calls == []  # без URL не шлём
 
 
-# ---------------- Bitrix24Crm REST ----------------
-def test_create_lead_calls_deal_add_with_category(monkeypatch):
+# ---------------- Bitrix24Crm REST (ЛИДЫ) ----------------
+def test_create_lead_calls_lead_add_with_name_and_phone(monkeypatch):
     from app.integrations.crm import bitrix24 as mod
     monkeypatch.setattr(mod.settings, "bitrix24_webhook_url", WEBHOOK)
-    monkeypatch.setattr(mod.settings, "bitrix_category_by_funnel", {"tours": "7"})
     calls = []
     crm = Bitrix24Crm(client=_recording_client(calls, result=321))
 
-    deal_id = asyncio.run(crm.create_lead({"user_id": "u1"}, "tours", {"destination": "Турция"}))
+    lead_id = asyncio.run(crm.create_lead(
+        {"user_id": "996700", "name": "Иван"}, "tours", {"destination": "Турция"}))
 
-    assert deal_id == "321"
+    assert lead_id == "321"
     path, body = calls[0]
-    assert path.endswith("/crm.deal.add.json")
-    assert body["fields"]["CATEGORY_ID"] == "7"
+    assert path.endswith("/crm.lead.add.json")          # ЛИД, не сделка
+    assert body["fields"]["NAME"] == "Иван"
+    assert body["fields"]["PHONE"] == [{"VALUE": "996700", "VALUE_TYPE": "WORK"}]
     assert "Турция" in body["fields"]["COMMENTS"]
+    assert "CATEGORY_ID" not in body["fields"]           # лид не кладём в воронку оплативших
 
 
-def test_update_stage_maps_to_stage_id(monkeypatch):
+def test_find_lead_id_by_phone(monkeypatch):
     from app.integrations.crm import bitrix24 as mod
     monkeypatch.setattr(mod.settings, "bitrix24_webhook_url", WEBHOOK)
-    monkeypatch.setattr(mod.settings, "bitrix_stage_map", {"manager_handoff": "C7:UC_DEAL"})
+
+    def handler(request):
+        return httpx.Response(200, json={"result": {"LEAD": [555]}})
+
+    crm = Bitrix24Crm(client=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+    assert asyncio.run(crm.find_lead_id_by_phone("996700")) == "555"
+
+
+def test_find_lead_id_by_phone_none(monkeypatch):
+    from app.integrations.crm import bitrix24 as mod
+    monkeypatch.setattr(mod.settings, "bitrix24_webhook_url", WEBHOOK)
+
+    def handler(request):
+        return httpx.Response(200, json={"result": {}})
+
+    crm = Bitrix24Crm(client=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+    assert asyncio.run(crm.find_lead_id_by_phone("996700")) == ""
+    assert asyncio.run(crm.find_lead_id_by_phone("")) == ""
+
+
+def test_update_stage_maps_to_lead_status_id(monkeypatch):
+    from app.integrations.crm import bitrix24 as mod
+    monkeypatch.setattr(mod.settings, "bitrix24_webhook_url", WEBHOOK)
+    monkeypatch.setattr(mod.settings, "bitrix_stage_map", {"manager_handoff": "IN_PROCESS"})
     calls = []
     crm = Bitrix24Crm(client=_recording_client(calls))
 
     asyncio.run(crm.update_stage("321", "manager_handoff"))
 
     path, body = calls[0]
-    assert path.endswith("/crm.deal.update.json")
-    assert body == {"id": "321", "fields": {"STAGE_ID": "C7:UC_DEAL"}}
+    assert path.endswith("/crm.lead.update.json")
+    assert body == {"id": "321", "fields": {"STATUS_ID": "IN_PROCESS"}}
 
 
 def test_update_stage_skips_unmapped(monkeypatch):
-    """Нет STAGE_ID в карте → не шлём в портал несуществующую стадию."""
+    """Нет STATUS_ID в карте → не шлём в портал несуществующую стадию."""
     from app.integrations.crm import bitrix24 as mod
     monkeypatch.setattr(mod.settings, "bitrix24_webhook_url", WEBHOOK)
     monkeypatch.setattr(mod.settings, "bitrix_stage_map", {})
@@ -141,7 +166,7 @@ def test_update_stage_skips_unmapped(monkeypatch):
     assert calls == []
 
 
-def test_add_note_calls_timeline_comment(monkeypatch):
+def test_add_note_calls_timeline_comment_on_lead(monkeypatch):
     from app.integrations.crm import bitrix24 as mod
     monkeypatch.setattr(mod.settings, "bitrix24_webhook_url", WEBHOOK)
     calls = []
@@ -151,6 +176,6 @@ def test_add_note_calls_timeline_comment(monkeypatch):
 
     path, body = calls[0]
     assert path.endswith("/crm.timeline.comment.add.json")
-    assert body["fields"]["ENTITY_ID"] == "321"
-    assert body["fields"]["ENTITY_TYPE"] == "deal"
+    assert body["fields"]["ENTITY_ID"] == 321            # число, не строка
+    assert body["fields"]["ENTITY_TYPE"] == "lead"        # ЛИД, не сделка
     assert body["fields"]["COMMENT"] == "клиент тёплый"

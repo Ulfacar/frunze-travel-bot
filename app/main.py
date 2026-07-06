@@ -167,6 +167,9 @@ async def _handle_manager_echo(raw: dict) -> None:
     )
     await panel.update_meta(key, funnel=bot.scenario, assigned_to="whatsapp")
     await set_intercept(key, True)
+    # Зеркало реплики менеджера в Bitrix (best-effort, фоном).
+    from app.integrations.crm import bitrix_mirror
+    bitrix_mirror.fire(key, sender="manager", text=text, phone=phone, funnel=bot.scenario)
 
 
 @app.get("/health")
