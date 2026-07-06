@@ -53,19 +53,11 @@ def select_followup_targets(convs: list, now: datetime, cfg) -> list:
     return out
 
 
-async def run() -> None:
-    """Джоба планировщика: разослать дожимы (если включено и не «тихие часы»)."""
-    from app.core import flags
-    cfg = settings
-    if not await flags.get_flag("followup_enabled", cfg.followup_enabled):
-        return  # выключено (рантайм-флаг из админки; дефолт — из env)
-    now = datetime.now(timezone.utc)
-    local_hour = (now + timedelta(hours=BISHKEK_UTC_OFFSET)).hour
-    if is_quiet_hour(local_hour, cfg):
-        return  # ночь в Бишкеке — переносим на следующий тик
-
+async def _send_followups(now: datetime, cfg) -> int:
+    """Разослать по одному пингу всем текущим целям. Возвращает число отправленных."""
     store = get_conversation_store()
     targets = select_followup_targets(await store.all_conversations(), now, cfg)
+    sent = 0
     for c in targets:
         post_consult = STAGE_TO_COLUMN.get(getattr(c, "stage", ""), "") == "office"
         text = followup_ping_for(c.funnel, post_consult=post_consult)
@@ -77,7 +69,37 @@ async def run() -> None:
                                     provider_msg_id=provider or "")
             await store.update_meta(c.user_id, stage="follow_up", followup_sent=True,
                                     followup_count=followup_pings(c) + 1)
+            sent += 1
             log.info("followup #%d sent to %s (funnel=%s)",
                      followup_pings(c) + 1, c.user_id, c.funnel)
         except Exception:  # noqa: BLE001 — один сбой не должен останавливать рассылку
             log.warning("followup send failed for %s", c.user_id, exc_info=True)
+    return sent
+
+
+async def run() -> None:
+    """Джоба планировщика: разослать дожимы (если включён авто-флаг и не «тихие часы»)."""
+    from app.core import flags
+    cfg = settings
+    if not await flags.get_flag("followup_enabled", cfg.followup_enabled):
+        return  # авто-режим выключен (рантайм-флаг из админки; дефолт — из env)
+    now = datetime.now(timezone.utc)
+    local_hour = (now + timedelta(hours=BISHKEK_UTC_OFFSET)).hour
+    if is_quiet_hour(local_hour, cfg):
+        return  # ночь в Бишкеке — переносим на следующий тик
+    await _send_followups(now, cfg)
+
+
+async def run_manual() -> dict:
+    """Ручной дожим по кнопке в админке — НЕ зависит от авто-флага followup_enabled.
+
+    Менеджер сам решает, когда дожать (клиент просил «по кнопочке ~2×/неделю»). Тихие часы
+    Бишкека соблюдаем, чтобы не слать клиентам ночью. Ритм на клиента ограничен внутри is_silent.
+    """
+    cfg = settings
+    now = datetime.now(timezone.utc)
+    local_hour = (now + timedelta(hours=BISHKEK_UTC_OFFSET)).hour
+    if is_quiet_hour(local_hour, cfg):
+        return {"sent": 0, "quiet": True}
+    sent = await _send_followups(now, cfg)
+    return {"sent": sent, "quiet": False}

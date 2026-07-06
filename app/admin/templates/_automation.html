@@ -17,4 +17,20 @@
     </div>
   </div>
   {% endfor %}
+
+  <div class="followup-manual" style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+    <div class="t-title">Дожать молчунов вручную</div>
+    <div class="t-desc" style="margin:4px 0 12px">
+      Отправит один мягкий пинг тем, кто замолчал — и на квалификации, и после консультации.
+      Ритм ограничен: не чаще ~2×/неделю на клиента, ночью (Бишкек 22–9) не шлёт.
+    </div>
+    <button type="button"
+            hx-post="/admin/followup/run" hx-target="#followup-result" hx-swap="innerHTML"
+            hx-confirm="Отправить дожим молчунам сейчас?"
+            style="cursor:pointer;padding:9px 16px;border:none;border-radius:8px;
+                   background:var(--accent,#00767d);color:#fff;font:inherit;font-weight:600">
+      Дожать молчунов сейчас
+    </button>
+    <span id="followup-result" style="margin-left:12px"></span>
+  </div>
 </div>

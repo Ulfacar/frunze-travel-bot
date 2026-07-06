@@ -122,6 +122,34 @@ def test_followup_dojimaet_office_lead_and_increments_count(monkeypatch):
     assert conv2.followup_count == 1
 
 
+def test_followup_run_manual_sends_regardless_of_auto_flag(monkeypatch):
+    """Кнопка «Дожать молчунов»: шлёт, даже когда авто-флаг followup_enabled выключен."""
+    ps._memory_store._conv.clear()
+    from app.core import flags
+    flags.reset()
+    store = ps.get_conversation_store()
+    asyncio.run(store.add_message("getvisa:88", "bot", "вопрос?", channel="whatsapp",
+                                  bot_id="getvisa", chat_id="88@c.us"))
+    asyncio.run(store.update_meta("getvisa:88", funnel="visa", stage="qualification"))
+    conv = asyncio.run(store.get("getvisa:88"))
+    conv.last_message_at = datetime.now(timezone.utc) - timedelta(hours=30)
+
+    sent = []
+
+    async def fake_send(channel, bot_id, chat_id, text):
+        sent.append((chat_id, text))
+        return "pmid"
+
+    monkeypatch.setattr(followup.outbound, "send_to_client", fake_send)
+    monkeypatch.setattr(followup.settings, "followup_enabled", False)   # авто OFF
+    monkeypatch.setattr(followup.settings, "followup_quiet_from", 0)    # тихие часы off
+    monkeypatch.setattr(followup.settings, "followup_quiet_to", 0)
+
+    result = asyncio.run(followup.run_manual())
+    assert result == {"sent": 1, "quiet": False}
+    assert sent and sent[0][0] == "88@c.us"
+
+
 # ---------------- алерт «клиент ждёт менеджера»: отбор целей ----------------
 def test_select_awaiting_targets():
     now = datetime(2026, 6, 24, 12, 0, tzinfo=timezone.utc)

@@ -511,6 +511,23 @@ async def toggle_flag(key: str, request: Request, manager: dict = Depends(requir
     return templates.TemplateResponse(request, "_automation.html", {"flags": await _flag_views()})
 
 
+@router.post("/followup/run", response_class=HTMLResponse)
+async def run_followup_now(manager: dict = Depends(require_admin)):
+    """Ручной дожим молчунов по кнопке (не зависит от авто-флага followup_enabled)."""
+    from app.core import followup
+    result = await followup.run_manual()
+    await get_conversation_store().add_audit(
+        manager["login"], "followup", "",
+        f"manual sent={result['sent']} quiet={result['quiet']}")
+    if result["quiet"]:
+        msg = "Сейчас тихие часы (Бишкек 22–9) — дожим отложен, попробуйте днём 🌙"
+    elif result["sent"] == 0:
+        msg = "Сейчас некого дожимать — молчунов нет 👍"
+    else:
+        msg = f"Готово: отправлено {result['sent']} пингов молчунам ✅"
+    return HTMLResponse(f'<span style="color:var(--muted)">{msg}</span>')
+
+
 @router.post("/bots/{bot_id}/toggle", response_class=HTMLResponse)
 async def toggle_bot_flag(bot_id: str, request: Request, manager: dict = Depends(require_admin),
                           on: str = Form("0")):
