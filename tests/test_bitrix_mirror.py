@@ -13,11 +13,13 @@ class FakeAdapter:
         self.raise_on = None     # 'find' | 'create' | 'note' → бросить
 
     async def find_lead_id_by_phone(self, phone):
+        await asyncio.sleep(0)               # уступаем управление — воспроизводим гонку
         if self.raise_on == "find":
             raise RuntimeError("boom")
         return self.found
 
     async def create_lead(self, contact, funnel, data):
+        await asyncio.sleep(0)               # уступаем управление — воспроизводим гонку
         if self.raise_on == "create":
             raise RuntimeError("boom")
         self.created.append((contact, funnel, data))
@@ -99,6 +101,26 @@ def test_mirror_never_raises_on_adapter_error(monkeypatch):
     asyncio.run(bitrix_mirror.mirror_message(
         "getvisa:99", sender="bot", text="ответ", phone="996700099", funnel="visa"))
     assert fake.comments == []
+
+
+def test_mirror_no_duplicate_lead_under_concurrency(monkeypatch):
+    """Гонка: client-хук и bot-хук на быстрый ответ создали бы 2 лида — лок держит ОДИН."""
+    fake = FakeAdapter()
+    store = _setup(monkeypatch, fake)
+
+    async def both():
+        await asyncio.gather(
+            bitrix_mirror.mirror_message("getvisa:99", sender="client", text="привет",
+                                         phone="996700099", funnel="visa"),
+            bitrix_mirror.mirror_message("getvisa:99", sender="bot", text="здравствуйте",
+                                         phone="996700099", funnel="visa"),
+        )
+
+    asyncio.run(both())
+    assert len(fake.created) == 1                      # ровно один лид, несмотря на 2 хука
+    assert len(fake.comments) == 2                     # оба комментария легли
+    assert all(cid == "700" for cid, _ in fake.comments)
+    assert asyncio.run(store.get("getvisa:99")).bitrix_lead_id == "700"
 
 
 def test_mirror_skips_empty_text(monkeypatch):

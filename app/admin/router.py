@@ -447,6 +447,16 @@ FEATURE_FLAGS = {
         "default": lambda: settings.followup_enabled,
         "note": lambda: "",
     },
+    "bitrix_mirror_enabled": {
+        "title": "Зеркалирование диалогов в Bitrix",
+        "desc": ("Дублировать переписку (клиент / бот / менеджер) в Bitrix24: на первое "
+                 "сообщение создаётся ЛИД, дальше каждая реплика падает комментарием в его "
+                 "таймлайн. Менеджер сам конвертит Лид → Сделку после оплаты. Клиенту ничего "
+                 "повторно не отправляется. Работает, только если задан вебхук портала."),
+        "default": lambda: settings.bitrix_mirror_enabled,
+        "note": lambda: ("" if settings.bitrix24_webhook_url
+                         else "⚠️ Задайте BITRIX24_WEBHOOK_URL в prod.env, иначе зеркало не работает."),
+    },
     "alerts_enabled": {
         "title": "Watchdog-алерты",
         "desc": ("Уведомлять администратора в WhatsApp, если бот не получает входящих дольше "

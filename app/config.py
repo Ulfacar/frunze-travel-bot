@@ -111,9 +111,11 @@ class Settings(BaseSettings):
     # CRM (портал один — облако getvisakg.bitrix24.kz; вебхук портал-уровня)
     crm_backend: Literal["stub", "postgres", "bitrix24"] = "stub"
     bitrix24_webhook_url: str = ""
-    # [?] Реальные значения от заказчика. Воронка → CATEGORY_ID сделки.
+    # ⚠️ Бот создаёт ЛИДЫ (не сделки): воронки Bitrix начинаются после оплаты, менеджер
+    # конвертит Лид→Сделку сам. Поэтому CATEGORY_ID лиду НЕ задаётся — эта карта пока не
+    # используется (оставлена на будущее, если заведём конвертацию/распределение по воронкам).
     bitrix_category_by_funnel: dict[str, str] = {}
-    # [?] Внутренняя стадия бота → STAGE_ID канбана Bitrix (category-specific, напр. "C2:NEW").
+    # [?] Внутренняя стадия бота → STATUS_ID ЛИДА Bitrix (напр. "IN_PROCESS"); пусто → не двигаем.
     bitrix_stage_map: dict[str, str] = {}
     # Зеркалирование диалога в Bitrix как ЛИД + комментарии (ТЗ 02.07 п.3). Отдельный
     # best-effort сайд-канал, НЕ зависит от crm_backend. Дефолт OFF — включается флагом из БД.

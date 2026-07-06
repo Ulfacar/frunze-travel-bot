@@ -345,16 +345,16 @@ class Orchestrator:
                                              status="pending", phone=msg.user_id)
         except Exception:  # noqa: BLE001
             log.warning("panel log_out failed", exc_info=True)
-        # Зеркало ответа бота в Bitrix (best-effort, фоном).
-        from app.integrations.crm import bitrix_mirror
-        bitrix_mirror.fire(self._key(msg), sender="bot", text=text, phone=msg.user_id,
-                           funnel=self.bot.scenario if self.bot else None)
         try:
             provider = await self.channel.send(msg.chat_id, text)
             mark_own(provider)
             if msg_id:
                 await panel.mark_message_status(message_id=msg_id, status="sent",
                                                 set_provider_msg_id=(provider or None))
+            # Зеркало ответа бота в Bitrix — только после успешной отправки клиенту (best-effort, фоном).
+            from app.integrations.crm import bitrix_mirror
+            bitrix_mirror.fire(self._key(msg), sender="bot", text=text, phone=msg.user_id,
+                               funnel=self.bot.scenario if self.bot else None)
         except Exception:  # noqa: BLE001 — сбой канала: помечаем failed, диалог не роняем
             record_failure("send")
             if msg_id:
