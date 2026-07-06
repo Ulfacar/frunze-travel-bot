@@ -54,7 +54,8 @@ class ConversationView:
     last_text: str = ""
     last_sender: str = ""
     last_message_at: datetime | None = None
-    followup_sent: bool = False       # автодожим уже отправлен (один раз)
+    followup_sent: bool = False       # legacy: автодожим отправлен (один раз)
+    followup_count: int = 0           # сколько пингов дожима отправлено (ритм ~2×/неделю)
     # Мотор готовности «Покупатели сегодня» (детерминированный, из readiness.py).
     readiness_tier: str = ""          # green|warm|noise|insufficient|"" (не считался)
     readiness_reason: str = ""
@@ -168,6 +169,7 @@ class MemoryConversationStore:
                           assigned_to: str | None = None,
                           outcome: str | None = None,
                           followup_sent: bool | None = None,
+                          followup_count: int | None = None,
                           readiness_tier: str | None = None,
                           readiness_reason: str | None = None,
                           readiness_signals: dict | None = None,
@@ -201,6 +203,8 @@ class MemoryConversationStore:
             conv.outcome = outcome
         if followup_sent is not None:
             conv.followup_sent = followup_sent
+        if followup_count is not None:
+            conv.followup_count = followup_count
         if readiness_tier is not None:
             conv.readiness_tier = readiness_tier
             conv.readiness_scored_at = _now()
@@ -360,6 +364,7 @@ class PostgresConversationStore:
                           assigned_to: str | None = None,
                           outcome: str | None = None,
                           followup_sent: bool | None = None,
+                          followup_count: int | None = None,
                           readiness_tier: str | None = None,
                           readiness_reason: str | None = None,
                           readiness_signals: dict | None = None,
@@ -395,6 +400,8 @@ class PostgresConversationStore:
                 conv.outcome = outcome
             if followup_sent is not None:
                 conv.followup_sent = followup_sent
+            if followup_count is not None:
+                conv.followup_count = followup_count
             if readiness_tier is not None:
                 conv.readiness_tier = readiness_tier
                 conv.readiness_scored_at = _now()
@@ -541,6 +548,7 @@ def _view(conv) -> ConversationView:
         last_text=conv.last_text,
         last_sender=conv.last_sender, last_message_at=conv.last_message_at,
         followup_sent=getattr(conv, "followup_sent", False) or False,
+        followup_count=int(getattr(conv, "followup_count", 0) or 0),
         readiness_tier=getattr(conv, "readiness_tier", "") or "",
         readiness_reason=getattr(conv, "readiness_reason", "") or "",
         readiness_signals=dict(getattr(conv, "readiness_signals", None) or {}),

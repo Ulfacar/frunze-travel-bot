@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 # --- Визы Frunze Travel (менеджер Медина) ---
-GETVISA_OFFICE_ADDRESS = "г. Бишкек, ул. Токтогула 108 (пересеч. Орозбекова), БЦ «312», 9 этаж"
+GETVISA_OFFICE_ADDRESS = "г. Бишкек, ул. Тоголок Молдо, 5"
 GETVISA_EMAIL = "getvisainternational@gmail.com"
 # Персона/позиционирование из приветствий Медины.
 GETVISA_PERSONA = (
@@ -33,8 +33,27 @@ GETVISA_VISA_SCOPE = (
     "Италия, Греция, Чехия и др.), Великобритания, Китай, Таиланд, Япония, Корея, ОАЭ"
 )
 
+# Англоязычные направления: по таким визам НЕ спрашиваем уровень английского — это личная
+# информация, и для визового офицера незнание языка не является минусом (правка со встречи 06.07).
+ENGLISH_SPEAKING_COUNTRIES = (
+    "сша", "америк", "usa", "u.s", "штаты",
+    "великобритан", "англи", "британ", "u.k", "united kingdom", "kingdom",
+    "канад", "canada",
+    "австрали", "australia",
+    "ирланд", "ireland",
+    "новая зеланд", "новозеланд", "zealand",
+)
+
+
+def is_english_speaking(country: str | None) -> bool:
+    """True, если названная клиентом страна — англоязычная (для гейтинга вопроса про английский)."""
+    if not country:
+        return False
+    low = str(country).lower()
+    return any(kw in low for kw in ENGLISH_SPEAKING_COUNTRIES)
+
 # --- Frunze Travel (туры/билеты, менеджеры Адеми и Сезим) ---
-FRUNZE_OFFICE_ADDRESS = "г. Бишкек, пересечение ул. Киевской и ул. Тоголок Молдо, 5"
+FRUNZE_OFFICE_ADDRESS = "г. Бишкек, ул. Тоголок Молдо, 5"
 FRUNZE_DEPARTURE_CITIES = "Бишкек (основной) или Алматы"
 # Реальные направления по городу вылета (из анкеты менеджеров).
 FRUNZE_DESTINATIONS = (
@@ -167,8 +186,23 @@ FOLLOWUP_PINGS = {
 _FOLLOWUP_DEFAULT = ("Здравствуйте! 😊 Это Frunze Travel. Подскажите, ваш вопрос ещё актуален? "
                      "Будем рады помочь 🙏")
 
+# Отдельный текст для тех, кто уже был/приглашён на консультацию (стадия office) — обычный
+# пинг «вы ещё рассматриваете?» звучал бы так, будто бот забыл про встречу (правка 06.07).
+FOLLOWUP_PINGS_POST_CONSULT = {
+    "visa": ("Здравствуйте! 😊 Это Frunze Travel. Вы были на консультации по визе — "
+             "остались вопросы или готовы двигаться дальше? Поможем с оформлением 🙏"),
+    "tours": ("Здравствуйте! 😊 Это Frunze Travel. Мы подбирали вам тур — "
+              "подскажите, определились? Поможем забронировать 🙏"),
+    "tickets": ("Здравствуйте! 😊 Это Frunze Travel. По авиабилетам всё ещё актуально? "
+                "Менеджер готов подобрать рейс 🙏"),
+}
+_FOLLOWUP_POST_CONSULT_DEFAULT = ("Здравствуйте! 😊 Это Frunze Travel. Остались вопросы после "
+                                  "консультации? Будем рады довести дело до конца 🙏")
 
-def followup_ping_for(funnel: str | None) -> str:
+
+def followup_ping_for(funnel: str | None, *, post_consult: bool = False) -> str:
+    if post_consult:
+        return FOLLOWUP_PINGS_POST_CONSULT.get(funnel or "", _FOLLOWUP_POST_CONSULT_DEFAULT)
     return FOLLOWUP_PINGS.get(funnel or "", _FOLLOWUP_DEFAULT)
 
 

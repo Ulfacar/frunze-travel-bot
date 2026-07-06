@@ -30,6 +30,7 @@ class DialogState:
     pending_field: str | None = None  # какой вопрос задан в fallback-режиме (ждём ответ)
     wait_ack_sent: bool = False  # после авто-хендоффа клиенту разово подтвердили ожидание
     ad_referral: dict[str, Any] = field(default_factory=dict)  # источник первого касания (CTWA), write-once
+    consecutive_audio: int = 0  # подряд идущих голосовых/медиа без текста — на 2-м зовём менеджера
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False)

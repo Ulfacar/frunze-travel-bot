@@ -6,6 +6,8 @@ from app.integrations.panel.store import ConversationView, MessageView
 
 class _Cfg:
     followup_after_hours = 24
+    followup_max_pings = 2
+    followup_interval_hours = 84
     noise_stale_days = 3
 
 
@@ -60,8 +62,24 @@ def test_is_silent_broad_stuck_leads_and_exclusions():
     assert is_silent(_conv("bot-last", last_sender="bot", last_message_at=old), now, _Cfg()) is True
     assert is_silent(_conv("fresh", last_message_at=fresh), now, _Cfg()) is False
     assert is_silent(_conv("manager", stage="manager", last_message_at=old), now, _Cfg()) is False
-    assert is_silent(_conv("office", stage="office", last_message_at=old), now, _Cfg()) is False
+    # Прошедших консультацию/офис теперь ДОЖИМАЕМ (правка 06.07) — раньше было False.
+    assert is_silent(_conv("office", stage="office", last_message_at=old), now, _Cfg()) is True
     assert is_silent(_conv("won", outcome="won", last_message_at=old), now, _Cfg()) is False
-    assert is_silent(_conv("sent", followup_sent=True, last_message_at=old), now, _Cfg()) is False
     assert is_silent(_conv("spam", stage="greeting", last_text="https://instagram.com/ad",
                            last_message_at=old), now, _Cfg()) is False
+
+
+def test_followup_cadence_limits_and_interval():
+    now = datetime(2026, 6, 30, 12, 0, tzinfo=timezone.utc)
+    old = now - timedelta(hours=30)           # молчит 30ч (> 24ч первого порога, < 84ч интервала)
+    long_ago = now - timedelta(hours=100)     # молчит 100ч (> 84ч интервала повторного пинга)
+
+    # Уже пингован 1 раз: 30ч < интервала 84ч → ещё рано.
+    assert is_silent(_conv("p1-early", followup_count=1, last_message_at=old), now, _Cfg()) is False
+    # Пингован 1 раз, но прошло 100ч > интервала → снова пора.
+    assert is_silent(_conv("p1-due", followup_count=1, last_message_at=long_ago), now, _Cfg()) is True
+    # Исчерпан лимит (2 пинга) → больше не дожимаем, даже если давно молчит.
+    assert is_silent(_conv("p2-max", followup_count=2, last_message_at=long_ago), now, _Cfg()) is False
+    # Legacy: старый булев followup_sent считается как 1 пинг (совместимость).
+    assert is_silent(_conv("legacy-early", followup_sent=True, last_message_at=old), now, _Cfg()) is False
+    assert is_silent(_conv("legacy-due", followup_sent=True, last_message_at=long_ago), now, _Cfg()) is True

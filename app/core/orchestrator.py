@@ -70,6 +70,11 @@ NON_TEXT_FALLBACK = (
     "Голосовые сообщения пока не распознаём 🙏 Напишите, пожалуйста, словами — "
     "или скажите «нужен менеджер», и я позову человека."
 )
+# Второе голосовое/медиа подряд без текста — не мучаем клиента просьбой «напишите словами»,
+# а сразу зовём менеджера (решение со встречи 06.07: 2 аудио подряд → человек прослушает).
+NON_TEXT_HANDOFF = (
+    "Вижу, вам удобнее голосом 🙏 Передаю менеджеру — он прослушает и ответит вам."
+)
 # Мягкий фолбэк, если ход не удалось обработать (сбой LLM/инструмента) — клиент НЕ
 # должен получать тишину или 500. Диалог не роняем, состояние сохраняем.
 LLM_ERROR_FALLBACK = (
@@ -131,11 +136,20 @@ class Orchestrator:
         # перехвачено / рубильник off / идёт окно дебаунса.
         await self._log_in(msg, msg.text)
 
-        # Дебаунс выключен (0) — синхронная обработка под локом, как раньше.
+        # Дебаунс выключен (0) — синхронная обработка под локом, как раньше (_run_turn сбросит
+        # счётчик голосовых сам).
         if settings.debounce_seconds <= 0:
             async with _lock_for(key):
                 await self._run_turn(msg)
             return
+
+        # Текст прерывает серию голосовых СРАЗУ на входе: при дебаунсе _run_turn отработает только
+        # после окна тишины, а до него мог прийти 2-й голос и ложно триггернуть хендофф.
+        async with _lock_for(key):
+            st = await get_state_store().load(key)
+            if st.consecutive_audio:
+                st.consecutive_audio = 0
+                await get_state_store().save(st)
 
         # Дебаунс включён: копим быстрые реплики клиента и перезапускаем таймер тихого окна.
         # По его истечении обработаем склеенный текст одним ходом LLM (без задвоений ответов).
@@ -146,11 +160,30 @@ class Orchestrator:
         self._timers[key] = asyncio.create_task(self._debounce_flush(key))
 
     async def _handle_non_text(self, msg: Message) -> None:
-        """Голос/медиа: лог + честный фолбэк (бот не распознаёт). Под локом диалога."""
+        """Голос/медиа: бот не распознаёт. 1-е — честный фолбэк; 2-е подряд → зовём менеджера.
+
+        Счётчик `consecutive_audio` живёт в состоянии и сбрасывается в 0 любым текстовым
+        сообщением (см. _run_turn). Под локом диалога.
+        """
         await self._log_in(msg, "[медиа/голос]")
-        state = await get_state_store().load(self._key(msg))
+        key = self._key(msg)
+        store = get_state_store()
+        state = await store.load(key)
+        if self.bot is not None:
+            state.bot_id = self.bot.id
+            state.manager_name = _default_manager_name(self.bot)
         if state.intercepted or not await self._bots_on():
             return  # перехвачено / рубильник off — лог записали, бот молчит
+        state.consecutive_audio += 1
+        if state.consecutive_audio >= 2:
+            # 2 голосовых/медиа подряд без текста → авто-хендофф: менеджер прослушает.
+            state.stage = "manager"
+            state.intercepted = True
+            await store.save(state)
+            await self._sync_card(msg, state)
+            await self._reply(msg, NON_TEXT_HANDOFF)
+            return
+        await store.save(state)
         await self._reply(msg, NON_TEXT_FALLBACK)
 
     async def _debounce_flush(self, key: str) -> None:
@@ -188,6 +221,7 @@ class Orchestrator:
             state.manager_name = _default_manager_name(self.bot)
         if msg.referral and not state.ad_referral:
             state.ad_referral = dict(msg.referral)  # write-once: источник = первое касание
+        state.consecutive_audio = 0  # пришёл текст — серия голосовых прервана
 
         # Главный рубильник: если авто-ответы выключены из панели — бот молчит во всех
         # воронках (сообщение клиента уже в логе, менеджер ведёт диалог вручную).
@@ -403,8 +437,8 @@ class Orchestrator:
             return False
 
         answer = faq.answer
-        pending_question = None
-        if state.pending_field and faq.allow_during_qualification:
+        # При хендоффе бот замолкает — не дописываем вопрос анкеты после прощальной фразы.
+        if state.pending_field and faq.allow_during_qualification and not faq.handoff_only:
             pending_question = qualification_question(state.funnel, state.pending_field)
             if pending_question:
                 answer = f"{answer}\n\n{pending_question}"

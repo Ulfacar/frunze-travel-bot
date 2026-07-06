@@ -149,7 +149,9 @@ class Settings(BaseSettings):
     outcome_infer_stale_hours: int = 24      # диалог без активности дольше → кандидат на классификацию
     outcome_infer_max_per_run: int = 20      # потолок вызовов LLM за прогон (бюджет)
     followup_enabled: bool = False
-    followup_after_hours: int = 24       # молчит дольше → один мягкий пинг
+    followup_after_hours: int = 24       # молчит дольше → ПЕРВЫЙ мягкий пинг
+    followup_max_pings: int = 2          # максимум пингов на клиента (ритм ~2×/неделю), потом стоп
+    followup_interval_hours: int = 84    # между повторными пингами (~3.5 суток) — не чаще
     noise_stale_days: int = 3            # пустой greeting без ответа бота старше N дней = мусор
     followup_quiet_from: int = 22        # «тихие часы» (Бишкек, UTC+6): не слать с 22:00…
     followup_quiet_to: int = 9           # …до 09:00

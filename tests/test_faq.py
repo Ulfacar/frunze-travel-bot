@@ -77,13 +77,14 @@ def test_seed_defaults_adds_expected_rules_to_empty_memory_store():
 
         rows = await get_faq_store().list(include_disabled=True)
 
-        assert len(rows) == 19
+        assert len(rows) == 20
         by_title = {row.title: row for row in rows}
         assert set(by_title) == {
             "Часы работы",
             "Адрес офиса",
             "Стоимость визовых услуг",
             "Направления туров",
+            "Авиабилеты — к менеджеру",
             "Self-visa удержание",
             "Гарантии по визе",
             "Документы для визы США",
@@ -107,7 +108,8 @@ def test_seed_defaults_adds_expected_rules_to_empty_memory_store():
         assert "по какой стране" in by_title["Стоимость визовых услуг"].answer
         assert FRUNZE_DESTINATIONS in by_title["Направления туров"].answer
         assert all(row.allow_during_qualification for row in rows)
-        assert [r.title for r in rows if r.handoff_only] == ["Страна вне данных — к менеджеру"]
+        assert {r.title for r in rows if r.handoff_only} == {
+            "Страна вне данных — к менеджеру", "Авиабилеты — к менеджеру"}
 
     asyncio.run(scenario())
 
@@ -122,8 +124,8 @@ def test_seed_defaults_is_idempotent_for_non_empty_store():
         await seed_defaults()
         second = await store.list(include_disabled=True)
 
-        assert len(first) == 19
-        assert len(second) == 19
+        assert len(first) == 20
+        assert len(second) == 20
         assert [row.id for row in second] == [row.id for row in first]
 
     asyncio.run(scenario())
@@ -175,6 +177,33 @@ def test_seeded_visa_faq_new_rules():
     asyncio.run(scenario())
 
 
+def test_tickets_route_to_manager_on_tours_bot():
+    """Запрос авиабилета в туровом боте → детерминированный хендофф менеджеру."""
+    async def scenario():
+        reset()
+        await seed_defaults()
+        store = get_faq_store()
+        tours_entries = await store.candidates("tours")
+
+        for text in ["есть билет Ош Бишкек", "нужен авиабилет в Москву", "билет бишкек москва"]:
+            hit = match_faq(text, "tours", tours_entries)
+            assert hit is not None and hit.title == "Авиабилеты — к менеджеру", text
+            assert hit.handoff_only is True
+
+        # Смешанные тур+билет запросы НЕ должны уводить на менеджера (иначе необратимый хендофф
+        # обрывает легитимный тур-диалог) — negative_terms их отсекают.
+        for text in [
+            "тур в Дубай с авиабилетом на двоих",
+            "у меня уже есть билет до Стамбула, нужен только отель",
+            "путёвка с перелётом, билет включён",
+            "виза и билет в США",
+        ]:
+            hit = match_faq(text, "tours", tours_entries)
+            assert hit is None or hit.title != "Авиабилеты — к менеджеру", text
+
+    asyncio.run(scenario())
+
+
 def test_seed_defaults_adds_missing_rules_without_overwriting_manual_edits():
     async def scenario():
         reset()
@@ -192,7 +221,7 @@ def test_seed_defaults_adds_missing_rules_without_overwriting_manual_edits():
         rows = await store.list(include_disabled=True)
         by_title = {row.title: row for row in rows}
 
-        assert len(rows) == 19
+        assert len(rows) == 20
         assert by_title["Часы работы"].id == manual.id
         assert by_title["Часы работы"].answer == "Ручной ответ"
         assert by_title["Self-visa удержание"].updated_by == "system:seed"

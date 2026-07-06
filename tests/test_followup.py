@@ -92,6 +92,36 @@ def test_followup_run_sends_once(monkeypatch):
     assert sent == []
 
 
+def test_followup_dojimaet_office_lead_and_increments_count(monkeypatch):
+    """Прошедшего консультацию (stage=office), но замолчавшего — тоже дожимаем; счётчик растёт."""
+    ps._memory_store._conv.clear()
+    from app.core import flags
+    flags.reset()
+    store = ps.get_conversation_store()
+    asyncio.run(store.add_message("getvisa:77", "bot", "ждём вас на консультации",
+                                  channel="whatsapp", bot_id="getvisa", chat_id="77@c.us"))
+    asyncio.run(store.update_meta("getvisa:77", funnel="visa", stage="office"))
+    conv = asyncio.run(store.get("getvisa:77"))
+    conv.last_message_at = datetime.now(timezone.utc) - timedelta(hours=30)
+
+    sent = []
+
+    async def fake_send(channel, bot_id, chat_id, text):
+        sent.append((chat_id, text))
+        return "pmid"
+
+    monkeypatch.setattr(followup.outbound, "send_to_client", fake_send)
+    monkeypatch.setattr(followup.settings, "followup_enabled", True)
+    monkeypatch.setattr(followup.settings, "followup_quiet_from", 0)
+    monkeypatch.setattr(followup.settings, "followup_quiet_to", 0)
+
+    asyncio.run(followup.run())
+    assert sent and sent[0][0] == "77@c.us"          # office-лид тоже дожали
+    assert "консультаци" in sent[0][1].lower()        # текст помнит о прошедшей консультации
+    conv2 = asyncio.run(store.get("getvisa:77"))
+    assert conv2.followup_count == 1
+
+
 # ---------------- алерт «клиент ждёт менеджера»: отбор целей ----------------
 def test_select_awaiting_targets():
     now = datetime(2026, 6, 24, 12, 0, tzinfo=timezone.utc)

@@ -91,6 +91,31 @@ def extract_ad_referral(raw: dict) -> dict:
     return out
 
 
+# Подстроки, выдающие рекламный контекст в сыром payload. Если они есть, а
+# extract_ad_referral вернул {} — значит реальный формат Wappi не совпал с парсером:
+# логируем сырьё под [referral-miss], чтобы поймать настоящие ключи на живом трафике.
+_REF_HINT_SUBSTRINGS = (
+    "referral", "adreply", "externaladreply", "ctwa", "source_url", "sourceurl",
+    "source_id", "sourceid", "ad_id", "\"adid\"", "quotedad", "conversionsource",
+)
+
+
+def _log_referral_miss(raw: dict) -> None:
+    """Диагностика: сырьё с признаками рекламы, которое парсер НЕ распознал.
+
+    Срабатывает только когда в payload есть тэлл-тейл рекламного контекста, а
+    extract_ad_referral вернул {} — то есть формат Wappi разошёлся с парсером. Так лог
+    не флудит на обычных сообщениях и прямо показывает реальные ключи CTWA. Никогда не бросает.
+    """
+    try:
+        blob = json.dumps(raw, ensure_ascii=False)
+    except Exception:  # noqa: BLE001 — лог не должен мешать обработке
+        return
+    low = blob.lower()
+    if any(hint in low for hint in _REF_HINT_SUBSTRINGS):
+        logger.info("Wappi ad-referral MISS [referral-miss]: %s", blob[:1800])
+
+
 def is_incoming_user_message(raw: dict) -> bool:
     """True только для входящих сообщений клиента в ЛИЧНОМ чате.
 
@@ -158,6 +183,9 @@ class WappiAdapter:
                             json.dumps(raw, ensure_ascii=False)[:1500])
             except Exception:  # noqa: BLE001 — лог не должен мешать обработке
                 logger.info("Wappi ad-referral [referral-capture]: keys=%s", sorted(raw.keys()))
+        else:
+            # Парсер ничего не нашёл — но, возможно, формат Wappi просто не совпал.
+            _log_referral_miss(raw)
 
         if raw.get("type") == _TEXT_TYPE and body:
             kind, text = "text", body

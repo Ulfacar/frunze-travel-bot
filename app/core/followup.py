@@ -1,8 +1,12 @@
-"""Автодожим: один мягкий проактивный пинг клиенту, замолчавшему на этапе квалификации.
+"""Автодожим: мягкие проактивные пинги замолчавшему клиенту по расписанию.
 
-`select_followup_targets` — чистая функция отбора (тестируемо). `run` — джоба
-планировщика: учитывает «тихие часы» (Бишкек), шлёт пинг, двигает карточку в
-«Повторное касание» и ставит флаг followup_sent (идемпотентно — пинг ровно один раз).
+Дожимаем и тех, кто замолчал на квалификации, и тех, кто прошёл консультацию/офис, но не
+пришёл (правка со встречи 06.07). Ритм ограничен: до `followup_max_pings` пингов на клиента,
+повторные — не чаще `followup_interval_hours` (~2×/неделю); «на живом менеджере» не трогаем.
+
+`select_followup_targets` — чистая функция отбора (тестируемо). `run` — джоба планировщика:
+учитывает «тихие часы» (Бишкек), шлёт пинг, двигает карточку в «Повторное касание» и
+инкрементит followup_count.
 """
 from __future__ import annotations
 
@@ -12,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from app.channels import outbound
 from app.config import settings
 from app.core.branding import followup_ping_for
-from app.core.leadstate import is_silent
+from app.core.leadstate import STAGE_TO_COLUMN, followup_pings, is_silent
 from app.core.own_outbound import mark_own
 from app.integrations.panel.store import get_conversation_store
 
@@ -63,14 +67,17 @@ async def run() -> None:
     store = get_conversation_store()
     targets = select_followup_targets(await store.all_conversations(), now, cfg)
     for c in targets:
-        text = followup_ping_for(c.funnel)
+        post_consult = STAGE_TO_COLUMN.get(getattr(c, "stage", ""), "") == "office"
+        text = followup_ping_for(c.funnel, post_consult=post_consult)
         try:
             provider = await outbound.send_to_client(
                 c.channel, c.bot_id, c.chat_id or c.user_id, text)
             mark_own(provider)
             await store.add_message(c.user_id, "bot", text, status="sent",
                                     provider_msg_id=provider or "")
-            await store.update_meta(c.user_id, stage="follow_up", followup_sent=True)
-            log.info("followup sent to %s (funnel=%s)", c.user_id, c.funnel)
+            await store.update_meta(c.user_id, stage="follow_up", followup_sent=True,
+                                    followup_count=followup_pings(c) + 1)
+            log.info("followup #%d sent to %s (funnel=%s)",
+                     followup_pings(c) + 1, c.user_id, c.funnel)
         except Exception:  # noqa: BLE001 — один сбой не должен останавливать рассылку
             log.warning("followup send failed for %s", c.user_id, exc_info=True)

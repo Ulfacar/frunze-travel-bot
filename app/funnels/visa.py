@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from app.channels.base import Message
 from app.agent.llm import llm_available
-from app.core.branding import GETVISA_OFFICE_ADDRESS
+from app.core.branding import GETVISA_OFFICE_ADDRESS, is_english_speaking
 from app.core.state import DialogState
 from app.funnels.base import collect_qualification
 from app.integrations.crm import get_crm
@@ -18,6 +18,17 @@ REQUIRED_FIELDS = [
     "name", "country", "age", "marital_status", "occupation",
     "prior_countries", "companions", "english_level", "dates", "prior_refusal",
 ]
+
+
+def _required_fields(qualification: dict) -> list[str]:
+    """REQUIRED_FIELDS с учётом страны: по англоязычным визам не спрашиваем про английский.
+
+    `country` в опроснике идёт раньше `english_level`, поэтому к моменту, когда бот дошёл бы
+    до вопроса про английский, страна уже собрана — гейтинг срабатывает корректно.
+    """
+    if is_english_speaking(qualification.get("country")):
+        return [f for f in REQUIRED_FIELDS if f != "english_level"]
+    return REQUIRED_FIELDS
 
 
 class VisaFunnel:
@@ -30,7 +41,7 @@ class VisaFunnel:
             return await run_visa_turn(state, msg.text)
 
         # Fallback без ключа: детерминированный опросник (для тестов/демо офлайн).
-        question = collect_qualification(state, msg.text, REQUIRED_FIELDS, _ask_for)
+        question = collect_qualification(state, msg.text, _required_fields(state.qualification), _ask_for)
         if question is not None:
             return question
 
