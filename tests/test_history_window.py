@@ -126,6 +126,20 @@ def test_qual_context_message_only_includes_non_empty_values():
     assert "budget=" not in msg["content"]
 
 
+def test_date_context_message_uses_bishkek_local_date():
+    from datetime import datetime, timezone
+
+    # 09.07.2026 06:00 UTC -> Бишкек (UTC+6) 12:00 того же дня.
+    msg = runner._date_context_message(datetime(2026, 7, 9, 6, 0, tzinfo=timezone.utc))
+    assert msg["role"] == "user"
+    assert "09.07.2026" in msg["content"]
+    assert "Бишкек" in msg["content"]
+
+    # 09.07.2026 20:00 UTC -> Бишкек 02:00 10.07 — дата должна перекатиться.
+    later = runner._date_context_message(datetime(2026, 7, 9, 20, 0, tzinfo=timezone.utc))
+    assert "10.07.2026" in later["content"]
+
+
 def test_run_turn_sends_window_and_qual_each_tool_iteration(monkeypatch):
     monkeypatch.setattr(runner.settings, "llm_history_max_messages", 3)
     state = DialogState(
@@ -150,15 +164,17 @@ def test_run_turn_sends_window_and_qual_each_tool_iteration(monkeypatch):
     second_messages = fake.messages.create.await_args_list[1].kwargs["messages"]
 
     assert first_messages[0]["role"] == "user"
-    assert first_messages[0]["content"].startswith("[Уже известно от клиента:")
-    assert first_messages[1] == {"role": "user", "content": "актуально?"}
+    assert first_messages[0]["content"].startswith("[Служебная заметка: сегодня")
+    assert first_messages[1]["content"].startswith("[Уже известно от клиента:")
+    assert first_messages[2] == {"role": "user", "content": "актуально?"}
 
-    assert second_messages[0]["content"].startswith("[Уже известно от клиента:")
-    assert second_messages[1] == {"role": "user", "content": "актуально?"}
-    assert second_messages[2]["role"] == "assistant"
-    assert second_messages[3]["role"] == "user"
-    assert isinstance(second_messages[3]["content"], list)
-    assert second_messages[3]["content"][0]["type"] == "tool_result"
+    assert second_messages[0]["content"].startswith("[Служебная заметка: сегодня")
+    assert second_messages[1]["content"].startswith("[Уже известно от клиента:")
+    assert second_messages[2] == {"role": "user", "content": "актуально?"}
+    assert second_messages[3]["role"] == "assistant"
+    assert second_messages[4]["role"] == "user"
+    assert isinstance(second_messages[4]["content"], list)
+    assert second_messages[4]["content"][0]["type"] == "tool_result"
 
     assert len(state.history) == original_history_len + 4
     assert state.history[0] == {"role": "user", "content": "request 1"}

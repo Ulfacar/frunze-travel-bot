@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, replace
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -83,6 +84,30 @@ def _ad_context_message(referral: dict) -> dict | None:
     }
 
 
+# Кыргызстан UTC+6, без перехода на летнее время (как в followup.py / budget.py).
+_BISHKEK_OFFSET = timedelta(hours=6)
+_RU_WEEKDAYS = ("понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье")
+
+
+def _date_context_message(now: datetime | None = None) -> dict:
+    """Текущая дата (Бишкек) отдельным user-сообщением на каждый ход.
+
+    Без неё модель не знает «какое сегодня» и угадывает месяц/год — на живых
+    диалогах угадывала февраль/январь вместо июля (слив доверия клиента).
+    В state.history не пишется — только подмешивается в prefix."""
+    base = now or datetime.now(timezone.utc)
+    if base.tzinfo is None:
+        base = base.replace(tzinfo=timezone.utc)
+    local = base.astimezone(timezone.utc) + _BISHKEK_OFFSET
+    stamp = f"{local:%d.%m.%Y}, {_RU_WEEKDAYS[local.weekday()]}"
+    return {
+        "role": "user",
+        "content": (f"[Служебная заметка: сегодня {stamp} (время Бишкека). Отсчитывай все "
+                    f"относительные даты («этот месяц», «через неделю», «в начале месяца») "
+                    f"от сегодняшней. НИКОГДА не угадывай текущий месяц или год.]"),
+    }
+
+
 @dataclass
 class FunnelSpec:
     """Описание воронки для агентного цикла."""
@@ -105,7 +130,8 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
         if await budget.soft_capped():
             model = settings.llm_model_cheap
         window = _windowed_history(state.history, settings.llm_history_max_messages)
-        prefix = [m for m in (_ad_context_message(state.ad_referral),
+        prefix = [m for m in (_date_context_message(),
+                              _ad_context_message(state.ad_referral),
                               _qual_context_message(state.qualification)) if m]
         messages = prefix + window
         resp = await client().messages.create(
