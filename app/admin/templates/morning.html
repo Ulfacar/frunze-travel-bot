@@ -38,8 +38,12 @@
     .lc-top { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
     .lc-name { font-weight:700; font-size:16px; }
     .lc-dir { color:var(--muted); font-size:13px; white-space:nowrap; }
-    .lc-val { font-family:var(--mono); font-size:20px; font-weight:700; color:var(--text);
-              font-variant-numeric:tabular-nums; margin:6px 0; }
+    .lc-meta { display:flex; gap:7px; flex-wrap:wrap; margin:9px 0; }
+    .lc-chip { font-family:var(--mono); font-size:13px; font-weight:700; padding:4px 10px; border-radius:8px;
+               background:#EEF2F7; color:var(--text); font-variant-numeric:tabular-nums; }
+    .lc-chip.check { background:#E0F2FE; color:#075985; }
+    .lc-chip.wait  { background:#FEF3C7; color:#92400E; }
+    .lc-chip.wait--late { background:#FEE2E2; color:#B91C1C; }
     .lc-reason { color:var(--muted); font-size:14px; font-style:italic; margin-bottom:12px;
                  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
     .lc-open { border:none; background:var(--accent); color:#fff; font-weight:700; font-size:14px;
@@ -73,7 +77,11 @@
           <span class="lc-name">{{ c.name }}</span>
           <span class="lc-dir">{{ c.direction }}</span>
         </div>
-        {% if c.value %}<div class="lc-val">{{ c.value|round|int }}{{ c.currency }}</div>{% endif %}
+        <div class="lc-meta">
+          {% if c.check %}<span class="lc-chip check">{{ c.check }}</span>{% endif %}
+          {% if c.dates %}<span class="lc-chip">вылет {{ c.dates }}</span>{% endif %}
+          {% if c.wait_label %}<span class="lc-chip wait{% if c.wait >= 480 %}--late{% endif %}">{{ c.wait_label }}</span>{% endif %}
+        </div>
         {% if c.reason %}<div class="lc-reason">{{ c.reason }}</div>{% endif %}
         <a class="lc-open" href="/admin?open={{ c.user_id }}">Открыть диалог</a>
       </div>
@@ -90,7 +98,11 @@
           <span class="lc-name">{{ c.name }}</span>
           <span class="lc-dir">{{ c.direction }}</span>
         </div>
-        {% if c.value %}<div class="lc-val">{{ c.value|round|int }}{{ c.currency }}</div>{% endif %}
+        <div class="lc-meta">
+          {% if c.check %}<span class="lc-chip check">{{ c.check }}</span>{% endif %}
+          {% if c.dates %}<span class="lc-chip">вылет {{ c.dates }}</span>{% endif %}
+          {% if c.wait_label %}<span class="lc-chip wait{% if c.wait >= 480 %}--late{% endif %}">{{ c.wait_label }}</span>{% endif %}
+        </div>
         {% if c.reason %}<div class="lc-reason">{{ c.reason }}</div>{% endif %}
         <a class="lc-open" href="/admin?open={{ c.user_id }}">Открыть диалог</a>
       </div>

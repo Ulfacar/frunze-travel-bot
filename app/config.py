@@ -171,6 +171,9 @@ class Settings(BaseSettings):
     # Токен бота для пуша менеджерам. Пусто → фолбэк на telegram_bot_token (легаси демо-бот). Прод:
     # завести ВЫДЕЛЕННОГО бота менеджеров, чтобы пуш не зависел от тестовой песочницы.
     managers_telegram_bot_token: str = ""
+    # Фикс-курс сом→$ ТОЛЬКО для тайбрейка сортировки чека в горячем листе (не для отображения —
+    # там показываем как сказал клиент). Ручное обновление по необходимости, НЕ live-API. ~89 сом/$.
+    som_to_usd_rate: float = 0.0112
 
     # Секрет подписи cookie-сессии (Starlette SessionMiddleware). ПРОД: SESSION_SECRET!
     session_secret: str = "change-me-frunze-session-secret"
