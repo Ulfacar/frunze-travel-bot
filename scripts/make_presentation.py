@@ -217,10 +217,10 @@ def slide_1(prs):
         Palette.muted_dark,
     )
     add_card(slide, 9.35, 1.55, 2.95, 3.75, Palette.panel, RGBColor(42, 86, 101))
-    add_text(slide, 9.72, 1.95, 2.2, 0.48, "230", 36, True, Palette.white)
-    add_text(slide, 9.72, 2.58, 2.2, 0.6, "реальных\nдиалогов", 15, False, Palette.muted_dark)
-    add_text(slide, 9.72, 3.65, 2.2, 0.48, "70%", 36, True, Palette.teal)
-    add_text(slide, 9.72, 4.28, 2.2, 0.45, "бот провёл сам", 15, False, Palette.muted_dark)
+    add_text(slide, 9.72, 1.95, 2.2, 0.48, "369", 36, True, Palette.white)
+    add_text(slide, 9.72, 2.58, 2.2, 0.6, "реальных\nдиалогов с 1 июля", 15, False, Palette.muted_dark)
+    add_text(slide, 9.72, 3.65, 2.2, 0.48, "96%", 36, True, Palette.teal)
+    add_text(slide, 9.72, 4.28, 2.2, 0.6, "вёл сам, без\nвмешательства", 15, False, Palette.muted_dark)
     add_text(slide, 0.95, 6.58, 5.8, 0.25, "Frunze Travel · GetVisa · Бишкек", 9.5, False, Palette.muted_dark)
 
 
@@ -229,10 +229,10 @@ def slide_2(prs):
     add_bg(slide)
     add_title(slide, "Что бот уже делает", "реальные данные из WhatsApp")
     metrics = [
-        ("230", "диалога\n48–100 новых/день", Palette.teal),
-        ("3200", "сообщений\nобработано", Palette.teal_dark),
-        ("1400", "ответов бота\nклиентам", Palette.amber),
-        ("70%", "диалогов бот\nпровёл сам", Palette.red),
+        ("369", "диалогов\nс 1 июля", Palette.teal),
+        ("4600", "сообщений\nобработано", Palette.teal_dark),
+        ("1956", "ответов бота\nклиентам", Palette.amber),
+        ("96%", "вёл сам, без\nменеджера", Palette.red),
     ]
     for i, (value, label, color) in enumerate(metrics):
         x = SAFE_L + i * 3.08
@@ -240,9 +240,9 @@ def slide_2(prs):
         add_text(slide, x + 0.22, 2.48, 2.25, 0.42, value, 30, True, color)
         add_text(slide, x + 0.22, 3.05, 2.25, 0.52, label, 13, False, Palette.slate)
     add_card(slide, SAFE_L, 4.45, 5.8, 1.25, Palette.green_soft, RGBColor(184, 224, 221))
-    add_text(slide, 0.9, 4.72, 5.25, 0.42, "Туры 131 · визы 99", 18, True, Palette.ink)
+    add_text(slide, 0.9, 4.72, 5.25, 0.42, "Туры 193 · визы 176", 18, True, Palette.ink)
     add_card(slide, 6.75, 4.45, 5.95, 1.25, Palette.amber_soft, RGBColor(239, 218, 166))
-    add_text(slide, 7.05, 4.68, 5.25, 0.54, "24/7: половина обращений вне рабочих часов", 16, True, Palette.ink)
+    add_text(slide, 7.05, 4.68, 5.25, 0.54, "24/7: почти половина обращений — вне рабочих часов", 15, True, Palette.ink)
     add_footer(slide, 2)
 
 
@@ -282,58 +282,164 @@ def slide_3_engagement(prs):
 def slide_3(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_bg(slide)
-    add_title(slide, "Откуда брался расход", "почему ~$15 в день — это нормально")
+    add_title(slide, "Куда ушли деньги на ИИ", "почему $20 хватило на всю горячую неделю")
     add_text(
         slide,
         0.6,
-        2.05,
-        11.4,
-        0.45,
-        "Деньги уходили не из-за сбоя: бот реально много работал на дорогой модели.",
-        18,
+        2.0,
+        11.6,
+        0.7,
+        "$15 (1 июля) + $5 (2 июля) = $20 отработали пик запуска: 1 956 ответов бота\nна 369 диалогов. «Быстро» — потому что был вал трафика, а не потому что дорого.",
+        16,
         True,
         Palette.ink,
     )
-    add_card(slide, 0.6, 2.95, 5.35, 2.95, Palette.grey_soft, Palette.line)
-    add_text(slide, 0.95, 3.25, 4.5, 0.36, "Было ~$15/день", 22, True, Palette.ink)
+
+    # Левая карта — на что ушло
+    add_card(slide, 0.6, 3.15, 5.75, 2.85, Palette.grey_soft, Palette.line)
+    add_text(slide, 0.95, 3.42, 5.1, 0.36, "На что ушли $20", 20, True, Palette.ink)
     add_bullets(
         slide,
         [
-            "674+ ответов в день",
-            "дорогая модель на всём потоке",
-            "вся длинная переписка каждый раз",
-            "ответы днём и ночью",
+            "пик 2 июля — 752 ответа за день",
+            "каждый ответ = 2–3 обращения к ИИ",
+            "каждый раз перечитывается вся история",
+            "работа круглосуточно, без выходных",
         ],
         0.95,
-        3.95,
-        4.55,
-        1.35,
+        4.05,
+        5.05,
+        1.55,
         Palette.slate,
         14.5,
         Palette.grey,
     )
-    add_text(slide, 0.95, 5.35, 4.55, 0.28, "Расход = живая работа, не сбой", 14.5, True, Palette.ink)
-    add_text(slide, 6.13, 4.05, 0.55, 0.4, "→", 30, True, Palette.teal, PP_ALIGN.CENTER)
-    add_card(slide, 6.85, 2.95, 5.85, 2.95, Palette.green_soft, RGBColor(169, 221, 215))
-    add_text(slide, 7.2, 3.25, 5.0, 0.36, "Стало ~$1–2,5/день", 22, True, Palette.ink)
+
+    add_text(slide, 6.5, 4.35, 0.55, 0.4, "→", 30, True, Palette.teal, PP_ALIGN.CENTER)
+
+    # Правая карта — итог: дёшево
+    add_card(slide, 7.15, 3.15, 5.55, 2.85, Palette.green_soft, RGBColor(169, 221, 215))
+    add_text(slide, 7.5, 3.42, 4.9, 0.36, "Это дёшево: ~1¢ на клиента", 20, True, Palette.ink)
     add_bullets(
         slide,
         [
-            "дешёвая модель на 80% диалогов",
-            "дорогая — только на подборе туров",
-            "готовые ответы без AI",
-            "сокращение переписки + лимит $10",
+            "почти всё идёт на дешёвой модели",
+            "~$30–50 в месяц при 100 чел/день",
+            "1 менеджер за смену — дороже в разы",
+            "лечится авто-пополнением баланса",
         ],
-        7.2,
-        3.95,
-        4.95,
-        1.35,
+        7.5,
+        4.05,
+        4.85,
+        1.55,
         Palette.slate,
         14.5,
         Palette.teal,
     )
-    add_text(slide, 7.2, 5.35, 4.95, 0.28, "Тот же поток — в 2–3 раза дешевле", 14.5, True, Palette.ink)
     add_footer(slide, 4)
+
+
+def slide_quality(prs):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Почему бот отвечает как живой менеджер", "реальные диалоги с прода")
+    cards = [
+        ("Ведёт до брони сам",
+         "«Хочу тур, Дубай, $3000» → бот подобрал отель в Шардже\nс завтраком и записал в офис на 13:00. Без менеджера.",
+         Palette.teal),
+        ("Реальные цены, без выдумок",
+         "Берёт живые цены из TourVisor. Отказывается называть\nсуммы наугад: «не хочу называть цену наугад» 🙏",
+         Palette.amber),
+        ("Говорит на языке клиента",
+         "Отвечает на кыргызском и узбекском так же свободно,\nкак на русском — «АКШга виза алууга жардам беребиз».",
+         Palette.teal_dark),
+        ("Мгновенно и круглосуточно",
+         "Отвечает за секунды, ночью и днём — ни один горячий\nлид не ждёт ответа до утра.",
+         Palette.red),
+    ]
+    for i, (title, body, accent) in enumerate(cards):
+        x = SAFE_L + (i % 2) * 6.22
+        y = 2.3 + (i // 2) * 2.02
+        add_card(slide, x, y, 5.82, 1.8, Palette.white, Palette.line)
+        add_shape(slide, MSO_SHAPE.RECTANGLE, x + 0.2, y + 0.24, 0.09, 1.32, accent, label="mark")
+        add_text(slide, x + 0.45, y + 0.24, 5.15, 0.34, title, 17, True, Palette.ink)
+        add_text(slide, x + 0.45, y + 0.72, 5.2, 0.95, body, 12.5, False, Palette.slate)
+    add_footer(slide, 3)
+
+
+def slide_fuel(prs):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "На чём работает бот — держим включённым", "два внешних сервиса = топливо бота")
+    add_text(
+        slide,
+        0.6,
+        2.0,
+        11.6,
+        0.55,
+        "Бот зависит от двух платных сервисов. Оба недавно отвалились — отсюда сбои. "
+        "Оживают сами при оплате, деплой не нужен.",
+        15,
+        True,
+        Palette.ink,
+    )
+
+    # OpenRouter
+    add_card(slide, 0.6, 2.85, 5.75, 3.0, Palette.white, Palette.line)
+    add_shape(slide, MSO_SHAPE.RECTANGLE, 0.78, 3.08, 0.09, 2.5, Palette.red, label="mark")
+    add_text(slide, 1.05, 3.1, 5.1, 0.34, "OpenRouter — «мозг» бота", 17, True, Palette.ink)
+    add_bullets(
+        slide,
+        [
+            "через него бот думает и пишет ответы",
+            "6 июля кончились деньги → «Секундочку» всем",
+            "~$30–50 в месяц при 100 чел/день",
+            "решение: авто-пополнение баланса",
+        ],
+        1.05,
+        3.7,
+        5.05,
+        1.85,
+        Palette.slate,
+        13.5,
+        Palette.red,
+    )
+
+    # TourVisor
+    add_card(slide, 6.85, 2.85, 5.85, 3.0, Palette.white, Palette.line)
+    add_shape(slide, MSO_SHAPE.RECTANGLE, 7.03, 3.08, 0.09, 2.5, Palette.amber, label="mark")
+    add_text(slide, 7.3, 3.1, 5.2, 0.34, "TourVisor — цены на туры", 17, True, Palette.ink)
+    add_bullets(
+        slide,
+        [
+            "бот берёт отсюда живые цены отелей",
+            "3–6 июля подписка отвалилась → туры без цен",
+            "визы не затронуты, только туры",
+            "решение: держать подписку оплаченной",
+        ],
+        7.3,
+        3.7,
+        5.15,
+        1.85,
+        Palette.slate,
+        13.5,
+        Palette.amber,
+    )
+
+    add_card(slide, 0.6, 6.05, 12.1, 0.72, Palette.amber_soft, RGBColor(239, 218, 166))
+    add_text(
+        slide,
+        0.85,
+        6.19,
+        11.6,
+        0.45,
+        "Отдельно решить: что показывать клиенту по отелю — фото (рекомендуем) / ссылку / ничего. "
+        "Прямая ссылка на TourVisor светит закупочную цену.",
+        12.5,
+        True,
+        Palette.ink,
+    )
+    add_footer(slide, 5)
 
 
 def slide_4(prs):
@@ -434,6 +540,67 @@ def slide_8(prs):
     add_footer(slide, 9)
 
 
+def slide_decisions(prs):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Что решаем на встрече", "3 решения — и бот идёт дальше")
+    cards = [
+        ("Bitrix: куда бот пишет?",
+         "Лиды или сразу Сделки? Ваши воронки начинаются после оплаты, "
+         "а бот работает до неё.",
+         "Совет: бот создаёт Лид, менеджер конвертит в Сделку после оплаты.",
+         Palette.teal),
+        ("Что показывать по отелю?",
+         "Фото / ссылка / ничего. Прямая ссылка на TourVisor светит "
+         "вашу закупочную цену.",
+         "Совет: показывать фото отеля — наглядно и не палит источник.",
+         Palette.amber),
+        ("«Проблемный клиент» — кто?",
+         "По ТЗ бот зовёт таких в офис, а не дожимает. Но критерии "
+         "вы пока не задали.",
+         "Нужно от вас: по каким признакам вести в офис, а не дожимать?",
+         Palette.red),
+    ]
+    for i, (title, body, tip, accent) in enumerate(cards):
+        x = SAFE_L + i * 4.15
+        add_card(slide, x, 2.5, 3.75, 3.55, Palette.white, Palette.line)
+        add_shape(slide, MSO_SHAPE.RECTANGLE, x + 0.2, 2.73, 3.35, 0.14, accent, label="strip")
+        add_text(slide, x + 0.35, 3.05, 3.05, 0.7, title, 16, True, Palette.ink)
+        add_text(slide, x + 0.35, 3.75, 3.1, 1.15, body, 12.5, False, Palette.slate)
+        add_shape(slide, MSO_SHAPE.RECTANGLE, x + 0.35, 5.0, 1.2, 0.06, accent, label="tip line")
+        add_text(slide, x + 0.35, 5.12, 3.1, 0.85, tip, 12, True, Palette.ink)
+    add_footer(slide, 12)
+
+
+def slide_asks(prs):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Что нужно от вас", "3 вещи, которые разблокируют следующий скачок")
+    items = [
+        ("Каталог рекламных постов",
+         "Ссылка на пост → страна / оффер / цена. Тогда бот сразу отвечает по делу "
+         "(79% клиентов идут с рекламы), и мы считаем, какого трафика больше.",
+         Palette.red),
+        ("Заполнить анкету менеджерам",
+         "32 вопроса из реальных диалогов (Адеми, Сезим — туры; Медина, Элиза — визы). "
+         "Ответы вошьём в бота — он станет отвечать точнее и без выдумок.",
+         Palette.teal),
+        ("Держать оплаченными 2 сервиса",
+         "OpenRouter (ИИ) и TourVisor (цены на туры). Лучше авто-пополнение — "
+         "чтобы бот не вставал молча, как это было 6 июля.",
+         Palette.amber),
+    ]
+    y = 2.2
+    for i, (title, body, accent) in enumerate(items):
+        top = y + i * 1.5
+        add_card(slide, SAFE_L, top, CONTENT_W, 1.32, Palette.white, Palette.line)
+        add_shape(slide, MSO_SHAPE.OVAL, SAFE_L + 0.3, top + 0.42, 0.5, 0.5, accent, label="num dot")
+        add_text(slide, SAFE_L + 0.3, top + 0.5, 0.5, 0.4, str(i + 1), 20, True, Palette.white, PP_ALIGN.CENTER)
+        add_text(slide, SAFE_L + 1.1, top + 0.2, 10.6, 0.4, title, 18, True, Palette.ink)
+        add_text(slide, SAFE_L + 1.1, top + 0.66, 10.7, 0.6, body, 13, False, Palette.slate)
+    add_footer(slide, 13)
+
+
 def slide_9(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_bg(slide, True)
@@ -451,7 +618,7 @@ def slide_9(prs):
     )
     add_card(slide, 0.75, 4.65, 6.4, 1.15, Palette.panel, RGBColor(42, 86, 101))
     add_text(slide, 1.05, 4.96, 5.65, 0.42, "Frunze Travel · GetVisa · Бишкек", 16, True, Palette.white)
-    add_text(slide, 0.75, 6.48, 11.0, 0.25, "Данные из рабочей базы за 1–3 июля 2026. Панель «Покупатели сегодня» уже работает на проде.", 8.5, False, Palette.muted_dark)
+    add_text(slide, 0.75, 6.48, 11.0, 0.25, "Данные из рабочей базы за 1–5 июля 2026. Панель «Покупатели сегодня» уже работает на проде.", 8.5, False, Palette.muted_dark)
 
 
 def slide_10(prs):
@@ -460,12 +627,14 @@ def slide_10(prs):
     add_title(slide, "Сколько людей писали и сколько бот ответил", "реальные данные из прода")
 
     rows = [
-        ("03.07", "82", "581", "487"),
-        ("02.07", "100", "981", "776"),
-        ("01.07", "48", "244", "137"),
+        ("05.07", "57", "194", "99"),
+        ("04.07", "68", "299", "249"),
+        ("03.07", "80", "658", "501"),
+        ("02.07", "101", "971", "752"),
+        ("01.07", "54", "464", "309"),
     ]
     headers = ("День", "Новых диалогов", "Сообщений клиентов", "Ответов бота")
-    total = ("ВСЕГО", "230 диалогов", "1806", "1400 ответов бота")
+    total = ("ВСЕГО с 1 июля", "369 диалогов", "2649", "1956 ответов")
 
     table_left = SAFE_L
     table_top = 2.02
@@ -563,13 +732,17 @@ def build():
     for make_slide in (
         slide_1,
         slide_2,
+        slide_quality,
         slide_3_engagement,
         slide_3,
+        slide_fuel,
         slide_4,
         slide_5,
         slide_6,
         slide_7,
         slide_8,
+        slide_decisions,
+        slide_asks,
         slide_9,
         slide_10,
     ):

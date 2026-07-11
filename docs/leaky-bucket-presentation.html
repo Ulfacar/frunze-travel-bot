@@ -1,0 +1,520 @@
+<title>Frunze Travel — где утекают деньги и как их поймать</title>
+<style>
+  :root {
+    --ground: #f3f5f8; --panel: #ffffff; --panel-2: #eef1f6; --ink: #14212f;
+    --ink-soft: #47566a; --ink-faint: #8492a6; --line: #dde3ec; --night: #12263f;
+    --water: #1f9bb3; --water-soft: #6fc6d6; --gold: #c08a2d; --gold-soft: #e3b463;
+    --leak: #cf5d52; --good: #3f9d64;
+    --shadow: 0 1px 2px rgba(20,33,47,.06), 0 8px 30px rgba(20,33,47,.07);
+    --maxw: 1080px;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0a141f; --panel: #10202f; --panel-2: #16293b; --ink: #e7eef6;
+      --ink-soft: #9fb1c4; --ink-faint: #64788d; --line: #21384d; --night: #081522;
+      --water: #45c3d8; --water-soft: #2b7f92; --gold: #e3b463; --gold-soft: #c08a2d;
+      --leak: #e07a6f; --good: #5bbd80;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 40px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #f3f5f8; --panel: #ffffff; --panel-2: #eef1f6; --ink: #14212f;
+    --ink-soft: #47566a; --ink-faint: #8492a6; --line: #dde3ec; --night: #12263f;
+    --water: #1f9bb3; --water-soft: #6fc6d6; --gold: #c08a2d; --gold-soft: #e3b463;
+    --leak: #cf5d52; --good: #3f9d64; --shadow: 0 1px 2px rgba(20,33,47,.06), 0 8px 30px rgba(20,33,47,.07);
+  }
+  :root[data-theme="dark"] {
+    --ground: #0a141f; --panel: #10202f; --panel-2: #16293b; --ink: #e7eef6;
+    --ink-soft: #9fb1c4; --ink-faint: #64788d; --line: #21384d; --night: #081522;
+    --water: #45c3d8; --water-soft: #2b7f92; --gold: #e3b463; --gold-soft: #c08a2d;
+    --leak: #e07a6f; --good: #5bbd80; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 40px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--sans);
+    line-height: 1.6; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  section { padding: 92px 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: 0; }
+
+  h1, h2, h3 { font-family: var(--serif); font-weight: 600; text-wrap: balance; letter-spacing: -.01em; }
+  h2 { font-size: clamp(1.7rem, 3.6vw, 2.7rem); line-height: 1.12; margin: 0 0 .4em; }
+  h3 { font-size: 1.22rem; margin: 0 0 .3em; line-height: 1.2; }
+  p { margin: 0 0 1em; }
+  .lead { font-size: clamp(1.05rem, 1.8vw, 1.26rem); color: var(--ink-soft); max-width: 62ch; }
+  .eyebrow { font-family: var(--sans); font-size: .78rem; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--water); margin: 0 0 18px; display: flex; align-items: center; gap: 10px; }
+  .eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--water); display: inline-block; }
+  .num { font-variant-numeric: tabular-nums; }
+  .flag { color: var(--ink-faint); font-size: .82em; font-style: italic; }
+  .measure { display:inline-block; font-family:var(--sans); font-style:normal; font-size:.68rem; font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--water); border:1px solid var(--water);
+    border-radius:999px; padding:1px 8px; margin-left:6px; vertical-align:middle; }
+
+  /* ---------- HERO ---------- */
+  .hero { background: radial-gradient(120% 90% at 78% 8%, rgba(69,195,216,.10), transparent 55%),
+      linear-gradient(180deg, var(--night), var(--night));
+    color: #eaf2f8; border-bottom: 1px solid rgba(255,255,255,.08); position: relative; overflow: hidden; padding: 0; }
+  .hero .wrap { display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center;
+    min-height: 90vh; padding-top: 56px; padding-bottom: 56px; }
+  .hero .eyebrow { color: var(--gold-soft); } .hero .eyebrow::before { background: var(--gold-soft); }
+  .hero h1 { font-size: clamp(2.1rem, 5vw, 3.8rem); line-height: 1.05; margin: 0 0 .5em; color: #f4f9fc; }
+  .hero h1 .hl { color: var(--gold-soft); font-style: italic; }
+  .hero .sub { color: #aec4d6; font-size: clamp(1.02rem, 1.7vw, 1.18rem); max-width: 54ch; }
+  .hero .brandline { margin-top: 32px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+    color: #7f9ab0; font-size: .82rem; letter-spacing: .04em; }
+  .hero .brandline b { color: #d7e6f0; font-weight: 600; }
+  .hero .brandline .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--water); }
+
+  .bucket-stage { position: relative; height: 440px; display: flex; align-items: flex-start; justify-content: center; }
+  .bucket-svg { width: 100%; max-width: 350px; height: auto; overflow: visible; }
+  .drop { fill: var(--water-soft); } .rain { animation: fall 1.5s linear infinite; }
+  .leakstream circle { fill: var(--water); }
+  @keyframes fall { 0% { transform: translateY(-60px); opacity: 0; } 12% { opacity: .9; } 100% { transform: translateY(40px); opacity: .9; } }
+  @keyframes spurtL { 0% { transform: translate(0,0); opacity: 0; } 15% { opacity: .95; } 100% { transform: translate(-46px, 60px); opacity: 0; } }
+  @keyframes spurtR { 0% { transform: translate(0,0); opacity: 0; } 15% { opacity: .95; } 100% { transform: translate(46px, 60px); opacity: 0; } }
+  @keyframes trickle { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: .9; } 100% { transform: translateY(34px); opacity: 0; } }
+  .rain.r1 { animation-delay: 0s; } .rain.r2 { animation-delay: .5s; } .rain.r3 { animation-delay: .9s; }
+  .rain.r4 { animation-delay: .3s; } .rain.r5 { animation-delay: 1.1s; }
+  .spurt-l { animation: spurtL 1.4s ease-in infinite; } .spurt-l.s2 { animation-delay: .7s; }
+  .spurt-r { animation: spurtR 1.6s ease-in infinite; } .spurt-r.s2 { animation-delay: .8s; }
+  .trickle { animation: trickle 1.2s ease-in infinite; }
+  .bucket-cap { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+    text-align: center; color: #86a1b6; font-size: .74rem; letter-spacing: .12em; text-transform: uppercase; }
+
+  .grid { display: grid; gap: 20px; }
+  .cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 26px; box-shadow: var(--shadow); }
+
+  /* ---------- fact split (concrete vs hypothesis) ---------- */
+  .factsplit { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 8px; }
+  .factcol { border-radius: 14px; padding: 26px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+  .factcol.concrete { background: var(--night); color: #e7eef6; border-color: transparent; }
+  .factcol.concrete h3 { color: #f4f9fc; }
+  .factcol.hypo { background: var(--panel); border-left: 4px solid var(--water); }
+  .factcol .hd { font-size: .76rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
+  .factcol.concrete .hd { color: var(--gold-soft); } .factcol.hypo .hd { color: var(--water); }
+  .factcol ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .factcol li { padding-left: 26px; position: relative; font-size: .95rem; }
+  .factcol.concrete li { color: #c6d6e4; } .factcol.hypo li { color: var(--ink-soft); }
+  .factcol.concrete li::before { content: "✓"; position: absolute; left: 0; color: var(--gold-soft); font-weight: 700; }
+  .factcol.hypo li::before { content: "?"; position: absolute; left: 0; color: var(--water); font-weight: 700; }
+  .factcol b { color: inherit; } .factcol.concrete b { color: #fff; } .factcol.hypo b { color: var(--ink); }
+  .disarm { margin-top: 24px; padding: 22px 26px; border-radius: 14px; background: color-mix(in srgb, var(--gold) 12%, var(--panel));
+    border: 1px dashed var(--gold); font-size: 1.05rem; color: var(--ink); }
+  .disarm b { color: var(--gold); }
+
+  /* funnel cards */
+  .funnel-card { border-top: 4px solid var(--edge, var(--water)); }
+  .funnel-card.tours { --edge: var(--gold); } .funnel-card.visa { --edge: var(--good); } .funnel-card.tix { --edge: var(--water); }
+  .funnel-card h3 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .funnel-card .verdict { font-size: .9rem; color: var(--ink-soft); }
+  .metric-row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px dashed var(--line); font-size: .9rem; }
+  .metric-row:first-of-type { border-top: 0; } .metric-row .k { color: var(--ink-soft); } .metric-row .v { font-weight: 600; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .04em; }
+  .pill.good { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
+  .pill.warn { background: color-mix(in srgb, var(--gold) 20%, transparent); color: var(--gold); }
+  .pill.water { background: color-mix(in srgb, var(--water) 16%, transparent); color: var(--water); }
+
+  /* the one hole — night */
+  .scene { display: grid; grid-template-columns: 1.1fr .9fr; gap: 30px; align-items: center; margin-top: 8px; }
+  .scene-card { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--gold);
+    border-radius: 14px; padding: 30px; box-shadow: var(--shadow); }
+  .chatlog { display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 82%; padding: 11px 15px; border-radius: 14px; font-size: .92rem; position: relative; }
+  .msg .t { display: block; font-size: .68rem; color: var(--ink-faint); margin-top: 5px; letter-spacing: .02em; }
+  .msg.client { align-self: flex-start; background: var(--panel-2); border-bottom-left-radius: 4px; }
+  .msg.silent { align-self: flex-end; background: color-mix(in srgb, var(--leak) 12%, var(--panel));
+    border: 1px dashed var(--leak); border-bottom-right-radius: 4px; color: var(--leak); font-style: italic; }
+  .msg.late { align-self: flex-end; background: var(--night); color: #dceaf2; border-bottom-right-radius: 4px; }
+
+  /* mini holes grid */
+  .mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 10px; }
+  .mini .m { background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 15px 16px; box-shadow: var(--shadow); }
+  .mini .m .b { width: 24px; height: 24px; border-radius: 7px; background: color-mix(in srgb, var(--water) 15%, transparent);
+    color: var(--water); font-family: var(--serif); font-weight: 700; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+  .mini .m .h { font-weight: 600; font-size: .9rem; margin-bottom: 2px; }
+  .mini .m .d { font-size: .8rem; color: var(--ink-soft); }
+
+  /* risk — bottom of bucket */
+  .risk { background: var(--night); color: #eaf2f8; }
+  .risk h2 { color: #f4f9fc; } .risk .lead { color: #aec4d6; }
+  .risk-q { font-family: var(--serif); font-style: italic; font-size: clamp(1.3rem,3vw,1.9rem); color: #f4f9fc;
+    text-wrap: balance; margin: 8px 0 34px; }
+  .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .step { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 13px; padding: 22px; }
+  .step .n { font-family: var(--serif); font-size: 1.5rem; color: var(--gold-soft); font-weight: 700; }
+  .step .t { font-weight: 600; color: #f0f6fa; margin: 6px 0 4px; } .step .d { font-size: .88rem; color: #9fb9cc; }
+
+  /* dispatcher */
+  .disp { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; margin-top: 10px; }
+  .flow { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 28px; box-shadow: var(--shadow); }
+  .flow ol { list-style: none; counter-reset: s; margin: 0; padding: 0; }
+  .flow li { counter-increment: s; position: relative; padding: 0 0 22px 46px; }
+  .flow li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--water); color: #04121a; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: .9rem; }
+  .flow li::after { content: ""; position: absolute; left: 14px; top: 32px; bottom: 4px; width: 2px; background: var(--line); }
+  .flow li:last-child { padding-bottom: 0; } .flow li:last-child::after { display: none; }
+  .flow li.star::before { background: var(--gold); }
+  .flow li b { display: block; margin-bottom: 2px; } .flow li span { color: var(--ink-soft); font-size: .92rem; }
+  .kpis { display: grid; grid-template-rows: auto auto auto; gap: 16px; }
+  .kpi { border-radius: 14px; padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+  .kpi.bot { background: color-mix(in srgb, var(--water) 10%, var(--panel)); border-color: var(--water); }
+  .kpi.man { background: color-mix(in srgb, var(--gold) 10%, var(--panel)); border-color: var(--gold); }
+  .kpi.count { background: var(--night); color: #eaf2f8; border-color: transparent; }
+  .kpi .who { font-size: .76rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .kpi.bot .who { color: var(--water); } .kpi.man .who { color: var(--gold); } .kpi.count .who { color: var(--gold-soft); }
+  .kpi .metric { font-family: var(--serif); font-size: 1.35rem; margin: 6px 0 5px; }
+  .kpi.count .metric { color: #f4f9fc; }
+  .kpi p { margin: 0; color: var(--ink-soft); font-size: .9rem; } .kpi.count p { color: #9fb9cc; }
+
+  /* horizon (second x2) */
+  .horizon-card { background: color-mix(in srgb, var(--gold) 8%, var(--panel)); border: 1px solid var(--gold);
+    border-radius: 14px; padding: 30px; box-shadow: var(--shadow); margin-top: 8px; display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center; }
+  .horizon-card .big { font-family: var(--serif); font-size: clamp(2.4rem,6vw,3.6rem); color: var(--gold); font-weight: 700; line-height: 1; }
+  .horizon-card p { margin: 0; } .horizon-card .q { font-family: var(--serif); font-style: italic; color: var(--ink); font-size: 1.1rem; margin-top: 10px; }
+
+  /* funnel compare */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
+  .fcol { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 26px; box-shadow: var(--shadow); }
+  .fcol.now { border-top: 4px solid var(--water); } .fcol.could { border-top: 4px solid var(--gold); }
+  .fcol h3 { display: flex; align-items: center; justify-content: space-between; }
+  .fstep { margin: 13px 0; }
+  .fstep .row { display: flex; justify-content: space-between; font-size: .88rem; margin-bottom: 5px; }
+  .fstep .row .lbl { color: var(--ink-soft); } .fstep .row .val { font-weight: 700; }
+  .fbar { height: 28px; border-radius: 7px; background: var(--panel-2); overflow: hidden; }
+  .fbar > span { display: block; height: 100%; border-radius: 7px; }
+  .now .fbar > span { background: linear-gradient(90deg, var(--water), var(--water-soft)); }
+  .could .fbar > span { background: linear-gradient(90deg, var(--gold), var(--gold-soft)); }
+  .fresult { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 1.02rem; }
+  .fresult .big { font-family: var(--serif); font-size: 2rem; font-weight: 600; }
+  .now .fresult .big { color: var(--water); } .could .fresult .big { color: var(--gold); }
+  .delta { margin-top: 24px; text-align: center; background: var(--night); color: #eaf2f8; border-radius: 14px; padding: 26px; }
+  .delta .k { font-family: var(--serif); font-size: clamp(1.4rem,3.2vw,2.1rem); color: #f4f9fc; }
+  .delta .k b { color: var(--gold-soft); } .delta .s { color: #9fb9cc; margin-top: 8px; }
+
+  /* monday */
+  .monday { background: var(--night); color: #eaf2f8; } .monday h2 { color: #f4f9fc; } .monday .lead { color: #aec4d6; }
+  .checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 28px; }
+  .check { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 18px 20px; }
+  .check .t { font-weight: 600; color: #f0f6fa; margin-bottom: 3px; } .check .d { font-size: .88rem; color: #9fb9cc; }
+  .check .owner-tag { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--gold-soft); }
+  .kicker { margin-top: 42px; font-family: var(--serif); font-style: italic; font-size: clamp(1.3rem,3vw,2rem);
+    text-align: center; color: #f4f9fc; text-wrap: balance; }
+  .note { margin-top: 38px; font-size: .82rem; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 18px; }
+  .note b { color: var(--ink-soft); }
+  .risk .note, .monday .note { color: #7f9ab0; border-color: rgba(255,255,255,.12); } .risk .note b, .monday .note b { color: #aec4d6; }
+
+  @media (max-width: 880px) {
+    section { padding: 60px 0; }
+    .hero .wrap { grid-template-columns: 1fr; min-height: auto; gap: 24px; }
+    .bucket-stage { height: 320px; order: -1; }
+    .cols-3, .factsplit, .scene, .disp, .compare { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; } .mini { grid-template-columns: 1fr 1fr; }
+    .horizon-card { grid-template-columns: 1fr; text-align: center; } .checklist { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { .rain, .spurt-l, .spurt-r, .trickle { animation: none; opacity: .55; } }
+</style>
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-copy">
+      <p class="eyebrow">Frunze Travel · GetVisa · разбор воронки</p>
+      <h1>Проблема не в потоке. Проблема в том, что вы <span class="hl">не видите, где он утекает</span>.</h1>
+      <p class="sub">Реклама льёт, бот отвечает, клиенты пишут. Но между «написал» и «оплатил» стоит ночь, очередь и уставший менеджер — и деньги уходят там, где никто не смотрит. Соберём их, ничего не добавляя в рекламу.</p>
+      <div class="brandline">
+        <span><b>Тема:</b> не больше лидов — меньше потерь</span>
+        <span class="dot"></span>
+        <span>Цель: <b>контроль</b> над воронкой</span>
+        <span class="dot"></span>
+        <span>Бонус: <b>×2</b> на том же бюджете</span>
+      </div>
+    </div>
+    <div class="bucket-stage">
+      <svg class="bucket-svg" viewBox="0 0 300 360" role="img" aria-label="Ведро с дырами: вода льётся сверху, утекает по бокам, тонкая струйка доходит до дна">
+        <g>
+          <rect class="drop rain r1" x="120" y="0" width="4" height="12" rx="2"/>
+          <rect class="drop rain r2" x="150" y="0" width="4" height="12" rx="2"/>
+          <rect class="drop rain r3" x="180" y="0" width="4" height="12" rx="2"/>
+          <rect class="drop rain r4" x="135" y="0" width="4" height="12" rx="2"/>
+          <rect class="drop rain r5" x="165" y="0" width="4" height="12" rx="2"/>
+        </g>
+        <path d="M70 90 L230 90 L212 300 L88 300 Z" fill="none" stroke="var(--water)" stroke-width="3" opacity="0.9"/>
+        <path d="M70 90 L230 90 L226 128 L74 128 Z" fill="var(--water)" opacity="0.14"/>
+        <ellipse cx="150" cy="90" rx="80" ry="12" fill="none" stroke="var(--water)" stroke-width="3" opacity="0.9"/>
+        <path d="M78 150 L222 150 L212 300 L88 300 Z" fill="var(--water)" opacity="0.12"/>
+        <circle cx="82" cy="185" r="4" fill="var(--leak)"/>
+        <circle cx="216" cy="215" r="4" fill="var(--leak)"/>
+        <circle cx="90" cy="250" r="4" fill="var(--leak)"/>
+        <g class="leakstream">
+          <circle class="spurt-l" cx="80" cy="185" r="3.2"/>
+          <circle class="spurt-l s2" cx="88" cy="250" r="3.2"/>
+          <circle class="spurt-r" cx="218" cy="215" r="3.2"/>
+          <circle class="spurt-r s2" cx="218" cy="215" r="3"/>
+        </g>
+        <circle class="drop trickle" cx="150" cy="304" r="3.5"/>
+        <ellipse cx="150" cy="338" rx="46" ry="9" fill="var(--gold)" opacity="0.85"/>
+        <ellipse cx="150" cy="335" rx="30" ry="6" fill="var(--gold-soft)" opacity="0.7"/>
+      </svg>
+      <div class="bucket-cap">поток есть → соберём то, что уходит</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HONESTY: CONCRETE vs HYPOTHESIS ================= -->
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Честно · ваши реальные цифры</p>
+    <h2>Мы уже измерили. Вот что показала ваша база.</h2>
+    <p class="lead">389 диалогов с боевого старта 01.07, снято 06.07. Слева — факты из вашей системы. Справа — то, что вы сейчас <b>физически не можете измерить</b>, и это само по себе первая дыра.</p>
+
+    <div class="factsplit">
+      <div class="factcol concrete">
+        <div class="hd">Бетон — измерено на вашей базе</div>
+        <ul>
+          <li>Медиана ответа менеджера — <b>3 часа</b></li>
+          <li><b>66 лидов/день</b> (медиана; пик 96), не «сто»</li>
+          <li><b>20%</b> лидов рождаются ночью (22:00–08:00)</li>
+          <li><b>157 лидов</b> застоялись без ответа дольше 2 суток</li>
+          <li><b>74%</b> диалогов бот ведёт сам, без человека</li>
+        </ul>
+      </div>
+      <div class="factcol hypo">
+        <div class="hd">Слепая зона — вы это не видите</div>
+        <ul>
+          <li>Конверсия в продажу: размечено <b>3 из 389</b> — вы её не считаете</li>
+          <li>Источник рекламы: захвачено <b>0%</b> — не знаете, что сработало</li>
+          <li>16% лидов «готовы платить» — <b>лежат необработанными</b></li>
+          <li>Сколько из 157 застойных ещё живы</li>
+          <li>Реальная выручка с лида — нет источника истины</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="disarm">
+      Раньше тут висели цифры рекламщика — «$3.8 за лид», «$100 за тур», «100 лидов». Мы заменили их <b>вашими</b>, снятыми с прода 06.07. И вот главное открытие: из 389 диалогов размечено всего <b>3 продажи</b> — не потому что не продаёте, а потому что <b>конверсию сейчас никто не считает</b>. «Вы не видите, где течёт» — это не фигура речи. Это буквально.
+    </div>
+  </div>
+</section>
+
+<!-- ================= THE ONE HOLE: NIGHT ================= -->
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Главная дыра · одна, ваша</p>
+    <h2>Ночь: лучший спрос — там, где нет света.</h2>
+    <p class="lead">Туры созревают ночью. Клиент дома, свободен, мечтает — и пишет. А в этот момент бот молчит или отдаёт диалог менеджеру, которого нет. Утром лид либо остыл, либо уже у конкурента.</p>
+
+    <div class="scene">
+      <div class="scene-card">
+        <div class="chatlog">
+          <div class="msg client">Здравствуйте! Хотим на море, вдвоём, в сентябре. Какие есть варианты?<span class="t">Клиент · 23:47</span></div>
+          <div class="msg silent">— тишина: менеджер спит, бот отдал хендофф —<span class="t">ночь</span></div>
+          <div class="msg client">Ну что там? Мы бы хотели определиться сегодня<span class="t">Клиент · 00:12</span></div>
+          <div class="msg late">Добрый день! Подскажите даты и бюджет 🙂<span class="t">Менеджер · СЛЕДУЮЩИЙ вечер</span></div>
+          <div class="msg client" style="opacity:.55">…прочитано. Ответа нет — купили в другом месте.<span class="t">—</span></div>
+        </div>
+      </div>
+      <div>
+        <h3>Это не гипотеза — это в ваших данных</h3>
+        <p style="color:var(--ink-soft)"><b>20% ваших лидов рождаются ночью</b> (78 из 389). А медиана ответа менеджера — <b>3 часа</b>. Пока человек спит или занят, тёплый ночной клиент остывает и уходит: самый горячий момент приходится на время, когда за экраном никого нет.</p>
+        <p style="color:var(--ink-soft)">Проколоть эту дыру = поставить того, кто <b>никогда не спит</b>, ловит клиента на пике и держит его до утра, когда придёт человек. Это ядро решения — к нему вернёмся.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ...AND 8 MORE ================= -->
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Принцип один · дыр несколько</p>
+    <h2>…и таких точек ещё восемь.</h2>
+    <p class="lead">Ночь — самая крупная. Но принцип везде один: клиент уже пришёл и почти готов — надо не потерять. Коротко, без цифр (их измерим):</p>
+
+    <div class="mini">
+      <div class="m"><div class="b">1</div><div class="h">Три касания</div><div class="d">Нет системы «догнать» — лид ждёт и остывает.</div></div>
+      <div class="m"><div class="b">2</div><div class="h">Консультация ≠ продажа</div><div class="d">Бот всё рассказал и отпустил — цену унесли к конкуренту.</div></div>
+      <div class="m"><div class="b">3</div><div class="h">157 застойных</div><div class="d">Оплаченный трафик лежит без касания >2 суток.</div></div>
+      <div class="m"><div class="b">4</div><div class="h">Билеты жрут часы</div><div class="d">2–3 часа тур-менеджера на нерешительного клиента.</div></div>
+      <div class="m"><div class="b">5</div><div class="h">Голос — в тишину</div><div class="d">Войс = знак интереса, а в ответ хендофф и пауза.</div></div>
+      <div class="m"><div class="b">6</div><div class="h">Нет слотов</div><div class="d">Никто не звонит вовремя — времени никто не назначал.</div></div>
+      <div class="m"><div class="b">7</div><div class="h">Бюджет размазан</div><div class="d">Поровну на неравные воронки вместо ставки на доходные.</div></div>
+      <div class="m"><div class="b">8</div><div class="h">Две панели</div><div class="d">Своя админка + Bitrix = двойная работа на каждой фиче.</div></div>
+    </div>
+    <p class="note">Один гвоздь по шляпку лучше девяти царапин. Дальше — как заткнуть главные, и почему это не сломается о человеческий фактор.</p>
+  </div>
+</section>
+
+<!-- ================= BUSINESS MODEL ================= -->
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Как делаются деньги</p>
+    <h2>Три воронки — у каждой свой характер.</h2>
+    <p class="lead">Теперь, когда видно, где течёт, — карта. Кормят по-разному: визы — тихо и чисто, туры — по-крупному, но ночью и голосом, билеты — понемногу, но каждый день.</p>
+
+    <div class="grid cols-3" style="margin-top:32px">
+      <div class="card funnel-card visa">
+        <h3>Визы <span class="pill good">чистые деньги</span></h3>
+        <p class="verdict">Квалификация лёгкая: дата, гражданство, тип визы — и всё понятно. Официальный прайс, хорошая маржа. Здесь бот уже работает.</p>
+        <div style="margin-top:12px">
+          <div class="metric-row"><span class="k">USA-виза</span><span class="v">самые чистые деньги</span></div>
+          <div class="metric-row"><span class="k">Путь</span><span class="v">лид → квал → оплата</span></div>
+          <div class="metric-row"><span class="k">Риск</span><span class="v">растёт конкуренция</span></div>
+        </div>
+      </div>
+
+      <div class="card funnel-card tours">
+        <h3>Туры <span class="pill warn">крупные деньги, ночью</span></h3>
+        <p class="verdict">Цена — ваше оружие: ставите ниже, чтобы забрать клиента и продавать ему дальше. Продаётся голосом, когда человек дома и мечтает.</p>
+        <div style="margin-top:12px">
+          <div class="metric-row"><span class="k">Где продаётся</span><span class="v">ночь, голос, человек</span></div>
+          <div class="metric-row"><span class="k">Квал</span><span class="v">деньги + даты + ЛПР</span></div>
+          <div class="metric-row"><span class="k">Заработок</span><span class="v">на возврате клиента</span></div>
+        </div>
+      </div>
+
+      <div class="card funnel-card tix">
+        <h3>Билеты <span class="pill water">стабильный день</span></h3>
+        <p class="verdict">Маленькая маржа, зато каждый день, стабильно ~10 продаж. Проблема не в билетах, а в том, что нерешительный клиент съедает 2–3 часа тур-менеджера.</p>
+        <div style="margin-top:12px">
+          <div class="metric-row"><span class="k">Деньги</span><span class="v">небольшие, но каждый день</span></div>
+          <div class="metric-row"><span class="k">Решение</span><span class="v">выделить 1 менеджера</span></div>
+          <div class="metric-row"><span class="k">Освобождает</span><span class="v">часы под туры</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="note"><b>Важно про билеты.</b> Их не «убивают» — они приносят стабильные деньги каждый день. Задача не закрыть направление, а снять его с плеч тур-менеджеров: посадить одного человека на билеты, двоих освободить под крупные туры.</p>
+  </div>
+</section>
+
+<!-- ================= RISK: BOTTOM OF THE BUCKET ================= -->
+<section class="risk">
+  <div class="wrap">
+    <p class="eyebrow" style="color:var(--gold-soft)">Честный риск · дыра в дне</p>
+    <h2>А менеджеры вообще будут это делать?</h2>
+    <p class="risk-q">«Если менеджер игнорит живого лида сегодня — почему он не проигнорит слот завтра в 9 утра?»</p>
+    <p class="lead">Справедливый вопрос — и без ответа на него вся система превращается в красивый конвейер, упёртый в ту же стену. Поэтому решение не про «замотивируем», а про структуру: деньги ловятся <b style="color:#f4f9fc">даже при слабом менеджере</b>, а слабый — становится виден.</p>
+
+    <div class="steps">
+      <div class="step"><div class="n">1</div><div class="t">Слот с окном</div><div class="d">Не взял звонок в течение ~получаса — слот не растворяется в чате, а поднимает флаг.</div></div>
+      <div class="step"><div class="n">2</div><div class="t">Эскалация</div><div class="d">Просроченный слот уходит другому менеджеру, а вам — алерт в телефон. Лид не умирает от одного человека.</div></div>
+      <div class="step"><div class="n">3</div><div class="t">Табло утечки</div><div class="d">Поимённо: сколько слотов дано, отработано, сгорело. Впервые вы видите, кто течёт — в реальном времени.</div></div>
+    </div>
+    <p class="note"><b>Суть.</b> Мы не продаём «мотивацию продавцов» — её софт не чинит. Мы продаём систему, где деньги не зависят от того, разгильдяй менеджер сегодня или нет, и где утечка видна поимённо.</p>
+  </div>
+</section>
+
+<!-- ================= SOLUTION: NIGHT DISPATCHER ================= -->
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Ядро решения</p>
+    <h2>Ночной диспетчер: ловит ночью, вооружает утром.</h2>
+    <p class="lead">Бот — не продавец (клиентов на ботах не закрыть, а цену-оружие не автоматизировать). Бот — тот, кто не спит: фильтрует ночью, назначает касание и к утру кладёт менеджеру <b>готовую точку дожима</b>. Рычаг здесь — не слот, а досье.</p>
+
+    <div class="disp">
+      <div class="flow">
+        <h3 style="margin-bottom:20px">Что происходит ночью</h3>
+        <ol>
+          <li><b>Клиент пишет в 23:47</b><span>Бот отвечает мгновенно — пока менеджер спит.</span></li>
+          <li><b>Квалификация по 4 критериям</b><span>Деньги · реальные даты · потребность · ЛПР (кто платит).</span></li>
+          <li><b>Бронь слота утреннего звонка</b><span>«Завтра в 13:00» — с дедлайном и эскалацией из прошлого слайда.</span></li>
+          <li class="star"><b>К 9:00 — досье менеджеру</b><span>Не просто «позвони», а: бюджет, состав семьи, куда мечтает, насколько горит. Менеджер открывает клиента и уже знает, за какую ниточку дёрнуть. Войс расшифрован в текст.</span></li>
+        </ol>
+      </div>
+      <div class="kpis">
+        <div class="kpi bot">
+          <div class="who">KPI бота</div>
+          <div class="metric">% слотов, где досье попало в цель</div>
+          <p>Не «сколько назначил», а сколько раз менеджер сказал: подготовка была точной. Бот-оружейник, не бот-курьер.</p>
+        </div>
+        <div class="kpi man">
+          <div class="who">KPI менеджера</div>
+          <div class="metric">% слотов, ставших деньгами</div>
+          <p>Человек приходит утром к готовому досье — и закрывает голосом. Разные работы, не конкуренция.</p>
+        </div>
+        <div class="kpi count">
+          <div class="who">Бонус, которого не было</div>
+          <div class="metric">Прозрачность стоимости лида</div>
+          <p>С первой ночи система считает стоимость лида и конверсию по каждой воронке — на оценках + подтверждённых сделках. Наконец ваши цифры, а не прогноз рекламщика.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SECOND X2: RETURN MACHINE ================= -->
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Горизонт 2 · второй ×2, дешевле первого</p>
+    <h2>Вы уже купили этих клиентов — ценой ниже нуля.</h2>
+    <p class="lead">Ваша модель — не разовая продажа, а захват клиента: даёте цену ниже, чтобы он остался вашим. Но где система, которая помнит, что он летал в Анталью прошлым июлем, и будит его в этом?</p>
+
+    <div class="horizon-card">
+      <div class="big">×2</div>
+      <div>
+        <p style="color:var(--ink-soft)">Первый ×2 — ночной диспетчер на входящем потоке (acquisition). Второй ×2 — <b>машина возврата</b>: та же база, разбуженная под сезон и горящий тур. Трафик за неё уже оплачен минусовой ценой — осталось забрать. Это следующий шаг, не сегодняшний, но он дешевле первого.</p>
+        <p class="q">«Если бы вам запретили купить хоть одного нового лида в этом году — что бы вы сделали с теми, кого уже купили в минус?»</p>
+      </div>
+    </div>
+    <p class="note"><b>Осторожно с рассылками.</b> Возврат делаем не авто-спамом с боевого номера (бан WhatsApp = весь бизнес разом), а как задачи менеджерам + аккуратные касания. Безопасность номера важнее скорости.</p>
+  </div>
+</section>
+
+<!-- ================= FUNNEL: TODAY vs ACHIEVABLE ================= -->
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Модель · пока на вилках</p>
+    <h2>Как это выглядит в воронке.</h2>
+    <p class="lead">Числа ниже — <b>иллюстрация механики</b>, не ваш замер <span class="measure">меряем с 1-й ночи</span>. Показываем не «точную цифру», а рычаг: где теряется и где можно удержать. Проценты заменим вашими, как только диспетчер посчитает.</p>
+
+    <div class="compare">
+      <div class="fcol now">
+        <h3>Сегодня <span class="pill water">как есть</span></h3>
+        <div class="fstep"><div class="row"><span class="lbl">Входящие за день</span><span class="val num">100%</span></div><div class="fbar"><span style="width:100%"></span></div></div>
+        <div class="fstep"><div class="row"><span class="lbl">Дошли до внятного диалога</span><span class="val num">~60%</span></div><div class="fbar"><span style="width:60%"></span></div></div>
+        <div class="fstep"><div class="row"><span class="lbl">Квалифицировались</span><span class="val num">~20%</span></div><div class="fbar"><span style="width:20%"></span></div></div>
+        <div class="fstep"><div class="row"><span class="lbl">Дошли до звонка/встречи</span><span class="val num">~8%</span></div><div class="fbar"><span style="width:8%"></span></div></div>
+        <div class="fstep"><div class="row"><span class="lbl">Продажа</span><span class="val num">~5%</span></div><div class="fbar"><span style="width:5%"></span></div></div>
+        <div class="fresult"><span class="big num">капли</span> <div class="flag" style="margin-top:4px">…и 157 застойных — отдельный резерв сверху</div></div>
+      </div>
+
+      <div class="fcol could">
+        <h3>Достижимо <span class="pill warn">потенциал</span></h3>
+        <div class="fstep"><div class="row"><span class="lbl">Бот отвечает 24/7, ночь поймана</span><span class="val num">~85%</span></div><div class="fbar"><span style="width:85%"></span></div></div>
+        <div class="fstep"><div class="row"><span class="lbl">Квал по 4 критериям</span><span class="val num">~30%</span></div><div class="fbar"><span style="width:30%"></span></div></div>
+        <div class="fstep"><div class="row"><span class="lbl">Бронь слота (с эскалацией)</span><span class="val num">~22%</span></div><div class="fbar"><span style="width:22%"></span></div></div>
+        <div class="fstep"><div class="row"><span class="lbl">Менеджер закрыл (с досье)</span><span class="val num">~10%</span></div><div class="fbar"><span style="width:10%"></span></div></div>
+        <div class="fresult"><span class="big num">поток</span> <div class="flag" style="margin-top:4px">+ разовый сбор 157 застойных сверху</div></div>
+      </div>
+    </div>
+
+    <div class="delta">
+      <div class="k">Удвоить конверсию — <b>не увеличивая рекламу ни на доллар</b></div>
+      <div class="s">Медиана ответа сегодня — 3 часа; ночью бот отвечает за секунды. Механика бьёт в ту же трубу с двух сторон: ловим ночь + вооружаем утро. Точную дельту в $ поставим, как только начнём размечать продажи (сейчас их считают 3 из 389).</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MONDAY ================= -->
+<section class="monday">
+  <div class="wrap">
+    <p class="eyebrow" style="color:var(--gold-soft)">Что делаем дальше</p>
+    <h2>Сначала свет и счётчик, потом ночная смена.</h2>
+    <p class="lead">Два уровня: что решаете вы (разговор, ноль кода) и что строим мы. И первым делом — измеряем, чтобы этот дек через 2 недели стоял на ваших цифрах.</p>
+
+    <div class="checklist">
+      <div class="check"><div class="owner-tag">Решаете вы</div><div class="t">Цена туров: вилка или точная?</div><div class="d">Бот даёт диапазон, финальную цену — человек. Это защищает вашу схему демпинга.</div></div>
+      <div class="check"><div class="owner-tag">Решаете вы</div><div class="t">Одна главная панель: Bitrix или своя?</div><div class="d">Чтобы снять двойной налог на каждую фичу.</div></div>
+      <div class="check"><div class="owner-tag">Решаете вы</div><div class="t">Билеты: выделяем менеджера?</div><div class="d">Один на билеты, двое — на крупные туры.</div></div>
+      <div class="check"><div class="owner-tag">Строим мы</div><div class="t">Потушить прод + включить счётчик</div><div class="d">OpenRouter + TourVisor, и с первой ночи меряем ваш реальный $/лид по воронкам.</div></div>
+      <div class="check"><div class="owner-tag">Строим мы</div><div class="t">Ночной диспетчер</div><div class="d">Квал 4 критерия → слот с эскалацией → досье в 9:00 + табло утечки. 80% инфраструктуры уже готово.</div></div>
+      <div class="check"><div class="owner-tag">Горизонт 2</div><div class="t">Машина возврата</div><div class="d">Разбудить уже оплаченную базу под сезон — безопасными касаниями.</div></div>
+    </div>
+
+    <p class="kicker">«Мне не нужно больше лидов.<br>Мне нужно перестать терять тех, за кого я уже заплатил — и видеть, где именно течёт.»</p>
+
+    <p class="note"><b>Источник цифр.</b> Ключевые числа (66 лидов/день, медиана ответа 3 часа, 20% ночных, 157 застойных, containment 74%) сняты с прода 06.07 по 389 диалогам с боевого старта 01.07. Проценты внутри воронки — иллюстрация механики: реальную конверсию пока измерить нельзя (размечено 3 продажи из 389 — это первое, что чиним). Слот-окно — «в течение ~получаса» (не таймер до секунды); голосовые ночью пока обрабатываем текстом (Whisper — отдельный шаг). Дашборд мотивирует, но продажи чинит скрипт + структура бонусов — это зона владельца.</p>
+  </div>
+</section>

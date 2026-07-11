@@ -1,0 +1,543 @@
+<title>Frunze Travel — Календарь бронирования звонков</title>
+<style>
+  :root{
+    --bg:#F4F6F5; --surface:#FFFFFF; --surface-2:#EDF1F0; --surface-3:#E4EBE9;
+    --ink:#13201F; --ink-soft:#4B5B58; --ink-faint:#7A8A87;
+    --line:#DBE3E1; --line-soft:#E8EEEC;
+    --brand:#0E5C57; --brand-ink:#0A403C; --brand-soft:#DBEAE8;
+    --accent:#DB7526; --accent-soft:#F9E7D5;
+    --good:#1C875A; --good-soft:#D8EFE3;
+    --warn:#B5820F; --warn-soft:#FAEECB;
+    --bad:#BB4630; --bad-soft:#F6DDD6;
+    --wa:#128C7E; --wa-bubble:#E7FDD8; --wa-panel:#0B1E1B;
+    --tg:#2B94D9; --tg-soft:#E4F1FB;
+    --radius:14px; --radius-s:9px;
+    --shadow:0 1px 2px rgba(16,40,38,.06),0 10px 30px -18px rgba(16,40,38,.35);
+    --shadow-lift:0 2px 6px rgba(16,40,38,.10),0 22px 48px -24px rgba(16,40,38,.45);
+    --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    --mono:"SFMono-Regular",ui-monospace,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0B1312; --surface:#111D1B; --surface-2:#172524; --surface-3:#1F302E;
+      --ink:#E7EEEC; --ink-soft:#9FB1AE; --ink-faint:#6F817E;
+      --line:#243230; --line-soft:#1C2A28;
+      --brand:#39B7AD; --brand-ink:#0C2E2B; --brand-soft:#12302D;
+      --accent:#EE9450; --accent-soft:#3A2413;
+      --good:#4BBE85; --good-soft:#123028;
+      --warn:#DBAE45; --warn-soft:#332813;
+      --bad:#E0765A; --bad-soft:#37201A;
+      --wa:#2AB89E; --wa-bubble:#123028; --wa-panel:#050D0B;
+      --tg:#54ADE6; --tg-soft:#122534;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 34px -20px rgba(0,0,0,.8);
+      --shadow-lift:0 2px 8px rgba(0,0,0,.5),0 26px 54px -26px rgba(0,0,0,.9);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#F4F6F5; --surface:#FFFFFF; --surface-2:#EDF1F0; --surface-3:#E4EBE9;
+    --ink:#13201F; --ink-soft:#4B5B58; --ink-faint:#7A8A87;
+    --line:#DBE3E1; --line-soft:#E8EEEC;
+    --brand:#0E5C57; --brand-ink:#0A403C; --brand-soft:#DBEAE8;
+    --accent:#DB7526; --accent-soft:#F9E7D5;
+    --good:#1C875A; --good-soft:#D8EFE3; --warn:#B5820F; --warn-soft:#FAEECB;
+    --bad:#BB4630; --bad-soft:#F6DDD6;
+    --wa:#128C7E; --wa-bubble:#E7FDD8; --wa-panel:#0B1E1B; --tg:#2B94D9; --tg-soft:#E4F1FB;
+    --shadow:0 1px 2px rgba(16,40,38,.06),0 10px 30px -18px rgba(16,40,38,.35);
+    --shadow-lift:0 2px 6px rgba(16,40,38,.10),0 22px 48px -24px rgba(16,40,38,.45);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0B1312; --surface:#111D1B; --surface-2:#172524; --surface-3:#1F302E;
+    --ink:#E7EEEC; --ink-soft:#9FB1AE; --ink-faint:#6F817E;
+    --line:#243230; --line-soft:#1C2A28;
+    --brand:#39B7AD; --brand-ink:#0C2E2B; --brand-soft:#12302D;
+    --accent:#EE9450; --accent-soft:#3A2413;
+    --good:#4BBE85; --good-soft:#123028; --warn:#DBAE45; --warn-soft:#332813;
+    --bad:#E0765A; --bad-soft:#37201A;
+    --wa:#2AB89E; --wa-bubble:#123028; --wa-panel:#050D0B; --tg:#54ADE6; --tg-soft:#122534;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 34px -20px rgba(0,0,0,.8);
+    --shadow-lift:0 2px 8px rgba(0,0,0,.5),0 26px 54px -26px rgba(0,0,0,.9);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+  body{margin:0}
+  .page{
+    background:
+      radial-gradient(120% 60% at 100% -10%,var(--brand-soft) 0%,transparent 45%),
+      var(--bg);
+    color:var(--ink); font-family:var(--sans);
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+    padding:0 20px 90px; font-size:16px;
+  }
+  .wrap{max-width:1060px;margin:0 auto}
+
+  /* ---------- header ---------- */
+  header.hero{padding:56px 0 30px}
+  .eyebrow{
+    font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--brand);display:inline-flex;gap:9px;align-items:center;margin:0 0 18px;
+  }
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--brand);border-radius:2px}
+  h1{
+    font-family:var(--serif);font-weight:600;letter-spacing:-.01em;
+    font-size:clamp(30px,5.4vw,50px);line-height:1.04;margin:0 0 16px;text-wrap:balance;
+  }
+  .lede{font-size:clamp(16px,2vw,19px);color:var(--ink-soft);max-width:60ch;margin:0 0 26px}
+  .lede b{color:var(--ink);font-weight:600}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding-top:6px;border-top:1px solid var(--line);margin-top:4px}
+  .legend .k{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft)}
+  .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 3px var(--halo)}
+  .dot.g{background:var(--good);--halo:var(--good-soft)}
+  .dot.w{background:var(--warn);--halo:var(--warn-soft)}
+  .dot.n{background:var(--bad);--halo:var(--bad-soft)}
+
+  /* ---------- sticky nav ---------- */
+  nav.jump{
+    position:sticky;top:0;z-index:20;margin:30px 0 8px;
+    background:color-mix(in srgb,var(--bg) 86%,transparent);
+    backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:100px;
+    padding:6px;display:flex;gap:4px;flex-wrap:wrap;box-shadow:var(--shadow);
+  }
+  nav.jump a{
+    flex:1 1 auto;text-align:center;text-decoration:none;color:var(--ink-soft);
+    font-size:13.5px;font-weight:600;padding:9px 12px;border-radius:100px;white-space:nowrap;
+    transition:background .15s,color .15s;
+  }
+  nav.jump a:hover{color:var(--ink);background:var(--surface-2)}
+  nav.jump a .n{color:var(--brand);font-variant-numeric:tabular-nums;margin-right:6px}
+  nav.jump a:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+  /* ---------- section scaffold ---------- */
+  section.act{padding:46px 0 8px;scroll-margin-top:70px}
+  .act-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:22px}
+  .act-num{
+    font-family:var(--serif);font-size:15px;font-weight:600;color:var(--brand);
+    border:1.5px solid var(--brand);border-radius:50%;width:38px;height:38px;flex:none;
+    display:grid;place-items:center;background:var(--brand-soft);
+  }
+  .act-head h2{font-size:clamp(21px,3vw,27px);margin:2px 0 4px;letter-spacing:-.01em;line-height:1.15}
+  .act-head p{margin:0;color:var(--ink-soft);font-size:15px;max-width:64ch}
+  .who{font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+
+  /* ---------- device: phone ---------- */
+  .stage{display:grid;gap:24px;align-items:start}
+  .stage.split{grid-template-columns:minmax(0,300px) minmax(0,1fr)}
+  @media (max-width:760px){.stage.split{grid-template-columns:1fr}}
+  .phone{
+    background:var(--wa-panel);border-radius:30px;padding:11px;box-shadow:var(--shadow-lift);
+    border:1px solid rgba(255,255,255,.06);max-width:300px;margin:0 auto;width:100%;
+  }
+  .phone .screen{background:var(--surface);border-radius:22px;overflow:hidden}
+  .wa-top{background:var(--wa);color:#fff;padding:13px 15px;display:flex;align-items:center;gap:11px}
+  .wa-top .av{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.22);display:grid;place-items:center;font-weight:700;font-size:14px}
+  .wa-top .nm{font-weight:600;font-size:14.5px;line-height:1.1}
+  .wa-top .st{font-size:11px;opacity:.85}
+  .wa-body{
+    background:
+      repeating-linear-gradient(135deg,transparent 0 22px,rgba(0,0,0,.012) 22px 23px),
+      var(--surface-2);
+    padding:15px 13px;display:flex;flex-direction:column;gap:9px;min-height:150px;
+  }
+  .bub{max-width:85%;padding:9px 12px;border-radius:14px;font-size:13.5px;line-height:1.42;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+  .bub.bot{background:var(--surface);border-top-left-radius:4px;align-self:flex-start;color:var(--ink)}
+  .bub.me{background:var(--wa-bubble);border-top-right-radius:4px;align-self:flex-end;color:var(--ink)}
+  .bub .t{font-size:10px;color:var(--ink-faint);text-align:right;margin-top:3px}
+  .bub .cta-link{color:var(--wa);font-weight:600;text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--wa) 40%,transparent)}
+
+  /* ---------- booking card (client web page) ---------- */
+  .browser{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-lift);overflow:hidden}
+  .url{display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--surface-2);border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ink-faint)}
+  .url .dots{display:flex;gap:6px}
+  .url .dots i{width:10px;height:10px;border-radius:50%;background:var(--line);display:block}
+  .url .bar{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:100px;padding:4px 12px;font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .url .lock{color:var(--good)}
+  .book{padding:22px}
+  .mgr{display:flex;align-items:center;gap:13px;margin-bottom:16px}
+  .mgr .ph{width:48px;height:48px;border-radius:50%;background:linear-gradient(150deg,var(--brand),var(--brand-ink));color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
+  .mgr .mn{font-weight:650;font-size:16px}
+  .mgr .mr{font-size:12.5px;color:var(--ink-soft)}
+  .ctx{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px}
+  .chip{font-size:12.5px;padding:4px 10px;border-radius:100px;background:var(--brand-soft);color:var(--brand-ink);font-weight:600;border:1px solid color-mix(in srgb,var(--brand) 18%,transparent)}
+  .chip.muted{background:var(--surface-2);color:var(--ink-soft);border-color:var(--line)}
+  .book h3{font-size:14px;margin:0 0 3px}
+  .book .day{font-size:12.5px;color:var(--ink-soft);margin:0 0 12px}
+  .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px}
+  .slot{
+    font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;
+    padding:11px 4px;border-radius:var(--radius-s);border:1.5px solid var(--line);background:var(--surface);
+    color:var(--ink);cursor:pointer;text-align:center;transition:border-color .14s,background .14s,transform .1s;
+  }
+  .slot:hover:not(.taken){border-color:var(--brand);background:var(--brand-soft)}
+  .slot:active:not(.taken){transform:scale(.97)}
+  .slot.taken{color:var(--ink-faint);background:var(--surface-2);border-color:var(--line-soft);cursor:not-allowed;text-decoration:line-through;text-decoration-thickness:1px}
+  .slot.sel{border-color:var(--accent);background:var(--accent);color:#fff;box-shadow:0 6px 16px -6px color-mix(in srgb,var(--accent) 70%,transparent)}
+  .slot:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  .confirm{margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .btn{
+    appearance:none;border:none;font-family:var(--sans);font-weight:650;font-size:14.5px;
+    padding:12px 20px;border-radius:var(--radius-s);cursor:pointer;background:var(--brand);color:#fff;
+    transition:filter .14s,transform .1s;box-shadow:0 8px 20px -10px color-mix(in srgb,var(--brand) 70%,transparent);
+  }
+  .btn:hover{filter:brightness(1.06)}
+  .btn:active{transform:translateY(1px)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .confirm .pick{font-size:13px;color:var(--ink-soft)}
+  .confirm .pick b{color:var(--ink)}
+
+  /* callout notes beside a device */
+  .notes{display:flex;flex-direction:column;gap:14px;align-self:center}
+  .note{position:relative;padding:2px 0 2px 20px;font-size:14px;color:var(--ink-soft)}
+  .note::before{content:"";position:absolute;left:0;top:7px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .note b{color:var(--ink);font-weight:650;display:block;font-size:14px;margin-bottom:1px}
+
+  /* ---------- manager admin calendar ---------- */
+  .admin{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-lift);overflow:hidden}
+  .admin-top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 18px;border-bottom:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
+  .admin-top .ttl{display:flex;align-items:center;gap:10px;font-weight:650;font-size:15px}
+  .admin-top .ttl .tag{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--brand);background:var(--brand-soft);padding:3px 9px;border-radius:100px}
+  .kpis{display:flex;gap:7px;flex-wrap:wrap}
+  .kpi{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:100px;background:var(--surface);border:1px solid var(--line)}
+  .kpi .num{font-variant-numeric:tabular-nums;font-weight:700}
+  .kpi.g{color:var(--good)} .kpi.g .num{color:var(--good)}
+  .kpi.w{color:var(--warn)} .kpi.w .num{color:var(--warn)}
+  .kpi.n{color:var(--bad)}  .kpi.n .num{color:var(--bad)}
+  .cal{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,300px)}
+  @media (max-width:720px){.cal{grid-template-columns:1fr}}
+  .daylist{border-right:1px solid var(--line)}
+  @media (max-width:720px){.daylist{border-right:none;border-bottom:1px solid var(--line)}}
+  .daylist .dh{padding:12px 18px 8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
+  .appt{display:grid;grid-template-columns:58px 1fr auto;gap:13px;align-items:center;padding:13px 18px;border-top:1px solid var(--line-soft);cursor:pointer;transition:background .13s;width:100%;text-align:left;background:none;border-left:none;border-right:none;border-bottom:none;font-family:inherit;color:inherit}
+  .appt:hover{background:var(--surface-2)}
+  .appt.active{background:var(--brand-soft)}
+  .appt:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+  .appt .tm{font-variant-numeric:tabular-nums;font-weight:700;font-size:16px;color:var(--ink);display:flex;align-items:center;gap:8px}
+  .appt .who-nm{font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:8px}
+  .appt .meta{font-size:12.5px;color:var(--ink-soft);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .stat{font-size:11px;font-weight:700;padding:4px 9px;border-radius:100px;white-space:nowrap}
+  .stat.ok{color:var(--good);background:var(--good-soft)}
+  .stat.pend{color:var(--warn);background:var(--warn-soft)}
+  .stat.risk{color:var(--bad);background:var(--bad-soft)}
+  .tierdot{width:9px;height:9px;border-radius:50%;flex:none}
+  .tierdot.g{background:var(--good)} .tierdot.w{background:var(--warn)}
+
+  .dossier{padding:16px 18px;background:var(--surface)}
+  .dossier .dt{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+  .dossier .dnm{font-family:var(--serif);font-size:19px;font-weight:600;margin-bottom:2px}
+  .dossier .dsub{font-size:12.5px;color:var(--ink-soft);margin-bottom:14px}
+  .crit{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .crit .c{display:flex;align-items:center;gap:9px;font-size:13px}
+  .crit .c .ico{width:18px;height:18px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;background:var(--good)}
+  .crit .c .lbl{color:var(--ink-soft)}
+  .crit .c .val{margin-left:auto;font-weight:650;color:var(--ink);font-variant-numeric:tabular-nums}
+  .dpr{font-size:12.5px;color:var(--ink-soft);background:var(--surface-2);border-radius:var(--radius-s);padding:10px 12px;border:1px solid var(--line-soft)}
+  .dpr b{color:var(--ink)}
+
+  /* ---------- night flow + telegram ---------- */
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:26px}
+  @media (max-width:720px){.flow{grid-template-columns:1fr 1fr}}
+  .step{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-s);padding:14px;box-shadow:var(--shadow);position:relative}
+  .step .si{font-family:var(--serif);font-size:13px;color:var(--brand);font-weight:700;margin-bottom:7px}
+  .step .stt{font-weight:650;font-size:14px;margin-bottom:3px;line-height:1.2}
+  .step .sd{font-size:12.5px;color:var(--ink-soft);line-height:1.4}
+  .step:not(:last-child)::after{content:"→";position:absolute;right:-11px;top:50%;transform:translateY(-50%);color:var(--ink-faint);font-weight:700;z-index:2}
+  @media (max-width:720px){.step:not(:last-child)::after{content:none}}
+
+  .tgwrap{max-width:420px}
+  .tg{background:var(--tg-soft);border:1px solid color-mix(in srgb,var(--tg) 25%,transparent);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-lift)}
+  .tg-top{background:var(--tg);color:#fff;padding:11px 15px;display:flex;align-items:center;gap:10px}
+  .tg-top .av{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:15px}
+  .tg-top .nm{font-weight:600;font-size:14px;line-height:1.1}
+  .tg-top .st{font-size:11px;opacity:.85}
+  .tg-msg{padding:13px 15px 16px}
+  .tg-card{background:var(--surface);border-radius:12px;padding:13px 14px;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+  .tg-card .h{font-weight:700;font-size:14.5px;margin-bottom:2px;display:flex;align-items:center;gap:7px}
+  .tg-card .sub{font-size:12px;color:var(--ink-soft);margin-bottom:11px}
+  .tg-li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line-soft);font-size:13px}
+  .tg-li:first-of-type{border-top:none}
+  .tg-li .tm{font-variant-numeric:tabular-nums;font-weight:700;color:var(--brand)}
+  .tg-li .nm2{font-weight:600}
+  .tg-li .mt{font-size:11.5px;color:var(--ink-soft)}
+  .tg-li .mg{font-size:11px;color:var(--ink-faint)}
+  .tg-time{font-size:10px;color:var(--ink-faint);text-align:right;margin-top:8px}
+
+  /* ---------- build / feasibility ---------- */
+  section.build{padding:52px 0 0;scroll-margin-top:70px}
+  .grid-b{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+  @media (max-width:640px){.grid-b{grid-template-columns:1fr}}
+  .bcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-s);padding:15px 16px;box-shadow:var(--shadow);display:flex;gap:13px;align-items:flex-start}
+  .bcard .tagb{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;border-radius:6px;flex:none;margin-top:1px}
+  .tagb.reuse{color:var(--good);background:var(--good-soft)}
+  .tagb.new{color:var(--accent);background:var(--accent-soft)}
+  .bcard .bt{font-weight:650;font-size:14px;margin-bottom:2px}
+  .bcard .bd{font-size:12.5px;color:var(--ink-soft);line-height:1.42}
+  .bcard code{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);padding:1px 5px;border-radius:5px;color:var(--brand)}
+  .verdict{margin-top:22px;background:var(--brand-soft);border:1px solid color-mix(in srgb,var(--brand) 22%,transparent);border-radius:var(--radius);padding:20px 22px}
+  .verdict h3{margin:0 0 8px;font-size:16px;color:var(--brand-ink)}
+  .verdict p{margin:0;font-size:14.5px;color:var(--ink);line-height:1.55}
+  .verdict p b{color:var(--brand-ink)}
+  .verdict .q4{margin-top:12px;font-size:13px;color:var(--ink-soft);padding-top:12px;border-top:1px solid color-mix(in srgb,var(--brand) 20%,transparent)}
+
+  footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:12.5px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+</style>
+
+<div class="page">
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">Frunze Travel · концепт для обсуждения</p>
+    <h1>Календарь бронирования звонков</h1>
+    <p class="lede">Бот работает <b>ночным диспетчером</b>: квалифицирует лид, пока менеджеры спят, и переводит горячего клиента не в «мы вам перезвоним», а в <b>конкретный забронированный слот</b> утреннего звонка. Утром у менеджера не хаос-инбокс, а стопка назначенных встреч с готовым досье.</p>
+    <div class="legend">
+      <span class="k"><span class="dot g"></span> Готов платить (green)</span>
+      <span class="k"><span class="dot w"></span> Тёплый, дожать (warm)</span>
+      <span class="k"><span class="dot n"></span> Шум / риск ноу-шоу</span>
+    </div>
+  </header>
+
+  <nav class="jump" aria-label="Разделы">
+    <a href="#client"><span class="n">01</span>Клиент</a>
+    <a href="#manager"><span class="n">02</span>Менеджер</a>
+    <a href="#night"><span class="n">03</span>Ночной бот</a>
+    <a href="#build"><span class="n">04</span>Что писать</a>
+  </nav>
+
+  <!-- ================= ACT 1 · CLIENT ================= -->
+  <section class="act" id="client">
+    <div class="act-head">
+      <div class="act-num">01</div>
+      <div>
+        <div class="who">👤 Клиент · публичная страница на frunzetravel.kg</div>
+        <h2>Клиент сам выбирает время звонка</h2>
+        <p>Ночью бот квалифицировал Айгерим и вместо «менеджер ответит утром» дал ссылку. Контекст диалога уже подставлен — форму заново не заполняет. Кто сам ткнул слот — тот придёт: бронь работает как фильтр мотивации.</p>
+      </div>
+    </div>
+
+    <div class="stage split">
+      <div class="phone" aria-label="Экран WhatsApp клиента">
+        <div class="screen">
+          <div class="wa-top">
+            <div class="av">FT</div>
+            <div><div class="nm">Frunze Travel</div><div class="st">бот · онлайн</div></div>
+          </div>
+          <div class="wa-body">
+            <div class="bub me">Анталья, вылет 10–17 августа, на двоих. Бюджет до 1500$<div class="t">01:47</div></div>
+            <div class="bub bot">Айгерим, подобрала варианты — по цене лучше отработает живой менеджер (даём индивидуальную цену, ниже сайта). Адеми свободна завтра утром 👇<div class="t">01:47</div></div>
+            <div class="bub bot">Выберите удобное время звонка:<br><a class="cta-link" href="#client">frunzetravel.kg/call/aigerim ↗</a><div class="t">01:47</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="browser" aria-label="Страница бронирования">
+        <div class="url">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="bar"><span class="lock">🔒</span> frunzetravel.kg/call/aigerim</span>
+        </div>
+        <div class="book">
+          <div class="mgr">
+            <div class="ph">А</div>
+            <div><div class="mn">Адеми</div><div class="mr">Менеджер по турам · отвечает на звонке ~10 мин</div></div>
+          </div>
+          <div class="ctx">
+            <span class="chip">🏖 Анталья</span>
+            <span class="chip">💵 до 1500 $</span>
+            <span class="chip">📅 10–17 авг</span>
+            <span class="chip muted">2 взрослых</span>
+          </div>
+          <h3>Свободное время</h3>
+          <p class="day">Завтра, четверг 10 июля · время бишкекское</p>
+          <div class="slots" id="slots" role="group" aria-label="Слоты">
+            <button class="slot taken" disabled>09:00</button>
+            <button class="slot">09:20</button>
+            <button class="slot taken" disabled>09:40</button>
+            <button class="slot sel" aria-pressed="true">10:00</button>
+            <button class="slot">10:20</button>
+            <button class="slot">10:40</button>
+            <button class="slot taken" disabled>11:00</button>
+            <button class="slot">11:20</button>
+            <button class="slot">11:40</button>
+          </div>
+          <div class="confirm">
+            <button class="btn" type="button">Забронировать звонок</button>
+            <span class="pick">Выбрано: <b id="pick">10:00, завтра</b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ACT 2 · MANAGER ================= -->
+  <section class="act" id="manager">
+    <div class="act-head">
+      <div class="act-num">02</div>
+      <div>
+        <div class="who">🧑‍💼 Менеджер · новый экран /calendar в админке</div>
+        <h2>Утро менеджера — стопка звонков, а не 100 «здравствуйте»</h2>
+        <p>Клик по звонку раскрывает досье: 4 критерия квалификации + кто платит (ЛПР) + история диалога. Менеджер контекст не восстанавливает — он его читает и звонит.</p>
+      </div>
+    </div>
+
+    <div class="admin" aria-label="Экран календаря менеджера">
+      <div class="admin-top">
+        <div class="ttl"><span class="tag">/calendar</span> Сегодня · Адеми · чт 10 июля</div>
+        <div class="kpis">
+          <span class="kpi g"><span class="num">3</span> подтвердили</span>
+          <span class="kpi w"><span class="num">1</span> не ответил</span>
+          <span class="kpi n"><span class="num">1</span> риск ноу-шоу</span>
+        </div>
+      </div>
+      <div class="cal">
+        <div class="daylist">
+          <div class="dh">Утренние звонки · 5</div>
+
+          <button class="appt active" data-nm="Айгерим" data-sub="Анталья · тёплый лид, зашла из рекламы" data-b="1500 $" data-dt="10–17 авг" data-px="2 взр." data-lpr="Она сама (муж в копии оплаты)" data-note="Сравнивала с 2 агентствами, но по нашей цене готова закрыть. Просила «всё включено», 5★.">
+            <span class="tm"><span class="tierdot g"></span>10:00</span>
+            <span><span class="who-nm">Айгерим</span><span class="meta">Анталья · 1500 $ · 10–17 авг · 2 взр.</span></span>
+            <span class="stat ok">✓ подтвердила</span>
+          </button>
+
+          <button class="appt" data-nm="Данияр" data-sub="Дубай · бюджет плавает" data-b="не назвал" data-dt="конец авг" data-px="семья 4" data-lpr="Он (решает с женой)" data-note="Ждёт зарплату 15-го. Тёплый, но по деньгам не зафиксирован — на звонке дожать бюджет.">
+            <span class="tm"><span class="tierdot w"></span>10:20</span>
+            <span><span class="who-nm">Данияр</span><span class="meta">Дубай · бюджет ? · семья 4</span></span>
+            <span class="stat pend">● не ответил на пинг</span>
+          </button>
+
+          <button class="appt" data-nm="Салтанат" data-sub="Виза США · документы готовы" data-b="пакет виза" data-dt="подача в июле" data-px="1 чел." data-lpr="Она сама" data-note="Загранпаспорт есть, спрашивала сроки записи. Горячая — хочет подать до отпуска.">
+            <span class="tm"><span class="tierdot g"></span>10:40</span>
+            <span><span class="who-nm">Салтанат</span><span class="meta">Виза США · документы готовы · 1 чел.</span></span>
+            <span class="stat ok">✓ подтвердила</span>
+          </button>
+
+          <button class="appt" data-nm="Нурлан" data-sub="Шарм-эль-Шейх · молодожёны" data-b="2000 $" data-dt="сентябрь" data-px="2 взр." data-lpr="Он сам" data-note="Медовый месяц, хочет пятёрку у моря. По бюджету и датам зафиксирован — тёплый, готов.">
+            <span class="tm"><span class="tierdot g"></span>11:20</span>
+            <span><span class="who-nm">Нурлан</span><span class="meta">Шарм · 2000 $ · сентябрь · 2 взр.</span></span>
+            <span class="stat ok">✓ подтвердил</span>
+          </button>
+
+          <button class="appt" data-nm="Азамат" data-sub="Турция · переносил дважды" data-b="1200 $" data-dt="не решил" data-px="3 чел." data-lpr="неясно (спрашивает за друга?)" data-note="Дважды переносил слот, на пинги отвечает редко. Держать, но не рассчитывать — типичный кандидат в ноу-шоу.">
+            <span class="tm"><span class="tierdot w"></span>11:40</span>
+            <span><span class="who-nm">Азамат</span><span class="meta">Турция · 1200 $ · переносил 2×</span></span>
+            <span class="stat risk">⚠ риск</span>
+          </button>
+        </div>
+
+        <div class="dossier" id="dossier">
+          <div class="dt">Досье к звонку</div>
+          <div class="dnm" id="d-nm">Айгерим</div>
+          <div class="dsub" id="d-sub">Анталья · тёплый лид, зашла из рекламы</div>
+          <div class="crit" id="d-crit">
+            <div class="c"><span class="ico">✓</span><span class="lbl">Бюджет</span><span class="val" id="d-b">1500 $</span></div>
+            <div class="c"><span class="ico">✓</span><span class="lbl">Даты</span><span class="val" id="d-dt">10–17 авг</span></div>
+            <div class="c"><span class="ico">✓</span><span class="lbl">Туристы</span><span class="val" id="d-px">2 взр.</span></div>
+            <div class="c"><span class="ico">✓</span><span class="lbl">Кто платит (ЛПР)</span><span class="val" id="d-lpr">Она сама</span></div>
+          </div>
+          <div class="dpr"><b>Заметка бота:</b> <span id="d-note">Сравнивала с 2 агентствами, но по нашей цене готова закрыть. Просила «всё включено», 5★.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ACT 3 · NIGHT BOT ================= -->
+  <section class="act" id="night">
+    <div class="act-head">
+      <div class="act-num">03</div>
+      <div>
+        <div class="who">🤖 Ночной бот · джоба на scheduler.py</div>
+        <h2>Что бот делает, пока все спят</h2>
+        <p>Мотор планировщика уже крутится в проде (тик 5 мин). Календарь — это ещё одна джоба поверх него плюс утренний пуш в общий чат менеджеров.</p>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="step"><div class="si">01</div><div class="stt">Квалифицирует</div><div class="sd">Ведёт диалог, readiness.py считает тир: green / warm / noise.</div></div>
+      <div class="step"><div class="si">02</div><div class="stt">Предлагает слот</div><div class="sd">Дозрел до green/warm + 4 критерия → даёт ссылку на бронь.</div></div>
+      <div class="step"><div class="si">03</div><div class="stt">Балансирует</div><div class="sd">Слот падает наименее загруженному: Адеми / Сезим / Медина / Элиза.</div></div>
+      <div class="step"><div class="si">04</div><div class="stt">Пуш в 9:00</div><div class="sd">Собирает горячий лист дня и шлёт менеджерам в Telegram.</div></div>
+    </div>
+
+    <div class="tgwrap">
+      <div class="tg" aria-label="Утренний пуш в Telegram">
+        <div class="tg-top">
+          <div class="av">✈️</div>
+          <div><div class="nm">Frunze · Менеджеры</div><div class="st">бот-диспетчер</div></div>
+        </div>
+        <div class="tg-msg">
+          <div class="tg-card">
+            <div class="h">🔥 Горячий лист на сегодня</div>
+            <div class="sub">5 звонков забронировано за ночь · чт 10 июля</div>
+            <div class="tg-li"><span class="tm">10:00</span><span><span class="nm2">Айгерим</span> · <span class="mt">Анталья, 1500$</span></span><span class="mg">→ Адеми</span></div>
+            <div class="tg-li"><span class="tm">10:20</span><span><span class="nm2">Данияр</span> · <span class="mt">Дубай, семья 4</span></span><span class="mg">→ Адеми</span></div>
+            <div class="tg-li"><span class="tm">10:40</span><span><span class="nm2">Салтанат</span> · <span class="mt">Виза США</span></span><span class="mg">→ Сезим</span></div>
+            <div class="tg-li"><span class="tm">11:20</span><span><span class="nm2">Нурлан</span> · <span class="mt">Шарм, 2000$</span></span><span class="mg">→ Медина</span></div>
+            <div class="tg-li"><span class="tm">11:40</span><span><span class="nm2">Азамат</span> · <span class="mt">Турция ⚠ риск</span></span><span class="mg">→ Элиза</span></div>
+            <div class="tg-time">09:00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ACT 4 · BUILD ================= -->
+  <section class="build" id="build">
+    <div class="act-head">
+      <div class="act-num">04</div>
+      <div>
+        <div class="who">⚙️ Реализуемость · честный разбор</div>
+        <h2>Что уже лежит в проде, а что реально писать</h2>
+        <p>~60% фундамента готово. Новое — по сути таблица слотов и одна публичная страница.</p>
+      </div>
+    </div>
+
+    <div class="grid-b">
+      <div class="bcard"><span class="tagb reuse">реюз</span><div><div class="bt">Мотор планировщика</div><div class="bd"><code>scheduler.py</code> — asyncio-реестр джоб, тик 5 мин. Утренний пуш = +1 джоба.</div></div></div>
+      <div class="bcard"><span class="tagb reuse">реюз</span><div><div class="bt">Кому предлагать слот</div><div class="bd"><code>readiness.py</code> уже считает тиры green/warm/noise без LLM.</div></div></div>
+      <div class="bcard"><span class="tagb reuse">реюз</span><div><div class="bt">Экран в админке</div><div class="bd">/calendar по образцу существующего <code>/buyers</code> + claim-логики.</div></div></div>
+      <div class="bcard"><span class="tagb reuse">реюз</span><div><div class="bt">Досье по клику</div><div class="bd">Данные квалификации уже копятся в <code>state.qualification</code>.</div></div></div>
+      <div class="bcard"><span class="tagb new">новое</span><div><div class="bt">Таблица слотов + часы менеджеров</div><div class="bd">Модель <code>Appointment</code>, доступность, защита от double-booking. Ядро фичи.</div></div></div>
+      <div class="bcard"><span class="tagb new">новое</span><div><div class="bt">Публичная страница брони</div><div class="bd">Единственный кусок вне админки. Нужна защита от спама (не за логином).</div></div></div>
+    </div>
+
+    <div class="verdict">
+      <h3>Вывод</h3>
+      <p>Календарь на своём сайте — это <b>третий ответ на вопрос №4</b>, который висит на Грише: не Google Calendar и не «только Telegram-пуши», а <b>своя страница бронирования</b>. Клиент бронирует сам, глазами → выше show-up и ноль внешних зависимостей.</p>
+      <p class="q4">Гейты перед кодом: (1) решение Алана А/Б по сигналу ЛПР для ядра C; (2) ответ Гриши по формату календаря. Скелет — 1–2 дня, без переписывания архитектуры.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>Frunze Travel · внутренний концепт · показ Грише</span>
+    <span>Макет · данные-заглушки</span>
+  </footer>
+
+</div>
+</div>
+
+<script>
+  (function(){
+    // client booking: slot selection
+    var slots = document.getElementById('slots');
+    var pick = document.getElementById('pick');
+    if(slots){
+      slots.addEventListener('click', function(e){
+        var b = e.target.closest('.slot');
+        if(!b || b.classList.contains('taken')) return;
+        slots.querySelectorAll('.slot').forEach(function(s){s.classList.remove('sel');s.setAttribute('aria-pressed','false');});
+        b.classList.add('sel'); b.setAttribute('aria-pressed','true');
+        if(pick) pick.textContent = b.textContent.trim() + ', завтра';
+      });
+    }
+    // manager: click appt -> fill dossier
+    var map = {nm:'d-nm',sub:'d-sub',b:'d-b',dt:'d-dt',px:'d-px',lpr:'d-lpr',note:'d-note'};
+    document.querySelectorAll('.appt').forEach(function(row){
+      row.addEventListener('click', function(){
+        document.querySelectorAll('.appt').forEach(function(r){r.classList.remove('active');});
+        row.classList.add('active');
+        Object.keys(map).forEach(function(k){
+          var el = document.getElementById(map[k]);
+          if(el && row.dataset[k]!=null) el.textContent = row.dataset[k];
+        });
+      });
+    });
+  })();
+</script>
