@@ -12,3 +12,6 @@ _bmad/
 _bmad-output/
 design-artifacts/
 runs/
+
+# build artifacts (генерятся scripts/make_*_pptx.py)
+*.pptx
