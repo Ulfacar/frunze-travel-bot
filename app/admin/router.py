@@ -371,6 +371,17 @@ async def buyers(request: Request, manager: dict = Depends(require_admin)):
                                       headers={"Cache-Control": "no-store"})
 
 
+@router.get("/morning", response_class=HTMLResponse)
+async def morning(request: Request, manager: dict = Depends(require_admin)):
+    """Утренний «горячий лист» (Фаза 0 календаря): green/warm лиды, ждущие звонка. Скоуп по ботам."""
+    from app.core.morning_brief import build_brief
+    convs = _filter_conversations(await get_conversation_store().all_conversations_light(), manager)
+    data = build_brief(convs, _now())
+    return templates.TemplateResponse(request, "morning.html",
+                                      {"b": data, "manager": manager},
+                                      headers={"Cache-Control": "no-store"})
+
+
 @router.get("/buyers/feed", response_class=HTMLResponse)
 async def buyers_feed(request: Request, manager: dict = Depends(require_admin)):
     """HTMX-partial ленты 🟢 (поллинг every 30s): сервер владеет сортировкой и цветом ожидания."""

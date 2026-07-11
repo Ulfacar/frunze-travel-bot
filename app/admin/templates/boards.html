@@ -280,6 +280,16 @@
   </main>
 
   <script>
+    // Дип-линк: /admin?open=<user_id> открывает диалог в панели #chat (напр. из «Горячего листа»).
+    (function () {
+      var uid = new URLSearchParams(location.search).get('open');
+      if (!uid) return;
+      window.addEventListener('DOMContentLoaded', function () {
+        if (window.htmx) htmx.ajax('GET', '/admin/conversation/' + encodeURIComponent(uid),
+                                   { target: '#chat', swap: 'innerHTML' });
+      });
+    })();
+
     // Подсветка активного таба + сброс поля поиска при переключении доски.
     function setTab(el) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));

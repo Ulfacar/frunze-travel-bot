@@ -161,6 +161,17 @@ class Settings(BaseSettings):
     followup_quiet_from: int = 22        # «тихие часы» (Бишкек, UTC+6): не слать с 22:00…
     followup_quiet_to: int = 9           # …до 09:00
 
+    # Утренний «горячий лист» (Фаза 0 календаря звонков): раз в сутки утром по Бишкеку
+    # cron-джоба собирает green/warm лидов и пушит менеджерам. ВЫКЛ по умолчанию. Экран
+    # /admin/morning доступен всегда; Telegram-пуш — только если задан managers_telegram_chat_id
+    # (+ telegram_bot_token). chat_id группы менеджеров можно завести позже без правки кода.
+    morning_brief_enabled: bool = False
+    morning_brief_hour: int = 9              # час Бишкека для отправки, окно [hour, hour+3); держать 0–20
+    managers_telegram_chat_id: str = ""      # chat_id группы менеджеров (пусто → без Telegram-пуша)
+    # Токен бота для пуша менеджерам. Пусто → фолбэк на telegram_bot_token (легаси демо-бот). Прод:
+    # завести ВЫДЕЛЕННОГО бота менеджеров, чтобы пуш не зависел от тестовой песочницы.
+    managers_telegram_bot_token: str = ""
+
     # Секрет подписи cookie-сессии (Starlette SessionMiddleware). ПРОД: SESSION_SECRET!
     session_secret: str = "change-me-frunze-session-secret"
     # Быстрый вход на странице логина (кнопки «войти как …» без пароля) — ТОЛЬКО для демо.

@@ -50,12 +50,14 @@ async def lifespan(app: FastAPI):
         log.warning("FAQ defaults seed failed", exc_info=True)
     # Фоновые джобы: watchdog-алерты + автодожим. Автодожим регистрируем всегда —
     # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
-    from app.core import awaiting, followup, outcome_infer, rescore, scheduler, watchdog
+    from app.core import (awaiting, followup, morning_brief, outcome_infer, rescore,
+                          scheduler, watchdog)
     scheduler.register("watchdog", watchdog.run)
     scheduler.register("awaiting", awaiting.run)
     scheduler.register("followup", followup.run)
     scheduler.register("rescore", rescore.run)          # ghost-ре-скоринг тира готовности
     scheduler.register("outcome_infer", outcome_infer.run)  # LLM-исход (gated OFF)
+    scheduler.register("morning_brief", morning_brief.run)  # утренний горячий лист (gated OFF)
     scheduler.start()
     try:
         yield
