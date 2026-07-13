@@ -60,7 +60,7 @@ async def _send_followups(now: datetime, cfg) -> int:
     sent = 0
     for c in targets:
         post_consult = STAGE_TO_COLUMN.get(getattr(c, "stage", ""), "") == "office"
-        text = followup_ping_for(c.funnel, post_consult=post_consult)
+        text = followup_ping_for(c.funnel, post_consult=post_consult, count=followup_pings(c))
         try:
             provider = await outbound.send_to_client(
                 c.channel, c.bot_id, c.chat_id or c.user_id, text)

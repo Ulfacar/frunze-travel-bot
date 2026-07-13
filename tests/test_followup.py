@@ -3,6 +3,7 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 
 from app.core import awaiting, followup, scheduler, watchdog
+from app.core.branding import FOLLOWUP_PINGS, FOLLOWUP_PINGS_SECOND, followup_ping_for
 from app.integrations.panel import store as ps
 from app.integrations.panel.store import ConversationView
 
@@ -56,6 +57,19 @@ def test_quiet_hours_wrap_midnight():
     assert followup.is_quiet_hour(23, cfg) is True
     assert followup.is_quiet_hour(3, cfg) is True
     assert followup.is_quiet_hour(12, cfg) is False
+
+
+def test_followup_ping_for_uses_first_text_by_default():
+    assert followup_ping_for("tours") == FOLLOWUP_PINGS["tours"]
+
+
+def test_followup_ping_for_uses_second_text_after_first_ping():
+    for funnel in ("tours", "visa", "tickets"):
+        assert followup_ping_for(funnel, count=1) == FOLLOWUP_PINGS_SECOND[funnel]
+
+
+def test_followup_ping_count_overrides_post_consult():
+    assert followup_ping_for("tours", post_consult=True, count=1) == FOLLOWUP_PINGS_SECOND["tours"]
 
 
 # ---------------- автодожим: отправка + идемпотентность ----------------
@@ -120,6 +134,43 @@ def test_followup_dojimaet_office_lead_and_increments_count(monkeypatch):
     assert "консультаци" in sent[0][1].lower()        # текст помнит о прошедшей консультации
     conv2 = asyncio.run(store.get("getvisa:77"))
     assert conv2.followup_count == 1
+
+
+def test_send_followups_uses_second_text_for_second_ping(monkeypatch):
+    ps._memory_store._conv.clear()
+    store = ps.get_conversation_store()
+    asyncio.run(store.add_message("frunze:66", "bot", "подбор", channel="whatsapp",
+                                  bot_id="frunze", chat_id="66@c.us"))
+    asyncio.run(store.update_meta("frunze:66", funnel="tours", stage="qualification",
+                                  followup_sent=True, followup_count=1))
+    conv = asyncio.run(store.get("frunze:66"))
+    now = datetime.now(timezone.utc)
+    conv.last_message_at = now - timedelta(hours=90)
+
+    sent = []
+
+    async def fake_send(channel, bot_id, chat_id, text):
+        sent.append((chat_id, text))
+        return "pmid"
+
+    monkeypatch.setattr(followup.outbound, "send_to_client", fake_send)
+
+    count = asyncio.run(followup._send_followups(now, _Cfg()))
+
+    assert count == 1
+    assert sent == [("66@c.us", FOLLOWUP_PINGS_SECOND["tours"])]
+
+
+def test_question_fatigue_instruction_is_in_common_and_all_funnels():
+    from app.agent.prompts.common import LANGUAGE_AND_ESCALATION
+    from app.agent.prompts.tickets import SYSTEM as TICKETS_SYSTEM
+    from app.agent.prompts.tours import SYSTEM as TOURS_SYSTEM
+    from app.agent.prompts.visa import SYSTEM as VISA_SYSTEM
+
+    assert "УСТАЛОСТЬ ОТ ВОПРОСОВ" in LANGUAGE_AND_ESCALATION
+    assert "УСТАЛОСТЬ ОТ ВОПРОСОВ" in TOURS_SYSTEM
+    assert "УСТАЛОСТЬ ОТ ВОПРОСОВ" in VISA_SYSTEM
+    assert "УСТАЛОСТЬ ОТ ВОПРОСОВ" in TICKETS_SYSTEM
 
 
 def test_followup_run_manual_sends_regardless_of_auto_flag(monkeypatch):

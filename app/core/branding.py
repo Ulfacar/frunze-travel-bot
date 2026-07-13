@@ -199,8 +199,21 @@ FOLLOWUP_PINGS_POST_CONSULT = {
 _FOLLOWUP_POST_CONSULT_DEFAULT = ("Здравствуйте! 😊 Это Frunze Travel. Остались вопросы после "
                                   "консультации? Будем рады довести дело до конца 🙏")
 
+FOLLOWUP_PINGS_SECOND = {
+    "visa": ("Понимаю, виза это всегда про «а вдруг откажут». У нас при отказе вторую попытку делаем бесплатно, "
+             "а анкету готовим так, чтобы повысить шансы. Давайте разберём ваш случай 🙏"),
+    "tours": ("По цене живой менеджер отработает лучше, подберёт под ваш бюджет выгоднее, чем в поиске. "
+              "Покажу пару вариантов, ни к чему не обязывает 🙏"),
+    "tickets": ("Цены на билеты быстро меняются, чтобы не упустить удобный рейс, менеджер зафиксирует лучшую цену "
+                "под ваши даты. Подскажете маршрут? ✈️"),
+}
+_FOLLOWUP_SECOND_DEFAULT = ("Если остались сомнения, давайте обсудим, менеджер поможет подобрать оптимально "
+                            "под вашу ситуацию 🙏")
 
-def followup_ping_for(funnel: str | None, *, post_consult: bool = False) -> str:
+
+def followup_ping_for(funnel: str | None, *, post_consult: bool = False, count: int = 0) -> str:
+    if count >= 1:
+        return FOLLOWUP_PINGS_SECOND.get(funnel or "", _FOLLOWUP_SECOND_DEFAULT)
     if post_consult:
         return FOLLOWUP_PINGS_POST_CONSULT.get(funnel or "", _FOLLOWUP_POST_CONSULT_DEFAULT)
     return FOLLOWUP_PINGS.get(funnel or "", _FOLLOWUP_DEFAULT)
