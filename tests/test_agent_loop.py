@@ -166,6 +166,43 @@ def test_tours_turn_uses_bot_specific_manager_name(monkeypatch):
     assert "Я Адеми, ваш менеджер Frunze Travel" not in system
 
 
+def test_dozhim_flag_off_keeps_system_unchanged(monkeypatch):
+    state = DialogState(user_id="u-dozhim-off", funnel="tours")
+    fake = _patch_client(monkeypatch, _text("Ок"))
+    monkeypatch.setattr(runner.flags, "get_flag", AsyncMock(return_value=False))
+
+    asyncio.run(runner.run_tours_turn(state, "дороговато"))
+
+    system = fake.messages.create.await_args.kwargs["system"]
+    assert system == runner.TOURS_SYSTEM
+    assert "ЦЕНОВАЯ ВИЛКА" not in system
+
+
+def test_dozhim_flag_on_appends_prompt_block(monkeypatch):
+    state = DialogState(user_id="u-dozhim-on", funnel="tours")
+    fake = _patch_client(monkeypatch, _text("Ок"))
+    monkeypatch.setattr(runner.flags, "get_flag", AsyncMock(return_value=True))
+
+    asyncio.run(runner.run_tours_turn(state, "дороговато"))
+
+    system = fake.messages.create.await_args.kwargs["system"]
+    assert "ЦЕНОВАЯ ВИЛКА" in system
+    assert system == runner.TOURS_SYSTEM + "\n\n" + runner.DOZHIM_AND_PRICE_FORK
+
+
+def test_dozhim_on_preserves_manager_persona(monkeypatch):
+    state = DialogState(user_id="u-sezim-dozhim", funnel="tours", manager_name="Сезим")
+    fake = _patch_client(monkeypatch, _text("Ок"))
+    monkeypatch.setattr(runner.flags, "get_flag", AsyncMock(return_value=True))
+
+    asyncio.run(runner.run_tours_turn(state, "дороговато"))
+
+    system = fake.messages.create.await_args.kwargs["system"]
+    assert "Я Сезим, ваш менеджер Frunze Travel" in system
+    assert "ЦЕНОВАЯ ВИЛКА" in system
+    assert system == runner.tours_system_for_manager("Сезим") + "\n\n" + runner.DOZHIM_AND_PRICE_FORK
+
+
 def test_max_iterations_guard(monkeypatch):
     """Если Claude бесконечно зовёт инструменты — выходим по лимиту с безопасным ответом."""
     state = DialogState(user_id="u2", funnel="tours")

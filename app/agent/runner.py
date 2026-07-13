@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 import httpx
 
 from app.agent.llm import client
+from app.agent.prompts.common import DOZHIM_AND_PRICE_FORK
 from app.agent.prompts.tickets import SYSTEM as TICKETS_SYSTEM
 from app.agent.prompts.tours import SYSTEM as TOURS_SYSTEM, system_for_manager as tours_system_for_manager
 from app.agent.prompts.visa import SYSTEM as VISA_SYSTEM
@@ -22,7 +23,7 @@ from app.agent.routing import choose_model, should_escalate_tours_input
 from app.agent.tools import tools_for
 from app.agent.validator import validate_reply
 from app.config import settings
-from app.core import budget, observ
+from app.core import budget, flags, observ
 from app.core.branding import GETVISA_OFFICE_ADDRESS, PRICE_DISCLAIMER
 from app.core.state import DialogState
 from app.core.visa_pricing import self_visa_reply, visa_price_reply
@@ -124,6 +125,9 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
     state.history.append({"role": "user", "content": user_text})
     crm = get_crm()
     escalated = spec.name == "tours" and should_escalate_tours_input(user_text)
+    system_prompt = spec.system
+    if await flags.get_flag("dozhim_enabled", settings.dozhim_enabled):
+        system_prompt = spec.system + "\n\n" + DOZHIM_AND_PRICE_FORK
 
     for _ in range(MAX_TOOL_ITERATIONS):
         model = choose_model(spec.name, escalated)
@@ -138,7 +142,7 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
             model=model,
             max_tokens=settings.llm_max_tokens,
             temperature=settings.llm_temperature,
-            system=spec.system,
+            system=system_prompt,
             tools=spec.tools,
             messages=messages,
         )

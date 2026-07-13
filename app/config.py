@@ -154,6 +154,8 @@ class Settings(BaseSettings):
     outcome_infer_stale_hours: int = 24      # диалог без активности дольше → кандидат на классификацию
     outcome_infer_max_per_run: int = 20      # потолок вызовов LLM за прогон (бюджет)
     followup_enabled: bool = False
+    # Гейт блока дожима и ценовой вилки в системном промпте.
+    dozhim_enabled: bool = False
     followup_after_hours: int = 24       # молчит дольше → ПЕРВЫЙ мягкий пинг
     followup_max_pings: int = 2          # максимум пингов на клиента (ритм ~2×/неделю), потом стоп
     followup_interval_hours: int = 84    # между повторными пингами (~3.5 суток) — не чаще

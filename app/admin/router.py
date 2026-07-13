@@ -458,6 +458,13 @@ FEATURE_FLAGS = {
         "default": lambda: settings.followup_enabled,
         "note": lambda: "",
     },
+    "dozhim_enabled": {
+        "title": "Дожим + ценовая вилка",
+        "desc": ("Бот активнее ведёт тёплого клиента в офис или к менеджеру и отрабатывает "
+                 "возражение по цене без обещания скидок, процентов или специальных цен."),
+        "default": lambda: settings.dozhim_enabled,
+        "note": lambda: "",
+    },
     "bitrix_mirror_enabled": {
         "title": "Зеркалирование диалогов в Bitrix",
         "desc": ("Дублировать переписку (клиент / бот / менеджер) в Bitrix24: на первое "
