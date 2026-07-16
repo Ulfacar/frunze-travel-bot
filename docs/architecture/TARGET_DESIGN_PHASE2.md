@@ -1,7 +1,7 @@
 # TARGET DESIGN — Phase 2
 
 > Status: PROPOSED TARGET DESIGN — NOT APPROVED
-> Review state: AWAITING OPUS RE-REVIEW (Phase 2.2 addresses findings M1–M5, m1–m4 + reopen + source-of-truth)
+> Review state: AWAITING FINAL MINOR VERIFICATION (Phase 2.3 applies the two minor review corrections)
 > Baseline (provisional as-is) commit: 574126049531ff75cd23d607dc034613411f9c44 (5741260)
 > Based on: Phase 1 Business Discovery decisions (16.07.2026)
 > Approval: decisions #1/#4/#8 = OWNER-APPROVED (Alan) / TEAM-VALIDATION-PENDING (Гриша + managers)
@@ -216,6 +216,14 @@ Plus unknowns unchanged from Phase 0C (live CTWA schema, exact prod source commi
 
 This design does **not** claim that an already-sent WhatsApp message can be technically recalled.
 
+**Native WhatsApp & shared number (clarification — finding M-a):**
+- Precise **per-manager attribution** of a direct native-WhatsApp message is only possible when **each manager has a separate WhatsApp/Wappi profile or number**.
+- If a **shared team number** is used, the hub **cannot always** technically determine which individual sent the message.
+- In that mode, only **team-level attribution + post-hoc audit** are available.
+- This must **not** automatically change the Assignment.
+- The **peer-takeover prohibition still holds** as an organizational and system rule on every surface where **pre-send identity is available** (panel, Bitrix, Telegram, API, automated manager-send).
+- The choice between **shared number** and **per-manager profile** is marked **OWNER-APPROVED / TEAM-VALIDATION-PENDING** until confirmed by the team.
+
 ---
 
 ## 8. Request ↔ Bitrix Lead/Deal correlation (finding M2)
@@ -271,7 +279,13 @@ Each high-risk fact must carry **source provenance**: TourVisor; versioned visa 
 
 **Preferred principle:** the LLM composes replies using structured, confirmed facts, and the blocking gate additionally verifies the final answer.
 
-This guardrail applies to **automated bot replies** only. It must **not** silently rewrite a live manager's message.
+**Scope (clarification — finding N-a):** the gate applies to **all automated outbound bot messages**, including:
+- LLM-generated replies;
+- deterministic FAQ replies;
+- deterministic visa-price replies;
+- other pre-LLM templated replies.
+
+Deterministic replies are **source-backed by construction**, but they still pass through the **common outbound safety contract** (a source-backed fact passes; a stale/unsourced one is blocked/replaced). The gate applies to automated bot messages only — it must **not** be applied to a live manager's text and must **not** rewrite a manager's message.
 
 ---
 
