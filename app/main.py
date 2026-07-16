@@ -33,6 +33,7 @@ from app.integrations.panel.store import get_conversation_store
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
+observ.install_request_id_logging()  # WP0: add [request_id] to structured logs
 log = logging.getLogger(__name__)
 
 
@@ -71,6 +72,9 @@ app = FastAPI(title="Frunze Travel Bot", lifespan=lifespan)
 # same_site=lax — базовая защита от CSRF.
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret,
                    max_age=14 * 24 * 3600, https_only=True, same_site="lax")
+# WP0: correlation id per request (X-Request-ID). Added last → outermost middleware,
+# so it binds the id before everything and echoes the header on the way out.
+app.add_middleware(observ.RequestIdMiddleware)
 
 
 def _verify_webhook(request: Request, *, telegram: bool = False) -> bool:
