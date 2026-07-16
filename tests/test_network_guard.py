@@ -1,4 +1,4 @@
-"""WP0: the automatic test network guard (tests/conftest.py)."""
+"""WP0: the automatic test network guard (tests/conftest.py) + opt-in marker."""
 import socket
 
 import pytest
@@ -18,6 +18,15 @@ def test_external_socket_connect_blocked():
     try:
         with pytest.raises(RuntimeError):
             s.connect(("1.1.1.1", 80))
+    finally:
+        s.close()
+
+
+def test_external_ipv6_connect_blocked():
+    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    try:
+        with pytest.raises(RuntimeError):
+            s.connect(("2606:4700:4700::1111", 53, 0, 0))
     finally:
         s.close()
 
@@ -51,7 +60,14 @@ def test_testclient_still_works_under_guard():
 
 
 def test_guard_is_applied_automatically():
-    # No fixture is requested in this module; the block below proves the guard is
-    # installed automatically by conftest import.
+    # No fixture is requested here; the block below proves the guard is installed
+    # automatically by conftest import.
     with pytest.raises(RuntimeError):
         socket.getaddrinfo("bitrix24.example", 443)
+
+
+@pytest.mark.external_network
+def test_marked_external_test_is_skipped_without_flag():
+    # Runs only under --allow-external-network; under ordinary pytest it is skipped,
+    # which proves the opt-in gate. No real external request is made in this body.
+    assert True

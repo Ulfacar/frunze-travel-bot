@@ -152,11 +152,25 @@ def _as_float(value: Any) -> float:
 
 
 # --- Request correlation id (WP0 observability) --------------------------------
-# Per-request id propagated via contextvars → structured logs + X-Request-ID header.
-# Only the id is logged; never phones, message text, tokens or other PII.
+# Per-request id propagated via contextvars → text logs with a request_id field
+# + X-Request-ID header. Only the id is logged; never phones, message text,
+# tokens or other PII.
 
 _REQUEST_ID: ContextVar[str] = ContextVar("request_id", default="-")
 _SAFE_REQUEST_ID = re.compile(r"^[A-Za-z0-9._\-]{1,128}$")
+
+# Only a direct loopback peer (e.g. the local nginx reverse proxy) may pass an
+# inbound X-Request-ID, so a public client cannot forge an internal correlation
+# id. Trust is decided from the real ASGI peer address — never X-Forwarded-For.
+# Default loopback-only; this frozenset is the single configurable trust point
+# (kept here to avoid touching production config in this package).
+_TRUSTED_REQUEST_ID_PEERS = frozenset({"127.0.0.1", "::1"})
+
+
+def _peer_is_trusted(scope) -> bool:
+    client = scope.get("client")
+    host = client[0] if client else None
+    return host in _TRUSTED_REQUEST_ID_PEERS
 
 
 def sanitize_request_id(raw: str | None) -> str:
@@ -200,9 +214,10 @@ def install_request_id_logging() -> None:
 class RequestIdMiddleware:
     """ASGI middleware: bind a correlation id per HTTP request.
 
-    Accepts a safe inbound `X-Request-ID`, otherwise generates one; echoes it in
-    the response header and exposes it to logs via the context var. Each request
-    runs in its own task, so two requests never share one context.
+    Accepts a safe inbound `X-Request-ID` only from a trusted loopback peer,
+    otherwise generates one; echoes it in the response header and exposes it to
+    logs via the context var. Each request runs in its own task, so two requests
+    never share one context.
     """
 
     def __init__(self, app) -> None:
@@ -217,6 +232,8 @@ class RequestIdMiddleware:
             if key == b"x-request-id":
                 raw = value.decode("latin-1", "replace")
                 break
+        if not _peer_is_trusted(scope):
+            raw = None  # never let an untrusted client impose an internal id
         request_id = sanitize_request_id(raw)
         token = _REQUEST_ID.set(request_id)
 

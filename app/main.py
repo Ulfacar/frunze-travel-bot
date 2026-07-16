@@ -33,7 +33,7 @@ from app.integrations.panel.store import get_conversation_store
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
-observ.install_request_id_logging()  # WP0: add [request_id] to structured logs
+observ.install_request_id_logging()  # WP0: text logs with a request_id field
 log = logging.getLogger(__name__)
 
 
