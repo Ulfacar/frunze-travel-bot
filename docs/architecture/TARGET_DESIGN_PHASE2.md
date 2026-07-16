@@ -1,7 +1,8 @@
 # TARGET DESIGN — Phase 2
 
-> Status: PROPOSED TARGET DESIGN — NOT APPROVED
-> Review state: AWAITING FINAL MINOR VERIFICATION (Phase 2.3 applies the two minor review corrections)
+> Status: PHASE 2 TARGET DESIGN — ARCHITECTURALLY APPROVED
+> Review state: FINAL MINOR CORRECTIONS VERIFIED
+> Architectural approval is NOT permission to implement: code, migrations, and production rollout remain not approved.
 > Baseline (provisional as-is) commit: 574126049531ff75cd23d607dc034613411f9c44 (5741260)
 > Based on: Phase 1 Business Discovery decisions (16.07.2026)
 > Approval: decisions #1/#4/#8 = OWNER-APPROVED (Alan) / TEAM-VALIDATION-PENDING (Гриша + managers)
@@ -460,4 +461,4 @@ No code, no migrations, no implementation branch, no rollout, no production or a
 | Request repeat/reopen | §15 |
 | Source-of-truth matrix | §16 |
 
-Owner decisions #1–#11 unchanged. Status remains **PROPOSED TARGET DESIGN — NOT APPROVED**; awaiting Opus re-review.
+Owner decisions #1–#11 unchanged. Status: **PHASE 2 TARGET DESIGN — ARCHITECTURALLY APPROVED** (review state: FINAL MINOR CORRECTIONS VERIFIED). This architectural approval is **not** permission to implement — code, migrations, and production rollout remain **not approved**, and decisions **#1/#4/#8 stay OWNER-APPROVED / TEAM-VALIDATION-PENDING** until confirmed by Гриша + managers.
