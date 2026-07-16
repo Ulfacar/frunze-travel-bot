@@ -29,6 +29,7 @@ All facts here are `[RUNTIME-CONFIRMED]` at the snapshot unless marked otherwise
 - FK: `messages → conversations`. Index counts: conversations 3, faq_entries 4, deals/audit_log/messages 2, app_flags 1.
 - `conversations` with `bitrix_lead_id` set: **364 / 1074**.
 - Manual `outcome` distribution: won **2**, office 35, manager 55, in_progress 359, none 623.
+  - Note: `outcome` is an internal system field, set by managers inconsistently and rarely. `won=2` must **not** be read as a conversion rate, and the field is **not a reliable measure of actual sales**. Real outcomes may be recorded outside this system, including in Bitrix. `[RUNTIME-CONFIRMED]` / `[BUSINESS-UNCONFIRMED]`
 - Advisory `outcome_inferred` (flag ON): active 539, none 464, ghosted 33, lost 31, won 7.
 - intercepted 196; assigned 196; archived 586.
 
