@@ -135,25 +135,63 @@ def test_db_rejects_duplicate_canonical_dedup_key():
     run_with_db(scenario)
 
 
-def test_db_rejects_duplicate_inbox_event():
+def test_db_rejects_duplicate_inbox_event_same_scope():
     async def scenario(sm):
         async with sm() as s:
             await _seed_dialog(s)
-            s.add(InboxEvent(provider="wappi", external_event_id="E1", status="received"))
-            s.add(InboxEvent(provider="wappi", external_event_id="E1", status="received"))
+            s.add(InboxEvent(provider="telegram", account_scope="botA",
+                             external_event_id="E1", status="received"))
+            s.add(InboxEvent(provider="telegram", account_scope="botA",
+                             external_event_id="E1", status="received"))
             with pytest.raises(IntegrityError):
                 await s.flush()
     run_with_db(scenario)
 
 
-def test_db_rejects_duplicate_outbox_idempotency_key():
+def test_M1_same_external_id_different_account_scope_does_not_collide():
+    """Telegram message ids repeat across bots — different account_scope must NOT dedup."""
+    async def scenario(sm):
+        async with sm() as s:
+            await _seed_dialog(s)
+            s.add(InboxEvent(provider="telegram", account_scope="botA",
+                             external_event_id="12345", status="received"))
+            s.add(InboxEvent(provider="telegram", account_scope="botB",
+                             external_event_id="12345", status="received"))
+            await s.flush()      # must NOT raise
+            assert await _count(s, InboxEvent) == 2
+    run_with_db(scenario)
+
+
+def test_db_rejects_duplicate_outbox_same_scope_and_key():
     async def scenario(sm):
         async with sm() as s:
             _, did = await _seed_dialog(s)
-            s.add(OutboxJob(dialog_id=did, channel="whatsapp", idempotency_key="I1",
-                            provider_msg_id="", status="pending"))
-            s.add(OutboxJob(dialog_id=did, channel="whatsapp", idempotency_key="I1",
-                            provider_msg_id="", status="pending"))
+            s.add(OutboxJob(dialog_id=did, channel="whatsapp", provider="wappi",
+                            account_scope="botA", destination_scope="996700111",
+                            idempotency_key="I1", provider_msg_id="", status="pending"))
+            s.add(OutboxJob(dialog_id=did, channel="whatsapp", provider="wappi",
+                            account_scope="botA", destination_scope="996700111",
+                            idempotency_key="I1", provider_msg_id="", status="pending"))
             with pytest.raises(IntegrityError):
                 await s.flush()
+    run_with_db(scenario)
+
+
+def test_M2_same_idempotency_key_different_destination_or_account_allowed():
+    async def scenario(sm):
+        async with sm() as s:
+            _, did = await _seed_dialog(s)
+            # same key, different destination → allowed
+            s.add(OutboxJob(dialog_id=did, channel="whatsapp", provider="wappi",
+                            account_scope="botA", destination_scope="996700111",
+                            idempotency_key="K1", provider_msg_id="", status="pending"))
+            s.add(OutboxJob(dialog_id=did, channel="whatsapp", provider="wappi",
+                            account_scope="botA", destination_scope="996700222",
+                            idempotency_key="K1", provider_msg_id="", status="pending"))
+            # same key, different account → allowed
+            s.add(OutboxJob(dialog_id=did, channel="whatsapp", provider="wappi",
+                            account_scope="botB", destination_scope="996700111",
+                            idempotency_key="K1", provider_msg_id="", status="pending"))
+            await s.flush()      # must NOT raise
+            assert await _count(s, OutboxJob) == 3
     run_with_db(scenario)

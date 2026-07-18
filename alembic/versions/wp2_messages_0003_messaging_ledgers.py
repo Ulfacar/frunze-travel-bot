@@ -62,6 +62,9 @@ def upgrade() -> None:
         "inbox_events",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("provider", sa.String(length=32), nullable=False),
+        # account_scope = receiving bot/provider account (bot_id): external ids are
+        # unique only within one account, never across accounts.
+        sa.Column("account_scope", sa.String(length=190), nullable=False),
         sa.Column("external_event_id", sa.String(length=190), nullable=False),
         sa.Column("channel", sa.String(length=32), nullable=False),
         sa.Column("dialog_id", sa.Integer(), nullable=True),
@@ -75,10 +78,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_inbox_events_dialog_id", "inbox_events", ["dialog_id"])
-    # Dedup: one inbox event per (provider, external_event_id) when an id is present.
+    # Dedup scoped to (provider, account_scope, external_event_id); partial (skip empty).
     op.create_index(
         "uq_inbox_event_dedup", "inbox_events",
-        ["provider", "external_event_id"], unique=True,
+        ["provider", "account_scope", "external_event_id"], unique=True,
         sqlite_where=sa.text("external_event_id <> ''"),
         postgresql_where=sa.text("external_event_id <> ''"),
     )
@@ -90,6 +93,11 @@ def upgrade() -> None:
         sa.Column("dialog_id", sa.Integer(), nullable=False),
         sa.Column("canonical_message_id", sa.Integer(), nullable=True),
         sa.Column("channel", sa.String(length=32), nullable=False),
+        # Dedup scope: provider (wappi/telegram/…), sending account (bot_id) and
+        # destination (recipient). idempotency keys are unique only within this scope.
+        sa.Column("provider", sa.String(length=32), nullable=False),
+        sa.Column("account_scope", sa.String(length=190), nullable=False),
+        sa.Column("destination_scope", sa.String(length=190), nullable=False),
         sa.Column("idempotency_key", sa.String(length=190), nullable=False),
         sa.Column("provider_msg_id", sa.String(length=128), nullable=False),
         sa.Column("status", sa.String(length=16), nullable=False),
@@ -104,10 +112,11 @@ def upgrade() -> None:
     )
     op.create_index("ix_outbox_jobs_dialog_id", "outbox_jobs", ["dialog_id"])
     op.create_index("ix_outbox_jobs_provider_msg_id", "outbox_jobs", ["provider_msg_id"])
-    # Dedup: one outbox job per idempotency_key when a key is present.
+    # Dedup scoped to (provider, account_scope, destination_scope, idempotency_key).
     op.create_index(
         "uq_outbox_job_idem", "outbox_jobs",
-        ["idempotency_key"], unique=True,
+        ["provider", "account_scope", "destination_scope", "idempotency_key"],
+        unique=True,
         sqlite_where=sa.text("idempotency_key <> ''"),
         postgresql_where=sa.text("idempotency_key <> ''"),
     )

@@ -249,9 +249,9 @@ def test_wp2_messaging_dedup_indexes_present_after_upgrade(sqlite_url):
             ("uq_canonical_message_dedup", insp.get_indexes("canonical_messages"),
              ["dialog_id", "direction", "dedup_key"]),
             ("uq_inbox_event_dedup", insp.get_indexes("inbox_events"),
-             ["provider", "external_event_id"]),
+             ["provider", "account_scope", "external_event_id"]),
             ("uq_outbox_job_idem", insp.get_indexes("outbox_jobs"),
-             ["idempotency_key"]),
+             ["provider", "account_scope", "destination_scope", "idempotency_key"]),
         ]:
             got = next(i for i in idx_set if i["name"] == name)
             assert got["unique"]

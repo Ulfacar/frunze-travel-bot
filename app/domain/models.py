@@ -221,13 +221,14 @@ class CanonicalMessage(DomainBase):
 
 
 class InboxEvent(DomainBase):
-    """Ledger of INCOMING provider events. DB-level dedup on (provider, external_event_id)
-    is the durable replacement basis for the current SELECT-only dedup — but it is NOT
-    yet in the live path."""
+    """Ledger of INCOMING provider events. DB-level dedup is scoped to
+    (provider, account_scope, external_event_id) so the SAME external id under two
+    different bot/provider accounts does NOT collide (e.g. Telegram message ids
+    repeat across bots). NOT yet in the live path."""
 
     __tablename__ = "inbox_events"
     __table_args__ = (
-        Index("uq_inbox_event_dedup", "provider", "external_event_id",
+        Index("uq_inbox_event_dedup", "provider", "account_scope", "external_event_id",
               unique=True,
               sqlite_where=text("external_event_id <> ''"),
               postgresql_where=text("external_event_id <> ''")),
@@ -235,6 +236,9 @@ class InboxEvent(DomainBase):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     provider: Mapped[str] = mapped_column(String(32))                # wappi | telegram | bitrix | …
+    # account_scope pins the receiving bot/provider account (bot_id), so ids are
+    # unique only WITHIN one account, never across accounts.
+    account_scope: Mapped[str] = mapped_column(String(190), default="")
     external_event_id: Mapped[str] = mapped_column(String(190), default="")
     channel: Mapped[str] = mapped_column(String(32), default="")
     dialog_id: Mapped[int | None] = mapped_column(ForeignKey("dialogs.id"), nullable=True, index=True)
@@ -246,13 +250,16 @@ class InboxEvent(DomainBase):
 
 
 class OutboxJob(DomainBase):
-    """Ledger of OUTGOING send intents. DB-level dedup on idempotency_key. NOT wired
-    into live delivery — the runtime still sends via the existing channel/own_outbound
-    path; this only records a shadow copy."""
+    """Ledger of OUTGOING send intents. DB-level dedup is scoped to
+    (provider, account_scope, destination_scope, idempotency_key) so the same
+    idempotency/action key never collides across providers, sending accounts or
+    recipients. NOT wired into live delivery — the runtime still sends via the
+    existing channel/own_outbound path; this only records a shadow copy."""
 
     __tablename__ = "outbox_jobs"
     __table_args__ = (
-        Index("uq_outbox_job_idem", "idempotency_key",
+        Index("uq_outbox_job_idem", "provider", "account_scope", "destination_scope",
+              "idempotency_key",
               unique=True,
               sqlite_where=text("idempotency_key <> ''"),
               postgresql_where=text("idempotency_key <> ''")),
@@ -263,6 +270,11 @@ class OutboxJob(DomainBase):
     canonical_message_id: Mapped[int | None] = mapped_column(
         ForeignKey("canonical_messages.id"), nullable=True)
     channel: Mapped[str] = mapped_column(String(32), default="")
+    # Scope of the idempotency key: provider (wappi/telegram/…), sending account
+    # (bot_id) and destination (recipient). Keys are unique only within this scope.
+    provider: Mapped[str] = mapped_column(String(32), default="")
+    account_scope: Mapped[str] = mapped_column(String(190), default="")
+    destination_scope: Mapped[str] = mapped_column(String(190), default="")
     idempotency_key: Mapped[str] = mapped_column(String(190), default="")
     provider_msg_id: Mapped[str] = mapped_column(String(128), default="", index=True)
     status: Mapped[str] = mapped_column(String(16), default="pending")   # pending|sent|delivered|failed

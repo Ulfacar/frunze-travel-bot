@@ -1,19 +1,17 @@
 """WP2 messaging shadow bridge: mirror live inbound/outbound touches into the
-CanonicalMessage / InboxEvent / OutboxJob ledgers, behind the default-OFF
-``messaging_shadow_enabled`` flag.
+CanonicalMessage / InboxEvent / OutboxJob ledgers.
 
-Same guarantees as the WP1B contact/dialog shadow bridge:
+Gated by BOTH flags (M6): it runs only when
+``domain_shadow_enabled AND messaging_shadow_enabled`` are both on. This keeps the
+contact/dialog shadow (WP1B) as the prerequisite layer, so a message row is never
+written without its Contact/Dialog.
 
-* Does NOTHING when the flag is off (early return).
-* Records ONLY into the new domain ledgers. Does NOT send/receive anything, does
-  NOT switch the source of truth, and does NOT touch the Bitrix mirror.
-* Uses its OWN session/transaction, isolated from the live dialog.
-* Catches ALL of its own errors — a shadow failure never propagates to the caller.
-* Logs failures WITHOUT PII (no phone, name, or message text) — only op + error class.
+Same guarantees as WP1B: records ONLY into the domain ledgers (no send/receive, no
+source-of-truth switch, no Bitrix); own session/transaction; awaited but
+self-contained (swallows its own errors); logs WITHOUT PII (op + error class only).
 
-It reuses the WP1B ContactService/DialogService (idempotent) to resolve the
-Contact/Dialog, so it is self-contained and independent of the contact/dialog
-shadow flag.
+Scoping (M1/M2): ``account_scope`` = the bot/provider account (``bot_id``),
+``provider`` = the channel, ``destination_scope`` = the recipient identity.
 """
 from __future__ import annotations
 
@@ -29,6 +27,15 @@ from app.domain.services import ContactService, DialogService
 log = logging.getLogger("domain.messaging_shadow")
 
 FLAG = "messaging_shadow_enabled"
+DOMAIN_FLAG = "domain_shadow_enabled"
+
+
+async def _both_flags_on() -> bool:
+    """Messaging shadow requires BOTH the contact/dialog shadow AND the messaging
+    shadow flags — so a CanonicalMessage is never written without its Contact/Dialog."""
+    if not await get_flag(DOMAIN_FLAG, settings.domain_shadow_enabled):
+        return False
+    return await get_flag(FLAG, settings.messaging_shadow_enabled)
 
 
 async def _resolve_dialog(session, *, normalized: str, channel: str, bot_id: str,
@@ -44,7 +51,7 @@ async def mirror_inbound_message(*, phone: str, channel: str, bot_id: str, direc
                                  body: str, provider_msg_id: str = "",
                                  external_event_id: str = "", sessionmaker=None) -> None:
     """Record one inbound message into the domain ledgers. Never raises."""
-    if not await get_flag(FLAG, settings.messaging_shadow_enabled):
+    if not await _both_flags_on():
         return
     try:
         normalized = normalize_phone(phone)
@@ -63,8 +70,9 @@ async def mirror_inbound_message(*, phone: str, channel: str, bot_id: str, direc
                 direction=direction)
             await MessageService.record_inbound(
                 session, dialog_id=dialog.id, contact_id=contact.id, channel=channel,
-                body=body, provider=channel, provider_msg_id=provider_msg_id,
-                external_event_id=external_event_id, sender_role="client")
+                body=body, provider=channel, account_scope=bot_id,
+                provider_msg_id=provider_msg_id, external_event_id=external_event_id,
+                sender_role="client")
             await session.commit()
     except Exception as exc:  # noqa: BLE001 — fail-safe; never break the live dialog
         log.warning("messaging shadow inbound failed "
@@ -77,7 +85,7 @@ async def mirror_outbound_message(*, phone: str, channel: str, bot_id: str, dire
                                   provider_msg_id: str = "", sender_role: str = "bot",
                                   status: str = "sent", sessionmaker=None) -> None:
     """Record one outbound message into the domain ledgers. Never raises."""
-    if not await get_flag(FLAG, settings.messaging_shadow_enabled):
+    if not await _both_flags_on():
         return
     try:
         normalized = normalize_phone(phone)
@@ -96,7 +104,8 @@ async def mirror_outbound_message(*, phone: str, channel: str, bot_id: str, dire
                 direction=direction)
             await MessageService.record_outbound(
                 session, dialog_id=dialog.id, contact_id=contact.id, channel=channel,
-                body=body, idempotency_key=idempotency_key,
+                body=body, provider=channel, account_scope=bot_id,
+                destination_scope=normalized, idempotency_key=idempotency_key,
                 provider_msg_id=provider_msg_id, sender_role=sender_role, status=status)
             await session.commit()
     except Exception as exc:  # noqa: BLE001 — fail-safe; never break the live dialog
