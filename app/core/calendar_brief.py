@@ -18,10 +18,10 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from app.config import settings
-from app.core.manager_scope import bot_scope_for, conversation_in_scope
+from app.core.manager_scope import bot_scope_for
 from app.core.morning_brief import (
     BISHKEK_UTC_OFFSET, SEND_WINDOW_HOURS, _direction, _fmt_wait, _name,
-    _needs_human, _wait_minutes,
+    _wait_minutes,
 )
 
 log = logging.getLogger("calendar_brief")
@@ -65,23 +65,43 @@ def _task_card(task) -> dict:
     }
 
 
+def _is_open_lead(conv) -> bool:
+    """A live lead still in play (not marked won/lost)."""
+    return (getattr(conv, "outcome", "") or "") not in ("won", "lost")
+
+
+def _owner_login(conv) -> str:
+    """Active owner login of a conversation (empty = unassigned)."""
+    return (getattr(conv, "assigned_to", "") or "").strip().lower()
+
+
+def _lead_card(conv, now: datetime) -> dict:
+    return {
+        "user_id": getattr(conv, "user_id", ""),
+        "name": _name(conv),
+        "direction": _direction(conv),
+        "wait_label": _fmt_wait(int(_wait_minutes(conv, now))),
+    }
+
+
 def build_manager_brief(login: str, name: str, tasks: list, night_requests: list,
-                        now: datetime | None = None) -> dict:
-    """Assemble one manager's brief. tasks — their active CalendarTask rows for today;
-    night_requests — unowned overnight leads (ConversationView) in their scope."""
+                        now: datetime | None = None, *,
+                        to_distribute: list | None = None) -> dict:
+    """Assemble one manager's brief.
+
+    tasks — their active CalendarTask rows for today.
+    night_requests — overnight leads ASSIGNED to this manager (owner-routed; never
+        duplicated across managers).
+    to_distribute — UNASSIGNED overnight leads, passed ONLY for a full-admin and shown
+        in a separate "Требуют распределения" section. No assignment happens here.
+    """
     now = _aware(now) or datetime.now(timezone.utc)
     local = now + timedelta(hours=BISHKEK_UTC_OFFSET)
     by_kind: dict[str, list] = {}
     for t in tasks:
         by_kind.setdefault(t.kind, []).append(_task_card(t))
-    night = []
-    for c in night_requests:
-        night.append({
-            "user_id": getattr(c, "user_id", ""),
-            "name": _name(c),
-            "direction": _direction(c),
-            "wait_label": _fmt_wait(int(_wait_minutes(c, now))),
-        })
+    night = [_lead_card(c, now) for c in night_requests]
+    distribute = [_lead_card(c, now) for c in (to_distribute or [])]
     return {
         "login": login,
         "name": name or login,
@@ -90,6 +110,8 @@ def build_manager_brief(login: str, name: str, tasks: list, night_requests: list
         "task_count": len(tasks),
         "night": night[:NIGHT_REQUEST_CAP],
         "night_count": len(night),
+        "to_distribute": distribute[:NIGHT_REQUEST_CAP],
+        "to_distribute_count": len(distribute),
         "generated_at": now,
     }
 
@@ -126,7 +148,15 @@ def render_manager_brief_text(brief: dict, base_url: str = "") -> str:
             lines.append(f"• {c['name']} · {c['direction']}{tail}")
             if c["user_id"]:
                 lines.append(f"    {_client_link(c['user_id'], base_url)}")
-    if brief["task_count"] == 0 and not brief["night"]:
+    # Full-admin only: unassigned leads awaiting distribution (no assignment done here).
+    if brief["to_distribute"]:
+        lines += ["", f"📥 Требуют распределения ({brief['to_distribute_count']}):"]
+        for c in brief["to_distribute"]:
+            tail = f" · {c['wait_label']}" if c["wait_label"] else ""
+            lines.append(f"• {c['name']} · {c['direction']}{tail}")
+            if c["user_id"]:
+                lines.append(f"    {_client_link(c['user_id'], base_url)}")
+    if brief["task_count"] == 0 and not brief["night"] and not brief["to_distribute"]:
         lines += ["", "На сегодня задач и новых заявок нет ☕"]
     return "\n".join(lines)
 
@@ -145,13 +175,6 @@ async def _push_telegram(token: str, chat_id: str, text: str) -> bool:
         log.warning("calendar brief push failed for manager=%s", "<redacted-chat>",
                     exc_info=True)
         return False
-
-
-async def _night_requests_for(scope: set[str] | None, store) -> list:
-    convs = await store.all_conversations_light()
-    return [c for c in convs if _needs_human(c)
-            and conversation_in_scope(getattr(c, "bot_id", "") or "",
-                                      getattr(c, "user_id", "") or "", scope)]
 
 
 async def _tasks_for(login: str, day, sessionmaker) -> list:
@@ -196,14 +219,23 @@ async def run(now: datetime | None = None, *, sessionmaker=None) -> None:
 
         try:
             tasks = await _tasks_for(login, day, sessionmaker)
-            scope = bot_scope_for({"login": mgr.login, "name": mgr.name,
-                                   "admin": bool(mgr.admin)}, admin_user=cfg.admin_user)
-            night = await _night_requests_for(scope, store)
+            convs = await store.all_conversations_light()
+            is_admin = bot_scope_for(
+                {"login": mgr.login, "name": mgr.name, "admin": bool(mgr.admin)},
+                admin_user=cfg.admin_user) is None
+            # Owner-routed: an assigned overnight lead goes ONLY to its active owner, so
+            # no client is duplicated across managers.
+            night = [c for c in convs if _is_open_lead(c) and _owner_login(c) == login]
+            # Unassigned leads are NOT sent to regular managers. Until live round-robin
+            # assignment exists, only a full-admin sees them (to distribute manually).
+            to_distribute = ([c for c in convs if _is_open_lead(c) and not _owner_login(c)]
+                             if is_admin else [])
         except Exception:  # noqa: BLE001 — one manager's data error must not block others
             log.warning("calendar brief build failed for manager=%s", login, exc_info=True)
             continue
 
-        brief = build_manager_brief(login, mgr.name or login, tasks, night, now)
+        brief = build_manager_brief(login, mgr.name or login, tasks, night, now,
+                                    to_distribute=to_distribute)
         text = render_manager_brief_text(brief, cfg.admin_base_url)
 
         if not token:

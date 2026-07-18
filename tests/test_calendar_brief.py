@@ -158,14 +158,39 @@ def test_outside_window_no_send(monkeypatch):
     _run_case(body, monkeypatch)
 
 
-def test_night_requests_scoped_to_manager_bots(monkeypatch):
-    convs = [Conv(bot_id="getvisa", user_id="getvisa:1", qualification={"name": "Виза-клиент"}),
-             Conv(bot_id="frunze_tours", user_id="frunze_tours:2",
-                  qualification={"name": "Тур-клиент"})]
+def _text_for(sent, chat_id):
+    return next((t for c, t in sent if c == chat_id), "")
+
+
+_TEAM = [ManagerConfig(login="medina", name="Медина", telegram_chat_id="111"),
+         ManagerConfig(login="eliza", name="Элиза", telegram_chat_id="222"),
+         ManagerConfig(login="boss", name="Босс", telegram_chat_id="999", admin=True)]
+
+
+def test_unassigned_lead_only_to_admin_not_managers(monkeypatch):
+    """Shared visa bot + 2 managers + 1 UNASSIGNED overnight lead → absent in both
+    personal briefs, present once in the admin brief under 'Требуют распределения'."""
+    convs = [Conv(bot_id="getvisa", user_id="getvisa:1", assigned_to="",
+                  qualification={"name": "НужноРаспределить"})]
     async def body(sm, sent):
         await flags.set_flag("calendar_brief_enabled", True)
         await cb.run(NOW, sessionmaker=sm)
-        _, text = sent[0]
-        assert "Виза-клиент" in text            # medina's bot scope = getvisa
-        assert "Тур-клиент" not in text          # tours bot out of scope
-    _run_case(body, monkeypatch, convs=convs)
+        assert "НужноРаспределить" not in _text_for(sent, "111")   # medina
+        assert "НужноРаспределить" not in _text_for(sent, "222")   # eliza
+        admin_text = _text_for(sent, "999")
+        assert "Требуют распределения" in admin_text
+        assert admin_text.count("НужноРаспределить") == 1           # once, no duplication
+    _run_case(body, monkeypatch, convs=convs, managers=_TEAM)
+
+
+def test_assigned_lead_only_to_owner(monkeypatch):
+    """An assigned overnight lead appears only in its owner's brief — not peers, not admin."""
+    convs = [Conv(bot_id="getvisa", user_id="getvisa:1", assigned_to="medina",
+                  qualification={"name": "КлиентМедины"})]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        assert "КлиентМедины" in _text_for(sent, "111")             # owner medina
+        assert "КлиентМедины" not in _text_for(sent, "222")         # peer eliza
+        assert "КлиентМедины" not in _text_for(sent, "999")         # admin (it's assigned)
+    _run_case(body, monkeypatch, convs=convs, managers=_TEAM)
