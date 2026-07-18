@@ -183,6 +183,17 @@ class Settings(BaseSettings):
     # Выключить (DEMO_LOGIN=false) перед боевым запуском с реальными клиентами.
     demo_login: bool = False
 
+    # WP1B domain shadow bridge: mirror live Conversation events into the new domain
+    # entities (Contact/Identity/Dialog) as a best-effort, fail-safe side effect.
+    # Default OFF; can be flipped at runtime via app_flags key `domain_shadow_enabled`.
+    # Shadow writes NEVER change bot answers, webhooks, outbound, or the source of truth.
+    domain_shadow_enabled: bool = False
+    # Visa round-robin ELIGIBILITY: explicit roster of visa-team manager logins (each
+    # has its own Bitrix account). Temporary AVAILABILITY is a SEPARATE axis, toggled
+    # per manager via app_flags key `manager_off:<login>`. The team is defined here —
+    # NOT derived from the admin panel scope map. No cross-team (tours) routing.
+    visa_manager_roster: list[str] = ["medina", "eliza"]
+
     def manager_list(self) -> list[ManagerConfig]:
         """Эффективный список менеджеров (с дефолтом из admin_user/admin_password)."""
         if self.managers:

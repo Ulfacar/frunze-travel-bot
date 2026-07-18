@@ -328,6 +328,13 @@ class Orchestrator:
                     source_url=msg.referral.get("source_url", ""),
                     source_payload=msg.referral,
                 )
+            # WP1B shadow bridge (flag-gated, default OFF, fail-safe). Awaited inside
+            # this best-effort block; the bridge also swallows its own errors, so a
+            # shadow write can never disturb the live dialog.
+            from app.domain import shadow_bridge
+            await shadow_bridge.mirror_inbound(
+                phone=msg.user_id, channel=msg.channel, bot_id=self._bot_id,
+                direction=(self.bot.scenario if self.bot is not None else ""))
         except Exception:  # noqa: BLE001 — лог не критичен для диалога
             log.warning("panel log_in failed", exc_info=True)
         # Зеркало в Bitrix (best-effort, фоном — не блокирует и не роняет обработку).

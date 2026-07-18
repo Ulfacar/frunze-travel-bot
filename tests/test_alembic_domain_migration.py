@@ -216,6 +216,21 @@ def test_reassignment_flushes_deactivation_before_insert(sqlite_url):
     assert emitted == ["UPDATE", "INSERT"], emitted
 
 
+def test_dialog_unique_index_present_after_upgrade(sqlite_url):
+    """WP1B revision wp1b_dialog_uidx_0002 adds the DB-level Dialog idempotency index
+    on (channel, bot_id, channel_key)."""
+    command.upgrade(_alembic_cfg(sqlite_url), "head")
+    eng = create_engine(sqlite_url)
+    try:
+        idx = {i["name"]: i for i in inspect(eng).get_indexes("dialogs")}
+        assert "uq_dialog_channel_bot_key" in idx
+        assert idx["uq_dialog_channel_bot_key"]["unique"]
+        assert idx["uq_dialog_channel_bot_key"]["column_names"] == [
+            "channel", "bot_id", "channel_key"]
+    finally:
+        eng.dispose()
+
+
 # =====================================================================
 # PostgreSQL tier — only with TEST_POSTGRES_DSN; otherwise honestly skipped.
 # =====================================================================

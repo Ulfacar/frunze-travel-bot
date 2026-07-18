@@ -118,6 +118,12 @@ class Dialog(DomainBase):
     NO business status. A Contact may have several Dialogs across channels."""
 
     __tablename__ = "dialogs"
+    __table_args__ = (
+        # DB-level idempotency for the shadow bridge: at most one Dialog per
+        # (channel, bot_id, channel_key). Added in migration wp1b_dialog_uidx_0002.
+        Index("uq_dialog_channel_bot_key", "channel", "bot_id", "channel_key",
+              unique=True),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     contact_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"), index=True)
