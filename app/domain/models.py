@@ -19,9 +19,9 @@ or removed. There is no production backfill.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from sqlalchemy import (Boolean, DateTime, ForeignKey, Index, Integer, String,
+from sqlalchemy import (Boolean, Date, DateTime, ForeignKey, Index, Integer, String,
                         Text, UniqueConstraint, func, select, text)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -282,6 +282,68 @@ class OutboxJob(DomainBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+# --- Sprint 1: calendar tasks (manager calendar + client-card tasks) ----------
+# Manager-owned tasks (calls/meetings/office visits) linked to a domain Contact and
+# optionally a Request/Assignment. Ownership is per manager_id (login). Times use the
+# repo's Bishkek convention (UTC+6): scheduled_date is the Bishkek day; scheduled_at
+# is an exact UTC instant, NULL = "без точного времени". Only ai_summary may be
+# AI-written; client/date/time/owner come solely from the DB.
+
+TASK_KINDS: tuple[str, ...] = ("call", "meeting", "office_visit", "followup", "other")
+TASK_STATUSES: tuple[str, ...] = ("planned", "rescheduled", "completed", "cancelled")
+ACTIVE_TASK_STATUSES: tuple[str, ...] = ("planned", "rescheduled")
+TASK_PRIORITIES: tuple[str, ...] = ("low", "normal", "high")
+
+
+class CalendarTask(DomainBase):
+    """One manager task tied to a Contact (+ optional Request/Assignment)."""
+
+    __tablename__ = "calendar_tasks"
+    __table_args__ = (
+        Index("ix_calendar_tasks_manager_date", "manager_id", "scheduled_date"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    contact_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"), index=True)
+    request_id: Mapped[int | None] = mapped_column(ForeignKey("requests.id"), nullable=True)
+    assignment_id: Mapped[int | None] = mapped_column(
+        ForeignKey("assignments.id"), nullable=True)   # populated once WP3 is wired
+    manager_id: Mapped[str] = mapped_column(String(64), index=True)   # owner login (lowercased)
+    direction: Mapped[str] = mapped_column(String(16))               # visa | tours | tickets
+    user_id: Mapped[str] = mapped_column(String(160), default="", index=True)  # live bot_id:phone
+    kind: Mapped[str] = mapped_column(String(24))                    # call | meeting | office_visit | …
+    priority: Mapped[str] = mapped_column(String(8), default="normal")
+    status: Mapped[str] = mapped_column(String(16), default="planned")
+    comment: Mapped[str] = mapped_column(Text, default="")
+    ai_summary: Mapped[str] = mapped_column(Text, default="")        # ONLY AI-writable field
+    scheduled_date: Mapped[date] = mapped_column(Date)               # Bishkek calendar day
+    scheduled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True)                     # exact instant; NULL = no time
+    created_by: Mapped[str] = mapped_column(String(64), default="")
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class CalendarTaskEvent(DomainBase):
+    """Authoritative history of a task's lifecycle actions (audit trail)."""
+
+    __tablename__ = "calendar_task_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    task_id: Mapped[int] = mapped_column(ForeignKey("calendar_tasks.id"), index=True)
+    event: Mapped[str] = mapped_column(String(24))   # created|rescheduled|completed|cancelled|reassigned
+    actor: Mapped[str] = mapped_column(String(64), default="")
+    from_status: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    to_status: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    from_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    to_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    detail: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # --- application-level invariants (foundation helpers, not a service/API) -------

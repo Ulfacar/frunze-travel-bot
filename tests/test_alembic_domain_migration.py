@@ -38,6 +38,8 @@ DOMAIN_TABLES = {
     "assignments", "external_references",
     # WP2 messaging ledgers.
     "canonical_messages", "inbox_events", "outbox_jobs",
+    # Sprint 1 calendar tasks.
+    "calendar_tasks", "calendar_task_events",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",
@@ -256,6 +258,25 @@ def test_wp2_messaging_dedup_indexes_present_after_upgrade(sqlite_url):
             got = next(i for i in idx_set if i["name"] == name)
             assert got["unique"]
             assert got["column_names"] == cols
+    finally:
+        eng.dispose()
+
+
+def test_calendar_tasks_tables_and_indexes_present(sqlite_url):
+    """Sprint 1 revision sprint1_calendar_0004 adds the calendar task tables + indexes."""
+    command.upgrade(_alembic_cfg(sqlite_url), "head")
+    eng = create_engine(sqlite_url)
+    try:
+        insp = inspect(eng)
+        assert {"calendar_tasks", "calendar_task_events"}.issubset(set(insp.get_table_names()))
+        task_idx = {i["name"] for i in insp.get_indexes("calendar_tasks")}
+        assert "ix_calendar_tasks_manager_date" in task_idx
+        assert "ix_calendar_tasks_user_id" in task_idx
+        ev_idx = {i["name"] for i in insp.get_indexes("calendar_task_events")}
+        assert "ix_calendar_task_events_task_id" in ev_idx
+        # FK from tasks → contacts exists.
+        assert any(fk["referred_table"] == "contacts"
+                   for fk in insp.get_foreign_keys("calendar_tasks"))
     finally:
         eng.dispose()
 

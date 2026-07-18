@@ -99,6 +99,78 @@
   </div>
   {% endif %}
 
+  {# --- Задачи (Sprint 1). Действия свапают всю карточку (#chat). --- #}
+  <div class="brief">
+    <div class="brief-title">Задачи</div>
+    {% for t in active_tasks %}
+    <div class="brief-row" style="flex-direction:column;align-items:stretch;gap:6px;border-bottom:1px solid var(--border);padding-bottom:8px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <b>{{ t.time or 'без времени' }}</b>
+        <span class="tag">{{ t.kind_label }}</span>
+        {% if t.priority == 'high' %}<span class="tag" style="background:#FEE2E2;color:#B91C1C">важно</span>{% endif %}
+        {% if t.status == 'rescheduled' %}<span class="tag">перенесена</span>{% endif %}
+        {% if t.overdue %}<span class="tag" style="background:#FEE2E2;color:#B91C1C">просрочено</span>{% endif %}
+        <span class="muted" style="font-size:12px">{{ t.date_iso }}</span>
+      </div>
+      {% if t.comment %}<div style="font-size:13px">{{ t.comment }}</div>{% endif %}
+      {% if t.context %}<div class="muted" style="font-size:12px">ℹ {{ t.context }}</div>{% endif %}
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-brand" style="padding:4px 10px;font-size:12px"
+                hx-post="/admin/conversation/{{ c.user_id }}/task/{{ t.id }}/complete"
+                hx-target="#chat" hx-swap="innerHTML">Выполнить</button>
+        <button class="btn btn-danger" style="padding:4px 10px;font-size:12px"
+                hx-post="/admin/conversation/{{ c.user_id }}/task/{{ t.id }}/cancel"
+                hx-target="#chat" hx-swap="innerHTML">Отменить</button>
+        <details style="display:inline-block">
+          <summary class="btn btn-ghost" style="padding:4px 10px;font-size:12px;list-style:none">Перенести</summary>
+          <form hx-post="/admin/conversation/{{ c.user_id }}/task/{{ t.id }}/reschedule"
+                hx-target="#chat" hx-swap="innerHTML"
+                style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+            <input type="date" name="scheduled_date" value="{{ t.date_iso }}" required>
+            <input type="time" name="scheduled_time" value="{{ t.time }}">
+            <button class="btn btn-brand" style="padding:4px 10px;font-size:12px" type="submit">ОК</button>
+          </form>
+        </details>
+      </div>
+    </div>
+    {% else %}
+    <div class="muted" style="font-size:13px">Активных задач нет</div>
+    {% endfor %}
+
+    <details style="margin-top:8px">
+      <summary style="cursor:pointer;color:var(--accent);font-size:13px;font-weight:600">➕ Новая задача</summary>
+      <form hx-post="/admin/conversation/{{ c.user_id }}/task/create"
+            hx-target="#chat" hx-swap="innerHTML"
+            style="display:grid;gap:6px;margin-top:8px">
+        <select name="kind" aria-label="Тип">
+          {% for key, label in task_kinds %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+        </select>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <input type="date" name="scheduled_date" value="{{ today_iso }}" required aria-label="Дата">
+          <input type="time" name="scheduled_time" aria-label="Время (необязательно)">
+        </div>
+        <select name="priority" aria-label="Приоритет">
+          {% for key, label in task_priorities %}<option value="{{ key }}"{% if key == 'normal' %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <input name="comment" placeholder="Комментарий" autocomplete="off" aria-label="Комментарий">
+        <button class="btn btn-brand" type="submit" style="justify-self:start;padding:6px 14px">Создать задачу</button>
+      </form>
+    </details>
+
+    {% set terminal = tasks | rejectattr('active') | list %}
+    {% if terminal %}
+    <details style="margin-top:6px">
+      <summary style="cursor:pointer;color:var(--muted);font-size:12px">История задач ({{ terminal|length }})</summary>
+      {% for t in terminal %}
+      <div class="brief-row" style="font-size:12px;color:var(--muted)">
+        <span>{{ t.date_iso }} · {{ t.kind_label }}</span>
+        <span>{{ 'выполнено' if t.status == 'completed' else 'отменено' }}</span>
+      </div>
+      {% endfor %}
+    </details>
+    {% endif %}
+  </div>
+
   <details class="chat-details" open>
   <summary style="cursor:pointer;color:var(--muted);font-size:12px;margin:6px 0;user-select:none">
     Переписка ({{ c.messages|length }})

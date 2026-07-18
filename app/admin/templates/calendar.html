@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frunze — календарь</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Fira+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#F1F5F9; --surface:#FFFFFF; --border:#E2E8F0; --text:#0F172A; --muted:#64748B;
+            --accent:#2563EB; --green:#059669; --amber:#D97706; --red:#DC2626;
+            --mono:'Fira Code', ui-monospace, monospace; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:'Fira Sans',system-ui,sans-serif; }
+    .topbar { display:flex; align-items:center; gap:14px; padding:0 18px; height:56px; background:var(--surface);
+              border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5; }
+    .topbar a { color:var(--accent); text-decoration:none; font-weight:600; }
+    .topbar b { font-size:15px; }
+    .muted { color:var(--muted); }
+    .wrap { max-width:1180px; margin:0 auto; padding:16px; }
+
+    .bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+    .seg { display:inline-flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .seg a { padding:7px 14px; text-decoration:none; color:var(--text); font-weight:600; font-size:14px; background:var(--surface); }
+    .seg a.on { background:var(--accent); color:#fff; }
+    .nav { display:inline-flex; gap:6px; align-items:center; }
+    .nav a, .today-btn { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px;
+             padding:0 10px; border:1px solid var(--border); border-radius:9px; background:var(--surface);
+             color:var(--text); text-decoration:none; font-weight:600; }
+    .range { font-weight:700; font-size:16px; }
+    .spacer { flex:1; }
+
+    .grid { display:grid; gap:12px; }
+    .grid.week { grid-template-columns:repeat(7, minmax(0,1fr)); }
+    .grid.day  { grid-template-columns:minmax(0, 560px); }
+    .col { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px; min-height:120px; }
+    .col.today { border-color:var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
+    .col-h { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+    .col-h .wd { font-weight:700; }
+    .col-h .dt { color:var(--muted); font-size:13px; font-family:var(--mono); }
+    .col-count { color:var(--muted); font-size:12px; }
+
+    .task { border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:10px;
+            padding:8px 10px; margin-bottom:8px; }
+    .task.call { border-left-color:var(--accent); }
+    .task.meeting { border-left-color:var(--green); }
+    .task.office_visit { border-left-color:var(--amber); }
+    .task.overdue { border-left-color:var(--red); background:#FEF2F2; }
+    .task .t-top { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .task .t-time { font-family:var(--mono); font-weight:700; }
+    .task .t-kind { color:var(--muted); font-size:12px; }
+    .task .t-cmt { font-size:13px; margin-top:4px; }
+    .task .t-open { color:var(--accent); text-decoration:none; font-size:12px; font-weight:600; }
+    .chip { font-size:11px; padding:2px 7px; border-radius:7px; background:#EEF2F7; color:var(--text); }
+    .chip.hi { background:#FEE2E2; color:#B91C1C; }
+    .chip.mgr { background:#E0F2FE; color:#075985; font-family:var(--mono); }
+    .empty { color:var(--muted); font-size:13px; padding:6px 2px; }
+
+    .overdue-box { background:#FEF2F2; border:1px solid #FCA5A5; border-radius:14px; padding:12px 14px; margin-bottom:16px; }
+    .overdue-box .oh { font-weight:700; color:#B91C1C; margin-bottom:8px; }
+    .legend { display:flex; gap:12px; flex-wrap:wrap; color:var(--muted); font-size:12px; margin-top:14px; }
+    @media (max-width:900px) { .grid.week { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="/admin">← Доски</a>
+    <b>Календарь</b>
+    <span class="spacer"></span>
+    <span class="muted">{{ manager.name if manager else '' }}{% if is_admin %} · все менеджеры{% endif %}</span>
+  </header>
+  <div class="wrap">
+    <div class="bar">
+      <div class="seg">
+        <a href="/admin/calendar?view=day&day={{ anchor_iso }}" class="{{ 'on' if view == 'day' else '' }}">День</a>
+        <a href="/admin/calendar?view=week&day={{ anchor_iso }}" class="{{ 'on' if view == 'week' else '' }}">Неделя</a>
+      </div>
+      <div class="nav">
+        <a href="/admin/calendar?view={{ view }}&day={{ prev_day }}" aria-label="Назад">‹</a>
+        <a class="today-btn" href="/admin/calendar?view={{ view }}&day={{ today_iso }}">Сегодня</a>
+        <a href="/admin/calendar?view={{ view }}&day={{ next_day }}" aria-label="Вперёд">›</a>
+      </div>
+      <span class="range">{{ range_label }}</span>
+      <span class="spacer"></span>
+      <span class="muted">Задач в периоде: {{ task_total }}</span>
+    </div>
+
+    {% if overdue %}
+    <div class="overdue-box">
+      <div class="oh">⚠ Просроченные задачи ({{ overdue|length }})</div>
+      {% for t in overdue %}
+      <div class="task overdue">
+        <div class="t-top">
+          <span class="t-time">{{ t.date_iso }}{% if t.time %} · {{ t.time }}{% endif %}</span>
+          <span class="t-kind">{{ t.kind_label }}</span>
+          {% if is_admin %}<span class="chip mgr">{{ t.manager_id }}</span>{% endif %}
+          <span class="chip">☎ {{ t.client }}</span>
+          {% if t.priority == 'high' %}<span class="chip hi">важно</span>{% endif %}
+        </div>
+        {% if t.comment %}<div class="t-cmt">{{ t.comment }}</div>{% endif %}
+        {% if t.user_id %}<a class="t-open" href="/admin?open={{ t.user_id }}">Открыть клиента →</a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid {{ view }}">
+      {% for d in days %}
+      <div class="col {{ 'today' if d.is_today else '' }}">
+        <div class="col-h">
+          <span class="wd">{{ d.weekday }}{% if d.is_today %} · сегодня{% endif %}</span>
+          <span class="dt">{{ d.label }}</span>
+        </div>
+        {% if d.count == 0 %}
+        <div class="empty">Нет задач</div>
+        {% endif %}
+        {% for t in d.timed %}
+        <div class="task {{ t.kind }} {{ 'overdue' if t.overdue else '' }}">
+          <div class="t-top">
+            <span class="t-time">{{ t.time }}</span>
+            <span class="t-kind">{{ t.kind_label }}</span>
+            {% if is_admin %}<span class="chip mgr">{{ t.manager_id }}</span>{% endif %}
+            <span class="chip">☎ {{ t.client }}</span>
+            {% if t.priority == 'high' %}<span class="chip hi">важно</span>{% endif %}
+            {% if t.status == 'rescheduled' %}<span class="chip">перенесена</span>{% endif %}
+          </div>
+          {% if t.comment %}<div class="t-cmt">{{ t.comment }}</div>{% endif %}
+          {% if t.user_id %}<a class="t-open" href="/admin?open={{ t.user_id }}">Открыть клиента →</a>{% endif %}
+        </div>
+        {% endfor %}
+        {% if d.untimed %}
+        <div class="col-count" style="margin:6px 0 4px">Без точного времени</div>
+        {% for t in d.untimed %}
+        <div class="task {{ t.kind }} {{ 'overdue' if t.overdue else '' }}">
+          <div class="t-top">
+            <span class="t-kind">{{ t.kind_label }}</span>
+            {% if is_admin %}<span class="chip mgr">{{ t.manager_id }}</span>{% endif %}
+            <span class="chip">☎ {{ t.client }}</span>
+            {% if t.priority == 'high' %}<span class="chip hi">важно</span>{% endif %}
+          </div>
+          {% if t.comment %}<div class="t-cmt">{{ t.comment }}</div>{% endif %}
+          {% if t.user_id %}<a class="t-open" href="/admin?open={{ t.user_id }}">Открыть клиента →</a>{% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="legend">
+      {% for key, label in kind_labels %}<span>{{ label }}</span>{% endfor %}
+      <span>· Задачи создаются в карточке клиента</span>
+    </div>
+  </div>
+</body>
+</html>

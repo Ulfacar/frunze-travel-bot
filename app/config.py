@@ -50,6 +50,10 @@ class ManagerConfig(BaseModel):
     name: str = ""
     password: str = ""
     admin: bool = False  # True → полный доступ ко всем воронкам и статистике (как admin_user)
+    # Личный Telegram chat_id менеджера для персонального Morning Brief. ТОЛЬКО из env
+    # (MANAGERS JSON); НЕ хардкодить в исходниках и НЕ логировать. Пусто → бриф этому
+    # менеджеру не шлётся (календарь работает), в общую группу НЕ уходит.
+    telegram_chat_id: str = ""
 
 
 # Дефолтный реестр — 2 стартовых Wappi-бота. Реальные секреты приходят из .env
@@ -176,6 +180,15 @@ class Settings(BaseSettings):
     # Фикс-курс сом→$ ТОЛЬКО для тайбрейка сортировки чека в горячем листе (не для отображения —
     # там показываем как сказал клиент). Ручное обновление по необходимости, НЕ live-API. ~89 сом/$.
     som_to_usd_rate: float = 0.0112
+
+    # Sprint 1 — персональный календарный Morning Brief менеджеру (задачи на сегодня +
+    # ночные заявки) в его ЛИЧНЫЙ Telegram (ManagerConfig.telegram_chat_id). Отдельный
+    # флаг от «горячего листа»; ВЫКЛ по умолчанию — включается на rollout. Окно отправки
+    # и час берутся из morning_brief_hour (те же). Экран /admin/calendar работает всегда.
+    calendar_brief_enabled: bool = False
+    # Необязательный префикс абсолютных ссылок на клиента в Telegram-брифе (напр.
+    # https://panel.frunzetravel.kg). Пусто → относительный путь /admin/conversation/...
+    admin_base_url: str = ""
 
     # Секрет подписи cookie-сессии (Starlette SessionMiddleware). ПРОД: SESSION_SECRET!
     session_secret: str = "change-me-frunze-session-secret"
