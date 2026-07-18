@@ -335,6 +335,16 @@ class Orchestrator:
             await shadow_bridge.mirror_inbound(
                 phone=msg.user_id, channel=msg.channel, bot_id=self._bot_id,
                 direction=(self.bot.scenario if self.bot is not None else ""))
+            # WP2 messaging shadow (separate flag `messaging_shadow_enabled`, default OFF,
+            # fail-safe). Records the inbound into the domain ledgers only; NOT wired into
+            # live delivery and does NOT touch the Bitrix mirror.
+            from app.domain import messaging_shadow
+            _ev = str(msg.raw.get("id") or msg.raw.get("message_id")
+                      or msg.raw.get("msg_id") or "")
+            await messaging_shadow.mirror_inbound_message(
+                phone=msg.user_id, channel=msg.channel, bot_id=self._bot_id,
+                direction=(self.bot.scenario if self.bot is not None else ""),
+                body=text, provider_msg_id=_ev, external_event_id=_ev)
         except Exception:  # noqa: BLE001 — лог не критичен для диалога
             log.warning("panel log_in failed", exc_info=True)
         # Зеркало в Bitrix (best-effort, фоном — не блокирует и не роняет обработку).
@@ -362,6 +372,15 @@ class Orchestrator:
             from app.integrations.crm import bitrix_mirror
             bitrix_mirror.fire(self._key(msg), sender="bot", text=text, phone=msg.user_id,
                                funnel=self.bot.scenario if self.bot else None)
+            # WP2 messaging shadow outbound (flag `messaging_shadow_enabled`, default OFF,
+            # fail-safe). Records the outbound into the domain ledgers only; NOT wired into
+            # live delivery and does NOT touch the Bitrix mirror above.
+            from app.domain import messaging_shadow
+            await messaging_shadow.mirror_outbound_message(
+                phone=msg.user_id, channel=msg.channel, bot_id=self._bot_id,
+                direction=(self.bot.scenario if self.bot is not None else ""),
+                body=text, idempotency_key=(provider or ""),
+                provider_msg_id=(provider or ""), status="sent")
         except Exception:  # noqa: BLE001 — сбой канала: помечаем failed, диалог не роняем
             record_failure("send")
             if msg_id:

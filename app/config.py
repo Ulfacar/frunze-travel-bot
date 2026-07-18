@@ -194,6 +194,16 @@ class Settings(BaseSettings):
     # NOT derived from the admin panel scope map. No cross-team (tours) routing.
     visa_manager_roster: list[str] = ["medina", "eliza"]
 
+    # WP2 messaging foundation: mirror live inbound/outbound into the domain
+    # CanonicalMessage/InboxEvent/OutboxJob ledgers. SEPARATE flag from the WP1B
+    # contact/dialog shadow; default OFF; runtime key `messaging_shadow_enabled`.
+    # These ledgers are NOT wired into live delivery and do NOT touch the Bitrix mirror.
+    messaging_shadow_enabled: bool = False
+    # Anti-loop thresholds (pure service; not enforced in the live path yet).
+    antiloop_repeat_window_seconds: int = 60   # identical outbound within window = loop
+    antiloop_runaway_window_seconds: int = 60  # window for the runaway burst check
+    antiloop_runaway_max_outbound: int = 5     # >= N outbound w/o inbound in window = runaway
+
     def manager_list(self) -> list[ManagerConfig]:
         """Эффективный список менеджеров (с дефолтом из admin_user/admin_password)."""
         if self.managers:

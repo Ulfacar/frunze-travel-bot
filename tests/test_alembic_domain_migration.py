@@ -36,6 +36,8 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 DOMAIN_TABLES = {
     "contacts", "contact_identities", "requests", "dialogs",
     "assignments", "external_references",
+    # WP2 messaging ledgers.
+    "canonical_messages", "inbox_events", "outbox_jobs",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",
@@ -227,6 +229,33 @@ def test_dialog_unique_index_present_after_upgrade(sqlite_url):
         assert idx["uq_dialog_channel_bot_key"]["unique"]
         assert idx["uq_dialog_channel_bot_key"]["column_names"] == [
             "channel", "bot_id", "channel_key"]
+    finally:
+        eng.dispose()
+
+
+def test_wp2_messaging_dedup_indexes_present_after_upgrade(sqlite_url):
+    """WP2 revision wp2_messages_0003 adds the three ledgers with DB-level dedup indexes."""
+    command.upgrade(_alembic_cfg(sqlite_url), "head")
+    eng = create_engine(sqlite_url)
+    try:
+        insp = inspect(eng)
+        cm = {i["name"] for i in insp.get_indexes("canonical_messages")}
+        ib = {i["name"] for i in insp.get_indexes("inbox_events")}
+        ob = {i["name"] for i in insp.get_indexes("outbox_jobs")}
+        assert "uq_canonical_message_dedup" in cm
+        assert "uq_inbox_event_dedup" in ib
+        assert "uq_outbox_job_idem" in ob
+        for name, idx_set, cols in [
+            ("uq_canonical_message_dedup", insp.get_indexes("canonical_messages"),
+             ["dialog_id", "direction", "dedup_key"]),
+            ("uq_inbox_event_dedup", insp.get_indexes("inbox_events"),
+             ["provider", "external_event_id"]),
+            ("uq_outbox_job_idem", insp.get_indexes("outbox_jobs"),
+             ["idempotency_key"]),
+        ]:
+            got = next(i for i in idx_set if i["name"] == name)
+            assert got["unique"]
+            assert got["column_names"] == cols
     finally:
         eng.dispose()
 

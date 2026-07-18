@@ -22,7 +22,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import (Boolean, DateTime, ForeignKey, Index, Integer, String,
-                        UniqueConstraint, func, select, text)
+                        Text, UniqueConstraint, func, select, text)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -183,6 +183,90 @@ class ExternalReference(DomainBase):
     request_ref: Mapped[int] = mapped_column(ForeignKey("requests.id"), index=True)
     direction: Mapped[str] = mapped_column(String(16))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+# --- WP2 messaging foundation (unified history + inbox/outbox ledgers) ---------
+# All three live on DomainBase and are NOT wired into live delivery. They are
+# mirrored, under the `messaging_shadow_enabled` flag (default OFF), from the
+# existing runtime; they do NOT replace ConvMessage / own_outbound and do NOT
+# touch the Bitrix mirror. Dedup is enforced at the DB level (partial unique).
+
+class CanonicalMessage(DomainBase):
+    """One channel-agnostic entry in a Dialog's unified message history. Deduplicated
+    per (dialog, direction, dedup_key) so a replayed webhook / resent job does not
+    create a second timeline row."""
+
+    __tablename__ = "canonical_messages"
+    __table_args__ = (
+        Index("uq_canonical_message_dedup", "dialog_id", "direction", "dedup_key",
+              unique=True,
+              sqlite_where=text("dedup_key <> ''"),
+              postgresql_where=text("dedup_key <> ''")),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    dialog_id: Mapped[int] = mapped_column(ForeignKey("dialogs.id"), index=True)
+    contact_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"), index=True)
+    direction: Mapped[str] = mapped_column(String(16))               # inbound | outbound
+    sender_role: Mapped[str] = mapped_column(String(16))             # client | bot | manager
+    channel: Mapped[str] = mapped_column(String(32), default="")
+    body: Mapped[str] = mapped_column(Text, default="")             # content (never logged)
+    provider_msg_id: Mapped[str] = mapped_column(String(128), default="", index=True)
+    dedup_key: Mapped[str] = mapped_column(String(190), default="")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class InboxEvent(DomainBase):
+    """Ledger of INCOMING provider events. DB-level dedup on (provider, external_event_id)
+    is the durable replacement basis for the current SELECT-only dedup — but it is NOT
+    yet in the live path."""
+
+    __tablename__ = "inbox_events"
+    __table_args__ = (
+        Index("uq_inbox_event_dedup", "provider", "external_event_id",
+              unique=True,
+              sqlite_where=text("external_event_id <> ''"),
+              postgresql_where=text("external_event_id <> ''")),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    provider: Mapped[str] = mapped_column(String(32))                # wappi | telegram | bitrix | …
+    external_event_id: Mapped[str] = mapped_column(String(190), default="")
+    channel: Mapped[str] = mapped_column(String(32), default="")
+    dialog_id: Mapped[int | None] = mapped_column(ForeignKey("dialogs.id"), nullable=True, index=True)
+    canonical_message_id: Mapped[int | None] = mapped_column(
+        ForeignKey("canonical_messages.id"), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="received")  # received|processed|skipped
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class OutboxJob(DomainBase):
+    """Ledger of OUTGOING send intents. DB-level dedup on idempotency_key. NOT wired
+    into live delivery — the runtime still sends via the existing channel/own_outbound
+    path; this only records a shadow copy."""
+
+    __tablename__ = "outbox_jobs"
+    __table_args__ = (
+        Index("uq_outbox_job_idem", "idempotency_key",
+              unique=True,
+              sqlite_where=text("idempotency_key <> ''"),
+              postgresql_where=text("idempotency_key <> ''")),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    dialog_id: Mapped[int] = mapped_column(ForeignKey("dialogs.id"), index=True)
+    canonical_message_id: Mapped[int | None] = mapped_column(
+        ForeignKey("canonical_messages.id"), nullable=True)
+    channel: Mapped[str] = mapped_column(String(32), default="")
+    idempotency_key: Mapped[str] = mapped_column(String(190), default="")
+    provider_msg_id: Mapped[str] = mapped_column(String(128), default="", index=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending")   # pending|sent|delivered|failed
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
