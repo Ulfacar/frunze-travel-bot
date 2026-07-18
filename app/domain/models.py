@@ -248,6 +248,13 @@ async def reassign_manager(session: AsyncSession, contact_id: int, direction: st
         current.active = False
         current.ended_at = _now()
         next_revision = current.revision + 1
+        # Flush the deactivation UPDATE BEFORE inserting the new active row, so the
+        # partial unique index (one active assignment per contact+direction) never
+        # sees two active rows within a single flush. Without this explicit flush the
+        # ordering relies on SQLAlchemy's unit-of-work heuristic (which currently
+        # emits UPDATE before INSERT) — an implementation detail we must not depend on
+        # across backends/versions, especially under immediate constraint checking.
+        await session.flush()
     assignment = Assignment(
         contact_id=contact_id, direction=direction, manager_id=manager_id,
         revision=next_revision, active=True, assigned_by=assigned_by, reason=reason)
