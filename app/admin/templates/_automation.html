@@ -18,6 +18,31 @@
   </div>
   {% endfor %}
 
+  {% if visa_queue %}
+  <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+    <div class="t-title">Очередь авто-распределения виз</div>
+    <div class="t-desc" style="margin:4px 0 10px">
+      Кто получает новых визовых клиентов по очереди. Выключенный менеджер (отпуск/болезнь)
+      пропускается; включение возвращает его в ротацию сразу.
+    </div>
+    {% for m in visa_queue %}
+    <div class="toggle-row" style="margin-top:8px">
+      <label class="switch" title="В очереди / выключен">
+        <input type="checkbox" {{ 'checked' if not m.off else '' }}
+               hx-post="/admin/queue/visa/{{ m.login }}/toggle" hx-target="#automation" hx-swap="outerHTML"
+               hx-vals='{"off": "{{ 0 if m.off else 1 }}"}'>
+        <span class="slider"></span>
+      </label>
+      <div class="toggle-text">
+        <div class="t-title">{{ m.login }} —
+          <span class="state {{ 'off' if m.off else 'on' }}">{{ 'ВЫКЛЮЧЕН из очереди' if m.off else 'в очереди' }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <div class="followup-manual" style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
     <div class="t-title">Дожать молчунов вручную</div>
     <div class="t-desc" style="margin:4px 0 12px">

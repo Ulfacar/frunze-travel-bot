@@ -379,7 +379,11 @@ async def buyers_feed(request: Request, manager: dict = Depends(require_admin)):
 @router.post("/buyers/{user_id}/claim", response_class=HTMLResponse)
 async def buyers_claim(user_id: str, manager: dict = Depends(require_admin)):
     """«Взять в работу» из ленты: атомарный claim (гонка менеджеров) + перехват. Карточка исчезает."""
-    await _require_visible_conversation(user_id, manager)
+    conv = await _require_visible_conversation(user_id, manager)
+    allowed, deny_notice = await _ownership_guard(conv, manager, "claim")
+    if not allowed:
+        from html import escape
+        return HTMLResponse(f'<div class="lead-card taken">{escape(deny_notice)}</div>')
     ok = await get_conversation_store().claim(user_id, manager["login"])
     if not ok:
         from html import escape
@@ -417,7 +421,8 @@ async def system(request: Request, manager: dict = Depends(require_full_admin)):
     }
     return templates.TemplateResponse(request, "system.html",
                                       {"s": data, "manager": manager,
-                                       "flags": flag_views, "bot_flags": bot_flags},
+                                       "flags": flag_views, "bot_flags": bot_flags,
+                                       "visa_queue": await _visa_queue_views()},
                                       headers={"Cache-Control": "no-store"})
 
 
@@ -457,6 +462,26 @@ FEATURE_FLAGS = {
         "default": lambda: settings.bitrix_mirror_enabled,
         "note": lambda: ("" if settings.bitrix24_webhook_url
                          else "⚠️ Задайте BITRIX24_WEBHOOK_URL в prod.env, иначе зеркало не работает."),
+    },
+    "authz_enforce_enabled": {
+        "title": "Жёсткое владение лидами (без перехвата)",
+        "desc": ("Менеджер может писать только своим или ничьим клиентам (ничей лид "
+                 "закрепляется за первым ответившим). Чужой диалог — только просмотр; "
+                 "передать лид может только администратор — кнопкой «Переназначить» "
+                 "или собственным перехватом. "
+                 "Выключено — как раньше: мягкое предупреждение «уже ведёт X»."),
+        "default": lambda: settings.authz_enforce_enabled,
+        "note": lambda: "",
+    },
+    "visa_autoassign_enabled": {
+        "title": "Авто-распределение визовых лидов",
+        "desc": ("Новый визовый клиент автоматически закрепляется за следующим менеджером "
+                 "по очереди («кто дольше всех не получал»). Бот продолжает отвечать сам — "
+                 "назначение только фиксирует владельца и шлёт менеджеру личное уведомление "
+                 "в Telegram (если настроен chat_id). Временно убрать менеджера из очереди "
+                 "можно тумблером «В очереди виз» ниже."),
+        "default": lambda: settings.visa_autoassign_enabled,
+        "note": lambda: "",
     },
     "alerts_enabled": {
         "title": "Watchdog-алерты",
@@ -508,6 +533,16 @@ async def _bot_flag_views() -> list[dict]:
     return views
 
 
+async def _visa_queue_views() -> list[dict]:
+    """Sprint 2: состояние очереди виз — кто в ротации, кто временно выключен."""
+    from app.core import flags
+    views = []
+    for login in settings.visa_manager_roster:
+        off = await flags.get_flag(f"manager_off:{login}", False)
+        views.append({"login": login, "off": off})
+    return views
+
+
 @router.post("/flags/{key}", response_class=HTMLResponse)
 async def toggle_flag(key: str, request: Request, manager: dict = Depends(require_admin),
                       on: str = Form("0")):
@@ -519,7 +554,31 @@ async def toggle_flag(key: str, request: Request, manager: dict = Depends(requir
     await flags.set_flag(key, value)
     await get_conversation_store().add_audit(
         manager["login"], "flag", "", f"{key}={'on' if value else 'off'}")
-    return templates.TemplateResponse(request, "_automation.html", {"flags": await _flag_views()})
+    return templates.TemplateResponse(request, "_automation.html",
+                                      {"flags": await _flag_views(),
+                                       "visa_queue": await _visa_queue_views()})
+
+
+@router.post("/queue/visa/{login}/toggle", response_class=HTMLResponse)
+async def toggle_visa_availability(login: str, request: Request,
+                                   manager: dict = Depends(require_full_admin),
+                                   off: str = Form("0")):
+    """Sprint 2: временно убрать/вернуть менеджера в очередь авто-распределения виз.
+
+    Пишет рантайм-флаг ``manager_off:<login>`` (та же ось доступности, что читает
+    round-robin). Только полный админ."""
+    login = (login or "").strip().lower()
+    if login not in [(l or "").strip().lower() for l in settings.visa_manager_roster]:
+        raise HTTPException(status_code=404, detail="not in visa roster")
+    from app.core import flags
+    value = off in ("1", "true", "on", "True")
+    await flags.set_flag(f"manager_off:{login}", value)
+    await get_conversation_store().add_audit(
+        manager["login"], "queue_toggle", "",
+        f"manager_off:{login}={'on' if value else 'off'}")
+    return templates.TemplateResponse(request, "_automation.html",
+                                      {"flags": await _flag_views(),
+                                       "visa_queue": await _visa_queue_views()})
 
 
 @router.post("/followup/run", response_class=HTMLResponse)
@@ -654,13 +713,20 @@ async def faq_test(request: Request, manager: dict = Depends(require_admin),
 
 
 @router.get("/board/{funnel}", response_class=HTMLResponse)
-async def board(funnel: str, request: Request, manager: dict = Depends(require_admin)):
-    """HTMX-партиал одной доски: колонки по стадиям с карточками."""
+async def board(funnel: str, request: Request, manager: dict = Depends(require_admin),
+                mine: int = 0):
+    """HTMX-партиал одной доски: колонки по стадиям с карточками.
+
+    ?mine=1 — Sprint 2: показать только лиды, закреплённые за текущим менеджером."""
     panel = get_conversation_store()
     cards = _filter_conversations(await panel.list_cards(funnel), manager)
+    if mine:
+        login = str(manager.get("login") or "").strip().lower()
+        cards = [c for c in cards
+                 if (getattr(c, "assigned_to", "") or "").strip().lower() == login]
     columns, metrics = _build_board(cards, _now())
     return templates.TemplateResponse(request, "_board.html", {
-        "funnel": funnel, "columns": columns, "metrics": metrics,
+        "funnel": funnel, "columns": columns, "metrics": metrics, "mine": mine,
     })
 
 
@@ -723,7 +789,8 @@ async def stats(manager: dict = Depends(require_admin)):
     })
 
 
-async def _render_conversation(user_id: str, request: Request, manager: dict):
+async def _render_conversation(user_id: str, request: Request, manager: dict, *,
+                               notice: str = ""):
     panel = get_conversation_store()
     conv = await panel.get(user_id)
     if conv is None:
@@ -736,12 +803,19 @@ async def _render_conversation(user_id: str, request: Request, manager: dict):
     busy_by = conv.assigned_to if conv.assigned_to and conv.assigned_to != manager["login"] else ""
     tasks = await _load_user_tasks(conv.user_id)
     active_tasks = [t for t in tasks if t["active"]]
+    # Sprint 2: полный админ видит контрол «Переназначить» (список логинов менеджеров).
+    is_full_admin = _manager_bot_scope(manager) is None
+    reassign_targets = ([m.login for m in settings.manager_list() if (m.login or "").strip()]
+                        if is_full_admin else [])
     return templates.TemplateResponse(request, "_conversation.html", {
         "c": conv,
         "initials": _initials(name, conv.phone),
         "avatar": _avatar(conv.phone),
         "manager": manager,
         "busy_by": busy_by,
+        "notice": notice,
+        "is_full_admin": is_full_admin,
+        "reassign_targets": reassign_targets,
         "outcomes": OUTCOMES,
         "quick_replies": quick_replies_for(conv.funnel),
         "tasks": tasks,
@@ -826,10 +900,104 @@ async def unarchive_conversation(user_id: str, manager: dict = Depends(require_a
     return JSONResponse({"ok": True})
 
 
+# ------------- Sprint 2: живое владение лидом (флаг authz_enforce_enabled) -------------
+
+def _authz_direction(conv) -> str:
+    """Направление (команда) диалога для правил владения. Воронка «tickets» и пустая
+    воронка сводятся к сценарию бота (билеты ведёт команда туров) — команда = бот."""
+    from app.core import live_authz
+    funnel = (getattr(conv, "funnel", "") or "").strip()
+    if funnel in ("visa", "tours"):
+        return funnel
+    return live_authz.direction_for_bot(getattr(conv, "bot_id", "") or "")
+
+
+async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]:
+    """Проверка (и фиксация) владения перед действием менеджера. action: send|claim|release.
+
+    Возвращает (allowed, notice). Успешный claim / авто-захват ничьего лида пишет
+    доменный Assignment под row-lock; панельный assigned_to выставляет вызывающий
+    код (легаси-путь сохраняется). Fail-open: сбой домена не кладёт панель — правила
+    владения тут дисциплина команды, не граница безопасности; сбой виден в логах.
+    """
+    from app.core import live_authz
+    try:
+        if not await live_authz.enforcement_enabled():
+            return True, ""
+    except Exception:  # noqa: BLE001 — сбой чтения флага не должен ломать панель
+        log.warning("authz guard: flag read failed — fail-open", exc_info=True)
+        return True, ""
+    direction = _authz_direction(conv)
+    if not direction:                       # команду не определить → не форсим
+        log.debug("authz guard: no direction for conversation, skipping")
+        return True, ""
+    try:
+        from app.domain import live_assign
+        from app.domain.models import DomainError
+        from app.domain.permissions import can_reassign, can_send
+        actor = live_authz.actor_for(manager)
+        async with _domain_sessionmaker()() as s:
+            contact = await live_assign.contact_for_channel(
+                s, channel=(getattr(conv, "channel", "") or ""),
+                raw=conv.phone or conv.user_id)
+            asg = await live_assign.active_assignment(s, contact.id, direction)
+            owner = (getattr(asg, "manager_id", "") or "") if asg is not None else ""
+            if not owner:
+                # Легаси-владение из панели (до-доменные клеймы): уважаем его и лениво
+                # мигрируем в домен при первом действии самого владельца.
+                owner = (getattr(conv, "assigned_to", "") or "").strip().lower()
+            if action == "release":
+                # Вернуть боту может владелец или полный админ; назначение закрывается.
+                if actor.is_full_admin or owner in ("", actor.manager_id):
+                    await live_assign.end_active(s, contact.id, direction)
+                    await s.commit()
+                    return True, ""
+                await s.commit()
+                return False, (f"Диалог ведёт {owner} — вернуть боту может "
+                               "владелец или администратор.")
+            if action == "send" and can_send(actor, asg, direction):
+                await s.commit()
+                return True, ""
+            if owner and owner != actor.manager_id and not (
+                    action == "claim" and actor.is_full_admin):
+                await s.commit()
+                if actor.is_full_admin:
+                    return False, (f"Диалог ведёт {owner}. Сначала передайте лид "
+                                   "(кнопка «Переназначить») — затем пишите.")
+                return False, (f"Диалог ведёт {owner}. Перехват запрещён — "
+                               "передать лид может только администратор.")
+            if action == "claim" and asg is not None and owner == actor.manager_id:
+                await s.commit()                # свой лид повторно — без новой ревизии
+                return True, ""
+            if not can_reassign(actor, asg, actor.manager_id, direction):
+                await s.commit()
+                return False, "Нет доступа к этой воронке."
+            # Ничей лид (или лениво мигрируемый свой, или админский перехват) → закрепляем.
+            try:
+                await live_assign.assign_locked(
+                    s, contact.id, direction, actor.manager_id,
+                    assigned_by=actor.manager_id,
+                    reason=("takeover" if action == "claim" else "auto_claim_on_send"),
+                    allow_emergency=actor.is_full_admin)
+                await s.commit()
+            except DomainError:
+                # Гонка: другой менеджер взял лид между нашим чтением и локом. Это
+                # честный отказ бизнес-правила, НЕ инфраструктурный сбой → блокируем.
+                return False, ("Диалог только что взял другой менеджер — "
+                               "обновите карточку.")
+            return True, ""
+    except Exception:  # noqa: BLE001 — fail-open только для ИНФРА-сбоев, см. докстринг
+        log.warning("authz guard failed — fail-open (action=%s)", action, exc_info=True)
+        return True, ""
+
+
 @router.post("/conversation/{user_id}/takeover", response_class=HTMLResponse)
 async def takeover(user_id: str, request: Request, manager: dict = Depends(require_admin)):
     """Менеджер перехватывает диалог: бот замолкает, диалог закрепляется за менеджером."""
-    await _require_visible_conversation(user_id, manager)
+    conv = await _require_visible_conversation(user_id, manager)
+    allowed, deny_notice = await _ownership_guard(conv, manager, "claim")
+    if not allowed:
+        return await _render_conversation(user_id, request, manager, notice=deny_notice)
     await _set_intercept(user_id, True)
     await get_conversation_store().update_meta(user_id, assigned_to=manager["login"])
     await get_conversation_store().add_audit(manager["login"], "takeover", user_id)
@@ -839,11 +1007,51 @@ async def takeover(user_id: str, request: Request, manager: dict = Depends(requi
 @router.post("/conversation/{user_id}/release", response_class=HTMLResponse)
 async def release(user_id: str, request: Request, manager: dict = Depends(require_admin)):
     """Вернуть диалог боту (снять перехват и закрепление)."""
-    await _require_visible_conversation(user_id, manager)
+    conv = await _require_visible_conversation(user_id, manager)
+    allowed, deny_notice = await _ownership_guard(conv, manager, "release")
+    if not allowed:
+        return await _render_conversation(user_id, request, manager, notice=deny_notice)
     await _set_intercept(user_id, False)
     await get_conversation_store().release_claim(user_id)
     await get_conversation_store().add_audit(manager["login"], "release", user_id)
     return await _render_conversation(user_id, request, manager)
+
+
+@router.post("/conversation/{user_id}/reassign", response_class=HTMLResponse)
+async def reassign(user_id: str, request: Request,
+                   manager: dict = Depends(require_full_admin), target: str = Form("")):
+    """Полный админ передаёт лид другому менеджеру (аварийный перехват — с историей).
+
+    Работает и при выключенном authz-флаге: пишет доменный Assignment + зеркалит в
+    панельный assigned_to, так что включение флага позже ничего не потеряет.
+    """
+    conv = await _require_visible_conversation(user_id, manager)
+    target = (target or "").strip().lower()
+    known = {(m.login or "").strip().lower() for m in settings.manager_list()}
+    if not target or target not in known:
+        raise HTTPException(status_code=400, detail="unknown target manager")
+    direction = _authz_direction(conv)
+    if not direction:
+        return await _render_conversation(
+            user_id, request, manager, notice="Не удалось определить воронку диалога.")
+    try:
+        from app.domain import live_assign
+        async with _domain_sessionmaker()() as s:
+            contact = await live_assign.contact_for_channel(
+                s, channel=(getattr(conv, "channel", "") or ""),
+                raw=conv.phone or conv.user_id)
+            await live_assign.assign_locked(
+                s, contact.id, direction, target, assigned_by=manager["login"],
+                reason="admin_reassign", allow_emergency=True)
+            await s.commit()
+    except Exception:  # noqa: BLE001
+        log.warning("reassign failed", exc_info=True)
+        return await _render_conversation(
+            user_id, request, manager, notice="Не удалось переназначить — попробуйте ещё раз.")
+    await get_conversation_store().update_meta(user_id, assigned_to=target)
+    await get_conversation_store().add_audit(manager["login"], "reassign", user_id, target)
+    return await _render_conversation(
+        user_id, request, manager, notice=f"Лид передан менеджеру {target}.")
 
 
 @router.post("/conversation/{user_id}/send", response_class=HTMLResponse)
@@ -856,6 +1064,9 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
     if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
     if text:
+        allowed, deny_notice = await _ownership_guard(conv, manager, "send")
+        if not allowed:
+            return await _render_conversation(user_id, request, manager, notice=deny_notice)
         await _set_intercept(user_id, True)  # отвечает человек → бот молчит
         await panel.update_meta(user_id, assigned_to=manager["login"])
         msg_id = await panel.add_message(user_id, "manager", text, status="pending")

@@ -15,6 +15,9 @@
     </div>
   </div>
 
+  {% if notice %}
+  <div class="status" style="background:var(--warm-soft);color:var(--warm)">{{ notice }}</div>
+  {% endif %}
   {% if busy_by %}
   <div class="status" style="background:var(--warm-soft);color:var(--warm)">
     ⚠ Диалог уже ведёт менеджер <b>{{ busy_by }}</b> — действуйте аккуратно
@@ -23,6 +26,18 @@
   <div class="status active">
     🔒 Ведёт: {{ c.assigned_to }}{% if c.assigned_to == manager.login %} (вы){% endif %}
   </div>
+  {% endif %}
+  {% if is_full_admin and reassign_targets %}
+  <form style="display:flex;gap:6px;align-items:center;margin:6px 0"
+        hx-post="/admin/conversation/{{ c.user_id }}/reassign" hx-target="#chat" hx-swap="innerHTML">
+    <select name="target" class="btn btn-ghost" style="padding:6px" title="Кому передать лид">
+      {% for t in reassign_targets %}
+      <option value="{{ t }}" {% if t == c.assigned_to %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-ghost" type="submit"
+            hx-confirm="Передать лид выбранному менеджеру?">↔ Переназначить</button>
+  </form>
   {% endif %}
 
   <div class="ph-actions">

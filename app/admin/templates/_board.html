@@ -1,5 +1,5 @@
 {# Доска: метрики + колонки канбана. Авто-обновление каждые 15с (только на видимой вкладке). #}
-<div hx-get="/admin/board/{{ funnel }}" hx-trigger="every 15s [document.visibilityState==='visible' && !window.__boardDragging]" hx-swap="outerHTML" hx-target="this" data-board data-funnel="{{ funnel }}">
+<div hx-get="/admin/board/{{ funnel }}{% if mine %}?mine=1{% endif %}" hx-trigger="every 15s [document.visibilityState==='visible' && !window.__boardDragging]" hx-swap="outerHTML" hx-target="this" data-board data-funnel="{{ funnel }}">
   <div class="metrics">
     <div class="stat"><div class="n">{{ metrics.total }}</div><div class="l">Всего диалогов</div></div>
     <div class="stat waiting"><div class="n">{{ metrics.waiting }}</div><div class="l">Ждут ответа</div></div>
@@ -9,6 +9,11 @@
     <div class="stat noise-filter" onclick="toggleNoise(this)" title="Скрыть рекламу и диалоги без переписки" style="cursor:pointer">
       <div class="n">{{ metrics.noise }}</div><div class="l">Скрыть рекламу/без диалога</div></div>
     <div class="stat intercepted"><div class="n">{{ metrics.intercepted }}</div><div class="l">Перехвачено</div></div>
+    <div class="stat mine-filter" title="Показать только лиды, закреплённые за вами"
+         style="cursor:pointer{% if mine %};outline:2px solid var(--accent,#00767d){% endif %}"
+         hx-get="/admin/board/{{ funnel }}?mine={{ 0 if mine else 1 }}"
+         hx-target="closest [data-board]" hx-swap="outerHTML">
+      <div class="n">👤</div><div class="l">{{ 'Все лиды' if mine else 'Мои лиды' }}</div></div>
   </div>
 
   <div class="board">
@@ -64,6 +69,9 @@
           {% endif %}
           {% if c.is_silent %}
           <span class="badge silent">молчит {{ c.time_label }}</span>
+          {% endif %}
+          {% if c.assigned_to %}
+          <span class="badge owner" title="Владелец лида">👤 {{ c.assigned_to }}</span>
           {% endif %}
           {% if c.intercepted %}
           <span class="badge intercepted push">

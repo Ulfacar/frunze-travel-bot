@@ -345,6 +345,13 @@ class Orchestrator:
                 phone=msg.user_id, channel=msg.channel, bot_id=self._bot_id,
                 direction=(self.bot.scenario if self.bot is not None else ""),
                 body=text, provider_msg_id=_ev, external_event_id=_ev)
+            # Sprint 2: авто-назначение визового лида (флаг visa_autoassign_enabled,
+            # default OFF, fail-safe). Закрепляет владельца, бота НЕ перехватывает.
+            from app.domain import autoassign
+            await autoassign.maybe_autoassign(
+                phone=msg.user_id, channel=msg.channel,
+                direction=(self.bot.scenario if self.bot is not None else ""),
+                user_id=self._key(msg))
         except Exception:  # noqa: BLE001 — лог не критичен для диалога
             log.warning("panel log_in failed", exc_info=True)
         # Зеркало в Bitrix (best-effort, фоном — не блокирует и не роняет обработку).

@@ -212,6 +212,15 @@ class Settings(BaseSettings):
     # contact/dialog shadow; default OFF; runtime key `messaging_shadow_enabled`.
     # These ledgers are NOT wired into live delivery and do NOT touch the Bitrix mirror.
     messaging_shadow_enabled: bool = False
+    # Sprint 2: живое применение WP3-прав владения в админке. Default OFF; runtime
+    # key `authz_enforce_enabled`. ON → писать можно только своим или ничьим клиентам
+    # (ничей закрепляется за первым ответившим); чужой лид передаёт только полный
+    # админ через «Переназначить». OFF → прежнее мягкое предупреждение «уже ведёт X».
+    authz_enforce_enabled: bool = False
+    # Sprint 2: авто-назначение нового ВИЗОВОГО лида по round-robin (least-recently-
+    # assigned по visa_manager_roster). Default OFF; runtime key `visa_autoassign_enabled`.
+    # Назначение НЕ перехватывает бота — фиксирует владельца + опц. личный TG-пуш.
+    visa_autoassign_enabled: bool = False
     # Anti-loop thresholds (pure service; not enforced in the live path yet).
     antiloop_repeat_window_seconds: int = 60   # identical outbound within window = loop
     antiloop_runaway_window_seconds: int = 60  # window for the runaway burst check
