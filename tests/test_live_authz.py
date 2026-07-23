@@ -297,6 +297,29 @@ def test_reassign_works_with_flag_off(tmp_path, monkeypatch):
     assert _assignments(sm)[0].manager_id == "medina"
 
 
+# ---------------- фичефлаги: только полный админ ----------------
+
+def test_feature_flag_toggle_forbidden_for_scoped_manager(monkeypatch):
+    """Аудит-фикс HIGH: скоуп-менеджер не может дёргать фичефлаги даже прямым POST."""
+    _clear()
+    monkeypatch.setattr(app.config.settings, "managers", MANAGERS)
+    r = _client("medina", "m1").post("/admin/flags/authz_enforce_enabled",
+                                     data={"on": "0"})
+    assert r.status_code == 403
+    from app.core import flags
+    assert asyncio.run(flags.get_flag("authz_enforce_enabled", False)) is False
+
+
+def test_feature_flag_toggle_allowed_for_full_admin(monkeypatch):
+    _clear()
+    monkeypatch.setattr(app.config.settings, "managers", MANAGERS)
+    r = _client("admin", "frunze").post("/admin/flags/authz_enforce_enabled",
+                                        data={"on": "1"})
+    assert r.status_code == 200
+    from app.core import flags
+    assert asyncio.run(flags.get_flag("authz_enforce_enabled", False)) is True
+
+
 # ---------------- доска: фильтр «Мои лиды» ----------------
 
 def test_board_mine_filter(tmp_path, monkeypatch):

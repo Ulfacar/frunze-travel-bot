@@ -544,9 +544,14 @@ async def _visa_queue_views() -> list[dict]:
 
 
 @router.post("/flags/{key}", response_class=HTMLResponse)
-async def toggle_flag(key: str, request: Request, manager: dict = Depends(require_admin),
-                      on: str = Form("0")):
-    """Менеджер включает/выключает фичу кнопкой в панели (рантайм-флаг в БД, без рестарта)."""
+async def toggle_flag(key: str, request: Request,
+                      manager: dict = Depends(require_full_admin), on: str = Form("0")):
+    """Полный админ включает/выключает фичу кнопкой в панели (рантайм-флаг в БД, без
+    рестарта). Только full-admin (аудит-фикс HIGH): страница флагов и так видна лишь
+    ему, но раньше POST руками мог дёрнуть любой залогиненный менеджер — включая
+    kill-switch ботов и новые authz/autoassign-флаги. Пер-бот тумблеры
+    (/bots/{id}/toggle) намеренно остаются require_admin — менеджеры включают и
+    выключают СВОИХ ботов сами (требование бизнеса)."""
     if key not in FEATURE_FLAGS:
         raise HTTPException(status_code=404, detail="unknown flag")
     from app.core import flags
