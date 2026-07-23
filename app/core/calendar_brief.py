@@ -75,12 +75,35 @@ def _owner_login(conv) -> str:
     return (getattr(conv, "assigned_to", "") or "").strip().lower()
 
 
+def _last_activity(conv) -> datetime | None:
+    """Момент последней активности диалога (для фильтра свежести)."""
+    return _aware(getattr(conv, "last_message_at", None))
+
+
+def _is_recent(conv, now: datetime, hours: int) -> bool:
+    """Диалог активен за последние `hours` часов (свежий → в список на обзвон).
+
+    Нет отметки времени → считаем свежим (не прячем клиента из-за пустого поля)."""
+    last = _last_activity(conv)
+    if last is None:
+        return True
+    return (now - last) <= timedelta(hours=hours)
+
+
+def _wa_link(user_id: str) -> str:
+    """Прямая ссылка «написать в WhatsApp» (wa.me/<цифры номера>). Пусто, если не номер."""
+    tail = "".join(ch for ch in (user_id or "").split(":")[-1] if ch.isdigit())
+    return f"https://wa.me/{tail}" if len(tail) >= 10 else ""
+
+
 def _lead_card(conv, now: datetime) -> dict:
     return {
         "user_id": getattr(conv, "user_id", ""),
         "name": _name(conv),
         "direction": _direction(conv),
+        "wait_min": int(_wait_minutes(conv, now)),
         "wait_label": _fmt_wait(int(_wait_minutes(conv, now))),
+        "wa_link": _wa_link(getattr(conv, "user_id", "")),
     }
 
 
@@ -100,8 +123,11 @@ def build_manager_brief(login: str, name: str, tasks: list, night_requests: list
     by_kind: dict[str, list] = {}
     for t in tasks:
         by_kind.setdefault(t.kind, []).append(_task_card(t))
-    night = [_lead_card(c, now) for c in night_requests]
-    distribute = [_lead_card(c, now) for c in (to_distribute or [])]
+    # Дольше всех ждёт — наверху (самый горячий клиент первым, не потеряется под капом).
+    night = sorted((_lead_card(c, now) for c in night_requests),
+                   key=lambda c: c["wait_min"], reverse=True)
+    distribute = sorted((_lead_card(c, now) for c in (to_distribute or [])),
+                        key=lambda c: c["wait_min"], reverse=True)
     return {
         "login": login,
         "name": name or login,
@@ -144,10 +170,12 @@ def render_manager_brief_text(brief: dict, base_url: str = "") -> str:
     if brief["night"]:
         lines += ["", f"🌙 Ночные заявки без точного времени ({brief['night_count']}):"]
         for c in brief["night"]:
-            tail = f" · {c['wait_label']}" if c["wait_label"] else ""
+            tail = f" · ждёт {c['wait_label']}" if c["wait_label"] else ""
             lines.append(f"• {c['name']} · {c['direction']}{tail}")
+            if c.get("wa_link"):
+                lines.append(f"    💬 написать: {c['wa_link']}")
             if c["user_id"]:
-                lines.append(f"    {_client_link(c['user_id'], base_url)}")
+                lines.append(f"    открыть: {_client_link(c['user_id'], base_url)}")
     # Full-admin only: unassigned leads awaiting distribution (no assignment done here).
     if brief["to_distribute"]:
         lines += ["", f"📥 Требуют распределения ({brief['to_distribute_count']}):"]
@@ -223,12 +251,20 @@ async def run(now: datetime | None = None, *, sessionmaker=None) -> None:
             is_admin = bot_scope_for(
                 {"login": mgr.login, "name": mgr.name, "admin": bool(mgr.admin)},
                 admin_user=cfg.admin_user) is None
-            # Owner-routed: an assigned overnight lead goes ONLY to its active owner, so
-            # no client is duplicated across managers.
-            night = [c for c in convs if _is_open_lead(c) and _owner_login(c) == login]
-            # Unassigned leads are NOT sent to regular managers. Until live round-robin
-            # assignment exists, only a full-admin sees them (to distribute manually).
-            to_distribute = ([c for c in convs if _is_open_lead(c) and not _owner_login(c)]
+            lookback = cfg.night_lookback_hours
+            # Клиенты, на кого уже есть задача сегодня — не дублируем в «ночных».
+            task_uids = {(getattr(t, "user_id", "") or "") for t in tasks}
+
+            def _is_night(c) -> bool:
+                # Список на обзвон: открытый лид + свежая активность (за ночь/вечер) +
+                # ещё не запланирован задачей. Не весь пайплайн, а «кто написал недавно».
+                return (_is_open_lead(c) and _is_recent(c, now, lookback)
+                        and getattr(c, "user_id", "") not in task_uids)
+
+            # Owner-routed: назначенный ночной лид идёт ТОЛЬКО своему владельцу.
+            night = [c for c in convs if _is_night(c) and _owner_login(c) == login]
+            # Неназначенные свежие лиды видит только full-admin (раздел «Требуют распределения»).
+            to_distribute = ([c for c in convs if _is_night(c) and not _owner_login(c)]
                              if is_admin else [])
         except Exception:  # noqa: BLE001 — one manager's data error must not block others
             log.warning("calendar brief build failed for manager=%s", login, exc_info=True)

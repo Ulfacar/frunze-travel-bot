@@ -194,3 +194,61 @@ def test_assigned_lead_only_to_owner(monkeypatch):
         assert "КлиентМедины" not in _text_for(sent, "222")         # peer eliza
         assert "КлиентМедины" not in _text_for(sent, "999")         # admin (it's assigned)
     _run_case(body, monkeypatch, convs=convs, managers=_TEAM)
+
+
+# --- список на обзвон: свежесть, дедуп, сортировка, wa.me -----------------------
+
+def test_night_sorted_longest_wait_first():
+    """Дольше всех ждёт — первым (самый горячий не теряется под капом)."""
+    from datetime import timedelta
+    fresh = Conv(user_id="getvisa:996700111222", last_message_at=NOW - timedelta(minutes=30),
+                 qualification={"name": "Недавний"})
+    old = Conv(user_id="getvisa:996700333444", last_message_at=NOW - timedelta(hours=8),
+               qualification={"name": "Давнийждёт"})
+    brief = cb.build_manager_brief("medina", "Медина", [], [fresh, old], NOW)
+    text = cb.render_manager_brief_text(brief)
+    assert text.index("Давнийждёт") < text.index("Недавний")     # дольше ждёт — выше
+
+
+def test_night_has_whatsapp_link():
+    """У ночного клиента есть прямая wa.me-ссылка на его номер."""
+    night = [Conv(user_id="getvisa:996700111222", qualification={"name": "Клиент"})]
+    brief = cb.build_manager_brief("medina", "Медина", [], night, NOW)
+    text = cb.render_manager_brief_text(brief)
+    assert "https://wa.me/996700111222" in text
+
+
+def test_stale_lead_excluded_from_night(monkeypatch):
+    """Лид с активностью старше окна свежести не попадает в «ночные» (не весь пайплайн)."""
+    from datetime import timedelta
+    convs = [Conv(user_id="getvisa:996700999", assigned_to="medina",
+                  last_message_at=NOW - timedelta(hours=20),   # >16ч lookback
+                  qualification={"name": "СтарыйЛид"})]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        assert "СтарыйЛид" not in _text_for(sent, "111")
+    _run_case(body, monkeypatch, convs=convs)
+
+
+def test_fresh_lead_included_in_night(monkeypatch):
+    convs = [Conv(user_id="getvisa:996700999", assigned_to="medina",
+                  last_message_at=NOW, qualification={"name": "СвежийЛид"})]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        assert "СвежийЛид" in _text_for(sent, "111")
+    _run_case(body, monkeypatch, convs=convs)
+
+
+def test_lead_with_task_deduped_from_night(monkeypatch):
+    """Клиент, на кого уже стоит задача сегодня, не дублируется в «ночных»."""
+    # Харнесс сеет задачу для medina на user_id="getvisa:996700111".
+    convs = [Conv(user_id="getvisa:996700111", assigned_to="medina",
+                  last_message_at=NOW, qualification={"name": "УжеСЗадачей"})]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        text = _text_for(sent, "111")
+        assert "🌙" not in text or "УжеСЗадачей" not in text     # в ночных его нет
+    _run_case(body, monkeypatch, convs=convs)
