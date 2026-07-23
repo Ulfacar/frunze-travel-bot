@@ -14,6 +14,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Код приложения.
 COPY app ./app
 COPY run_polling.py ./
+# Alembic-миграции доменной схемы: нужны В образе, чтобы `docker exec … alembic
+# upgrade head` работал на проде (деплой-шаг перед включением новых фич).
+COPY alembic.ini ./
+COPY alembic ./alembic
 
 # Непривилегированный пользователь.
 RUN useradd --create-home appuser
