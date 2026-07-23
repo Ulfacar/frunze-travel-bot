@@ -221,6 +221,14 @@ class Settings(BaseSettings):
     # assigned по visa_manager_roster). Default OFF; runtime key `visa_autoassign_enabled`.
     # Назначение НЕ перехватывает бота — фиксирует владельца + опц. личный TG-пуш.
     visa_autoassign_enabled: bool = False
+    # Ночной режим: бот авто-отвечает ТОЛЬКО в ночное окно по Бишкеку (менеджеры днём
+    # ведут вручную, ночью подхватывает бот). Default OFF; runtime key `night_mode_enabled`.
+    # Окно [night_mode_from, night_mode_to) через полночь: 22→8 = с 22:00 до 08:00.
+    # Работает поверх bots_enabled: если бот выключен кнопкой — ночь его не включит;
+    # если включён — днём молчит, ночью отвечает. Входящие всё равно копятся в панель.
+    night_mode_enabled: bool = False
+    night_mode_from: int = 22                 # час Бишкека начала ночного окна (вкл)
+    night_mode_to: int = 8                    # час Бишкека конца ночного окна (выкл)
     # Anti-loop thresholds (pure service; not enforced in the live path yet).
     antiloop_repeat_window_seconds: int = 60   # identical outbound within window = loop
     antiloop_runaway_window_seconds: int = 60  # window for the runaway burst check

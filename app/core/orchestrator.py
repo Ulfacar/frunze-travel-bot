@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import replace
+from datetime import datetime, timedelta, timezone
 
 from app.channels.base import ChannelAdapter, Message
 from app.config import BotConfig, settings
@@ -110,12 +111,32 @@ class Orchestrator:
 
         Per-bot ключ `bots_enabled:<bot_id>` переопределяет глобальный `bots_enabled`:
         позволяет включить тест-ботов в Telegram, не будя боевой WhatsApp (его боты
-        персональный ключ не задают → наследуют глобальный, сейчас OFF)."""
+        персональный ключ не задают → наследуют глобальный, сейчас OFF).
+
+        Поверх этого — ночной режим: при `night_mode_enabled` бот отвечает ТОЛЬКО в
+        ночном окне по Бишкеку (днём менеджеры ведут вручную). Ночь НЕ включает
+        выключенного кнопкой бота — только сужает окно уже включённого."""
         from app.core import flags
         global_on = await flags.get_flag("bots_enabled", True)
         if self._bot_id:
-            return await flags.get_flag(f"bots_enabled:{self._bot_id}", global_on)
-        return global_on
+            enabled = await flags.get_flag(f"bots_enabled:{self._bot_id}", global_on)
+        else:
+            enabled = global_on
+        if enabled and await self._night_mode_blocks():
+            return False
+        return enabled
+
+    async def _night_mode_blocks(self) -> bool:
+        """True → сейчас ДЕНЬ и ночной режим включён (бот должен молчать).
+
+        Окно [from, to) по Бишкеку, через полночь (22→8). Вне окна = день = блок."""
+        from app.core import flags
+        if not await flags.get_flag("night_mode_enabled", settings.night_mode_enabled):
+            return False
+        local_hour = (datetime.now(timezone.utc) + timedelta(hours=6)).hour
+        a, b = settings.night_mode_from, settings.night_mode_to
+        in_night = (local_hour >= a or local_hour < b) if a > b else (a <= local_hour < b)
+        return not in_night
 
     async def handle(self, msg: Message) -> None:
         if not msg.user_id:
