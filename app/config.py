@@ -221,6 +221,13 @@ class Settings(BaseSettings):
     # assigned по visa_manager_roster). Default OFF; runtime key `visa_autoassign_enabled`.
     # Назначение НЕ перехватывает бота — фиксирует владельца + опц. личный TG-пуш.
     visa_autoassign_enabled: bool = False
+    # Пилот: single-manager назначение туровых лидов (закрывает owner-gap Morning Brief —
+    # без owner ночной туровый лид не попадает в личный бриф менеджера). Default OFF;
+    # runtime key `tours_pilot_assign_enabled`. ТОЛЬКО bot_id=frunze_tours, ТОЛЬКО если у
+    # контакта нет активного tours-owner. Владелец из tours_pilot_manager (не хардкод).
+    tours_pilot_assign_enabled: bool = False
+    tours_pilot_manager: str = "ademi"        # login Адеми (совпадает с BOT_SCOPE_BY_MANAGER)
+    tours_pilot_bot_id: str = "frunze_tours"  # единственный боевой туровый WA-бот
     # Ночной режим: бот авто-отвечает ТОЛЬКО в ночное окно по Бишкеку (менеджеры днём
     # ведут вручную, ночью подхватывает бот). Default OFF; runtime key `night_mode_enabled`.
     # Окно [night_mode_from, night_mode_to) через полночь: 22→8 = с 22:00 до 08:00.

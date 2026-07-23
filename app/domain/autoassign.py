@@ -22,6 +22,9 @@ log = logging.getLogger("domain.autoassign")
 FLAG = "visa_autoassign_enabled"
 VISA_DIRECTION = "visa"
 
+TOURS_PILOT_FLAG = "tours_pilot_assign_enabled"
+TOURS_DIRECTION = "tours"
+
 
 async def _mirror_panel(user_id: str, login: str) -> None:
     """Отразить владельца в панельном assigned_to (только если тот пуст)."""
@@ -101,3 +104,65 @@ async def maybe_autoassign(*, phone: str, direction: str, user_id: str,
         log.warning("visa autoassign: notify failed (manager=%s)", login)
     log.info("visa autoassign: assigned manager=%s", login)
     return login
+
+
+async def _audit_assign(login: str, user_id: str, reason: str) -> None:
+    """Audit-запись о назначении (не роняет поток при сбое панели)."""
+    try:
+        from app.integrations.panel.store import get_conversation_store
+        await get_conversation_store().add_audit(
+            "system", "assign", user_id, f"{reason} → {login}")
+    except Exception:  # noqa: BLE001
+        log.warning("tours pilot: audit write failed (manager=%s)", login)
+
+
+async def maybe_assign_tours_pilot(*, phone: str, direction: str, bot_id: str,
+                                   user_id: str, channel: str = "",
+                                   sessionmaker=None) -> str | None:
+    """Пилот: назначить новый ТУРОВЫЙ лид единственному менеджеру (Адеми). Не raises.
+
+    Закрывает owner-gap Morning Brief. Строго: флаг ON, direction=tours,
+    bot_id=tours_pilot_bot_id, у контакта НЕТ активного tours-owner. Существующего
+    владельца НЕ перезаписывает. Идемпотентно (row-lock + проверка активного).
+    Владелец — settings.tours_pilot_manager (не хардкод). Пишет Assignment + audit;
+    зеркалит в панель (для брифа). Флаг OFF → новые лиды не назначаются.
+    """
+    from app.core.flags import get_flag
+    if (direction or "") != TOURS_DIRECTION:
+        return None
+    if (bot_id or "") != settings.tours_pilot_bot_id:
+        return None
+    if not await get_flag(TOURS_PILOT_FLAG, settings.tours_pilot_assign_enabled):
+        return None
+    pilot = (settings.tours_pilot_manager or "").strip().lower()
+    if not pilot:
+        log.info("tours pilot: no pilot manager configured")
+        return None
+    try:
+        sm = sessionmaker
+        if sm is None:
+            from app.integrations.crm.db import get_sessionmaker
+            sm = get_sessionmaker()
+        from app.domain import live_assign
+        async with sm() as session:
+            contact = await live_assign.contact_for_channel(
+                session, channel=channel, raw=phone)
+            await live_assign.lock_contact(session, contact.id)
+            # Существующий owner НИКОГДА не перезаписываем (идемпотентность + защита).
+            if await live_assign.active_assignment(session, contact.id, TOURS_DIRECTION):
+                await session.commit()
+                return None
+            await live_assign.assign_locked(
+                session, contact.id, TOURS_DIRECTION, pilot,
+                assigned_by="system", reason="tours_pilot")
+            await session.commit()
+    except Exception as exc:  # noqa: BLE001 — fail-safe
+        log.warning("tours pilot assign failed (err=%s)", type(exc).__name__)
+        return None
+    try:
+        await _mirror_panel(user_id, pilot)
+    except Exception:  # noqa: BLE001
+        log.warning("tours pilot: panel mirror failed", exc_info=True)
+    await _audit_assign(pilot, user_id, "tours_pilot")
+    log.info("tours pilot: assigned manager=%s", pilot)
+    return pilot

@@ -369,10 +369,15 @@ class Orchestrator:
             # Sprint 2: авто-назначение визового лида (флаг visa_autoassign_enabled,
             # default OFF, fail-safe). Закрепляет владельца, бота НЕ перехватывает.
             from app.domain import autoassign
+            _dir = (self.bot.scenario if self.bot is not None else "")
             await autoassign.maybe_autoassign(
                 phone=msg.user_id, channel=msg.channel,
-                direction=(self.bot.scenario if self.bot is not None else ""),
-                user_id=self._key(msg))
+                direction=_dir, user_id=self._key(msg))
+            # Пилот: single-manager назначение туровых лидов (флаг tours_pilot_assign_enabled,
+            # default OFF, fail-safe). Закрывает owner-gap Morning Brief; бота НЕ перехватывает.
+            await autoassign.maybe_assign_tours_pilot(
+                phone=msg.user_id, channel=msg.channel, bot_id=self._bot_id,
+                direction=_dir, user_id=self._key(msg))
         except Exception:  # noqa: BLE001 — лог не критичен для диалога
             log.warning("panel log_in failed", exc_info=True)
         # Зеркало в Bitrix (best-effort, фоном — не блокирует и не роняет обработку).

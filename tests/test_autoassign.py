@@ -211,3 +211,139 @@ def test_fail_safe_never_raises(tmp_path):
 
     assert asyncio.run(autoassign.maybe_autoassign(
         phone=PHONE_1, direction="visa", user_id=UID_1, sessionmaker=_BrokenSM())) is None
+
+
+# ==================== Пилот: single-manager tours assignment ====================
+
+TOURS_PHONE = "996700555666"
+TOURS_UID = "frunze_tours:996700555666"
+
+
+def _tours_on():
+    from app.core import flags
+    asyncio.run(flags.set_flag("tours_pilot_assign_enabled", True))
+
+
+def _run_tours(sm, *, phone=TOURS_PHONE, bot_id="frunze_tours", direction="tours",
+               user_id=TOURS_UID):
+    return asyncio.run(autoassign.maybe_assign_tours_pilot(
+        phone=phone, direction=direction, bot_id=bot_id, user_id=user_id,
+        channel="whatsapp", sessionmaker=sm))
+
+
+def _tours_assignments(sm):
+    async def _q():
+        from app.domain.models import Assignment
+        async with sm() as s:
+            return (await s.scalars(
+                select(Assignment).where(Assignment.direction == "tours")
+                .order_by(Assignment.id))).all()
+    return asyncio.run(_q())
+
+
+def test_tours_pilot_flag_off_no_assignment(tmp_path):
+    """1. flag OFF → assignment отсутствует."""
+    _clear()
+    sm = _sm(tmp_path)
+    assert _run_tours(sm) is None
+    assert _tours_assignments(sm) == []
+
+
+def test_tours_pilot_assigns_ademi_when_no_owner(tmp_path):
+    """2. flag ON + frunze_tours + no owner → owner Адеми (ademi)."""
+    _clear()
+    _tours_on()
+    sm = _sm(tmp_path)
+    assert _run_tours(sm) == "ademi"
+    rows = _tours_assignments(sm)
+    assert len(rows) == 1
+    assert rows[0].manager_id == "ademi" and rows[0].active
+    assert rows[0].assigned_by == "system" and rows[0].reason == "tours_pilot"
+
+
+def test_tours_pilot_idempotent(tmp_path):
+    """3. повторное событие → дубля нет."""
+    _clear()
+    _tours_on()
+    sm = _sm(tmp_path)
+    assert _run_tours(sm) == "ademi"
+    assert _run_tours(sm) is None
+    assert len(_tours_assignments(sm)) == 1
+
+
+def test_tours_pilot_never_overwrites_existing_owner(tmp_path):
+    """4. существующий owner → не меняется."""
+    _clear()
+    _tours_on()
+    sm = _sm(tmp_path)
+    # Предзакрепляем контакт за другим менеджером напрямую в домене.
+    from app.domain import live_assign
+
+    async def _preassign():
+        async with sm() as s:
+            contact = await live_assign.contact_for_channel(
+                s, channel="whatsapp", raw=TOURS_PHONE)
+            await live_assign.assign_locked(
+                s, contact.id, "tours", "sezim",
+                assigned_by="manual", reason="test")
+            await s.commit()
+    asyncio.run(_preassign())
+    assert _run_tours(sm) is None
+    rows = _tours_assignments(sm)
+    assert len(rows) == 1 and rows[0].manager_id == "sezim"   # Адеми не перезаписала
+
+
+def test_tours_pilot_other_bot_id_not_assigned(tmp_path):
+    """5. другой bot_id → не назначается (напр. Сезим-бот frunze_tours_sezim)."""
+    _clear()
+    _tours_on()
+    sm = _sm(tmp_path)
+    assert _run_tours(sm, bot_id="frunze_tours_sezim",
+                      user_id="frunze_tours_sezim:996700555666") is None
+    assert _tours_assignments(sm) == []
+
+
+def test_tours_pilot_non_tours_direction_noop(tmp_path):
+    """Визовое направление через туровый хук не назначается (кросс-скоуп-защита)."""
+    _clear()
+    _tours_on()
+    sm = _sm(tmp_path)
+    assert _run_tours(sm, direction="visa") is None
+    assert _tours_assignments(sm) == []
+
+
+def test_tours_pilot_configurable_manager(tmp_path):
+    """pilot_manager берётся из настроек, не хардкодится."""
+    _clear()
+    _tours_on()
+    import app.config
+    from unittest.mock import patch
+    sm = _sm(tmp_path)
+    with patch.object(app.config.settings, "tours_pilot_manager", "ademi_alt"):
+        assert _run_tours(sm) == "ademi_alt"
+
+
+def test_tours_pilot_flag_off_after_on_stops_new(tmp_path):
+    """После выключения флага новые лиды больше не назначаются."""
+    _clear()
+    _tours_on()
+    sm = _sm(tmp_path)
+    assert _run_tours(sm) == "ademi"                    # первый — назначен
+    from app.core import flags
+    asyncio.run(flags.set_flag("tours_pilot_assign_enabled", False))
+    assert _run_tours(sm, phone="996700777888",
+                      user_id="frunze_tours:996700777888") is None   # новый — нет
+    assert len(_tours_assignments(sm)) == 1
+
+
+def test_tours_pilot_fail_safe_never_raises(tmp_path):
+    _clear()
+    _tours_on()
+
+    class _BrokenSM:
+        def __call__(self):
+            raise RuntimeError("db down")
+
+    assert asyncio.run(autoassign.maybe_assign_tours_pilot(
+        phone=TOURS_PHONE, direction="tours", bot_id="frunze_tours",
+        user_id=TOURS_UID, sessionmaker=_BrokenSM())) is None
