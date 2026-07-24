@@ -133,6 +133,18 @@ _install_guard()
 
 
 @pytest.fixture(autouse=True)
+def _reset_runtime_flags():
+    """Сбрасывать in-memory рантайм-флаги между тестами — иначе флаг, включённый
+    одним тестом (напр. night_mode_enabled), протекает в следующий и молча меняет
+    поведение бота (_bots_on). Тесты сами тоже зовут flags.reset() в начале — этот
+    fixture гарантирует чистоту даже если забыли."""
+    from app.core import flags
+    flags.reset()
+    yield
+    flags.reset()
+
+
+@pytest.fixture(autouse=True)
 def _external_network_gate(request):
     """Lift the guard ONLY inside a test marked ``external_network`` AND only when
     ``--allow-external-network`` is set; restore it afterwards. An unmarked test can
