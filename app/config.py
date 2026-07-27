@@ -186,6 +186,12 @@ class Settings(BaseSettings):
     # флаг от «горячего листа»; ВЫКЛ по умолчанию — включается на rollout. Окно отправки
     # и час берутся из morning_brief_hour (те же). Экран /admin/calendar работает всегда.
     calendar_brief_enabled: bool = False
+    # Шаг 1 связки бот→календарь: при доставке брифа бот САМ ставит задачу-звонок
+    # (kind=call, created_by='bot', на сегодня) на каждый owner-routed ночной лид —
+    # чтобы утренний список звонков материализовался в календарь без ручного труда.
+    # Идемпотентно: «ночные» уже исключают лидов с задачей на сегодня. Default OFF;
+    # runtime key `calendar_autotask_enabled`. Требует calendar_brief_enabled.
+    calendar_autotask_enabled: bool = False
     # Еженедельная тур-сводка ВЛАДЕЛЬЦУ (Грише) в личный Telegram: закрывает «не вижу
     # цифр по турам → не оправдать таргет». Только честные факты + ручные продажи;
     # AI-оценка отдельной строкой с пометкой. Default OFF; runtime key

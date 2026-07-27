@@ -31,7 +31,7 @@ class Task:
 @dataclass
 class Conv:
     bot_id: str = "getvisa"
-    user_id: str = "getvisa:996700999"
+    user_id: str = "getvisa:996700111222"
     funnel: str = "visa"
     outcome: str = ""
     assigned_to: str = ""
@@ -221,7 +221,7 @@ def test_night_has_whatsapp_link():
 def test_stale_lead_excluded_from_night(monkeypatch):
     """Лид с активностью старше окна свежести не попадает в «ночные» (не весь пайплайн)."""
     from datetime import timedelta
-    convs = [Conv(user_id="getvisa:996700999", assigned_to="medina",
+    convs = [Conv(user_id="getvisa:996700111222", assigned_to="medina",
                   last_message_at=NOW - timedelta(hours=20),   # >16ч lookback
                   qualification={"name": "СтарыйЛид"})]
     async def body(sm, sent):
@@ -232,7 +232,7 @@ def test_stale_lead_excluded_from_night(monkeypatch):
 
 
 def test_fresh_lead_included_in_night(monkeypatch):
-    convs = [Conv(user_id="getvisa:996700999", assigned_to="medina",
+    convs = [Conv(user_id="getvisa:996700111222", assigned_to="medina",
                   last_message_at=NOW, qualification={"name": "СвежийЛид"})]
     async def body(sm, sent):
         await flags.set_flag("calendar_brief_enabled", True)
@@ -251,4 +251,66 @@ def test_lead_with_task_deduped_from_night(monkeypatch):
         await cb.run(NOW, sessionmaker=sm)
         text = _text_for(sent, "111")
         assert "🌙" not in text or "УжеСЗадачей" not in text     # в ночных его нет
+    _run_case(body, monkeypatch, convs=convs)
+
+
+# --- Шаг 1: бот → авто-задача звонка на ночные лиды (флаг calendar_autotask) --------
+
+async def _bot_tasks_today(sm, manager_id):
+    async with sm() as s:
+        rows = await CalendarTaskService.list_for_manager(
+            s, manager_id, date_from=TODAY, date_to=TODAY, include_terminal=True)
+    return [t for t in rows if (t.created_by or "") == "bot"]
+
+
+def test_autotask_off_creates_no_bot_task(monkeypatch):
+    """Бриф включён, autotask ВЫКЛ → бот не создаёт задач (поведение прежнее)."""
+    convs = [Conv(user_id="getvisa:996700111222", assigned_to="medina",
+                  last_message_at=NOW, qualification={"name": "СвежийЛид"})]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        assert await _bot_tasks_today(sm, "medina") == []
+    _run_case(body, monkeypatch, convs=convs)
+
+
+def test_autotask_on_materializes_call_task_for_night_lead(monkeypatch):
+    """autotask ВКЛ → на owner-routed ночной лид появляется задача-звонок created_by='bot'."""
+    convs = [Conv(user_id="getvisa:996700111222", assigned_to="medina",
+                  last_message_at=NOW, qualification={"name": "СвежийЛид"})]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await flags.set_flag("calendar_autotask_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        bot_tasks = await _bot_tasks_today(sm, "medina")
+        assert len(bot_tasks) == 1
+        t = bot_tasks[0]
+        assert t.kind == "call" and t.user_id == "getvisa:996700111222"
+        assert t.manager_id == "medina" and t.scheduled_date == TODAY
+    _run_case(body, monkeypatch, convs=convs)
+
+
+def test_autotask_skips_lead_that_already_has_task(monkeypatch):
+    """Лид, у кого уже есть задача сегодня, дедупнут из «ночных» → бот не создаёт вторую."""
+    # Харнесс сеет НЕ-bot задачу на user_id="getvisa:996700111".
+    convs = [Conv(user_id="getvisa:996700111", assigned_to="medina",
+                  last_message_at=NOW, qualification={"name": "УжеСЗадачей"})]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await flags.set_flag("calendar_autotask_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        assert await _bot_tasks_today(sm, "medina") == []
+    _run_case(body, monkeypatch, convs=convs)
+
+
+def test_autotask_idempotent_second_run_same_day(monkeypatch):
+    """Второй прогон в тот же день не плодит дубли (sent_key гейтит повторную доставку)."""
+    convs = [Conv(user_id="getvisa:996700111222", assigned_to="medina",
+                  last_message_at=NOW, qualification={"name": "СвежийЛид"})]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await flags.set_flag("calendar_autotask_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        await cb.run(NOW, sessionmaker=sm)
+        assert len(await _bot_tasks_today(sm, "medina")) == 1
     _run_case(body, monkeypatch, convs=convs)

@@ -211,6 +211,47 @@ async def _tasks_for(login: str, day, sessionmaker) -> list:
         return await CalendarTaskService.today_for_manager(session, login, day)
 
 
+async def _materialize_call_tasks(login: str, night_convs: list, day, sessionmaker) -> int:
+    """Bot auto-creates a 'call' task (created_by='bot') for each owner-routed overnight
+    lead, so the morning call-list lands in the manager's calendar without manual entry.
+
+    Idempotent by construction: the caller's ``night`` set already excludes leads that
+    have a task today. Best-effort — a domain error on one lead never blocks the rest or
+    the brief send. Returns how many tasks were created."""
+    from app.domain.calendar_tasks import CalendarTaskService
+    from app.domain.models import DIRECTIONS
+    from app.domain.services import ContactService
+    created = 0
+    try:
+        async with sessionmaker() as s:
+            for c in night_convs:
+                # Same as admin task_create: phone if known, else the user_id — normalize_phone
+                # strips the bot prefix and validates; bad/short numbers raise → skipped below.
+                ident = (getattr(c, "phone", "") or getattr(c, "user_id", "") or "").strip()
+                if not ident:
+                    continue
+                direction = (getattr(c, "funnel", "") or "tours").strip()
+                if direction not in DIRECTIONS:
+                    direction = "tours"
+                try:
+                    contact = await ContactService.find_or_create_by_identity(s, "phone", ident)
+                    await CalendarTaskService.create(
+                        s, manager_id=login, direction=direction, kind="call",
+                        scheduled_date=day, scheduled_at=None, contact_id=contact.id,
+                        user_id=getattr(c, "user_id", "") or "", priority="normal",
+                        comment="Автозадача: перезвонить по ночной заявке", created_by="bot")
+                    created += 1
+                except Exception:  # noqa: BLE001 — one lead's failure must not block others
+                    log.warning("calendar autotask failed user=%s",
+                                getattr(c, "user_id", "?"), exc_info=True)
+            await s.commit()
+    except Exception:  # noqa: BLE001 — auto-task must never break the brief flow
+        log.warning("calendar autotask batch failed manager=%s", login, exc_info=True)
+    if created:
+        log.info("calendar autotask created=%d manager=%s", created, login)
+    return created
+
+
 async def run(now: datetime | None = None, *, sessionmaker=None) -> None:
     """Scheduler job: personal calendar brief to each manager with a telegram_chat_id.
 
@@ -234,6 +275,8 @@ async def run(now: datetime | None = None, *, sessionmaker=None) -> None:
         from app.integrations.crm.db import get_sessionmaker
         sessionmaker = get_sessionmaker()
     day = bishkek_today(now)
+    autotask_on = await flags.get_flag(
+        "calendar_autotask_enabled", cfg.calendar_autotask_enabled)
 
     for mgr in cfg.manager_list():
         login = (mgr.login or "").strip().lower()
@@ -276,11 +319,15 @@ async def run(now: datetime | None = None, *, sessionmaker=None) -> None:
 
         if not token:
             await flags.set_flag(sent_key, True)   # nowhere to send → screen covers it
+            if autotask_on:
+                await _materialize_call_tasks(login, night, day, sessionmaker)
             log.info("calendar brief built (telegram off) manager=%s tasks=%d night=%d",
                      login, brief["task_count"], brief["night_count"])
             continue
 
         if await _push_telegram(token, chat_id, text):
             await flags.set_flag(sent_key, True)   # flag only on success → retry next tick
+            if autotask_on:
+                await _materialize_call_tasks(login, night, day, sessionmaker)
             log.info("calendar brief sent manager=%s tasks=%d night=%d",
                      login, brief["task_count"], brief["night_count"])
