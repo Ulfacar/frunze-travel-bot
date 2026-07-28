@@ -67,6 +67,20 @@ def test_build_and_render_contains_tasks_and_night():
     assert "https://p.kg/admin/conversation/getvisa:996700111" in text
 
 
+def test_brief_gives_a_dialable_number_and_says_wait_once():
+    """Бриф читают с телефона: по номеру звонят тапом, «ждёт» не должно двоиться."""
+    tasks = [Task("call", scheduled_at=datetime(2026, 7, 20, 4, 0, tzinfo=timezone.utc),
+                  user_id="frunze_tours:996553333424", comment="перезвонить")]
+    night = [Conv(user_id="frunze_tours:996555754852",
+                  last_message_at=datetime(2026, 7, 20, 0, 0, tzinfo=timezone.utc))]
+    text = cb.render_manager_brief_text(
+        cb.build_manager_brief("sezim", "Сезим", tasks, night, NOW))
+    assert "+996 553 33 34 24" in text            # задача — с полным номером
+    assert "+996 555 75 48 52" in text            # ночная заявка — тоже
+    assert "Без имени" not in text                # мусорная подпись вместо номера
+    assert "ждёт ждёт" not in text and "ждёт 4 ч" in text
+
+
 # --- run: flags / delivery ----------------------------------------------------
 
 def _domain_sm():

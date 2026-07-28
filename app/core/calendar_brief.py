@@ -44,6 +44,15 @@ def _phone_tail(user_id: str) -> str:
     return phone[-4:] if phone else "—"
 
 
+def _phone_display(user_id: str) -> str:
+    """+996 555 12 34 56 — тапом по номеру в Telegram менеджер сразу звонит.
+    Иностранные/короткие номера отдаём как есть, лишь бы с плюсом."""
+    d = "".join(ch for ch in (user_id or "").split(":")[-1] if ch.isdigit())
+    if len(d) == 12 and d.startswith("996"):
+        return f"+{d[:3]} {d[3:6]} {d[6:8]} {d[8:10]} {d[10:]}"
+    return f"+{d}" if d else ""
+
+
 def _task_time_label(task) -> str:
     at = _aware(getattr(task, "scheduled_at", None))
     if at is None:
@@ -59,6 +68,8 @@ def _task_card(task) -> dict:
         "time": _task_time_label(task),
         "user_id": task.user_id or "",
         "client": _phone_tail(task.user_id),
+        "phone": _phone_display(task.user_id),
+        "wa_link": _wa_link(task.user_id or ""),
         "comment": (task.comment or "").strip(),
         "context": (task.ai_summary or "").strip(),   # AI-written context recap only
         "direction": task.direction,
@@ -97,9 +108,15 @@ def _wa_link(user_id: str) -> str:
 
 
 def _lead_card(conv, now: datetime) -> dict:
+    uid = getattr(conv, "user_id", "")
+    known_name = ((getattr(conv, "qualification", None) or {}).get("name") or "").strip()
     return {
-        "user_id": getattr(conv, "user_id", ""),
+        "user_id": uid,
         "name": _name(conv),
+        # Шапка строки: «Имя · +996 …» либо просто номер — «Без имени · 4386» бесполезно,
+        # звонить по нему нельзя.
+        "head": f"{known_name} · {_phone_display(uid)}".strip(" ·") if known_name
+                else (_phone_display(uid) or _name(conv)),
         "direction": _direction(conv),
         "wait_min": int(_wait_minutes(conv, now)),
         "wait_label": _fmt_wait(int(_wait_minutes(conv, now))),
@@ -157,7 +174,7 @@ def render_manager_brief_text(brief: dict, base_url: str = "") -> str:
             continue
         lines += ["", _KIND_LABEL.get(kind, kind)]
         for c in cards:
-            head = f"• {c['time']} · {c['client']}"
+            head = f"• {c['time']} · {c.get('phone') or c['client']}"
             if c["priority"] == "high":
                 head += " 🔴"
             lines.append(head)
@@ -165,13 +182,15 @@ def render_manager_brief_text(brief: dict, base_url: str = "") -> str:
                 lines.append(f"    {c['comment']}")
             if c["context"]:
                 lines.append(f"    ℹ {c['context']}")
+            if c.get("wa_link"):
+                lines.append(f"    💬 {c['wa_link']}")
             if c["user_id"]:
                 lines.append(f"    {_client_link(c['user_id'], base_url)}")
     if brief["night"]:
         lines += ["", f"🌙 Ночные заявки без точного времени ({brief['night_count']}):"]
         for c in brief["night"]:
-            tail = f" · ждёт {c['wait_label']}" if c["wait_label"] else ""
-            lines.append(f"• {c['name']} · {c['direction']}{tail}")
+            tail = f" · {c['wait_label']}" if c["wait_label"] else ""   # уже «ждёт N ч»
+            lines.append(f"• {c.get('head') or c['name']} · {c['direction']}{tail}")
             if c.get("wa_link"):
                 lines.append(f"    💬 написать: {c['wa_link']}")
             if c["user_id"]:
@@ -181,7 +200,7 @@ def render_manager_brief_text(brief: dict, base_url: str = "") -> str:
         lines += ["", f"📥 Требуют распределения ({brief['to_distribute_count']}):"]
         for c in brief["to_distribute"]:
             tail = f" · {c['wait_label']}" if c["wait_label"] else ""
-            lines.append(f"• {c['name']} · {c['direction']}{tail}")
+            lines.append(f"• {c.get('head') or c['name']} · {c['direction']}{tail}")
             if c["user_id"]:
                 lines.append(f"    {_client_link(c['user_id'], base_url)}")
     if brief["task_count"] == 0 and not brief["night"] and not brief["to_distribute"]:
