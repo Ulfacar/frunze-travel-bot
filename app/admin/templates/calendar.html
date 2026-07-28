@@ -11,64 +11,147 @@
             --mono:'Fira Code', ui-monospace, monospace; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--text); font-family:'Fira Sans',system-ui,sans-serif; }
-    .topbar { display:flex; align-items:center; gap:14px; padding:0 18px; height:56px; background:var(--surface);
-              border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5; }
-    .topbar a { color:var(--accent); text-decoration:none; font-weight:600; }
-    .topbar b { font-size:15px; }
+    a { color:var(--accent); }
     .muted { color:var(--muted); }
-    .wrap { max-width:1180px; margin:0 auto; padding:16px; }
-
-    .bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
-    .seg { display:inline-flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-    .seg a { padding:7px 14px; text-decoration:none; color:var(--text); font-weight:600; font-size:14px; background:var(--surface); }
-    .seg a.on { background:var(--accent); color:#fff; }
-    .nav { display:inline-flex; gap:6px; align-items:center; }
-    .nav a, .today-btn { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px;
-             padding:0 10px; border:1px solid var(--border); border-radius:9px; background:var(--surface);
-             color:var(--text); text-decoration:none; font-weight:600; }
-    .range { font-weight:700; font-size:16px; }
     .spacer { flex:1; }
+    .topbar { display:flex; align-items:center; gap:14px; padding:0 18px; height:56px; background:var(--surface);
+              border-bottom:1px solid var(--border); position:sticky; top:0; z-index:20; }
+    .topbar a { text-decoration:none; font-weight:600; }
+    .topbar b { font-size:15px; }
+    .wrap { max-width:900px; margin:0 auto; padding:16px 16px 60px; }
+    .wrap.wide { max-width:1240px; }
 
-    .grid { display:grid; gap:12px; }
-    .grid.week { grid-template-columns:repeat(7, minmax(0,1fr)); }
-    .grid.day  { grid-template-columns:minmax(0, 560px); }
-    .col { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px; min-height:120px; }
-    .col.today { border-color:var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
-    .col-h { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
-    .col-h .wd { font-weight:700; }
-    .col-h .dt { color:var(--muted); font-size:13px; font-family:var(--mono); }
-    .col-count { color:var(--muted); font-size:12px; }
+    /* --- шапка дня --------------------------------------------------------- */
+    .dayhead { background:var(--surface); border:1px solid var(--border); border-radius:16px;
+               padding:16px 18px; margin-bottom:14px; }
+    .dayhead .row1 { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .dayhead h1 { margin:0; font-size:22px; font-weight:800; letter-spacing:-.2px; }
+    .badge-today { background:#DBEAFE; color:#1D4ED8; font-size:12px; font-weight:700;
+                   padding:3px 9px; border-radius:999px; }
+    .stats { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .stat { display:flex; align-items:baseline; gap:7px; border:1px solid var(--border);
+            border-radius:11px; padding:7px 12px; background:#F8FAFC; }
+    .stat b { font-size:17px; }
+    .stat.red { border-color:#FCA5A5; background:#FEF2F2; color:#B91C1C; }
+    .stat.green { border-color:#A7F3D0; background:#ECFDF5; color:#047857; }
+    .pbar { height:7px; border-radius:99px; background:#E2E8F0; margin-top:14px; overflow:hidden; }
+    .pbar i { display:block; height:100%; background:var(--green); border-radius:99px; }
 
-    .task { border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:10px;
-            padding:8px 10px; margin-bottom:8px; }
-    .task.call { border-left-color:var(--accent); }
+    .bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+    .seg { display:inline-flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .seg a { padding:8px 15px; text-decoration:none; color:var(--text); font-weight:600; font-size:14px; background:var(--surface); }
+    .seg a.on { background:var(--accent); color:#fff; }
+    .nav { display:inline-flex; gap:6px; }
+    .nav a { display:inline-flex; align-items:center; justify-content:center; min-width:36px; height:36px;
+             padding:0 12px; border:1px solid var(--border); border-radius:10px; background:var(--surface);
+             color:var(--text); text-decoration:none; font-weight:600; }
+
+    /* --- секции ------------------------------------------------------------ */
+    .sec { margin:20px 0 10px; display:flex; align-items:center; gap:9px; }
+    .sec h2 { margin:0; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); }
+    .sec .n { font-size:12px; color:var(--muted); background:#E2E8F0; border-radius:99px; padding:1px 8px; font-weight:700; }
+    .sec.danger h2 { color:#B91C1C; } .sec.danger .n { background:#FEE2E2; color:#B91C1C; }
+
+    /* --- карточка задачи --------------------------------------------------- */
+    .task { display:flex; gap:14px; background:var(--surface); border:1px solid var(--border);
+            border-left:5px solid var(--accent); border-radius:14px; padding:13px 15px; margin-bottom:10px; }
     .task.meeting { border-left-color:var(--green); }
     .task.office_visit { border-left-color:var(--amber); }
-    .task.overdue { border-left-color:var(--red); background:#FEF2F2; }
-    .task .t-top { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .task .t-time { font-family:var(--mono); font-weight:700; }
-    .task .t-kind { color:var(--muted); font-size:12px; }
-    .task .t-cmt { font-size:13px; margin-top:4px; }
-    .task .t-open { color:var(--accent); text-decoration:none; font-size:12px; font-weight:600; }
-    .chip { font-size:11px; padding:2px 7px; border-radius:7px; background:#EEF2F7; color:var(--text); }
+    .task.followup { border-left-color:#7C3AED; }
+    .task.other { border-left-color:var(--muted); }
+    .task.is-overdue { border-left-color:var(--red); background:#FEF2F2; }
+    .task.is-next { box-shadow:0 0 0 2px rgba(37,99,235,.18); }
+    .task.is-done { opacity:.62; border-left-color:#CBD5E1; }
+    .task.is-done .name { text-decoration:line-through; }
+    .when { min-width:62px; text-align:center; }
+    .when .hh { font-family:var(--mono); font-weight:700; font-size:18px; line-height:1.15; }
+    .when .any { font-size:11px; color:var(--muted); line-height:1.25; }
+    .when .kd { font-size:18px; }
+    .body { flex:1; min-width:0; }
+    .line { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+    .name { font-weight:700; font-size:16px; }
+    .tel { font-family:var(--mono); font-size:14px; text-decoration:none; font-weight:600; }
+    .chip { font-size:11px; padding:2px 8px; border-radius:8px; background:#EEF2F7; color:#334155; font-weight:600; }
     .chip.hi { background:#FEE2E2; color:#B91C1C; }
+    .chip.wait { background:#FEF3C7; color:#92400E; }
     .chip.mgr { background:#E0F2FE; color:#075985; font-family:var(--mono); }
-    .empty { color:var(--muted); font-size:13px; padding:6px 2px; }
+    .note { margin-top:6px; font-size:14px; }
+    .ctx { margin-top:4px; font-size:13px; color:var(--muted); }
+    .ctx .q { font-style:italic; }
 
-    .overdue-box { background:#FEF2F2; border:1px solid #FCA5A5; border-radius:14px; padding:12px 14px; margin-bottom:16px; }
-    .overdue-box .oh { font-weight:700; color:#B91C1C; margin-bottom:8px; }
-    .legend { display:flex; gap:12px; flex-wrap:wrap; color:var(--muted); font-size:12px; margin-top:14px; }
-    @media (max-width:900px) { .grid.week { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+    .acts { display:flex; gap:7px; flex-wrap:wrap; margin-top:11px; align-items:center; }
+    .acts form { margin:0; }
+    .btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--surface);
+           color:var(--text); border-radius:10px; padding:8px 12px; font:inherit; font-size:13px; font-weight:600;
+           text-decoration:none; cursor:pointer; white-space:nowrap; }
+    .btn:hover { background:#F8FAFC; }
+    .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .btn.primary:hover { filter:brightness(1.06); }
+    .btn.wa { background:#25D366; border-color:#25D366; color:#062; }
+    .btn.ok { background:#ECFDF5; border-color:#A7F3D0; color:#047857; }
+    .btn.del { color:#B91C1C; }
+    .btn.sm { padding:6px 10px; font-size:12px; }
+    .sep { width:1px; height:22px; background:var(--border); margin:0 3px; }
+
+    .move { position:relative; }
+    .move summary { list-style:none; }
+    .move summary::-webkit-details-marker { display:none; }
+    .move .pop { position:absolute; z-index:15; top:calc(100% + 6px); left:0; background:var(--surface);
+                 border:1px solid var(--border); border-radius:12px; padding:11px; box-shadow:0 12px 28px rgba(15,23,42,.14);
+                 display:flex; gap:7px; align-items:center; }
+    .move input { border:1px solid var(--border); border-radius:9px; padding:7px 9px; font:inherit; font-size:13px; }
+
+    .empty { background:var(--surface); border:1px dashed var(--border); border-radius:14px;
+             padding:26px; text-align:center; color:var(--muted); }
+    .empty .big { font-size:34px; margin-bottom:8px; }
+
+    /* --- добавить задачу --------------------------------------------------- */
+    .add { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:14px; }
+    .add summary { cursor:pointer; padding:12px 15px; font-weight:700; list-style:none; }
+    .add summary::-webkit-details-marker { display:none; }
+    .add form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:0 15px 14px; }
+    .add input, .add select { border:1px solid var(--border); border-radius:10px; padding:9px 11px; font:inherit; font-size:14px; }
+    .add input.grow { flex:1; min-width:190px; }
+
+    /* --- неделя ------------------------------------------------------------ */
+    .grid { display:grid; gap:11px; grid-template-columns:repeat(7, minmax(0,1fr)); }
+    .col { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:11px; min-height:130px; }
+    .col.today { border-color:var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
+    .col-h { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px; }
+    .col-h a { text-decoration:none; font-weight:700; color:var(--text); }
+    .col-h .dt { color:var(--muted); font-size:12px; font-family:var(--mono); }
+    .mini { border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:9px;
+            padding:6px 8px; margin-bottom:6px; font-size:13px; }
+    .mini.meeting { border-left-color:var(--green); } .mini.office_visit { border-left-color:var(--amber); }
+    .mini.followup { border-left-color:#7C3AED; } .mini.other { border-left-color:var(--muted); }
+    .mini .t { font-family:var(--mono); font-weight:700; font-size:12px; }
+    .mini a { text-decoration:none; color:var(--text); display:block; }
+    .mini .nm { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+    .legend { display:flex; gap:14px; flex-wrap:wrap; color:var(--muted); font-size:12px; margin-top:18px; }
+
+    @media (max-width:900px) { .grid { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+    @media (max-width:640px) {
+      .wrap { padding:12px 11px 60px; }
+      .task { gap:10px; padding:12px; }
+      .when { min-width:52px; }
+      .dayhead h1 { font-size:19px; }
+      .btn { padding:9px 12px; }         /* пальцем — не мышкой */
+      .grid { grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body>
   <header class="topbar">
-    <a href="/admin">← Доски</a>
+    <a href="/admin">← Диалоги</a>
     <b>Календарь</b>
+    <span class="muted" style="font-size:13px">{% if view == 'day' %}мой день{% else %}неделя{% endif %}</span>
     <span class="spacer"></span>
     <span class="muted">{{ manager.name if manager else '' }}{% if is_admin %} · все менеджеры{% endif %}</span>
   </header>
-  <div class="wrap">
+
+  <div class="wrap {{ 'wide' if view == 'week' else '' }}">
+
     <div class="bar">
       <div class="seg">
         <a href="/admin/calendar?view=day&day={{ anchor_iso }}" class="{{ 'on' if view == 'day' else '' }}">День</a>
@@ -76,79 +159,181 @@
       </div>
       <div class="nav">
         <a href="/admin/calendar?view={{ view }}&day={{ prev_day }}" aria-label="Назад">‹</a>
-        <a class="today-btn" href="/admin/calendar?view={{ view }}&day={{ today_iso }}">Сегодня</a>
+        <a href="/admin/calendar?view={{ view }}&day={{ today_iso }}">Сегодня</a>
         <a href="/admin/calendar?view={{ view }}&day={{ next_day }}" aria-label="Вперёд">›</a>
       </div>
-      <span class="range">{{ range_label }}</span>
       <span class="spacer"></span>
-      <span class="muted">Задач в периоде: {{ task_total }}</span>
+      {% if view == 'week' %}<span class="muted">{{ range_label }} · задач: {{ task_total }}</span>{% endif %}
     </div>
 
-    {% if overdue %}
-    <div class="overdue-box">
-      <div class="oh">⚠ Просроченные задачи ({{ overdue|length }})</div>
-      {% for t in overdue %}
-      <div class="task overdue">
-        <div class="t-top">
-          <span class="t-time">{{ t.date_iso }}{% if t.time %} · {{ t.time }}{% endif %}</span>
-          <span class="t-kind">{{ t.kind_label }}</span>
-          {% if is_admin %}<span class="chip mgr">{{ t.manager_id }}</span>{% endif %}
-          <span class="chip">☎ {{ t.client }}</span>
+    {% macro task_card(t, extra='') %}
+    <article class="task {{ t.kind }} {{ extra }} {{ 'is-overdue' if t.overdue else '' }}
+                        {{ 'is-next' if t.id == next_id and not t.overdue else '' }}
+                        {{ 'is-done' if t.done else '' }}">
+      <div class="when">
+        {% if t.has_time %}<div class="hh">{{ t.time }}</div>{% else %}<div class="kd">{{ t.kind_label.split(' ')[0] }}</div>{% endif %}
+        {% if t.overdue %}<div class="any" style="color:#B91C1C">{{ t.date_label }}</div>
+        {% elif not t.has_time %}<div class="any">в течение дня</div>{% endif %}
+      </div>
+      <div class="body">
+        <div class="line">
+          <span class="name">{{ t.title }}</span>
+          {% if t.name and t.phone_display %}<a class="tel" href="{{ t.tel }}">{{ t.phone_display }}</a>{% endif %}
+          <span class="chip">{{ t.kind_label }}</span>
           {% if t.priority == 'high' %}<span class="chip hi">важно</span>{% endif %}
+          {% if t.waiting %}<span class="chip wait">ждёт {{ t.waiting }}</span>{% endif %}
+          {% if t.status == 'rescheduled' and not t.done %}<span class="chip">перенесена</span>{% endif %}
+          {% if is_admin %}<span class="chip mgr">{{ t.manager_id }}</span>{% endif %}
         </div>
-        {% if t.comment %}<div class="t-cmt">{{ t.comment }}</div>{% endif %}
-        {% if t.user_id %}<a class="t-open" href="/admin?open={{ t.user_id }}">Открыть клиента →</a>{% endif %}
+        {% if t.comment %}<div class="note">{{ t.comment }}</div>{% endif %}
+        {% if t.context %}<div class="ctx">{{ t.context }}</div>
+        {% elif t.last_text %}<div class="ctx q">«{{ t.last_text }}»</div>{% endif %}
+
+        {% if not t.done %}
+        <div class="acts">
+          {% if t.tel %}<a class="btn primary" href="{{ t.tel }}">📞 Позвонить</a>{% endif %}
+          {% if t.wa %}<a class="btn wa" href="{{ t.wa }}" target="_blank" rel="noopener">💬 WhatsApp</a>{% endif %}
+          {% if t.user_id %}<a class="btn" href="/admin?open={{ t.user_id }}">Переписка →</a>{% endif %}
+          <span class="sep"></span>
+          <form method="post" action="/admin/calendar/task/{{ t.id }}/complete">
+            <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
+            <button class="btn ok" type="submit">✅ Сделано</button>
+          </form>
+          {% if t.overdue %}
+          <form method="post" action="/admin/calendar/task/{{ t.id }}/snooze">
+            <input type="hidden" name="mode" value="today">
+            <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
+            <button class="btn sm" type="submit">↪ На сегодня</button>
+          </form>
+          {% else %}
+          <form method="post" action="/admin/calendar/task/{{ t.id }}/snooze">
+            <input type="hidden" name="mode" value="h2">
+            <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
+            <button class="btn sm" type="submit">🕑 +2 ч</button>
+          </form>
+          {% endif %}
+          <form method="post" action="/admin/calendar/task/{{ t.id }}/snooze">
+            <input type="hidden" name="mode" value="tomorrow">
+            <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
+            <button class="btn sm" type="submit">📅 Завтра</button>
+          </form>
+          <details class="move">
+            <summary class="btn sm">🗓 Другой день</summary>
+            <div class="pop">
+              <form method="post" action="/admin/calendar/task/{{ t.id }}/reschedule" style="display:flex;gap:7px;align-items:center">
+                <input type="date" name="scheduled_date" value="{{ t.date_iso }}" required>
+                <input type="time" name="scheduled_time" value="{{ t.time }}">
+                <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
+                <button class="btn primary sm" type="submit">Перенести</button>
+              </form>
+            </div>
+          </details>
+          <form method="post" action="/admin/calendar/task/{{ t.id }}/cancel"
+                onsubmit="return confirm('Отменить задачу?')">
+            <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
+            <button class="btn del sm" type="submit" title="Отменить">✕</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </article>
+    {% endmacro %}
+
+    {% if view == 'day' %}
+    <div class="dayhead">
+      <div class="row1">
+        <h1>{{ day_title }}</h1>
+        {% if is_today %}<span class="badge-today">сегодня · {{ now_hhmm }}</span>{% endif %}
+      </div>
+      <div class="stats">
+        <div class="stat"><b>{{ n_left }}</b> <span class="muted">осталось</span></div>
+        {% if overdue %}<div class="stat red"><b>{{ overdue|length }}</b> <span>просрочено</span></div>{% endif %}
+        {% if n_done %}<div class="stat green"><b>{{ n_done }}</b> <span>сделано</span></div>{% endif %}
+      </div>
+      {% if n_planned %}<div class="pbar"><i style="width:{{ progress }}%"></i></div>{% endif %}
+    </div>
+
+    <details class="add">
+      <summary>➕ Добавить задачу</summary>
+      <form method="post" action="/admin/calendar/task/create">
+        <input class="grow" type="tel" name="phone" placeholder="Номер клиента, напр. 0555 12 34 56" required>
+        <select name="kind">
+          {% for key, label in kind_labels %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+        </select>
+        <input type="date" name="scheduled_date" value="{{ anchor_iso }}" required>
+        <input type="time" name="scheduled_time">
+        <select name="priority">
+          <option value="normal">Обычный</option>
+          <option value="high">Важно</option>
+          <option value="low">Низкий</option>
+        </select>
+        <input class="grow" type="text" name="comment" placeholder="О чём: «Анталья, 2 взр, до 1500$»">
+        <input type="hidden" name="view" value="day"><input type="hidden" name="day" value="{{ anchor_iso }}">
+        <button class="btn primary" type="submit">Поставить</button>
+      </form>
+    </details>
+
+    {% if overdue %}
+    <div class="sec danger"><h2>Просрочено</h2><span class="n">{{ overdue|length }}</span></div>
+    {% for t in overdue %}{{ task_card(t) }}{% endfor %}
+    {% endif %}
+
+    {% if timed %}
+    <div class="sec"><h2>По времени</h2><span class="n">{{ timed|length }}</span></div>
+    {% for t in timed %}{{ task_card(t) }}{% endfor %}
+    {% endif %}
+
+    {% if untimed %}
+    <div class="sec"><h2>В течение дня</h2><span class="n">{{ untimed|length }}</span></div>
+    {% for t in untimed %}{{ task_card(t) }}{% endfor %}
+    {% endif %}
+
+    {% if not overdue and not timed and not untimed %}
+    <div class="empty">
+      <div class="big">{{ '☕' if n_done else '📭' }}</div>
+      {% if n_done %}Все задачи на день закрыты. {{ n_done }} — молодец.
+      {% else %}На этот день задач нет.<br>Поставьте звонок кнопкой «Добавить задачу» или из карточки клиента.{% endif %}
+    </div>
+    {% endif %}
+
+    {% if done %}
+    <details style="margin-top:22px">
+      <summary class="muted" style="cursor:pointer;font-weight:600">✅ Сделано{{ ' сегодня' if is_today else '' }} ({{ done|length }})</summary>
+      <div style="margin-top:10px">{% for t in done %}{{ task_card(t) }}{% endfor %}</div>
+    </details>
+    {% endif %}
+
+    {% else %}
+    {# ---------- неделя: планирование, детали — в дне ---------- #}
+    {% if overdue %}
+    <div class="sec danger"><h2>Просрочено</h2><span class="n">{{ overdue|length }}</span></div>
+    {% for t in overdue %}{{ task_card(t) }}{% endfor %}
+    {% endif %}
+
+    <div class="grid">
+      {% for d in days %}
+      <div class="col {{ 'today' if d.is_today else '' }}">
+        <div class="col-h">
+          <a href="/admin/calendar?view=day&day={{ d.iso }}">{{ d.weekday }}{% if d.is_today %} ·&nbsp;сегодня{% endif %}</a>
+          <span class="dt">{{ d.label }}</span>
+        </div>
+        {% if d.count == 0 %}<div class="muted" style="font-size:12px">—</div>{% endif %}
+        {% for t in d.timed + d.untimed %}
+        <div class="mini {{ t.kind }}">
+          <a href="/admin/calendar?view=day&day={{ d.iso }}">
+            <div class="t">{{ t.time if t.has_time else '—:—' }} {{ t.kind_label.split(' ')[0] }}</div>
+            <div class="nm">{{ t.title }}</div>
+          </a>
+        </div>
+        {% endfor %}
       </div>
       {% endfor %}
     </div>
     {% endif %}
 
-    <div class="grid {{ view }}">
-      {% for d in days %}
-      <div class="col {{ 'today' if d.is_today else '' }}">
-        <div class="col-h">
-          <span class="wd">{{ d.weekday }}{% if d.is_today %} · сегодня{% endif %}</span>
-          <span class="dt">{{ d.label }}</span>
-        </div>
-        {% if d.count == 0 %}
-        <div class="empty">Нет задач</div>
-        {% endif %}
-        {% for t in d.timed %}
-        <div class="task {{ t.kind }} {{ 'overdue' if t.overdue else '' }}">
-          <div class="t-top">
-            <span class="t-time">{{ t.time }}</span>
-            <span class="t-kind">{{ t.kind_label }}</span>
-            {% if is_admin %}<span class="chip mgr">{{ t.manager_id }}</span>{% endif %}
-            <span class="chip">☎ {{ t.client }}</span>
-            {% if t.priority == 'high' %}<span class="chip hi">важно</span>{% endif %}
-            {% if t.status == 'rescheduled' %}<span class="chip">перенесена</span>{% endif %}
-          </div>
-          {% if t.comment %}<div class="t-cmt">{{ t.comment }}</div>{% endif %}
-          {% if t.user_id %}<a class="t-open" href="/admin?open={{ t.user_id }}">Открыть клиента →</a>{% endif %}
-        </div>
-        {% endfor %}
-        {% if d.untimed %}
-        <div class="col-count" style="margin:6px 0 4px">Без точного времени</div>
-        {% for t in d.untimed %}
-        <div class="task {{ t.kind }} {{ 'overdue' if t.overdue else '' }}">
-          <div class="t-top">
-            <span class="t-kind">{{ t.kind_label }}</span>
-            {% if is_admin %}<span class="chip mgr">{{ t.manager_id }}</span>{% endif %}
-            <span class="chip">☎ {{ t.client }}</span>
-            {% if t.priority == 'high' %}<span class="chip hi">важно</span>{% endif %}
-          </div>
-          {% if t.comment %}<div class="t-cmt">{{ t.comment }}</div>{% endif %}
-          {% if t.user_id %}<a class="t-open" href="/admin?open={{ t.user_id }}">Открыть клиента →</a>{% endif %}
-        </div>
-        {% endfor %}
-        {% endif %}
-      </div>
-      {% endfor %}
-    </div>
-
     <div class="legend">
       {% for key, label in kind_labels %}<span>{{ label }}</span>{% endfor %}
-      <span>· Задачи создаются в карточке клиента</span>
+      <span>· задачи ставятся здесь или в карточке клиента</span>
     </div>
   </div>
 </body>

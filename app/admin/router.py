@@ -1215,6 +1215,11 @@ TASK_KIND_LABELS = [("call", "📞 Звонок"), ("meeting", "🤝 Встре�
 TASK_PRIORITY_LABELS = [("low", "Низкий"), ("normal", "Обычный"), ("high", "Высокий")]
 _KIND_LABEL_MAP = dict(TASK_KIND_LABELS)
 _WEEKDAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+_WEEKDAYS_FULL_RU = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница",
+                     "Суббота", "Воскресенье"]
+_MONTHS_RU = ["января", "февраля", "марта", "апреля", "мая", "июня",
+              "июля", "августа", "сентября", "октября", "ноября", "декабря"]
+_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
 def _domain_sessionmaker():
@@ -1227,21 +1232,69 @@ def _bishkek_today() -> date:
     return (datetime.now(timezone.utc) + timedelta(hours=6)).date()
 
 
-def _task_ui(t, today: date) -> dict:
+def _fmt_phone(digits: str) -> str:
+    """996555123456 → +996 555 12 34 56. Foreign/short numbers → '+<digits>' as-is."""
+    d = "".join(ch for ch in (digits or "") if ch.isdigit())
+    if len(d) == 12 and d.startswith("996"):
+        return f"+{d[:3]} {d[3:6]} {d[6:8]} {d[8:10]} {d[10:]}"
+    return f"+{d}" if d else ""
+
+
+def _as_utc(when: datetime | None) -> datetime:
+    """Store rows may carry naive UTC timestamps — normalize before any comparison."""
+    if when is None:
+        return _EPOCH
+    return when if when.tzinfo is not None else when.replace(tzinfo=timezone.utc)
+
+
+def _ago_short(when: datetime | None) -> str:
+    """'ждёт 3 ч' / 'ждёт 2 дн' — how long the client has been waiting. '' if unknown."""
+    if when is None:
+        return ""
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    mins = int((datetime.now(timezone.utc) - when).total_seconds() // 60)
+    if mins < 0:
+        return ""
+    if mins < 60:
+        return f"{mins} мин"
+    if mins < 60 * 36:
+        return f"{mins // 60} ч"
+    return f"{mins // 1440} дн"
+
+
+def _task_ui(t, today: date, conv=None) -> dict:
+    """One task as the calendar/card renders it. ``conv`` (optional live conversation)
+    supplies the human bits a manager needs before dialling: name, waiting time, context."""
     at = t.scheduled_at
     if at is not None and at.tzinfo is None:
         at = at.replace(tzinfo=timezone.utc)
     phone = (t.user_id or "").split(":")[-1]
+    digits = "".join(ch for ch in phone if ch.isdigit())
     active = t.status in ("planned", "rescheduled")
+    name, context, waiting, last_text = "", (t.ai_summary or ""), "", ""
+    if conv is not None:
+        name = (getattr(conv, "qualification", None) or {}).get("name") or ""
+        digits = digits or "".join(ch for ch in (conv.phone or "") if ch.isdigit())
+        context = context or (conv.ai_summary or "")
+        last_text = (conv.last_text or "").strip().replace("\n", " ")[:120]
+        if (conv.last_sender or "") == "client":
+            waiting = _ago_short(conv.last_message_at)
     return {
         "id": t.id, "kind": t.kind, "kind_label": _KIND_LABEL_MAP.get(t.kind, t.kind),
         "priority": t.priority, "status": t.status,
         "time": (at + timedelta(hours=6)).strftime("%H:%M") if at else "",
         "has_time": at is not None, "date": t.scheduled_date,
         "date_iso": t.scheduled_date.isoformat(),
+        "date_label": t.scheduled_date.strftime("%d.%m"),
         "user_id": t.user_id or "", "client": (phone[-4:] if phone else "—"),
-        "comment": t.comment or "", "context": t.ai_summary or "",
+        "name": name, "title": name or _fmt_phone(digits) or "Без номера",
+        "digits": digits, "phone_display": _fmt_phone(digits),
+        "tel": f"tel:+{digits}" if digits else "", "wa": f"https://wa.me/{digits}" if digits else "",
+        "waiting": waiting, "last_text": last_text,
+        "comment": t.comment or "", "context": context,
         "direction": t.direction, "manager_id": t.manager_id, "active": active,
+        "done": t.status == "completed", "cancelled": t.status == "cancelled",
         "overdue": active and t.scheduled_date < today,
     }
 
@@ -1360,27 +1413,51 @@ async def task_reschedule(user_id: str, task_id: int, request: Request,
     return await _render_conversation(user_id, request, manager)
 
 
-async def _fetch_calendar_tasks(manager: dict, date_from: date, date_to: date) -> list:
-    """Active tasks in the range for the calendar. Full-admin → all; else own only.
-    Fetches a wider lower bound so overdue active tasks surface. Fail-safe."""
+async def _fetch_calendar_tasks(manager: dict, date_from: date, date_to: date, *,
+                                include_terminal: bool = False) -> list:
+    """Tasks in the range for the calendar. Full-admin → all; else own only.
+    Active tasks use a wider lower bound so overdue ones surface; done/cancelled ones are
+    never back-filled — only the visible range (that's the 'сделано' counter). Fail-safe."""
     try:
         from app.domain.calendar_tasks import CalendarTaskService
-        lower = date_from - timedelta(days=60)
+        scoped = _manager_bot_scope(manager) is not None
+        login = str(manager.get("login") or "").strip().lower()
         async with _domain_sessionmaker()() as s:
-            if _manager_bot_scope(manager) is None:      # full-admin sees all
+            async def _q(low: date, terminal: bool) -> list:
+                if scoped:
+                    return await CalendarTaskService.list_for_manager(
+                        s, login, date_from=low, date_to=date_to, include_terminal=terminal)
                 return await CalendarTaskService.list_all(
-                    s, date_from=lower, date_to=date_to, include_terminal=False)
-            return await CalendarTaskService.list_for_manager(
-                s, manager["login"], date_from=lower, date_to=date_to, include_terminal=False)
+                    s, date_from=low, date_to=date_to, include_terminal=terminal)
+
+            rows = await _q(date_from - timedelta(days=60), False)
+            if include_terminal:
+                seen = {t.id for t in rows}
+                rows = rows + [t for t in await _q(date_from, True) if t.id not in seen]
+            return rows
     except Exception:  # noqa: BLE001
         log.debug("calendar: fetch failed", exc_info=True)
         return []
 
 
+async def _conv_map(user_ids: set[str]) -> dict:
+    """user_id → live conversation, for the human bits on a task card (name, waiting, context).
+    One light store read for the whole page. Fail-safe: empty map degrades to phone-only cards."""
+    if not user_ids:
+        return {}
+    try:
+        convs = await get_conversation_store().all_conversations_light()
+        return {c.user_id: c for c in convs if c.user_id in user_ids}
+    except Exception:  # noqa: BLE001
+        log.debug("calendar: conversation map failed", exc_info=True)
+        return {}
+
+
 @router.get("/calendar", response_class=HTMLResponse)
 async def calendar_view(request: Request, manager: dict = Depends(require_admin),
                         view: str = "day", day: str = ""):
-    """Manager calendar — day/week. Scoped manager sees only their tasks; full-admin all."""
+    """Manager calendar. Day = the working call-list (overdue → now → later → done);
+    week = a planning grid. Scoped manager sees only their tasks; full-admin all."""
     today = _bishkek_today()
     try:
         anchor = date.fromisoformat(day) if day else today
@@ -1392,31 +1469,47 @@ async def calendar_view(request: Request, manager: dict = Depends(require_admin)
     else:
         view, d_from, d_to = "day", anchor, anchor
 
-    rows = await _fetch_calendar_tasks(manager, d_from, d_to)
+    rows = await _fetch_calendar_tasks(manager, d_from, d_to, include_terminal=(view == "day"))
+    convs = await _conv_map({t.user_id for t in rows if t.user_id})
+    cards = [_task_ui(t, today, convs.get(t.user_id or "")) for t in rows]
+
+    # Older-than-range tasks only ever surface as the overdue tail.
+    overdue = sorted((c for c in cards if c["active"] and c["date"] < d_from),
+                     key=lambda c: (c["date_iso"], c["time"] or "99:99"))
+    in_range = [c for c in cards if d_from <= c["date"] <= d_to]
+
     days = [d_from + timedelta(days=i) for i in range((d_to - d_from).days + 1)]
     by_date: dict[date, list] = {d: [] for d in days}
-    overdue: list[dict] = []
-    for t in rows:
-        card = _task_ui(t, today)
-        if t.scheduled_date < d_from:
-            if card["overdue"]:
-                overdue.append(card)
-        elif t.scheduled_date in by_date:
-            by_date[t.scheduled_date].append(card)
-
+    for c in in_range:
+        if c["active"]:
+            by_date[c["date"]].append(c)
     day_views = []
     for d in days:
-        cards = by_date[d]
-        timed = sorted((c for c in cards if c["has_time"]), key=lambda c: c["time"])
-        untimed = [c for c in cards if not c["has_time"]]
+        cards_d = by_date[d]
         day_views.append({
             "iso": d.isoformat(), "label": d.strftime("%d.%m"),
             "weekday": _WEEKDAYS_RU[d.weekday()], "is_today": d == today,
-            "timed": timed, "untimed": untimed, "count": len(cards),
+            "timed": sorted((c for c in cards_d if c["has_time"]), key=lambda c: c["time"]),
+            "untimed": [c for c in cards_d if not c["has_time"]],
+            "count": len(cards_d),
         })
 
+    # Day screen: one list in the order the manager actually works it.
+    todo = [c for c in in_range if c["active"] and c["date"] == anchor]
+    timed = sorted((c for c in todo if c["has_time"]), key=lambda c: c["time"])
+    untimed = [c for c in todo if not c["has_time"]]
+    done = [c for c in in_range if c["done"] and c["date"] == anchor]
+    now_hhmm = (datetime.now(timezone.utc) + timedelta(hours=6)).strftime("%H:%M")
+    next_id = 0
+    if anchor == today:
+        upcoming = [c for c in timed if c["time"] >= now_hhmm]
+        nxt = (upcoming or untimed or timed)
+        next_id = nxt[0]["id"] if nxt else 0
+    elif timed or untimed:
+        next_id = (timed or untimed)[0]["id"]
+    planned_total = len(todo) + len(done)
+
     step = 7 if view == "week" else 1
-    overdue.sort(key=lambda c: c["date_iso"])
     return templates.TemplateResponse(request, "calendar.html", {
         "manager": manager,
         "is_admin": _manager_bot_scope(manager) is None,
@@ -1425,13 +1518,176 @@ async def calendar_view(request: Request, manager: dict = Depends(require_admin)
         "prev_day": (anchor - timedelta(days=step)).isoformat(),
         "next_day": (anchor + timedelta(days=step)).isoformat(),
         "today_iso": today.isoformat(),
+        "is_today": anchor == today,
+        "day_title": (f"{_WEEKDAYS_FULL_RU[anchor.weekday()]}, "
+                      f"{anchor.day} {_MONTHS_RU[anchor.month - 1]}"),
         "range_label": (f"{d_from.strftime('%d.%m')} – {d_to.strftime('%d.%m')}"
                         if view == "week" else anchor.strftime("%d.%m.%Y")),
         "days": day_views,
         "overdue": overdue,
+        "timed": timed, "untimed": untimed, "done": done, "next_id": next_id,
+        "n_left": len(todo), "n_done": len(done), "n_planned": planned_total,
+        "progress": int(round(100 * len(done) / planned_total)) if planned_total else 0,
+        "now_hhmm": now_hhmm,
         "task_total": sum(dv["count"] for dv in day_views),
         "kind_labels": TASK_KIND_LABELS,
+        "priority_labels": TASK_PRIORITY_LABELS,
     }, headers={"Cache-Control": "no-store"})
+
+
+# ---- one-tap actions straight from the calendar (no client-card round-trip) ----------
+
+def _calendar_redirect(view: str, day: str) -> RedirectResponse:
+    v = "week" if view == "week" else "day"
+    d = (day or "").strip()
+    return RedirectResponse(f"/admin/calendar?view={v}" + (f"&day={d}" if d else ""),
+                            status_code=303)
+
+
+def _snoozed_when(task, mode: str, today: date) -> tuple[date, datetime | None]:
+    """New (Bishkek date, exact UTC instant) for a one-tap snooze.
+    h1/h2 — push from now (or from the task time if it is still ahead); tomorrow/today —
+    keep the wall-clock time, move the day."""
+    at = task.scheduled_at
+    if at is not None and at.tzinfo is None:
+        at = at.replace(tzinfo=timezone.utc)
+    if mode in ("h1", "h2"):
+        now = datetime.now(timezone.utc)
+        base = at if (at is not None and at > now) else now
+        new_at = base + timedelta(hours=1 if mode == "h1" else 2)
+        return (new_at + timedelta(hours=6)).date(), new_at
+    if mode in ("tomorrow", "today"):
+        d = (max(task.scheduled_date, today) + timedelta(days=1)) if mode == "tomorrow" else today
+        shift = (d - task.scheduled_date).days
+        return d, (at + timedelta(days=shift)) if at is not None else None
+    raise HTTPException(status_code=400, detail="bad snooze mode")
+
+
+async def _apply_calendar_action(task_id: int, manager: dict, action: str, *, mode: str = "",
+                                 new_date: date | None = None,
+                                 new_at: datetime | None = None) -> None:
+    """Task lifecycle from the calendar. Ownership is checked on the task itself — unlike the
+    client card, user_id may be empty (quick-added task). Fail-safe: never 500s the page."""
+    try:
+        from app.domain.calendar_tasks import CalendarTaskService
+        async with _domain_sessionmaker()() as s:
+            task = await CalendarTaskService.get(s, task_id)
+            if task is None or not _manager_can_touch_task(manager, task):
+                return
+            uid = task.user_id or ""
+            if action == "complete":
+                await CalendarTaskService.complete(s, task, actor=manager["login"])
+            elif action == "cancel":
+                await CalendarTaskService.cancel(s, task, actor=manager["login"])
+            elif action == "reschedule":
+                if mode:
+                    new_date, new_at = _snoozed_when(task, mode, _bishkek_today())
+                if new_date is None:
+                    return
+                await CalendarTaskService.reschedule(
+                    s, task, new_date=new_date, new_at=new_at, actor=manager["login"])
+            await s.commit()
+        await get_conversation_store().add_audit(
+            manager["login"], f"task_{action}", uid, str(task_id))
+    except Exception:  # noqa: BLE001
+        log.warning("calendar: %s from calendar failed task=%s", action, task_id, exc_info=True)
+
+
+@router.post("/calendar/task/{task_id}/complete")
+async def calendar_task_complete(task_id: int, manager: dict = Depends(require_admin),
+                                 view: str = Form("day"), day: str = Form("")):
+    await _apply_calendar_action(task_id, manager, "complete")
+    return _calendar_redirect(view, day)
+
+
+@router.post("/calendar/task/{task_id}/cancel")
+async def calendar_task_cancel(task_id: int, manager: dict = Depends(require_admin),
+                               view: str = Form("day"), day: str = Form("")):
+    await _apply_calendar_action(task_id, manager, "cancel")
+    return _calendar_redirect(view, day)
+
+
+@router.post("/calendar/task/{task_id}/snooze")
+async def calendar_task_snooze(task_id: int, manager: dict = Depends(require_admin),
+                               mode: str = Form("h2"), view: str = Form("day"),
+                               day: str = Form("")):
+    await _apply_calendar_action(task_id, manager, "reschedule", mode=mode)
+    return _calendar_redirect(view, day)
+
+
+@router.post("/calendar/task/{task_id}/reschedule")
+async def calendar_task_reschedule(task_id: int, manager: dict = Depends(require_admin),
+                                   scheduled_date: str = Form(""), scheduled_time: str = Form(""),
+                                   view: str = Form("day"), day: str = Form("")):
+    try:
+        d, at = _parse_task_when(scheduled_date, scheduled_time)
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad date/time")
+    await _apply_calendar_action(task_id, manager, "reschedule", new_date=d, new_at=at)
+    return _calendar_redirect(view, day)
+
+
+def _default_direction(manager: dict) -> str:
+    scope = _manager_bot_scope(manager) or set()
+    return "visa" if any("getvisa" in b for b in scope) else "tours"
+
+
+async def _find_conv_by_phone(digits: str, manager: dict):
+    """Newest visible conversation whose number ends with the same 9 digits. '' → None."""
+    tail = (digits or "")[-9:]
+    if not tail:
+        return None
+    try:
+        convs = await get_conversation_store().all_conversations_light()
+    except Exception:  # noqa: BLE001
+        return None
+    best = None
+    for c in convs:
+        cd = "".join(ch for ch in (c.phone or c.user_id or "") if ch.isdigit())
+        if not cd.endswith(tail) or not _can_view_conversation(c, manager):
+            continue
+        if best is None or _as_utc(c.last_message_at) > _as_utc(best.last_message_at):
+            best = c
+    return best
+
+
+@router.post("/calendar/task/create")
+async def calendar_task_quick_create(manager: dict = Depends(require_admin),
+                                     phone: str = Form(""), kind: str = Form("call"),
+                                     scheduled_date: str = Form(""), scheduled_time: str = Form(""),
+                                     priority: str = Form("normal"), comment: str = Form(""),
+                                     view: str = Form("day"), day: str = Form("")):
+    """Add a task from the calendar itself, by phone — the manager does not have to hunt for
+    the dialog first. Links the live conversation when one exists for that number."""
+    try:
+        d, at = _parse_task_when(scheduled_date, scheduled_time)
+    except Exception:
+        raise HTTPException(status_code=400, detail="bad date/time")
+    digits = "".join(ch for ch in (phone or "") if ch.isdigit())
+    if not digits:
+        return _calendar_redirect(view, day)
+    conv = await _find_conv_by_phone(digits, manager)
+    try:
+        from app.domain.calendar_tasks import CalendarTaskService
+        from app.domain.models import DIRECTIONS
+        from app.domain.services import ContactService
+        direction = (getattr(conv, "funnel", "") or "") if conv is not None else ""
+        if direction not in DIRECTIONS:
+            direction = _default_direction(manager)
+        async with _domain_sessionmaker()() as s:
+            contact = await ContactService.find_or_create_by_identity(s, "phone", digits)
+            await CalendarTaskService.create(
+                s, manager_id=manager["login"], direction=direction, kind=kind,
+                scheduled_date=d, scheduled_at=at, contact_id=contact.id,
+                user_id=(conv.user_id if conv is not None else ""),
+                priority=priority, comment=comment, created_by=manager["login"])
+            await s.commit()
+        await get_conversation_store().add_audit(
+            manager["login"], "task_create", (conv.user_id if conv is not None else ""),
+            f"{kind} {d.isoformat()} {digits}")
+    except Exception:  # noqa: BLE001 — bad number / domain down must not break the page
+        log.warning("calendar: quick task create failed", exc_info=True)
+    return _calendar_redirect(view, day)
 
 
 async def _set_intercept(user_id: str, value: bool) -> None:
