@@ -41,6 +41,16 @@ services:
       MANAGERS: ${MANAGERS:-[]}
       SESSION_SECRET: ${SESSION_SECRET:-change-me-frunze-session-secret}
       DEMO_LOGIN: ${DEMO_LOGIN:-false}
+      # Утренний бриф менеджеру: без этого токена джоба «отправляет» в пустоту (контейнер
+      # видит ТОЛЬКО перечисленные здесь переменные — в prod.env их держать мало).
+      MANAGERS_TELEGRAM_BOT_TOKEN: ${MANAGERS_TELEGRAM_BOT_TOKEN:-}
+      MANAGERS_TELEGRAM_CHAT_ID: ${MANAGERS_TELEGRAM_CHAT_ID:-}
+      MORNING_BRIEF_HOUR: ${MORNING_BRIEF_HOUR:-9}
+      # Абсолютный префикс ссылок в брифе — иначе в Telegram уходит «/admin/...» и не кликается.
+      ADMIN_BASE_URL: ${ADMIN_BASE_URL:-}
+      # Пилот по турам: за кем закрепляем ночные лиды и на каком канале.
+      TOURS_PILOT_MANAGER: ${TOURS_PILOT_MANAGER:-ademi}
+      TOURS_PILOT_BOT_ID: ${TOURS_PILOT_BOT_ID:-frunze_tours}
     ports:
       - "8000:8000"
     depends_on:
