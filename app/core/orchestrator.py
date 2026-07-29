@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.channels.base import ChannelAdapter, Message
 from app.config import BotConfig, settings
+from app.core.intercept import expire_auto_intercept
 from app.core.manager_brief import build_manager_brief
 from app.core.readiness import compute_readiness
 from app.core.observ import record_failure
@@ -46,6 +47,17 @@ def _lock_for(key: str) -> asyncio.Lock:
     if lock is None:
         lock = _key_locks.setdefault(key, asyncio.Lock())
     return lock
+
+
+def _merge_fresh_intercept(state, fresh, *, auto_handoff: bool) -> bool:
+    """Смерджить перехват, который мог измениться во время долгого хода."""
+    state.auto_intercept_until = (
+        None if auto_handoff else fresh.auto_intercept_until
+    )
+    intercepted_midflight = fresh.intercepted and not auto_handoff
+    if intercepted_midflight:
+        state.intercepted = True
+    return intercepted_midflight
 
 
 def _auto_outcome(stage: str) -> str:
@@ -142,6 +154,10 @@ class Orchestrator:
         if not msg.user_id:
             return  # служебный/пустой апдейт
         key = self._key(msg)
+        # Единственная точка TTL-проверки: любой ближайший входящий апдейт лениво
+        # возвращает бота в диалог после окна тишины менеджера.
+        async with _lock_for(key):
+            await expire_auto_intercept(key)
 
         # Не-текст (голос/фото/медиа): бот не распознаёт — логируем и сразу честный fallback,
         # без дебаунса (склеивать нечего).
@@ -282,6 +298,10 @@ class Orchestrator:
         except Exception:  # noqa: BLE001 — сбой LLM/инструмента: не роняем вебхук, мягкий фолбэк
             log.error("funnel handle failed (key=%s)", key, exc_info=True)
             record_failure("llm")
+            fresh = await store.load(key)
+            _merge_fresh_intercept(
+                state, fresh, auto_handoff=state.stage == "manager"
+            )
             await store.save(state)               # сохраняем то, что успело накопиться в ходе
             await self._reply(msg, LLM_ERROR_FALLBACK)
             return
@@ -296,9 +316,9 @@ class Orchestrator:
         # Перехват «на лету»: менеджер мог нажать «Перехватить», пока генерировался ответ.
         # Перечитываем свежее состояние; если перехвачено не нами (не хендофф) — не отвечаем.
         fresh = await store.load(key)
-        intercepted_midflight = fresh.intercepted and not auto_handoff
-        if intercepted_midflight:
-            state.intercepted = True
+        intercepted_midflight = _merge_fresh_intercept(
+            state, fresh, auto_handoff=auto_handoff
+        )
 
         await store.save(state)
         await self._sync_card(msg, state)

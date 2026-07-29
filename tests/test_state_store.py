@@ -30,6 +30,7 @@ def test_dialog_state_json_round_trip():
         qualification={"country": "Германия", "prior_visas": "да"},
         deal_id="42", history=[{"role": "user", "content": "привет"}],
         intercepted=True,
+        auto_intercept_until=1785312000.0,
     )
     restored = DialogState.from_json(state.to_json())
     assert restored == state

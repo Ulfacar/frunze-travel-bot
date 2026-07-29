@@ -27,6 +27,7 @@ class DialogState:
     deal_id: str | None = None
     history: list[dict] = field(default_factory=list)  # для контекста LLM
     intercepted: bool = False  # менеджер перехватил диалог в Bitrix → бот молчит
+    auto_intercept_until: float | None = None  # UTC timestamp; None = ручной/бессрочный перехват
     pending_field: str | None = None  # какой вопрос задан в fallback-режиме (ждём ответ)
     wait_ack_sent: bool = False  # после авто-хендоффа клиенту разово подтвердили ожидание
     ad_referral: dict[str, Any] = field(default_factory=dict)  # источник первого касания (CTWA), write-once

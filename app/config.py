@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -101,6 +101,9 @@ class Settings(BaseSettings):
     wappi_token: str = ""
     wappi_profile_id: str = ""           # дев-демо: одиночный профиль (легаси)
     capture_manager_echo: bool = False
+    manager_silence_hours: int = Field(
+        default=3, ge=1
+    )                                      # часов молчания бота после ответа менеджера с телефона
 
     # TourVisor — кабинетные креды подходят и для XML API (проверено 19.06.2026)
     tourvisor_login: str = ""

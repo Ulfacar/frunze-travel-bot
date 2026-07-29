@@ -173,8 +173,10 @@ async def _handle_manager_echo(raw: dict) -> None:
         provider_msg_id=event_id,
         phone=phone,
     )
-    await panel.update_meta(key, funnel=bot.scenario, assigned_to="whatsapp")
-    await set_intercept(key, True)
+    # Echo не сообщает логин менеджера: существующего владельца сохраняем, а ничей
+    # диалог оставляем честно нераспределённым.
+    await panel.update_meta(key, funnel=bot.scenario)
+    await set_intercept(key, True, automatic=True)
     # Зеркало реплики менеджера в Bitrix (best-effort, фоном).
     from app.integrations.crm import bitrix_mirror
     bitrix_mirror.fire(key, sender="manager", text=text, phone=phone, funnel=bot.scenario)

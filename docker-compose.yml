@@ -21,6 +21,7 @@ services:
       WAPPI_TOKEN: ${WAPPI_TOKEN:-}
       WAPPI_PROFILE_ID: ${WAPPI_PROFILE_ID:-}
       CAPTURE_MANAGER_ECHO: ${CAPTURE_MANAGER_ECHO:-false}
+      MANAGER_SILENCE_HOURS: ${MANAGER_SILENCE_HOURS:-3}
       BOTS: ${BOTS:-[{"id":"frunze_tours","scenario":"tours","title":"FrunzeTravel2","wappi_profile_id":"02a4708d-ec6c"},{"id":"getvisa","scenario":"visa","title":"GetVisa","wappi_profile_id":"2f099bc3-478d"}]}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_BOTS: ${TELEGRAM_BOTS:-[]}
