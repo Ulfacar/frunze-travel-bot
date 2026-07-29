@@ -53,7 +53,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 
 # Прямой запуск из корня репозитория.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -63,7 +63,8 @@ from app.core.flags import get_flag  # noqa: E402
 from app.domain import live_assign  # noqa: E402
 from app.domain.assignment_queue import select_next_visa_manager  # noqa: E402
 from app.domain.models import DomainError  # noqa: E402
-from app.integrations.crm.db import AuditLog, Conversation, get_sessionmaker  # noqa: E402
+from app.integrations.crm.db import (  # noqa: E402
+    AuditLog, ConvMessage, Conversation, get_sessionmaker)
 
 SEZIM_BOT_ID = "frunze_tours_sezim"
 SEZIM_LOGIN = "sezim"
@@ -108,6 +109,15 @@ def _identity(conv: Conversation) -> tuple[str, str] | None:
     return ("whatsapp", phone) if phone else None
 
 
+def _filters_label(run: "_Run") -> str:
+    """Человекочитаемые отсечки — печатаются до применения, чтобы было что сверять."""
+    parts = ["без отсечки по давности" if run.cutoff is None
+             else f"давность ≤{run.since_days} дн (с {run.cutoff.date()})"]
+    if run.min_messages > 0:
+        parts.append(f"сообщений ≥{run.min_messages}")
+    return ", ".join(parts)
+
+
 def _chunks(rows: list, size: int):
     for i in range(0, len(rows), size):
         yield rows[i:i + size]
@@ -118,11 +128,27 @@ async def _availability(logins: list[str]) -> dict[str, bool]:
     return {login: not await get_flag(f"manager_off:{login}", False) for login in logins}
 
 
-def _active_query(*, cutoff: datetime | None):
-    """Базовый фильтр «живой диалог» + отсечка по свежести (0 дней = без отсечки)."""
+def _msg_count_sq():
+    """Подзапрос «сколько сообщений в диалоге» — для отсечки по содержательности."""
+    return (select(ConvMessage.conversation_id.label("cid"),
+                   func.count(ConvMessage.id).label("cnt"))
+            .group_by(ConvMessage.conversation_id).subquery())
+
+
+def _active_query(*, cutoff: datetime | None, min_messages: int = 0):
+    """Живой диалог + отсечка по свежести (0 дней = без отсечки) и по содержательности.
+
+    Отсечка по сообщениям нужна потому, что на живых данных давность почти ничего не
+    отсекает: бот в бою с 01.07.2026, вся база младше месяца, и `--since-days 30`
+    оказывается no-op. Разделяет реальные разговоры и «поздоровался и ушёл» именно
+    число сообщений.
+    """
     q = select(Conversation).where(Conversation.archived.is_not(True))
     if cutoff is not None:
         q = q.where(Conversation.last_message_at >= cutoff)
+    if min_messages > 0:
+        sq = _msg_count_sq()
+        q = q.join(sq, sq.c.cid == Conversation.id).where(sq.c.cnt >= min_messages)
     return q
 
 
@@ -140,10 +166,11 @@ class _Run:
     """Состояние одного прогона: счётчики, конфликты, режим."""
 
     def __init__(self, *, apply: bool, owner: str, since_days: int,
-                 batch_size: int, now: datetime) -> None:
+                 batch_size: int, now: datetime, min_messages: int = 0) -> None:
         self.apply = apply
         self.owner = owner
         self.since_days = since_days
+        self.min_messages = min_messages
         self.batch_size = batch_size
         self.now = now
         self.cutoff = None if since_days <= 0 else now - timedelta(days=since_days)
@@ -176,6 +203,7 @@ class _Run:
             "mode": mode,
             "owner": self.owner,
             "since_days": self.since_days,
+            "min_messages": self.min_messages,
             "cutoff": self.cutoff.isoformat() if self.cutoff else None,
             "visa": dict(self.visa),
             "visa_by_bot": dict(self.by_bot),
@@ -250,13 +278,13 @@ async def _pass_visa(sm, run: _Run) -> None:
                 Conversation.funnel == "visa", Conversation.archived.is_not(True),
                 _ownerless()))).scalars().all())
         rows = (await session.execute(
-            _active_query(cutoff=run.cutoff)
+            _active_query(cutoff=run.cutoff, min_messages=run.min_messages)
             .where(Conversation.funnel == "visa", _ownerless())
             .order_by(Conversation.last_message_at.desc(), Conversation.id)
         )).scalars().all()
         ids = [c.id for c in rows]
-    print(f"визы: свежих {len(ids)} / всего {total}"
-          f"{'' if run.cutoff is None else f' (отсечка {run.cutoff.date()})'}")
+    print(f"визы: под отсечку попало {len(ids)} / всего бесхозных {total} "
+          f"[{_filters_label(run)}]")
 
     for chunk in _chunks(ids, run.batch_size):
         async with sm() as session:
@@ -298,7 +326,7 @@ async def _pass_sezim_channel(sm, run: _Run, *, orphans: bool) -> None:
     """Канал Сезим: наследство (панель ИЛИ домен) и, по флагу, орфаны канала."""
     async with sm() as session:
         rows = (await session.execute(
-            _active_query(cutoff=run.cutoff)
+            _active_query(cutoff=run.cutoff, min_messages=run.min_messages)
             .where(Conversation.bot_id == SEZIM_BOT_ID)
             .order_by(Conversation.id))).scalars().all()
         ids = [c.id for c in rows]
@@ -306,8 +334,9 @@ async def _pass_sezim_channel(sm, run: _Run, *, orphans: bool) -> None:
             select(Conversation.id).where(
                 Conversation.bot_id == SEZIM_BOT_ID,
                 Conversation.archived.is_not(True), _ownerless()))).scalars().all())
-    print(f"канал {SEZIM_BOT_ID}: живых диалогов в окне {len(ids)}, "
-          f"бесхозных всего {orphan_total} → владелец {run.owner!r}"
+    print(f"канал {SEZIM_BOT_ID}: под отсечку попало {len(ids)}, "
+          f"бесхозных всего {orphan_total} → владелец {run.owner!r} "
+          f"[{_filters_label(run)}]"
           f"{'' if orphans else ' (орфаны НЕ трогаем, нужен --tours-orphans)'}")
 
     for chunk in _chunks(ids, run.batch_size):
@@ -413,14 +442,15 @@ async def _pass_rollback(sm, run: _Run, reason: str) -> None:
 # --------------------------------------------------------------------------- entry
 
 
-async def run(*, apply: bool = False, since_days: int = 30, visa: bool = True,
-              sezim: bool = True, tours_orphans: bool = False,
+async def run(*, apply: bool = False, since_days: int = 30, min_messages: int = 0,
+              visa: bool = True, sezim: bool = True, tours_orphans: bool = False,
               rollback: str | None = None, owner: str | None = None,
               batch_size: int = 50, sessionmaker=None,
               now: datetime | None = None) -> dict[str, object]:
     sm = sessionmaker or get_sessionmaker()
     state = _Run(apply=apply, owner=(owner or settings.tours_pilot_manager),
-                 since_days=since_days, batch_size=max(1, batch_size),
+                 since_days=since_days, min_messages=max(0, min_messages),
+                 batch_size=max(1, batch_size),
                  now=now or datetime.now(timezone.utc))
     if rollback:
         if rollback not in REASONS:
@@ -440,6 +470,9 @@ def main() -> None:
                    help="применить изменения (по умолчанию только превью)")
     p.add_argument("--since-days", type=int, default=30,
                    help="брать диалоги с активностью за N дней; 0 = без отсечки")
+    p.add_argument("--min-messages", type=int, default=0,
+                   help="брать только диалоги с N+ сообщениями (отсекает «поздоровался "
+                        "и ушёл»); на живых данных отсекает сильнее, чем давность")
     p.add_argument("--visa", dest="visa", action="store_true", default=None,
                    help="только визовый бэклог")
     p.add_argument("--sezim", dest="sezim", action="store_true", default=None,
@@ -457,7 +490,7 @@ def main() -> None:
     # Явно выбранные пассы отключают остальные; по умолчанию идут оба.
     explicit = args.visa or args.sezim
     summary = asyncio.run(run(
-        apply=args.apply, since_days=args.since_days,
+        apply=args.apply, since_days=args.since_days, min_messages=args.min_messages,
         visa=bool(args.visa) if explicit else True,
         sezim=bool(args.sezim) if explicit else True,
         tours_orphans=args.tours_orphans, rollback=args.rollback,

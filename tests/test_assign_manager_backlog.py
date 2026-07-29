@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.config import settings
 from app.core import flags
 from app.domain.models import Assignment, DomainBase
-from app.integrations.crm.db import AuditLog, Base, Conversation
+from app.integrations.crm.db import AuditLog, Base, ConvMessage, Conversation
 from scripts.assign_manager_backlog import REASON_SEZIM, REASON_VISA, run
 
 NOW = datetime(2026, 7, 30, 12, 0, tzinfo=timezone.utc)
@@ -179,6 +179,33 @@ def test_since_days_zero_takes_everything(tmp_path):
         summary = await run(sessionmaker=sm, apply=True, sezim=False,
                             since_days=0, now=NOW)
         assert sum(summary["visa"].values()) == 1
+        await engine.dispose()
+    _sync(check)
+
+
+def test_min_messages_separates_real_talk_from_a_hello(tmp_path):
+    """На живых данных (бот в бою с 01.07, база младше месяца) отсечка по давности —
+    no-op, и разделяет реальный разговор от «поздоровался и ушёл» число сообщений."""
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _conv("getvisa:talk", phone="996700000001"),
+            _conv("getvisa:hello", phone="996700000002"),
+        ])
+        async with sm() as session:
+            ids = {c.user_id: c.id for c in (await session.execute(
+                select(Conversation))).scalars().all()}
+            session.add_all(
+                [ConvMessage(conversation_id=ids["getvisa:talk"], sender="client",
+                             text=f"сообщение {i}") for i in range(4)]
+                + [ConvMessage(conversation_id=ids["getvisa:hello"], sender="client",
+                               text="здравствуйте")])
+            await session.commit()
+        summary = await run(sessionmaker=sm, apply=True, sezim=False,
+                            min_messages=4, since_days=0, now=NOW)
+        assert sum(summary["visa"].values()) == 1
+        owners = await _owners(sm)
+        assert owners["getvisa:talk"] != ""
+        assert owners["getvisa:hello"] == ""
         await engine.dispose()
     _sync(check)
 
