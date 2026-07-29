@@ -328,3 +328,74 @@ def test_autotask_idempotent_second_run_same_day(monkeypatch):
         await cb.run(NOW, sessionmaker=sm)
         assert len(await _bot_tasks_today(sm, "medina")) == 1
     _run_case(body, monkeypatch, convs=convs)
+
+
+# --- сводка владельца: оба направления в одном утреннем сообщении ----------------
+
+@dataclass
+class DigestTask:
+    """Задача для сводки: важны направление, владелец и дата (просрочка)."""
+    direction: str = "visa"
+    manager_id: str = "medina"
+    scheduled_date: date = TODAY
+
+
+def test_owner_digest_counts_visas_and_tours_separately():
+    """Гриша/Даулет просили видеть утром ОБА направления: визы и туры считаются
+    раздельно — открытые, свежие за ночь, ждущие ответа и бесхозные."""
+    from datetime import timedelta
+    convs = [
+        Conv(bot_id="getvisa", funnel="visa", user_id="getvisa:1", assigned_to="medina"),
+        Conv(bot_id="getvisa", funnel="visa", user_id="getvisa:2", assigned_to=""),
+        Conv(bot_id="frunze_tours_sezim", funnel="tours", user_id="frunze_tours_sezim:3",
+             assigned_to="aisina", last_message_at=NOW - timedelta(minutes=30)),
+        # Старый висяк: ждёт больше суток и в «новых за ночь» не считается.
+        Conv(bot_id="frunze_tours_sezim", funnel="tours", user_id="frunze_tours_sezim:4",
+             assigned_to="", last_message_at=NOW - timedelta(hours=50)),
+        # Закрытый лид в сводку не попадает вообще.
+        Conv(bot_id="getvisa", funnel="visa", user_id="getvisa:5", outcome="won"),
+    ]
+    digest = cb.build_owner_digest(convs, [], NOW, lookback_hours=14, day=TODAY)
+    by_key = {d["key"]: d for d in digest["directions"]}
+    assert [d["key"] for d in digest["directions"]] == ["visa", "tours"]   # визы первыми
+    assert by_key["visa"]["open"] == 2 and by_key["visa"]["unassigned"] == 1
+    assert by_key["tours"]["open"] == 2 and by_key["tours"]["unassigned"] == 1
+    assert by_key["visa"]["fresh"] == 2          # обе визовые свежие
+    assert by_key["tours"]["fresh"] == 1         # висяк 50 ч — не «за ночь»
+    assert by_key["tours"]["waiting"] == 2 and by_key["tours"]["waiting_stale"] == 1
+
+
+def test_owner_digest_splits_today_tasks_from_overdue():
+    """Просрочка (активная задача со вчера) считается отдельно от сегодняшних."""
+    from datetime import timedelta
+    tasks = [DigestTask(direction="visa", manager_id="medina"),
+             DigestTask(direction="visa", manager_id="eliza",
+                        scheduled_date=TODAY - timedelta(days=2)),
+             DigestTask(direction="tours", manager_id="aisina")]
+    digest = cb.build_owner_digest([], tasks, NOW, lookback_hours=14, day=TODAY)
+    by_key = {d["key"]: d for d in digest["directions"]}
+    assert by_key["visa"]["tasks_today"] == 1 and by_key["visa"]["tasks_overdue"] == 1
+    assert by_key["tours"]["tasks_today"] == 1 and by_key["tours"]["tasks_overdue"] == 0
+    assert dict(by_key["visa"]["by_manager"]) == {"medina": 1, "eliza": 1}
+
+
+def test_owner_digest_empty_renders_nothing():
+    """Считать нечего → пустая строка, заголовок впустую не шлём."""
+    assert cb.render_owner_digest_text(
+        cb.build_owner_digest([], [], NOW, lookback_hours=14, day=TODAY)) == ""
+
+
+def test_owner_digest_only_for_admin(monkeypatch):
+    """Сводка по компании уходит только full-admin; у менеджеров её в брифе нет."""
+    convs = [Conv(bot_id="getvisa", funnel="visa", user_id="getvisa:1", assigned_to="medina"),
+             Conv(bot_id="frunze_tours_sezim", funnel="tours",
+                  user_id="frunze_tours_sezim:2", assigned_to="")]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        admin_text = _text_for(sent, "999")
+        assert "По компании" in admin_text
+        assert "Визы" in admin_text and "Туры" in admin_text     # оба направления
+        assert "По компании" not in _text_for(sent, "111")       # медина
+        assert "По компании" not in _text_for(sent, "222")       # элиза
+    _run_case(body, monkeypatch, convs=convs, managers=_TEAM)

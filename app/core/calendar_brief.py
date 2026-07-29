@@ -20,13 +20,18 @@ from datetime import datetime, timedelta, timezone
 from app.config import settings
 from app.core.manager_scope import bot_scope_for
 from app.core.morning_brief import (
-    BISHKEK_UTC_OFFSET, SEND_WINDOW_HOURS, _direction, _fmt_wait, _name,
-    _wait_minutes,
+    BISHKEK_UTC_OFFSET, SEND_WINDOW_HOURS, _FUNNEL_LABEL, _direction, _fmt_wait,
+    _name, _wait_minutes,
 )
 
 log = logging.getLogger("calendar_brief")
 
 NIGHT_REQUEST_CAP = 15
+# Сводка владельца: клиент, ждущий ответа дольше этого, считается «висяком».
+OWNER_STALE_HOURS = 24
+# Порядок направлений в сводке; всё неизвестное падает в «Прочее» последним.
+OWNER_DIGEST_ORDER = ["visa", "tours", "tickets"]
+OWNER_DIGEST_MANAGER_CAP = 6
 _KIND_LABEL = {"call": "📞 Звонки", "meeting": "🤝 Встречи",
                "office_visit": "🏢 Визиты в офис", "followup": "🔁 Повторные касания",
                "other": "📋 Другое"}
@@ -159,6 +164,102 @@ def build_manager_brief(login: str, name: str, tasks: list, night_requests: list
     }
 
 
+def _conv_direction(conv) -> str:
+    """Направление диалога по воронке. Пусто → «прочее» (не молчим о таких лидах)."""
+    return (getattr(conv, "funnel", "") or "").strip().lower() or "other"
+
+
+def _task_direction(task) -> str:
+    return (getattr(task, "direction", "") or "").strip().lower() or "other"
+
+
+def _empty_direction_row() -> dict:
+    return {"open": 0, "fresh": 0, "waiting": 0, "waiting_stale": 0, "unassigned": 0,
+            "tasks_today": 0, "tasks_overdue": 0, "by_manager": {}}
+
+
+def build_owner_digest(convs: list, tasks: list, now: datetime | None = None, *,
+                       lookback_hours: int, day=None,
+                       stale_hours: int = OWNER_STALE_HOURS) -> dict:
+    """Утренняя сводка ПО ВСЕЙ КОМПАНИИ для владельца/руководителя (full-admin).
+
+    Личный блок брифа отвечает на «что делать мне», а этот — на «что происходит по
+    визам и по турам»: сколько пришло за ночь, сколько клиентов ждёт ответа, что
+    висит без владельца и как загружена команда. Считает по ОТКРЫТЫМ (не won/lost,
+    не архивным) диалогам — то же определение лида, что и в остальном брифе.
+
+    convs — все живые диалоги; tasks — активные задачи ВСЕХ менеджеров по день `day`
+    включительно (просрочка = активная задача со вчера и раньше).
+    """
+    now = _aware(now) or datetime.now(timezone.utc)
+    rows: dict[str, dict] = {}
+
+    for conv in convs:
+        if not _is_open_lead(conv):
+            continue
+        row = rows.setdefault(_conv_direction(conv), _empty_direction_row())
+        row["open"] += 1
+        if not _owner_login(conv):
+            row["unassigned"] += 1
+        last = _last_activity(conv)
+        # Строгая свежесть: без отметки времени лид в «пришло за ночь» не попадает,
+        # иначе счётчик раздувается старьём с пустым полем.
+        if last is not None and (now - last) <= timedelta(hours=lookback_hours):
+            row["fresh"] += 1
+        wait = _wait_minutes(conv, now)
+        if wait > 0:
+            row["waiting"] += 1
+            if wait >= stale_hours * 60:
+                row["waiting_stale"] += 1
+
+    for task in tasks:
+        row = rows.setdefault(_task_direction(task), _empty_direction_row())
+        scheduled = getattr(task, "scheduled_date", None)
+        if day is not None and scheduled is not None and scheduled < day:
+            row["tasks_overdue"] += 1
+        else:
+            row["tasks_today"] += 1
+        owner = (getattr(task, "manager_id", "") or "").strip().lower()
+        if owner:
+            row["by_manager"][owner] = row["by_manager"].get(owner, 0) + 1
+
+    order = {key: i for i, key in enumerate(OWNER_DIGEST_ORDER)}
+    directions = []
+    for key in sorted(rows, key=lambda k: (order.get(k, len(order)), k)):
+        row = rows[key]
+        by_manager = sorted(row["by_manager"].items(), key=lambda kv: (-kv[1], kv[0]))
+        directions.append({**row, "key": key,
+                           "label": _FUNNEL_LABEL.get(key, "Прочее"),
+                           "by_manager": by_manager[:OWNER_DIGEST_MANAGER_CAP]})
+    local = now + timedelta(hours=BISHKEK_UTC_OFFSET)
+    return {"date_label": local.strftime("%d.%m"), "directions": directions,
+            "stale_hours": stale_hours}
+
+
+def render_owner_digest_text(digest: dict) -> str:
+    """Текстовый блок сводки. Пусто, если считать нечего — не шлём заголовок впустую."""
+    if not digest["directions"]:
+        return ""
+    lines = [f"🏢 По компании · {digest['date_label']}"]
+    for d in digest["directions"]:
+        lines += ["", f"{d['label']} · открытых {d['open']}"]
+        if d["fresh"]:
+            lines.append(f"  🌙 новых за ночь: {d['fresh']}")
+        if d["waiting"]:
+            tail = (f" (дольше {digest['stale_hours']} ч: {d['waiting_stale']})"
+                    if d["waiting_stale"] else "")
+            lines.append(f"  ⏳ ждут ответа: {d['waiting']}{tail}")
+        if d["unassigned"]:
+            lines.append(f"  📥 без владельца: {d['unassigned']}")
+        if d["tasks_today"] or d["tasks_overdue"]:
+            tail = f" · просрочено {d['tasks_overdue']}" if d["tasks_overdue"] else ""
+            lines.append(f"  📅 задач на сегодня: {d['tasks_today']}{tail}")
+        if d["by_manager"]:
+            who = " · ".join(f"{login} {count}" for login, count in d["by_manager"])
+            lines.append(f"  👤 {who}")
+    return "\n".join(lines)
+
+
 def _client_link(user_id: str, base_url: str) -> str:
     path = f"/admin/conversation/{user_id}"
     base = (base_url or "").rstrip("/")
@@ -228,6 +329,18 @@ async def _tasks_for(login: str, day, sessionmaker) -> list:
     from app.domain.calendar_tasks import CalendarTaskService
     async with sessionmaker() as session:
         return await CalendarTaskService.today_for_manager(session, login, day)
+
+
+async def _all_tasks(day, sessionmaker) -> list:
+    """Активные задачи ВСЕХ менеджеров по сегодня включительно (для сводки владельца).
+
+    Окно назад ограничено: просрочка старше месяца — это уже не утренняя сводка."""
+    from datetime import timedelta as _td
+
+    from app.domain.calendar_tasks import CalendarTaskService
+    async with sessionmaker() as session:
+        return await CalendarTaskService.list_all(
+            session, date_from=day - _td(days=30), date_to=day)
 
 
 async def _materialize_call_tasks(login: str, night_convs: list, day, sessionmaker) -> int:
@@ -335,6 +448,18 @@ async def run(now: datetime | None = None, *, sessionmaker=None) -> None:
         brief = build_manager_brief(login, mgr.name or login, tasks, night, now,
                                     to_distribute=to_distribute)
         text = render_manager_brief_text(brief, cfg.admin_base_url)
+
+        # Владелец/руководитель дополнительно видит срез по ОБОИМ направлениям —
+        # личный блок отвечает «что делать мне», сводка «что происходит в компании».
+        if is_admin:
+            try:
+                digest = build_owner_digest(convs, await _all_tasks(day, sessionmaker),
+                                            now, lookback_hours=lookback, day=day)
+                block = render_owner_digest_text(digest)
+                if block:
+                    text = f"{text}\n\n{block}"
+            except Exception:  # noqa: BLE001 — сводка не должна ломать личный бриф
+                log.warning("owner digest failed for manager=%s", login, exc_info=True)
 
         if not token:
             await flags.set_flag(sent_key, True)   # nowhere to send → screen covers it

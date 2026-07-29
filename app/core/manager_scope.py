@@ -9,8 +9,12 @@ from __future__ import annotations
 BOT_SCOPE_BY_MANAGER: dict[str, set[str]] = {
     "ademi": {"frunze_tours", "frunze_tours_tg"},
     "адеми": {"frunze_tours", "frunze_tours_tg"},
+    # Сезим уволилась 07.2026; её WhatsApp-номер (frunze_tours_sezim) ведёт Айсина.
+    # Логин sezim оставлен в карте, чтобы старые записи владения не потеряли смысл.
     "sezim": {"frunze_tours_sezim"},
     "сезим": {"frunze_tours_sezim"},
+    "aisina": {"frunze_tours_sezim", "frunze_tours_tg"},
+    "айсина": {"frunze_tours_sezim", "frunze_tours_tg"},
     "medina": {"getvisa", "getvisa_tg"},
     "медина": {"getvisa", "getvisa_tg"},
     "eliza": {"getvisa", "getvisa_tg"},
