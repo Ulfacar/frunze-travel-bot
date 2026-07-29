@@ -324,8 +324,24 @@ class Orchestrator:
         await self._sync_card(msg, state)
         if reply and not intercepted_midflight:
             await self._reply(msg, reply)
+            # P1.1: заявка собрана → мгновенный пуш владельцу. Врезка именно ЗДЕСЬ, а не
+            # в runner.py на handoff_to_manager: там инструмент возвращает инструкцию для
+            # LLM, а не текст клиенту, то есть «что бот пообещал» недоступно. В `reply`
+            # лежит буквально отправленная реплика.
+            await self._maybe_instant_handoff(msg, state, reply)
         elif intercepted_midflight:
             log.info("reply dropped: intercepted mid-flight (key=%s)", key)
+
+    async def _maybe_instant_handoff(self, msg: Message, state, reply: str) -> None:
+        """Пуш «заявка готова» владельцу диалога — best-effort, живой диалог не роняем."""
+        try:
+            from app.core.instant_handoff import HANDOFF_STAGES, maybe_notify
+            if (state.stage or "") not in HANDOFF_STAGES:
+                return
+            await maybe_notify(self._key(msg), promised=reply)
+        except Exception:  # noqa: BLE001 — пуш не критичен для диалога
+            log.warning("instant handoff hook failed (key=%s)", self._key(msg),
+                        exc_info=True)
 
     async def _maybe_wait_ack(self, msg: Message, state, store) -> None:
         """Разовое подтверждение клиенту после авто-хендоффа, пока менеджер молчит.

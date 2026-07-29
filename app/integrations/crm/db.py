@@ -81,6 +81,11 @@ class Conversation(Base):
     # NULL» физически не покрывается. Новые строки по-прежнему получают "" по default.
     assigned_to: Mapped[str | None] = mapped_column(String(64), default="")
     assigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # P1.1: когда по ГОТОВОЙ заявке ушёл мгновенный пуш владельцу. NULL = ещё не ушёл;
+    # условный UPDATE по этой колонке и есть дедуп (стадия office бота не перехватывает,
+    # поэтому инструмент эскалации может вызваться повторно на следующих ходах).
+    handoff_notified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True)
     outcome: Mapped[str] = mapped_column(String(24), default="")       # in_progress|office|manager|won|lost
     last_text: Mapped[str] = mapped_column(Text, default="")  # превью последней реплики для карточки
     last_sender: Mapped[str] = mapped_column(String(16), default="")  # client|bot|manager — для сигналов
@@ -218,6 +223,7 @@ async def init_models(engine: AsyncEngine) -> None:
             "lead_temperature": "VARCHAR(16) DEFAULT 'new'",
             "assigned_to": "VARCHAR(64) DEFAULT ''",
             "assigned_at": "TIMESTAMPTZ",
+            "handoff_notified_at": "TIMESTAMPTZ",
             "outcome": "VARCHAR(24) DEFAULT ''",
             "followup_sent": "BOOLEAN DEFAULT FALSE",
             "followup_count": "INTEGER DEFAULT 0",

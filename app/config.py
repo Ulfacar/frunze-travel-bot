@@ -195,6 +195,16 @@ class Settings(BaseSettings):
     # Идемпотентно: «ночные» уже исключают лидов с задачей на сегодня. Default OFF;
     # runtime key `calendar_autotask_enabled`. Требует calendar_brief_enabled.
     calendar_autotask_enabled: bool = False
+    # P1.1 — главное требование встречи 29.07: «когда заявка заполнена — сразу скинуть,
+    # чтобы клиент не ждал», ночью тоже. Пуш идёт ВЛАДЕЛЬЦУ диалога в личный Telegram в
+    # момент, когда бот собрал заявку (stage → manager/office). Default OFF; runtime key
+    # `instant_handoff_enabled`. Дедуп — условный UPDATE по conversations.handoff_notified_at.
+    instant_handoff_enabled: bool = False
+    # Ограничение из той же минуты записи: «главное, чтобы их это не доставало». Канал в
+    # этом списке НЕ получает мгновенных пушей — его заявки уходят дайджестом в указанные
+    # часы по Бишкеку. Это замена мгновенному пушу, а не добавка: два касания, не пять.
+    instant_handoff_digest_bots: list[str] = []
+    instant_handoff_digest_hours: list[int] = [12, 15, 19]
     # Еженедельная тур-сводка ВЛАДЕЛЬЦУ (Грише) в личный Telegram: закрывает «не вижу
     # цифр по турам → не оправдать таргет». Только честные факты + ручные продажи;
     # AI-оценка отдельной строкой с пометкой. Default OFF; runtime key

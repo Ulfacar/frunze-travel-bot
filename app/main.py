@@ -51,8 +51,9 @@ async def lifespan(app: FastAPI):
         log.warning("FAQ defaults seed failed", exc_info=True)
     # Фоновые джобы: watchdog-алерты + автодожим. Автодожим регистрируем всегда —
     # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
-    from app.core import (awaiting, calendar_brief, followup, morning_brief,
-                          outcome_infer, rescore, scheduler, tours_summary, watchdog)
+    from app.core import (awaiting, calendar_brief, followup, instant_handoff,
+                          morning_brief, outcome_infer, rescore, scheduler,
+                          tours_summary, watchdog)
     scheduler.register("watchdog", watchdog.run)
     scheduler.register("awaiting", awaiting.run)
     scheduler.register("followup", followup.run)
@@ -61,6 +62,9 @@ async def lifespan(app: FastAPI):
     scheduler.register("morning_brief", morning_brief.run)  # утренний горячий лист (gated OFF)
     scheduler.register("calendar_brief", calendar_brief.run)  # персональный план дня (gated OFF)
     scheduler.register("tours_summary", tours_summary.run)  # еженедельная тур-сводка владельцу (gated OFF)
+    # Дайджест готовых заявок для каналов, переведённых с мгновенных пушей (gated OFF).
+    # Мгновенный пуш идёт не отсюда, а из orchestrator по факту собранной заявки.
+    scheduler.register("handoff_digest", instant_handoff.run_digest)
     scheduler.start()
     try:
         yield
