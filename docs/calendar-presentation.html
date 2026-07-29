@@ -1,0 +1,356 @@
+<title>Frunze Travel — Календарь звонков</title>
+<style>
+  :root{
+    --bg:#F4F6F5; --surface:#FFFFFF; --surface-2:#EDF1F0; --ink:#13201F; --ink-soft:#4B5B58;
+    --ink-faint:#7A8A87; --line:#DBE3E1; --brand:#0E5C57; --brand-ink:#0A403C; --brand-soft:#DBEAE8;
+    --accent:#DB7526; --accent-soft:#F9E7D5; --good:#1C875A; --good-soft:#D8EFE3;
+    --warn:#B5820F; --warn-soft:#FAEECB; --night:#0C1B1A; --night-ink:#E7EEEC; --night-soft:#9FB1AE;
+    --radius:16px; --radius-s:10px;
+    --shadow:0 1px 2px rgba(16,40,38,.06),0 12px 34px -20px rgba(16,40,38,.4);
+    --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    --mono:"SFMono-Regular",ui-monospace,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#0B1312;--surface:#111D1B;--surface-2:#172524;--ink:#E7EEEC;--ink-soft:#9FB1AE;
+      --ink-faint:#6F817E;--line:#243230;--brand:#39B7AD;--brand-ink:#0C2E2B;--brand-soft:#12302D;
+      --accent:#EE9450;--accent-soft:#3A2413;--good:#4BBE85;--good-soft:#123028;--warn:#DBAE45;
+      --warn-soft:#332813;--night:#050D0C;--night-ink:#E7EEEC;--night-soft:#9FB1AE;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 38px -22px rgba(0,0,0,.85);}
+  }
+  :root[data-theme="light"]{--bg:#F4F6F5;--surface:#FFFFFF;--surface-2:#EDF1F0;--ink:#13201F;
+    --ink-soft:#4B5B58;--ink-faint:#7A8A87;--line:#DBE3E1;--brand:#0E5C57;--brand-ink:#0A403C;
+    --brand-soft:#DBEAE8;--accent:#DB7526;--accent-soft:#F9E7D5;--good:#1C875A;--good-soft:#D8EFE3;
+    --warn:#B5820F;--warn-soft:#FAEECB;--night:#0C1B1A;--night-ink:#E7EEEC;--night-soft:#9FB1AE;
+    --shadow:0 1px 2px rgba(16,40,38,.06),0 12px 34px -20px rgba(16,40,38,.4);}
+  :root[data-theme="dark"]{--bg:#0B1312;--surface:#111D1B;--surface-2:#172524;--ink:#E7EEEC;
+    --ink-soft:#9FB1AE;--ink-faint:#6F817E;--line:#243230;--brand:#39B7AD;--brand-ink:#0C2E2B;
+    --brand-soft:#12302D;--accent:#EE9450;--accent-soft:#3A2413;--good:#4BBE85;--good-soft:#123028;
+    --warn:#DBAE45;--warn-soft:#332813;--night:#050D0C;--night-ink:#E7EEEC;--night-soft:#9FB1AE;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 38px -22px rgba(0,0,0,.85);}
+
+  *{box-sizing:border-box}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  body{margin:0}
+  .page{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;
+    -webkit-font-smoothing:antialiased;font-size:16px;padding:0 20px 80px}
+  .wrap{max-width:1000px;margin:0 auto}
+  .slide{padding:44px 0;border-bottom:1px solid var(--line)}
+  .slide:last-child{border-bottom:none}
+  .kicker{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--brand);display:inline-flex;gap:9px;align-items:center;margin:0 0 14px}
+  .kicker::before{content:"";width:24px;height:2px;background:var(--brand);border-radius:2px}
+  h2{font-family:var(--serif);font-weight:600;font-size:clamp(23px,3.4vw,32px);line-height:1.12;
+    margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+  .sub{color:var(--ink-soft);font-size:clamp(15px,1.8vw,17px);max-width:64ch;margin:0 0 22px}
+
+  /* cover */
+  .cover{background:var(--night);color:var(--night-ink);border-radius:0 0 22px 22px;
+    margin:0 -20px 0;padding:64px 40px 56px}
+  .cover .in{max-width:1000px;margin:0 auto}
+  .cover .kicker{color:var(--accent)}.cover .kicker::before{background:var(--accent)}
+  .cover h1{font-family:var(--serif);font-weight:600;font-size:clamp(32px,6vw,54px);line-height:1.05;
+    margin:0 0 18px;color:#fff;text-wrap:balance}
+  .cover p{color:var(--night-soft);font-size:clamp(15px,2vw,18px);max-width:62ch;margin:0 0 26px}
+  .cover .bullets{display:flex;flex-wrap:wrap;gap:10px 26px}
+  .cover .bullets span{display:inline-flex;align-items:center;gap:9px;color:#fff;font-weight:600;font-size:14.5px}
+  .cover .bullets span::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--brand)}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:720px){.two{grid-template-columns:1fr}}
+  .three{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media (max-width:760px){.three{grid-template-columns:1fr}}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;box-shadow:var(--shadow)}
+  .card.dark{background:var(--night);border-color:transparent;color:var(--night-ink)}
+  .card.dark .lbl{color:var(--accent)} .card.dark li{color:#fff}
+  .card.tealtop{border-top:4px solid var(--brand)} .card.ambertop{border-top:4px solid var(--accent)}
+  .lbl{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--brand);margin:0 0 12px}
+  .card ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+  .card li{font-size:14.5px;color:var(--ink-soft);display:flex;gap:10px;align-items:flex-start}
+  .card li .m{color:var(--accent);font-weight:800;flex:none}
+  .card li .m.g{color:var(--good)} .card li .m.a{color:var(--accent)}
+  .card h3{font-family:var(--serif);font-size:19px;font-weight:600;margin:0 0 4px}
+  .card .tag{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin:0 0 12px;display:block}
+  .card .body{font-size:14px;color:var(--ink-soft)}
+
+  /* chat */
+  .chat{display:flex;flex-direction:column;gap:10px;max-width:460px}
+  .bub{max-width:88%;padding:11px 14px;border-radius:14px;font-size:14px;line-height:1.4}
+  .bub.me{align-self:flex-start;background:var(--surface-2);color:var(--ink);border-top-left-radius:4px}
+  .bub.bot{align-self:flex-end;background:var(--brand);color:#fff;border-top-right-radius:4px}
+  .bub.pick{align-self:flex-start;background:var(--good-soft);color:var(--good);font-weight:700;max-width:40%}
+  .bub .t{font-size:10.5px;opacity:.7;margin-top:3px}
+
+  /* appointment stack */
+  .appt{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;
+    background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--brand);
+    border-radius:var(--radius-s);padding:12px 14px;margin-bottom:9px}
+  .appt.warm{border-left-color:var(--accent)}
+  .appt .tm{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--ink)}
+  .appt .nm{font-weight:650;font-size:14.5px}
+  .appt .meta{font-size:12px;color:var(--ink-soft)}
+  .appt .st{font-size:11px;font-weight:700;color:var(--good);white-space:nowrap}
+  .appt .st.pend{color:var(--warn)}
+
+  .flow{display:flex;flex-direction:column;gap:16px;margin-top:6px}
+  .step{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:start}
+  .step .n{width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;display:grid;
+    place-items:center;font-weight:700;font-size:16px;flex:none}
+  .step:last-child .n{background:var(--accent)}
+  .step .st-t{font-weight:650;font-size:15px;margin:6px 0 2px}
+  .step .st-d{font-size:13.5px;color:var(--ink-soft)}
+
+  .kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+  @media (max-width:720px){.kpi-row{grid-template-columns:1fr}}
+  .kpi{border-radius:var(--radius);padding:22px}
+  .kpi.bot{background:var(--good-soft);border:1px solid var(--good)}
+  .kpi.mgr{background:var(--accent-soft);border:1px solid var(--accent)}
+  .kpi .who{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px}
+  .kpi.bot .who{color:var(--good)} .kpi.mgr .who{color:var(--accent)}
+  .kpi .m{font-size:17px;font-weight:650;color:var(--ink)}
+  .note{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-s);
+    padding:16px 18px;font-size:14px;color:var(--ink-soft)}
+  .note b{color:var(--ink)}
+
+  .foot{padding-top:26px;color:var(--ink-faint);font-size:12.5px;display:flex;
+    justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .snum{font-family:var(--mono);color:var(--ink-faint);font-size:12px;font-weight:700;
+    letter-spacing:.05em;float:right}
+</style>
+
+<div class="page">
+
+  <!-- 01 · COVER -->
+  <header class="cover">
+    <div class="in">
+      <div class="kicker">Frunze Travel · Календарь звонков</div>
+      <h1>Бот ловит ночью.<br>Человек закрывает утром.</h1>
+      <p>Тур созревает ночью, когда менеджеров нет. Вместо «мы вам перезвоним» бот бронирует клиенту конкретный слот утреннего звонка — и к 9:00 кладёт менеджеру готовое досье.</p>
+      <div class="bullets">
+        <span>Ночь поймана</span><span>Утро — стопка звонков</span><span>Показатель show-up</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- 02 · REFRAME -->
+    <section class="slide">
+      <span class="snum">02</span>
+      <div class="kicker">Рефрейм · роль бота</div>
+      <h2>Бот — ночной диспетчер, а не продавец</h2>
+      <div class="two">
+        <div class="card dark">
+          <p class="lbl">Почему течёт</p>
+          <ul>
+            <li><span class="m">—</span> Туры созревают ночью — менеджеры спят</li>
+            <li><span class="m">—</span> Медиана ответа человека — 3 часа</li>
+            <li><span class="m">—</span> 20% лидов рождаются ночью (22:00–08:00)</li>
+            <li><span class="m">—</span> Цена — ручное оружие: бот её не называет</li>
+          </ul>
+        </div>
+        <div class="card tealtop">
+          <p class="lbl">Что делает календарь</p>
+          <ul>
+            <li><span class="m g">→</span> Ночью квалифицирует тёплого клиента</li>
+            <li><span class="m g">→</span> Бронирует слот утреннего звонка</li>
+            <li><span class="m g">→</span> К 9:00 отдаёт менеджеру готовое досье</li>
+            <li><span class="m g">→</span> Утром человек звонит и закрывает</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 · THREE ROLES -->
+    <section class="slide">
+      <span class="snum">03</span>
+      <div class="kicker">Как это работает</div>
+      <h2>Три роли — один конвейер</h2>
+      <div class="three">
+        <div class="card tealtop">
+          <h3>👤 Клиент</h3>
+          <span class="tag" style="color:var(--brand)">в переписке WhatsApp</span>
+          <div class="body">Бот даёт 2–3 свободных времени. Клиент отвечает цифрой — «в 10:00». Сам выбрал → сам обязался прийти.</div>
+        </div>
+        <div class="card ambertop">
+          <h3>🧑‍💼 Менеджер</h3>
+          <span class="tag" style="color:var(--accent)">экран календаря утром</span>
+          <div class="body">Приходит в 9:00 — не хаос-инбокс, а стопка назначенных звонков с готовым досье: бюджет, даты, кто платит.</div>
+        </div>
+        <div class="card tealtop">
+          <h3>🤖 Бот</h3>
+          <span class="tag" style="color:var(--brand)">ночью на автопилоте</span>
+          <div class="body">Квалифицирует, бронирует слот наименее загруженному менеджеру, к 9:00 шлёт «горячий лист» в общий чат.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 · CLIENT -->
+    <section class="slide">
+      <span class="snum">04</span>
+      <div class="kicker">Клиент · выбор в чате</div>
+      <h2>Слот выбирается прямо в WhatsApp — не на сайте</h2>
+      <div class="two">
+        <div class="chat">
+          <div class="bub me">Анталья, вдвоём, 10–17 августа, до 1500$<div class="t">01:47</div></div>
+          <div class="bub bot">Айгерим, по цене лучше отработает живой менеджер. Адеми свободна завтра утром — в 10:00 или 11:30? Ответьте 1 или 2<div class="t">01:47</div></div>
+          <div class="bub pick">1<div class="t">07:12</div></div>
+          <div class="bub bot">Готово ✅ Адеми позвонит завтра в 10:00. До связи!<div class="t">07:12</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card ambertop">
+            <p class="lbl" style="color:var(--accent)">Почему не сайт</p>
+            <div class="body">Публичную страницу на сайте мы отклонили: в Бишкеке клиенты живут в WhatsApp и не ходят по ссылкам ботов ночью. Каждый уход из чата режет конверсию. Слот выбирается цифрой — ноль трения.</div>
+          </div>
+          <div class="card tealtop">
+            <p class="lbl">Эффект</p>
+            <div class="body">Кто сам выбрал время — тот приходит. Бронь работает как фильтр: пустышки слот не берут, менеджер тратит утро только на реальных.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 · MANAGER -->
+    <section class="slide">
+      <span class="snum">05</span>
+      <div class="kicker">Менеджер · утро</div>
+      <h2>Не 100 «здравствуйте», а стопка назначенных звонков</h2>
+      <div class="two">
+        <div>
+          <p class="lbl">Сегодня · Адеми · 4 звонка</p>
+          <div class="appt"><span class="tm">10:00</span><span><div class="nm">Айгерим</div><div class="meta">Анталья · 1500$ · 10–17 авг</div></span><span class="st">✓ подтвердила</span></div>
+          <div class="appt warm"><span class="tm">10:20</span><span><div class="nm">Данияр</div><div class="meta">Дубай · бюджет ? · семья 4</div></span><span class="st pend">не ответил</span></div>
+          <div class="appt"><span class="tm">10:40</span><span><div class="nm">Салтанат</div><div class="meta">Виза США · документы готовы</div></span><span class="st">✓ подтвердила</span></div>
+          <div class="appt"><span class="tm">11:20</span><span><div class="nm">Нурлан</div><div class="meta">Шарм · 2000$ · сентябрь</div></span><span class="st">✓ подтвердил</span></div>
+        </div>
+        <div class="card">
+          <p class="lbl">Досье к звонку 10:00</p>
+          <h3 style="margin-bottom:14px">Айгерим · Анталья</h3>
+          <ul>
+            <li style="justify-content:space-between"><span>Бюджет</span><b style="color:var(--ink)">до 1500 $</b></li>
+            <li style="justify-content:space-between"><span>Даты</span><b style="color:var(--ink)">10–17 авг</b></li>
+            <li style="justify-content:space-between"><span>Туристы</span><b style="color:var(--ink)">2 взрослых</b></li>
+            <li style="justify-content:space-between"><span>Кто платит</span><b style="color:var(--ink)">она сама</b></li>
+          </ul>
+          <div class="note" style="margin-top:14px;font-style:italic">Заметка бота: сравнивала с 2 агентствами, по нашей цене готова.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 · NIGHT BOT -->
+    <section class="slide">
+      <span class="snum">06</span>
+      <div class="kicker">Ночной бот</div>
+      <h2>Что бот делает, пока все спят</h2>
+      <div class="two">
+        <div class="flow">
+          <div class="step"><div class="n">1</div><div><div class="st-t">Квалифицирует</div><div class="st-d">Ведёт диалог, считает готовность: green / warm / шум.</div></div></div>
+          <div class="step"><div class="n">2</div><div><div class="st-t">Предлагает слот</div><div class="st-d">Дозрел + 4 критерия → даёт 2–3 времени в чате.</div></div></div>
+          <div class="step"><div class="n">3</div><div><div class="st-t">Балансирует</div><div class="st-d">Слот падает наименее загруженному: Адеми / Сезим / Медина / Элиза.</div></div></div>
+          <div class="step"><div class="n">4</div><div><div class="st-t">Пуш в 9:00</div><div class="st-d">Горячий лист дня → менеджерам в Telegram + экран.</div></div></div>
+        </div>
+        <div class="card dark">
+          <p class="lbl">🔥 Горячий лист · 9:00</p>
+          <ul>
+            <li><span class="m a" style="font-family:var(--mono)">10:00</span> Айгерим · Анталья</li>
+            <li><span class="m a" style="font-family:var(--mono)">10:20</span> Данияр · Дубай</li>
+            <li><span class="m a" style="font-family:var(--mono)">10:40</span> Салтанат · виза США</li>
+            <li><span class="m a" style="font-family:var(--mono)">11:20</span> Нурлан · Шарм</li>
+          </ul>
+          <div class="body" style="color:var(--night-soft);margin-top:14px;font-style:italic">→ падает менеджерам в Telegram</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 · KPI -->
+    <section class="slide">
+      <span class="snum">07</span>
+      <div class="kicker">Два KPI · разная ответственность</div>
+      <h2>Бот доводит до слота. Человек — до денег.</h2>
+      <p class="sub">Разделение снимает вечный спор «трафик или менеджеры». У каждого свой измеримый результат.</p>
+      <div class="kpi-row">
+        <div class="kpi bot"><div class="who">KPI бота</div><div class="m">% лидов, доведённых до назначенного слота с человеком</div></div>
+        <div class="kpi mgr"><div class="who">KPI менеджера</div><div class="m">% слотов, ставших деньгами (show-up → продажа)</div></div>
+      </div>
+      <div class="note"><b>Важно: слот ≠ продажа.</b> Если менеджер не закрывает — точная доставка умножается на ноль. Поэтому show-up мы обязаны измерять — и здесь вылезает дыра: продажи в системе сейчас не считаются (следующий слайд).</div>
+    </section>
+
+    <!-- 08 · HONEST -->
+    <section class="slide">
+      <span class="snum">08</span>
+      <div class="kicker">Честно · два решения</div>
+      <h2>Что мы срезали и что вскрыли</h2>
+      <div class="two">
+        <div class="card dark">
+          <p class="lbl">Срезали — сайт-календарь</p>
+          <div class="body" style="color:#fff">Публичная страница на сайте убила бы конверсию: разрыв WhatsApp→сайт, паттерн фишинга от бота ночью, риск двойных броней и спама.<br><br><b style="color:var(--accent)">→ Слот выбирается цифрой прямо в чате.</b> Меньше кода, меньше трения, тот же результат.</div>
+        </div>
+        <div class="card dark">
+          <p class="lbl" style="color:var(--brand)">Вскрыли — продажи не считаются</p>
+          <div class="body" style="color:#fff">Факт оплаты живёт в Bitrix-«Сделке», которую система не читает. «Продано» размечено 3 из 389 вручную — конверсия недостоверна.<br><br><b style="color:var(--brand)">→ Без чтения сделок show-up не с чем сравнить.</b> Фундамент под весь календарь — вопрос №8 уже у вас.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 · PHASES -->
+    <section class="slide">
+      <span class="snum">09</span>
+      <div class="kicker">Фазы · не ждём сложа руки</div>
+      <h2>Часть уже в проде. Слоты — по вашему сигналу.</h2>
+      <div class="two">
+        <div class="card" style="background:var(--good-soft);border-color:var(--good)">
+          <p class="lbl" style="color:var(--good)">Фаза 0 · уже работает</p>
+          <h3 style="margin-bottom:12px">Утренний «горячий лист»</h3>
+          <ul>
+            <li><span class="m g">✓</span> Бот собирает готовых лидов за ночь</li>
+            <li><span class="m g">✓</span> Экран /admin/morning — стопка звонков</li>
+            <li><span class="m g">✓</span> Сортировка по ожиданию, чек, «ждёт N»</li>
+            <li><span class="m g">✓</span> В проде, на боевых данных сегодня</li>
+          </ul>
+        </div>
+        <div class="card ambertop">
+          <p class="lbl" style="color:var(--accent)">Фаза 1 · ждёт Гришу + решение ЛПР</p>
+          <h3 style="margin-bottom:12px">Слоты бронирования</h3>
+          <ul>
+            <li><span class="m a">○</span> Таблица слотов + часы менеджеров</li>
+            <li><span class="m a">○</span> Выбор времени в чате WhatsApp</li>
+            <li><span class="m a">○</span> Экран /calendar + напоминание за час</li>
+            <li><span class="m a">○</span> Балансировка нагрузки по менеджерам</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note" style="margin-top:16px"><b>~60% фундамента Фазы 1 уже готово</b> (планировщик, мотор готовности, экран-образец). Реально новое — таблица слотов и напоминание.</div>
+    </section>
+
+    <!-- 10 · NEXT -->
+    <section class="slide">
+      <span class="snum">10</span>
+      <div class="kicker">Что нужно от вас</div>
+      <h2>Три ответа — и запускаем слоты</h2>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card" style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center">
+          <div style="font-family:var(--serif);font-size:30px;font-weight:700;color:var(--accent)">1</div>
+          <div><div style="font-weight:650;font-size:15.5px">Формат календаря</div><div class="body">Свой встроенный + Telegram-пуши (мы за это) или Google Calendar?</div></div>
+        </div>
+        <div class="card" style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center">
+          <div style="font-family:var(--serif);font-size:30px;font-weight:700;color:var(--accent)">2</div>
+          <div><div style="font-weight:650;font-size:15.5px">Доступ к сделкам</div><div class="body">Чтение Bitrix-сделок, чтобы мерить show-up и конверсию (вопрос №8).</div></div>
+        </div>
+        <div class="card" style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center">
+          <div style="font-family:var(--serif);font-size:30px;font-weight:700;color:var(--accent)">3</div>
+          <div><div style="font-weight:650;font-size:15.5px">Telegram-группа</div><div class="body">id чата менеджеров — включим утренний пуш «горячего листа».</div></div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:18px;text-align:center;color:var(--brand);font-weight:600;font-style:italic;background:var(--brand-soft);border-color:var(--brand)">Фаза 0 уже приносит пользу без этих ответов. Слоты (Фаза 1) — как только решите формат.</div>
+    </section>
+
+    <div class="foot">
+      <span>Frunze Travel · Календарь звонков · Бишкек</span>
+      <span>Концепт · для обсуждения</span>
+    </div>
+
+  </div>
+</div>

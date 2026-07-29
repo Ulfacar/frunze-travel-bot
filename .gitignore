@@ -15,3 +15,7 @@ runs/
 
 # build artifacts (генерятся scripts/make_*_pptx.py)
 *.pptx
+
+# сырьё встреч: расшифровки и голосовые, в репо не нужны
+Text context/
+*.ogg

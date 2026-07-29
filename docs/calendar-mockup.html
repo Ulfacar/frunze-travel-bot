@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frunze Travel — Календарь звонков · макет экранов</title>
+<style>
+  :root{
+    --bg:#F4F6F5; --surface:#FFFFFF; --surface-2:#EDF1F0; --ink:#13201F; --ink-soft:#4B5B58;
+    --ink-faint:#7A8A87; --line:#DBE3E1; --brand:#0E5C57; --brand-soft:#DBEAE8;
+    --accent:#DB7526; --accent-soft:#F9E7D5; --accent-ink:#7A3C0D;
+    --good:#1C875A; --good-soft:#D8EFE3; --warn:#B5820F; --warn-soft:#FAEECB;
+    --night:#0C1B1A; --night-ink:#E7EEEC; --night-soft:#9FB1AE; --now:#D64541;
+    --wa:#075E54; --wa-bg:#ECE5DD; --wa-in:#FFFFFF; --wa-out:#DCF8C6; --wa-txt:#111B21;
+    --wa-dim:#66757F; --wa-chip:#FFFFFF; --wa-sys-bg:#FCF3CB; --wa-sys-c:#54656F; --wa-tick:#34B7F1;
+    --radius:16px; --radius-s:10px;
+    --shadow:0 1px 2px rgba(16,40,38,.06),0 12px 34px -20px rgba(16,40,38,.4);
+    --shadow-lift:0 2px 6px rgba(16,40,38,.08),0 18px 40px -18px rgba(16,40,38,.45);
+    --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    --mono:"SFMono-Regular",ui-monospace,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#0B1312;--surface:#111D1B;--surface-2:#172524;--ink:#E7EEEC;--ink-soft:#9FB1AE;
+      --ink-faint:#6F817E;--line:#243230;--brand:#39B7AD;--brand-soft:#12302D;
+      --accent:#EE9450;--accent-soft:#3A2413;--accent-ink:#F2B98C;
+      --good:#4BBE85;--good-soft:#123028;--warn:#DBAE45;--warn-soft:#332813;
+      --night:#050D0C;--night-ink:#E7EEEC;--night-soft:#9FB1AE;--now:#E0655F;
+      --wa:#202C33;--wa-bg:#0B141A;--wa-in:#202C33;--wa-out:#005C4B;--wa-txt:#E9EDEF;
+      --wa-dim:#8696A0;--wa-chip:#182229;--wa-sys-bg:#182229;--wa-sys-c:#FFD279;--wa-tick:#53BDEB;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 38px -22px rgba(0,0,0,.85);
+      --shadow-lift:0 2px 6px rgba(0,0,0,.5),0 18px 44px -20px rgba(0,0,0,.9);}
+  }
+  :root[data-theme="light"]{--bg:#F4F6F5;--surface:#FFFFFF;--surface-2:#EDF1F0;--ink:#13201F;
+    --ink-soft:#4B5B58;--ink-faint:#7A8A87;--line:#DBE3E1;--brand:#0E5C57;--brand-soft:#DBEAE8;
+    --accent:#DB7526;--accent-soft:#F9E7D5;--accent-ink:#7A3C0D;--good:#1C875A;--good-soft:#D8EFE3;
+    --warn:#B5820F;--warn-soft:#FAEECB;--night:#0C1B1A;--night-ink:#E7EEEC;--night-soft:#9FB1AE;--now:#D64541;
+    --wa:#075E54;--wa-bg:#ECE5DD;--wa-in:#FFFFFF;--wa-out:#DCF8C6;--wa-txt:#111B21;--wa-dim:#66757F;
+    --wa-chip:#FFFFFF;--wa-sys-bg:#FCF3CB;--wa-sys-c:#54656F;--wa-tick:#34B7F1;
+    --shadow:0 1px 2px rgba(16,40,38,.06),0 12px 34px -20px rgba(16,40,38,.4);
+    --shadow-lift:0 2px 6px rgba(16,40,38,.08),0 18px 40px -18px rgba(16,40,38,.45);}
+  :root[data-theme="dark"]{--bg:#0B1312;--surface:#111D1B;--surface-2:#172524;--ink:#E7EEEC;
+    --ink-soft:#9FB1AE;--ink-faint:#6F817E;--line:#243230;--brand:#39B7AD;--brand-soft:#12302D;
+    --accent:#EE9450;--accent-soft:#3A2413;--accent-ink:#F2B98C;--good:#4BBE85;--good-soft:#123028;
+    --warn:#DBAE45;--warn-soft:#332813;--night:#050D0C;--night-ink:#E7EEEC;--night-soft:#9FB1AE;--now:#E0655F;
+    --wa:#202C33;--wa-bg:#0B141A;--wa-in:#202C33;--wa-out:#005C4B;--wa-txt:#E9EDEF;--wa-dim:#8696A0;
+    --wa-chip:#182229;--wa-sys-bg:#182229;--wa-sys-c:#FFD279;--wa-tick:#53BDEB;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 38px -22px rgba(0,0,0,.85);
+    --shadow-lift:0 2px 6px rgba(0,0,0,.5),0 18px 44px -20px rgba(0,0,0,.9);}
+
+  *{box-sizing:border-box}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  html,body{overflow-x:clip}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    line-height:1.5;-webkit-font-smoothing:antialiased;font-size:15px}
+  button{font:inherit}
+  :is(.tab,.who-tab,.btn,.mode,.appt,.slot,.grid-bar button,.seg span):focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px}
+
+  /* ---- App chrome ---- */
+  .top{background:var(--night);color:var(--night-ink);padding:13px 22px;
+    display:flex;align-items:center;gap:16px}
+  .top .logo{font-family:var(--serif);font-weight:600;font-size:18px;color:#fff;white-space:nowrap;letter-spacing:.01em}
+  .top .logo b{color:var(--accent);font-weight:600}
+  .top .logo .sep{color:var(--night-soft);font-family:var(--sans);font-size:14px;font-weight:400;margin:0 2px}
+  .top .env{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--night-soft);border:1px solid rgba(159,177,174,.35);border-radius:20px;padding:3.5px 11px;white-space:nowrap}
+  .top .spacer{flex:1}
+  .top .clock{font-family:var(--mono);font-size:12.5px;color:var(--night-soft);white-space:nowrap}
+  .top .clock b{color:#fff;font-weight:600}
+  .mode{appearance:none;border:1px solid rgba(159,177,174,.35);background:transparent;color:var(--night-soft);
+    width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;line-height:1;flex:none;
+    display:grid;place-items:center;transition:.15s}
+  .mode:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+  @media(max-width:640px){.top{flex-wrap:wrap;row-gap:8px}.top .clock{display:none}}
+
+  .tabs{display:flex;gap:2px;background:var(--surface);padding:8px 22px 0;
+    border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:0;z-index:9;
+    box-shadow:0 1px 0 var(--line)}
+  .tab{appearance:none;border:none;background:transparent;cursor:pointer;
+    padding:11px 16px 12px;border-radius:10px 10px 0 0;color:var(--ink-soft);font-weight:600;
+    font-size:14px;border-bottom:3px solid transparent;margin-bottom:-1px;transition:.15s;
+    display:inline-flex;align-items:center;gap:8px}
+  .tab:hover{background:var(--surface-2);color:var(--ink)}
+  .tab.on{color:var(--brand);border-bottom-color:var(--brand)}
+  .tab .num{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--ink-faint);
+    border:1px solid var(--line);border-radius:6px;padding:1px 5.5px;transition:.15s}
+  .tab.on .num{color:var(--brand);border-color:var(--brand)}
+
+  .canvas{max-width:1160px;margin:0 auto;padding:30px 22px 70px}
+  .view{display:none}.view.on{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h2.vt{font-family:var(--serif);font-weight:600;font-size:clamp(22px,3vw,27px);
+    line-height:1.15;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
+  .caption{color:var(--ink-soft);font-size:13.5px;margin:0 0 22px;max-width:76ch;
+    display:flex;gap:9px;align-items:baseline}
+  .caption::before{content:"◍";color:var(--brand);flex:none;transform:translateY(1px)}
+  .caption b{color:var(--ink)}
+
+  /* ---- Screen 1: manager morning ---- */
+  .mgr-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:20px;align-items:start}
+  @media(max-width:880px){.mgr-grid{grid-template-columns:1fr}}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden}
+  .panel-h{padding:15px 18px 13px;border-bottom:1px solid var(--line);display:flex;
+    align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .panel-h .t{font-weight:700;font-size:15px}
+  .panel-h .c{font-size:12px;color:var(--ink-faint);margin-top:1px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;
+    background:var(--brand-soft);color:var(--brand)}
+  .chip.w{background:var(--warn-soft);color:var(--warn)}
+
+  .who-tabs{display:flex;gap:6px;padding:13px 18px 3px;flex-wrap:wrap}
+  .who-tab{appearance:none;font-size:12.5px;font-weight:600;padding:6.5px 13px;border-radius:20px;cursor:pointer;
+    border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);
+    display:inline-flex;align-items:center;gap:7px;transition:.15s}
+  .who-tab:hover{border-color:var(--brand);color:var(--brand)}
+  .who-tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .who-tab .b{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:9px;
+    background:var(--surface-2);color:var(--ink-faint)}
+  .who-tab.on .b{background:rgba(255,255,255,.18);color:#fff}
+
+  .appt-list{padding:12px 14px 16px;display:flex;flex-direction:column;gap:8px}
+  .appt{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:12px;align-items:center;
+    background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--good);
+    border-radius:var(--radius-s);padding:12px 14px;cursor:pointer;transition:.15s;text-align:left}
+  .appt:hover{border-color:var(--brand);border-left-color:var(--brand);
+    box-shadow:var(--shadow-lift);transform:translateY(-1px)}
+  .appt.warm{border-left-color:var(--accent)}
+  .appt.sel{border-color:var(--brand);border-left-color:var(--brand);background:var(--brand-soft)}
+  .appt .tm{font-family:var(--mono);font-weight:700;font-size:15.5px}
+  .appt .tm small{display:block;font-size:10px;color:var(--ink-faint);font-weight:600;margin-top:2px;letter-spacing:.03em}
+  .appt .nm{font-weight:650;font-size:14.5px;display:flex;align-items:center;gap:7px}
+  .appt .nm .moon{font-size:11px;opacity:.75;font-weight:400}
+  .appt .meta{font-size:12.5px;color:var(--ink-soft);margin-top:2px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .pill{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;white-space:nowrap;letter-spacing:.02em}
+  .pill.ok{background:var(--good-soft);color:var(--good)}
+  .pill.wait{background:var(--warn-soft);color:var(--warn)}
+  .list-hint{padding:0 18px 14px;font-size:11.5px;color:var(--ink-faint)}
+
+  /* dossier */
+  .dos{padding:18px}
+  .dos .lead{display:flex;align-items:center;gap:13px;margin-bottom:6px}
+  .dos .ava{width:48px;height:48px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
+    display:grid;place-items:center;font-weight:700;font-size:19px;font-family:var(--serif);flex:none}
+  .dos .lead-m{min-width:0;flex:1}
+  .dos h3{font-family:var(--serif);font-size:21px;font-weight:600;margin:0;letter-spacing:-.01em}
+  .dos .sub{font-size:12.5px;color:var(--ink-faint);margin-top:2px}
+  .dos .lead-r{text-align:right;flex:none}
+  .dos .big-tm{font-family:var(--mono);font-weight:700;font-size:17px;margin-bottom:5px}
+  .dos .nightrow{margin:12px 0 4px;font-size:12.5px;color:var(--ink-soft);
+    background:var(--surface-2);border-radius:8px;padding:8px 12px;display:flex;gap:8px;align-items:baseline}
+  .dos .nightrow::before{content:"🌙";flex:none;font-size:12px}
+  .dos dl{margin:6px 0 0;display:grid;grid-template-columns:auto 1fr;column-gap:16px;font-size:13.5px}
+  .dos dt{color:var(--ink-soft);padding:9px 0;border-bottom:1px solid var(--line)}
+  .dos dd{margin:0;text-align:right;font-weight:650;padding:9px 0;border-bottom:1px solid var(--line)}
+  .dos dt:last-of-type,.dos dd:last-of-type{border-bottom:none}
+  .dos .botnote{margin-top:12px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--radius-s);padding:12px 14px;font-size:13px;color:var(--ink-soft);
+    font-style:italic;line-height:1.55}
+  .dos .botnote b{font-style:normal;color:var(--brand);font-size:10.5px;letter-spacing:.06em;
+    text-transform:uppercase;display:block;margin-bottom:5px;font-weight:800}
+  .dos .acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .btn{appearance:none;border:none;font-weight:650;font-size:13.5px;cursor:pointer;
+    padding:9px 15px;border-radius:10px;display:inline-flex;gap:7px;align-items:center;transition:.15s}
+  .btn.g{background:var(--good);color:#fff}
+  .btn.g:hover{filter:brightness(1.08);box-shadow:var(--shadow)}
+  .btn.o{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .btn.o:hover{border-color:var(--brand);color:var(--brand)}
+
+  /* ---- Screen 2: week grid ---- */
+  .grid-wrap{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden}
+  .grid-scroll{overflow-x:auto}
+  .grid-bar{display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .grid-bar .nav{display:flex;gap:4px}
+  .grid-bar .nav button{width:30px;height:30px;border:1px solid var(--line);background:var(--surface);
+    border-radius:8px;cursor:pointer;font-size:15px;color:var(--ink-soft);transition:.15s;padding:0}
+  .grid-bar .nav button:hover{border-color:var(--brand);color:var(--brand)}
+  .grid-bar .day{font-weight:700;font-size:15px}
+  .grid-bar .day small{display:block;font-size:11px;font-weight:600;color:var(--ink-faint)}
+  .grid-bar .seg{margin-left:auto;display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .grid-bar .seg span{padding:6.5px 15px;font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:.15s}
+  .grid-bar .seg span:hover{color:var(--brand)}
+  .grid-bar .seg span.on{background:var(--brand);color:#fff}
+  table.cal{border-collapse:collapse;width:100%;min-width:720px}
+  table.cal th,table.cal td{border:1px solid var(--line);padding:0}
+  table.cal thead th{background:var(--surface-2);padding:10px 10px 12px;font-size:13.5px;text-align:left;font-weight:700}
+  table.cal thead th.hr{width:58px}
+  table.cal thead th .mini{display:block;font-size:11px;color:var(--ink-faint);font-weight:600;margin:2px 0 7px}
+  table.cal thead th .load{height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+  table.cal thead th .load i{display:block;height:100%;background:var(--brand);border-radius:4px}
+  table.cal td.hr{width:58px;background:var(--surface-2);text-align:center;font-family:var(--mono);
+    font-size:11.5px;color:var(--ink-faint);vertical-align:top;padding:7px 0}
+  table.cal td.hr.nowhr{color:var(--now);font-weight:700}
+  table.cal td.cell{height:58px;vertical-align:top;position:relative;min-width:150px}
+  td.cell.now::before{content:"";position:absolute;left:0;right:0;top:6px;
+    border-top:2px solid var(--now);opacity:.55;z-index:3;pointer-events:none}
+  .slot{position:absolute;inset:3px;border-radius:8px;padding:6px 9px;font-size:11.5px;
+    line-height:1.3;overflow:hidden;cursor:pointer;border:1px solid transparent;
+    text-align:left;transition:.15s;z-index:1;width:auto}
+  .slot:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift);z-index:2}
+  .slot .s-t{font-family:var(--mono);font-weight:700;font-size:10.5px}
+  .slot .s-n{font-weight:700;margin-top:1px;color:var(--ink)}
+  .slot .s-d{color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slot.b{background:var(--brand-soft);border-color:var(--brand)}
+  .slot.b .s-t{color:var(--brand)}
+  .slot.a{background:var(--accent-soft);border-color:var(--accent)}
+  .slot.a .s-t{color:var(--accent-ink)}
+  .slot.free{border:1px dashed var(--line);background:transparent;color:var(--ink-faint);
+    font-size:11px;display:grid;place-items:center;box-shadow:none}
+  .slot.free:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-soft);
+    transform:none;box-shadow:none}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--ink-soft)}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+  .legend .nowline{display:inline-block;width:14px;border-top:2px solid var(--now);margin-right:7px;vertical-align:3px}
+
+  /* ---- Screen 3: WhatsApp ---- */
+  .wa-wrap{display:grid;grid-template-columns:minmax(0,372px) minmax(0,1fr);gap:24px;align-items:start}
+  @media(max-width:780px){.wa-wrap{grid-template-columns:1fr}.phone{margin:0 auto}}
+  .phone{background:var(--wa-bg);border-radius:30px;overflow:hidden;max-width:372px;width:100%;
+    box-shadow:var(--shadow-lift);border:9px solid #0B1413}
+  .wa-top{background:var(--wa);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:11px}
+  .wa-top .back{font-size:22px;line-height:1;opacity:.9;margin-right:-2px}
+  .wa-top .ava{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);
+    display:grid;place-items:center;font-size:17px;flex:none}
+  .wa-top .n{font-weight:650;font-size:14.5px}
+  .wa-top .s{font-size:11px;opacity:.75;margin-top:1px}
+  .wa-top .ic{margin-left:auto;font-size:14px;opacity:.85;letter-spacing:8px}
+  .wa-body{padding:12px 12px 14px;display:flex;flex-direction:column;gap:7px;min-height:430px}
+  .wa-sys{align-self:center;background:var(--wa-sys-bg);color:var(--wa-sys-c);font-size:10.5px;
+    padding:5px 12px;border-radius:8px;text-align:center;max-width:88%;margin-bottom:2px;
+    box-shadow:0 1px 1px rgba(0,0,0,.06)}
+  .wa-day{align-self:center;background:var(--wa-chip);color:var(--wa-dim);font-size:10.5px;
+    font-weight:700;padding:4px 11px;border-radius:8px;margin:6px 0 2px;
+    box-shadow:0 1px 1px rgba(0,0,0,.06);text-transform:uppercase;letter-spacing:.04em}
+  .msg{max-width:82%;padding:7px 10px 6px;border-radius:9px;font-size:13.5px;line-height:1.42;
+    box-shadow:0 1px 1px rgba(0,0,0,.1);position:relative;color:var(--wa-txt)}
+  .msg .tm{font-size:10px;color:var(--wa-dim);text-align:right;margin-top:2px}
+  .msg .tm .tick{color:var(--wa-tick)}
+  .msg.in{align-self:flex-start;background:var(--wa-in);border-top-left-radius:2px}
+  .msg.out{align-self:flex-end;background:var(--wa-out);border-top-right-radius:2px}
+  .msg.pick{align-self:flex-end;background:var(--wa-out);border-top-right-radius:2px;
+    font-weight:700;min-width:64px;font-size:15px}
+  .wa-opts{display:flex;flex-direction:column;gap:5px;margin-top:7px}
+  .wa-opt{border:1px solid rgba(127,127,127,.28);border-radius:8px;padding:6px 10px;font-size:13px;
+    font-weight:600;background:rgba(127,127,127,.06);display:flex;align-items:center;gap:9px}
+  .wa-opt i{font-style:normal;font-family:var(--mono);font-size:11px;font-weight:700;flex:none;
+    width:19px;height:19px;border-radius:50%;display:grid;place-items:center;
+    background:var(--brand);color:#fff}
+  .wa-input{background:var(--wa-chip);padding:8px 12px;display:flex;gap:8px;align-items:center}
+  .wa-input .box{flex:1;background:var(--wa-in);border:1px solid rgba(127,127,127,.18);
+    border-radius:20px;padding:8px 14px;color:var(--wa-dim);font-size:13px}
+  .wa-input .snd{width:37px;height:37px;border-radius:50%;background:#00A884;color:#fff;
+    display:grid;place-items:center;font-size:15px;flex:none}
+  .wa-note{font-size:11.5px;color:var(--ink-faint);margin-top:12px;text-align:center;max-width:372px}
+
+  .side{display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:19px 20px;box-shadow:var(--shadow)}
+  .card.top-b{border-top:4px solid var(--brand)}.card.top-a{border-top:4px solid var(--accent)}
+  .card .lbl{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--brand);margin:0 0 9px;display:flex;gap:9px;align-items:center}
+  .card.top-a .lbl{color:var(--accent)}
+  .card .lbl::before{content:"";width:18px;height:2px;background:currentColor;border-radius:2px}
+  .card p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+  .card p b{color:var(--ink)}
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);
+    opacity:0;transition:.25s;background:var(--night);color:var(--night-ink);padding:11px 18px;
+    border-radius:12px;font-size:13.5px;pointer-events:none;z-index:50;box-shadow:var(--shadow-lift);
+    max-width:min(90vw,480px);text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%)}
+
+  .foot{max-width:1160px;margin:0 auto;padding:0 22px 50px;color:var(--ink-faint);
+    font-size:12.5px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="logo">Frunze <b>Travel</b><span class="sep">·</span>Календарь звонков</div>
+  <span class="env">Макет · концепт</span>
+  <div class="spacer"></div>
+  <div class="clock">Сб, 12 июля · <b>09:04</b></div>
+  <button class="mode" id="modeBtn" title="Переключить тему">◐</button>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="tab on" role="tab" aria-selected="true" data-v="mgr"><span class="num">1</span>Экран менеджера</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="week"><span class="num">2</span>Сетка недели</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="wa"><span class="num">3</span>Выбор слота в WhatsApp</button>
+</div>
+
+<div class="canvas">
+
+  <!-- ============ VIEW 1: MANAGER ============ -->
+  <section class="view on" id="v-mgr" role="tabpanel">
+    <h2 class="vt">Утро менеджера</h2>
+    <p class="caption">Не хаос-инбокс на сто «здравствуйте», а стопка назначенных звонков с готовым досье. <b>Кликните звонок слева</b> — досье справа обновится. Вкладки менеджеров переключают их личные списки.</p>
+    <div class="mgr-grid">
+      <div class="panel">
+        <div class="panel-h">
+          <div><div class="t">Сегодня · назначенные звонки</div><div class="c">Суббота, 12 июля · собраны ботом за ночь</div></div>
+          <div class="chips" id="statChips"></div>
+        </div>
+        <div class="who-tabs" id="whoTabs"></div>
+        <div class="appt-list" id="apptList"></div>
+        <div class="list-hint">Оранжевая полоска — клиент ещё не подтвердил время. Бот дожмёт напоминанием сам.</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><div><div class="t">Досье к звонку</div><div class="c">собрано ботом ночью, до первого «алло»</div></div></div>
+        <div class="dos" id="dossier"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW 2: WEEK GRID ============ -->
+  <section class="view" id="v-week" role="tabpanel">
+    <h2 class="vt">Сетка календаря</h2>
+    <p class="caption">Колонки — менеджеры, время — по вертикали. Бот кладёт новый слот наименее загруженной — балансировка видна с одного взгляда. <b>Клик по занятому слоту</b> откроет его досье на экране 1.</p>
+    <div class="grid-wrap">
+      <div class="grid-bar">
+        <div class="nav"><button id="navPrev" title="Предыдущий день">‹</button><button id="navNext" title="Следующий день">›</button></div>
+        <div class="day">Суббота, 12 июля<small>рабочие часы 09:00–18:00 · показано утро</small></div>
+        <div class="seg" id="segDayWeek"><span>Неделя</span><span class="on">День</span></div>
+      </div>
+      <div class="grid-scroll">
+        <table class="cal">
+          <thead><tr id="calHead"></tr></thead>
+          <tbody id="calBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--brand-soft);border:1px solid var(--brand)"></i>Подтверждён</span>
+      <span><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>Ждёт подтверждения</span>
+      <span><i style="border:1px dashed var(--line)"></i>Свободный слот</span>
+      <span><span class="nowline"></span>Сейчас · 09:04</span>
+    </div>
+  </section>
+
+  <!-- ============ VIEW 3: WHATSAPP ============ -->
+  <section class="view" id="v-wa" role="tabpanel">
+    <h2 class="vt">Выбор слота — прямо в чате</h2>
+    <p class="caption">Клиент не уходит на сайт и не открывает ссылок. Бот даёт 2–3 времени, клиент отвечает <b>одной цифрой</b>. Сам выбрал время — сам обязался прийти.</p>
+    <div class="wa-wrap">
+      <div>
+        <div class="phone">
+          <div class="wa-top">
+            <span class="back">‹</span>
+            <div class="ava">🌴</div>
+            <div><div class="n">Frunze Travel</div><div class="s">бот-ассистент · онлайн</div></div>
+            <div class="ic">📞 ⋮</div>
+          </div>
+          <div class="wa-body">
+            <div class="wa-sys">🔒 Сообщения защищены сквозным шифрованием</div>
+            <div class="wa-day">Сегодня</div>
+            <div class="msg in">Здравствуйте! Хочу тур в Анталью, вдвоём, 10–17 августа, бюджет до 1500$<div class="tm">01:47</div></div>
+            <div class="msg out">Айгерим, отличные даты — варианты по Анталье есть 👌 Точную цену под ваш бюджет подберёт живой менеджер: Адеми свободна сегодня утром. Когда удобно созвониться? Просто ответьте цифрой:
+              <div class="wa-opts">
+                <div class="wa-opt"><i>1</i>10:00</div>
+                <div class="wa-opt"><i>2</i>11:30</div>
+                <div class="wa-opt"><i>3</i>12:30</div>
+              </div>
+              <div class="tm">01:47 <span class="tick">✓✓</span></div></div>
+            <div class="msg pick">1<div class="tm">07:12</div></div>
+            <div class="msg out">Записала: сегодня в 10:00 вам позвонит Адеми ✅ За час пришлю напоминание. Хорошего утра!<div class="tm">07:12 <span class="tick">✓✓</span></div></div>
+            <div class="wa-day">09:00</div>
+            <div class="msg out">Доброе утро, Айгерим! Напоминаю — Адеми позвонит через час, в 10:00. Если планы поменялись, просто ответьте на это сообщение.<div class="tm">09:00 <span class="tick">✓✓</span></div></div>
+          </div>
+          <div class="wa-input"><div class="box">Сообщение</div><div class="snd">➤</div></div>
+        </div>
+        <p class="wa-note">Переписка — пример. Формулировки бота дорабатываются под тон Frunze Travel.</p>
+      </div>
+
+      <div class="side">
+        <div class="card top-a">
+          <p class="lbl">Почему не сайт</p>
+          <p>Публичную страницу-календарь мы отклонили: в Бишкеке клиенты живут в WhatsApp и не ходят ночью по ссылкам от ботов. Каждый уход из чата режет конверсию. <b>Слот выбирается цифрой — ноль трения, ноль подозрений.</b></p>
+        </div>
+        <div class="card top-b">
+          <p class="lbl">Бронь как фильтр</p>
+          <p>Кто сам выбрал время — тот приходит на звонок. Пустышки слот не берут. Менеджер тратит утро <b>только на реальных покупателей</b>, а не на прозвон всех подряд.</p>
+        </div>
+        <div class="card top-b">
+          <p class="lbl">Что происходит дальше</p>
+          <p>Выбор клиента мгновенно попадает в сетку календаря (вкладка 2) и в утреннюю стопку Адеми (вкладка 1) вместе с досье: бюджет, даты, кто платит. <b>Одно сообщение клиента — три связанных экрана.</b></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="foot">
+  <span>Frunze Travel · Календарь звонков · Бишкек</span>
+  <span>Интерактивный макет · для обсуждения</span>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+  // ================= shared data: one source for all three screens =================
+  const DATA = {
+    "Адеми": [
+      {tm:"09:40", nm:"Салтанат", ini:"С", dir:"Виза США (B1/B2)", meta:"Виза США · документы готовы", pend:false,
+       night:"поймана ботом в 23:52 · ждёт звонка 9 ч", grid:"виза США",
+       dl:[["Запрос","виза США, собеседование"],["Статус","пакет документов готов"],["Срочность","до сентября"],["Кто платит","сама"],["Источник","WhatsApp · реклама"]],
+       note:"Пакет собран, нужна запись на собеседование. Готова оплатить сразу — в звонке дать шаги и счёт, не тянуть."},
+      {tm:"10:00", nm:"Айгерим", ini:"А", dir:"Анталья, пляжный отдых", meta:"Анталья · до 1500 $ · 10–17 авг", pend:false,
+       night:"поймана ботом в 01:47 · ждёт звонка 7 ч", grid:"Анталья",
+       dl:[["Бюджет","до 1500 $"],["Даты","10–17 августа"],["Туристы","2 взрослых"],["Кто платит","сама"],["Источник","WhatsApp · реклама"]],
+       note:"Сравнивала с двумя агентствами — по нашей цене готова. Торопится: вылет через четыре недели, решает быстро."},
+      {tm:"11:20", nm:"Нурлан", ini:"Н", dir:"Шарм-эль-Шейх", meta:"Шарм · до 2000 $ · сентябрь", pend:false,
+       night:"пойман ботом в 22:30 · повторный клиент", grid:"Шарм",
+       dl:[["Бюджет","до 2000 $"],["Даты","2-я неделя сентября"],["Туристы","2 взрослых"],["Кто платит","сам"],["Источник","писал сам, был у нас"]],
+       note:"Второй раз обращается, прошлой поездкой доволен. Даты гибкие — можно предлагать горящее."},
+      {tm:"12:00", nm:"Данияр", ini:"Д", dir:"Дубай, семейный", meta:"Дубай · бюджет ? · семья 4", pend:true,
+       night:"пойман ботом в 03:12 · время ещё не подтвердил", grid:"Дубай",
+       dl:[["Бюджет","не назвал — уточнить"],["Даты","конец августа"],["Туристы","2 взр + 2 реб (6 и 9)"],["Кто платит","сам"],["Источник","WhatsApp · реклама"]],
+       note:"Бюджет не вытянут — первый вопрос в звонке. Дети 6 и 9 лет: считать с детскими ценами и отель с анимацией."}
+    ],
+    "Сезим": [
+      {tm:"09:00", nm:"Бакыт", ini:"Б", dir:"Анталья, всё включено", meta:"Анталья · до 1200 $ · сентябрь", pend:false,
+       night:"пойман ботом в 02:15 · ждёт звонка 7 ч", grid:"Анталья",
+       dl:[["Бюджет","до 1200 $"],["Даты","первая половина сентября"],["Туристы","2 взр + 1 реб (5 лет)"],["Кто платит","сам"],["Источник","WhatsApp · реклама"]],
+       note:"Просил отель с аквапарком для ребёнка. Считать сразу с детской ценой — в прошлый раз его это зацепило."},
+      {tm:"11:00", nm:"Асель", ini:"А", dir:"Виза ЕС · Италия", meta:"Шенген · Италия · октябрь", pend:false,
+       night:"поймана ботом в 00:34", grid:"виза ЕС",
+       dl:[["Запрос","Шенген, Италия"],["Статус","первая виза"],["Даты поездки","октябрь"],["Кто платит","сама"],["Источник","WhatsApp · реклама"]],
+       note:"Первая виза — волнуется из-за отказа. Спокойно рассказать порядок и сроки, без обещаний результата."},
+      {tm:"13:10", nm:"Мадина", ini:"М", dir:"Виза США · вторая попытка", meta:"Виза США · был отказ в 2024", pend:true,
+       night:"поймана ботом в 01:05 · время ещё не подтвердила", grid:"виза США",
+       dl:[["Запрос","виза США, повторно"],["Статус","отказ в 2024"],["Документы","собраны наполовину"],["Кто платит","сама"],["Источник","WhatsApp · реклама"]],
+       note:"Выяснить причину прошлого отказа до советов. Документы наполовину — дать чек-лист в конце звонка."}
+    ],
+    "Медина": [
+      {tm:"09:30", nm:"Чолпон", ini:"Ч", dir:"Грузия · Тбилиси + Батуми", meta:"Грузия · до 900 $ · октябрь", pend:false,
+       night:"поймана ботом в 03:05 · ждёт звонка 6 ч", grid:"Грузия",
+       dl:[["Бюджет","до 900 $ с человека"],["Даты","октябрь, гибко"],["Туристы","3 подруги"],["Кто платит","каждая за себя"],["Источник","WhatsApp · реклама"]],
+       note:"Едут втроём, хотят Тбилиси + Батуми одной поездкой. Даты гибкие — можно собрать выгодный маршрут."},
+      {tm:"10:00", nm:"Жамиля", ini:"Ж", dir:"Мальдивы · медовый месяц", meta:"Мальдивы · до 3500 $ · ноябрь", pend:false,
+       night:"поймана ботом в 00:12 · ждёт звонка 9 ч", grid:"Мальдивы",
+       dl:[["Бюджет","до 3500 $"],["Даты","ноябрь"],["Туристы","молодожёны"],["Кто платит","муж"],["Источник","Instagram → WhatsApp"]],
+       note:"Медовый месяц: важна водная вилла и перелёт с одной пересадкой. Чек высокий — не отпускать без вариантов."},
+      {tm:"11:30", nm:"Руслан", ini:"Р", dir:"Таиланд · Пхукет", meta:"Пхукет · Новый год · бюджет ?", pend:true,
+       night:"пойман ботом в 02:48 · время ещё не подтвердил", grid:"Таиланд",
+       dl:[["Бюджет","не назвал — уточнить"],["Даты","новогодние заезды"],["Туристы","2 взрослых"],["Кто платит","сам"],["Источник","WhatsApp · реклама"]],
+       note:"Спрашивал про Новый год — ранняя бронь, цены растут. Бюджет вытянуть в звонке и показать вилку сразу."},
+      {tm:"12:20", nm:"Гульнара", ini:"Г", dir:"Шарм · семейный", meta:"Шарм · до 2800 $ · семья 5", pend:false,
+       night:"поймана ботом в 22:47", grid:"Шарм",
+       dl:[["Бюджет","до 2800 $"],["Даты","конец августа"],["Туристы","2 взр + 3 реб"],["Кто платит","сама"],["Источник","WhatsApp · реклама"]],
+       note:"Пять человек — искать семейные номера или два смежных. Дети школьники: успеть до 1 сентября."}
+    ],
+    "Элиза": [
+      {tm:"09:30", nm:"Азиз", ini:"А", dir:"Виза ОАЭ · срочная", meta:"Виза ОАЭ · вылет через 10 дней", pend:true,
+       night:"пойман ботом в 01:58 · время ещё не подтвердил", grid:"виза ОАЭ",
+       dl:[["Запрос","виза ОАЭ, срочно"],["Вылет","через 10 дней"],["Статус","паспорт на руках"],["Кто платит","сам"],["Источник","WhatsApp · реклама"]],
+       note:"Сроки горят: если подтвердится — брать в работу первым, документы принять сегодня же."},
+      {tm:"10:15", nm:"Тимур", ini:"Т", dir:"Грузия · пара", meta:"Грузия · до 1100 $ · сентябрь", pend:false,
+       night:"пойман ботом в 23:20 · ждёт звонка 10 ч", grid:"Грузия",
+       dl:[["Бюджет","до 1100 $"],["Даты","середина сентября"],["Туристы","2 взрослых"],["Кто платит","сам"],["Источник","WhatsApp · реклама"]],
+       note:"Хочет вино-гастро маршрут, не пляж. Предложить Кахетию — по прошлым клиентам заходит отлично."},
+      {tm:"12:00", nm:"Эмир", ini:"Э", dir:"Авиабилеты · Бишкек–Стамбул", meta:"Билеты · Бишкек–Стамбул · 20–28 июля", pend:false,
+       night:"пойман ботом в 00:41", grid:"билеты",
+       dl:[["Маршрут","Бишкек – Стамбул, туда-обратно"],["Даты","20–28 июля"],["Пассажиры","2 взрослых"],["Кто платит","сам"],["Источник","писал сам"]],
+       note:"Смотрит параллельно агрегаторы — в звонке сразу назвать вилку и что входит, иначе уйдёт по цене."}
+    ]
+  };
+  const MANAGERS = Object.keys(DATA);
+  const state = {mgr: MANAGERS[0], idx: 0};
+
+  const $ = id => document.getElementById(id);
+  const all = (a, f) => MANAGERS.flatMap(m => DATA[m]).filter(f).length;
+  const TOTAL = MANAGERS.reduce((s,m)=>s+DATA[m].length,0);
+  const OK = all(0, a=>!a.pend), WAIT = all(0, a=>a.pend);
+
+  // ---------------- toast ----------------
+  let toastTimer;
+  function toast(msg){
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+  }
+
+  // ---------------- screen 1: manager ----------------
+  function renderStats(){
+    $('statChips').innerHTML =
+      `<span class="chip">${TOTAL} слотов за ночь</span>` +
+      `<span class="chip">${OK} подтверждено</span>` +
+      `<span class="chip w">${WAIT} ждут ответа</span>`;
+  }
+  function renderWho(){
+    $('whoTabs').innerHTML = MANAGERS.map(m =>
+      `<button class="who-tab ${m===state.mgr?'on':''}" data-m="${m}">${m} <span class="b">${DATA[m].length}</span></button>`
+    ).join('');
+    $('whoTabs').querySelectorAll('.who-tab').forEach(w => w.onclick = () => {
+      state.mgr = w.dataset.m; state.idx = 0;
+      renderWho(); renderList(); renderDossier();
+    });
+  }
+  function renderList(){
+    $('apptList').innerHTML = DATA[state.mgr].map((a,i)=>`
+      <div class="appt ${a.pend?'warm':''} ${i===state.idx?'sel':''}" data-i="${i}" role="button" tabindex="0">
+        <span class="tm">${a.tm}<small>звонок</small></span>
+        <span><div class="nm">${a.nm} <span class="moon" title="Пойман(а) ботом ночью">🌙</span></div>
+          <div class="meta">${a.meta}</div></span>
+        <span class="pill ${a.pend?'wait':'ok'}">${a.pend?'ждёт ответа':'✓ подтверждено'}</span>
+      </div>`).join('');
+    $('apptList').querySelectorAll('.appt').forEach(el => {
+      const pick = () => { state.idx = +el.dataset.i; renderList(); renderDossier(); };
+      el.onclick = pick;
+      el.onkeydown = e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pick(); } };
+    });
+  }
+  function renderDossier(){
+    const a = DATA[state.mgr][state.idx];
+    $('dossier').innerHTML = `
+      <div class="lead">
+        <div class="ava">${a.ini}</div>
+        <div class="lead-m"><h3>${a.nm}</h3><div class="sub">${a.dir} · менеджер ${state.mgr}</div></div>
+        <div class="lead-r"><div class="big-tm">${a.tm}</div>
+          <span class="pill ${a.pend?'wait':'ok'}">${a.pend?'ждёт ответа':'подтверждено'}</span></div>
+      </div>
+      <div class="nightrow">${a.night}</div>
+      <dl>${a.dl.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+      <div class="botnote"><b>Заметка ночного бота</b>${a.note}</div>
+      <div class="acts">
+        <button class="btn g">📞 Позвонить</button>
+        <button class="btn o">💬 Открыть чат</button>
+        <button class="btn o">✎ Перенести</button>
+      </div>`;
+    $('dossier').querySelectorAll('.btn').forEach(b =>
+      b.onclick = () => toast('В макете кнопки не активны — в продукте здесь действие менеджера'));
+  }
+
+  // ---------------- screen 2: week grid (derived from the same data) ----------------
+  const HOURS = ["09:00","10:00","11:00","12:00","13:00"];
+  function renderGrid(){
+    const maxLoad = Math.max(...MANAGERS.map(m=>DATA[m].length));
+    $('calHead').innerHTML = `<th class="hr"></th>` + MANAGERS.map(m=>
+      `<th>${m}<span class="mini">${DATA[m].length} звонка</span>
+        <div class="load"><i style="width:${Math.round(DATA[m].length/maxLoad*100)}%"></i></div></th>`).join('');
+    $('calBody').innerHTML = HOURS.map(h=>{
+      const isNow = h === "09:00";
+      return `<tr><td class="hr ${isNow?'nowhr':''}">${h}</td>` + MANAGERS.map(m=>{
+        const i = DATA[m].findIndex(a => a.tm.slice(0,2) === h.slice(0,2));
+        if(i < 0) return `<td class="cell ${isNow?'now':''}"><button class="slot free" data-free="1" title="Свободный слот">+</button></td>`;
+        const a = DATA[m][i];
+        return `<td class="cell ${isNow?'now':''}">
+          <button class="slot ${a.pend?'a':'b'}" data-m="${m}" data-i="${i}" title="Открыть досье на экране 1">
+            <div class="s-t">${a.tm}</div><div class="s-n">${a.nm}</div><div class="s-d">${a.grid}</div>
+          </button></td>`;
+      }).join('') + `</tr>`;
+    }).join('');
+    $('calBody').querySelectorAll('.slot').forEach(s => s.onclick = () => {
+      if(s.dataset.free){ toast('Свободный слот — бот предложит его следующему тёплому лиду'); return; }
+      state.mgr = s.dataset.m; state.idx = +s.dataset.i;
+      renderWho(); renderList(); renderDossier();
+      switchTab('mgr');
+      toast(`Досье: ${DATA[state.mgr][state.idx].nm} · ${DATA[state.mgr][state.idx].tm} · ${state.mgr}`);
+    });
+  }
+
+  // ---------------- tabs ----------------
+  function switchTab(v){
+    document.querySelectorAll('.tab').forEach(x=>{
+      const on = x.dataset.v === v;
+      x.classList.toggle('on', on); x.setAttribute('aria-selected', on);
+    });
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+    $('v-'+v).classList.add('on');
+  }
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => switchTab(t.dataset.v));
+
+  // decorative controls → honest toast instead of dead click
+  $('navPrev').onclick = $('navNext').onclick = () => toast('В макете показан один день — листание будет в продукте');
+  $('segDayWeek').querySelectorAll('span').forEach(s => s.onclick = () => {
+    if(!s.classList.contains('on')) toast('В макете — режим «День». Недельный вид собирается так же, по колонкам менеджеров');
+  });
+
+  // ---------------- theme toggle ----------------
+  $('modeBtn').onclick = () => {
+    const r = document.documentElement;
+    const cur = r.dataset.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+    r.dataset.theme = cur === 'dark' ? 'light' : 'dark';
+  };
+
+  // ---------------- init ----------------
+  renderStats(); renderWho(); renderList(); renderDossier(); renderGrid();
+</script>
+</body>
+</html>
