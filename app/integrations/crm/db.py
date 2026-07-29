@@ -75,7 +75,11 @@ class Conversation(Base):
     manager_next_step: Mapped[str] = mapped_column(Text, default="")
     escalation_reason: Mapped[str] = mapped_column(Text, default="")
     lead_temperature: Mapped[str] = mapped_column(String(16), default="new")
-    assigned_to: Mapped[str] = mapped_column(String(64), default="")   # логин менеджера, ведущего диалог
+    # Логин менеджера, ведущего диалог. Nullable намеренно: на проде колонку добавлял
+    # self-heal-DDL (`VARCHAR(64) DEFAULT ''`) без NOT NULL, поэтому NULL там ВОЗМОЖЕН.
+    # Объявляем так же, иначе `create_all` в тестах даёт NOT NULL и ветка «бесхозный =
+    # NULL» физически не покрывается. Новые строки по-прежнему получают "" по default.
+    assigned_to: Mapped[str | None] = mapped_column(String(64), default="")
     assigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     outcome: Mapped[str] = mapped_column(String(24), default="")       # in_progress|office|manager|won|lost
     last_text: Mapped[str] = mapped_column(Text, default="")  # превью последней реплики для карточки
