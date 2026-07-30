@@ -402,7 +402,8 @@ def _known_logins() -> set[str]:
             for m in settings.manager_list() if (m.login or "").strip()}
 
 
-async def _pass_departed(sm, run: _Run, *, extra: frozenset[str] = frozenset()) -> None:
+async def _pass_departed(sm, run: _Run, *, extra: frozenset[str] = frozenset(),
+                         include_orphans: bool = False) -> None:
     """Диалоги, висящие на логине, которого больше нет в MANAGERS (человек уволился).
 
     Такой диалог не видит НИКТО: панель фильтрует по скоупу живых логинов, а мгновенный
@@ -419,15 +420,26 @@ async def _pass_departed(sm, run: _Run, *, extra: frozenset[str] = frozenset()) 
     def _movable(conv) -> bool:
         return (conv.assigned_to or "").strip().lower() not in known
 
+    q = _active_query(cutoff=run.cutoff, min_messages=run.min_messages)
+    if not include_orphans:
+        q = q.where(Conversation.assigned_to.is_not(None), Conversation.assigned_to != "")
     async with sm() as session:
-        rows = (await session.execute(
-            _active_query(cutoff=run.cutoff, min_messages=run.min_messages)
-            .where(Conversation.assigned_to.is_not(None), Conversation.assigned_to != "")
-            .order_by(Conversation.id))).scalars().all()
-    plan = {c.id: tours_owner_for(c.bot_id or "") for c in rows
-            if _movable(c) and tours_owner_for(c.bot_id or "")
-            and tours_owner_for(c.bot_id or "") != (c.assigned_to or "").strip().lower()}
-    ghosts = sorted({(c.assigned_to or "").strip() for c in rows if _movable(c)})
+        rows = (await session.execute(q.order_by(Conversation.id))).scalars().all()
+
+    plan: dict[int, tuple[str, str]] = {}
+    for conv in rows:
+        channel_owner = tours_owner_for(conv.bot_id or "")
+        if not channel_owner:
+            continue                                  # канал не наш
+        owner = (conv.assigned_to or "").strip().lower()
+        if not owner:
+            if include_orphans:
+                plan[conv.id] = (channel_owner, REASON_ORPHANS)
+            continue
+        if _movable(conv) and owner != channel_owner:
+            plan[conv.id] = (channel_owner, REASON_DEPARTED)
+    ghosts = sorted({(c.assigned_to or "").strip() for c in rows
+                     if (c.assigned_to or "").strip() and _movable(c)})
     print(f"владельцы-призраки: {ghosts or '—'} → под перенос {len(plan)} "
           f"[{_filters_label(run)}]")
 
@@ -438,7 +450,7 @@ async def _pass_departed(sm, run: _Run, *, extra: frozenset[str] = frozenset()) 
             if run.apply:
                 q = q.with_for_update()
             for conv in (await session.execute(q)).scalars().all():
-                new_owner = plan[conv.id]
+                new_owner, reason = plan[conv.id]
                 ident = _identity(conv)
                 if ident is None:
                     run.skipped["нет идентичности"] += 1
@@ -457,9 +469,12 @@ async def _pass_departed(sm, run: _Run, *, extra: frozenset[str] = frozenset()) 
                     run.conflict(conv, domain_owner, "tours")
                     continue
                 if await _set_owner(session, run, conv, direction="tours",
-                                    login=new_owner, reason=REASON_DEPARTED,
-                                    allow_emergency=True):
-                    run.departed_moved += 1
+                                    login=new_owner, reason=reason,
+                                    allow_emergency=reason == REASON_DEPARTED):
+                    if reason == REASON_ORPHANS:
+                        run.orphans_moved += 1
+                    else:
+                        run.departed_moved += 1
             await _finish_batch(session, run.apply)
 
 
@@ -520,7 +535,7 @@ async def _pass_rollback(sm, run: _Run, reason: str) -> None:
 async def run(*, apply: bool = False, since_days: int = 30, min_messages: int = 0,
               visa: bool = True, sezim: bool = True, tours_orphans: bool = False,
               departed: bool = False, from_logins: tuple[str, ...] = (),
-              skip_conflicts: bool = False,
+              channel_orphans: bool = False, skip_conflicts: bool = False,
               rollback: str | None = None, owner: str | None = None,
               batch_size: int = 50, sessionmaker=None,
               now: datetime | None = None) -> dict[str, object]:
@@ -536,8 +551,8 @@ async def run(*, apply: bool = False, since_days: int = 30, min_messages: int = 
         return state.summary(("apply" if apply else "dry-run") + "-rollback")
     if visa:
         await _pass_visa(sm, state)
-    if departed or from_logins:
-        await _pass_departed(sm, state, extra=frozenset(
+    if departed or from_logins or channel_orphans:
+        await _pass_departed(sm, state, include_orphans=channel_orphans, extra=frozenset(
             l.strip().lower() for l in (from_logins or ()) if l.strip()))
     if sezim or tours_orphans:
         await _pass_sezim_channel(sm, state, orphans=tours_orphans)
@@ -567,6 +582,10 @@ def main() -> None:
                         "служебного admin) менеджеру канала; можно повторять")
     p.add_argument("--owner", default=None,
                    help="кому отдавать туровые диалоги (по умолчанию tours_pilot_manager)")
+    p.add_argument("--channel-orphans", action="store_true",
+                   help="раздать бесхозные диалоги ВСЕХ каналов из карты "
+                        "tours_owner_by_bot их менеджерам (в отличие от --tours-orphans, "
+                        "который знает только канал Сезим)")
     p.add_argument("--skip-conflicts", action="store_true",
                    help="не падать на конфликте владельца, а пропускать строку "
                         "(конфликты всё равно попадут в отчёт)")
@@ -577,13 +596,14 @@ def main() -> None:
     args = p.parse_args()
 
     # Явно выбранные пассы отключают остальные; по умолчанию идут оба.
-    explicit = args.visa or args.sezim or args.departed or args.from_login
+    explicit = (args.visa or args.sezim or args.departed or args.from_login
+                or args.channel_orphans)
     summary = asyncio.run(run(
         apply=args.apply, since_days=args.since_days, min_messages=args.min_messages,
         visa=bool(args.visa) if explicit else True,
         sezim=bool(args.sezim) if explicit else True,
         departed=bool(args.departed), from_logins=tuple(args.from_login),
-        skip_conflicts=args.skip_conflicts,
+        channel_orphans=args.channel_orphans, skip_conflicts=args.skip_conflicts,
         tours_orphans=args.tours_orphans, rollback=args.rollback,
         owner=args.owner, batch_size=args.batch_size))
 

@@ -18,6 +18,7 @@ from app.core import flags
 from app.domain.models import Assignment, DomainBase
 from app.integrations.crm.db import AuditLog, Base, ConvMessage, Conversation
 from scripts.assign_manager_backlog import (
+    REASON_ORPHANS,
     REASON_DEPARTED, REASON_SEZIM, REASON_VISA, run)
 
 NOW = datetime(2026, 7, 30, 12, 0, tzinfo=timezone.utc)
@@ -718,4 +719,44 @@ def test_conflict_halts_apply_unless_explicitly_skipped(tmp_path, monkeypatch):
         assert owners["clean:1"] == "aisina"
         assert owners["busy:1"] == "admin"        # спорный не тронут
         await engine2.dispose()
+    _sync(check)
+
+
+def test_channel_orphans_go_to_their_own_channel_manager(tmp_path, monkeypatch):
+    """`--tours-orphans` знает только канал Сезим, поэтому бесхозные второго турового
+    номера копились и их готовые заявки уходить не могли — владельца нет."""
+    monkeypatch.setattr(settings, "managers", LIVE_MANAGERS)
+    monkeypatch.setattr(settings, "tours_owner_by_bot", DEPARTED_MAP)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _tours("orph:a", phone="996700000041", bot_id="frunze_tours"),
+            _tours("orph:s", phone="996700000042", bot_id="frunze_tours_sezim"),
+            _tours("orph:x", phone="996700000043", bot_id="frunze_tours_tg"),
+        ])
+        summary = await run(sessionmaker=sm, apply=True, visa=False, sezim=False,
+                            channel_orphans=True, since_days=0, now=NOW)
+        assert summary["tours_orphans_moved"] == 2
+        owners = await _owners(sm)
+        assert owners["orph:a"] == "ademi"
+        assert owners["orph:s"] == "aisina"
+        assert owners["orph:x"] == ""              # канал вне карты не трогаем
+        await engine.dispose()
+    _sync(check)
+
+
+def test_channel_orphans_rollback_clears_owner(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "managers", LIVE_MANAGERS)
+    monkeypatch.setattr(settings, "tours_owner_by_bot", DEPARTED_MAP)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _tours("orph:a", phone="996700000041", bot_id="frunze_tours"),
+        ])
+        await run(sessionmaker=sm, apply=True, visa=False, sezim=False,
+                  channel_orphans=True, since_days=0, now=NOW)
+        assert (await _owners(sm))["orph:a"] == "ademi"
+        await run(sessionmaker=sm, apply=True, rollback=REASON_ORPHANS, now=NOW)
+        assert (await _owners(sm))["orph:a"] == ""
+        await engine.dispose()
     _sync(check)
