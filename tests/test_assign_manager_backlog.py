@@ -271,6 +271,23 @@ def test_row_without_identity_is_skipped_not_guessed(tmp_path):
     _sync(check)
 
 
+def test_foreign_whatsapp_numbers_are_assigned(tmp_path):
+    """На проде 30.07 таких было 16 — иностранные клиенты канала (Турция, КЗ, УЗ, ОАЭ),
+    у одного 22 сообщения. Раньше все уходили в skipped как ambiguous."""
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _conv("getvisa:tr", phone="905078174386"),      # Турция
+            _conv("getvisa:kz", phone="77088657170"),       # Казахстан
+            _conv("getvisa:uz", phone="998943236050"),      # Узбекистан
+        ])
+        summary = await run(sessionmaker=sm, apply=True, sezim=False, now=NOW)
+        assert sum(summary["visa"].values()) == 3
+        assert summary["skipped"] == {}
+        assert all(v for v in (await _owners(sm)).values())
+        await engine.dispose()
+    _sync(check)
+
+
 def test_telegram_row_uses_telegram_identity(tmp_path):
     async def check():
         engine, sm = await _db(tmp_path, [

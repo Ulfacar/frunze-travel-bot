@@ -50,14 +50,19 @@ class ContactService:
     @staticmethod
     async def find_or_create_by_identity(session: AsyncSession, identity_type: str,
                                          raw_value: str, *,
-                                         provider_scope: str = "") -> Contact:
+                                         provider_scope: str = "",
+                                         assume_e164: bool = False) -> Contact:
         """Return the Contact owning this identity, creating Contact+Identity if new.
 
         Phone identities are normalized and always use ``provider_scope=""`` so one
         person is a single Contact across every bot/profile.
+
+        ``assume_e164`` прокидывается в нормализатор для источников с гарантированным
+        форматом (WhatsApp отдаёт полный номер без ``+``). Идентичность не расщепляется:
+        результат совпадает с ``+``-формой того же номера.
         """
-        normalized = (normalize_phone(raw_value) if identity_type == "phone"
-                      else (raw_value or "").strip())
+        normalized = (normalize_phone(raw_value, assume_e164=assume_e164)
+                      if identity_type == "phone" else (raw_value or "").strip())
         if not normalized:
             raise DomainError("empty identity value")
 

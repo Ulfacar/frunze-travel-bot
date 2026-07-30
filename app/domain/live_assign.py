@@ -36,9 +36,17 @@ async def contact_for_phone(session: AsyncSession, raw_phone: str) -> Contact:
 
 async def contact_for_channel(session: AsyncSession, *, channel: str,
                               raw: str) -> Contact:
-    """Контакт по идентичности канала (find-or-create): phone либо telegram-id."""
+    """Контакт по идентичности канала (find-or-create): phone либо telegram-id.
+
+    Для WhatsApp разрешаем номер без ``+``: провайдер всегда отдаёт полный E.164
+    (``905078174386@c.us``), и без этого иностранные клиенты отвергались как ambiguous —
+    на проде 30.07 так потерялись 16 живых диалогов. Знание о формате принадлежит каналу,
+    поэтому общее правило ``normalize_phone`` остаётся строгим.
+    """
     identity_type, value = identity_for(channel, raw)
-    return await ContactService.find_or_create_by_identity(session, identity_type, value)
+    is_whatsapp = (channel or "").strip().lower() in ("whatsapp", "wappi")
+    return await ContactService.find_or_create_by_identity(
+        session, identity_type, value, assume_e164=is_whatsapp)
 
 
 async def lock_contact(session: AsyncSession, contact_id: int) -> None:
