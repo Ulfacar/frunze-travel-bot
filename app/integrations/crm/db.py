@@ -162,6 +162,40 @@ class AuditLog(Base):
     )
 
 
+class BotError(Base):
+    """P1.4: журнал ошибок бота — «бот иногда ошибается, к сентябрю чтобы был опытным».
+
+    Простое накопление переписок модель НЕ обучает, поэтому нужен явный цикл: поймали →
+    записали с категорией → починили → закрыли РЕГРЕССИОННЫМ ТЕСТОМ → проверили, что не
+    вернулась. Поле ``covered_by_test`` обязательно при закрытии: без теста «починили»
+    означает «починили до следующего раза».
+
+    Интерфейса в панели намеренно нет: менеджеры, которые не осилили Start в Telegram,
+    категорию не выберут. Канал — владелец: «перешли кривой диалог в наш чат», категорию
+    ставим мы.
+    """
+
+    __tablename__ = "bot_errors"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True)
+    source: Mapped[str] = mapped_column(String(16), default="owner")   # owner|manager|auto
+    # price|country|misunderstood|no_handoff|tone|other — см. app/core/bot_errors.CATEGORIES
+    category: Mapped[str] = mapped_column(String(24), default="other", index=True)
+    user_id: Mapped[str] = mapped_column(String(160), default="", index=True)
+    bot_id: Mapped[str] = mapped_column(String(64), default="")
+    funnel: Mapped[str] = mapped_column(String(32), default="")
+    quote: Mapped[str] = mapped_column(Text, default="")      # что бот сказал не так
+    expected: Mapped[str] = mapped_column(Text, default="")   # как должно было быть
+    status: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    covered_by_test: Mapped[str] = mapped_column(String(200), default="")
+    fix_ref: Mapped[str] = mapped_column(String(80), default="")       # коммит/PR
+    fixed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+
+
 class AppFlag(Base):
     """Рантайм-флаги фич (вкл/выкл из админки), переживающие рестарт."""
 

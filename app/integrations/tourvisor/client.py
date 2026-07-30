@@ -62,6 +62,10 @@ class TourVisorClient:
 
     # ---------- низкоуровневый вызов ----------
     async def _call(self, client: httpx.AsyncClient, path: str, params: dict) -> dict:
+        # Единственная точка выхода в API — здесь и считаем суточную квоту (3000/сутки).
+        # Учитываем ДО запроса: провайдер тратит квоту и на ошибочные вызовы.
+        from app.integrations.tourvisor import quota
+        await quota.note_call()
         resp = await client.get(
             f"{BASE_URL}/{path}",
             params={"authlogin": self._login, "authpass": self._pass, "format": "json", **params},

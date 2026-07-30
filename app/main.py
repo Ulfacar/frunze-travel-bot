@@ -65,6 +65,9 @@ async def lifespan(app: FastAPI):
     # Дайджест готовых заявок для каналов, переведённых с мгновенных пушей (gated OFF).
     # Мгновенный пуш идёт не отсюда, а из orchestrator по факту собранной заявки.
     scheduler.register("handoff_digest", instant_handoff.run_digest)
+    # Квота TourVisor: предупредить владельца ДО того, как поиск туров умрёт молча.
+    from app.integrations.tourvisor import quota as tv_quota
+    scheduler.register("tourvisor_quota", tv_quota.run)
     scheduler.start()
     try:
         yield
