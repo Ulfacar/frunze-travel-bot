@@ -73,11 +73,13 @@ def _default_manager_name(bot: BotConfig) -> str:
         return bot.manager_name
     if bot.scenario == "visa":
         return "Медина"
+    # bot_id остался историческим (`..._sezim`), но менеджер сменился: Сезим уволилась
+    # 07.2026, номер ведёт Айсина — клиенту должно звучать актуальное имя.
     if bot.id.endswith("sezim") or "sezim" in bot.id.lower():
-        return "Сезим"
+        return "Айсина"
     if bot.scenario == "tours":
         return "Адеми"
-    return "Сезим"
+    return "Айсина"
 
 NON_TEXT_FALLBACK = (
     "Голосовые сообщения пока не распознаём 🙏 Напишите, пожалуйста, словами — "

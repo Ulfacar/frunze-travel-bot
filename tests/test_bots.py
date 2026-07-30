@@ -40,7 +40,8 @@ def test_default_bots_match_starting_wappi_profiles():
     assert reg.by_wappi_profile_id("6a74fb33-16aa").id == "frunze_tours_sezim"
     assert reg.by_wappi_profile_id("2f099bc3-478d").id == "getvisa"
     assert reg.by_id("frunze_tours").manager_name == "Адеми"
-    assert reg.by_id("frunze_tours_sezim").manager_name == "Сезим"
+    # id канала исторический, а имя в клиентских ответах — актуального менеджера (Айсина).
+    assert reg.by_id("frunze_tours_sezim").manager_name == "Айсина"
 
 
 def test_registry_ignores_unconfigured_bots():
