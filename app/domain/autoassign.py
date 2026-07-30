@@ -116,6 +116,26 @@ async def _audit_assign(login: str, user_id: str, reason: str) -> None:
         log.warning("tours pilot: audit write failed (manager=%s)", login)
 
 
+def tours_owner_for(bot_id: str) -> str:
+    """Кому закреплять новый туровый лид этого канала. Пусто — канал не обслуживаем.
+
+    Карта `tours_owner_by_bot` (bot_id → логин) описывает оба туровых номера сразу и имеет
+    приоритет. Если она пуста, работает прежняя одноканальная пара
+    `tours_pilot_bot_id`/`tours_pilot_manager` — так пилот не ломается на старых стендах.
+    """
+    mapping = {str(k).strip(): str(v or "").strip().lower()
+               for k, v in (settings.tours_owner_by_bot or {}).items()}
+    key = (bot_id or "").strip()
+    if mapping:
+        return mapping.get(key, "")
+    if key != settings.tours_pilot_bot_id:
+        return ""
+    pilot = (settings.tours_pilot_manager or "").strip().lower()
+    if not pilot:
+        log.info("tours pilot: no pilot manager configured")
+    return pilot
+
+
 async def maybe_assign_tours_pilot(*, phone: str, direction: str, bot_id: str,
                                    user_id: str, channel: str = "",
                                    sessionmaker=None) -> str | None:
@@ -130,13 +150,10 @@ async def maybe_assign_tours_pilot(*, phone: str, direction: str, bot_id: str,
     from app.core.flags import get_flag
     if (direction or "") != TOURS_DIRECTION:
         return None
-    if (bot_id or "") != settings.tours_pilot_bot_id:
+    pilot = tours_owner_for(bot_id)
+    if not pilot:
         return None
     if not await get_flag(TOURS_PILOT_FLAG, settings.tours_pilot_assign_enabled):
-        return None
-    pilot = (settings.tours_pilot_manager or "").strip().lower()
-    if not pilot:
-        log.info("tours pilot: no pilot manager configured")
         return None
     try:
         sm = sessionmaker

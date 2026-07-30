@@ -72,7 +72,8 @@ SEZIM_LOGIN = "sezim"
 REASON_VISA = "backfill_2026_07"
 REASON_SEZIM = "staff_transition_2026_07"
 REASON_ORPHANS = "tours_orphans_2026_07"
-REASONS = (REASON_VISA, REASON_SEZIM, REASON_ORPHANS)
+REASON_DEPARTED = "departed_owner_2026_07"
+REASONS = (REASON_VISA, REASON_SEZIM, REASON_ORPHANS, REASON_DEPARTED)
 
 
 # --------------------------------------------------------------------------- helpers
@@ -180,6 +181,7 @@ class _Run:
         self.conflicts: list[str] = []
         self.sezim_moved = 0
         self.orphans_moved = 0
+        self.departed_moved = 0
         self.repaired = 0
         self.rolled_back = 0
         self._seq = 0
@@ -209,6 +211,7 @@ class _Run:
             "visa_by_bot": dict(self.by_bot),
             "sezim_moved": self.sezim_moved,
             "tours_orphans_moved": self.orphans_moved,
+            "departed_moved": self.departed_moved,
             "mirrors_repaired": self.repaired,
             "skipped": dict(self.skipped),
             "conflicts": self.conflicts,
@@ -388,6 +391,70 @@ async def _pass_sezim_channel(sm, run: _Run, *, orphans: bool) -> None:
             await _finish_batch(session, run.apply)
 
 
+def _known_logins() -> set[str]:
+    """Логины, которые ещё существуют в MANAGERS. Всё остальное — призраки."""
+    return {(m.login or "").strip().lower()
+            for m in settings.manager_list() if (m.login or "").strip()}
+
+
+async def _pass_departed(sm, run: _Run) -> None:
+    """Диалоги, висящие на логине, которого больше нет в MANAGERS (человек уволился).
+
+    Такой диалог не видит НИКТО: панель фильтрует по скоупу живых логинов, а мгновенный
+    пуш «заявка готова» адресуется владельцу, которого не существует. Отличие от `--sezim`:
+    тот режим прибит к одному каналу, а наследство расползлось по обоим туровым номерам.
+
+    Новый владелец — менеджер КАНАЛА (решение владельцев 30.07: «по турам менеджер
+    получает канал целиком»), поэтому берём его из той же карты, что и авто-закрепление:
+    два источника правды о владельце канала разъехались бы на первой же перестановке.
+    """
+    from app.domain.autoassign import tours_owner_for
+    known = _known_logins()
+    async with sm() as session:
+        rows = (await session.execute(
+            _active_query(cutoff=run.cutoff, min_messages=run.min_messages)
+            .where(Conversation.assigned_to.is_not(None), Conversation.assigned_to != "")
+            .order_by(Conversation.id))).scalars().all()
+    plan = {c.id: tours_owner_for(c.bot_id or "") for c in rows
+            if (c.assigned_to or "").strip().lower() not in known
+            and tours_owner_for(c.bot_id or "")}
+    ghosts = sorted({(c.assigned_to or "").strip() for c in rows
+                     if (c.assigned_to or "").strip().lower() not in known})
+    print(f"владельцы-призраки: {ghosts or '—'} → под перенос {len(plan)} "
+          f"[{_filters_label(run)}]")
+
+    for chunk in _chunks(list(plan), run.batch_size):
+        async with sm() as session:
+            q = select(Conversation).where(Conversation.id.in_(chunk)).order_by(
+                Conversation.id)
+            if run.apply:
+                q = q.with_for_update()
+            for conv in (await session.execute(q)).scalars().all():
+                new_owner = plan[conv.id]
+                ident = _identity(conv)
+                if ident is None:
+                    run.skipped["нет идентичности"] += 1
+                    continue
+                channel, raw = ident
+                try:
+                    contact = await live_assign.contact_for_channel(
+                        session, channel=channel, raw=raw)
+                except DomainError as exc:
+                    run.skipped[f"DomainError: {exc}"[:60]] += 1
+                    continue
+                active = await live_assign.active_assignment(session, contact.id, "tours")
+                domain_owner = (active.manager_id if active is not None else "").lower()
+                # В домене сидит ЖИВОЙ и это не тот, кому мы отдаём → руками, не скриптом.
+                if domain_owner and domain_owner in known and domain_owner != new_owner:
+                    run.conflict(conv, domain_owner, "tours")
+                    continue
+                if await _set_owner(session, run, conv, direction="tours",
+                                    login=new_owner, reason=REASON_DEPARTED,
+                                    allow_emergency=True):
+                    run.departed_moved += 1
+            await _finish_batch(session, run.apply)
+
+
 async def _pass_rollback(sm, run: _Run, reason: str) -> None:
     """Отыграть прогон по аудит-записям: вернуть прежнего владельца (или снять)."""
     async with sm() as session:
@@ -444,6 +511,7 @@ async def _pass_rollback(sm, run: _Run, reason: str) -> None:
 
 async def run(*, apply: bool = False, since_days: int = 30, min_messages: int = 0,
               visa: bool = True, sezim: bool = True, tours_orphans: bool = False,
+              departed: bool = False,
               rollback: str | None = None, owner: str | None = None,
               batch_size: int = 50, sessionmaker=None,
               now: datetime | None = None) -> dict[str, object]:
@@ -459,6 +527,8 @@ async def run(*, apply: bool = False, since_days: int = 30, min_messages: int = 
         return state.summary(("apply" if apply else "dry-run") + "-rollback")
     if visa:
         await _pass_visa(sm, state)
+    if departed:
+        await _pass_departed(sm, state)
     if sezim or tours_orphans:
         await _pass_sezim_channel(sm, state, orphans=tours_orphans)
     return state.summary("apply" if apply else "dry-run")
@@ -479,6 +549,9 @@ def main() -> None:
                    help="только наследство Сезим")
     p.add_argument("--tours-orphans", action="store_true",
                    help="дополнительно раздать бесхозные диалоги канала Сезим")
+    p.add_argument("--departed", action="store_true",
+                   help="перенести диалоги с логинов, которых больше нет в MANAGERS, "
+                        "менеджеру канала (карта tours_owner_by_bot)")
     p.add_argument("--owner", default=None,
                    help="кому отдавать туровые диалоги (по умолчанию tours_pilot_manager)")
     p.add_argument("--rollback", choices=REASONS, default=None,
@@ -488,11 +561,12 @@ def main() -> None:
     args = p.parse_args()
 
     # Явно выбранные пассы отключают остальные; по умолчанию идут оба.
-    explicit = args.visa or args.sezim
+    explicit = args.visa or args.sezim or args.departed
     summary = asyncio.run(run(
         apply=args.apply, since_days=args.since_days, min_messages=args.min_messages,
         visa=bool(args.visa) if explicit else True,
         sezim=bool(args.sezim) if explicit else True,
+        departed=bool(args.departed),
         tours_orphans=args.tours_orphans, rollback=args.rollback,
         owner=args.owner, batch_size=args.batch_size))
 

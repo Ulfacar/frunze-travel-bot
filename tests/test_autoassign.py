@@ -312,6 +312,53 @@ def test_tours_pilot_non_tours_direction_noop(tmp_path):
     assert _tours_assignments(sm) == []
 
 
+def test_tours_owner_map_covers_both_channels(tmp_path):
+    """30.07: каналов два, у каждого свой менеджер. Одноканальный пилот оставлял второй
+    без владельца, а без владельца пуш «заявка готова» слать некому."""
+    _clear()
+    _tours_on()
+    import app.config
+    from unittest.mock import patch
+    sm = _sm(tmp_path)
+    mapping = {"frunze_tours": "ademi", "frunze_tours_sezim": "aisina"}
+    with patch.object(app.config.settings, "tours_owner_by_bot", mapping):
+        assert _run_tours(sm) == "ademi"
+        assert _run_tours(sm, phone="996700555777", bot_id="frunze_tours_sezim",
+                          user_id="frunze_tours_sezim:996700555777") == "aisina"
+    rows = _tours_assignments(sm)
+    assert {r.manager_id for r in rows} == {"ademi", "aisina"}
+
+
+def test_tours_owner_map_ignores_foreign_channel(tmp_path):
+    """Канал вне карты не обслуживаем — чужие лиды не раздаём."""
+    _clear()
+    _tours_on()
+    import app.config
+    from unittest.mock import patch
+    sm = _sm(tmp_path)
+    with patch.object(app.config.settings, "tours_owner_by_bot", {"frunze_tours": "ademi"}):
+        assert _run_tours(sm, bot_id="frunze_tours_tg",
+                          user_id="frunze_tours_tg:996700555666") is None
+    assert _tours_assignments(sm) == []
+
+
+def test_tours_owner_map_still_never_overwrites(tmp_path):
+    """Ключевая гарантия пилота не должна утечь при переходе на карту."""
+    _clear()
+    _tours_on()
+    import app.config
+    from unittest.mock import patch
+    sm = _sm(tmp_path)
+    with patch.object(app.config.settings, "tours_owner_by_bot",
+                      {"frunze_tours": "ademi"}):
+        assert _run_tours(sm) == "ademi"
+        with patch.object(app.config.settings, "tours_owner_by_bot",
+                          {"frunze_tours": "aisina"}):
+            assert _run_tours(sm) is None          # владелец уже есть — не перебиваем
+    rows = _tours_assignments(sm)
+    assert len(rows) == 1 and rows[0].manager_id == "ademi"
+
+
 def test_tours_pilot_configurable_manager(tmp_path):
     """pilot_manager берётся из настроек, не хардкодится."""
     _clear()

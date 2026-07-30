@@ -268,6 +268,11 @@ class Settings(BaseSettings):
     # контакта нет активного tours-owner. Владелец из tours_pilot_manager (не хардкод).
     tours_pilot_assign_enabled: bool = False
     tours_pilot_manager: str = "ademi"        # login Адеми (совпадает с BOT_SCOPE_BY_MANAGER)
+    # 30.07: туровых каналов ДВА, у каждого свой менеджер. Пара выше описывает ровно один,
+    # поэтому второй канал оставался без владельца — а без владельца мгновенный пуш «заявка
+    # готова» слать некому (в логах «no owner yet»). Карта bot_id → логин перекрывает пилота;
+    # пусто = прежнее одноканальное поведение.
+    tours_owner_by_bot: dict[str, str] = {}
     tours_pilot_bot_id: str = "frunze_tours"  # единственный боевой туровый WA-бот
     # Ночной режим: бот авто-отвечает ТОЛЬКО в ночное окно по Бишкеку (менеджеры днём
     # ведут вручную, ночью подхватывает бот). Default OFF; runtime key `night_mode_enabled`.

@@ -13,11 +13,12 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.config import settings
+from app.config import ManagerConfig, settings
 from app.core import flags
 from app.domain.models import Assignment, DomainBase
 from app.integrations.crm.db import AuditLog, Base, ConvMessage, Conversation
-from scripts.assign_manager_backlog import REASON_SEZIM, REASON_VISA, run
+from scripts.assign_manager_backlog import (
+    REASON_DEPARTED, REASON_SEZIM, REASON_VISA, run)
 
 NOW = datetime(2026, 7, 30, 12, 0, tzinfo=timezone.utc)
 STALE = NOW - timedelta(days=90)
@@ -542,3 +543,93 @@ class TestPostgresTier:
                 assert len(active) == 20        # ровно одно активное на контакт
             await engine.dispose()
         _sync(scenario)
+
+
+# ------------------------------------------------------- владелец-призрак (--departed)
+
+
+DEPARTED_MAP = {"frunze_tours": "ademi", "frunze_tours_sezim": "aisina"}
+LIVE_MANAGERS = [
+    ManagerConfig(login="ademi", password="x"),
+    ManagerConfig(login="aisina", password="x"),
+    ManagerConfig(login="medina", password="x"),
+]
+
+
+def test_departed_owner_moves_to_channel_manager(tmp_path, monkeypatch):
+    """Наследство уволившейся расползлось по ОБОИМ туровым каналам, а `--sezim` знает
+    только один. Каждый диалог уходит менеджеру своего канала, не одному на всех."""
+    monkeypatch.setattr(settings, "managers", LIVE_MANAGERS)
+    monkeypatch.setattr(settings, "tours_owner_by_bot", DEPARTED_MAP)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _tours("a:1", phone="996700000011", bot_id="frunze_tours",
+                   assigned_to="sezim"),
+            _tours("s:1", phone="996700000012", bot_id="frunze_tours_sezim",
+                   assigned_to="sezim"),
+            _tours("live:1", phone="996700000013", bot_id="frunze_tours",
+                   assigned_to="ademi"),
+        ])
+        summary = await run(sessionmaker=sm, apply=True, visa=False, sezim=False,
+                            departed=True, since_days=0, now=NOW)
+        assert summary["departed_moved"] == 2
+        owners = await _owners(sm)
+        assert owners["a:1"] == "ademi"          # канал Адеми → Адеми
+        assert owners["s:1"] == "aisina"         # канал Айсины → Айсине
+        assert owners["live:1"] == "ademi"       # живого владельца не трогаем
+        await engine.dispose()
+    _sync(check)
+
+
+def test_departed_dry_run_changes_nothing(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "managers", LIVE_MANAGERS)
+    monkeypatch.setattr(settings, "tours_owner_by_bot", DEPARTED_MAP)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _tours("a:1", phone="996700000011", bot_id="frunze_tours",
+                   assigned_to="sezim"),
+        ])
+        summary = await run(sessionmaker=sm, visa=False, sezim=False,
+                            departed=True, since_days=0, now=NOW)
+        assert summary["departed_moved"] == 1            # превью считает
+        assert (await _owners(sm))["a:1"] == "sezim"     # но не меняет
+        await engine.dispose()
+    _sync(check)
+
+
+def test_departed_rollback_returns_previous_owner(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "managers", LIVE_MANAGERS)
+    monkeypatch.setattr(settings, "tours_owner_by_bot", DEPARTED_MAP)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _tours("a:1", phone="996700000011", bot_id="frunze_tours",
+                   assigned_to="sezim"),
+        ])
+        await run(sessionmaker=sm, apply=True, visa=False, sezim=False,
+                  departed=True, since_days=0, now=NOW)
+        assert (await _owners(sm))["a:1"] == "ademi"
+        await run(sessionmaker=sm, apply=True, rollback=REASON_DEPARTED, now=NOW)
+        assert (await _owners(sm))["a:1"] == "sezim"
+        await engine.dispose()
+    _sync(check)
+
+
+def test_departed_skips_channel_outside_the_map(tmp_path, monkeypatch):
+    """Канал не в карте — не наш: чужие диалоги скрипт не раздаёт."""
+    monkeypatch.setattr(settings, "managers", LIVE_MANAGERS)
+    monkeypatch.setattr(settings, "tours_owner_by_bot", {"frunze_tours": "ademi"})
+
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _tours("tg:1", phone="996700000014", bot_id="frunze_tours_tg",
+                   assigned_to="sezim"),
+        ])
+        summary = await run(sessionmaker=sm, apply=True, visa=False, sezim=False,
+                            departed=True, since_days=0, now=NOW)
+        assert summary["departed_moved"] == 0
+        assert (await _owners(sm))["tg:1"] == "sezim"
+        await engine.dispose()
+    _sync(check)

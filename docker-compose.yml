@@ -52,6 +52,8 @@ services:
       # Пилот по турам: за кем закрепляем ночные лиды и на каком канале.
       TOURS_PILOT_MANAGER: ${TOURS_PILOT_MANAGER:-ademi}
       TOURS_PILOT_BOT_ID: ${TOURS_PILOT_BOT_ID:-frunze_tours}
+      # Оба туровых канала сразу (bot_id → логин). Перекрывает пару выше; пусто = пилот.
+      TOURS_OWNER_BY_BOT: ${TOURS_OWNER_BY_BOT:-{}}
       # Копия каждой готовой заявки владельцу бизнеса (оба направления), JSON-список
       # личных chat_id. Пусто = копий нет, поведение прежнее.
       INSTANT_HANDOFF_CC_CHAT_IDS: ${INSTANT_HANDOFF_CC_CHAT_IDS:-[]}
