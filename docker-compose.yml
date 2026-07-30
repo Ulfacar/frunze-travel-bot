@@ -52,6 +52,9 @@ services:
       # Пилот по турам: за кем закрепляем ночные лиды и на каком канале.
       TOURS_PILOT_MANAGER: ${TOURS_PILOT_MANAGER:-ademi}
       TOURS_PILOT_BOT_ID: ${TOURS_PILOT_BOT_ID:-frunze_tours}
+      # Копия каждой готовой заявки владельцу бизнеса (оба направления), JSON-список
+      # личных chat_id. Пусто = копий нет, поведение прежнее.
+      INSTANT_HANDOFF_CC_CHAT_IDS: ${INSTANT_HANDOFF_CC_CHAT_IDS:-[]}
     ports:
       - "8000:8000"
     depends_on:

@@ -59,11 +59,12 @@ class _Spy:
         return self.ok
 
 
-def _run(scenario, monkeypatch, *, spy=None, digest_bots=(), enabled=True):
+def _run(scenario, monkeypatch, *, spy=None, digest_bots=(), enabled=True, cc=()):
     flags.reset()
     monkeypatch.setattr(settings, "managers", MANAGERS)   # manager_list() отдаёт их
     monkeypatch.setattr(settings, "instant_handoff_enabled", enabled)
     monkeypatch.setattr(settings, "instant_handoff_digest_bots", list(digest_bots))
+    monkeypatch.setattr(settings, "instant_handoff_cc_chat_ids", list(cc))
     monkeypatch.setattr(settings, "admin_base_url", "https://panel.test")
     if spy is not None:
         monkeypatch.setattr(instant_handoff, "_send", spy)
@@ -216,6 +217,85 @@ def test_send_failure_releases_the_claim(tmp_path, monkeypatch):
             "frunze_tours_sezim:996700000001", sessionmaker=sm) is True
         await engine.dispose()
     _run(check, monkeypatch, spy=spy)
+
+
+# ------------------------------------------------- копия владельцу бизнеса (Даулет)
+
+
+class _CCSpy:
+    """Подмена телеграм-слоя для копий: у владельца нет логина, только chat_id."""
+
+    def __init__(self, ok=True):
+        self.sent: list[tuple[str, str]] = []
+        self.ok = ok
+
+    def install(self, monkeypatch):
+        from app.core import calendar_brief
+
+        async def push(token, chat_id, text):
+            self.sent.append((chat_id, text))
+            return self.ok
+
+        monkeypatch.setattr(calendar_brief, "_push_telegram", push)
+        monkeypatch.setattr(calendar_brief, "_token", lambda: "token")
+        return self
+
+
+def test_owner_gets_a_copy_with_the_manager_named(tmp_path, monkeypatch):
+    """Владелец видит оба направления. Без строки «Менеджер» он не поймёт, звонит ли
+    кто-то уже, — копия без адресата бесполезна."""
+    spy, cc = _Spy(), _CCSpy().install(monkeypatch)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [_conv()])
+        assert await instant_handoff.maybe_notify(
+            "frunze_tours_sezim:996700000001", promised="от $1600", sessionmaker=sm) is True
+        assert [chat for chat, _ in cc.sent] == ["6217466575"]
+        assert "Заявка готова" in cc.sent[0][1] and "Менеджер: aisina" in cc.sent[0][1]
+        await engine.dispose()
+    _run(check, monkeypatch, spy=spy, cc=["6217466575"])
+
+
+def test_copy_to_owner_survives_manager_without_chat_id(tmp_path, monkeypatch):
+    """Заявка Медины сегодня утекла именно так. Копия ушла — значит заявку видят, и
+    признак снимать НЕЛЬЗЯ: иначе владельцу летела бы та же карточка на каждом ходу."""
+    cc = _CCSpy().install(monkeypatch)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [_conv(assigned_to="ademi")])
+        assert await instant_handoff.maybe_notify(
+            "frunze_tours_sezim:996700000001", sessionmaker=sm) is False
+        assert len(cc.sent) == 1
+        assert await _notified_at(sm, "frunze_tours_sezim:996700000001") is not None
+        assert await instant_handoff.maybe_notify(
+            "frunze_tours_sezim:996700000001", sessionmaker=sm) is False
+        assert len(cc.sent) == 1                          # ровно одна копия на заявку
+        await engine.dispose()
+    _run(check, monkeypatch, cc=["6217466575"])           # без spy: реальный _send
+
+
+def test_without_cc_the_claim_is_still_released(tmp_path, monkeypatch):
+    """Без настроенных копий поведение прежнее: не дошло — заявка возвращается в очередь."""
+    async def check():
+        engine, sm = await _db(tmp_path, [_conv(assigned_to="ademi")])
+        assert await instant_handoff.maybe_notify(
+            "frunze_tours_sezim:996700000001", sessionmaker=sm) is False
+        assert await _notified_at(sm, "frunze_tours_sezim:996700000001") is None
+        await engine.dispose()
+    _run(check, monkeypatch)
+
+
+def test_broken_copy_never_blocks_the_manager_push(tmp_path, monkeypatch):
+    """Копия — наблюдение, а не доставка: её сбой не имеет права стоить пуша менеджеру."""
+    spy, cc = _Spy(), _CCSpy(ok=False).install(monkeypatch)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [_conv()])
+        assert await instant_handoff.maybe_notify(
+            "frunze_tours_sezim:996700000001", sessionmaker=sm) is True
+        assert len(spy.sent) == 1
+        await engine.dispose()
+    _run(check, monkeypatch, spy=spy, cc=["6217466575"])
 
 
 def test_exception_inside_never_propagates(tmp_path, monkeypatch):

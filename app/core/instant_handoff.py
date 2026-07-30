@@ -151,6 +151,30 @@ async def _send(login: str, text: str) -> bool:
     return await _push_telegram(token, chat_id, text)
 
 
+async def _send_cc(text: str, *, owner_login: str) -> bool:
+    """Копия заявки владельцу бизнеса. True — доставлено хотя бы одному получателю.
+
+    Адресат менеджера дописывается строкой: без неё владелец не поймёт, звонит уже кто-то
+    или заявка повисла. Сбой копии никогда не влияет на пуш менеджеру — это наблюдение,
+    а не доставка.
+    """
+    targets = [c.strip() for c in (settings.instant_handoff_cc_chat_ids or []) if c.strip()]
+    if not targets:
+        return False
+    from app.core.calendar_brief import _push_telegram, _token
+    token = _token()
+    if not token:
+        return False
+    body = f"{text}\n\nМенеджер: {owner_login or '—'}"
+    ok = False
+    for chat_id in targets:
+        try:
+            ok = await _push_telegram(token, chat_id, body) or ok
+        except Exception:  # noqa: BLE001
+            log.warning("instant handoff: копия владельцу не ушла", exc_info=True)
+    return ok
+
+
 async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None) -> bool:
     """Пуш по собранной заявке. True — отправлено. Никогда не поднимает исключение."""
     try:
@@ -185,9 +209,18 @@ async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None) -
             name=snapshot["name"], phone=snapshot["phone"], request=snapshot["request"],
             promised=promised, link=_client_link(user_id, settings.admin_base_url),
             wa_link=snapshot["wa"])
-        if await _send(login, text):
-            log.info("instant handoff: sent (manager=%s key=%s)", login, user_id)
+        owner_ok = await _send(login, text)
+        cc_ok = await _send_cc(text, owner_login=login)
+        if owner_ok:
+            log.info("instant handoff: sent (manager=%s key=%s cc=%s)", login, user_id, cc_ok)
             return True
+        if cc_ok:
+            # Менеджеру не дошло (нет chat_id/сбой), но владелец бизнеса заявку УЖЕ видит.
+            # Признак не снимаем: иначе на каждом следующем ходу клиента владельцу летела бы
+            # та же карточка. Заявка не потеряна — она у владельца и в панели.
+            log.warning("instant handoff: менеджеру не доставлено (manager=%s key=%s), "
+                        "ушла только копия владельцу", login, user_id)
+            return False
         await _release(sm, user_id)
         return False
     except Exception:  # noqa: BLE001 — фича не имеет права ронять живой диалог
