@@ -18,6 +18,9 @@ COPY run_polling.py ./
 # upgrade head` работал на проде (деплой-шаг перед включением новых фич).
 COPY alembic.ini ./
 COPY alembic ./alembic
+# Операционные скрипты (разбор владения, журнал ошибок бота) — нужны В образе, иначе
+# каждый разовый прогон на проде требует docker cp. Кода приложения не касаются.
+COPY scripts ./scripts
 
 # Непривилегированный пользователь.
 RUN useradd --create-home appuser
