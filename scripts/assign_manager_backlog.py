@@ -464,6 +464,13 @@ async def _pass_departed(sm, run: _Run, *, extra: frozenset[str] = frozenset(),
                     continue
                 active = await live_assign.active_assignment(session, contact.id, "tours")
                 domain_owner = (active.manager_id if active is not None else "").lower()
+                if reason == REASON_ORPHANS and active is not None:
+                    # В панели пусто, а в домене владелец есть — это дыра ЗЕРКАЛА, а не
+                    # бесхозный диалог. Клиент, писавший в оба номера, закреплён за
+                    # менеджером другого канала: перевешивать его нельзя, показать
+                    # настоящего владельца — нужно.
+                    await _repair_mirror(session, run, conv, active)
+                    continue
                 # В домене сидит ЖИВОЙ и это не тот, кому мы отдаём → руками, не скриптом.
                 if domain_owner and domain_owner in known and domain_owner != new_owner:
                     run.conflict(conv, domain_owner, "tours")

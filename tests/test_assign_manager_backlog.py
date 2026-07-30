@@ -760,3 +760,30 @@ def test_channel_orphans_rollback_clears_owner(tmp_path, monkeypatch):
         assert (await _owners(sm))["orph:a"] == ""
         await engine.dispose()
     _sync(check)
+
+
+def test_orphan_with_domain_owner_repairs_mirror_not_reassigns(tmp_path, monkeypatch):
+    """Клиент писал в оба номера: в панели диалог выглядит бесхозным, а в домене он уже
+    за менеджером другого канала. Перевешивать нельзя — надо показать настоящего."""
+    monkeypatch.setattr(settings, "managers", LIVE_MANAGERS)
+    monkeypatch.setattr(settings, "tours_owner_by_bot", DEPARTED_MAP)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _tours("cross:1", phone="996700000051", bot_id="frunze_tours"),
+        ])
+        async with sm() as session:
+            from app.domain import live_assign
+            contact = await live_assign.contact_for_channel(
+                session, channel="whatsapp", raw="996700000051")
+            await live_assign.assign_locked(session, contact.id, "tours", "aisina",
+                                            assigned_by="test", reason="legacy")
+            await session.commit()
+        summary = await run(sessionmaker=sm, apply=True, visa=False, sezim=False,
+                            channel_orphans=True, since_days=0, now=NOW)
+        assert summary["tours_orphans_moved"] == 0
+        assert summary["mirrors_repaired"] == 1
+        assert summary["conflicts"] == []
+        assert (await _owners(sm))["cross:1"] == "aisina"   # настоящий владелец, не ademi
+        await engine.dispose()
+    _sync(check)
