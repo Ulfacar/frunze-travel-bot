@@ -82,6 +82,44 @@ def test_night_mode_never_wakes_disabled_bot(monkeypatch):
     assert _bots_on(_orch()) is False
 
 
+def test_per_bot_key_frees_one_channel_for_daytime(monkeypatch):
+    """Решение владельца 30.07: туры днём, визы ночью. Глобальный флаг остаётся ON,
+    туровому каналу ночной режим снимается персональным ключом."""
+    _clear()
+    asyncio.run(flags.set_flag("bots_enabled:frunze_tours", True))
+    asyncio.run(flags.set_flag("bots_enabled:getvisa", True))
+    asyncio.run(flags.set_flag("night_mode_enabled", True))
+    asyncio.run(flags.set_flag("night_mode_enabled:frunze_tours", False))
+
+    _set_hour(monkeypatch, 14)                              # день
+    assert _bots_on(_orch("frunze_tours")) is True           # туры отвечают
+    assert _bots_on(_orch("getvisa")) is False               # визы молчат днём
+
+    _set_hour(monkeypatch, 3)                               # ночь
+    assert _bots_on(_orch("frunze_tours")) is True           # туры отвечают и ночью
+    assert _bots_on(_orch("getvisa")) is True                # визы работают ночью
+
+
+def test_per_bot_key_can_also_add_night_mode_to_one_channel(monkeypatch):
+    """Обратный случай: глобально ночного режима нет, а одному каналу он нужен."""
+    _clear()
+    asyncio.run(flags.set_flag("bots_enabled:frunze_tours", True))
+    asyncio.run(flags.set_flag("bots_enabled:getvisa", True))
+    asyncio.run(flags.set_flag("night_mode_enabled:getvisa", True))
+    _set_hour(monkeypatch, 14)
+    assert _bots_on(_orch("frunze_tours")) is True
+    assert _bots_on(_orch("getvisa")) is False
+
+
+def test_per_bot_night_key_never_wakes_disabled_bot(monkeypatch):
+    """Персональный ключ ночного режима тоже не включает выключенного кнопкой бота."""
+    _clear()
+    asyncio.run(flags.set_flag("bots_enabled:getvisa", False))
+    asyncio.run(flags.set_flag("night_mode_enabled:getvisa", False))
+    _set_hour(monkeypatch, 3)
+    assert _bots_on(_orch("getvisa")) is False
+
+
 def test_night_mode_custom_window(monkeypatch):
     """Окно берётся из настроек (напр. 20→10)."""
     _clear()

@@ -141,9 +141,19 @@ class Orchestrator:
     async def _night_mode_blocks(self) -> bool:
         """True → сейчас ДЕНЬ и ночной режим включён (бот должен молчать).
 
-        Окно [from, to) по Бишкеку, через полночь (22→8). Вне окна = день = блок."""
+        Окно [from, to) по Бишкеку, через полночь (22→8). Вне окна = день = блок.
+
+        Per-bot ключ `night_mode_enabled:<bot_id>` переопределяет глобальный — как у
+        рубильника `bots_enabled`. Нужен для решения владельца 30.07: «туры днём, визы
+        пусть ночью». Одним глобальным флагом это невыразимо: сняв его ради туров, мы
+        открыли бы дневные авто-ответы и визовому каналу.
+        """
         from app.core import flags
-        if not await flags.get_flag("night_mode_enabled", settings.night_mode_enabled):
+        global_night = await flags.get_flag("night_mode_enabled",
+                                           settings.night_mode_enabled)
+        night_on = (await flags.get_flag(f"night_mode_enabled:{self._bot_id}", global_night)
+                    if self._bot_id else global_night)
+        if not night_on:
             return False
         local_hour = (datetime.now(timezone.utc) + timedelta(hours=6)).hour
         a, b = settings.night_mode_from, settings.night_mode_to
