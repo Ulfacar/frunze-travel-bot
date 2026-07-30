@@ -633,3 +633,46 @@ def test_departed_skips_channel_outside_the_map(tmp_path, monkeypatch):
         assert (await _owners(sm))["tg:1"] == "sezim"
         await engine.dispose()
     _sync(check)
+
+
+def test_from_login_takes_service_account_dialogs(tmp_path, monkeypatch):
+    """Служебный `admin` — живой логин, поэтому под «призрака» не попадает, но Telegram у
+    него нет и пуш по его лидам уходить некуда. Забираем явным указанием оператора."""
+    monkeypatch.setattr(settings, "managers",
+                        LIVE_MANAGERS + [ManagerConfig(login="admin", password="x")])
+    monkeypatch.setattr(settings, "tours_owner_by_bot", DEPARTED_MAP)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _tours("adm:1", phone="996700000021", bot_id="frunze_tours_sezim",
+                   assigned_to="admin"),
+            _tours("keep:1", phone="996700000022", bot_id="frunze_tours_sezim",
+                   assigned_to="aisina"),
+        ])
+        summary = await run(sessionmaker=sm, apply=True, visa=False, sezim=False,
+                            from_logins=("admin",), since_days=0, now=NOW)
+        assert summary["departed_moved"] == 1
+        owners = await _owners(sm)
+        assert owners["adm:1"] == "aisina"
+        assert owners["keep:1"] == "aisina"          # уже её — трогать нечего
+        await engine.dispose()
+    _sync(check)
+
+
+def test_owner_equal_to_channel_manager_is_not_touched(tmp_path, monkeypatch):
+    """Диалог уже у менеджера канала — переносить нечего, лишней аудит-записи быть не должно."""
+    monkeypatch.setattr(settings, "managers", LIVE_MANAGERS)
+    monkeypatch.setattr(settings, "tours_owner_by_bot", DEPARTED_MAP)
+
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _tours("own:1", phone="996700000023", bot_id="frunze_tours_sezim",
+                   assigned_to="aisina"),
+        ])
+        summary = await run(sessionmaker=sm, apply=True, visa=False, sezim=False,
+                            from_logins=("aisina",), since_days=0, now=NOW)
+        assert summary["departed_moved"] == 0
+        async with sm() as session:
+            assert (await session.execute(select(AuditLog))).scalars().all() == []
+        await engine.dispose()
+    _sync(check)

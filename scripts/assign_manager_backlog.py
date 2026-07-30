@@ -397,7 +397,7 @@ def _known_logins() -> set[str]:
             for m in settings.manager_list() if (m.login or "").strip()}
 
 
-async def _pass_departed(sm, run: _Run) -> None:
+async def _pass_departed(sm, run: _Run, *, extra: frozenset[str] = frozenset()) -> None:
     """Диалоги, висящие на логине, которого больше нет в MANAGERS (человек уволился).
 
     Такой диалог не видит НИКТО: панель фильтрует по скоупу живых логинов, а мгновенный
@@ -409,17 +409,20 @@ async def _pass_departed(sm, run: _Run) -> None:
     два источника правды о владельце канала разъехались бы на первой же перестановке.
     """
     from app.domain.autoassign import tours_owner_for
-    known = _known_logins()
+    known = _known_logins() - extra
+
+    def _movable(conv) -> bool:
+        return (conv.assigned_to or "").strip().lower() not in known
+
     async with sm() as session:
         rows = (await session.execute(
             _active_query(cutoff=run.cutoff, min_messages=run.min_messages)
             .where(Conversation.assigned_to.is_not(None), Conversation.assigned_to != "")
             .order_by(Conversation.id))).scalars().all()
     plan = {c.id: tours_owner_for(c.bot_id or "") for c in rows
-            if (c.assigned_to or "").strip().lower() not in known
-            and tours_owner_for(c.bot_id or "")}
-    ghosts = sorted({(c.assigned_to or "").strip() for c in rows
-                     if (c.assigned_to or "").strip().lower() not in known})
+            if _movable(c) and tours_owner_for(c.bot_id or "")
+            and tours_owner_for(c.bot_id or "") != (c.assigned_to or "").strip().lower()}
+    ghosts = sorted({(c.assigned_to or "").strip() for c in rows if _movable(c)})
     print(f"владельцы-призраки: {ghosts or '—'} → под перенос {len(plan)} "
           f"[{_filters_label(run)}]")
 
@@ -511,7 +514,7 @@ async def _pass_rollback(sm, run: _Run, reason: str) -> None:
 
 async def run(*, apply: bool = False, since_days: int = 30, min_messages: int = 0,
               visa: bool = True, sezim: bool = True, tours_orphans: bool = False,
-              departed: bool = False,
+              departed: bool = False, from_logins: tuple[str, ...] = (),
               rollback: str | None = None, owner: str | None = None,
               batch_size: int = 50, sessionmaker=None,
               now: datetime | None = None) -> dict[str, object]:
@@ -527,8 +530,9 @@ async def run(*, apply: bool = False, since_days: int = 30, min_messages: int = 
         return state.summary(("apply" if apply else "dry-run") + "-rollback")
     if visa:
         await _pass_visa(sm, state)
-    if departed:
-        await _pass_departed(sm, state)
+    if departed or from_logins:
+        await _pass_departed(sm, state, extra=frozenset(
+            l.strip().lower() for l in (from_logins or ()) if l.strip()))
     if sezim or tours_orphans:
         await _pass_sezim_channel(sm, state, orphans=tours_orphans)
     return state.summary("apply" if apply else "dry-run")
@@ -552,6 +556,9 @@ def main() -> None:
     p.add_argument("--departed", action="store_true",
                    help="перенести диалоги с логинов, которых больше нет в MANAGERS, "
                         "менеджеру канала (карта tours_owner_by_bot)")
+    p.add_argument("--from-login", action="append", default=[], metavar="LOGIN",
+                   help="дополнительно забрать диалоги этого живого логина (напр. "
+                        "служебного admin) менеджеру канала; можно повторять")
     p.add_argument("--owner", default=None,
                    help="кому отдавать туровые диалоги (по умолчанию tours_pilot_manager)")
     p.add_argument("--rollback", choices=REASONS, default=None,
@@ -561,12 +568,12 @@ def main() -> None:
     args = p.parse_args()
 
     # Явно выбранные пассы отключают остальные; по умолчанию идут оба.
-    explicit = args.visa or args.sezim or args.departed
+    explicit = args.visa or args.sezim or args.departed or args.from_login
     summary = asyncio.run(run(
         apply=args.apply, since_days=args.since_days, min_messages=args.min_messages,
         visa=bool(args.visa) if explicit else True,
         sezim=bool(args.sezim) if explicit else True,
-        departed=bool(args.departed),
+        departed=bool(args.departed), from_logins=tuple(args.from_login),
         tours_orphans=args.tours_orphans, rollback=args.rollback,
         owner=args.owner, batch_size=args.batch_size))
 
