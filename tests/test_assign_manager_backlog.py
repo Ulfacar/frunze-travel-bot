@@ -676,3 +676,46 @@ def test_owner_equal_to_channel_manager_is_not_touched(tmp_path, monkeypatch):
             assert (await session.execute(select(AuditLog))).scalars().all() == []
         await engine.dispose()
     _sync(check)
+
+
+def test_conflict_halts_apply_unless_explicitly_skipped(tmp_path, monkeypatch):
+    """Предохранитель по умолчанию сохраняется: apply падает на конфликте. С явным
+    --skip-conflicts спорная строка пропускается, а чистые доезжают."""
+    monkeypatch.setattr(settings, "managers",
+                        LIVE_MANAGERS + [ManagerConfig(login="admin", password="x")])
+    monkeypatch.setattr(settings, "tours_owner_by_bot", DEPARTED_MAP)
+
+    async def _seed(name):
+        engine, sm = await _db(tmp_path, [
+            _tours("clean:1", phone="996700000031", bot_id="frunze_tours_sezim",
+                   assigned_to="admin"),
+            _tours("busy:1", phone="996700000032", bot_id="frunze_tours_sezim",
+                   assigned_to="admin"),
+        ], name=name)
+        async with sm() as session:
+            from app.domain import live_assign
+            contact = await live_assign.contact_for_channel(
+                session, channel="whatsapp", raw="996700000032")
+            await live_assign.assign_locked(session, contact.id, "tours", "ademi",
+                                            assigned_by="test", reason="legacy")
+            await session.commit()
+        return engine, sm
+
+    async def check():
+        engine, sm = await _seed("conflict_halt.db")
+        with pytest.raises(RuntimeError, match="конфликт владельца"):
+            await run(sessionmaker=sm, apply=True, visa=False, sezim=False,
+                      from_logins=("admin",), since_days=0, now=NOW)
+        await engine.dispose()
+
+        engine2, sm2 = await _seed("conflict_skip.db")
+        summary = await run(sessionmaker=sm2, apply=True, visa=False, sezim=False,
+                            from_logins=("admin",), skip_conflicts=True,
+                            since_days=0, now=NOW)
+        assert summary["departed_moved"] == 1
+        assert len(summary["conflicts"]) == 1
+        owners = await _owners(sm2)
+        assert owners["clean:1"] == "aisina"
+        assert owners["busy:1"] == "admin"        # спорный не тронут
+        await engine2.dispose()
+    _sync(check)

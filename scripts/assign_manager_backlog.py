@@ -167,8 +167,13 @@ class _Run:
     """Состояние одного прогона: счётчики, конфликты, режим."""
 
     def __init__(self, *, apply: bool, owner: str, since_days: int,
-                 batch_size: int, now: datetime, min_messages: int = 0) -> None:
+                 batch_size: int, now: datetime, min_messages: int = 0,
+                 skip_conflicts: bool = False) -> None:
         self.apply = apply
+        # Осознанное ослабление предохранителя: конфликтная строка пропускается, а не рушит
+        # прогон. Нужно, когда один спорный диалог (клиент писал в оба канала — владелец в
+        # домене чужой) держит два десятка чистых. Спорные всё равно попадают в отчёт.
+        self.skip_conflicts = skip_conflicts
         self.owner = owner
         self.since_days = since_days
         self.min_messages = min_messages
@@ -194,7 +199,7 @@ class _Run:
     def conflict(self, conv: Conversation, owner: str, direction: str) -> None:
         msg = (f"конфликт владельца: id={conv.id} user_id={conv.user_id} "
                f"direction={direction} уже за {owner!r}")
-        if self.apply:
+        if self.apply and not self.skip_conflicts:
             # В применении останавливаемся на первом — батч не коммитится.
             raise RuntimeError(msg)
         # В превью собираем ВСЕ, чтобы оператор увидел проблемы разом, а не по одной.
@@ -515,13 +520,14 @@ async def _pass_rollback(sm, run: _Run, reason: str) -> None:
 async def run(*, apply: bool = False, since_days: int = 30, min_messages: int = 0,
               visa: bool = True, sezim: bool = True, tours_orphans: bool = False,
               departed: bool = False, from_logins: tuple[str, ...] = (),
+              skip_conflicts: bool = False,
               rollback: str | None = None, owner: str | None = None,
               batch_size: int = 50, sessionmaker=None,
               now: datetime | None = None) -> dict[str, object]:
     sm = sessionmaker or get_sessionmaker()
     state = _Run(apply=apply, owner=(owner or settings.tours_pilot_manager),
                  since_days=since_days, min_messages=max(0, min_messages),
-                 batch_size=max(1, batch_size),
+                 batch_size=max(1, batch_size), skip_conflicts=skip_conflicts,
                  now=now or datetime.now(timezone.utc))
     if rollback:
         if rollback not in REASONS:
@@ -561,6 +567,9 @@ def main() -> None:
                         "служебного admin) менеджеру канала; можно повторять")
     p.add_argument("--owner", default=None,
                    help="кому отдавать туровые диалоги (по умолчанию tours_pilot_manager)")
+    p.add_argument("--skip-conflicts", action="store_true",
+                   help="не падать на конфликте владельца, а пропускать строку "
+                        "(конфликты всё равно попадут в отчёт)")
     p.add_argument("--rollback", choices=REASONS, default=None,
                    help="отыграть прогон по аудит-записям")
     p.add_argument("--batch-size", type=int, default=50,
@@ -574,6 +583,7 @@ def main() -> None:
         visa=bool(args.visa) if explicit else True,
         sezim=bool(args.sezim) if explicit else True,
         departed=bool(args.departed), from_logins=tuple(args.from_login),
+        skip_conflicts=args.skip_conflicts,
         tours_orphans=args.tours_orphans, rollback=args.rollback,
         owner=args.owner, batch_size=args.batch_size))
 
