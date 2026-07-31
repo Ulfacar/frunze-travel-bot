@@ -235,6 +235,45 @@ class WappiAdapter:
         return provider_msg_id
 
 
+    async def fetch_chat_messages(self, phone: str) -> list[dict]:
+        """Переписка с номером как её видит WhatsApp (вместе с нашими исходящими).
+
+        Нужна потому, что профиль Wappi подписан только на `incoming_message` — эхо
+        исходящих нам не приходит, и ответы менеджера с телефона до панели не долетают
+        (за неделю 31.07.2026 в базе НОЛЬ сообщений с sender='manager' при 980 клиентских).
+        Пока тип вебхука не включён в кабинете, забираем их сами.
+        """
+        if not self._token or not self._profile_id or not phone:
+            return []
+        owns = self._client is None
+        client = self._client or httpx.AsyncClient(timeout=25)
+        try:
+            resp = await client.get(
+                f"{self._base}/api/sync/messages/get",
+                params={"profile_id": self._profile_id, "chat_id": f"{_recipient(phone)}@c.us"},
+                headers={"Authorization": self._token},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        finally:
+            if owns:
+                await client.aclose()
+        return data.get("messages") or [] if isinstance(data, dict) else []
+
+
+def is_manager_reply(raw: dict) -> bool:
+    """Исходящее текстовое сообщение живого человека (не реакция, не медиа-заглушка)."""
+    outgoing = bool(raw.get("fromMe") or raw.get("from_me") or raw.get("is_me"))
+    return outgoing and raw.get("type") == _TEXT_TYPE and bool(str(raw.get("body") or "").strip())
+
+
+def message_time(raw: dict) -> int:
+    try:
+        return int(raw.get("time") or raw.get("timestamp") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def _extract_msg_id(resp: httpx.Response) -> str:
     """Вытащить id отправленного сообщения из ответа Wappi (ключ варьируется)."""
     try:

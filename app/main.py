@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     # Фоновые джобы: watchdog-алерты + автодожим. Автодожим регистрируем всегда —
     # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
     from app.core import (awaiting, calendar_brief, followup, instant_handoff,
-                          morning_brief, outcome_infer, rescore, scheduler,
+                          manager_sync, morning_brief, outcome_infer, rescore, scheduler,
                           tours_health, tours_summary, watchdog)
     scheduler.register("watchdog", watchdog.run)
     scheduler.register("awaiting", awaiting.run)
@@ -71,6 +71,9 @@ async def lifespan(app: FastAPI):
     # Здоровье подбора: кричать, когда бот массово отвечает «ничего не нашлось».
     # Прежде мерили расход API, а не результат — поэтому поломка жила месяц незамеченной.
     scheduler.register("tours_health", tours_health.run)
+    # Ответы менеджеров с телефона: Wappi не шлёт эхо исходящих, поэтому перехваченные
+    # диалоги вечно висят «ждёт ответа». Подтягиваем их сами, пока тип вебхука не включён.
+    scheduler.register("manager_sync", manager_sync.run)
     scheduler.start()
     try:
         yield
