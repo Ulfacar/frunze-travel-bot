@@ -89,6 +89,28 @@
         <div class="v"><span class="dot {{ 'ok' if s.send_failures == 0 else 'bad' }}"></span><span class="mono">{{ s.send_failures }}</span>
           {% if s.send_failure_ago is not none %}<span class="muted" style="font-size:12px">{{ (s.send_failure_ago/60)|round(0,'floor')|int }} мин назад</span>{% endif %}</div>
       </div>
+      <div class="card">
+        <div class="l">Подбор туров сегодня</div>
+        <div class="v">
+          <span class="dot {{ 'bad' if s.tours_health.zone == 'broken' else ('ok' if s.tours_health.zone == 'ok' else '') }}"></span>
+          <span class="mono">{{ s.tours_health.ok }} с результатом / {{ s.tours_health.total }}</span>
+        </div>
+        {% if s.tours_health.total %}
+          <div class="muted" style="font-size:12px; margin-top:4px">
+            пусто {{ s.tours_health.empty }}
+            {%- if s.tours_health.no_destination %}, не понял направление {{ s.tours_health.no_destination }}{% endif %}
+            {%- if s.tours_health.no_dates %}, без дат {{ s.tours_health.no_dates }}{% endif %}
+            {%- if s.tours_health.fallback %}, спас Алматы {{ s.tours_health.fallback }}{% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="card">
+        <div class="l">Квота TourVisor сегодня</div>
+        <div class="v">
+          <span class="dot {{ 'bad' if s.tourvisor_quota.zone == 'exhausted' else ('ok' if s.tourvisor_quota.zone == 'ok' else '') }}"></span>
+          <span class="mono">{{ s.tourvisor_quota.used }}{% if s.tourvisor_quota.limit %} / {{ s.tourvisor_quota.limit }}{% endif %}</span>
+        </div>
+      </div>
     </div>
 
     {% include "_automation.html" %}

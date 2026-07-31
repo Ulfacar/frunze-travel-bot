@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 
 from app.agent import runner
 from app.core.state import DialogState
+from app.integrations.tourvisor.client import TourSearch
 
 
 class FakeBlock:
@@ -153,7 +154,8 @@ def test_run_turn_sends_window_and_qual_each_tool_iteration(monkeypatch):
     fake = AsyncMock()
     fake.messages.create = AsyncMock(side_effect=[_tool_use(), _text("Вот варианты")])
     monkeypatch.setattr(runner, "client", lambda: fake)
-    monkeypatch.setattr(runner._tourvisor, "search", AsyncMock(return_value=["Отель X 5*"]))
+    monkeypatch.setattr(runner._tourvisor, "search_detailed",
+                        AsyncMock(return_value=TourSearch(["Отель X 5*"], 1, "ok", "Бишкек")))
 
     reply = asyncio.run(runner.run_tours_turn(state, "актуально?"))
 

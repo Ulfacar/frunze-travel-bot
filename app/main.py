@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
     # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
     from app.core import (awaiting, calendar_brief, followup, instant_handoff,
                           morning_brief, outcome_infer, rescore, scheduler,
-                          tours_summary, watchdog)
+                          tours_health, tours_summary, watchdog)
     scheduler.register("watchdog", watchdog.run)
     scheduler.register("awaiting", awaiting.run)
     scheduler.register("followup", followup.run)
@@ -68,6 +68,9 @@ async def lifespan(app: FastAPI):
     # Квота TourVisor: предупредить владельца ДО того, как поиск туров умрёт молча.
     from app.integrations.tourvisor import quota as tv_quota
     scheduler.register("tourvisor_quota", tv_quota.run)
+    # Здоровье подбора: кричать, когда бот массово отвечает «ничего не нашлось».
+    # Прежде мерили расход API, а не результат — поэтому поломка жила месяц незамеченной.
+    scheduler.register("tours_health", tours_health.run)
     scheduler.start()
     try:
         yield

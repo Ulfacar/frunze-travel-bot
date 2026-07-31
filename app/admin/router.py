@@ -398,7 +398,8 @@ async def buyers_claim(user_id: str, manager: dict = Depends(require_admin)):
 @router.get("/system", response_class=HTMLResponse)
 async def system(request: Request, manager: dict = Depends(require_full_admin)):
     """Статус системы: LLM, тишина вебхуков, бэкенды, счётчики сбоев, боты."""
-    from app.core import observ
+    from app.core import observ, tours_health
+    from app.integrations.tourvisor import quota as tv_quota
     snap = observ.snapshot()
     flag_views = await _flag_views()
     bot_flags = await _bot_flag_views()
@@ -418,6 +419,10 @@ async def system(request: Request, manager: dict = Depends(require_full_admin)):
         "send_failures": snap.get("send_failures", 0),
         "llm_failure_ago": snap.get("llm_failure_ago"),
         "send_failure_ago": snap.get("send_failure_ago"),
+        # Подбор туров: и расход квоты, и РЕЗУЛЬТАТ. Раньше в панели не было ни того, ни
+        # другого — поэтому месяц пустых подборов прошёл незамеченным.
+        "tours_health": await tours_health.status(),
+        "tourvisor_quota": await tv_quota.status(),
     }
     return templates.TemplateResponse(request, "system.html",
                                       {"s": data, "manager": manager,

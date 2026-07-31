@@ -23,7 +23,7 @@ from app.agent.routing import choose_model, should_escalate_tours_input
 from app.agent.tools import tools_for
 from app.agent.validator import validate_reply
 from app.config import settings
-from app.core import budget, flags, observ
+from app.core import budget, flags, observ, tours_health
 from app.core.branding import GETVISA_OFFICE_ADDRESS, PRICE_DISCLAIMER
 from app.core.state import DialogState
 from app.core.visa_pricing import self_visa_reply, visa_price_reply
@@ -192,6 +192,40 @@ async def _record_llm_usage(model: str, resp: object, state: DialogState) -> Non
 
 
 # ---------------- Туры ----------------
+def _tours_search_report(found) -> str:
+    """Результат подбора для агента — С ПРИЧИНОЙ, а не голым списком.
+
+    Раньше на пустой выдаче наверх уходило «Подходящих туров не нашлось», агент причины не
+    знал и придумывал её сам («август дорогой, поднимите бюджет»). Клиент поднимал бюджет
+    впустую и уходил. Теперь причина машинная и агент обязан назвать именно её.
+    """
+    if found.reason == "no_destination":
+        return ("НАПРАВЛЕНИЕ НЕ РАСПОЗНАНО. Поиск НЕ выполнялся. Переспроси у клиента страну "
+                "или курорт (например «Турция», «Анталья», «Дубай») и вызови поиск заново. "
+                "Не показывай варианты и не называй причину «нет туров» — их просто не искали.")
+
+    if found.reason == "nothing_found":
+        where = f" (вылет {found.departure})" if found.departure else ""
+        return (f"НИЧЕГО НЕ НАЙДЕНО{where} — проверены оба города вылета, Бишкек и Алматы. "
+                "Скажи клиенту ЧЕСТНО: на эти даты по этому направлению туров у операторов "
+                "нет. НЕ ссылайся на бюджет и не проси его поднять — дело не в деньгах. "
+                "Предложи сменить даты или направление, либо передай менеджеру.")
+
+    head = [f"Найдено вариантов: {found.found}. Вылет из: {found.departure}."]
+    if found.min_price:
+        head.append(f"Минимальная цена: {found.min_price}.")
+    if found.fallback_departure:
+        head.append(
+            "ВАЖНО: из Бишкека по этому направлению туров нет, это варианты ИЗ АЛМАТЫ. "
+            "Обязательно предупреди клиента об этом — не выдавай их за вылет из Бишкека."
+        )
+    head.append(
+        "Цены называй ровно как в строках, вместе с валютой (USD/EUR) — не переводи в другую "
+        "валюту и не меняй знак. Дату вылета озвучивай: она может отличаться от запрошенной."
+    )
+    return " ".join(head) + "\n" + "\n".join(found.lines)
+
+
 async def _tours_exec_tool(name: str, args: dict, state: DialogState, crm) -> str:
     logger.info("tours tool %s args=%s", name, args)
 
@@ -200,11 +234,20 @@ async def _tours_exec_tool(name: str, args: dict, state: DialogState, crm) -> st
         if not state.deal_id:
             state.deal_id = await crm.create_lead({"user_id": state.user_id}, "tours", state.qualification)
         try:
-            tours = await _tourvisor.search(state.qualification)
+            # Параметры берём из args текущего вызова, а не из накопленной квалификации:
+            # та служит досье клиента и тянула в новый поиск старый курорт/даты/бюджет.
+            found = await _tourvisor.search_detailed({**state.qualification, **args})
         except (TourVisorError, httpx.HTTPError):
             return ("Поиск туров сейчас временно недоступен. Я записал ваш запрос — "
                     "менеджер подберёт варианты и свяжется с вами.")
-        return "\n".join(tours) if tours else "Подходящих туров не нашлось."
+        # Считаем ИСХОД подбора: сломанный поиск месяц жил незамеченным ровно потому, что
+        # мерили расход API, а не результат.
+        await tours_health.note(
+            found.reason,
+            fallback=found.fallback_departure,
+            has_dates=bool((found.query or {}).get("datefrom")),
+        )
+        return _tours_search_report(found)
 
     if name == "handoff_to_manager":
         if state.deal_id:

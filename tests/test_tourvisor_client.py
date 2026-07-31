@@ -5,10 +5,10 @@ from unittest.mock import AsyncMock
 import app.integrations.tourvisor.client as tv
 from app.integrations.tourvisor.client import (
     TourVisorClient,
-    _format_over_budget,
     _format_hotels,
     _hotel_link,
     _hotel_price,
+    _min_price_label,
     _parse_dates,
 )
 
@@ -59,18 +59,12 @@ def test_hotel_price_reads_best_tour_price():
     assert _hotel_price(_hotel("B", "мусор")) == 10**9
 
 
-def test_format_over_budget_sorts_and_adds_notice():
-    lines = _format_over_budget(
-        [_hotel("Expensive", "3485"), _hotel("Cheap", "3 153"), _hotel("Middle", "3300"), _hotel("Far", "4000")],
-        2000,
+def test_min_price_label_reads_cheapest_hotel():
+    label = _min_price_label(
+        [_hotel("Expensive", "3485"), _hotel("Cheap", "3 153"), _hotel("Middle", "3300")]
     )
 
-    assert lines[0].startswith("⚠️ Под бюджет 2000 вариантов нет.")
-    assert "от 3 153 USD" in lines[0]
-    assert len(lines) == 4
-    assert "Cheap" in lines[1]
-    assert "Middle" in lines[2]
-    assert "Expensive" in lines[3]
+    assert label == "3 153 USD"
 
 
 def test_format_hotels_adds_clickable_hotel_search_link():
@@ -84,58 +78,90 @@ def test_hotel_link_skips_empty_default_name():
     assert _hotel_link("Отель", "Анталья") == ""
 
 
-def test_search_retries_once_without_price_limit_when_budget_is_too_low(monkeypatch):
-    client = TourVisorClient()
-    client._login = "login"
-    client._pass = "pass"
-    query = {
-        "departure": "80",
-        "country": "1",
-        "pricetype": 0,
-        "pricefrom": 1000,
-        "priceto": 2000,
-    }
+def _stub_search(client, poll_results: list[list[dict]]) -> list[tuple[str, dict]]:
+    """Подменить сеть: вернуть журнал вызовов, скормив _poll заготовленные выдачи."""
     calls: list[tuple[str, dict]] = []
-
-    async def build_query(_http_client, _params):
-        return query
 
     async def call(_http_client, path, params):
         calls.append((path, dict(params)))
         return {"result": {"requestid": f"request-{len(calls)}"}}
 
-    client._build_query = build_query
     client._call = AsyncMock(side_effect=call)
-    client._poll = AsyncMock(side_effect=[[], [_hotel("Cheap", "3153")]])
-
-    result = asyncio.run(client.search({"destination": "Египет", "budget": "2000 USD"}))
-
-    search_calls = [params for path, params in calls if path == "search.php"]
-    assert len(search_calls) == 2
-    assert search_calls[0]["priceto"] == 2000
-    assert "priceto" not in search_calls[1]
-    assert "pricefrom" not in search_calls[1]
-    assert "pricetype" not in search_calls[1]
-    assert result[0].startswith("⚠️ Под бюджет 2000")
-    assert "Cheap" in result[1]
+    client._poll = AsyncMock(side_effect=poll_results)
+    client._ref_cache["departure"] = [
+        {"id": "80", "name": "Бишкек"}, {"id": "60", "name": "Алматы"},
+    ]
+    return calls
 
 
-def test_search_returns_empty_when_retry_without_price_limit_is_empty():
+def test_empty_from_bishkek_falls_back_to_almaty():
+    """Из Бишкека TourVisor не продаёт Египет/Таиланд/Кипр — правило менеджеров велит
+    смотреть из Алматы. Раньше этого не делал никто и заявка уходила в пустоту."""
     client = TourVisorClient()
-    client._login = "login"
-    client._pass = "pass"
+    client._login, client._pass = "login", "pass"
 
     async def build_query(_http_client, _params):
-        return {"departure": "80", "pricetype": 0, "priceto": 2000}
+        return {"departure": "80", "country": "1"}
 
     client._build_query = build_query
-    client._call = AsyncMock(side_effect=[
-        {"result": {"requestid": "first"}},
-        {"result": {"requestid": "second"}},
-    ])
-    client._poll = AsyncMock(side_effect=[[], []])
+    calls = _stub_search(client, [[], [_hotel("Cheap", "3153")]])
 
-    assert asyncio.run(client.search({"budget": "2000 USD"})) == []
-    assert client._call.call_count == 2
-    second_params = client._call.call_args_list[1].args[2]
-    assert "priceto" not in second_params
+    result = asyncio.run(client.search_detailed({"destination": "Египет"}))
+
+    search_calls = [p for path, p in calls if path == "search.php"]
+    assert [p["departure"] for p in search_calls] == ["80", "60"]
+    assert result.reason == "ok"
+    assert result.fallback_departure is True
+    assert result.departure == "Алматы"
+    assert "Cheap" in result.lines[0]
+
+
+def test_no_fallback_when_bishkek_already_has_tours():
+    client = TourVisorClient()
+    client._login, client._pass = "login", "pass"
+
+    async def build_query(_http_client, _params):
+        return {"departure": "80", "country": "4"}
+
+    client._build_query = build_query
+    calls = _stub_search(client, [[_hotel("Ares", "1096")]])
+
+    result = asyncio.run(client.search_detailed({"destination": "Турция"}))
+
+    assert len([p for path, p in calls if path == "search.php"]) == 1
+    assert result.fallback_departure is False
+    assert result.departure == "Бишкек"
+
+
+def test_unresolved_destination_never_searches_worldwide():
+    """Без страны TourVisor ищет по всему миру — так на «Пхукет» прилетал Шарм-эль-Шейх."""
+    client = TourVisorClient()
+    client._login, client._pass = "login", "pass"
+
+    async def build_query(_http_client, _params):
+        return {"departure": "80"}          # страна не распозналась
+
+    client._build_query = build_query
+    calls = _stub_search(client, [])
+
+    result = asyncio.run(client.search_detailed({"destination": "Тмутаракань"}))
+
+    assert result.reason == "no_destination"
+    assert result.lines == []
+    assert [path for path, _ in calls if path == "search.php"] == []
+
+
+def test_nothing_found_reports_reason_instead_of_silence():
+    client = TourVisorClient()
+    client._login, client._pass = "login", "pass"
+
+    async def build_query(_http_client, _params):
+        return {"departure": "80", "country": "1"}
+
+    client._build_query = build_query
+    _stub_search(client, [[], []])
+
+    result = asyncio.run(client.search_detailed({"destination": "Египет"}))
+
+    assert result.reason == "nothing_found"
+    assert result.found == 0

@@ -1,6 +1,6 @@
 """Юнит-тесты агентного цикла «Туры» с мок-Claude (без сети и без API-ключа).
 
-Мокаем app.agent.runner.client (Anthropic) и runner._tourvisor.search, проверяя:
+Мокаем app.agent.runner.client (Anthropic) и runner._tourvisor.search_detailed, проверяя:
 - round-trip tool_use → tool_result → финальный текст;
 - guard по максимуму итераций;
 - graceful degrade инструмента search_tours при ошибке TourVisor.
@@ -11,7 +11,12 @@ from unittest.mock import AsyncMock
 from app.agent import runner
 from app.core.state import DialogState
 from app.integrations.crm import get_crm
-from app.integrations.tourvisor.client import TourVisorError
+from app.integrations.tourvisor.client import TourSearch, TourVisorError
+
+
+def _found(lines: list[str]) -> TourSearch:
+    """Успешная выдача подбора в том виде, в каком её отдаёт клиент TourVisor."""
+    return TourSearch(lines=lines, found=len(lines), reason="ok", departure="Бишкек")
 
 
 # ---- фейковые ответы Claude (форма, которую ждёт runner) ----
@@ -58,12 +63,12 @@ def test_tool_use_then_text(monkeypatch):
     """search_tours отрабатывает, затем Claude отдаёт финальный текст."""
     state = DialogState(user_id="u1", funnel="tours")
     fake = _patch_client(monkeypatch, _tool_use(), _text("Вот варианты"))
-    monkeypatch.setattr(runner._tourvisor, "search", AsyncMock(return_value=["Отель X 5*"]))
+    monkeypatch.setattr(runner._tourvisor, "search_detailed", AsyncMock(return_value=_found(["Отель X 5*"])))
 
     reply = asyncio.run(runner.run_tours_turn(state, "хочу тур в Турцию"))
 
     assert reply == "Вот варианты"
-    runner._tourvisor.search.assert_awaited()
+    runner._tourvisor.search_detailed.assert_awaited()
     assert state.deal_id is not None  # лид создан по ходу search_tours
     assert fake.messages.create.await_count == 2
 
@@ -74,7 +79,7 @@ def test_tours_turn_escalates_model_after_search_tours(monkeypatch):
     monkeypatch.setattr(runner.settings, "llm_model_main", "main-model")
     state = DialogState(user_id="u-route", funnel="tours")
     fake = _patch_client(monkeypatch, _tool_use(), _text("Вот варианты"))
-    monkeypatch.setattr(runner._tourvisor, "search", AsyncMock(return_value=["Отель X 5*"]))
+    monkeypatch.setattr(runner._tourvisor, "search_detailed", AsyncMock(return_value=_found(["Отель X 5*"])))
 
     reply = asyncio.run(runner.run_tours_turn(state, "хочу тур в Турцию"))
 
@@ -207,7 +212,7 @@ def test_max_iterations_guard(monkeypatch):
     """Если Claude бесконечно зовёт инструменты — выходим по лимиту с безопасным ответом."""
     state = DialogState(user_id="u2", funnel="tours")
     fake = _patch_client(monkeypatch, _tool_use(), repeat_last=True)
-    monkeypatch.setattr(runner._tourvisor, "search", AsyncMock(return_value=["X"]))
+    monkeypatch.setattr(runner._tourvisor, "search_detailed", AsyncMock(return_value=_found(["X"])))
 
     reply = asyncio.run(runner.run_tours_turn(state, "тур"))
 
@@ -219,7 +224,7 @@ def test_search_tool_graceful_degrade(monkeypatch):
     """Ошибка TourVisor не валит диалог — инструмент возвращает понятное сообщение."""
     state = DialogState(user_id="u3", funnel="tours")
     crm = get_crm()
-    monkeypatch.setattr(runner._tourvisor, "search", AsyncMock(side_effect=TourVisorError("auth")))
+    monkeypatch.setattr(runner._tourvisor, "search_detailed", AsyncMock(side_effect=TourVisorError("auth")))
 
     out = asyncio.run(runner._tours_exec_tool("search_tours", {"destination": "Турция"}, state, crm))
 
