@@ -33,6 +33,10 @@ POLL_INTERVAL = 1.5
 POLL_TIMEOUT = 35.0
 POLL_ENOUGH_AFTER = 15.0
 
+# Ретрай обрывов связи с tourvisor.ru (см. _call).
+NETWORK_RETRIES = 2
+NETWORK_BACKOFF = 0.7
+
 # Города вылета Frunze Travel. Из Бишкека TourVisor продаёт малую часть направлений,
 # из Алматы — практически всё; правило «нет из Бишкека → предложи Алматы» идёт от менеджеров
 # (см. branding.FRUNZE_DESTINATIONS).
@@ -88,12 +92,25 @@ class TourVisorClient:
         # Единственная точка выхода в API — здесь и считаем суточную квоту (3000/сутки).
         # Учитываем ДО запроса: провайдер тратит квоту и на ошибочные вызовы.
         from app.integrations.tourvisor import quota
-        await quota.note_call()
-        resp = await client.get(
-            f"{BASE_URL}/{path}",
-            params={"authlogin": self._login, "authpass": self._pass, "format": "json", **params},
-        )
-        resp.raise_for_status()
+        query = {"authlogin": self._login, "authpass": self._pass, "format": "json", **params}
+
+        # Связь с tourvisor.ru рвётся: за один сеанс диагностики 31.07.2026 httpx.ReadError
+        # прилетал трижды, и каждый раз со второй попытки запрос проходил. Без ретрая одна
+        # такая осечка роняет ВЕСЬ подбор, и живой клиент слышит «поиск временно недоступен»
+        # вместо своих туров. Ретраим только обрывы транспорта: ошибки самого API (неверные
+        # параметры, кончившаяся квота) повторять бессмысленно.
+        for attempt in range(NETWORK_RETRIES + 1):
+            await quota.note_call()
+            try:
+                resp = await client.get(f"{BASE_URL}/{path}", params=query)
+                resp.raise_for_status()
+                break
+            except httpx.TransportError:
+                if attempt == NETWORK_RETRIES:
+                    raise
+                logger.info("TourVisor: обрыв связи на %s, повтор %s", path, attempt + 1)
+                await asyncio.sleep(NETWORK_BACKOFF * (attempt + 1))
+
         data = resp.json()
         if isinstance(data, dict) and "error" in data:
             msg = (data["error"] or {}).get("errormessage", "").strip()

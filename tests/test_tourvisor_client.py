@@ -2,6 +2,8 @@ import asyncio
 from datetime import date as real_date
 from unittest.mock import AsyncMock
 
+import pytest
+
 import app.integrations.tourvisor.client as tv
 from app.integrations.tourvisor.client import (
     TourVisorClient,
@@ -165,3 +167,56 @@ def test_nothing_found_reports_reason_instead_of_silence():
 
     assert result.reason == "nothing_found"
     assert result.found == 0
+
+
+def test_transport_error_is_retried_not_fatal(monkeypatch):
+    """Обрыв связи с tourvisor.ru — регулярный (3 раза за сеанс 31.07). Без ретрая одна
+    осечка роняла весь подбор, и клиент слышал «поиск временно недоступен»."""
+    import httpx
+
+    import app.integrations.tourvisor.client as tvc
+
+    client = TourVisorClient()
+    client._login, client._pass = "login", "pass"
+    monkeypatch.setattr(tvc.asyncio, "sleep", AsyncMock())
+
+    class Resp:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"lists": {}}
+
+    attempts = {"n": 0}
+
+    async def get(_url, params=None):
+        attempts["n"] += 1
+        if attempts["n"] == 1:
+            raise httpx.ReadError("boom")
+        return Resp()
+
+    http = type("C", (), {"get": staticmethod(get)})()
+
+    assert asyncio.run(client._call(http, "list.php", {})) == {"lists": {}}
+    assert attempts["n"] == 2
+
+
+def test_transport_error_gives_up_after_retries(monkeypatch):
+    import httpx
+
+    import app.integrations.tourvisor.client as tvc
+
+    client = TourVisorClient()
+    client._login, client._pass = "login", "pass"
+    monkeypatch.setattr(tvc.asyncio, "sleep", AsyncMock())
+    attempts = {"n": 0}
+
+    async def get(_url, params=None):
+        attempts["n"] += 1
+        raise httpx.ReadError("boom")
+
+    http = type("C", (), {"get": staticmethod(get)})()
+
+    with pytest.raises(httpx.ReadError):
+        asyncio.run(client._call(http, "list.php", {}))
+    assert attempts["n"] == tvc.NETWORK_RETRIES + 1
