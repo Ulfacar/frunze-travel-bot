@@ -131,11 +131,23 @@ def is_incoming_user_message(raw: dict) -> bool:
     )
 
 
+# Эхо ответа менеджера с телефона. `outgoing_message_phone` — реальный тип из кабинета Wappi
+# (включён на всех трёх профилях 31.07.2026); `incoming_message` + is_me оставляем как форму,
+# на которую код был написан изначально, — она ничего не ломает и страхует, если провайдер
+# пришлёт эхо в старом виде. Тип `outgoing_message_api` СОЗНАТЕЛЬНО не слушаем: это эхо
+# отправок самого бота, мы их пишем при отправке, а защита «своё сообщение» живёт в памяти
+# 15 минут — после рестарта бот принял бы собственные реплики за ответы менеджера.
+_ECHO_WH_TYPES = ("outgoing_message_phone", "incoming_message")
+
+
 def is_outgoing_echo(raw: dict) -> bool:
+    wh_type = raw.get("wh_type")
+    if wh_type not in _ECHO_WH_TYPES:
+        return False
+    if wh_type == "incoming_message" and raw.get("is_me") is not True:
+        return False
     return (
-        raw.get("wh_type") == "incoming_message"
-        and raw.get("is_me") is True
-        and raw.get("type") != "reaction"
+        raw.get("type") != "reaction"
         and raw.get("chat_type", "dialog") != "group"
     )
 
@@ -147,7 +159,9 @@ def outgoing_echo_text(raw: dict) -> str:
 
 
 def outgoing_echo_phone(raw: dict) -> str:
-    chat_id = str(raw.get("to") or raw.get("chatId") or "")
+    """Номер КЛИЕНТА из эха. Ключ у Wappi плавает по типам событий, поэтому перебираем."""
+    chat_id = str(raw.get("to") or raw.get("chatId") or raw.get("chat_id")
+                  or raw.get("recipient") or "")
     return _recipient(chat_id)
 
 

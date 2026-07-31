@@ -481,3 +481,36 @@ def test_echo_capture_error_does_not_block_next_client_event(monkeypatch):
     assert resp.status_code == 200
     assert resp.json() == {"ok": True, "handled": 1}
     assert channel.sent == [(f"{PHONE}@c.us", "bot:need visa now")]
+
+
+def test_real_wappi_type_from_cabinet_is_recognised():
+    """Кабинет Wappi шлёт ответ менеджера с телефона как `outgoing_message_phone`
+    (проверено на всех трёх профилях 31.07.2026). Раньше код ждал только
+    incoming_message+is_me и такое эхо молча пропускал."""
+    from app.channels.wappi import is_outgoing_echo
+
+    assert is_outgoing_echo({"wh_type": "outgoing_message_phone", "type": "chat"})
+
+
+def test_bot_own_api_echo_is_not_treated_as_manager_reply():
+    """`outgoing_message_api` — эхо отправок самого бота. Слушать его нельзя: защита
+    «своё сообщение» живёт в памяти 15 минут, после рестарта бот принял бы свои же
+    реплики за ответы менеджера и ложно снимал «ждёт ответа»."""
+    from app.channels.wappi import is_outgoing_echo
+
+    assert not is_outgoing_echo({"wh_type": "outgoing_message_api", "type": "chat"})
+
+
+def test_group_and_reaction_echo_still_ignored():
+    from app.channels.wappi import is_outgoing_echo
+
+    assert not is_outgoing_echo({"wh_type": "outgoing_message_phone", "type": "reaction"})
+    assert not is_outgoing_echo({"wh_type": "outgoing_message_phone", "type": "chat",
+                                 "chat_type": "group"})
+
+
+def test_outgoing_echo_phone_reads_alternative_keys():
+    from app.channels.wappi import outgoing_echo_phone
+
+    assert outgoing_echo_phone({"chat_id": "996700111222@c.us"}) == "996700111222"
+    assert outgoing_echo_phone({"recipient": "996700333444@c.us"}) == "996700333444"
