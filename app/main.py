@@ -276,6 +276,14 @@ async def wappi_webhook(request: Request) -> dict:
         if not isinstance(raw, dict):
             continue
 
+        # Диагностика захвата ответов менеджера (31.07.2026). В базе за неделю НОЛЬ сообщений
+        # с sender='manager': перехваченные диалоги навсегда висят в «ждёт ответа», потому что
+        # ответ менеджера с телефона до нас не долетает. Нам нужно увидеть, какие события Wappi
+        # шлёт на самом деле — ждём wh_type=incoming_message + is_me=true. Только форма события,
+        # без телефона и текста: в логах не должно быть персональных данных.
+        log.info("wappi event: wh_type=%s is_me=%s type=%s",
+                 raw.get("wh_type"), raw.get("is_me"), raw.get("type"))
+
         # Статус доставки/прочтения нашего исходящего → обновляем галочку в панели.
         if is_delivery_status(raw):
             provider_msg_id, status = parse_delivery_status(raw)
