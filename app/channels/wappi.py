@@ -22,10 +22,16 @@ from app.config import BotConfig, settings
 logger = logging.getLogger("channel.wappi")
 
 _TEXT_TYPE = "chat"  # Wappi: тип текстового сообщения (остальное — медиа/вложения)
+# Формы ниже уточнены по РЕАЛЬНОМУ payload голосового с прода 03.08 (tests/fixtures/
+# wappi/voice_ptt.json): Wappi присылает `type="ptt"`, ссылку в `file_link` и длительность
+# в `length_seconds`. Ни того, ни другого имени в наших первоначальных догадках не было —
+# без живого события голосовые молча не распознавались бы, а причину искали бы в OpenAI.
+# Остальные варианты оставлены: провайдер может отдать другую форму для audio/документа.
 _VOICE_TYPES = {"ptt", "voice", "audio", "audio_message", "voice_message"}
-_URL_KEYS = ("file", "fileUrl", "file_url", "url", "media", "mediaUrl", "media_url", "download_url")
+_URL_KEYS = ("file_link", "file", "fileUrl", "file_url", "url", "media", "mediaUrl",
+             "media_url", "download_url")
 _MIME_KEYS = ("mimetype", "mime_type", "mime", "contentType")
-_DURATION_KEYS = ("duration", "seconds", "duration_sec", "audio_duration")
+_DURATION_KEYS = ("length_seconds", "duration", "seconds", "duration_sec", "audio_duration")
 
 
 @dataclass(frozen=True)

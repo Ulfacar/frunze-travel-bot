@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from app.config import settings
 
+# 10+ цифр подряд — это телефон или чужой идентификатор, а не техническое число.
+_DIGIT_RUN = re.compile(r"\d{10,}")
 _KEYS = {"media": "frunze:media_capture", "voice": "frunze:voice_capture"}
 _SENSITIVE_PARTS = ("token", "secret", "authorization", "apikey", "api_key", "password", "key")
 _PHONE_KEYS = {"from", "to", "chatid", "chat_id", "whatsapp_chat_id", "contact_phone", "recipient", "sender"}
@@ -26,6 +29,17 @@ def _mask_phone(value: Any) -> Any:
     return f"{value[:4]}***{value[-2:]}"
 
 
+def _mask_digits(value: str) -> str:
+    """Замаскировать длинные цепочки цифр в ЛЮБОЙ строке.
+
+    Маскировать только известные ключи оказалось мало: в реальном payload 03.08 телефон
+    клиента приехал внутри ссылки на аватарку (`.../tumb_996500494009.jpg`), то есть в
+    поле, которого нет ни в одном списке. Capture выгружают в фикстуры и в чат, поэтому
+    режем по форме, а не по имени поля.
+    """
+    return _DIGIT_RUN.sub(lambda m: f"{m.group()[:4]}***{m.group()[-2:]}", value)
+
+
 def _sanitize(raw: dict) -> dict:
     """Убрать секреты и телефоны: capture выгружают с прода в тестовые фикстуры."""
     def clean(value: Any, key: str = "") -> Any:
@@ -39,6 +53,8 @@ def _sanitize(raw: dict) -> dict:
             return [clean(item) for item in value]
         if key.lower() in _PHONE_KEYS:
             value = _mask_phone(value)
+        elif isinstance(value, str):
+            value = _mask_digits(value)
         if isinstance(value, str) and len(value) > 300:
             return f"{value[:300]}…[обрезано]"
         return value

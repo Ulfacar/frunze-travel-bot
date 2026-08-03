@@ -520,3 +520,37 @@ def test_voice_fields_come_from_one_container():
     assert ref is not None
     assert ref.url == "https://x/voice.ogg"
     assert ref.mime == "audio/ogg" and ref.duration_sec == 7
+
+
+def test_extract_voice_on_real_wappi_payload():
+    """Боевой payload голосового с прода 03.08 (обезличен).
+
+    Именно он показал, что первоначальные догадки были мимо: ссылка приходит в `file_link`,
+    длительность — в `length_seconds`. Ни одного из этих имён в списках кандидатов не было,
+    поэтому распознавание молча не запускалось бы, а причину искали бы в OpenAI.
+    """
+    import json
+    from pathlib import Path
+
+    raw = json.loads(
+        (Path(__file__).parent / "fixtures" / "wappi" / "voice_ptt.json").read_text("utf-8"))
+    ref = extract_voice(raw)
+    assert ref is not None
+    assert ref.url.startswith("https://wapi-uploads7d.storage.yandexcloud.net/")
+    assert ref.mime.startswith("audio/ogg")
+    assert ref.duration_sec == 4
+
+
+def test_capture_masks_phone_inside_any_string():
+    """Телефон клиента приехал внутри ссылки на аватарку — поля с таким именем нет ни в
+    одном списке, поэтому маскируем по форме: длинная цепочка цифр в любой строке."""
+    from app.core.media_capture import _sanitize
+
+    cleaned = _sanitize({
+        "thumbnail": "https://fs.wappi.pro/fs/downloadFile/x/avatars/tumb_996500494009.jpg",
+        "nested": {"link": "https://x/996700111222/file.ogg"},
+        "small_number": "12345",
+    })
+    assert "996500494009" not in cleaned["thumbnail"]
+    assert "996700111222" not in cleaned["nested"]["link"]
+    assert cleaned["small_number"] == "12345"      # короткие числа не трогаем
