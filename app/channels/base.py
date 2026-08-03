@@ -16,6 +16,10 @@ class Message:
     raw: dict[str, Any] = field(default_factory=dict)
     referral: dict[str, Any] = field(default_factory=dict)  # CTWA-источник (реклама), {} если нет
     voice: bool = False      # распознанная речь: в LLM идёт текст, в панели виден источник
+    # Голосовое было, но расшифровать не удалось. Менеджеру в панели нужно РАЗЛИЧАТЬ
+    # «бот не умеет в голос» и «попытались и не вышло»: во втором случае запись стоит
+    # прослушать самому, а не ждать от бота осмысленного ответа.
+    voice_failed: bool = False
 
 
 class ChannelAdapter(Protocol):

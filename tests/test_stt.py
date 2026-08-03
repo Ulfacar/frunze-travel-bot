@@ -554,3 +554,77 @@ def test_capture_masks_phone_inside_any_string():
     assert "996500494009" not in cleaned["thumbnail"]
     assert "996700111222" not in cleaned["nested"]["link"]
     assert cleaned["small_number"] == "12345"      # короткие числа не трогаем
+
+
+def test_failed_recognition_is_visible_to_manager(monkeypatch):
+    """Менеджер обязан различать «бот не умеет в голос» и «пытались и не вышло»:
+    во втором случае запись надо прослушать самому, а не ждать ответа бота."""
+    from app.channels.base import Message
+    from app.core import orchestrator as module
+    from app.core.orchestrator import NON_TEXT_VOICE_FAILED, Orchestrator
+
+    panel, replies = [], []
+    orch = Orchestrator(channel=object())
+
+    async def expire(key): return None
+    async def log_in(msg, text): panel.append(text)
+    async def reply(msg, text): replies.append(text)
+    async def bots_on(): return True
+    async def sync(msg, state): return None
+
+    monkeypatch.setattr(module, "expire_auto_intercept", expire)
+    monkeypatch.setattr(orch, "_log_in", log_in)
+    monkeypatch.setattr(orch, "_reply", reply)
+    monkeypatch.setattr(orch, "_bots_on", bots_on)
+    monkeypatch.setattr(orch, "_sync_card", sync)
+
+    asyncio.run(orch.handle(Message(channel="whatsapp", user_id="u-fail", chat_id="u-fail",
+                                    text="", kind="non_text", voice_failed=True)))
+    assert panel == [NON_TEXT_VOICE_FAILED]
+    assert "не удалось распознать" in panel[0]
+    # Клиенту уходит ПРЕЖНИЙ fallback: сомнительную расшифровку боту не отдаём.
+    assert replies and "Голосовые сообщения пока не распознаём" in replies[0]
+
+
+def test_plain_media_still_reads_as_before(monkeypatch):
+    """Фото и документ — не провалившееся распознавание, отметка не должна врать."""
+    from app.channels.base import Message
+    from app.core import orchestrator as module
+    from app.core.orchestrator import Orchestrator
+
+    panel = []
+    orch = Orchestrator(channel=object())
+
+    async def expire(key): return None
+    async def log_in(msg, text): panel.append(text)
+    async def reply(msg, text): return None
+    async def bots_on(): return True
+    async def sync(msg, state): return None
+
+    monkeypatch.setattr(module, "expire_auto_intercept", expire)
+    monkeypatch.setattr(orch, "_log_in", log_in)
+    monkeypatch.setattr(orch, "_reply", reply)
+    monkeypatch.setattr(orch, "_bots_on", bots_on)
+    monkeypatch.setattr(orch, "_sync_card", sync)
+
+    asyncio.run(orch.handle(Message(channel="whatsapp", user_id="u-pic", chat_id="u-pic",
+                                    text="", kind="non_text")))
+    assert panel == ["[медиа/голос]"]
+
+
+def test_empty_transcript_marks_failure_in_parse(monkeypatch):
+    """Пустая расшифровка не уходит боту, но помечает сообщение как непонятое."""
+    from app.integrations.stt import service
+
+    async def empty(**kwargs):
+        return ""
+
+    monkeypatch.setattr(service, "transcribe", empty)
+    monkeypatch.setattr("app.integrations.stt.service.transcribe", empty)
+    monkeypatch.setattr(settings, "stt_enabled", True)
+    monkeypatch.setattr(settings, "stt_api_key", "k")
+    monkeypatch.setattr(settings, "stt_allowlist_phones", [])
+    flags.reset()
+    msg = asyncio.run(WappiAdapter(BOT).parse(_voice()))
+    assert (msg.kind, msg.text) == ("non_text", "")
+    assert msg.voice_failed is True and msg.voice is False

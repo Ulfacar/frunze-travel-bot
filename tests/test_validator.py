@@ -21,13 +21,18 @@ def test_markdown_flagged_as_violation():
     assert "markdown" in violations
 
 
-def test_google_hotel_link_is_preserved():
-    text = "Palmora Lara: ссылка: https://www.google.com/search?q=Palmora+Lara+hotel"
-    clean, violations = validate_reply(text, "tours")
-
-    assert clean == text
-    assert "https://www.google.com/search?q=Palmora+Lara+hotel" in clean
-    assert "invented_url_stripped" not in violations
+def test_any_link_is_stripped_now():
+    """Разрешённых ссылок у бота больше нет. Поиск Google по отелю уводил клиента, за
+    которого мы заплатили рекламой, в выдачу с Booking и конкурентами на тот же отель.
+    Карточку с бронью присылает менеджер, поэтому режем ЛЮБОЙ URL, включая прежний «свой»."""
+    for text in (
+        "Palmora Lara: ссылка: https://www.google.com/search?q=Palmora+Lara+hotel",
+        "Смотрите тут https://booking.com/hotel/x",
+        "Забронируйте на http://example.kg/tour",
+    ):
+        clean, violations = validate_reply(text, "tours")
+        assert "http" not in clean
+        assert "invented_url_stripped" in violations
 
 
 def test_invented_booking_url_is_stripped_and_text_preserved():

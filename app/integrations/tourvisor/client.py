@@ -615,9 +615,6 @@ def _format_hotels(hotels: list[dict], limit: int = 5) -> list[str]:
             tail.append(f"от {price} {currency}".strip())
         if operator:
             tail.append(f"({operator})")
-        link = _hotel_link(name, region)
-        if link:
-            tail.append(f"ссылка: {link}")
         line = " ".join(parts)
         if tail:
             line += ". " + ", ".join(tail)
@@ -626,9 +623,15 @@ def _format_hotels(hotels: list[dict], limit: int = 5) -> list[str]:
 
 
 def _hotel_link(name: str, region: str = "") -> str:
-    """TourVisor XML не даёт публичный URL карточки, поэтому даём кликабельный поиск по отелю."""
-    clean_name = " ".join(str(name or "").split())
-    if not clean_name or clean_name == "Отель":
-        return ""
-    query = " ".join(part for part in (clean_name, region, "hotel") if part)
-    return f"https://www.google.com/search?q={quote_plus(query)}"
+    """Ссылку на отель бот больше НЕ даёт. Оставлено пустым намеренно.
+
+    Раньше сюда подставлялся поиск в Google по названию отеля — заглушка, потому что XML
+    TourVisor не отдаёт публичный URL карточки. На живом диалоге 03.08 стало видно, чем это
+    оборачивается: мы платим за рекламу, доводим клиента до подбора и на последнем шаге сами
+    отправляем его в выдачу, где рядом стоят Booking и цены конкурентов на тот же отель.
+
+    Менеджеры так не делают: они шлют карточку тура (`tourcart.ru/?tvcard=…`), которая ведёт
+    в нашу воронку и уже содержит даты, состав и бронь. Собрать такую ссылку из XML мы пока
+    не умеем — до тех пор бот называет отель словами, а карточку присылает человек.
+    """
+    return ""

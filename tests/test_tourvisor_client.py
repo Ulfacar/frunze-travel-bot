@@ -69,14 +69,19 @@ def test_min_price_label_reads_cheapest_hotel():
     assert label == "3 153 USD"
 
 
-def test_format_hotels_adds_clickable_hotel_search_link():
+def test_format_hotels_gives_facts_and_no_link():
+    """Ссылку на отель бот не даёт: поиск Google уводил оплаченного рекламой клиента к
+    конкурентам и Booking. Клиент должен получить факты словами, а карточку — от менеджера."""
     lines = _format_hotels([_hotel("Palmora Lara", "2612")])
 
-    assert "ссылка: https://www.google.com/search?q=Palmora+Lara" in lines[0]
-    assert "Хургада" in lines[0]
+    assert "http" not in lines[0] and "ссылка" not in lines[0]
+    # Всё, по чему клиент принимает решение, остаётся на месте.
+    assert "Palmora Lara" in lines[0] and "Хургада" in lines[0]
+    assert "2612" in lines[0]
 
 
-def test_hotel_link_skips_empty_default_name():
+def test_hotel_link_is_disabled_everywhere():
+    assert _hotel_link("Palmora Lara", "Анталья") == ""
     assert _hotel_link("Отель", "Анталья") == ""
 
 

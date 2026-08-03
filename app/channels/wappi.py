@@ -105,14 +105,24 @@ def _digits(value: str) -> str:
 
 
 async def _stt_allowed(bot_id: str, phone: str) -> bool:
-    """Проверить денежный рубильник до скачивания и обращения к провайдеру."""
+    """Проверить денежный рубильник до скачивания и обращения к провайдеру.
+
+    Решение логируем ЦЕЛИКОМ, по каждому входу отдельно. На боевом включении 03.08 голосовое
+    не распозналось, и по логам было невозможно понять, какое именно из четырёх условий не
+    выполнилось: молчаливый `return False` не оставлял следа. Телефон не пишем — только
+    факт попадания в список.
+    """
     from app.core import flags
     global_on = await flags.get_flag("stt_enabled", settings.stt_enabled)
     enabled = await flags.get_flag(f"stt_enabled:{bot_id}", global_on) if bot_id else global_on
-    if not enabled or not settings.stt_api_key:
-        return False
+    has_key = bool(settings.stt_api_key)
     allowlist = {_digits(item) for item in settings.stt_allowlist_phones if _digits(item)}
-    return not allowlist or _digits(phone) in allowlist
+    in_allowlist = not allowlist or _digits(phone) in allowlist
+    ok = bool(enabled and has_key and in_allowlist)
+    if not ok:
+        logger.info("STT пропущен: bot_id=%r флаг=%s ключ=%s номер_в_списке=%s",
+                    bot_id, enabled, has_key, in_allowlist)
+    return ok
 
 
 def is_delivery_status(raw: dict) -> bool:
@@ -295,9 +305,9 @@ class WappiAdapter:
 
         if raw.get("type") == _TEXT_TYPE and body:
             kind, text = "text", body
-            voice = False
+            voice = voice_failed = False
         else:
-            kind, text, voice = "non_text", "", False
+            kind, text, voice, voice_failed = "non_text", "", False, False
             from app.core.media_capture import note_raw, note_voice_miss
             await note_raw(raw)
             # M1-capture: логируем сырой payload медиа, чтобы узнать реальный формат Wappi
@@ -324,6 +334,11 @@ class WappiAdapter:
                     )
                     if transcript:
                         kind, text, voice = "text", transcript, True
+                    else:
+                        # Пытались и не вышло. Пустую или сомнительную расшифровку боту НЕ
+                        # отдаём — он ответит не по делу и уронит доверие сильнее молчания.
+                        # Но менеджер обязан увидеть в панели, что запись стоит прослушать.
+                        voice_failed = True
 
         return Message(
             channel=self.channel,
@@ -333,6 +348,7 @@ class WappiAdapter:
             kind=kind,
             raw=raw,
             referral=referral,
+            voice_failed=voice_failed,
             voice=voice,
         )
 
