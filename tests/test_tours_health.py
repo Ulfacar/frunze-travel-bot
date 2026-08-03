@@ -34,6 +34,14 @@ def test_counts_outcomes_of_each_search():
     assert snap["empty"] == 2
 
 
+def test_missing_duration_is_counted_separately_from_searches():
+    asyncio.run(tours_health.note("no_duration"))
+    snap = _status()
+    assert snap["no_duration"] == 1
+    assert snap["total"] == 0
+    assert snap["empty"] == 0
+
+
 def test_small_sample_stays_quiet():
     """На двух поисках выводов не делаем — иначе алерт будет кричать каждое утро."""
     asyncio.run(tours_health.note("nothing_found"))

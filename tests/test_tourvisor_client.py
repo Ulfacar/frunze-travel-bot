@@ -11,6 +11,7 @@ from app.integrations.tourvisor.client import (
     _hotel_link,
     _hotel_price,
     _min_price_label,
+    _parse_budget,
     _parse_dates,
 )
 
@@ -78,6 +79,39 @@ def test_format_hotels_gives_facts_and_no_link():
     # Всё, по чему клиент принимает решение, остаётся на месте.
     assert "Palmora Lara" in lines[0] and "Хургада" in lines[0]
     assert "2612" in lines[0]
+
+
+@pytest.mark.parametrize(("text", "tourists", "expected"), [
+    ("2500 долларов", 2, (2500, "USD")),
+    ("2500$", 2, (2500, "USD")),
+    ("250 тыс сом", 2, (250000, "KGS")),
+    ("2000-2500", 2, (2500, "USD")),
+    ("800 на человека", 4, (3200, "USD")),
+    ("эконом", 2, (None, None)),
+])
+def test_parse_budget_amount_currency_and_person_basis(text, tourists, expected):
+    assert _parse_budget(text, tourists) == expected
+
+
+def test_format_hotels_marks_each_budget_band():
+    lines = _format_hotels(
+        [_hotel("Fit", "2500"), _hotel("Near", "2700"), _hotel("High", "3000")],
+        budget=(2500, "USD"),
+    )
+    assert "в бюджет" in lines[0]
+    assert "чуть выше бюджета" in lines[1]
+    assert "выше бюджета на 20%" in lines[2]
+
+
+def test_format_hotels_without_budget_has_no_budget_marks():
+    assert "бюджет" not in _format_hotels([_hotel("A", "2500")])[0]
+
+
+def test_budget_comparison_converts_eur_to_usd():
+    line = _format_hotels([_hotel("A", "2400", "EUR")], budget=(2500, "USD"))[0]
+    assert "чуть выше бюджета" in line
+    assert "в бюджет" not in line
+    assert "http" not in line
 
 
 def test_hotel_link_is_disabled_everywhere():

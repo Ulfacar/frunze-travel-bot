@@ -55,6 +55,7 @@ class TourSearch:
     fallback_departure: bool = False
     min_price: str = ""
     query: dict | None = None
+    budget_fit_count: int | None = None
 
 # Дефолты, если из текста не удалось распарсить
 DEFAULT_NIGHTS = (7, 10)
@@ -261,14 +262,25 @@ class TourVisorClient:
                 dep_name = next((d.get("name", "") for d in names if str(d.get("id")) == departure), "")
                 if not hotels:
                     return TourSearch([], 0, "nothing_found", dep_name, False, query=query)
+                adults, child_ages = _parse_tourists(
+                    params.get("tourists", ""), params.get("children_ages", "")
+                )
+                client_budget = _parse_budget(
+                    str(params.get("budget", "")), adults + len(child_ages)
+                )
+                lines = _format_hotels(hotels, budget=client_budget)
+                fit_count = None
+                if client_budget[0] is not None:
+                    fit_count = sum("в бюджет" in line for line in lines)
                 return TourSearch(
-                    lines=_format_hotels(hotels),
+                    lines=lines,
                     found=len(hotels),
                     reason="ok",
                     departure=dep_name,
                     fallback_departure=fallback,
                     min_price=_min_price_label(hotels),
                     query=query,
+                    budget_fit_count=fit_count,
                 )
             except TourVisorError as e:
                 logger.warning("TourVisor API: %s", e)
@@ -554,13 +566,46 @@ def _parse_meal(text: str) -> int | None:
     return None
 
 
-def _parse_budget(text: str) -> tuple[int | None, int | None]:
-    nums = [int(n.replace(" ", "")) for n in re.findall(r"\d[\d\s]{2,}", text or "")]
-    if not nums:
+def _parse_budget(text: str, tourists: int = 1) -> tuple[float | None, str | None]:
+    """Бюджет клиента в исходной валюте; диапазон означает доступный верхний предел.
+
+    В Бишкеке сумму часто называют без валюты, имея в виду доллары. Это безопаснее
+    зафиксировать кодом, чем позволять модели по-разному трактовать один и тот же запрос.
+    """
+    value = (text or "").strip().lower()
+    matches = list(re.finditer(r"\d+(?:[\s.,]\d+)*", value))
+    if not matches:
         return None, None
-    if len(nums) >= 2:
-        return min(nums), max(nums)
-    return None, nums[0]
+
+    amounts: list[float] = []
+    for match in matches:
+        raw = re.sub(r"\s", "", match.group())
+        try:
+            amount = float(raw.replace(",", "."))
+        except ValueError:
+            continue
+        suffix = value[match.end():match.end() + 12]
+        if re.match(r"\s*(?:тыс\.?|тысяч)", suffix):
+            amount *= 1000
+        amounts.append(amount)
+    if not amounts:
+        return None, None
+
+    if re.search(r"(?:€|\beur\b|евро)", value):
+        currency = "EUR"
+    elif re.search(r"(?:\$|\busd\b|долл)", value):
+        currency = "USD"
+    elif re.search(r"(?:\bkgs\b|\bсом\w*\b|(?:^|\s)с(?:\s|$))", value):
+        currency = "KGS"
+    elif re.search(r"(?:\brub\b|\bруб\w*\b)", value):
+        currency = "RUB"
+    else:
+        currency = "USD"
+
+    amount = max(amounts)
+    if re.search(r"на человека|с человека|на одного", value):
+        amount *= max(tourists, 1)
+    return amount, currency
 
 
 # ---------- форматирование результата ----------
@@ -583,7 +628,10 @@ def _min_price_label(hotels: list[dict]) -> str:
     return f"{price} {currency}".strip()
 
 
-def _format_hotels(hotels: list[dict], limit: int = 5) -> list[str]:
+def _format_hotels(
+    hotels: list[dict], limit: int = 5,
+    budget: tuple[float | None, str | None] = (None, None),
+) -> list[str]:
     out: list[str] = []
     for h in hotels[:limit]:
         tours = _as_list((h.get("tours", {}) or {}).get("tour"))
@@ -613,6 +661,9 @@ def _format_hotels(hotels: list[dict], limit: int = 5) -> list[str]:
             tail.append(str(meal))
         if price:
             tail.append(f"от {price} {currency}".strip())
+            mark = _budget_fit_label(price, currency, budget)
+            if mark:
+                tail.append(mark)
         if operator:
             tail.append(f"({operator})")
         line = " ".join(parts)
@@ -620,6 +671,28 @@ def _format_hotels(hotels: list[dict], limit: int = 5) -> list[str]:
             line += ". " + ", ".join(tail)
         out.append(line)
     return out
+
+
+def _budget_fit_label(
+    price: object, currency: object, budget: tuple[float | None, str | None],
+) -> str:
+    """Сравнить валюты приблизительно, не выдавая внутренний курс за цену клиенту."""
+    amount, budget_currency = budget
+    rates = settings.currency_rates_to_usd
+    price_currency = str(currency or "").upper()
+    if not amount or not budget_currency or price_currency not in rates or budget_currency not in rates:
+        return ""
+    try:
+        price_usd = float(str(price).replace(" ", "")) * rates[price_currency]
+    except (TypeError, ValueError):
+        return ""
+    budget_usd = amount * rates[budget_currency]
+    if price_usd <= budget_usd:
+        return "в бюджет"
+    excess = (price_usd / budget_usd - 1) * 100
+    if excess <= 10:
+        return "чуть выше бюджета"
+    return f"выше бюджета на {round(excess)}%"
 
 
 def _hotel_link(name: str, region: str = "") -> str:

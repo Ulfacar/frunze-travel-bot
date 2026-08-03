@@ -11,7 +11,8 @@
 Что считаем за сутки (день катится в 00:00 по Бишкеку, как у остальных суточных счётчиков):
 
 * `total` — сколько раз бот вообще пытался подобрать тур;
-* `ok` / `nothing_found` / `no_destination` — чем закончилось;
+* `ok` / `nothing_found` / `no_destination` — чем закончился выполненный поиск;
+* `no_duration` — поиск остановлен до API, чтобы цена на случайный срок не отпугнула клиента;
 * `fallback` — сколько раз спасал вылет из Алматы (растёт → пора говорить это клиентам сразу);
 * `no_dates` — поиск ушёл без дат (главный симптом сломанного разбора дат: именно так
   выглядел дефект, из-за которого клиенту показывали туры на чужие числа).
@@ -39,7 +40,7 @@ _redis_client: Any | None = None
 _alerted_day: str | None = None
 
 # Исходы подбора. Совпадают с `TourSearch.reason`, плюс служебные пометки.
-REASONS = ("ok", "nothing_found", "no_destination")
+REASONS = ("ok", "nothing_found", "no_destination", "no_duration")
 _FIELDS = (*REASONS, "total", "fallback", "no_dates")
 
 # Меньше этого числа поисков за сутки — выборка не показательна, молчим.
@@ -73,6 +74,9 @@ async def _incr(field: str) -> None:
 async def note(reason: str, *, fallback: bool = False, has_dates: bool = True) -> None:
     """Учесть один подбор. Никогда не поднимает исключение: счётчик не важнее ответа клиенту."""
     try:
+        if reason == "no_duration":
+            await _incr("no_duration")
+            return
         await _incr("total")
         await _incr(reason if reason in REASONS else "nothing_found")
         if fallback:

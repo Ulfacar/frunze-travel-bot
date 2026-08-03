@@ -196,3 +196,77 @@ def test_stars_reach_the_query(client):
     q = build(client, {"destination": "Турция", "hotel_stars": "5"})
 
     assert q["stars"] == 5
+
+
+def test_changing_country_forgets_the_old_resort():
+    """Клиент передумал «Турция, Белек» → «Египет». Модель прислала только страну, и раньше
+    в запрос уходил Белек внутри Египта — гарантированно пустая выдача с честным
+    «ничего не нашлось». Курорт живёт внутри страны и смену страны переживать не должен."""
+    import asyncio
+
+    from app.agent.runner import _tours_exec_tool
+    from app.core.state import DialogState
+
+    captured = {}
+
+    class _TV:
+        async def search_detailed(self, params):
+            captured.update(params)
+            raise RuntimeError("дальше не идём — нужен только запрос")
+
+    class _CRM:
+        async def create_lead(self, *a, **kw):
+            return "deal-1"
+
+    import app.agent.runner as runner
+    tv_backup = runner._tourvisor
+    runner._tourvisor = _TV()
+    try:
+        state = DialogState(user_id="u")
+        state.qualification.update({"destination": "Турция", "region": "Белек",
+                                    "dates": "10-17 августа", "budget": "2500 долларов"})
+        try:
+            asyncio.run(_tours_exec_tool("search_tours", {"destination": "Египет"}, state, _CRM()))
+        except RuntimeError:
+            pass
+    finally:
+        runner._tourvisor = tv_backup
+
+    assert captured.get("destination") == "Египет"
+    assert "region" not in captured                    # старый курорт не поехал в другую страну
+    assert captured.get("budget") == "2500 долларов"   # остальное досье пережило смену
+    assert captured.get("dates") == "10-17 августа"
+
+
+def test_same_country_keeps_the_resort():
+    """Уточнение внутри той же страны курорт не теряет."""
+    import asyncio
+
+    from app.agent.runner import _tours_exec_tool
+    from app.core.state import DialogState
+
+    captured = {}
+
+    class _TV:
+        async def search_detailed(self, params):
+            captured.update(params)
+            raise RuntimeError("stop")
+
+    class _CRM:
+        async def create_lead(self, *a, **kw):
+            return "deal-1"
+
+    import app.agent.runner as runner
+    tv_backup = runner._tourvisor
+    runner._tourvisor = _TV()
+    try:
+        state = DialogState(user_id="u")
+        state.qualification.update({"destination": "Турция", "region": "Белек", "nights": "7"})
+        try:
+            asyncio.run(_tours_exec_tool("search_tours", {"destination": "Турция"}, state, _CRM()))
+        except RuntimeError:
+            pass
+    finally:
+        runner._tourvisor = tv_backup
+
+    assert captured.get("region") == "Белек"

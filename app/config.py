@@ -140,6 +140,11 @@ class Settings(BaseSettings):
     tourvisor_quota_alert_ratio: float = 0.7
     tourvisor_login: str = ""
     tourvisor_pass: str = ""
+    # Приблизительный курс нужен только для машинной пометки «в бюджет/выше». Клиенту
+    # цену не пересчитываем: для брони менеджер всё равно проверяет актуальный курс.
+    currency_rates_to_usd: dict[str, float] = {
+        "USD": 1.0, "EUR": 1.08, "KGS": 0.0115, "RUB": 0.011,
+    }
 
     # Хранилище
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/frunze"

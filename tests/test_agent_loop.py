@@ -62,7 +62,11 @@ def _patch_client(monkeypatch, *responses, repeat_last=False):
 def test_tool_use_then_text(monkeypatch):
     """search_tours отрабатывает, затем Claude отдаёт финальный текст."""
     state = DialogState(user_id="u1", funnel="tours")
-    fake = _patch_client(monkeypatch, _tool_use(), _text("Вот варианты"))
+    fake = _patch_client(
+        monkeypatch,
+        _tool_use(inp={"destination": "Турция", "nights": "7"}),
+        _text("Вот варианты"),
+    )
     monkeypatch.setattr(runner._tourvisor, "search_detailed", AsyncMock(return_value=_found(["Отель X 5*"])))
 
     reply = asyncio.run(runner.run_tours_turn(state, "хочу тур в Турцию"))
@@ -226,9 +230,88 @@ def test_search_tool_graceful_degrade(monkeypatch):
     crm = get_crm()
     monkeypatch.setattr(runner._tourvisor, "search_detailed", AsyncMock(side_effect=TourVisorError("auth")))
 
-    out = asyncio.run(runner._tours_exec_tool("search_tours", {"destination": "Турция"}, state, crm))
+    out = asyncio.run(runner._tours_exec_tool(
+        "search_tours", {"destination": "Турция", "nights": "7"}, state, crm
+    ))
 
     assert "менеджер" in out.lower()
+
+
+def test_search_without_duration_stops_before_tourvisor(monkeypatch):
+    """Цена на случайные 7–10 ночей в пик отпугивает клиента до полезного уточнения."""
+    state = DialogState(user_id="u-no-duration", funnel="tours")
+    search = AsyncMock(return_value=_found(["не должен появиться"]))
+    monkeypatch.setattr(runner._tourvisor, "search_detailed", search)
+
+    out = asyncio.run(runner._tours_exec_tool(
+        "search_tours", {"destination": "Турция"}, state, get_crm()
+    ))
+
+    search.assert_not_awaited()
+    assert "ДЛИТЕЛЬНОСТЬ НЕ ИЗВЕСТНА" in out
+    assert "спроси" in out.lower()
+
+
+async def _search_with_duration(monkeypatch, state, args):
+    search = AsyncMock(return_value=_found(["Отель"]))
+    monkeypatch.setattr(runner._tourvisor, "search_detailed", search)
+    await runner._tours_exec_tool("search_tours", args, state, get_crm())
+    return search
+
+
+def test_search_runs_with_only_nights(monkeypatch):
+    search = asyncio.run(_search_with_duration(
+        monkeypatch, DialogState(user_id="u-nights", funnel="tours"),
+        {"destination": "Турция", "nights": "7"},
+    ))
+    search.assert_awaited_once()
+
+
+def test_search_runs_with_only_dates(monkeypatch):
+    search = asyncio.run(_search_with_duration(
+        monkeypatch, DialogState(user_id="u-dates", funnel="tours"),
+        {"destination": "Турция", "dates": "15 августа"},
+    ))
+    search.assert_awaited_once()
+
+
+def test_search_keeps_dates_from_qualification(monkeypatch):
+    state = DialogState(
+        user_id="u-saved-dates", funnel="tours",
+        qualification={"dates": "15 августа"},
+    )
+    search = asyncio.run(_search_with_duration(
+        monkeypatch, state, {"destination": "Турция"},
+    ))
+    assert search.await_args.args[0]["dates"] == "15 августа"
+
+
+def test_empty_current_dates_do_not_erase_qualification(monkeypatch):
+    state = DialogState(
+        user_id="u-empty-current-dates", funnel="tours",
+        qualification={"dates": "15 августа"},
+    )
+    search = asyncio.run(_search_with_duration(
+        monkeypatch, state, {"destination": "Турция", "dates": ""},
+    ))
+    assert search.await_args.args[0]["dates"] == "15 августа"
+
+
+def test_report_requires_three_moves_only_when_nothing_fits():
+    none_fit = TourSearch(
+        ["Отель. от 3199 EUR, выше бюджета на 38%"], 1, "ok", "Бишкек",
+        min_price="3199 EUR", budget_fit_count=0,
+    )
+    one_fits = TourSearch(
+        ["Отель. от 2200 EUR, в бюджет"], 1, "ok", "Бишкек",
+        min_price="2200 EUR", budget_fit_count=1,
+    )
+
+    bad_report = runner._tours_search_report(none_fit)
+    good_report = runner._tours_search_report(one_fits)
+    assert "три конкретных хода" in bad_report
+    assert "НЕ проси клиента поднять бюджет" in bad_report
+    assert "три конкретных хода" not in good_report
 
 
 def test_tours_office_gate_asks_name_before_escalation():
