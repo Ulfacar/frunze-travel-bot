@@ -365,8 +365,16 @@ async def _materialize_call_tasks(login: str, night_convs: list, day, sessionmak
                 direction = (getattr(c, "funnel", "") or "tours").strip()
                 if direction not in DIRECTIONS:
                     direction = "tours"
+                # WhatsApp всегда отдаёт полный E.164 без `+` (`4915781345793`), и общее
+                # правило normalize_phone отвергало такие номера как ambiguous — каждое
+                # утро 1–3 иностранных клиента молча выпадали из списка обзвона. Знание о
+                # формате принадлежит каналу, поэтому послабление даём только WhatsApp,
+                # ровно как в live_assign.contact_for_channel.
+                is_whatsapp = (getattr(c, "channel", "") or "").strip().lower() in (
+                    "whatsapp", "wappi")
                 try:
-                    contact = await ContactService.find_or_create_by_identity(s, "phone", ident)
+                    contact = await ContactService.find_or_create_by_identity(
+                        s, "phone", ident, assume_e164=is_whatsapp)
                     await CalendarTaskService.create(
                         s, manager_id=login, direction=direction, kind="call",
                         scheduled_date=day, scheduled_at=None, contact_id=contact.id,

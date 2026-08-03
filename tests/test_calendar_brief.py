@@ -32,6 +32,7 @@ class Task:
 class Conv:
     bot_id: str = "getvisa"
     user_id: str = "getvisa:996700111222"
+    channel: str = "whatsapp"
     funnel: str = "visa"
     outcome: str = ""
     assigned_to: str = ""
@@ -327,6 +328,36 @@ def test_autotask_idempotent_second_run_same_day(monkeypatch):
         await cb.run(NOW, sessionmaker=sm)
         await cb.run(NOW, sessionmaker=sm)
         assert len(await _bot_tasks_today(sm, "medina")) == 1
+    _run_case(body, monkeypatch, convs=convs)
+
+
+def test_autotask_handles_foreign_whatsapp_number(monkeypatch):
+    """WhatsApp отдаёт полный E.164 без «+» — общее правило звало такой номер ambiguous,
+    и каждое утро 1–3 иностранных клиента молча выпадали из списка обзвона (прод, 03.08:
+    Германия, Польша, Турция). Клиент в переписке есть, а в работе менеджера — нет."""
+    convs = [Conv(bot_id="frunze_tours_sezim", user_id="frunze_tours_sezim:4915781345793",
+                  channel="whatsapp", funnel="tours", assigned_to="medina",
+                  last_message_at=NOW, qualification={"name": "Германия"})]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await flags.set_flag("calendar_autotask_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        tasks = await _bot_tasks_today(sm, "medina")
+        assert len(tasks) == 1
+        assert tasks[0].user_id == "frunze_tours_sezim:4915781345793"
+    _run_case(body, monkeypatch, convs=convs)
+
+
+def test_autotask_still_rejects_a_number_that_is_not_one(monkeypatch):
+    """Послабление даём формату, а не мусору: короткий обрывок номером не становится."""
+    convs = [Conv(bot_id="frunze_tours", user_id="frunze_tours:abc", channel="whatsapp",
+                  funnel="tours", assigned_to="medina", last_message_at=NOW)]
+    async def body(sm, sent):
+        await flags.set_flag("calendar_brief_enabled", True)
+        await flags.set_flag("calendar_autotask_enabled", True)
+        await cb.run(NOW, sessionmaker=sm)
+        assert await _bot_tasks_today(sm, "medina") == []      # пропущен, бриф не упал
+        assert len(sent) == 1
     _run_case(body, monkeypatch, convs=convs)
 
 

@@ -231,6 +231,10 @@ class Orchestrator:
             await store.save(state)
             await self._sync_card(msg, state)
             await self._reply(msg, NON_TEXT_HANDOFF)
+            # Это тоже готовая передача менеджеру, просто пришедшая голосом. Без этой
+            # строки заявка молча оседала в панели: пуш врезан только в _run_turn, а
+            # голосовой хендофф выходит отсюда через return. Голос — самый частый путь.
+            await self._maybe_instant_handoff(msg, state, NON_TEXT_HANDOFF)
             return
         await store.save(state)
         await self._reply(msg, NON_TEXT_FALLBACK)
@@ -534,6 +538,7 @@ class Orchestrator:
                     await store.save(state)
                     await self._sync_card(msg, state)
                     await self._reply(msg, answer)
+                    await self._maybe_instant_handoff(msg, state, answer)
                     return True
             except Exception:  # noqa: BLE001
                 log.warning("visa deterministic reply failed", exc_info=True)
@@ -567,4 +572,7 @@ class Orchestrator:
         await store.save(state)
         await self._sync_card(msg, state)
         await self._reply(msg, answer)
+        # FAQ с handoff_only так же собирает заявку и так же выходит через return —
+        # без этой строки пуш не уходил (живой случай 02.08: виза США, сутки тишины).
+        await self._maybe_instant_handoff(msg, state, answer)
         return True

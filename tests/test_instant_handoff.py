@@ -417,6 +417,151 @@ def test_digest_failure_releases_claims(tmp_path, monkeypatch):
     _run(check, monkeypatch, spy=spy, digest_bots=["frunze_tours_sezim"])
 
 
+# --------------------------------------------------------- догоняющая отправка
+
+STALE = NOW - timedelta(hours=6)      # заявка собралась 6 часов назад, пуш не ушёл
+
+
+def _catchup(scenario, monkeypatch, *, spy=None, enabled=True, catchup=True,
+             digest_bots=()):
+    def wrapped():
+        monkeypatch.setattr(settings, "instant_handoff_catchup_enabled", catchup)
+        monkeypatch.setattr(settings, "instant_handoff_catchup_window_hours", 72)
+        return scenario()
+    _run(wrapped, monkeypatch, spy=spy, enabled=enabled, digest_bots=digest_bots)
+
+
+def test_catchup_sends_the_lead_that_the_live_turn_missed(tmp_path, monkeypatch):
+    """Ровно тот случай, ради которого джоба: владелец есть, заявка готова, пуша нет."""
+    spy = _Spy()
+
+    async def check():
+        engine, sm = await _db(tmp_path, [_conv(last_message_at=STALE,
+                                                last_sender="bot",
+                                                last_text="передаю менеджеру")])
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 1
+        login, text = spy.sent[0]
+        assert login == "aisina"
+        assert "Заявка ждёт с" in text                 # менеджер видит: лид не свежий
+        assert "Бот пообещал: «передаю менеджеру»" in text
+        assert await _notified_at(sm, "frunze_tours_sezim:996700000001") is not None
+        # Повторно та же заявка не уходит — признак общий с мгновенным пушем.
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 0
+        await engine.dispose()
+    _catchup(check, monkeypatch, spy=spy)
+
+
+def test_catchup_is_silent_while_the_manager_is_in_the_dialog(tmp_path, monkeypatch):
+    """«Главное, чтобы их это не доставало»: менеджер уже отвечает — напоминание лишнее.
+    Признак не ставим: если он бросит диалог, заявку подберёт следующий тик."""
+    spy = _Spy()
+
+    async def check():
+        engine, sm = await _db(tmp_path, [_conv(last_message_at=STALE,
+                                                last_sender="manager")])
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 0
+        assert spy.sent == []
+        assert await _notified_at(sm, "frunze_tours_sezim:996700000001") is None
+        await engine.dispose()
+    _catchup(check, monkeypatch, spy=spy)
+
+
+def test_catchup_does_not_race_the_live_turn(tmp_path, monkeypatch):
+    """Заявка минуту как собралась — у живого хода есть свой шанс отправить пуш."""
+    spy = _Spy()
+
+    async def check():
+        engine, sm = await _db(tmp_path, [_conv(last_message_at=NOW - timedelta(minutes=1))])
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 0
+        await engine.dispose()
+    _catchup(check, monkeypatch, spy=spy)
+
+
+def test_catchup_leaves_the_dead_backlog_alone(tmp_path, monkeypatch):
+    """Заявка недельной давности мертва: звонок по ней злит, а не продаёт."""
+    spy = _Spy()
+
+    async def check():
+        engine, sm = await _db(tmp_path, [_conv(last_message_at=NOW - timedelta(days=7))])
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 0
+        await engine.dispose()
+    _catchup(check, monkeypatch, spy=spy)
+
+
+def test_catchup_skips_unowned_and_unfinished(tmp_path, monkeypatch):
+    """Без владельца слать некому, без собранной заявки — нечего."""
+    spy = _Spy()
+
+    async def check():
+        engine, sm = await _db(tmp_path, [
+            _conv("frunze_tours_sezim:996700000001", assigned_to="", last_message_at=STALE),
+            _conv("frunze_tours_sezim:996700000002", phone="996700000002",
+                  stage="qualification", last_message_at=STALE),
+        ])
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 0
+        assert spy.sent == []
+        await engine.dispose()
+    _catchup(check, monkeypatch, spy=spy)
+
+
+def test_catchup_respects_digest_channels(tmp_path, monkeypatch):
+    """Канал на дайджесте мгновенных пушей не получает — догоняющих тоже."""
+    spy = _Spy()
+
+    async def check():
+        engine, sm = await _db(tmp_path, [_conv(last_message_at=STALE)])
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 0
+        assert await _notified_at(sm, "frunze_tours_sezim:996700000001") is None
+        await engine.dispose()
+    _catchup(check, monkeypatch, spy=spy, digest_bots=["frunze_tours_sezim"])
+
+
+def test_catchup_caps_one_batch(tmp_path, monkeypatch):
+    """Разовый разбор накопленного не должен прилететь пачкой из тридцати карточек."""
+    spy = _Spy()
+
+    async def check():
+        rows = [_conv(f"frunze_tours_sezim:99670000{i:04d}", phone=f"99670000{i:04d}",
+                      last_message_at=STALE) for i in range(instant_handoff.CATCHUP_CAP + 5)]
+        engine, sm = await _db(tmp_path, rows)
+        first = await instant_handoff.run_catchup(now=NOW, sessionmaker=sm)
+        assert first == instant_handoff.CATCHUP_CAP
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 5
+        await engine.dispose()
+    _catchup(check, monkeypatch, spy=spy)
+
+
+def test_catchup_flags_off_send_nothing(tmp_path, monkeypatch):
+    """Два рубильника: общий по фиче и отдельный по догонялке."""
+    spy = _Spy()
+
+    async def only_catchup_off():
+        engine, sm = await _db(tmp_path, [_conv(last_message_at=STALE)])
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 0
+        await engine.dispose()
+    _catchup(only_catchup_off, monkeypatch, spy=spy, catchup=False)
+
+    async def feature_off():
+        engine, sm = await _db(tmp_path, [_conv(last_message_at=STALE)], name="off.db")
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 0
+        await engine.dispose()
+    _catchup(feature_off, monkeypatch, spy=spy, enabled=False)
+    assert spy.sent == []
+
+
+def test_catchup_never_propagates(tmp_path, monkeypatch):
+    """Фоновая джоба не имеет права ронять тик планировщика."""
+    async def boom(*a, **kw):
+        raise RuntimeError("телега упала")
+
+    async def check():
+        engine, sm = await _db(tmp_path, [_conv(last_message_at=STALE)])
+        monkeypatch.setattr(instant_handoff, "_send", boom)
+        assert await instant_handoff.run_catchup(now=NOW, sessionmaker=sm) == 0
+        await engine.dispose()
+    _catchup(check, monkeypatch)
+
+
 # ------------------------------------------------------------------------- прочее
 
 

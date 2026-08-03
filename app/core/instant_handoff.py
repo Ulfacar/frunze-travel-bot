@@ -41,6 +41,12 @@ from app.core.morning_brief import BISHKEK_UTC_OFFSET, _FUNNEL_LABEL
 log = logging.getLogger("instant_handoff")
 
 FLAG = "instant_handoff_enabled"
+CATCHUP_FLAG = "instant_handoff_catchup_enabled"
+
+# Границы догоняющей отправки — см. run_catchup. Пауза от последнего сообщения нужна,
+# чтобы не гоняться за живым ходом: у него есть свой шанс отправить пуш.
+CATCHUP_MIN_AGE = timedelta(minutes=15)
+CATCHUP_CAP = 10
 
 # Стадии «заявка собрана, дальше человек». manager_handoff/office_consultation — на
 # случай, если стадию заведут под другим именем в CRM-маппинге.
@@ -85,13 +91,22 @@ def _request_line(qualification: dict | None, funnel: str) -> str:
 
 
 def render_handoff_text(*, name: str, phone: str, request: str, promised: str,
-                        link: str, wa_link: str = "") -> str:
+                        link: str, wa_link: str = "",
+                        waited_since: datetime | None = None) -> str:
     """Пуш читается с телефона за 20 секунд; номер тапабелен сам (международный формат).
 
     Строка «Бот пообещал» обязательна и всегда в кавычках: менеджер должен звонить, зная,
     что клиенту уже сказано, иначе назовёт другую цену.
+
+    ``waited_since`` — заголовок догоняющей отправки. Менеджер обязан видеть, что заявка
+    не свежая: звонить «здравствуйте, вы только что писали» по вчерашнему лиду — хуже,
+    чем не звонить вовсе.
     """
-    head = f"🔥 Заявка готова — можно звонить"
+    if waited_since is not None:
+        local = waited_since + timedelta(hours=BISHKEK_UTC_OFFSET)
+        head = f"⏰ Заявка ждёт с {local:%d.%m %H:%M} — уведомление не ушло вовремя"
+    else:
+        head = "🔥 Заявка готова — можно звонить"
     who = " · ".join(x for x in ((name or "").strip(), (phone or "").strip()) if x)
     lines = [head, who or "клиент без имени", request]
     if promised:
@@ -175,7 +190,8 @@ async def _send_cc(text: str, *, owner_login: str) -> bool:
     return ok
 
 
-async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None) -> bool:
+async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None,
+                       waited_since: datetime | None = None) -> bool:
     """Пуш по собранной заявке. True — отправлено. Никогда не поднимает исключение."""
     try:
         if not await _enabled():
@@ -208,7 +224,7 @@ async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None) -
         text = render_handoff_text(
             name=snapshot["name"], phone=snapshot["phone"], request=snapshot["request"],
             promised=promised, link=_client_link(user_id, settings.admin_base_url),
-            wa_link=snapshot["wa"])
+            wa_link=snapshot["wa"], waited_since=waited_since)
         owner_ok = await _send(login, text)
         cc_ok = await _send_cc(text, owner_login=login)
         if owner_ok:
@@ -226,6 +242,69 @@ async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None) -
     except Exception:  # noqa: BLE001 — фича не имеет права ронять живой диалог
         log.warning("instant handoff failed (key=%s)", user_id, exc_info=True)
         return False
+
+
+async def run_catchup(*, now: datetime | None = None, sessionmaker=None) -> int:
+    """Догоняющая отправка: заявка готова, владелец есть, а пуш так и не ушёл.
+
+    Мгновенный пуш живёт внутри хода диалога — он уходит только когда бот отвечает
+    клиенту. Если владельца в ту секунду ещё не было, второй попытки не случалось
+    НИКОГДА: за две недели июля так осели 12 готовых заявок из 17, часть — вообще без
+    звонка. Джоба закрывает ровно этот разрыв и ничего больше.
+
+    Границы узкие намеренно — «главное, чтобы их это не доставало» (встреча 29.07):
+
+    * окно ``instant_handoff_catchup_window_hours`` (72ч): недельную древность утром
+      менеджеру не вываливаем, такой лид уже мёртв и только злит;
+    * молчим, если последним в диалоге говорил менеджер — человек уже там, напоминание
+      лишнее. Отметку при этом НЕ ставим: менеджер мог ответить и бросить, тогда заявку
+      подберёт следующий тик, пока не истечёт окно;
+    * пауза ``CATCHUP_MIN_AGE`` от последнего сообщения — живой ход имеет право
+      отправить пуш сам, мы не гоняемся за ним;
+    * не больше ``CATCHUP_CAP`` за тик: разовый разбор накопленного не должен
+      прилететь менеджеру пачкой из тридцати карточек.
+
+    Каналы на дайджесте и дедуп не трогаем: отправка идёт через ``maybe_notify``, то
+    есть путь и признак ровно те же, что у мгновенного пуша.
+    """
+    try:
+        from app.core.flags import get_flag
+        if not await _enabled():
+            return 0
+        if not await get_flag(CATCHUP_FLAG, settings.instant_handoff_catchup_enabled):
+            return 0
+        from app.integrations.crm.db import Conversation
+        sm = _sessionmaker(sessionmaker)
+        now = now or datetime.now(timezone.utc)
+        window = timedelta(hours=max(1, settings.instant_handoff_catchup_window_hours))
+        digest = _digest_bots()
+        async with sm() as session:
+            rows = (await session.execute(select(Conversation).where(
+                Conversation.stage.in_(HANDOFF_STAGES),
+                Conversation.handoff_notified_at.is_(None),
+                Conversation.archived.is_not(True),
+                Conversation.assigned_to.is_not(None),
+                Conversation.assigned_to != "",
+                Conversation.last_message_at >= now - window,
+                Conversation.last_message_at <= now - CATCHUP_MIN_AGE,
+            ).order_by(Conversation.last_message_at))).scalars().all()
+        pending = [c for c in rows
+                   if (c.bot_id or "") not in digest
+                   and (c.last_sender or "") != "manager"]
+        sent = 0
+        for conv in pending[:CATCHUP_CAP]:
+            # «Бот пообещал» берём только если последним говорил бот: реплику клиента
+            # в эту строку класть нельзя, менеджер прочтёт её как обещание фирмы.
+            promised = (conv.last_text or "") if (conv.last_sender or "") == "bot" else ""
+            if await maybe_notify(conv.user_id, promised=promised, sessionmaker=sm,
+                                  waited_since=conv.last_message_at):
+                sent += 1
+        if sent or len(pending) > CATCHUP_CAP:
+            log.info("instant handoff catchup: sent %s of %s pending", sent, len(pending))
+        return sent
+    except Exception:  # noqa: BLE001 — фоновая догонялка не имеет права ронять тик
+        log.warning("instant handoff catchup failed", exc_info=True)
+        return 0
 
 
 def _is_digest_hour(now: datetime) -> bool:

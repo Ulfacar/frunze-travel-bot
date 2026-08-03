@@ -65,6 +65,10 @@ async def lifespan(app: FastAPI):
     # Дайджест готовых заявок для каналов, переведённых с мгновенных пушей (gated OFF).
     # Мгновенный пуш идёт не отсюда, а из orchestrator по факту собранной заявки.
     scheduler.register("handoff_digest", instant_handoff.run_digest)
+    # Догоняющая отправка: пуш из orchestrator уходит только в момент ответа бота, и
+    # заявка без владельца в ту секунду не получала второй попытки НИКОГДА (12 из 17
+    # потерянных за июль). Джоба досылает готовые заявки, до которых пуш не дошёл.
+    scheduler.register("handoff_catchup", instant_handoff.run_catchup)
     # Квота TourVisor: предупредить владельца ДО того, как поиск туров умрёт молча.
     from app.integrations.tourvisor import quota as tv_quota
     scheduler.register("tourvisor_quota", tv_quota.run)
