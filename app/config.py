@@ -106,6 +106,32 @@ class Settings(BaseSettings):
         default=3, ge=1
     )                                      # часов молчания бота после ответа менеджера с телефона
 
+    # Голосовые включаются отдельно, чтобы первый деплой только собирал реальные payload,
+    # а платное распознавание можно было безопасно открыть по ботам и номерам клиентов.
+    stt_enabled: bool = False
+    stt_provider: str = "openai"
+    stt_fallback_provider: str = ""  # задел на yandex/google, в этой версии не работает
+    stt_api_key: str = ""
+    stt_base_url: str = "https://api.openai.com/v1"
+    stt_model: str = "gpt-4o-mini-transcribe"
+    stt_timeout_seconds: float = 25.0
+    stt_download_timeout_seconds: float = 15.0
+    stt_max_duration_seconds: int = 300
+    stt_max_bytes: int = 20_000_000
+    # Пустая подсказка сохраняет автоопределение для русской, кыргызской и смешанной речи.
+    stt_language_hint: str = ""
+    stt_allowlist_phones: list[str] = []
+    stt_cache_ttl_seconds: int = 604800
+    # Сбой распознавания помним минуту, а не неделю: Wappi повторяет доставку вебхука по
+    # таймауту, и длинная отметка «не получилось» навсегда закрыла бы повторную попытку.
+    stt_failure_cache_seconds: int = 60
+    stt_lock_ttl_seconds: int = 120
+    stt_media_host_allowlist: list[str] = []
+    stt_cost_per_minute_usd: float = 0.003
+    media_capture_enabled: bool = True
+    media_capture_keep: int = 50
+    media_capture_ttl_seconds: int = 86400
+
     # TourVisor — кабинетные креды подходят и для XML API (проверено 19.06.2026)
     # Суточная квота тарифа TourVisor. При исчерпании бот не падает, а отвечает всем
     # «поиск временно недоступен» — тихо, без алерта. Счётчик + предупреждение владельцу

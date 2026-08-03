@@ -15,6 +15,7 @@ class Message:
     kind: str = "text"      # text | non_text (голос/фото/медиа — бот пока понимает только текст)
     raw: dict[str, Any] = field(default_factory=dict)
     referral: dict[str, Any] = field(default_factory=dict)  # CTWA-источник (реклама), {} если нет
+    voice: bool = False      # распознанная речь: в LLM идёт текст, в панели виден источник
 
 
 class ChannelAdapter(Protocol):

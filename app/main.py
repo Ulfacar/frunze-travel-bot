@@ -39,6 +39,9 @@ log = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Явно сообщаем на старте: заполненный fallback пока не даёт ложной гарантии резерва.
+    from app.integrations.stt.registry import warn_fallback_configuration
+    warn_fallback_configuration()
     # Создаём схему БД (идемпотентно), если используется Postgres под CRM или панель.
     if settings.crm_backend == "postgres" or settings.panel_backend == "postgres":
         from app.integrations.crm.db import init_db

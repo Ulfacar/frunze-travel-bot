@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+from dataclasses import dataclass
 
 import httpx
 
@@ -21,6 +22,91 @@ from app.config import BotConfig, settings
 logger = logging.getLogger("channel.wappi")
 
 _TEXT_TYPE = "chat"  # Wappi: тип текстового сообщения (остальное — медиа/вложения)
+_VOICE_TYPES = {"ptt", "voice", "audio", "audio_message", "voice_message"}
+_URL_KEYS = ("file", "fileUrl", "file_url", "url", "media", "mediaUrl", "media_url", "download_url")
+_MIME_KEYS = ("mimetype", "mime_type", "mime", "contentType")
+_DURATION_KEYS = ("duration", "seconds", "duration_sec", "audio_duration")
+
+
+@dataclass(frozen=True)
+class VoiceRef:
+    url: str
+    mime: str
+    duration_sec: float
+
+
+def extract_voice(raw: dict) -> VoiceRef | None:
+    """Извлечь голосовое из вероятных форм Wappi, пока точная схема не известна."""
+    if not isinstance(raw, dict) or str(raw.get("type") or "").lower() not in _VOICE_TYPES:
+        return None
+    containers: list[dict] = [raw]
+    if isinstance(raw.get("message"), dict):
+        containers.append(raw["message"])
+    attaches = raw.get("attaches")
+    if isinstance(attaches, dict):
+        containers.append(attaches)
+    elif isinstance(attaches, list):
+        containers.extend(item for item in attaches if isinstance(item, dict))
+    for key in ("file", "media"):
+        if isinstance(raw.get(key), dict):
+            containers.append(raw[key])
+
+    # Ссылку, mime и длительность берём из ОДНОГО контейнера — того, где нашлась ссылка.
+    # Разные вложения одного события описывают разные файлы: mime от аватарки рядом с
+    # ссылкой на голос дал бы отказ по content-type уже после платного скачивания.
+    for container in containers:
+        url = _first_url(container)
+        if url:
+            return VoiceRef(url=url, mime=_first_mime(container),
+                            duration_sec=_first_duration(container))
+    logger.info("[voice-capture] не распознан формат голосового: keys=%s", sorted(raw.keys()))
+    return None
+
+
+def _first_url(container: dict) -> str:
+    for key in _URL_KEYS:
+        value = container.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    body = container.get("body")
+    if isinstance(body, str) and body.strip().lower().startswith(("http://", "https://")):
+        return body.strip()
+    return ""
+
+
+def _first_mime(container: dict) -> str:
+    for key in _MIME_KEYS:
+        value = container.get(key)
+        if value not in (None, ""):
+            return str(value)
+    return "audio/ogg"
+
+
+def _first_duration(container: dict) -> float:
+    for key in _DURATION_KEYS:
+        value = container.get(key)
+        if value in (None, ""):
+            continue
+        try:
+            return max(0.0, float(value))
+        except (TypeError, ValueError):
+            continue
+    return 0.0
+
+
+def _digits(value: str) -> str:
+    return "".join(ch for ch in str(value or "") if ch.isdigit())
+
+
+async def _stt_allowed(bot_id: str, phone: str) -> bool:
+    """Проверить денежный рубильник до скачивания и обращения к провайдеру."""
+    from app.core import flags
+    global_on = await flags.get_flag("stt_enabled", settings.stt_enabled)
+    enabled = await flags.get_flag(f"stt_enabled:{bot_id}", global_on) if bot_id else global_on
+    if not enabled or not settings.stt_api_key:
+        return False
+    allowlist = {_digits(item) for item in settings.stt_allowlist_phones if _digits(item)}
+    return not allowlist or _digits(phone) in allowlist
 
 
 def is_delivery_status(raw: dict) -> bool:
@@ -203,8 +289,11 @@ class WappiAdapter:
 
         if raw.get("type") == _TEXT_TYPE and body:
             kind, text = "text", body
+            voice = False
         else:
-            kind, text = "non_text", ""  # медиа/голос — бот пока понимает только текст
+            kind, text, voice = "non_text", "", False
+            from app.core.media_capture import note_raw, note_voice_miss
+            await note_raw(raw)
             # M1-capture: логируем сырой payload медиа, чтобы узнать реальный формат Wappi
             # (ссылка на файл/голос, mime, длительность) — на этом строим плеер в панели.
             try:
@@ -214,6 +303,22 @@ class WappiAdapter:
                 logger.info("Wappi non-text raw [media-capture]: type=%s keys=%s",
                             raw.get("type"), sorted(raw.keys()))
 
+            bot_id = self.bot.id if self.bot else ""
+            ref = extract_voice(raw)
+            if str(raw.get("type") or "").lower() in _VOICE_TYPES and ref is None:
+                await note_voice_miss(raw)
+            if await _stt_allowed(bot_id, user_id):
+                if ref is not None:
+                    from app.integrations.stt.service import transcribe
+                    transcript = await transcribe(
+                        audio_url=ref.url, mime=ref.mime, duration_sec=ref.duration_sec,
+                        msg_id=str(raw.get("id") or raw.get("message_id") or raw.get("msg_id") or ""),
+                        bot_id=bot_id,
+                        wappi_account=str(raw.get("profile_id") or "unknown"),
+                    )
+                    if transcript:
+                        kind, text, voice = "text", transcript, True
+
         return Message(
             channel=self.channel,
             user_id=user_id,
@@ -222,6 +327,7 @@ class WappiAdapter:
             kind=kind,
             raw=raw,
             referral=referral,
+            voice=voice,
         )
 
     async def send(self, chat_id: str, text: str, **kwargs) -> str:
