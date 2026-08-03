@@ -23,4 +23,24 @@
     </div>
   </div>
   {% endfor %}
+  <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+    <h2>Распознавание голосовых</h2>
+    <div class="t-desc" style="margin-bottom:12px">Отключает только перевод голосовых в текст. WhatsApp и текстовые сообщения продолжают работать.</div>
+    {% for b in stt_flags %}
+    <div class="toggle-row"{% if not loop.first %} style="margin-top:12px"{% endif %}>
+      <label class="switch" title="Включить/выключить распознавание голосовых">
+        <input type="checkbox" {{ 'checked' if b.on else '' }}
+               hx-post="/admin/bots/{{ b.id }}/stt-toggle" hx-target="#bot-toggles" hx-swap="outerHTML"
+               hx-vals='{"on": "{{ 0 if b.on else 1 }}"}'>
+        <span class="slider"></span>
+      </label>
+      <div class="toggle-text">
+        <div class="t-title">{{ b.name }} · <span class="mono">{{ b.id }}</span> —
+          <span class="state {{ 'on' if b.on else 'off' }}">{{ 'ВКЛ' if b.on else 'ВЫКЛ' }}</span>
+        </div>
+        {% if b.breaker %}<div class="t-desc">Автоотключение: {{ b.breaker }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
 </div>

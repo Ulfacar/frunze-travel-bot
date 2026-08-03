@@ -403,6 +403,7 @@ async def system(request: Request, manager: dict = Depends(require_full_admin)):
     snap = observ.snapshot()
     flag_views = await _flag_views()
     bot_flags = await _bot_flag_views()
+    stt_flags = await _stt_flag_views()
     data = {
         "llm_enabled": llm_enabled(),
         "spend_today": await budget.spend_today(),
@@ -427,6 +428,7 @@ async def system(request: Request, manager: dict = Depends(require_full_admin)):
     return templates.TemplateResponse(request, "system.html",
                                       {"s": data, "manager": manager,
                                        "flags": flag_views, "bot_flags": bot_flags,
+                                       "stt_flags": stt_flags,
                                        "visa_queue": await _visa_queue_views()},
                                       headers={"Cache-Control": "no-store"})
 
@@ -566,6 +568,21 @@ async def _bot_flag_views() -> list[dict]:
     return views
 
 
+async def _stt_flag_views() -> list[dict]:
+    """Состояние распознавания отдельно от автоответов и причина последней аварии."""
+    from app.core import flags, stt_metrics
+    from app.core.bots import registry
+    global_on = await flags.get_flag("stt_enabled", settings.stt_enabled)
+    views = []
+    for bot in registry.all():
+        default = False if bot.id == "getvisa" else global_on
+        on = await flags.get_flag(f"stt_enabled:{bot.id}", default)
+        snap = await stt_metrics.snapshot(bot.id)
+        views.append({"id": bot.id, "name": bot.manager_name or bot.title or bot.id,
+                      "on": on, "breaker": (snap.get("breaker") or {}).get("reason", "")})
+    return views
+
+
 async def _visa_queue_views() -> list[dict]:
     """Sprint 2: состояние очереди виз — кто в ротации, кто временно выключен."""
     from app.core import flags
@@ -651,7 +668,28 @@ async def toggle_bot_flag(bot_id: str, request: Request, manager: dict = Depends
     await get_conversation_store().add_audit(
         manager["login"], "flag", "", f"{key}={'on' if value else 'off'}")
     return templates.TemplateResponse(request, "_bot_toggles.html",
-                                      {"bot_flags": await _bot_flag_views()})
+                                      {"bot_flags": await _bot_flag_views(),
+                                       "stt_flags": await _stt_flag_views()})
+
+
+@router.post("/bots/{bot_id}/stt-toggle", response_class=HTMLResponse)
+async def toggle_stt_flag(bot_id: str, request: Request, manager: dict = Depends(require_admin),
+                          on: str = Form("0")):
+    """Менять только распознавание: боевой WhatsApp и автоответы остаются включены."""
+    from app.core import flags, stt_metrics
+    from app.core.bots import registry
+    if registry.by_id(bot_id) is None:
+        raise HTTPException(status_code=404, detail="unknown bot")
+    value = on in ("1", "true", "on", "True")
+    key = f"stt_enabled:{bot_id}"
+    await flags.set_flag(key, value)
+    if value:
+        await stt_metrics.clear_breaker(bot_id)
+    await get_conversation_store().add_audit(
+        manager["login"], "flag", "", f"{key}={'on' if value else 'off'}")
+    return templates.TemplateResponse(request, "_bot_toggles.html",
+                                      {"bot_flags": await _bot_flag_views(),
+                                       "stt_flags": await _stt_flag_views()})
 
 
 @router.get("/audit", response_class=HTMLResponse)

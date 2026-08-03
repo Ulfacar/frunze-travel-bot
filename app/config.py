@@ -109,6 +109,8 @@ class Settings(BaseSettings):
     # Голосовые включаются отдельно, чтобы первый деплой только собирал реальные payload,
     # а платное распознавание можно было безопасно открыть по ботам и номерам клиентов.
     stt_enabled: bool = False
+    # Публичный допуск — рантайм-флаг поверх allowlist: его меняют без рестарта в момент запуска.
+    stt_public_enabled: bool = False
     stt_provider: str = "openai"
     stt_fallback_provider: str = ""  # задел на yandex/google, в этой версии не работает
     stt_api_key: str = ""
@@ -128,6 +130,8 @@ class Settings(BaseSettings):
     stt_lock_ttl_seconds: int = 120
     stt_media_host_allowlist: list[str] = []
     stt_cost_per_minute_usd: float = 0.003
+    # Отдельный адресат технических аварий: карточки клиентских заявок сюда не попадают.
+    ops_alert_chat_ids: list[str] = []
     media_capture_enabled: bool = True
     media_capture_keep: int = 50
     media_capture_ttl_seconds: int = 86400

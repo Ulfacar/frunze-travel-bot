@@ -38,6 +38,11 @@ services:
       STT_FAILURE_CACHE_SECONDS: ${STT_FAILURE_CACHE_SECONDS:-60}
       STT_LOCK_TTL_SECONDS: ${STT_LOCK_TTL_SECONDS:-120}
       STT_MEDIA_HOST_ALLOWLIST: ${STT_MEDIA_HOST_ALLOWLIST:-[]}
+      # Публичный режим переключается рантайм-флагом (без рестарта), env — только дефолт.
+      STT_PUBLIC_ENABLED: ${STT_PUBLIC_ENABLED:-false}
+      # Технические уведомления владельцу проекта: preflight, автоотключение STT, отчёты.
+      # НЕ путать с INSTANT_HANDOFF_CC_CHAT_IDS — туда идут карточки клиентских заявок.
+      OPS_ALERT_CHAT_IDS: ${OPS_ALERT_CHAT_IDS:-[]}
       STT_COST_PER_MINUTE_USD: ${STT_COST_PER_MINUTE_USD:-0.003}
       MEDIA_CAPTURE_ENABLED: ${MEDIA_CAPTURE_ENABLED:-true}
       MEDIA_CAPTURE_KEEP: ${MEDIA_CAPTURE_KEEP:-50}

@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 
 from app.config import settings
 from app.core import observ
+from app.core import stt_metrics
 from app.integrations.stt.base import SttPermanentError
 from app.integrations.stt.fetch import fetch_media
 from app.integrations.stt.registry import get_provider
@@ -139,13 +140,19 @@ async def transcribe(
     model = settings.stt_model
     result_duration = duration_sec
     cost_usd = 0.0
+    await stt_metrics.note_received(bot_id)
     try:
         found, cached = await _cache_get(cache_key)
         if found:
+            await stt_metrics.note_cache_hit(bot_id)
+            await stt_metrics.check_and_trip(bot_id)
             return cached
         acquired = await _lock_acquire(lock_key, lock_token)
         if acquired is False:
-            return await _wait_for_cache(cache_key)
+            await stt_metrics.note_lock_wait(bot_id)
+            cached = await _wait_for_cache(cache_key)
+            await stt_metrics.check_and_trip(bot_id)
+            return cached
         if not audio_url:
             raise SttPermanentError("в голосовом отсутствует ссылка на медиа")
         if duration_sec > settings.stt_max_duration_seconds:
@@ -180,8 +187,17 @@ async def transcribe(
             ok=bool(text), error="" if text else "пустая транскрипция",
             cost_usd=result.cost_usd, media_ref=_media_ref(audio_url),
         ))
+        latency_ms = int((time.monotonic() - started) * 1000)
         if not text:
+            await stt_metrics.note_empty(bot_id, latency_ms=latency_ms,
+                                         cost_usd=result.cost_usd, msg_id=msg_id)
+            await stt_metrics.check_and_trip(bot_id)
             return ""
+        await stt_metrics.note_success(
+            bot_id, latency_ms=latency_ms, duration_sec=result.duration_sec,
+            cost_usd=result.cost_usd, msg_id=msg_id,
+        )
+        await stt_metrics.check_and_trip(bot_id)
         observ.record_usage(
             f"stt/{result.provider}/{result.model}", 0, 0, result.cost_usd,
             bot_id, "", usage={"duration_sec": result.duration_sec},
@@ -200,6 +216,11 @@ async def transcribe(
             error=type(exc).__name__, cost_usd=cost_usd, media_ref=_media_ref(audio_url),
         ), ttl=settings.stt_failure_cache_seconds)
         logger.warning("STT не выполнен: %s", type(exc).__name__)
+        await stt_metrics.note_error(
+            bot_id, latency_ms=int((time.monotonic() - started) * 1000),
+            code=stt_metrics.error_code(exc),
+        )
+        await stt_metrics.check_and_trip(bot_id)
         return ""
     finally:
         if acquired is True:

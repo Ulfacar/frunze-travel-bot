@@ -115,13 +115,14 @@ async def _stt_allowed(bot_id: str, phone: str) -> bool:
     from app.core import flags
     global_on = await flags.get_flag("stt_enabled", settings.stt_enabled)
     enabled = await flags.get_flag(f"stt_enabled:{bot_id}", global_on) if bot_id else global_on
+    public = await flags.get_flag("stt_public_enabled", settings.stt_public_enabled)
     has_key = bool(settings.stt_api_key)
     allowlist = {_digits(item) for item in settings.stt_allowlist_phones if _digits(item)}
-    in_allowlist = not allowlist or _digits(phone) in allowlist
+    in_allowlist = public or not allowlist or _digits(phone) in allowlist
     ok = bool(enabled and has_key and in_allowlist)
     if not ok:
-        logger.info("STT пропущен: bot_id=%r флаг=%s ключ=%s номер_в_списке=%s",
-                    bot_id, enabled, has_key, in_allowlist)
+        logger.info("STT пропущен: bot_id=%r флаг=%s ключ=%s публичный=%s номер_в_списке=%s",
+                    bot_id, enabled, has_key, public, in_allowlist)
     return ok
 
 

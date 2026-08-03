@@ -35,6 +35,12 @@ class OpenAiTranscriptionProvider:
                             raise SttTemporaryError("связь со STT-провайдером недоступна") from exc
                         await asyncio.sleep(0.7 * (attempt + 1))
                         continue
+                    # OpenAI использует 429 и для временного rate limit, и для исчерпанной
+                    # квоты. Второй случай повтором не лечится и должен немедленно открыть breaker.
+                    if response.status_code == 429 and "insufficient_quota" in response.text.lower():
+                        exc = SttPermanentError("STT-провайдер вернул insufficient_quota: HTTP 429")
+                        exc.status_code = 429
+                        raise exc
                     if response.status_code == 429 or response.status_code >= 500:
                         if attempt == 2:
                             raise SttTemporaryError(
@@ -43,9 +49,14 @@ class OpenAiTranscriptionProvider:
                         await asyncio.sleep(0.7 * (attempt + 1))
                         continue
                     if 400 <= response.status_code < 500:
-                        raise SttPermanentError(
-                            f"STT-провайдер отклонил запрос: HTTP {response.status_code}"
+                        detail = response.text[:500]
+                        exc = SttPermanentError(
+                            f"STT-провайдер отклонил запрос: HTTP {response.status_code} {detail}"
                         )
+                        # Атрибут сохраняет точный статус для breaker, а текст оставляет
+                        # совместимость со старыми тестами и сторонними провайдерами.
+                        exc.status_code = response.status_code
+                        raise exc
                     response.raise_for_status()
                     try:
                         payload = response.json()
