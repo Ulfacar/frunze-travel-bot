@@ -128,13 +128,20 @@ async def chat(
     user_id: str = "",
     tools: list[dict] | None = None,
     cacheable_system: bool = True,
+    max_tokens: int | None = None,
+    temperature: float | None = None,
 ) -> dict:
-    """Run one LLM turn with tools and return an Anthropic-like dump."""
+    """Run one LLM turn with tools and return an Anthropic-like dump.
+
+    `max_tokens` / `temperature` default to the dialogue settings. Override them for
+    auxiliary calls that are not dialogue turns — a classifier wants temperature 0 and
+    a handful of tokens, not the chatty defaults tuned for talking to a client.
+    """
     selected_model = model or settings.llm_model_main
     resp = await client().messages.create(
         model=selected_model,
-        max_tokens=settings.llm_max_tokens,
-        temperature=settings.llm_temperature,
+        max_tokens=settings.llm_max_tokens if max_tokens is None else max_tokens,
+        temperature=settings.llm_temperature if temperature is None else temperature,
         system=system,
         tools=TOOLS if tools is None else tools,
         messages=messages,

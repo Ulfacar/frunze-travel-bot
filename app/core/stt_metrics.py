@@ -18,7 +18,14 @@ _METRIC_TTL = 48 * 3600
 _STREAK_TTL = 24 * 3600
 _PAID_TTL = 7 * 24 * 3600
 _FIELDS = ("received", "ok", "empty", "errors", "cache_hits", "lock_waits",
-           "duration_sum", "latency_sum", "cost_sum", "double_paid")
+           "duration_sum", "latency_sum", "cost_sum", "double_paid",
+           # guard v1 — фильтр доверия к расшифровке. Отдельные счётчики, НЕ влияющие
+           # на success_rate/p95/streak: ошибка проверки — не ошибка распознавания.
+           "guard_checked", "guard_flag_heuristic", "guard_flag_llm", "guard_blocked",
+           "guard_llm_calls", "guard_llm_errors")
+
+# Признаки эвристик guard'а — нужны при калибровке, чтобы видеть, ЧТО именно сработало.
+_GUARD_REASONS = ("empty", "foreign_alphabet", "glued", "repeat", "llm")
 _ERROR_CODES = {"insufficient_quota", "401", "403", "429", "timeout", "download", "other"}
 _BOT_NAMES = {"frunze_tours": "Адеми", "frunze_tours_sezim": "Айсина", "getvisa": "GetVisa"}
 
@@ -69,6 +76,15 @@ async def _latency(bot_id: str, latency_ms: int | float) -> None:
 
 async def note_received(bot_id: str) -> None:
     await _hincr(bot_id, "received")
+
+
+async def note_guard(bot_id: str, field: str) -> None:
+    """Счётчик guard'а. Намеренно ОТДЕЛЬНАЯ функция, а не `note_error`:
+
+    ошибка фильтра доверия — это не ошибка распознавания, она не имеет права влиять
+    на success_rate, p95, streak и автоотключение STT боту.
+    """
+    await _hincr(bot_id, field)
 
 
 async def _paid(bot_id: str, msg_id: str) -> bool:
@@ -153,6 +169,7 @@ async def note_lock_wait(bot_id: str) -> None:
 async def snapshot(bot_id: str, day: Any = None) -> dict:
     values = {field: 0 for field in _FIELDS}
     values.update({f"err:{code}": 0 for code in _ERROR_CODES})
+    values.update({f"guard_reason:{r}": 0 for r in _GUARD_REASONS})
     latencies: list[float] = []
     streak = 0
     breaker: dict = {}

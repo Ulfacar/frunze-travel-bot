@@ -130,6 +130,17 @@ class Settings(BaseSettings):
     stt_lock_ttl_seconds: int = 120
     stt_media_host_allowlist: list[str] = []
     stt_cost_per_minute_usd: float = 0.003
+    # --- guard v1: фильтр доверия к расшифровке (app/core/stt_guard.py) ------------
+    # Дефолт = shadow: вердикт считается и виден менеджеру, но текст ВСЁ РАВНО уходит
+    # боту. Для клиента после выкатки не меняется ничего. Режим на бота — двумя
+    # рантайм-флагами `stt_guard_enabled:<bot_id>` и `stt_guard_block:<bot_id>`.
+    stt_guard_enabled: bool = True
+    stt_guard_block: bool = False
+    stt_guard_llm_model: str = ""        # пусто -> llm_model_cheap (Haiku), не хардкодим
+    stt_guard_llm_timeout_seconds: float = 4.0
+    stt_guard_foreign_share: float = 0.02   # доля букв чужого алфавита (қ ғ ұ …)
+    stt_guard_glued_max_len: int = 20       # длина токена, после которой это склейка
+    stt_guard_repeat_max: int = 3           # одно слово подряд N раз
     # Отдельный адресат технических аварий: карточки клиентских заявок сюда не попадают.
     ops_alert_chat_ids: list[str] = []
     media_capture_enabled: bool = True

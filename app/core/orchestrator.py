@@ -20,6 +20,7 @@ from app.core.observ import record_failure
 from app.core.own_outbound import mark_own
 from app.core.router import detect_funnel
 from app.core.state import get_state_store
+from app.core import stt_guard, stt_metrics
 from app.funnels import get_funnel
 from app.integrations.panel.store import get_conversation_store
 
@@ -185,10 +186,36 @@ class Orchestrator:
         if not msg.text:
             return  # пустой апдейт без содержимого
 
+        # Фильтр доверия к расшифровке (guard v1). Живёт ЗДЕСЬ, а не в канале: решение
+        # «верить ли расшифровке» требует знать, перехвачен ли диалог менеджером, а
+        # WappiAdapter.parse() состояния не видит — это слой канала.
+        log_text = f"🎤 {msg.text}" if msg.voice else msg.text
+        if msg.voice and msg.text:
+            mode = await stt_guard.mode_for(self._bot_id)
+            if mode != "off":
+                async with _lock_for(key):
+                    intercepted = (await get_state_store().load(key)).intercepted
+                verdict = await stt_guard.check(
+                    msg.text, bot_id=self._bot_id, intercepted=intercepted)
+                if not verdict.trusted:
+                    # Расшифровку менеджеру ПОКАЗЫВАЕМ даже когда блокируем: кривой текст
+                    # помогает понять, о чём речь, и решить, слушать ли запись срочно.
+                    log_text = f"🎤⚠️ {msg.text}"
+                    if mode == "block":
+                        await stt_metrics.note_guard(self._bot_id, "guard_blocked")
+                        await self._log_in(msg, log_text)
+                        # Дальше — СУЩЕСТВУЮЩИЙ путь non_text: новых веток поведения не
+                        # создаём. «Не менять квалификацию, не плодить задачи, отправить
+                        # безопасный фолбэк» выполняется тем, что мы не заходим в _run_turn.
+                        msg = replace(msg, kind="non_text", text="", voice_failed=True)
+                        async with _lock_for(key):
+                            await self._handle_non_text(msg, log=False)
+                        return
+
         # Входящее логируем СРАЗУ (вне обработки) — менеджер видит реплику живьём, даже если
         # перехвачено / рубильник off / идёт окно дебаунса.
         # Воронка и LLM получают чистую расшифровку; маркер нужен только менеджеру в панели.
-        await self._log_in(msg, f"🎤 {msg.text}" if msg.voice else msg.text)
+        await self._log_in(msg, log_text)
 
         # Дебаунс выключен (0) — синхронная обработка под локом, как раньше (_run_turn сбросит
         # счётчик голосовых сам).
@@ -213,15 +240,19 @@ class Orchestrator:
             old.cancel()
         self._timers[key] = asyncio.create_task(self._debounce_flush(key))
 
-    async def _handle_non_text(self, msg: Message) -> None:
+    async def _handle_non_text(self, msg: Message, *, log: bool = True) -> None:
         """Голос/медиа: бот не распознаёт. 1-е — честный фолбэк; 2-е подряд → зовём менеджера.
 
         Счётчик `consecutive_audio` живёт в состоянии и сбрасывается в 0 любым текстовым
         сообщением (см. _run_turn). Под локом диалога.
+
+        `log=False` — вызов из guard'а: запись в панель уже сделана расшифровкой с
+        пометкой ⚠️. Инвариант «ровно одна запись на входящее» закреплён гейтом.
         """
         # Менеджер должен различать три вещи: «бот не умеет в голос», «пытались и не
         # вышло — прослушай сам» и обычное медиа. Общий «[медиа/голос]» их склеивал.
-        await self._log_in(msg, NON_TEXT_VOICE_FAILED if msg.voice_failed else "[медиа/голос]")
+        if log:
+            await self._log_in(msg, NON_TEXT_VOICE_FAILED if msg.voice_failed else "[медиа/голос]")
         key = self._key(msg)
         store = get_state_store()
         state = await store.load(key)

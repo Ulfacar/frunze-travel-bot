@@ -44,6 +44,16 @@ services:
       # НЕ путать с INSTANT_HANDOFF_CC_CHAT_IDS — туда идут карточки клиентских заявок.
       OPS_ALERT_CHAT_IDS: ${OPS_ALERT_CHAT_IDS:-[]}
       STT_COST_PER_MINUTE_USD: ${STT_COST_PER_MINUTE_USD:-0.003}
+      # guard v1 — фильтр доверия к расшифровке. Дефолт = shadow (считаем и показываем
+      # менеджеру, но текст всё равно уходит боту): для клиента не меняется ничего.
+      # Режим на бота переключается рантайм-флагами, без рестарта.
+      STT_GUARD_ENABLED: ${STT_GUARD_ENABLED:-true}
+      STT_GUARD_BLOCK: ${STT_GUARD_BLOCK:-false}
+      STT_GUARD_LLM_MODEL: ${STT_GUARD_LLM_MODEL:-}
+      STT_GUARD_LLM_TIMEOUT_SECONDS: ${STT_GUARD_LLM_TIMEOUT_SECONDS:-4.0}
+      STT_GUARD_FOREIGN_SHARE: ${STT_GUARD_FOREIGN_SHARE:-0.02}
+      STT_GUARD_GLUED_MAX_LEN: ${STT_GUARD_GLUED_MAX_LEN:-20}
+      STT_GUARD_REPEAT_MAX: ${STT_GUARD_REPEAT_MAX:-3}
       MEDIA_CAPTURE_ENABLED: ${MEDIA_CAPTURE_ENABLED:-true}
       MEDIA_CAPTURE_KEEP: ${MEDIA_CAPTURE_KEEP:-50}
       MEDIA_CAPTURE_TTL_SECONDS: ${MEDIA_CAPTURE_TTL_SECONDS:-86400}
