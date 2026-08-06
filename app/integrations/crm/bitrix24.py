@@ -43,8 +43,14 @@ class Bitrix24Crm:
             if owns:
                 await client.aclose()
 
-    async def create_lead(self, contact: dict[str, Any], funnel: str, data: dict) -> str:
-        """Создать ЛИД (crm.lead.add). Возвращает ID лида (строкой)."""
+    async def create_lead(self, contact: dict[str, Any], funnel: str, data: dict,
+                          assigned_by_id: str = "") -> str:
+        """Создать ЛИД (crm.lead.add). Возвращает ID лида (строкой).
+
+        `assigned_by_id` обязателен по смыслу, хоть и не по сигнатуре: без него Битрикс
+        вешает лид на владельца вебхука — служебный аккаунт, чьи карточки менеджер
+        не видит. Именно так 604 лида с полной перепиской оказались невидимыми.
+        """
         phone = str(contact.get("phone") or contact.get("user_id") or "")
         name = str(contact.get("name") or "").strip()
         fields: dict[str, Any] = {
@@ -53,6 +59,8 @@ class Bitrix24Crm:
             "COMMENTS": _format_qualification(data),
             "SOURCE_DESCRIPTION": f"WhatsApp бот ({funnel})" if funnel else "WhatsApp бот",
         }
+        if assigned_by_id:
+            fields["ASSIGNED_BY_ID"] = assigned_by_id
         if phone:
             fields["PHONE"] = [{"VALUE": phone, "VALUE_TYPE": "WORK"}]
         resp = await self._call("crm.lead.add", {"fields": fields})
@@ -70,6 +78,28 @@ class Bitrix24Crm:
             {"type": "PHONE", "values": [phone], "entity_type": "LEAD"})
         leads = ((resp.get("result") or {}).get("LEAD")) or []
         return str(leads[0]) if leads else ""
+
+    async def find_leads_by_phone(self, phone: str) -> list[dict[str, Any]]:
+        """Все лиды с этим телефоном — с ID и SOURCE_ID, чтобы выбрать нужный.
+
+        В отличие от `find_lead_id_by_phone` возвращает не первый попавшийся, а весь
+        список: на одного клиента в портале живут и лид Открытой линии (его открывает
+        менеджер), и наш. Поиск идёт через `crm.duplicate.findbycomm` — он нормализует
+        номер, формат с `+` и без находится одинаково (проверено на живом портале).
+        """
+        phone = str(phone or "").strip()
+        if not phone:
+            return []
+        resp = await self._call(
+            "crm.duplicate.findbycomm",
+            {"type": "PHONE", "values": [phone], "entity_type": "LEAD"})
+        ids = ((resp.get("result") or {}).get("LEAD")) or []
+        if not ids:
+            return []
+        detail = await self._call(
+            "crm.lead.list",
+            {"filter": {"@ID": [str(i) for i in ids]}, "select": ["ID", "SOURCE_ID"]})
+        return list(detail.get("result") or [])
 
     async def update_stage(self, deal_id: str, stage: str) -> None:
         """Обновить STATUS_ID лида (если стадия замаплена; иначе мягко пропустить)."""

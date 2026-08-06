@@ -475,7 +475,8 @@ class Orchestrator:
         # Зеркало в Bitrix (best-effort, фоном — не блокирует и не роняет обработку).
         from app.integrations.crm import bitrix_mirror
         bitrix_mirror.fire(self._key(msg), sender="client", text=text, phone=msg.user_id,
-                           funnel=self.bot.scenario if self.bot else None)
+                           funnel=self.bot.scenario if self.bot else None,
+                           bot_id=self._bot_id)
 
     async def _reply(self, msg: Message, text: str) -> None:
         # Логируем исходящее как pending → шлём → отмечаем доставку (sent/failed).
@@ -496,7 +497,8 @@ class Orchestrator:
             # Зеркало ответа бота в Bitrix — только после успешной отправки клиенту (best-effort, фоном).
             from app.integrations.crm import bitrix_mirror
             bitrix_mirror.fire(self._key(msg), sender="bot", text=text, phone=msg.user_id,
-                               funnel=self.bot.scenario if self.bot else None)
+                               funnel=self.bot.scenario if self.bot else None,
+                               bot_id=self._bot_id)
             # WP2 messaging shadow outbound (flag `messaging_shadow_enabled`, default OFF,
             # fail-safe). Records the outbound into the domain ledgers only; NOT wired into
             # live delivery and does NOT touch the Bitrix mirror above.

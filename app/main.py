@@ -202,7 +202,8 @@ async def _handle_manager_echo(raw: dict) -> None:
     await set_intercept(key, True, automatic=True)
     # Зеркало реплики менеджера в Bitrix (best-effort, фоном).
     from app.integrations.crm import bitrix_mirror
-    bitrix_mirror.fire(key, sender="manager", text=text, phone=phone, funnel=bot.scenario)
+    bitrix_mirror.fire(key, sender="manager", text=text, phone=phone,
+                       funnel=bot.scenario, bot_id=bot.id)
 
 
 @app.get("/health")
