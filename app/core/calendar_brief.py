@@ -75,6 +75,7 @@ def _task_card(task) -> dict:
         "client": _phone_tail(task.user_id),
         "phone": _phone_display(task.user_id),
         "wa_link": _wa_link(task.user_id or ""),
+        "bitrix_link": "",   # проставляется ниже из диалога: у задачи лида нет
         "comment": (task.comment or "").strip(),
         "context": (task.ai_summary or "").strip(),   # AI-written context recap only
         "direction": task.direction,
@@ -126,6 +127,8 @@ def _lead_card(conv, now: datetime) -> dict:
         "wait_min": int(_wait_minutes(conv, now)),
         "wait_label": _fmt_wait(int(_wait_minutes(conv, now))),
         "wa_link": _wa_link(getattr(conv, "user_id", "")),
+        # Карточка клиента в Битриксе — визовые менеджеры работают там.
+        "bitrix_link": _bitrix_link(getattr(conv, "bitrix_lead_id", "")),
     }
 
 
@@ -266,6 +269,20 @@ def _client_link(user_id: str, base_url: str) -> str:
     return f"{base}{path}" if base else path
 
 
+def _bitrix_link(lead_id: str | None) -> str:
+    """Прямая ссылка на карточку клиента в Битриксе — открывается одним тапом.
+
+    Визовые менеджеры работают в Битриксе, и без этой ссылки им приходилось искать
+    клиента там руками. `bitrix_lead_id` после правки 2a2db0c указывает на карточку
+    Открытой линии — ровно ту, которую менеджер и открывает.
+
+    Пусто, если id или адрес портала не заданы: битая ссылка в 6 утра хуже её отсутствия.
+    """
+    base = (settings.bitrix_portal_url or "").rstrip("/")
+    lead_id = str(lead_id or "").strip()
+    return f"{base}/crm/lead/details/{lead_id}/" if base and lead_id else ""
+
+
 def render_manager_brief_text(brief: dict, base_url: str = "") -> str:
     lines = [f"📅 План на {brief['date_label']} · {brief['name']}",
              f"Задач сегодня: {brief['task_count']}"]
@@ -285,6 +302,10 @@ def render_manager_brief_text(brief: dict, base_url: str = "") -> str:
                 lines.append(f"    ℹ {c['context']}")
             if c.get("wa_link"):
                 lines.append(f"    💬 {c['wa_link']}")
+            # Три ссылки решают разные задачи: написать клиенту, открыть его карточку
+            # в Битриксе (там работают визовые) и открыть нашу панель (там туровые).
+            if c.get("bitrix_link"):
+                lines.append(f"    🗂 {c['bitrix_link']}")
             if c["user_id"]:
                 lines.append(f"    {_client_link(c['user_id'], base_url)}")
     if brief["night"]:
@@ -294,6 +315,8 @@ def render_manager_brief_text(brief: dict, base_url: str = "") -> str:
             lines.append(f"• {c.get('head') or c['name']} · {c['direction']}{tail}")
             if c.get("wa_link"):
                 lines.append(f"    💬 написать: {c['wa_link']}")
+            if c.get("bitrix_link"):
+                lines.append(f"    🗂 карточка: {c['bitrix_link']}")
             if c["user_id"]:
                 lines.append(f"    открыть: {_client_link(c['user_id'], base_url)}")
     # Full-admin only: unassigned leads awaiting distribution (no assignment done here).

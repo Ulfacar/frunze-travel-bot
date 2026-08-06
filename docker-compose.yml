@@ -78,6 +78,8 @@ services:
       BITRIX_STAGE_MAP: ${BITRIX_STAGE_MAP:-{}}
       # В какую карточку пишет бот: лид Открытой линии (её открывает менеджер) вместо
       # своего. Дефолт false — выкатываем, ничего не меняя.
+      # Адрес портала для кликабельных ссылок в утреннем брифе (не для API).
+      BITRIX_PORTAL_URL: ${BITRIX_PORTAL_URL:-}
       BITRIX_PREFER_OPENLINE_LEAD: ${BITRIX_PREFER_OPENLINE_LEAD:-false}
       BITRIX_OPENLINE_WAIT_SECONDS: ${BITRIX_OPENLINE_WAIT_SECONDS:-600}
       BITRIX_ASSIGNEE_BY_BOT: ${BITRIX_ASSIGNEE_BY_BOT:-{}}
