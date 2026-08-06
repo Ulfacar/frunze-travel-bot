@@ -91,7 +91,7 @@ def _request_line(qualification: dict | None, funnel: str) -> str:
 
 
 def render_handoff_text(*, name: str, phone: str, request: str, promised: str,
-                        link: str, wa_link: str = "",
+                        link: str, wa_link: str = "", bitrix_link: str = "",
                         waited_since: datetime | None = None) -> str:
     """Пуш читается с телефона за 20 секунд; номер тапабелен сам (международный формат).
 
@@ -116,6 +116,10 @@ def render_handoff_text(*, name: str, phone: str, request: str, promised: str,
         lines.append(f"Бот пообещал: «{short}»")
     if wa_link:
         lines.append(f"💬 написать: {wa_link}")
+    # Визовые менеджеры работают в Битриксе — им нужен вход прямо в карточку клиента.
+    # Ссылку на панель при этом не отбираем: туровые Битриксом не пользуются.
+    if bitrix_link:
+        lines.append(f"🗂 карточка: {bitrix_link}")
     if link:
         lines.append(f"👉 открыть диалог: {link}")
     return "\n".join(lines)
@@ -196,7 +200,8 @@ async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None,
     try:
         if not await _enabled():
             return False
-        from app.core.calendar_brief import _client_link, _phone_display, _wa_link
+        from app.core.calendar_brief import (_bitrix_link, _client_link, _phone_display,
+                                             _wa_link)
         from app.integrations.crm.db import Conversation
         sm = _sessionmaker(sessionmaker)
         now = datetime.now(timezone.utc)
@@ -218,13 +223,16 @@ async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None,
                 "phone": _phone_display(conv.phone or conv.user_id),
                 "request": _request_line(conv.qualification, conv.funnel or ""),
                 "wa": _wa_link(conv.phone or conv.user_id),
+                # Карточка клиента в Битриксе — визовые работают там.
+                "bitrix": _bitrix_link(getattr(conv, "bitrix_lead_id", "")),
             }
             if not await _claim(session, user_id, now):
                 return False          # уже отправляли (или стадия успела уехать)
         text = render_handoff_text(
             name=snapshot["name"], phone=snapshot["phone"], request=snapshot["request"],
             promised=promised, link=_client_link(user_id, settings.admin_base_url),
-            wa_link=snapshot["wa"], waited_since=waited_since)
+            wa_link=snapshot["wa"], bitrix_link=snapshot["bitrix"],
+            waited_since=waited_since)
         owner_ok = await _send(login, text)
         cc_ok = await _send_cc(text, owner_login=login)
         if owner_ok:
