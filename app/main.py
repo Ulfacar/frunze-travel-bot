@@ -54,10 +54,13 @@ async def lifespan(app: FastAPI):
         log.warning("FAQ defaults seed failed", exc_info=True)
     # Фоновые джобы: watchdog-алерты + автодожим. Автодожим регистрируем всегда —
     # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
-    from app.core import (awaiting, calendar_brief, followup, instant_handoff,
-                          manager_sync, morning_brief, outcome_infer, rescore, scheduler,
-                          tours_health, tours_summary, watchdog)
+    from app.core import (awaiting, calendar_brief, channel_heartbeat, followup,
+                          instant_handoff, manager_sync, morning_brief, outcome_infer,
+                          rescore, scheduler, tours_health, tours_summary, watchdog)
     scheduler.register("watchdog", watchdog.run)
+    # Отдельно от watchdog: тот смотрит агрегат («легло всё»), этот — каждый канал
+    # («легла часть»). 03.08 визовый молчал 12 часов, и агрегат промолчал.
+    scheduler.register("channel_heartbeat", channel_heartbeat.run)
     scheduler.register("awaiting", awaiting.run)
     scheduler.register("followup", followup.run)
     scheduler.register("rescore", rescore.run)          # ghost-ре-скоринг тира готовности
@@ -325,6 +328,9 @@ async def wappi_webhook(request: Request) -> dict:
             continue
 
         observ.note_inbound()
+        # Отметка живости КОНКРЕТНОГО канала: агрегат выше не показывает смерть части.
+        from app.core import channel_heartbeat
+        await channel_heartbeat.note_inbound(getattr(orchestrator.bot, "id", "") or "")
         msg = await orchestrator.channel.parse(raw)
         await orchestrator.handle(msg)
         handled += 1

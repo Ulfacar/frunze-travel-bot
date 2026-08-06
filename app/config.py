@@ -128,6 +128,15 @@ class Settings(BaseSettings):
     # таймауту, и длинная отметка «не получилось» навсегда закрыла бы повторную попытку.
     stt_failure_cache_seconds: int = 60
     stt_lock_ttl_seconds: int = 120
+    # --- сторож живости каналов (app/core/channel_heartbeat.py) -------------------
+    # Отдельно от alert_* старого watchdog: тот смотрит агрегат («легло всё»), этот —
+    # каждый канал («легла часть»). 03.08 визовый молчал 12 часов, и агрегат промолчал.
+    channel_heartbeat_enabled: bool = True
+    channel_silence_minutes: int = 90            # днём
+    channel_silence_night_minutes: int = 300     # ночью трафик реально падает
+    channel_alert_cooldown_minutes: int = 180    # напоминание по длящемуся простою
+    channel_heartbeat_quiet_from: int = 22       # тихое окно по Бишкеку
+    channel_heartbeat_quiet_to: int = 9
     stt_media_host_allowlist: list[str] = []
     stt_cost_per_minute_usd: float = 0.003
     # --- guard v1: фильтр доверия к расшифровке (app/core/stt_guard.py) ------------
