@@ -95,6 +95,19 @@ NON_TEXT_FALLBACK = (
 NON_TEXT_HANDOFF = (
     "Вижу, вам удобнее голосом 🙏 Передаю менеджеру — он прослушает и ответит вам."
 )
+# Скриншот билета, фото паспорта, документ. Раньше на них уходил NON_TEXT_FALLBACK —
+# ответ ПРО ГОЛОСОВЫЕ на присланную картинку. Менеджер видел бессмыслицу и выключал
+# бота руками (Адеми на встрече 06.08: «сегодня мне на центр пик отправляли — но я его
+# сразу уже отключила»). Замер: 22 картинки и документа в сутки.
+MEDIA_HANDOFF = (
+    "Вижу файл 🙏 Я его не открою, но уже передал(а) менеджеру — он посмотрит и ответит."
+)
+# Типы вложений, ради которых стоит будить менеджера. Стикеры (2 в сутки) и визитки
+# сюда НЕ входят: пуш на каждый стикер — шум, а шумные уведомления перестают читать.
+_HANDOFF_MEDIA = {"image", "document", "video", "audio_document"}
+
+_MEDIA_LABEL = {"image": "🖼 Фото/скриншот", "document": "📎 Документ",
+                "video": "🎬 Видео", "sticker": "Стикер", "vcard": "📇 Контакт"}
 # Мягкий фолбэк, если ход не удалось обработать (сбой LLM/инструмента) — клиент НЕ
 # должен получать тишину или 500. Диалог не роняем, состояние сохраняем.
 LLM_ERROR_FALLBACK = (
@@ -249,10 +262,12 @@ class Orchestrator:
         `log=False` — вызов из guard'а: запись в панель уже сделана расшифровкой с
         пометкой ⚠️. Инвариант «ровно одна запись на входящее» закреплён гейтом.
         """
-        # Менеджер должен различать три вещи: «бот не умеет в голос», «пытались и не
-        # вышло — прослушай сам» и обычное медиа. Общий «[медиа/голос]» их склеивал.
+        # Менеджер должен различать: «бот не умеет в голос», «пытались и не вышло —
+        # прослушай сам», и ЧТО именно за файл пришёл. Общий «[медиа/голос]» их склеивал.
+        is_file = msg.media_type in _HANDOFF_MEDIA and not msg.voice_failed
         if log:
-            await self._log_in(msg, NON_TEXT_VOICE_FAILED if msg.voice_failed else "[медиа/голос]")
+            await self._log_in(msg, NON_TEXT_VOICE_FAILED if msg.voice_failed
+                               else _MEDIA_LABEL.get(msg.media_type, "[медиа/голос]"))
         key = self._key(msg)
         store = get_state_store()
         state = await store.load(key)
@@ -261,6 +276,18 @@ class Orchestrator:
             state.manager_name = _default_manager_name(self.bot)
         if state.intercepted or not await self._bots_on():
             return  # перехвачено / рубильник off — лог записали, бот молчит
+
+        if is_file:
+            # Файл менеджер всё равно откроет сам — не заставляем его для этого
+            # выключать бота. Счётчик голосовых не трогаем: картинка не голосовое.
+            state.stage = "manager"
+            state.intercepted = True
+            await store.save(state)
+            await self._sync_card(msg, state)
+            await self._reply(msg, MEDIA_HANDOFF)
+            await self._maybe_instant_handoff(msg, state, MEDIA_HANDOFF)
+            return
+
         state.consecutive_audio += 1
         if state.consecutive_audio >= 2:
             # 2 голосовых/медиа подряд без текста → авто-хендофф: менеджер прослушает.

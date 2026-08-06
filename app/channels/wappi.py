@@ -351,6 +351,8 @@ class WappiAdapter:
             referral=referral,
             voice_failed=voice_failed,
             voice=voice,
+            # Тип вложения нужен оркестратору, чтобы отличить скриншот от голосового.
+            media_type="" if kind == "text" else str(raw.get("type") or "").lower(),
         )
 
     async def send(self, chat_id: str, text: str, **kwargs) -> str:
