@@ -1,0 +1,196 @@
+"""Детерминированный сторож каналов: спрашиваем Wappi, а не гадаем по тишине.
+
+Сторож тишины (`channel_heartbeat.py`) неустраним по природе: молчащий живой канал и
+мёртвый канал по длительности молчания неразличимы. Честная симуляция на 21 сутках
+показала 2.5 ложных инцидента в сутки даже на смягчённых порогах 180/420.
+
+А Wappi отвечает точно: `GET /api/sync/get/status` отдаёт `authorized` и `app_status`.
+В поле `logouted_at` визового профиля стоит 03.08 09:06 — ровно та авария, которую мы
+тогда 12 часов не замечали. Вопрос «авторизован ли профиль» надо задавать, а не выводить.
+
+Два повода для тревоги:
+  A. разлогин — `authorized != true` или `app_status != "open"`;
+  B. подписка Wappi кончается — `payment_expired_at` ближе порога. Отвалившаяся подписка
+     убивает канал молча, это уже было с TourVisor 06.07.
+
+Сторож тишины остаётся предохранителем на 12 часов: статус Wappi не покрывает случай
+«профиль жив, но вебхук до нас не доходит».
+
+ТЗ и гейт: `docs/task-wappi-health-v3.md`, `tests/test_wappi_health.py`.
+"""
+from __future__ import annotations
+
+import json
+import logging
+import time
+from datetime import datetime, timezone
+
+from app.config import settings
+from app.core import flags
+
+log = logging.getLogger("wappi_health")
+
+_state: dict[str, float] = {}
+_STATE_KEY = "wh:alert_state"
+_STATE_TTL = 14 * 24 * 3600
+
+
+def parse_wappi_time(value) -> float | None:
+    """Разобрать время из ответа Wappi. Мусор и пустота → None, без исключений.
+
+    Форматы с прода различаются в одном ответе: `payment_expired_at` приходит с `Z`,
+    остальные поля — со смещением `+03:00`.
+    """
+    if not isinstance(value, str) or not value.strip():
+        return None
+    raw = value.strip()
+    if raw.endswith("Z"):
+        raw = raw[:-1] + "+00:00"
+    try:
+        moment = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.timestamp()
+
+
+def _name(bot_id: str) -> str:
+    try:
+        from app.core.bots import registry
+        bot = next((b for b in registry.all() if b.id == bot_id), None)
+        if bot and (bot.manager_name or bot.title):
+            return f" ({bot.manager_name or bot.title})"
+    except Exception:  # noqa: BLE001 — алерт важнее красивого имени
+        pass
+    return ""
+
+
+def _logout_text(bot_id: str, status: dict) -> str:
+    detail = "не авторизован" if not status.get("authorized") else \
+        f"приложение в состоянии «{status.get('app_status')}»"
+    return (f"🔴 Канал {bot_id}{_name(bot_id)} отвалился: {detail}.\n"
+            f"Сообщения клиентов до нас не доходят. Нужно заново отсканировать QR "
+            f"в профиле Wappi.")
+
+
+def _payment_text(bot_id: str, expires_at: float, now: float) -> str:
+    when = datetime.fromtimestamp(expires_at, timezone.utc).strftime("%d.%m")
+    days = int((expires_at - now) // 86400)
+    tail = f"через {days} дн. ({when})" if days > 0 else f"уже истекла ({when})"
+    return (f"🟡 Подписка Wappi по каналу {bot_id}{_name(bot_id)} {tail}.\n"
+            f"Когда она кончится, канал умрёт молча — продлить заранее.")
+
+
+def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> list[tuple[str, str]]:
+    """Чистое решение: по каким каналам бить тревогу. Мутирует state.
+
+    `statuses`: bot_id → ответ Wappi, либо None, если запрос не удался. None — молчим:
+    тревога, вызванная нашей же сетевой ошибкой, обесценила бы все остальные.
+    """
+    if not getattr(cfg, "wappi_health_enabled", True):
+        return []
+
+    cooldown = getattr(cfg, "wappi_health_cooldown_minutes", 360) * 60
+    warn_ahead = getattr(cfg, "wappi_payment_warn_days", 5) * 86400
+    alerts: list[tuple[str, str]] = []
+
+    for bot_id, status in sorted(statuses.items()):
+        if not isinstance(status, dict):
+            continue
+
+        reasons: dict[str, str] = {}
+        if not status.get("authorized") or str(status.get("app_status") or "") != "open":
+            reasons["logout"] = _logout_text(bot_id, status)
+        expires_at = parse_wappi_time(status.get("payment_expired_at"))
+        if expires_at is not None and expires_at - now <= warn_ahead:
+            reasons["payment"] = _payment_text(bot_id, expires_at, now)
+
+        # Поводы независимы: защёлка на разлогин не смеет заглушить подписку, иначе
+        # про второй повод мы узнаем постфактум.
+        for reason in ("logout", "payment"):
+            key = f"{reason}:{bot_id}"
+            if reason not in reasons:
+                state.pop(key, None)          # повода нет → защёлка снимается
+                continue
+            last_alert = state.get(key)
+            if last_alert and now - last_alert < cooldown:
+                continue
+            state[key] = now
+            alerts.append((bot_id, reasons[reason]))
+
+    return alerts
+
+
+async def fetch_status(profile_id: str) -> dict | None:
+    """Статус профиля у Wappi. Любой сбой → None (сторож молчит, а не выдумывает)."""
+    if not profile_id or not settings.wappi_token or not settings.wappi_base_url:
+        return None
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=settings.wappi_health_timeout_seconds) as client:
+            resp = await client.get(
+                f"{settings.wappi_base_url}/api/sync/get/status",
+                params={"profile_id": profile_id},
+                # Токен только в заголовке и никогда в лог.
+                headers={"Authorization": settings.wappi_token},
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+    except Exception:  # noqa: BLE001 — недоступность Wappi не повод для тревоги
+        log.warning("статус профиля не прочитан (profile=%s)", profile_id)
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+async def _state_load() -> dict:
+    if settings.state_backend != "redis":
+        return dict(_state)
+    try:
+        from app.core.stt_metrics import _redis
+        raw = await _redis().get(_STATE_KEY)
+        if raw:
+            loaded = json.loads(raw)
+            if isinstance(loaded, dict):
+                return {str(k): float(v) for k, v in loaded.items()}
+    except Exception:  # noqa: BLE001
+        log.warning("защёлка не прочитана, беру из памяти", exc_info=True)
+    return dict(_state)
+
+
+async def _state_save(state: dict) -> None:
+    _state.clear()
+    _state.update(state)
+    if settings.state_backend != "redis":
+        return
+    try:
+        from app.core.stt_metrics import _redis
+        await _redis().set(_STATE_KEY, json.dumps(state), ex=_STATE_TTL)
+    except Exception:  # noqa: BLE001
+        return
+
+
+async def run() -> None:
+    """Джоба планировщика: спросить статус каждого профиля и позвать владельца."""
+    if not await flags.get_flag("wappi_health_enabled", settings.wappi_health_enabled):
+        return
+
+    from app.core.bots import registry
+    profiles = {bot.id: bot.wappi_profile_id for bot in registry.all() if bot.wappi_profile_id}
+    if not profiles:
+        return
+
+    statuses: dict[str, dict | None] = {}
+    for bot_id, profile_id in profiles.items():
+        statuses[bot_id] = await fetch_status(profile_id)
+
+    state = await _state_load()
+    alerts = decide(time.time(), statuses, state, settings)
+    await _state_save(state)
+    if not alerts:
+        return
+
+    from app.core import ops_alert
+    for bot_id, text in alerts:
+        log.error("WAPPI UNHEALTHY: %s", bot_id)
+        await ops_alert.send(text)

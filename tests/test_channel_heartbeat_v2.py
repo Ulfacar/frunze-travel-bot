@@ -132,6 +132,13 @@ def test_regression_false_alarm_of_07_08():
     """07.08 в 07:23 по Бишкеку прилетел алерт по живому каналу: 5 часов ночной тишины
     при ночном пороге ровно в 5 часов. В 07:36 клиент написал сам, за сутки 149 входящих.
 
+    ЧИСЛА ОБНОВЛЕНЫ 07.08 (docs/task-wappi-health-v3.md). Требование изменилось, тест не
+    подгонялся под код: первый расчёт порогов в v2 был ошибочным — паузы относились к
+    «дню» или «ночи» по часу прихода СЛЕДУЮЩЕГО сообщения, хотя сторож судит на каждом
+    тике. Честная симуляция дала 2.5 ложных инцидента в сутки на порогах 180/420 вместо
+    обещанных 0-1. Чувствительность перенесена на детектор, у которого ложных тревог нет
+    по построению (app/core/wappi_health.py), а тишина оставлена предохранителем на 12 ч.
+
     Тест намеренно берёт настройки из app.config.settings: если правку порогов сделать
     только в docker-compose или только в config.py, гейт обязан это заметить.
     """
@@ -139,18 +146,23 @@ def test_regression_false_alarm_of_07_08():
     from app.core.channel_heartbeat import decide
 
     assert decide(NOW, {"getvisa": _ago(5 * 60)}, {}, settings, bishkek_hour=NIGHT_HOUR) == []
-    assert _ids(decide(NOW, {"getvisa": _ago(8 * 60)}, {}, settings,
+    assert decide(NOW, {"getvisa": _ago(8 * 60)}, {}, settings, bishkek_hour=NIGHT_HOUR) == []
+    assert _ids(decide(NOW, {"getvisa": _ago(13 * 60)}, {}, settings,
                        bishkek_hour=NIGHT_HOUR)) == ["getvisa"]
 
 
 def test_regression_daytime_lull_is_not_an_outage():
     """Днём пауза в 2 часа случалась 59 раз за 14 дней на трёх каналах — это дыхание
-    трафика, а не авария. Настоящий простой днём начинается заметно позже."""
+    трафика, а не авария. Настоящий простой днём начинается заметно позже.
+
+    Числа обновлены вместе с предыдущим тестом и по той же причине: 5 часов дневной
+    тишины по симуляции тоже дают ложную тревогу, а не аварию."""
     from app.config import settings
     from app.core.channel_heartbeat import decide
 
     assert decide(NOW, {"getvisa": _ago(120)}, {}, settings, bishkek_hour=DAY_HOUR) == []
-    assert _ids(decide(NOW, {"getvisa": _ago(300)}, {}, settings,
+    assert decide(NOW, {"getvisa": _ago(5 * 60)}, {}, settings, bishkek_hour=DAY_HOUR) == []
+    assert _ids(decide(NOW, {"getvisa": _ago(13 * 60)}, {}, settings,
                        bishkek_hour=DAY_HOUR)) == ["getvisa"]
 
 

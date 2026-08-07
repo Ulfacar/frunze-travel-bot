@@ -56,10 +56,14 @@ async def lifespan(app: FastAPI):
     # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
     from app.core import (awaiting, calendar_brief, channel_heartbeat, followup,
                           instant_handoff, manager_sync, morning_brief, outcome_infer,
-                          rescore, scheduler, tours_health, tours_summary, watchdog)
+                          rescore, scheduler, tours_health, tours_summary, wappi_health,
+                          watchdog)
     scheduler.register("watchdog", watchdog.run)
-    # Отдельно от watchdog: тот смотрит агрегат («легло всё»), этот — каждый канал
-    # («легла часть»). 03.08 визовый молчал 12 часов, и агрегат промолчал.
+    # Основной сторож каналов: спрашивает у Wappi, авторизован ли профиль. Точный факт
+    # вместо догадки по тишине — 03.08 Wappi знал о разлогине, а мы 12 часов не знали.
+    scheduler.register("wappi_health", wappi_health.run)
+    # Предохранитель к нему: ловит «профиль жив, но вебхук до нас не доходит», чего
+    # статус Wappi не покажет. Порог 12 часов — более чувствительные дают ложные тревоги.
     scheduler.register("channel_heartbeat", channel_heartbeat.run)
     scheduler.register("awaiting", awaiting.run)
     scheduler.register("followup", followup.run)
