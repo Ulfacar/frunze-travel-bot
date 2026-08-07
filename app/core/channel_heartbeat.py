@@ -68,10 +68,14 @@ def _human(minutes: float) -> str:
 
 
 def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
-           *, bishkek_hour: int) -> list[tuple[str, str]]:
+           *, bishkek_hour: int, reported=frozenset()) -> list[tuple[str, str]]:
     """Чистое решение: по каким каналам пора бить тревогу. Мутирует state.
 
     Возвращает список `(bot_id, текст)`. Пустой список — всё в порядке.
+
+    `reported` — каналы, про которые уже сказал детектор Wappi. Разлогин профиля это
+    одновременно и «Wappi говорит: отвалился», и «входящих нет»; факт один, и сообщение
+    про него должно быть одно.
     """
     if not getattr(cfg, "channel_heartbeat_enabled", True):
         return []
@@ -90,19 +94,22 @@ def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
             state.pop(f"alerted:{bot_id}", None)     # ожил → защёлка снимается
             continue
 
-        # Один инцидент — один алерт; напоминание не чаще cooldown. Иначе при тике
-        # в 5 минут суточный простой дал бы 288 сообщений, и сторожа отключат.
+        if bot_id in reported:
+            continue        # про этот канал уже сказал детектор Wappi — не дублируем
+
+        # Один инцидент — одно сообщение; напоминание не чаще cooldown (сутки). Иначе
+        # при тике в 5 минут суточный простой дал бы 288 сообщений, и сторожа отключат.
         last_alert = state.get(f"alerted:{bot_id}")
         if last_alert and now - last_alert < cooldown:
             continue
         state[f"alerted:{bot_id}"] = now
 
-        alerts.append((bot_id, _text(bot_id, silent_minutes)))
+        alerts.append((bot_id, _text(bot_id, silent_minutes, reminder=last_alert is not None)))
 
     return alerts
 
 
-def _text(bot_id: str, silent_minutes: float) -> str:
+def _text(bot_id: str, silent_minutes: float, *, reminder: bool = False) -> str:
     name = ""
     try:
         from app.core.bots import registry
@@ -110,6 +117,12 @@ def _text(bot_id: str, silent_minutes: float) -> str:
         name = f" ({bot.manager_name or bot.title})" if bot and (bot.manager_name or bot.title) else ""
     except Exception:  # noqa: BLE001 — алерт важнее красивого имени
         pass
+    # Повтор обязан читаться как напоминание, а не как новое событие: иначе это то же
+    # самое сообщение второй раз, а владелец просил ровно обратного.
+    if reminder:
+        return (f"🔁 Напоминаю: канал {bot_id}{name} так и молчит — уже "
+                f"{_human(silent_minutes)}, входящих нет.\n"
+                f"Проверь профиль в Wappi: авторизация (QR) и адрес вебхука.")
     return (f"🔴 Канал {bot_id}{name} молчит {_human(silent_minutes)} — входящих нет.\n"
             f"Проверь профиль в Wappi: авторизация (QR) и адрес вебхука.")
 
@@ -285,7 +298,11 @@ async def run() -> None:
 
     local = datetime.now(timezone.utc) + timedelta(hours=BISHKEK_UTC_OFFSET)
     state = await _state_load()
-    alerts = decide(now, await _load_last_seen(), state, settings, bishkek_hour=local.hour)
+    # Про каналы, по которым Wappi уже сообщил о разлогине, молчим: факт один.
+    from app.core import wappi_health
+    reported = await wappi_health.open_incidents()
+    alerts = decide(now, await _load_last_seen(), state, settings,
+                    bishkek_hour=local.hour, reported=reported)
     # Сохраняем ДО проверки на пустоту: `decide` снимает защёлку с ожившего канала, и
     # эту отмену нужно записать не меньше, чем сам факт алерта.
     await _state_save(state)

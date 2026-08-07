@@ -66,9 +66,12 @@ def _name(bot_id: str) -> str:
     return ""
 
 
-def _logout_text(bot_id: str, status: dict) -> str:
+def _logout_text(bot_id: str, status: dict, *, reminder: bool = False) -> str:
     detail = "не авторизован" if not status.get("authorized") else \
         f"приложение в состоянии «{status.get('app_status')}»"
+    if reminder:
+        return (f"🔁 Напоминаю: канал {bot_id}{_name(bot_id)} так и не поднялся — "
+                f"{detail}.\nСообщения клиентов до нас не доходят.")
     return (f"🔴 Канал {bot_id}{_name(bot_id)} отвалился: {detail}.\n"
             f"Сообщения клиентов до нас не доходят. Нужно заново отсканировать QR "
             f"в профиле Wappi.")
@@ -110,7 +113,8 @@ def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> li
             streak = state.get(streak_key, 0) + 1
             state[streak_key] = streak
             if streak >= confirm:
-                reasons["logout"] = _logout_text(bot_id, status)
+                reasons["logout"] = _logout_text(
+                    bot_id, status, reminder=state.get(f"logout:{bot_id}") is not None)
         else:
             state.pop(streak_key, None)     # одна здоровая проба обнуляет счётчик
         expires_at = parse_wappi_time(status.get("payment_expired_at"))
@@ -131,6 +135,24 @@ def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> li
             alerts.append((bot_id, reasons[reason]))
 
     return alerts
+
+
+def open_incidents_from_state(state: dict) -> set[str]:
+    """Каналы с открытой защёлкой разлогина — про них уже сказано.
+
+    Счётчики проб (`streak:`) и предупреждения о подписке (`payment:`) сюда не входят:
+    первое ещё не тревога, второе — не повод глушить сторожа тишины.
+    """
+    return {key.split(":", 1)[1] for key in state
+            if key.startswith("logout:") and key.split(":", 1)[1]}
+
+
+async def open_incidents() -> set[str]:
+    """То же, но из хранилища — чтобы сторож тишины не дублировал уже сказанное."""
+    try:
+        return open_incidents_from_state(await _state_load())
+    except Exception:  # noqa: BLE001 — в худшем случае получим лишнее сообщение, не тишину
+        return set()
 
 
 async def fetch_status(profile_id: str) -> dict | None:
