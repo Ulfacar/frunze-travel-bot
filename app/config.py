@@ -151,6 +151,10 @@ class Settings(BaseSettings):
     # (logouted_at 09:06), а мы 12 часов её не видели.
     wappi_health_enabled: bool = True
     wappi_health_cooldown_minutes: int = 360     # напоминание по длящейся аварии
+    # Короткие провалы статуса — штатное поведение Wappi: 07.08 getvisa провалился на одной
+    # пробе и переавторизовался сам через 34 секунды. Ждём подтверждения: 3 пробы по 5 минут.
+    # Настоящий разлогин (03.08 — 12 часов) это переживает с запасом.
+    wappi_health_confirm_ticks: int = 3
     wappi_health_timeout_seconds: float = 15.0   # джоба планировщика не имеет права висеть
     wappi_payment_warn_days: int = 5             # подписка кончается → предупредить заранее
     stt_media_host_allowlist: list[str] = []

@@ -93,6 +93,11 @@ def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> li
 
     cooldown = getattr(cfg, "wappi_health_cooldown_minutes", 360) * 60
     warn_ahead = getattr(cfg, "wappi_payment_warn_days", 5) * 86400
+    # Сколько нездоровых проб ПОДРЯД считаем аварией. 07.08 профиль getvisa провалился
+    # на одной пробе и переавторизовался сам через 34 секунды; `authorized_at` у всех
+    # профилей меняется по нескольку раз в сутки, то есть короткие провалы — штатное
+    # поведение Wappi. Настоящий разлогин держится часами (03.08 — двенадцать).
+    confirm = max(1, int(getattr(cfg, "wappi_health_confirm_ticks", 1)))
     alerts: list[tuple[str, str]] = []
 
     for bot_id, status in sorted(statuses.items()):
@@ -100,8 +105,14 @@ def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> li
             continue
 
         reasons: dict[str, str] = {}
+        streak_key = f"streak:{bot_id}"
         if not status.get("authorized") or str(status.get("app_status") or "") != "open":
-            reasons["logout"] = _logout_text(bot_id, status)
+            streak = state.get(streak_key, 0) + 1
+            state[streak_key] = streak
+            if streak >= confirm:
+                reasons["logout"] = _logout_text(bot_id, status)
+        else:
+            state.pop(streak_key, None)     # одна здоровая проба обнуляет счётчик
         expires_at = parse_wappi_time(status.get("payment_expired_at"))
         if expires_at is not None and expires_at - now <= warn_ahead:
             reasons["payment"] = _payment_text(bot_id, expires_at, now)
@@ -182,7 +193,15 @@ async def run() -> None:
 
     statuses: dict[str, dict | None] = {}
     for bot_id, profile_id in profiles.items():
-        statuses[bot_id] = await fetch_status(profile_id)
+        status = await fetch_status(profile_id)
+        statuses[bot_id] = status
+        # Пишем КАЖДУЮ нездоровую пробу, даже ту, что не дошла до тревоги: иначе разбирать
+        # короткие провалы можно только по скриншоту из Telegram. Токена и телефона тут нет.
+        if isinstance(status, dict) and (not status.get("authorized")
+                                         or str(status.get("app_status") or "") != "open"):
+            log.warning("проба нездорова: %s authorized=%s app_status=%s authorized_at=%s",
+                        bot_id, status.get("authorized"), status.get("app_status"),
+                        status.get("authorized_at"))
 
     state = await _state_load()
     alerts = decide(time.time(), statuses, state, settings)
