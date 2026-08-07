@@ -132,11 +132,18 @@ class Settings(BaseSettings):
     # Отдельно от alert_* старого watchdog: тот смотрит агрегат («легло всё»), этот —
     # каждый канал («легла часть»). 03.08 визовый молчал 12 часов, и агрегат промолчал.
     channel_heartbeat_enabled: bool = True
-    channel_silence_minutes: int = 90            # днём
-    channel_silence_night_minutes: int = 300     # ночью трафик реально падает
+    # Пороги подняты 07.08 по замеру пауз за 14 дней: при 90/300 сторож дал бы 59 дневных
+    # и 9 ночных срабатываний, из них почти все — дыхание трафика, а не авария (первое же
+    # боевое срабатывание было ложным). При 180/420 остаётся 0-1 в сутки, а простой 03.08
+    # (12 часов разлогина) ловится по-прежнему.
+    channel_silence_minutes: int = 180           # днём
+    channel_silence_night_minutes: int = 420     # ночью трафик реально падает
     channel_alert_cooldown_minutes: int = 180    # напоминание по длящемуся простою
     channel_heartbeat_quiet_from: int = 22       # тихое окно по Бишкеку
     channel_heartbeat_quiet_to: int = 9
+    # Насколько старую историю из БД принимаем за отметку живости. Старше — канал не
+    # «внезапно лёг», а выведен из работы; вечный алерт по нему = алерт-фатиг.
+    channel_heartbeat_baseline_max_age_hours: int = 168
     stt_media_host_allowlist: list[str] = []
     stt_cost_per_minute_usd: float = 0.003
     # --- guard v1: фильтр доверия к расшифровке (app/core/stt_guard.py) ------------
