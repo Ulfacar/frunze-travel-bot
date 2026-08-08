@@ -68,7 +68,8 @@ def _human(minutes: float) -> str:
 
 
 def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
-           *, bishkek_hour: int, reported=frozenset()) -> list[tuple[str, str]]:
+           *, bishkek_hour: int, reported=frozenset(),
+           diagnoses: dict[str, str] | None = None) -> list[tuple[str, str]]:
     """Чистое решение: по каким каналам пора бить тревогу. Мутирует state.
 
     Возвращает список `(bot_id, текст)`. Пустой список — всё в порядке.
@@ -104,12 +105,32 @@ def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
             continue
         state[f"alerted:{bot_id}"] = now
 
-        alerts.append((bot_id, _text(bot_id, silent_minutes, reminder=last_alert is not None)))
+        alerts.append((bot_id, _text(bot_id, silent_minutes,
+                                     reminder=last_alert is not None,
+                                     diagnosis=(diagnoses or {}).get(bot_id, ""))))
 
     return alerts
 
 
-def _text(bot_id: str, silent_minutes: float, *, reminder: bool = False) -> str:
+def _advice(diagnosis: str) -> str:
+    """Совет по факту, а не один на все случаи.
+
+    08.08 по каналу Айсины ушло «проверь профиль в Wappi: авторизация (QR) и адрес
+    вебхука», хотя оба были в порядке — на номер просто перестали писать (новые диалоги
+    13 → 4 → 8 → 3 → 1 → 0 при ровных соседних каналах). Совет увёл в сторону от
+    настоящей причины, а она была не техническая.
+    """
+    if diagnosis == "webhook":
+        return ("Сообщения в Wappi приходят, а до нас не доходят — смотри адрес вебхука "
+                "у этого профиля.")
+    if diagnosis == "no_traffic":
+        return ("В Wappi по этому номеру тоже тихо — значит дело не в технике. "
+                "Проверь, куда ведёт реклама, и не ограничен ли сам номер в WhatsApp.")
+    return "Проверь профиль в Wappi: авторизация (QR) и адрес вебхука."
+
+
+def _text(bot_id: str, silent_minutes: float, *, reminder: bool = False,
+          diagnosis: str = "") -> str:
     name = ""
     try:
         from app.core.bots import registry
@@ -121,10 +142,9 @@ def _text(bot_id: str, silent_minutes: float, *, reminder: bool = False) -> str:
     # самое сообщение второй раз, а владелец просил ровно обратного.
     if reminder:
         return (f"🔁 Напоминаю: канал {bot_id}{name} так и молчит — уже "
-                f"{_human(silent_minutes)}, входящих нет.\n"
-                f"Проверь профиль в Wappi: авторизация (QR) и адрес вебхука.")
+                f"{_human(silent_minutes)}, входящих нет.\n{_advice(diagnosis)}")
     return (f"🔴 Канал {bot_id}{name} молчит {_human(silent_minutes)} — входящих нет.\n"
-            f"Проверь профиль в Wappi: авторизация (QR) и адрес вебхука.")
+            f"{_advice(diagnosis)}")
 
 
 async def note_inbound(bot_id: str) -> None:
@@ -301,8 +321,10 @@ async def run() -> None:
     # Про каналы, по которым Wappi уже сообщил о разлогине, молчим: факт один.
     from app.core import wappi_health
     reported = await wappi_health.open_incidents()
+    # Почему тихо — спрашиваем у Wappi, а не советуем «проверь QR и вебхук» наугад.
+    diagnoses = await wappi_health.diagnoses()
     alerts = decide(now, await _load_last_seen(), state, settings,
-                    bishkek_hour=local.hour, reported=reported)
+                    bishkek_hour=local.hour, reported=reported, diagnoses=diagnoses)
     # Сохраняем ДО проверки на пустоту: `decide` снимает защёлку с ожившего канала, и
     # эту отмену нужно записать не меньше, чем сам факт алерта.
     await _state_save(state)

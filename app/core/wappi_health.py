@@ -31,6 +31,7 @@ from app.core import flags
 log = logging.getLogger("wappi_health")
 
 _state: dict[str, float] = {}
+_memory_counters: dict[str, tuple] = {}
 _STATE_KEY = "wh:alert_state"
 _STATE_TTL = 14 * 24 * 3600
 
@@ -66,15 +67,43 @@ def _name(bot_id: str) -> str:
     return ""
 
 
+def classify_gap(counter_now, counter_prev, our_inbound_moved: bool) -> str:
+    """Почему по каналу тихо: «webhook» | «no_traffic» | «» (не знаем).
+
+    Различие видно из того же ответа Wappi, что мы и так читаем. 08.08 уведомление по
+    каналу Айсины советовало «проверь QR и вебхук», хотя и авторизация, и вебхук были
+    в порядке: на номер просто перестали писать. Счётчик Wappi вырос за 19 часов на 9 —
+    значит сообщения не терялись по дороге, их не было. Совет уводил в сторону.
+    """
+    if our_inbound_moved:
+        return ""                       # до нас доходит — диагностировать нечего
+    if counter_now is None or counter_prev is None:
+        return ""                       # нет данных — молчим о причине, а не выдумываем
+    return "webhook" if counter_now > counter_prev else "no_traffic"
+
+
 def _logout_text(bot_id: str, status: dict, *, reminder: bool = False) -> str:
-    detail = "не авторизован" if not status.get("authorized") else \
-        f"приложение в состоянии «{status.get('app_status')}»"
+    """Совет обязан соответствовать причине.
+
+    07.08 на `app_status: connecting` бот написал «отвалился, нужно заново отсканировать
+    QR», хотя профиль был АВТОРИЗОВАН и просто переподключался. Сканировать было незачем.
+    QR помогает ровно в одном случае — когда профиль не авторизован.
+    """
+    channel = f"{bot_id}{_name(bot_id)}"
+    if not status.get("authorized"):
+        if reminder:
+            return (f"🔁 Напоминаю: канал {channel} так и не авторизован.\n"
+                    f"Сообщения клиентов до нас не доходят.")
+        return (f"🔴 Канал {channel} не авторизован — сообщения клиентов до нас не доходят.\n"
+                f"Нужно заново отсканировать QR в профиле Wappi.")
+
+    state = status.get("app_status")
     if reminder:
-        return (f"🔁 Напоминаю: канал {bot_id}{_name(bot_id)} так и не поднялся — "
-                f"{detail}.\nСообщения клиентов до нас не доходят.")
-    return (f"🔴 Канал {bot_id}{_name(bot_id)} отвалился: {detail}.\n"
-            f"Сообщения клиентов до нас не доходят. Нужно заново отсканировать QR "
-            f"в профиле Wappi.")
+        return (f"🔁 Напоминаю: канал {channel} так и не поднялся — приложение всё ещё "
+                f"в состоянии «{state}».")
+    return (f"🔴 Канал {channel}: приложение в состоянии «{state}» — связь с WhatsApp "
+            f"не восстановилась за 15 минут.\nПрофиль при этом авторизован, QR сканировать "
+            f"НЕ нужно: он сам переподключается. Если состояние не уйдёт, пишем в Wappi.")
 
 
 def _payment_text(bot_id: str, expires_at: float, now: float) -> str:
@@ -145,6 +174,61 @@ def open_incidents_from_state(state: dict) -> set[str]:
     """
     return {key.split(":", 1)[1] for key in state
             if key.startswith("logout:") and key.split(":", 1)[1]}
+
+
+async def diagnoses() -> dict[str, str]:
+    """Почему по каждому каналу тихо — для текста алерта сторожа тишины.
+
+    Снимок счётчика Wappi храним между тиками и сравниваем заодно с нашей отметкой
+    последнего входящего: выросло у них, но не у нас — теряется по дороге; не выросло
+    нигде — на номер просто не пишут.
+    """
+    out: dict[str, str] = {}
+    try:
+        from app.core.bots import registry
+        from app.core.channel_heartbeat import _load_last_seen
+        last_seen = await _load_last_seen()
+        for bot in registry.all():
+            if not bot.wappi_profile_id:
+                continue
+            status = await fetch_status(bot.wappi_profile_id)
+            counter = status.get("message_count") if isinstance(status, dict) else None
+            prev_counter, prev_seen = await _counter_snapshot(bot.id)
+            await _remember_counter(bot.id, counter, last_seen.get(bot.id))
+            moved = bool(prev_seen and last_seen.get(bot.id) and last_seen[bot.id] > prev_seen)
+            verdict = classify_gap(counter, prev_counter, moved)
+            if verdict:
+                out[bot.id] = verdict
+    except Exception:  # noqa: BLE001 — без диагноза алерт уйдёт с нейтральным текстом
+        log.warning("диагноз каналов не собран", exc_info=True)
+    return out
+
+
+async def _counter_snapshot(bot_id: str) -> tuple[int | None, float | None]:
+    if settings.state_backend != "redis":
+        return _memory_counters.get(bot_id, (None, None))
+    try:
+        from app.core.stt_metrics import _redis
+        raw = await _redis().get(f"wh:msgcount:{bot_id}")
+        if raw:
+            counter, seen = json.loads(raw)
+            return (int(counter) if counter is not None else None,
+                    float(seen) if seen else None)
+    except Exception:  # noqa: BLE001
+        pass
+    return (None, None)
+
+
+async def _remember_counter(bot_id: str, counter, last_seen) -> None:
+    _memory_counters[bot_id] = (counter, last_seen)
+    if settings.state_backend != "redis":
+        return
+    try:
+        from app.core.stt_metrics import _redis
+        await _redis().set(f"wh:msgcount:{bot_id}",
+                           json.dumps([counter, last_seen]), ex=_STATE_TTL)
+    except Exception:  # noqa: BLE001
+        return
 
 
 async def open_incidents() -> set[str]:
