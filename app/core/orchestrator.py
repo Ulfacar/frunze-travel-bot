@@ -505,7 +505,27 @@ class Orchestrator:
                            funnel=self.bot.scenario if self.bot else None,
                            bot_id=self._bot_id)
 
+    def _note_schedule_violation(self, text: str) -> None:
+        """Режим наблюдения: замечаем ответ, зовущий в офис в закрытый день или час.
+
+        Клиенту пока ничего не меняем — сначала сутки цифр. Корень чиним не здесь, а
+        подстановкой графика в промпт на каждый ход (`runner._schedule_context_message`);
+        этот счётчик показывает, хватило ли этого. На истории за 21 день детектор
+        помечал 1 сообщение из 1636 — ровно ту аварию с записью на воскресенье.
+        """
+        try:
+            from datetime import datetime, timedelta, timezone
+
+            from app.core.schedule import violates_schedule
+            local = datetime.now(timezone.utc) + timedelta(hours=6)
+            why = violates_schedule(self._bot_id, text, local)
+            if why:
+                log.warning("SCHEDULE VIOLATION (%s): %s", self._bot_id, why)
+        except Exception:  # noqa: BLE001 — наблюдение не имеет права мешать ответу
+            return
+
     async def _reply(self, msg: Message, text: str) -> None:
+        self._note_schedule_violation(text)
         # Логируем исходящее как pending → шлём → отмечаем доставку (sent/failed).
         panel = get_conversation_store()
         msg_id = 0

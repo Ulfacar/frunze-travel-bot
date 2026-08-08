@@ -109,6 +109,27 @@ def _date_context_message(now: datetime | None = None) -> dict:
     }
 
 
+def _schedule_context_message(bot_id: str, now: datetime | None = None) -> dict | None:
+    """График приёма отдельным служебным сообщением — рядом с датой, на каждый ход.
+
+    06.08 бот записал клиента на консультацию в воскресенье вечером, хотя по визам
+    пн–сб до 19:00. График лежал в знаниях строкой, и что из неё следует, решала модель:
+    в ночь на 07.08 она отвечала правильно, а сутками раньше — нет. С датой была ровно
+    та же болезнь и то же лекарство (см. `_date_context_message`).
+    """
+    if not bot_id:
+        return None
+    try:
+        from app.core.schedule import schedule_note
+        base = now or datetime.now(timezone.utc)
+        if base.tzinfo is None:
+            base = base.replace(tzinfo=timezone.utc)
+        local = base.astimezone(timezone.utc) + _BISHKEK_OFFSET
+        return {"role": "user", "content": schedule_note(bot_id, local)}
+    except Exception:  # noqa: BLE001 — без заметки ответим как раньше, но ответим
+        return None
+
+
 @dataclass
 class FunnelSpec:
     """Описание воронки для агентного цикла."""
@@ -135,6 +156,7 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
             model = settings.llm_model_cheap
         window = _windowed_history(state.history, settings.llm_history_max_messages)
         prefix = [m for m in (_date_context_message(),
+                              _schedule_context_message(state.bot_id),
                               _ad_context_message(state.ad_referral),
                               _qual_context_message(state.qualification)) if m]
         messages = prefix + window
