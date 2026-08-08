@@ -193,10 +193,17 @@ async def diagnoses() -> dict[str, str]:
                 continue
             status = await fetch_status(bot.wappi_profile_id)
             counter = status.get("message_count") if isinstance(status, dict) else None
-            prev_counter, prev_seen = await _counter_snapshot(bot.id)
-            await _remember_counter(bot.id, counter, last_seen.get(bot.id))
-            moved = bool(prev_seen and last_seen.get(bot.id) and last_seen[bot.id] > prev_seen)
-            verdict = classify_gap(counter, prev_counter, moved)
+            base_counter, base_seen = await _counter_snapshot(bot.id)
+            our_seen = last_seen.get(bot.id)
+
+            # Точка отсчёта привязана к МОМЕНТУ ПОСЛЕДНЕГО ВХОДЯЩЕГО, а не к прошлому тику.
+            # Иначе на 12-часовом простое мы сравнивали бы счётчик за последние 5 минут и
+            # почти всегда видели «ноль прироста» — то есть диагноз был бы ни о чём.
+            moved = bool(our_seen and (base_seen is None or our_seen > base_seen))
+            if moved or base_counter is None:
+                await _remember_counter(bot.id, counter, our_seen)
+
+            verdict = classify_gap(counter, base_counter, moved)
             if verdict:
                 out[bot.id] = verdict
     except Exception:  # noqa: BLE001 — без диагноза алерт уйдёт с нейтральным текстом

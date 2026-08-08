@@ -141,6 +141,20 @@ def test_decide_passes_diagnosis_into_the_alert():
     assert "qr" not in alerts[0][1].lower()
 
 
+def test_baseline_is_anchored_at_our_last_inbound_not_the_last_tick():
+    """Точка отсчёта — момент последнего входящего. Иначе на 12-часовом простое мы
+    сравнивали бы счётчик за последние 5 минут и почти всегда видели «прироста нет»,
+    то есть диагноз был бы ни о чём.
+
+    Здесь: за время простоя Wappi принял 25 сообщений, а до нас не дошло ни одного.
+    """
+    from app.core.wappi_health import classify_gap
+
+    baseline_counter = 715           # снято в момент последнего нашего входящего
+    for counter_now in (716, 720, 740):     # тики идут, счётчик у них растёт
+        assert classify_gap(counter_now, baseline_counter, our_inbound_moved=False) == "webhook"
+
+
 def test_diagnoses_default_to_empty_and_change_nothing():
     from app.config import settings
     from app.core.channel_heartbeat import decide
