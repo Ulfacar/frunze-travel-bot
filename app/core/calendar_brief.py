@@ -75,7 +75,10 @@ def _task_card(task) -> dict:
         "client": _phone_tail(task.user_id),
         "phone": _phone_display(task.user_id),
         "wa_link": _wa_link(task.user_id or ""),
-        "bitrix_link": "",   # проставляется ниже из диалога: у задачи лида нет
+        # Заполняется в build_manager_brief из карты `lead_ids`: у задачи своего лида нет,
+        # он живёт на диалоге. Пустая строка здесь означает «карточка неизвестна», и тогда
+        # строки 🗂 в брифе не будет вовсе — битая ссылка в 8 утра хуже её отсутствия.
+        "bitrix_link": "",
         "comment": (task.comment or "").strip(),
         "context": (task.ai_summary or "").strip(),   # AI-written context recap only
         "direction": task.direction,
@@ -134,7 +137,8 @@ def _lead_card(conv, now: datetime) -> dict:
 
 def build_manager_brief(login: str, name: str, tasks: list, night_requests: list,
                         now: datetime | None = None, *,
-                        to_distribute: list | None = None) -> dict:
+                        to_distribute: list | None = None,
+                        lead_ids: dict[str, str] | None = None) -> dict:
     """Assemble one manager's brief.
 
     tasks — their active CalendarTask rows for today.
@@ -142,12 +146,19 @@ def build_manager_brief(login: str, name: str, tasks: list, night_requests: list
         duplicated across managers).
     to_distribute — UNASSIGNED overnight leads, passed ONLY for a full-admin and shown
         in a separate "Требуют распределения" section. No assignment happens here.
+    lead_ids — user_id → id карточки Битрикса. У задачи календаря своего лида нет, она
+        знает только клиента; лид живёт на диалоге. Без этой карты блок «Звонки» уходил
+        БЕЗ ссылки на Битрикс — а это ровно та часть брифа, по которой визовые работают
+        утром (замер 11.08: у Элизы 11 звонков без ссылок против 6 ночных со ссылками).
     """
     now = _aware(now) or datetime.now(timezone.utc)
     local = now + timedelta(hours=BISHKEK_UTC_OFFSET)
+    leads = lead_ids or {}
     by_kind: dict[str, list] = {}
     for t in tasks:
-        by_kind.setdefault(t.kind, []).append(_task_card(t))
+        card = _task_card(t)
+        card["bitrix_link"] = _bitrix_link(leads.get(card["user_id"], ""))
+        by_kind.setdefault(t.kind, []).append(card)
     # Дольше всех ждёт — наверху (самый горячий клиент первым, не потеряется под капом).
     night = sorted((_lead_card(c, now) for c in night_requests),
                    key=lambda c: c["wait_min"], reverse=True)
@@ -476,8 +487,12 @@ async def run(now: datetime | None = None, *, sessionmaker=None) -> None:
             log.warning("calendar brief build failed for manager=%s", login, exc_info=True)
             continue
 
+        # Карточки Битрикса по всем диалогам разом: задача знает только клиента, а лид
+        # лежит на диалоге. Считаем из уже загруженного `convs`, лишних запросов нет.
+        lead_ids = {getattr(c, "user_id", ""): (getattr(c, "bitrix_lead_id", "") or "")
+                    for c in convs if getattr(c, "bitrix_lead_id", "")}
         brief = build_manager_brief(login, mgr.name or login, tasks, night, now,
-                                    to_distribute=to_distribute)
+                                    to_distribute=to_distribute, lead_ids=lead_ids)
         text = render_manager_brief_text(brief, cfg.admin_base_url)
 
         # Владелец/руководитель дополнительно видит срез по ОБОИМ направлениям —
