@@ -140,6 +140,12 @@ if settings.admin_enabled:
     from app.admin.router import router as admin_router
     app.include_router(admin_router)
 
+# Витрина подборки туров `/t/<slug>` — её открывает КЛИЕНТ из WhatsApp, поэтому она
+# публична и живёт отдельно от админки: логина у клиента нет и быть не может.
+from app.web.offers import router as offers_router  # noqa: E402
+
+app.include_router(offers_router)
+
 # Дев-демо: одиночный бот в Telegram (keyword-детект воронки). Поднимается только
 # при заданном токене — прод работает через Bitrix и Telegram-токена не требует.
 _telegram = TelegramAdapter() if settings.telegram_bot_token else None

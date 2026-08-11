@@ -189,6 +189,7 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
             logger.info("validator (%s): %s", spec.name, ", ".join(violations))
             for v in violations:
                 observ.note_validation(v)
+        text = _attach_tour_cards(state, text)
         state.history.append({"role": "assistant", "content": text})
         return text or "Расскажите, пожалуйста, подробнее."
 
@@ -214,7 +215,44 @@ async def _record_llm_usage(model: str, resp: object, state: DialogState) -> Non
 
 
 # ---------------- Туры ----------------
-def _tours_search_report(found) -> str:
+def _render_cards_for_state(found, state: DialogState) -> list[str]:
+    """Карточки подборки из сырых отелей. Любой сбой рендера гасим: ход важнее формата."""
+    try:
+        from app.integrations.tourvisor.cards import render_cards
+        return render_cards(found.hotels, departure=found.departure)
+    except Exception:  # noqa: BLE001
+        logger.warning("tour cards render failed (key=%s)", state.user_id, exc_info=True)
+        return []
+
+
+async def _offer_url(found, state: DialogState) -> str:
+    """Ссылка на страницу подборки. Пусто — карточки уйдут без неё, это не авария."""
+    try:
+        from app.web.offers import create_offer
+        return await create_offer(found, state)
+    except Exception:  # noqa: BLE001
+        logger.warning("tour offer page failed (key=%s)", state.user_id, exc_info=True)
+        return ""
+
+
+def _attach_tour_cards(state: DialogState, text: str) -> str:
+    """Дописать подборку к ответу модели — ПОСЛЕ валидатора.
+
+    Валидатор нужен диалогу: он режет выдуманные моделью URL и markdown. Но карточки собрал
+    код, их разметка — WhatsApp (`*жирный*`), и `strip_markdown` уничтожил бы её вместе со
+    ссылкой на нашу же страницу. Поэтому валидируется только текст модели, а блок карточек
+    приклеивается после и в неизменном виде.
+    """
+    cards, url = state.pending_tour_cards, state.pending_offer_url
+    state.pending_tour_cards, state.pending_offer_url = [], ""
+    if not cards:
+        return text
+    from app.integrations.tourvisor.cards import render_block
+    block = render_block(cards, offer_url=url)
+    return f"{text.rstrip()}\n\n{block}" if text.strip() else block
+
+
+def _tours_search_report(found, *, cards_mode: bool = False) -> str:
     """Результат подбора для агента — С ПРИЧИНОЙ, а не голым списком.
 
     Раньше на пустой выдаче наверх уходило «Подходящих туров не нашлось», агент причины не
@@ -253,10 +291,20 @@ def _tours_search_report(found) -> str:
                 "с новыми параметрами. НЕ заканчивай сообщение на отказе и НЕ проси клиента "
                 "поднять бюджет."
             )
-    head.append(
-        "Цены называй ровно как в строках, вместе с валютой (USD/EUR) — не переводи в другую "
-        "валюту и не меняй знак. Дату вылета озвучивай: она может отличаться от запрошенной."
-    )
+    if cards_mode:
+        # Карточки уже собраны кодом и уйдут клиенту сразу под репликой модели. Если модель
+        # ещё раз перечислит те же отели словами, клиент получит одно и то же дважды.
+        head.append(
+            "Карточки вариантов клиенту отправит КОД — сразу под твоим сообщением, в том же "
+            "виде, в каком их шлют менеджеры. Твоя часть: короткая подводка и ОДИН следующий "
+            "шаг. Сам отели не перечисляй, цены и даты не называй — они уже будут в карточках. "
+            "Список ниже дан тебе, чтобы отвечать на уточняющие вопросы (порядок совпадает)."
+        )
+    else:
+        head.append(
+            "Цены называй ровно как в строках, вместе с валютой (USD/EUR) — не переводи в другую "
+            "валюту и не меняй знак. Дату вылета озвучивай: она может отличаться от запрошенной."
+        )
     return " ".join(head) + "\n" + "\n".join(found.lines)
 
 
@@ -306,7 +354,17 @@ async def _tours_exec_tool(name: str, args: dict, state: DialogState, crm) -> st
             fallback=found.fallback_departure,
             has_dates=bool((found.query or {}).get("datefrom")),
         )
-        return _tours_search_report(found)
+        # Подборку клиенту собирает КОД, а не модель: в «1–2 фразы, ~300 знаков» из общего
+        # промпта влезает ровно один отель, и клиент получал именно его. Флаг читаем здесь,
+        # в одном месте: тогда текст для модели и текст для клиента не могут разъехаться.
+        cards_on = await flags.get_flag("tours_cards_enabled", settings.tours_cards_enabled)
+        if cards_on:
+            cards = _render_cards_for_state(found, state)
+            # Повторный поиск в том же ходу перетирает прежние карточки — клиенту уходит
+            # подборка по последнему запросу, а не склейка двух.
+            state.pending_tour_cards = cards
+            state.pending_offer_url = await _offer_url(found, state) if cards else ""
+        return _tours_search_report(found, cards_mode=cards_on and bool(state.pending_tour_cards))
 
     if name == "handoff_to_manager":
         if state.deal_id:
@@ -360,6 +418,9 @@ TOURS_SPEC = FunnelSpec(
 
 async def run_tours_turn(state: DialogState, user_text: str) -> str | None:
     """Один ход клиента в воронке «Туры»."""
+    # Ход мог упасть после поиска — тогда карточки остались в сохранённом состоянии. Без
+    # этой чистки они приклеились бы к следующей, совсем другой реплике.
+    state.pending_tour_cards, state.pending_offer_url = [], ""
     spec = TOURS_SPEC
     if state.manager_name:
         spec = replace(TOURS_SPEC, system=tours_system_for_manager(state.manager_name))

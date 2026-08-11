@@ -90,6 +90,11 @@ services:
       BITRIX_PREFER_OPENLINE_LEAD: ${BITRIX_PREFER_OPENLINE_LEAD:-false}
       BITRIX_OPENLINE_WAIT_SECONDS: ${BITRIX_OPENLINE_WAIT_SECONDS:-600}
       BITRIX_ASSIGNEE_BY_BOT: ${BITRIX_ASSIGNEE_BY_BOT:-{}}
+      # Точнее карты по каналу: на getvisa менеджеров двое (Медина/Элиза).
+      BITRIX_ASSIGNEE_BY_MANAGER: ${BITRIX_ASSIGNEE_BY_MANAGER:-{}}
+      # Подборка туров карточками + публичный адрес для ссылки «Подробнее здесь».
+      TOURS_CARDS_ENABLED: ${TOURS_CARDS_ENABLED:-false}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
       STATE_BACKEND: ${STATE_BACKEND:-redis}
       PANEL_BACKEND: ${PANEL_BACKEND:-postgres}
       ADMIN_ENABLED: ${ADMIN_ENABLED:-true}

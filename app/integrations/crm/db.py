@@ -232,6 +232,28 @@ class FaqEntry(Base):
     )
 
 
+class TourOffer(Base):
+    """Подборка туров, отправленная клиенту, — она же страница `/t/{slug}`.
+
+    Храним снимок, а не ссылку на живой поиск: TourVisor отдаёт результат по `requestid`,
+    который живёт минуты, а клиент открывает подборку и вечером, и назавтра. Показать ему
+    пустую страницу вместо тех же вариантов, что он видел в чате, — хуже, чем показать
+    цену суточной давности рядом с честной оговоркой «цены меняются, уточните у менеджера».
+    """
+
+    __tablename__ = "tour_offers"
+
+    slug: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), index=True, default="")
+    bot_id: Mapped[str] = mapped_column(String(64), default="")
+    departure: Mapped[str] = mapped_column(String(64), default="")
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    views: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 _engine: AsyncEngine | None = None
 _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 

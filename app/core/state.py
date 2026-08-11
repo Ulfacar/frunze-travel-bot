@@ -32,6 +32,12 @@ class DialogState:
     wait_ack_sent: bool = False  # после авто-хендоффа клиенту разово подтвердили ожидание
     ad_referral: dict[str, Any] = field(default_factory=dict)  # источник первого касания (CTWA), write-once
     consecutive_audio: int = 0  # подряд идущих голосовых/медиа без текста — на 2-м зовём менеджера
+    # Карточки туров, собранные кодом в этом ходу, и ссылка на страницу подборки. Живут
+    # ровно один ход: инструмент кладёт, `run_turn` дописывает их к ответу и очищает.
+    # Поле, а не переменная в памяти, потому что между инструментом и концом хода состояние
+    # успевает сохраниться; очистка на входе хода страхует от упавшего предыдущего.
+    pending_tour_cards: list[str] = field(default_factory=list)
+    pending_offer_url: str = ""
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False)

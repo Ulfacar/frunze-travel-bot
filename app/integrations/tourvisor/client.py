@@ -14,7 +14,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from urllib.parse import quote_plus
 
@@ -56,6 +56,11 @@ class TourSearch:
     min_price: str = ""
     query: dict | None = None
     budget_fit_count: int | None = None
+    # Сырые отели как их отдал TourVisor. Раньше наверх уходили только текстовые строки, и
+    # разведка 11.08 показала цену этого решения: в ответе лежат `room`, `placement`, фото,
+    # описание и рейтинг — всё, из чего менеджеры собирают свою карточку, — а мы их молча
+    # выбрасывали. Карточки клиенту и страница подборки строятся отсюда.
+    hotels: list[dict] = field(default_factory=list)
 
 # Дефолты, если из текста не удалось распарсить
 DEFAULT_NIGHTS = (7, 10)
@@ -281,6 +286,7 @@ class TourVisorClient:
                     min_price=_min_price_label(hotels),
                     query=query,
                     budget_fit_count=fit_count,
+                    hotels=hotels,
                 )
             except TourVisorError as e:
                 logger.warning("TourVisor API: %s", e)
@@ -321,7 +327,8 @@ class TourVisorClient:
             query["dateto"] = (date_to or date_from).strftime("%d.%m.%Y")
 
         # Явно названные ночи важнее вычисленных из диапазона дат.
-        nights = _explicit_nights(f"{params.get('dates', '')} {params.get('nights', '')}")
+        nights = _plain_nights(params.get("nights", "")) or _explicit_nights(
+            f"{params.get('dates', '')} {params.get('nights', '')}")
         if nights is None and span:
             nights = (span, span)
         query["nightsfrom"], query["nightsto"] = nights or DEFAULT_NIGHTS
@@ -474,6 +481,29 @@ def _parse_dates(text: str) -> tuple[str | None, str | None]:
     if not d1:
         return None, None
     return d1.strftime("%d.%m.%Y"), (d2 or d1).strftime("%d.%m.%Y")
+
+
+def _plain_nights(raw) -> tuple[int, int] | None:
+    """Поле `nights` инструмента, где лежит голое число или диапазон: «7», «7-10».
+
+    Модель кладёт туда именно число — так описана схема тула. `_explicit_nights` ищет число
+    рядом со словом «ноч» и такое поле пропускала: на запросе «7 ночей» с датами 17–25.08 в
+    TourVisor уходило 8 ночей (замер 11.08). В августовский пик это чужая цена.
+
+    Границы здравого смысла: 1–30. За ними считаем, что в поле мусор, и молча падаем на
+    прежний путь — лучше длительность из дат, чем поиск на 400 ночей.
+    """
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    rng = re.fullmatch(r"(\d{1,2})\s*[-–—]\s*(\d{1,2})", text)
+    if rng:
+        a, b = int(rng.group(1)), int(rng.group(2))
+        return (min(a, b), max(a, b)) if 1 <= min(a, b) and max(a, b) <= 30 else None
+    one = re.fullmatch(r"(\d{1,3})", text)
+    if one and 1 <= int(one.group(1)) <= 30:
+        return int(one.group(1)), int(one.group(1))
+    return None
 
 
 def _explicit_nights(text: str) -> tuple[int, int] | None:
