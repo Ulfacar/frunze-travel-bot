@@ -174,6 +174,35 @@ _wappi_orchestrators: dict[str, Orchestrator] = {
 }
 
 
+_ECHO_LOOKBACK = 6
+
+
+async def _is_bot_echo(panel, key: str, text: str) -> bool:
+    """Не наша ли это собственная реплика, вернувшаяся эхом от провайдера.
+
+    Второй рубеж после `is_own`. Первый живёт 15 минут в памяти процесса, и после рестарта
+    или задержки эха бот принял бы свой же текст за ответ менеджера — а это автоперехват,
+    то есть бот замолчал бы на этом клиенте до вмешательства человека.
+
+    Сравниваем с последними репликами бота в диалоге по нормализованному тексту. Ошибиться
+    можно только если менеджер слово в слово повторил недавнюю фразу бота — тогда мы
+    потеряем одно сообщение в панели; цена несопоставима с молчанием бота.
+    """
+    needle = " ".join((text or "").split())
+    if not needle:
+        return False
+    try:
+        conv = await panel.get(key)
+    except Exception:  # noqa: BLE001 — сомнение трактуем в пользу записи
+        return False
+    for message in reversed(list(getattr(conv, "messages", None) or [])[-_ECHO_LOOKBACK:]):
+        if getattr(message, "sender", "") != "bot":
+            continue
+        if " ".join((getattr(message, "text", "") or "").split()) == needle:
+            return True
+    return False
+
+
 async def _handle_manager_echo(raw: dict) -> None:
     event_id = str(raw.get("id", ""))
     if _seen_before(event_id):
@@ -195,6 +224,8 @@ async def _handle_manager_echo(raw: dict) -> None:
     bot = orchestrator.bot
     key = f"{bot.id}:{phone}"
     panel = get_conversation_store()
+    if await _is_bot_echo(panel, key, text):
+        return
     await panel.add_message(
         key,
         "manager",

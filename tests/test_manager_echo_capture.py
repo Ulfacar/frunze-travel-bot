@@ -492,13 +492,22 @@ def test_real_wappi_type_from_cabinet_is_recognised():
     assert is_outgoing_echo({"wh_type": "outgoing_message_phone", "type": "chat"})
 
 
-def test_bot_own_api_echo_is_not_treated_as_manager_reply():
-    """`outgoing_message_api` — эхо отправок самого бота. Слушать его нельзя: защита
-    «своё сообщение» живёт в памяти 15 минут, после рестарта бот принял бы свои же
-    реплики за ответы менеджера и ложно снимал «ждёт ответа»."""
+def test_api_echo_is_listened_since_support_answer():
+    """РЕШЕНИЕ ИЗМЕНЕНО 11.08.2026 по ответу поддержки Wappi.
+
+    Раньше здесь было закреплено обратное: «`outgoing_message_api` — эхо отправок самого
+    бота, слушать нельзя». Оказалось половиной правды. Поддержка подтвердила, что ответ
+    оператора ИЗ БИТРИКСА идёт «Открытая линия → Wappi API → WhatsApp» и приходит ровно
+    этим типом, то есть под ним смешаны наши реплики и ответы визовых менеджеров. Цена
+    прежнего решения: 36 сообщений менеджеров по визам за 14 дней против 845 у туров.
+
+    Опасение, ради которого тип отключали, осталось верным — поэтому своё эхо отсекается
+    двумя рубежами (`is_own` по id и сверка текста с репликами бота), и на них написан
+    отдельный гейт `tests/test_manager_echo_from_bitrix.py`.
+    """
     from app.channels.wappi import is_outgoing_echo
 
-    assert not is_outgoing_echo({"wh_type": "outgoing_message_api", "type": "chat"})
+    assert is_outgoing_echo({"wh_type": "outgoing_message_api", "type": "chat"})
 
 
 def test_group_and_reaction_echo_still_ignored():
