@@ -343,15 +343,73 @@ def render_manager_brief_text(brief: dict, base_url: str = "") -> str:
     return "\n".join(lines)
 
 
+# Telegram отвергает сообщение длиннее 4096 символов ЦЕЛИКОМ — менеджер получает не
+# обрезанный бриф, а пустоту. Замер 11.08: бриф Медины 5292 знака (12 звонков + 8 ночных),
+# и это после того, как в блок «Звонки» добавилась ссылка на карточку Битрикса. Берём с
+# запасом: у Telegram лимит считается в UTF-16 code units, эмодзи в брифе весят по два.
+TELEGRAM_LIMIT = 3800
+
+
+def split_for_telegram(text: str, limit: int = TELEGRAM_LIMIT) -> list[str]:
+    """Разрезать длинный бриф на сообщения по границам строк.
+
+    Режем именно по строкам: карточка клиента — это телефон плюс три ссылки под ним, и
+    разорвать её посередине значит отправить менеджеру номер без ссылок, а ссылки без
+    номера. Строку длиннее лимита (гигантский комментарий к задаче) режем принудительно —
+    потерять её было бы хуже.
+    """
+    if not (text or "").strip():
+        return []
+
+    # Блок = строка клиента плюс её строки с отступом (комментарий и три ссылки). Режем
+    # по границам блоков: телефон без ссылок и ссылки без телефона одинаково бесполезны.
+    blocks: list[list[str]] = []
+    for line in text.splitlines():
+        if blocks and line.startswith((" ", "\t")):
+            blocks[-1].append(line)
+        else:
+            blocks.append([line])
+
+    parts: list[str] = []
+    chunk: list[str] = []
+    size = 0
+    for block in blocks:
+        joined = "\n".join(block)
+        if len(joined) > limit:                  # аварийный случай: блок сам длиннее лимита
+            if chunk:
+                parts.append("\n".join(chunk))
+                chunk, size = [], 0
+            while joined:
+                parts.append(joined[:limit])
+                joined = joined[limit:]
+            continue
+        extra = len(joined) + (1 if chunk else 0)
+        if chunk and size + extra > limit:
+            parts.append("\n".join(chunk))
+            chunk, size = [joined], len(joined)
+            continue
+        chunk.append(joined)
+        size += extra
+    if chunk:
+        parts.append("\n".join(chunk))
+    return parts
+
+
 def _token() -> str:
     return (settings.managers_telegram_bot_token or settings.telegram_bot_token or "").strip()
 
 
 async def _push_telegram(token: str, chat_id: str, text: str) -> bool:
-    """Send one manager's brief. Returns True on success. chat_id is never logged."""
+    """Send one manager's brief. Returns True on success. chat_id is never logged.
+
+    Длинный бриф уходит несколькими сообщениями подряд: Telegram отвергает всё, что
+    длиннее лимита, и менеджер остаётся вообще без списка звонков.
+    """
     try:
         from app.channels.telegram import TelegramAdapter
-        await TelegramAdapter(token).send(chat_id, text)
+        adapter = TelegramAdapter(token)
+        for part in split_for_telegram(text):
+            await adapter.send(chat_id, part)
         return True
     except Exception:  # noqa: BLE001 — push must not break the scheduler
         log.warning("calendar brief push failed for manager=%s", "<redacted-chat>",
