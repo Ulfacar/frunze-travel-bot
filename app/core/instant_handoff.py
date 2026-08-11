@@ -194,6 +194,26 @@ async def _send_cc(text: str, *, owner_login: str) -> bool:
     return ok
 
 
+async def _remember_lead(sm, user_id: str, lead_id: str) -> None:
+    """Записать найденную карточку в диалог: панель и утренний бриф ведут туда же.
+
+    Условие `bitrix_lead_id == ''` держит правило write-once — зеркало могло привязать
+    карточку в те же секунды, и перетирать его результат нам незачем.
+    """
+    from app.integrations.crm.db import Conversation
+    try:
+        async with sm() as session:
+            await session.execute(
+                update(Conversation)
+                .where(Conversation.user_id == user_id,
+                       or_(Conversation.bitrix_lead_id == "",
+                           Conversation.bitrix_lead_id.is_(None)))
+                .values(bitrix_lead_id=str(lead_id)))
+            await session.commit()
+    except Exception:  # noqa: BLE001
+        log.warning("instant handoff: lead id not saved (key=%s)", user_id, exc_info=True)
+
+
 async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None,
                        waited_since: datetime | None = None) -> bool:
     """Пуш по собранной заявке. True — отправлено. Никогда не поднимает исключение."""
@@ -226,8 +246,18 @@ async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None,
                 # Карточка клиента в Битриксе — визовые работают там.
                 "bitrix": _bitrix_link(getattr(conv, "bitrix_lead_id", "")),
             }
+            phone_raw = conv.phone or conv.user_id
             if not await _claim(session, user_id, now):
                 return False          # уже отправляли (или стадия успела уехать)
+        if not snapshot["bitrix"]:
+            # Карточки в диалоге ещё нет: заявка у виз собирается за 2–8 минут, а зеркало
+            # привязывает лид по ходу переписки. Спрашиваем портал один раз — иначе
+            # менеджер получит пуш вообще без входа в Битрикс (замер 11.08).
+            from app.integrations.crm import bitrix_mirror
+            lead_id = await bitrix_mirror.resolve_lead_now(phone_raw)
+            if lead_id:
+                snapshot["bitrix"] = _bitrix_link(lead_id)
+                await _remember_lead(sm, user_id, lead_id)
         text = render_handoff_text(
             name=snapshot["name"], phone=snapshot["phone"], request=snapshot["request"],
             promised=promised, link=_client_link(user_id, settings.admin_base_url),

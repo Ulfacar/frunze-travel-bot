@@ -18,7 +18,7 @@ class FakeAdapter:
             raise RuntimeError("boom")
         return self.found
 
-    async def create_lead(self, contact, funnel, data):
+    async def create_lead(self, contact, funnel, data, assigned_by_id=""):
         await asyncio.sleep(0)               # уступаем управление — воспроизводим гонку
         if self.raise_on == "create":
             raise RuntimeError("boom")

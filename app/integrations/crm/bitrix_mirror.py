@@ -29,6 +29,8 @@ _locks: dict[str, asyncio.Lock] = {}
 _tasks: set[asyncio.Task] = set()
 # С какого момента ждём лид Открытой линии по диалогу (см. _ensure_lead).
 _pending: dict[str, float] = {}
+# Потолок на живой поиск карточки для пуша (см. resolve_lead_now).
+RESOLVE_TIMEOUT_SECONDS = 8
 
 
 def _lock_for(conv_key: str) -> asyncio.Lock:
@@ -42,6 +44,26 @@ async def _enabled() -> bool:
     if not settings.bitrix24_webhook_url:
         return False
     return await flags.get_flag("bitrix_mirror_enabled", settings.bitrix_mirror_enabled)
+
+
+async def _prefer_openline() -> bool:
+    """Флаг из БД, а не из env.
+
+    Тумблер «Бот пишет в карточку менеджера» стоит в панели и пишет в `app_flags`.
+    Пока здесь читались только settings, он был декоративным: на проде флаг стоял `t`
+    с 06.08, а переменной `BITRIX_PREFER_OPENLINE_LEAD` в prod.env нет — и все ссылки
+    в уведомлениях продолжали вести в служебную карточку (замер 11.08: 17 из 21).
+    Соседний `bitrix_mirror_enabled` всегда читался правильно — теперь читаются оба.
+    """
+    return await flags.get_flag("bitrix_prefer_openline_lead",
+                                settings.bitrix_prefer_openline_lead)
+
+
+def _assignee_for(conv, bot_id: str) -> str:
+    """На кого вешать СВОЙ лид: владелец диалога точнее канала (на getvisa их двое)."""
+    login = ((getattr(conv, "assigned_to", "") if conv else "") or "").strip().lower()
+    by_manager = settings.bitrix_assignee_by_manager or {}
+    return by_manager.get(login, "") or settings.bitrix_assignee_by_bot.get(bot_id, "")
 
 
 def _is_openline(lead: dict) -> bool:
@@ -58,10 +80,17 @@ def _pick_lead(leads: list[dict]) -> str:
     """Выбрать целевую карточку: лид Открытой линии приоритетнее любого другого.
 
     Именно его открывает менеджер — там очередь линии уже проставила ответственного.
+
+    Среди линий берём САМУЮ СВЕЖУЮ (наибольший ID). Причина из данных 11.08: признак
+    «есть `|` в SOURCE_ID» ловит не только Wappi, но и мёртвую интеграцию i2crm
+    (`5|I2CRM`), чьи карточки 2024 года висят на уволенных — 106217 у 83049, 114005 и
+    124241 у 27691. У троих клиентов такая карточка соседствует со свежей карточкой
+    Wappi, и по порядку списка (findbycomm отдаёт по возрастанию ID) мы бы уверенно
+    выбрали архив двухлетней давности. Возраст здесь и есть различитель.
     """
-    for lead in leads:
-        if _is_openline(lead):
-            return str(lead.get("ID") or "")
+    openline = [str(l.get("ID") or "") for l in leads if _is_openline(l)]
+    if openline:
+        return max(openline, key=lambda i: int(i) if i.isdigit() else 0)
     return str(leads[0].get("ID") or "") if leads else ""
 
 
@@ -84,14 +113,17 @@ async def _ensure_lead(store, adapter, conv_key: str, phone: str, name: str,
         if lead_id:
             return lead_id, False                 # уже связан (в т.ч. параллельным хуком)
 
-        if not settings.bitrix_prefer_openline_lead:
+        if not await _prefer_openline():
             # Прежнее поведение: первый попавшийся лид по телефону, иначе создаём свой.
+            # Ответственного проставляем и здесь: на служебный аккаунт лид не уходит ни
+            # в одной из веток, иначе откат тумблера вернул бы 604 невидимые карточки.
             if phone:
                 lead_id = await adapter.find_lead_id_by_phone(phone)
             if not lead_id:
                 lead_id = await adapter.create_lead(
                     {"user_id": phone, "phone": phone, "name": name}, funnel or "",
-                    (getattr(conv, "qualification", None) if conv else None) or {})
+                    (getattr(conv, "qualification", None) if conv else None) or {},
+                    assigned_by_id=_assignee_for(conv, bot_id))
             if lead_id:
                 await store.update_meta(conv_key, bitrix_lead_id=str(lead_id))
             return lead_id, False
@@ -112,11 +144,44 @@ async def _ensure_lead(store, adapter, conv_key: str, phone: str, name: str,
         lead_id = await adapter.create_lead(
             {"user_id": phone, "phone": phone, "name": name}, funnel or "",
             (getattr(conv, "qualification", None) if conv else None) or {},
-            assigned_by_id=settings.bitrix_assignee_by_bot.get(bot_id, ""))
+            assigned_by_id=_assignee_for(conv, bot_id))
         _pending.pop(conv_key, None)
         if lead_id:
             await store.update_meta(conv_key, bitrix_lead_id=str(lead_id))
         return lead_id, True
+
+
+async def resolve_lead_now(phone: str) -> str:
+    """Найти карточку клиента в портале ПРЯМО СЕЙЧАС. Ничего не создаёт, "" при неудаче.
+
+    Нужна мгновенному пушу: зеркало работает по сообщениям и рано или поздно карточку
+    подхватит, а у пуша второго шанса нет — он уходит один раз. Замер 11.08: визовая
+    заявка готова через 2–8 минут, и карточка Открытой линии к этому моменту уже есть
+    (её ID даже МЕНЬШЕ нашего — Wappi заводит её первой, в ту же минуту).
+
+    Создавать лид отсюда нельзя: окно `bitrix_openline_wait_seconds` стоит против
+    дублей, и «поторопиться ради красивой ссылки» — ровно тот путь, которым мы уже
+    один раз наплодили близнецов.
+
+    Свой таймаут жёстче общего (у адаптера 20 с на вызов, а их здесь два): это
+    последний шаг обработки входящего, и висеть на нём почти минуту нельзя.
+    """
+    phone = str(phone or "").strip()
+    if not phone or not await _enabled():
+        return ""
+
+    async def _lookup() -> str:
+        from app.integrations.crm.bitrix24 import Bitrix24Crm
+        adapter = Bitrix24Crm()
+        if not await _prefer_openline():
+            return str(await adapter.find_lead_id_by_phone(phone) or "")
+        return _pick_lead(await adapter.find_leads_by_phone(phone))
+
+    try:
+        return await asyncio.wait_for(_lookup(), timeout=RESOLVE_TIMEOUT_SECONDS)
+    except Exception:  # noqa: BLE001 — ссылка не стоит потерянной заявки
+        log.warning("bitrix resolve_lead_now failed", exc_info=True)
+        return ""
 
 
 async def mirror_message(conv_key: str, *, sender: str, text: str,
