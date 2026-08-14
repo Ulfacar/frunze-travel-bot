@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 
 from app.channels.bitrix_openlines import BitrixOpenLinesAdapter
-from app.channels.telegram import TelegramAdapter
+from app.channels.telegram import get_adapter
 from app.channels.wappi import WappiAdapter
 from app.core.bots import registry
 from app.core.own_outbound import mark_own
@@ -22,7 +22,7 @@ def _adapter_for(channel: str, bot):
     if channel == "bitrix_openlines":
         return BitrixOpenLinesAdapter(bot=bot)
     if channel == "telegram":
-        return TelegramAdapter()
+        return get_adapter()
     return None
 
 

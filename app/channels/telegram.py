@@ -48,3 +48,26 @@ class TelegramAdapter:
 
     async def send(self, chat_id: str, text: str, **kwargs) -> None:
         await self._bot.send_message(chat_id=int(chat_id), text=text, **kwargs)
+
+
+# Один адаптер (и одна HTTP-сессия) на токен.
+_adapters: dict[str, TelegramAdapter] = {}
+
+
+def get_adapter(token: str | None = None) -> TelegramAdapter:
+    """Переиспользуемый адаптер вместо нового на каждый пуш.
+
+    `aiogram.Bot` держит внутри aiohttp-сессию и закрывает её только явно. Адаптер,
+    созданный на каждую отправку, оставляет сессию висеть — прод копил их десятками в
+    сутки («Unclosed client session» в логах). Пушей много, они короткие и идут в одни и
+    те же чаты, поэтому дешевле держать один живой клиент на процесс, чем закрывать
+    сессию после каждого сообщения.
+
+    Ключ — сам токен: у брифов менеджеров и у клиентских ботов токены разные, смешивать
+    их нельзя, иначе бриф уйдёт от чужого бота.
+    """
+    key = (token or settings.telegram_bot_token or "").strip()
+    adapter = _adapters.get(key)
+    if adapter is None:
+        adapter = _adapters[key] = TelegramAdapter(key)
+    return adapter

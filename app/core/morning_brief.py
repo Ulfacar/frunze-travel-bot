@@ -193,8 +193,8 @@ async def _push_telegram(text: str, cfg) -> bool:
     token = (cfg.managers_telegram_bot_token or cfg.telegram_bot_token or "").strip()
     chat_id = (cfg.managers_telegram_chat_id or "").strip()
     try:
-        from app.channels.telegram import TelegramAdapter
-        await TelegramAdapter(token).send(chat_id, text)
+        from app.channels.telegram import get_adapter
+        await get_adapter(token).send(chat_id, text)
         return True
     except Exception:  # noqa: BLE001 — пуш не должен ронять планировщик
         log.warning("morning brief telegram push failed", exc_info=True)

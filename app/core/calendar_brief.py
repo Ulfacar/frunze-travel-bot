@@ -406,8 +406,8 @@ async def _push_telegram(token: str, chat_id: str, text: str) -> bool:
     длиннее лимита, и менеджер остаётся вообще без списка звонков.
     """
     try:
-        from app.channels.telegram import TelegramAdapter
-        adapter = TelegramAdapter(token)
+        from app.channels.telegram import get_adapter
+        adapter = get_adapter(token)
         for part in split_for_telegram(text):
             await adapter.send(chat_id, part)
         return True

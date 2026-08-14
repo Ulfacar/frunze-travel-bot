@@ -49,3 +49,21 @@ def test_unknown_telegram_bot_returns_404():
         resp = client.post("/webhook/telegram/nope", json={"message": {"text": "hi"}})
     assert resp.status_code == 404
     assert resp.json()["reason"] == "unknown_bot"
+
+
+def test_adapter_is_reused_per_token():
+    """Один адаптер на токен — иначе каждая отправка оставляет висеть HTTP-сессию.
+
+    Пуши идут постоянно (мгновенные уведомления, утренние брифы, дайджесты), и адаптер,
+    создаваемый на каждый вызов, копил незакрытые aiohttp-сессии — прод писал их десятками
+    в сутки. Разные токены при этом смешивать нельзя: бриф менеджеров и клиентские боты
+    ходят под своими, иначе сообщение уйдёт от чужого бота.
+    """
+    from app.channels.telegram import get_adapter
+
+    first = get_adapter("tok-A")
+    again = get_adapter("tok-A")
+    other = get_adapter("tok-B")
+
+    assert first is again
+    assert first is not other
