@@ -229,7 +229,9 @@ async def _offer_url(found, state: DialogState) -> str:
     """Ссылка на страницу подборки. Пусто — карточки уйдут без неё, это не авария."""
     try:
         from app.web.offers import create_offer
-        return await create_offer(found, state)
+        # Повторный поиск в том же ходу переписывает УЖЕ выданную страницу, а не заводит
+        # новую: клиенту всё равно уйдёт одна ссылка, остальные остались бы сиротами.
+        return await create_offer(found, state, reuse=state.pending_offer_url)
     except Exception:  # noqa: BLE001
         logger.warning("tour offer page failed (key=%s)", state.user_id, exc_info=True)
         return ""

@@ -36,10 +36,19 @@ def _slug() -> str:
     return "".join(secrets.choice(SLUG_ALPHABET) for _ in range(SLUG_LEN))
 
 
-async def create_offer(found, state) -> str:
+async def create_offer(found, state, reuse: str = "") -> str:
     """Сохранить подборку и вернуть ссылку. Пусто — сообщение уйдёт без ссылки.
 
     Никогда не поднимает исключение: подборка в чате важнее страницы.
+
+    `reuse` — ссылка, выданная в этом же ходу: модель часто ищет по 2–3 раза подряд
+    («а теперь Аланья»), и каждый поиск заводил свою страницу, тогда как клиенту уходит
+    только последняя. За три дня так осело 8 страниц-сирот из 20 — мусор в базе и лишние
+    картинки, которые никто никогда не откроет. Перезаписываем ту же страницу.
+
+    Перезапись безопасна ровно потому, что непустой `reuse` означает «ссылка ещё не
+    отправлена»: после отправки поле в диалоге обнуляется. Открытую клиентом подборку мы
+    таким образом подменить не можем.
     """
     from app.config import settings
     base = (settings.public_base_url or "").rstrip("/")
@@ -52,16 +61,22 @@ async def create_offer(found, state) -> str:
         items = offer_items(found.hotels, departure=found.departure)
         if not items:
             return ""
-        slug = _slug()
         payload = {
             "items": items,
             "fallback_departure": bool(getattr(found, "fallback_departure", False)),
         }
+        slug = (reuse or "").rstrip("/").rsplit("/", 1)[-1]
         sm = get_sessionmaker()
         async with sm() as session:
-            session.add(TourOffer(slug=slug, user_id=getattr(state, "user_id", ""),
-                                  bot_id=getattr(state, "bot_id", ""),
-                                  departure=found.departure or "", payload=payload))
+            existing = await session.get(TourOffer, slug) if slug else None
+            if existing is not None:
+                existing.payload = payload
+                existing.departure = found.departure or ""
+            else:
+                slug = _slug()
+                session.add(TourOffer(slug=slug, user_id=getattr(state, "user_id", ""),
+                                      bot_id=getattr(state, "bot_id", ""),
+                                      departure=found.departure or "", payload=payload))
             await session.commit()
         return f"{base}/t/{slug}"
     except Exception:  # noqa: BLE001 — страница не стоит потерянного ответа клиенту

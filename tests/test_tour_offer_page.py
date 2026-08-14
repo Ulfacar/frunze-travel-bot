@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 
 import pytest
 from fastapi.testclient import TestClient
@@ -164,3 +165,34 @@ def test_views_are_counted(offer_db):
             offer = await session.get(TourOffer, slug)
             return offer.views
     assert asyncio.run(_views()) == 2
+
+
+def test_repeat_search_in_one_turn_rewrites_same_page(offer_db):
+    """Второй поиск в том же ходу переписывает страницу, а не заводит новую.
+
+    Модель регулярно ищет по 2–3 раза подряд («а теперь Аланья»), но клиенту уходит только
+    последняя ссылка. Прод за три дня накопил 8 страниц-сирот из 20: записи в базе и
+    отрисованные подборки, которые никто никогда не откроет.
+    """
+    from sqlalchemy import func, select
+
+    from app.integrations.crm.db import TourOffer
+
+    state = DialogState(user_id=USER_ID, funnel="tours", bot_id="frunze_tours")
+    first = _create(state=state)
+
+    second_found = TourSearch(lines=[], found=1, reason="ok", departure="Бишкек",
+                              hotels=[_hotel("ALANYA PALACE", 4100)])
+    second = asyncio.run(offers.create_offer(second_found, state, reuse=first))
+
+    assert second == first, "ссылка должна остаться прежней"
+
+    async def _count_and_payload():
+        async with offer_db() as session:
+            total = (await session.execute(select(func.count()).select_from(TourOffer))).scalar()
+            row = await session.get(TourOffer, first.rsplit("/", 1)[1])
+            return total, row.payload
+
+    total, payload = asyncio.run(_count_and_payload())
+    assert total == 1, "страниц-сирот быть не должно"
+    assert "ALANYA PALACE" in json.dumps(payload, ensure_ascii=False), "виден последний поиск"
