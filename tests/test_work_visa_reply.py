@@ -106,3 +106,29 @@ def test_ordinary_visa_answer_is_untouched():
     text, violations = validate_reply(plain, "visa")
     assert text.strip() == plain
     assert "work_visa_offer_blocked" not in violations
+
+
+def test_refusal_covers_kyrgyzstan_work_visas_too():
+    """Отказ не должен сужаться до «за границу» — иначе остаётся щель.
+
+    Ответ владельца 14.08.2026: рабочие визы фирма делает ТОЛЬКО в Кыргызстан и только на
+    канале Марселя, а на визовом номере их нет вообще. Со старой формулировкой клиент слышал
+    «за границу не оформляем» и логично спрашивал про рабочую в КР — а этому боту ответить
+    на такое нечем.
+    """
+    assert "за границу" not in SAFE_WORKVISA_REPLY.lower()
+    assert _DENIAL.search(SAFE_WORKVISA_REPLY), "отказ должен звучать явно"
+    assert _NEXT_STEP.search(SAFE_WORKVISA_REPLY), "и заканчиваться следующим шагом"
+
+
+def test_visa_prompt_forbids_handing_client_to_another_channel():
+    """Бот не отправляет клиента «к другому нашему специалисту».
+
+    Владелец решил два потока не смешивать: рабочие визы ведёт отдельный человек на отдельном
+    номере. Клиент, которого переслали руками, выпадает из обеих воронок — его не видит ни
+    визовая панель, ни канал Марселя, и он просто теряется.
+    """
+    from app.agent.prompts.visa import SYSTEM
+
+    assert "не смешивать" in SYSTEM or "не смешивая" in SYSTEM or "не\nсмешивать" in SYSTEM
+    assert "номера НЕ упоминай" in SYSTEM
