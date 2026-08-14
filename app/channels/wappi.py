@@ -363,6 +363,17 @@ class WappiAdapter:
             media_type="" if kind == "text" else str(raw.get("type") or "").lower(),
         )
 
+    # Единственный рычаг, которым наши API-отправки попадают в чат Открытой линии Битрикса
+    # (ответ поддержки Wappi 14.08.2026). Без `bot_id` адаптер провайдера сообщение в линию
+    # не передаёт: оператор в Контакт-центре видит вопросы клиента и НЕ видит ответов бота —
+    # и читает это как «бот молчит», хотя бот отвечает. Готовой настройки на уровне профиля
+    # у Wappi нет, значение должно быть одно фиксированное на все отправки.
+    #
+    # Подпись источника в Битриксе при этом может выглядеть как «С устройства» — это
+    # ожидаемо и лучше, чем отсутствие реплики: комментарии в таймлайне карточки остаются
+    # как были, здесь добавляется вторая витрина — сам чат линии.
+    _OPENLINE_BOT_ID = "external_api"
+
     async def send(self, chat_id: str, text: str, **kwargs) -> str:
         """Отправить ответ клиенту через Wappi sync-API. Возвращает provider_msg_id (или "")."""
         if not self._token or not self._profile_id:
@@ -374,7 +385,7 @@ class WappiAdapter:
         try:
             resp = await client.post(
                 f"{self._base}/api/sync/message/send",
-                params={"profile_id": self._profile_id},
+                params={"profile_id": self._profile_id, "bot_id": self._OPENLINE_BOT_ID},
                 headers={"Authorization": self._token, "Content-Type": "application/json"},
                 json={"recipient": _recipient(chat_id), "body": text},
             )

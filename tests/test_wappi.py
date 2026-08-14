@@ -87,6 +87,27 @@ def test_send_calls_wappi_api(monkeypatch):
     assert body == {"recipient": "996700123456", "body": "Здравствуйте!"}
 
 
+def test_send_passes_bot_id_so_reply_lands_in_openline(monkeypatch):
+    """Без `bot_id` Wappi не отдаёт наши API-отправки в чат Открытой линии Битрикса.
+
+    Цена потери параметра не абстрактная: оператор в Контакт-центре видит вопросы клиента
+    без ответов бота и делает вывод «бот молчит» — ровно та жалоба менеджеров, из-за которой
+    параметр и появился. Тест держит его на месте при любых будущих правках отправки.
+    """
+    from app.channels import wappi as mod
+    monkeypatch.setattr(mod.settings, "wappi_base_url", "https://wappi.pro")
+    monkeypatch.setattr(mod.settings, "wappi_token", "tok-123")
+
+    calls = []
+    client = httpx.AsyncClient(transport=httpx.MockTransport(
+        lambda r: calls.append(r) or httpx.Response(200, json={"status": "done"})))
+    bot = BotConfig(id="getvisa", scenario="visa", wappi_profile_id=PROFILE)
+
+    asyncio.run(WappiAdapter(bot=bot, client=client).send("996700123456@c.us", "Ответ"))
+
+    assert calls[0].url.params["bot_id"] == "external_api"
+
+
 def test_send_skipped_without_credentials(monkeypatch):
     from app.channels import wappi as mod
     monkeypatch.setattr(mod.settings, "wappi_token", "")
