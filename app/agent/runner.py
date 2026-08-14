@@ -225,6 +225,15 @@ def _render_cards_for_state(found, state: DialogState) -> list[str]:
         return []
 
 
+def _cards_places_for(found) -> list[str]:
+    """Курорты из реально отобранных карточек. Сбой рендера не должен ронять ход."""
+    try:
+        from app.integrations.tourvisor.cards import picked_places
+        return picked_places(found.hotels)
+    except Exception:  # noqa: BLE001
+        return []
+
+
 async def _offer_url(found, state: DialogState) -> str:
     """Ссылка на страницу подборки. Пусто — карточки уйдут без неё, это не авария."""
     try:
@@ -254,7 +263,8 @@ def _attach_tour_cards(state: DialogState, text: str) -> str:
     return f"{text.rstrip()}\n\n{block}" if text.strip() else block
 
 
-def _tours_search_report(found, *, cards_mode: bool = False) -> str:
+def _tours_search_report(found, *, cards_mode: bool = False,
+                         cards_places: list[str] | None = None) -> str:
     """Результат подбора для агента — С ПРИЧИНОЙ, а не голым списком.
 
     Раньше на пустой выдаче наверх уходило «Подходящих туров не нашлось», агент причины не
@@ -302,6 +312,15 @@ def _tours_search_report(found, *, cards_mode: bool = False) -> str:
             "шаг. Сам отели не перечисляй, цены и даты не называй — они уже будут в карточках. "
             "Список ниже дан тебе, чтобы отвечать на уточняющие вопросы (порядок совпадает)."
         )
+        if cards_places:
+            # Подводка обязана совпасть с содержимым: в карточки идут пять самых дешёвых, а
+            # найдено бывает больше и по другим курортам. 14.08 модель пообещала «Кемер и
+            # Аланью», а во всех пяти карточках была Аланья.
+            head.append(
+                "В КАРТОЧКИ ПОПАЛИ ТОЛЬКО: " + "; ".join(cards_places) + ". Называй в подводке "
+                "исключительно эти курорты — другие найденные направления клиенту не обещай, "
+                "иначе он не найдёт их в карточках и перестанет верить всему сообщению."
+            )
     else:
         head.append(
             "Цены называй ровно как в строках, вместе с валютой (USD/EUR) — не переводи в другую "
@@ -366,7 +385,12 @@ async def _tours_exec_tool(name: str, args: dict, state: DialogState, crm) -> st
             # подборка по последнему запросу, а не склейка двух.
             state.pending_tour_cards = cards
             state.pending_offer_url = await _offer_url(found, state) if cards else ""
-        return _tours_search_report(found, cards_mode=cards_on and bool(state.pending_tour_cards))
+        has_cards = cards_on and bool(state.pending_tour_cards)
+        return _tours_search_report(
+            found,
+            cards_mode=has_cards,
+            cards_places=_cards_places_for(found) if has_cards else None,
+        )
 
     if name == "handoff_to_manager":
         if state.deal_id:

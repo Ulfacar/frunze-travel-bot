@@ -108,7 +108,10 @@ def test_flag_on_attaches_cards_and_link(monkeypatch):
     assert text.startswith("Нашёл варианты")
     assert text.count("🏠") == 2
     assert "🛌 standard room land view, 3взр 1реб" in text
-    assert text.rstrip().endswith(OFFER_URL)
+    # Ссылка на месте, но замыкает сообщение призыв к действию (правка 14.08): раньше клиент
+    # дочитывал пятый отель и упирался в пустоту.
+    assert OFFER_URL in text
+    assert text.rstrip().endswith("проверю наличие и точную цену.")
 
 
 # --- карточки не проходят валидатор ------------------------------------------------

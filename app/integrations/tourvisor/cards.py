@@ -99,6 +99,37 @@ def _people(tour: dict) -> str:
     return " ".join(parts)
 
 
+def _for_whom(tour: dict) -> str:
+    """«за двоих» к цене. Без этого цена читается как за человека.
+
+    В карточке рядом стоят «2взр» и «1 361 eur», и человек, который не покупал туры онлайн,
+    умножает одно на другое. Получает вдвое дороже рынка и уходит молча — мы даже не узнаем,
+    что потеряли его на арифметике, а не на цене.
+    """
+    people = _people(tour)
+    if not people:
+        return ""
+    words = {"1взр": "за одного", "2взр": "за двоих", "3взр": "за троих", "4взр": "за четверых"}
+    if people in words:
+        return words[people]
+    # Состав со смешанным составом расписываем как есть: «за 2взр+1реб» честнее любой
+    # попытки просуммировать людей в одно слово — ребёнок в цене считается иначе.
+    return "за " + people.replace(" ", "+")
+
+
+def _sea(hotel: dict) -> str:
+    """Расстояние до моря — единственный различитель в подборке одинаковых троек.
+
+    Пять отелей 3⭐ в одном курорте на одни даты с разницей в цене 5% выбором не являются:
+    клиенту не за что зацепиться, и он отвечает «я подумаю». Поле приходит у 100% отелей
+    (разведка 11.08) и до сих пор жило только на странице подборки.
+    """
+    raw = str(hotel.get("seadistance") or "").strip()
+    if not raw or not raw.isdigit() or int(raw) <= 0:
+        return ""
+    return f"🏖️ до моря {int(raw)} м"
+
+
 def _best_tour(hotel: dict) -> tuple[dict, int] | None:
     """Самый дешёвый тур отеля с пригодной ценой. Нет такого — отеля в подборке нет."""
     best: tuple[dict, int] | None = None
@@ -149,7 +180,12 @@ def render_card(hotel: dict, *, departure: str = "") -> str:
     if meal:
         lines.append(f"🍽️ {meal}")
 
-    lines.append(f"🏷️ {_money(price)} {currency}")
+    sea = _sea(hotel)
+    if sea:
+        lines.append(sea)
+
+    whom = _for_whom(tour)
+    lines.append(f"🏷️ {_money(price)} {currency} {whom}".rstrip())
     return "\n".join(lines)
 
 
@@ -180,6 +216,23 @@ def render_cards(hotels: list[dict], *, departure: str = "",
     cards = [render_card(hotel, departure=departure)
              for hotel, _, _ in pick(hotels, limit=limit)]
     return [card for card in cards if card]
+
+
+def picked_places(hotels: list[dict], *, limit: int = TOUR_CARDS_LIMIT) -> list[str]:
+    """Курорты, которые РЕАЛЬНО попали в карточки, без повторов и в порядке цены.
+
+    Модель видит весь список найденного, а карточки берут пять самых дешёвых — и это разные
+    множества. Живой случай 14.08: подводка обещала «варианты по Кемеру и Аланье», а во всех
+    пяти карточках была Аланья. Клиент замечает расхождение за секунду и дальше читает уже
+    с недоверием — причём недоверие достаётся ценам, которые как раз верные.
+    """
+    places: list[str] = []
+    for hotel, _tour, _price in pick(hotels, limit=limit):
+        where = ", ".join(x for x in (str(hotel.get("countryname") or "").strip(),
+                                      str(hotel.get("regionname") or "").strip()) if x)
+        if where and where not in places:
+            places.append(where)
+    return places
 
 
 def offer_items(hotels: list[dict], *, departure: str = "",
@@ -214,11 +267,18 @@ def offer_items(hotels: list[dict], *, departure: str = "",
     return items
 
 
+# Ход клиента после карточек. Вопрос модели («какой курорт больше нравится?») стоит ДО
+# подборки, и человек, дочитав пятый отель, упирается в пустоту: пять названий прочитаны,
+# делать с ними нечего. Просим ровно одно простое действие — назвать отель.
+_NEXT_STEP = "Какой отель понравился — напишите название, проверю наличие и точную цену."
+
+
 def render_block(cards: list[str], *, offer_url: str = "") -> str:
     """Готовый хвост сообщения. Пустая подборка — пустая строка, без висящих заголовков."""
     if not cards:
         return ""
     block = "\n\n".join(cards)
     if offer_url:
-        block += f"\n\nПодробнее здесь:\n{offer_url}"
+        block += f"\n\nФото и подробности:\n{offer_url}"
+    block += f"\n\n{_NEXT_STEP}"
     return block

@@ -31,7 +31,8 @@ EXPECTED = (
     "📅 17 авг, 🌙 6нч\n"
     "🛌 economy pool room, 2взр 2реб\n"
     "🍽️ Все Включено\n"
-    "🏷️ 2 364 eur"
+    "🏖️ до моря 50 м\n"
+    "🏷️ 2 364 eur за 2взр+2реб"
 )
 
 
@@ -242,18 +243,84 @@ def test_block_separates_cards_with_one_blank_line():
 
 
 def test_block_appends_offer_link():
+    """Ссылка на месте, но последнее слово — за призывом к действию (правка 14.08).
+
+    Раньше блок заканчивался ссылкой, и клиент, дочитав пятый отель, упирался в пустоту:
+    названия прочитаны, делать с ними нечего. Вопрос модели «какой курорт нравится?» стоит
+    ДО подборки и к этому моменту уже забыт.
+    """
     block = render_block(render_cards(_many(2), departure="Бишкек"),
                          offer_url="https://frunzetravel.kg/t/abc123")
-    assert block.rstrip().endswith("https://frunzetravel.kg/t/abc123")
-    assert "Подробнее здесь:" in block
+    assert "https://frunzetravel.kg/t/abc123" in block
+    assert "Фото и подробности:" in block
+    assert block.rstrip().endswith("проверю наличие и точную цену.")
 
 
 def test_block_without_link_has_no_dangling_tail():
     block = render_block(render_cards(_many(2), departure="Бишкек"))
-    assert "Подробнее" not in block
+    assert "Фото и подробности" not in block
     assert not block.endswith("\n")
 
 
 def test_block_of_nothing_is_empty():
     assert render_block([]) == ""
     assert render_block([], offer_url="https://frunzetravel.kg/t/abc") == ""
+
+
+# ---------------- цена и различители (замер живой подборки 14.08) ----------------
+def test_price_says_for_whom_it_is():
+    """К цене приписано, на скольких она посчитана.
+
+    В живой подборке 14.08 рядом стояли «2взр» и «1 361 eur», и человек, который не покупал
+    туры онлайн, читает это как цену за человека: умножает на два, получает вдвое дороже
+    рынка и уходит молча. Мы даже не узнаем, что потеряли его на арифметике, а не на цене.
+    """
+    assert "🏷️ 2 364 eur за 2взр+2реб" in _one(_hotel())
+    assert "за двоих" in _one(_hotel(tours=[_tour(adults=2, child=0)]))
+    assert "за одного" in _one(_hotel(tours=[_tour(adults=1, child=0)]))
+
+
+def test_sea_distance_is_the_thing_that_distinguishes_hotels():
+    """Расстояние до моря — единственное, чем отличаются пять одинаковых троек.
+
+    Замер 14.08: подборка из пяти отелей 3⭐ в одном курорте, на одни даты, всё включено,
+    разброс цены 5%. Выбором это не является. Поле приходит у 100% отелей и до 14.08 жило
+    только на странице подборки, в WhatsApp не доходило.
+    """
+    assert "🏖️ до моря 50 м" in _one(_hotel())
+    assert "до моря" not in _one(_hotel(seadistance=0)), "нулевое расстояние не показываем"
+    assert "до моря" not in _one(_hotel(seadistance="")), "пустое поле строки не добавляет"
+
+
+def test_block_ends_with_a_next_step():
+    """После карточек клиенту сказано, что делать дальше.
+
+    Вопрос модели («какой курорт больше нравится?») стоит ДО подборки, и человек, дочитав
+    пятый отель, упирается в пустоту: названия прочитаны, действия нет.
+    """
+    from app.integrations.tourvisor.cards import render_block
+
+    block = render_block(["карточка"], offer_url="https://frunzetravel.kg/t/abc")
+    assert block.rstrip().endswith("проверю наличие и точную цену.")
+    assert block.index("https://") < block.index("Какой отель"), "ссылка выше призыва"
+    assert render_block([]) == "", "пустая подборка не тянет за собой призыв"
+
+
+def test_model_is_told_only_the_places_that_reached_the_cards():
+    """Модель узнаёт, какие курорты реально ушли клиенту, а не что было найдено.
+
+    В карточки идут пять самых дешёвых, а найдено бывает больше и по другим курортам. Живой
+    случай 14.08: подводка обещала «варианты по Кемеру и Аланье», во всех пяти карточках была
+    Аланья. Расхождение клиент замечает мгновенно, и недоверие достаётся ценам — которые как
+    раз верные.
+    """
+    from app.integrations.tourvisor.cards import picked_places
+
+    hotels = [
+        _hotel("ALANYA A", tours=[_tour(price=1000)], regionname="Аланья"),
+        _hotel("ALANYA B", tours=[_tour(price=1100)], regionname="Аланья"),
+        _hotel("KEMER PRICEY", tours=[_tour(price=9000)], regionname="Кемер"),
+    ]
+    assert picked_places(hotels, limit=2) == ["Турция, Аланья"], "дорогой Кемер в карточки не попал"
+    assert picked_places(hotels, limit=3) == ["Турция, Аланья", "Турция, Кемер"]
+    assert picked_places([]) == []
