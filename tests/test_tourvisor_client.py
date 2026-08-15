@@ -259,3 +259,15 @@ def test_transport_error_gives_up_after_retries(monkeypatch):
     with pytest.raises(httpx.ReadError):
         asyncio.run(client._call(http, "list.php", {}))
     assert attempts["n"] == tvc.NETWORK_RETRIES + 1
+
+
+def test_api_is_called_over_https_because_credentials_ride_in_the_url():
+    """Логин и пароль уходят параметрами URL — по http их видит любой узел на пути.
+
+    `authlogin`/`authpass` подставляются в query каждого вызова (`_call`), поэтому протокол
+    здесь не гигиена, а защита боевых кредов от аккаунта, на котором висит оплаченный тариф.
+    Сервер отвечает по https тем же ответом — проверено 15.08.2026 на живых кредах.
+    """
+    from app.integrations.tourvisor import client as mod
+
+    assert mod.BASE_URL.startswith("https://"), "креды в URL нельзя слать по http"
