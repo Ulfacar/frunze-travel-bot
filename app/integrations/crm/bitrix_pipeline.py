@@ -154,10 +154,12 @@ async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
         if str(lead.get("STATUS_ID") or "") in TERMINAL_STATUSES:
             return False
         comments = str(lead.get("COMMENTS") or "")
-        if comments and not _dossier_ours(comments) and not _legacy_ours(comments):
+        remembered = bool(getattr(conv, "bitrix_dossier_by_bot", False))
+        if not remembered and comments and not _dossier_ours(comments) and not _legacy_ours(comments):
             return False
         text = render_dossier(conv, conv.qualification if qualification is None else qualification)
         await client.update_comments(lead_id, text)
+        await store.update_meta(conv_key, bitrix_dossier_by_bot=True)
         return True
     except Exception:  # noqa: BLE001
         log.warning("pipeline dossier failed conv_key=%s", conv_key, exc_info=True)

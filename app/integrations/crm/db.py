@@ -93,6 +93,7 @@ class Conversation(Base):
     followup_count: Mapped[int] = mapped_column(default=0)  # сколько пингов дожима отправлено (ритм 2×/нед)
     bitrix_lead_id: Mapped[str] = mapped_column(String(32), default="")  # id лида Bitrix (зеркало диалога)
     bitrix_stage_by_bot: Mapped[str] = mapped_column(String(32), default="")
+    bitrix_dossier_by_bot: Mapped[bool] = mapped_column(Boolean, default=False)
     bitrix_deal_id: Mapped[str] = mapped_column(String(32), default="")
     # Мотор готовности «Покупатели сегодня» (детерминированный, из app/core/readiness.py).
     readiness_tier: Mapped[str] = mapped_column(String(16), default="")       # green|warm|noise|insufficient
@@ -287,6 +288,7 @@ async def init_models(engine: AsyncEngine) -> None:
             "followup_count": "INTEGER DEFAULT 0",
             "bitrix_lead_id": "VARCHAR(32) DEFAULT ''",
             "bitrix_stage_by_bot": "VARCHAR(32) DEFAULT ''",
+            "bitrix_dossier_by_bot": "BOOLEAN DEFAULT FALSE",
             "bitrix_deal_id": "VARCHAR(32) DEFAULT ''",
             "archived": "BOOLEAN DEFAULT FALSE",
             "readiness_tier": "VARCHAR(16) DEFAULT ''",

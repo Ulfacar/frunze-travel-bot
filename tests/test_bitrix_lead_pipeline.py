@@ -387,6 +387,31 @@ def test_marker_survives_the_portal_bbcode_parser():
     assert "[" not in bp.DOSSIER_MARKER and "]" not in bp.DOSSIER_MARKER
 
 
+def test_our_own_record_beats_whatever_portal_did_to_the_text():
+    """Кто писал досье — помним МЫ, а не угадываем по тексту в портале.
+
+    Портал уже дважды исказил наш текст: съел эмодзи (поле обнулилось) и вырезал
+    «[бот]» как BBCode-тег. Каждое искажение ломало распознавание, и бот замолкал по
+    карточке навсегда — проверено на проде 17.08, `sync_dossier` вернул False на
+    собственном же досье. Пока источник истины — чужой изменяемый текст, этот класс
+    багов неисчерпаем.
+    """
+    fake = FakeAdapter(status="NEW", comments="Досье:\nНаправление: что угодно")
+    store = _conv()
+    run(store.update_meta(KEY, bitrix_dossier_by_bot=True))
+    assert run(bp.sync_dossier(KEY, qualification={"направление": "Аланья"},
+                               adapter=fake)) is True
+    assert "Аланья" in fake.lead["COMMENTS"]
+
+
+def test_dossier_write_is_remembered_on_the_conversation():
+    """Первая запись отмечается у нас — иначе помнить нечего."""
+    fake = FakeAdapter(status="NEW", comments="")
+    store = _conv()
+    run(bp.sync_dossier(KEY, qualification={"направление": "Кемер"}, adapter=fake))
+    assert getattr(run(store.get(KEY)), "bitrix_dossier_by_bot", False) is True
+
+
 def test_own_dossier_is_recognised_after_round_trip():
     """Досье, прочитанное обратно из портала, обязано опознаваться как своё."""
     _conv()

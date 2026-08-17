@@ -58,6 +58,7 @@ class ConversationView:
     followup_count: int = 0           # сколько пингов дожима отправлено (ритм ~2×/неделю)
     bitrix_lead_id: str = ""          # id лида Bitrix (зеркало диалога), write-once на диалог
     bitrix_stage_by_bot: str = ""
+    bitrix_dossier_by_bot: bool = False
     bitrix_deal_id: str = ""
     # Мотор готовности «Покупатели сегодня» (детерминированный, из readiness.py).
     readiness_tier: str = ""          # green|warm|noise|insufficient|"" (не считался)
@@ -175,6 +176,7 @@ class MemoryConversationStore:
                           followup_count: int | None = None,
                           bitrix_lead_id: str | None = None,
                           bitrix_stage_by_bot: str | None = None,
+                          bitrix_dossier_by_bot: bool | None = None,
                           bitrix_deal_id: str | None = None,
                           readiness_tier: str | None = None,
                           readiness_reason: str | None = None,
@@ -215,6 +217,8 @@ class MemoryConversationStore:
             conv.bitrix_lead_id = bitrix_lead_id
         if bitrix_stage_by_bot is not None:
             conv.bitrix_stage_by_bot = bitrix_stage_by_bot
+        if bitrix_dossier_by_bot is not None:
+            conv.bitrix_dossier_by_bot = bitrix_dossier_by_bot
         if bitrix_deal_id is not None:
             conv.bitrix_deal_id = bitrix_deal_id
         if readiness_tier is not None:
@@ -379,6 +383,7 @@ class PostgresConversationStore:
                           followup_count: int | None = None,
                           bitrix_lead_id: str | None = None,
                           bitrix_stage_by_bot: str | None = None,
+                          bitrix_dossier_by_bot: bool | None = None,
                           bitrix_deal_id: str | None = None,
                           readiness_tier: str | None = None,
                           readiness_reason: str | None = None,
@@ -421,6 +426,8 @@ class PostgresConversationStore:
                 conv.bitrix_lead_id = bitrix_lead_id
             if bitrix_stage_by_bot is not None:
                 conv.bitrix_stage_by_bot = bitrix_stage_by_bot
+            if bitrix_dossier_by_bot is not None:
+                conv.bitrix_dossier_by_bot = bitrix_dossier_by_bot
             if bitrix_deal_id is not None:
                 conv.bitrix_deal_id = bitrix_deal_id
             if readiness_tier is not None:
@@ -572,6 +579,7 @@ def _view(conv) -> ConversationView:
         followup_count=int(getattr(conv, "followup_count", 0) or 0),
         bitrix_lead_id=getattr(conv, "bitrix_lead_id", "") or "",
         bitrix_stage_by_bot=getattr(conv, "bitrix_stage_by_bot", "") or "",
+        bitrix_dossier_by_bot=bool(getattr(conv, "bitrix_dossier_by_bot", False)),
         bitrix_deal_id=getattr(conv, "bitrix_deal_id", "") or "",
         readiness_tier=getattr(conv, "readiness_tier", "") or "",
         readiness_reason=getattr(conv, "readiness_reason", "") or "",
