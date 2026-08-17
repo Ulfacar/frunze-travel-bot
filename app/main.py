@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
         log.warning("FAQ defaults seed failed", exc_info=True)
     # Фоновые джобы: watchdog-алерты + автодожим. Автодожим регистрируем всегда —
     # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
-    from app.core import (awaiting, calendar_brief, channel_heartbeat, followup,
+    from app.core import (awaiting, bitrix_pipeline_job, calendar_brief, channel_heartbeat, followup,
                           instant_handoff, manager_sync, morning_brief, outcome_infer,
                           rescore, scheduler, tours_health, tours_summary, wappi_health,
                           watchdog)
@@ -88,6 +88,7 @@ async def lifespan(app: FastAPI):
     # Ответы менеджеров с телефона: Wappi не шлёт эхо исходящих, поэтому перехваченные
     # диалоги вечно висят «ждёт ответа». Подтягиваем их сами, пока тип вебхука не включён.
     scheduler.register("manager_sync", manager_sync.run)
+    scheduler.register("bitrix_pipeline_read_back", bitrix_pipeline_job.run)
     scheduler.start()
     try:
         yield

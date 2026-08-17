@@ -56,7 +56,7 @@ class Bitrix24Crm:
         fields: dict[str, Any] = {
             "TITLE": f"{funnel or 'lead'}: {name or phone or 'WhatsApp'}",
             "NAME": name,
-            "COMMENTS": _format_qualification(data),
+            "COMMENTS": ("🤖 Бот:\n" + _format_qualification(data)) if data else "",
             "SOURCE_DESCRIPTION": f"WhatsApp бот ({funnel})" if funnel else "WhatsApp бот",
         }
         if assigned_by_id:
@@ -109,6 +109,24 @@ class Bitrix24Crm:
             return
         await self._call("crm.lead.update", {"id": deal_id, "fields": {"STATUS_ID": status_id}})
         logger.info("Bitrix update_stage lead=%s -> %s (%s)", deal_id, stage, status_id)
+
+    async def get_lead(self, lead_id: str) -> dict[str, Any]:
+        """Прочитать поля лида, нужные конвейеру."""
+        resp = await self._call(
+            "crm.lead.get", {"id": lead_id, "select": ["ID", "STATUS_ID", "COMMENTS",
+                                                        "ASSIGNED_BY_ID", "TITLE"]})
+        return dict(resp.get("result") or {})
+
+    async def update_stage_status(self, lead_id: str, status_id: str) -> None:
+        """Поставить уже разрешённый STATUS_ID без повторного внутреннего маппинга."""
+        await self._call("crm.lead.update", {"id": lead_id, "fields": {"STATUS_ID": status_id}})
+
+    async def update_comments(self, lead_id: str, text: str) -> None:
+        await self._call("crm.lead.update", {"id": lead_id, "fields": {"COMMENTS": text}})
+
+    async def create_deal(self, fields: dict[str, Any]) -> str:
+        resp = await self._call("crm.deal.add", {"fields": fields})
+        return str(resp.get("result") or "")
 
     async def add_note(self, deal_id: str, text: str) -> None:
         """Комментарий в таймлайн ЛИДА."""

@@ -435,6 +435,18 @@ async def system(request: Request, manager: dict = Depends(require_full_admin)):
 
 # Тумблеры фич для менеджера: ключ → заголовок, описание, дефолт (из env), примечание.
 FEATURE_FLAGS = {
+    "bitrix_pipeline_enabled": {
+        "title": "Конвейер лидов Bitrix",
+        "desc": "Двигать лид вперёд и поддерживать краткое досье в карточке.",
+        "default": lambda: settings.bitrix_pipeline_enabled,
+        "note": lambda: "",
+    },
+    "bitrix_autodeal_enabled": {
+        "title": "Автосоздание сделок Bitrix",
+        "desc": "Создавать сделку в туровой воронке после статуса «Подписан».",
+        "default": lambda: settings.bitrix_autodeal_enabled,
+        "note": lambda: "",
+    },
     "bots_enabled": {
         "title": "Авто-ответы бота (главный рубильник)",
         "desc": ("Если выключить — бот перестаёт отвечать клиентам во всех воронках "

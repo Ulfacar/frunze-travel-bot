@@ -260,7 +260,28 @@ def _attach_tour_cards(state: DialogState, text: str) -> str:
         return text
     from app.integrations.tourvisor.cards import render_block
     block = render_block(cards, offer_url=url)
+    from app.integrations.crm import bitrix_pipeline
+    bitrix_pipeline.fire(state.user_id, "offer_sent", dict(state.qualification))
     return f"{text.rstrip()}\n\n{block}" if text.strip() else block
+
+
+def _is_qualified(state: DialogState) -> bool:
+    """Whether the minimum manager-ready facts have been collected."""
+    q = state.qualification or {}
+    present = lambda key: bool(str(q.get(key) or "").strip())
+    if state.funnel == "visa":
+        return (present("country") or present("visa_country")) and (
+            present("trip_purpose") or present("purpose"))
+    if state.funnel == "tours":
+        return (present("destination") or present("country")) and present("dates") and (
+            present("tourists") or present("adults"))
+    return False
+
+
+def _sync_qualified_if_ready(state: DialogState) -> None:
+    if _is_qualified(state):
+        from app.integrations.crm import bitrix_pipeline
+        bitrix_pipeline.fire(state.user_id, "qualified", dict(state.qualification))
 
 
 def _tours_search_report(found, *, cards_mode: bool = False,
@@ -337,6 +358,7 @@ async def _tours_exec_tool(name: str, args: dict, state: DialogState, crm) -> st
         # смену страны названный ранее курорт.
         prev_destination = str(state.qualification.get("destination") or "").strip().lower()
         state.qualification.update({k: v for k, v in args.items() if v})
+        _sync_qualified_if_ready(state)
         if not state.deal_id:
             state.deal_id = await crm.create_lead({"user_id": state.user_id}, "tours", state.qualification)
         # Пустое поле из повторного tool-вызова не должно стирать уже названную клиентом дату.
@@ -459,6 +481,7 @@ async def _visa_exec_tool(name: str, args: dict, state: DialogState, crm) -> str
 
     if name == "score_visa":
         state.qualification.update({k: v for k, v in args.items() if v})
+        _sync_qualified_if_ready(state)
         if not state.deal_id:
             state.deal_id = await crm.create_lead({"user_id": state.user_id}, "visa", state.qualification)
         await crm.update_stage(state.deal_id, "visa_scoring")

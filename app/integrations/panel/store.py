@@ -57,6 +57,8 @@ class ConversationView:
     followup_sent: bool = False       # legacy: автодожим отправлен (один раз)
     followup_count: int = 0           # сколько пингов дожима отправлено (ритм ~2×/неделю)
     bitrix_lead_id: str = ""          # id лида Bitrix (зеркало диалога), write-once на диалог
+    bitrix_stage_by_bot: str = ""
+    bitrix_deal_id: str = ""
     # Мотор готовности «Покупатели сегодня» (детерминированный, из readiness.py).
     readiness_tier: str = ""          # green|warm|noise|insufficient|"" (не считался)
     readiness_reason: str = ""
@@ -172,6 +174,8 @@ class MemoryConversationStore:
                           followup_sent: bool | None = None,
                           followup_count: int | None = None,
                           bitrix_lead_id: str | None = None,
+                          bitrix_stage_by_bot: str | None = None,
+                          bitrix_deal_id: str | None = None,
                           readiness_tier: str | None = None,
                           readiness_reason: str | None = None,
                           readiness_signals: dict | None = None,
@@ -209,6 +213,10 @@ class MemoryConversationStore:
             conv.followup_count = followup_count
         if bitrix_lead_id is not None:
             conv.bitrix_lead_id = bitrix_lead_id
+        if bitrix_stage_by_bot is not None:
+            conv.bitrix_stage_by_bot = bitrix_stage_by_bot
+        if bitrix_deal_id is not None:
+            conv.bitrix_deal_id = bitrix_deal_id
         if readiness_tier is not None:
             conv.readiness_tier = readiness_tier
             conv.readiness_scored_at = _now()
@@ -370,6 +378,8 @@ class PostgresConversationStore:
                           followup_sent: bool | None = None,
                           followup_count: int | None = None,
                           bitrix_lead_id: str | None = None,
+                          bitrix_stage_by_bot: str | None = None,
+                          bitrix_deal_id: str | None = None,
                           readiness_tier: str | None = None,
                           readiness_reason: str | None = None,
                           readiness_signals: dict | None = None,
@@ -409,6 +419,10 @@ class PostgresConversationStore:
                 conv.followup_count = followup_count
             if bitrix_lead_id is not None:
                 conv.bitrix_lead_id = bitrix_lead_id
+            if bitrix_stage_by_bot is not None:
+                conv.bitrix_stage_by_bot = bitrix_stage_by_bot
+            if bitrix_deal_id is not None:
+                conv.bitrix_deal_id = bitrix_deal_id
             if readiness_tier is not None:
                 conv.readiness_tier = readiness_tier
                 conv.readiness_scored_at = _now()
@@ -557,6 +571,8 @@ def _view(conv) -> ConversationView:
         followup_sent=getattr(conv, "followup_sent", False) or False,
         followup_count=int(getattr(conv, "followup_count", 0) or 0),
         bitrix_lead_id=getattr(conv, "bitrix_lead_id", "") or "",
+        bitrix_stage_by_bot=getattr(conv, "bitrix_stage_by_bot", "") or "",
+        bitrix_deal_id=getattr(conv, "bitrix_deal_id", "") or "",
         readiness_tier=getattr(conv, "readiness_tier", "") or "",
         readiness_reason=getattr(conv, "readiness_reason", "") or "",
         readiness_signals=dict(getattr(conv, "readiness_signals", None) or {}),

@@ -208,6 +208,11 @@ class Settings(BaseSettings):
     bitrix_category_by_funnel: dict[str, str] = {}
     # [?] Внутренняя стадия бота → STATUS_ID ЛИДА Bitrix (напр. "IN_PROCESS"); пусто → не двигаем.
     bitrix_stage_map: dict[str, str] = {}
+    bitrix_pipeline_enabled: bool = False
+    bitrix_autodeal_enabled: bool = False
+    bitrix_read_back_days: int = 45
+    bitrix_deal_category_id: str = "27"
+    bitrix_deal_stage_id: str = "C27:NEW"
     # --- в какую карточку пишет бот (разобрано на живом портале 06.08.2026) --------
     # В Битрикс идут ДВА потока лидов на одного клиента: интеграция Wappi через
     # Открытые линии (SOURCE_ID вида «25|02A4708D-EC6C», ответственный проставлен
