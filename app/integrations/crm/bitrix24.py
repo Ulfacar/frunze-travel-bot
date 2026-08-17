@@ -17,6 +17,7 @@ HTTP-клиент инъектируется (тесты) — иначе соз�
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 import httpx
@@ -25,15 +26,21 @@ from app.config import settings
 
 logger = logging.getLogger("crm.bitrix24")
 
-# Маркер собственного текста в COMMENTS лида. Без эмодзи сознательно: портал молча
-# обрезает поле на первом символе вне BMP (проверено на карточке 186199 17.08 —
-# crm.lead.update вернул result:true, а поле стало пустым).
-LEAD_COMMENTS_MARKER = "[бот] Досье:"
+# Маркер собственного текста в COMMENTS лида. Без эмодзи и BBCode: портал молча
+# обрезает поле на первом символе вне BMP, а неизвестные [tags] вырезает.
+LEAD_COMMENTS_MARKER = "Досье бота:"
+
+_BBCODE_TAG_RE = re.compile(r"\[/?[a-z][a-z0-9]*(?:=[^\]\r\n]*)?\]", re.IGNORECASE)
 
 
 def sanitize_lead_comments(text: str) -> str:
     """Remove characters that the portal cannot store in lead COMMENTS."""
     return "".join(ch for ch in str(text) if ord(ch) < 0x10000)
+
+
+def strip_lead_comments_bbcode(text: str) -> str:
+    """Return the visible COMMENTS text after Bitrix BBCode decoration."""
+    return _BBCODE_TAG_RE.sub("", str(text))
 
 
 class Bitrix24Crm:

@@ -9,7 +9,11 @@ from typing import Any
 
 from app.config import settings
 from app.core import flags
-from app.integrations.crm.bitrix24 import LEAD_COMMENTS_MARKER, sanitize_lead_comments
+from app.integrations.crm.bitrix24 import (
+    LEAD_COMMENTS_MARKER,
+    sanitize_lead_comments,
+    strip_lead_comments_bbcode,
+)
 from app.integrations.panel.store import get_conversation_store
 
 log = logging.getLogger("crm.bitrix_pipeline")
@@ -123,6 +127,17 @@ def _legacy_ours(text: str) -> bool:
     return True
 
 
+def _dossier_ours(text: str) -> bool:
+    """Recognise our marker in portal-normalised COMMENTS.
+
+    Bitrix may add BBCode around links on read-back.  Ownership lives only in the
+    first non-empty visible line; dossier contents are deliberately not compared.
+    """
+    visible = strip_lead_comments_bbcode(text)
+    first_line = next((line.strip() for line in visible.splitlines() if line.strip()), "")
+    return first_line.startswith(DOSSIER_MARKER)
+
+
 async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
                        adapter: Any = None, _conv: Any = None,
                        _lead: dict | None = None) -> bool:
@@ -139,7 +154,7 @@ async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
         if str(lead.get("STATUS_ID") or "") in TERMINAL_STATUSES:
             return False
         comments = str(lead.get("COMMENTS") or "")
-        if comments and not comments.startswith(DOSSIER_MARKER) and not _legacy_ours(comments):
+        if comments and not _dossier_ours(comments) and not _legacy_ours(comments):
             return False
         text = render_dossier(conv, conv.qualification if qualification is None else qualification)
         await client.update_comments(lead_id, text)

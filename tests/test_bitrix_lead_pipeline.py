@@ -377,6 +377,27 @@ def test_dossier_survives_emoji_from_client():
     assert "Кемер" in fake.lead["COMMENTS"]
 
 
+def test_marker_survives_the_portal_bbcode_parser():
+    """Проверено на карточке 186199 17.08: портал вырезал `[бот]` как BBCode-тег.
+
+    В поле осталось «Досье:» вместо «[бот] Досье:». Маркер, который не переживает
+    запись, хуже отсутствующего: на следующем ходу бот не узнаёт свой текст, считает
+    его человеческим и замолкает навсегда. Скобкам в маркере не место.
+    """
+    assert "[" not in bp.DOSSIER_MARKER and "]" not in bp.DOSSIER_MARKER
+
+
+def test_own_dossier_is_recognised_after_round_trip():
+    """Досье, прочитанное обратно из портала, обязано опознаваться как своё."""
+    _conv()
+    conv = run(ps.get_conversation_store().get(KEY))
+    written = bp.render_dossier(conv, {"направление": "Кемер"})
+    fake = FakeAdapter(status="NEW", comments=written)   # ровно то, что вернёт портал
+    assert run(bp.sync_dossier(KEY, qualification={"направление": "Аланья"},
+                               adapter=fake)) is True
+    assert "Аланья" in fake.lead["COMMENTS"]
+
+
 def test_dossier_never_overwrites_human_text():
     """ЛОЖНОПОЛОЖИТЕЛЬНЫЙ: менеджер написал в поле сам — не трогаем никогда."""
     fake = FakeAdapter(status="NEW", comments="созвон в 14:00, просит море рядом")
