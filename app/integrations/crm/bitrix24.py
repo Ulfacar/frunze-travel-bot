@@ -25,6 +25,16 @@ from app.config import settings
 
 logger = logging.getLogger("crm.bitrix24")
 
+# Маркер собственного текста в COMMENTS лида. Без эмодзи сознательно: портал молча
+# обрезает поле на первом символе вне BMP (проверено на карточке 186199 17.08 —
+# crm.lead.update вернул result:true, а поле стало пустым).
+LEAD_COMMENTS_MARKER = "[бот] Досье:"
+
+
+def sanitize_lead_comments(text: str) -> str:
+    """Remove characters that the portal cannot store in lead COMMENTS."""
+    return "".join(ch for ch in str(text) if ord(ch) < 0x10000)
+
 
 class Bitrix24Crm:
     def __init__(self, client: httpx.AsyncClient | None = None) -> None:
@@ -56,7 +66,9 @@ class Bitrix24Crm:
         fields: dict[str, Any] = {
             "TITLE": f"{funnel or 'lead'}: {name or phone or 'WhatsApp'}",
             "NAME": name,
-            "COMMENTS": ("🤖 Бот:\n" + _format_qualification(data)) if data else "",
+            "COMMENTS": sanitize_lead_comments(
+                LEAD_COMMENTS_MARKER + "\n" + _format_qualification(data)
+            ) if data else "",
             "SOURCE_DESCRIPTION": f"WhatsApp бот ({funnel})" if funnel else "WhatsApp бот",
         }
         if assigned_by_id:
@@ -122,7 +134,10 @@ class Bitrix24Crm:
         await self._call("crm.lead.update", {"id": lead_id, "fields": {"STATUS_ID": status_id}})
 
     async def update_comments(self, lead_id: str, text: str) -> None:
-        await self._call("crm.lead.update", {"id": lead_id, "fields": {"COMMENTS": text}})
+        await self._call(
+            "crm.lead.update",
+            {"id": lead_id, "fields": {"COMMENTS": sanitize_lead_comments(text)}},
+        )
 
     async def create_deal(self, fields: dict[str, Any]) -> str:
         resp = await self._call("crm.deal.add", {"fields": fields})

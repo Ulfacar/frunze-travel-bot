@@ -352,6 +352,31 @@ def test_dossier_overwrites_our_own_legacy_comments():
     assert fake.lead["COMMENTS"].startswith(bp.DOSSIER_MARKER)
 
 
+def test_dossier_has_no_astral_characters():
+    """Проверено на живом портале 17.08: Битрикс МОЛЧА съедает эмодзи в COMMENTS.
+
+    `crm.lead.update` с текстом, начинающимся на 🤖, вернул `result: true`, а поле стало
+    пустым — база портала обрывается на первом 4-байтовом символе. Ошибки нет ни в API,
+    ни в логах, поэтому досье исчезало бесследно. Ни маркер, ни собранный текст не
+    имеют права содержать символы вне BMP.
+    """
+    assert all(ord(ch) < 0x10000 for ch in bp.DOSSIER_MARKER)
+    _conv()
+    conv = run(ps.get_conversation_store().get(KEY))
+    text = bp.render_dossier(conv, {"направление": "Анталья 🏖️", "бюджет": "100000 💰"})
+    assert all(ord(ch) < 0x10000 for ch in text), "эмодзи из реплики клиента обнулят поле"
+
+
+def test_dossier_survives_emoji_from_client():
+    """Клиент пишет эмодзи в пожеланиях — досье обязано записаться, а не исчезнуть."""
+    fake = FakeAdapter(status="NEW", comments="")
+    _conv()
+    assert run(bp.sync_dossier(KEY, qualification={"направление": "Кемер 🌴"},
+                               adapter=fake)) is True
+    assert fake.lead["COMMENTS"].strip()
+    assert "Кемер" in fake.lead["COMMENTS"]
+
+
 def test_dossier_never_overwrites_human_text():
     """ЛОЖНОПОЛОЖИТЕЛЬНЫЙ: менеджер написал в поле сам — не трогаем никогда."""
     fake = FakeAdapter(status="NEW", comments="созвон в 14:00, просит море рядом")

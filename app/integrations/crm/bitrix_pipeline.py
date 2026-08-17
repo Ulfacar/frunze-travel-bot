@@ -9,6 +9,7 @@ from typing import Any
 
 from app.config import settings
 from app.core import flags
+from app.integrations.crm.bitrix24 import LEAD_COMMENTS_MARKER, sanitize_lead_comments
 from app.integrations.panel.store import get_conversation_store
 
 log = logging.getLogger("crm.bitrix_pipeline")
@@ -18,7 +19,7 @@ STAGE_SEQUENCE: tuple[str, ...] = (
     "UC_A492DB", "UC_PNSIIB",
 )
 TERMINAL_STATUSES = frozenset({"CONVERTED", "JUNK", "UC_R8BD0W"})
-DOSSIER_MARKER = "🤖 Бот:"
+DOSSIER_MARKER = LEAD_COMMENTS_MARKER
 READ_BACK_LIMIT = 100
 _tasks: set[asyncio.Task] = set()
 _inflight_stages: set[tuple[str, str]] = set()
@@ -108,7 +109,7 @@ def render_dossier(conv: Any, qualification: dict) -> str:
     lines.append(f"Диалог: {base + panel_path if base else panel_path}")
     if getattr(conv, "last_message_at", None):
         lines.append(f"Последнее сообщение: {conv.last_message_at:%d.%m.%Y %H:%M}")
-    return "\n".join(lines)
+    return sanitize_lead_comments("\n".join(lines))
 
 
 def _legacy_ours(text: str) -> bool:
