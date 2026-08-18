@@ -231,14 +231,34 @@ async def read_back_once(*, adapter: Any = None) -> dict:
     return stats
 
 
+def _facts_changed(conv: Any, qualification: dict | None) -> bool:
+    """Изменилась ли квалификация с прошлого хода.
+
+    Сравниваем свежие факты хода с теми, что лежат на диалоге: оркестратор пишет их в
+    конце хода, поэтому здесь `conv.qualification` — это ещё прошлое состояние. Так мы
+    отличаем «клиент назвал новое» от «клиент болтает», не заводя отдельного поля и не
+    дёргая портал на каждую реплику.
+    """
+    if qualification is None:
+        return False
+    fresh = {k: v for k, v in qualification.items() if v}
+    known = {k: v for k, v in (getattr(conv, "qualification", None) or {}).items() if v}
+    return fresh != known
+
+
 async def _advance_and_sync(conv_key: str, stage: str, qualification: dict | None) -> None:
     store = get_conversation_store()
     conv = await store.get(conv_key)
     if conv is None:
         return
+    # Ранний выход относится к СТАДИИ, а не к досье. Приёмочный прогон 18.08 (лид 186259):
+    # бот не дошёл до подборки, весь диалог зовётся только `qualified`, и после первой же
+    # записи карточка замерзала — клиент ушёл на Дубай, стал четвёркой и сменил вылет, а в
+    # карточке осталась Анталья на двоих. Стадию второй раз не двигаем, факты дописываем.
     target = (settings.bitrix_stage_map or {}).get(stage, "")
-    if target and (getattr(conv, "bitrix_stage_by_bot", "") or "") == target:
-        return
+    stage_done = bool(target) and (getattr(conv, "bitrix_stage_by_bot", "") or "") == target
+    if stage_done and not _facts_changed(conv, qualification):
+        return                      # ни стадии, ни новостей — портал не трогаем вовсе
     lead_id = getattr(conv, "bitrix_lead_id", "") or ""
     if not lead_id:
         return
