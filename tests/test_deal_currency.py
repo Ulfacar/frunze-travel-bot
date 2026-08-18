@@ -143,6 +143,32 @@ def test_bare_number_follows_search_default():
     assert deal.get("CURRENCY_ID") == "USD"
 
 
+@pytest.mark.parametrize("stored,expected", [
+    ("$", "USD"), ("€", "EUR"), ("сом", "KGS"), ("руб", "RUB"),
+    ("USD", "USD"), ("KGS", "KGS"),
+])
+def test_symbol_currency_becomes_portal_code(stored, expected):
+    """Движок оценки хранит валюту СИМВОЛОМ, а портал ждёт код.
+
+    Найдено живьём 18.08: `estimated_value_currency` = «$» (39 диалогов в базе, ещё один
+    с «€»), и `crm.deal.add` ответил 400 «Неверное значение поля "Валюта"». Первый гейт
+    этого не поймал, потому что проверял код «KGS» — то есть моё предположение, а не то,
+    что лежит в базе.
+    """
+    fake = FakeAdapter()
+    _conv("2500 USD", value=2500.0, currency=stored)
+    assert _deal(fake).get("CURRENCY_ID") == expected
+
+
+def test_unknown_currency_symbol_drops_the_sum():
+    """Непонятная валюта — не повод отправить мусор: портал отвергнет весь вызов,
+    и сделка не создастся вовсе. Лучше сделка без суммы."""
+    fake = FakeAdapter()
+    _conv("2500 USD", value=2500.0, currency="₸")
+    deal = _deal(fake)
+    assert "CURRENCY_ID" not in deal and "OPPORTUNITY" not in deal
+
+
 def test_stored_estimate_wins_with_its_own_currency():
     """Готовая оценка чека (readiness) идёт со своей валютой, а не с угаданной."""
     fake = FakeAdapter()

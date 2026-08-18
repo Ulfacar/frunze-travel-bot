@@ -169,6 +169,29 @@ async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
         return False
 
 
+# Портал принимает КОДЫ валют, а движок оценки чека хранит СИМВОЛЫ («$», «€», «сом» —
+# `readiness.py:180`). Живая проверка 18.08: `crm.deal.add` с `CURRENCY_ID: "$"` отвечает
+# 400 «Неверное значение поля Валюта» — и сделка не создаётся вовсе. В базе таких диалогов
+# 39 с «$» и один с «€».
+_CURRENCY_CODES = {
+    "$": "USD", "usd": "USD", "долл": "USD",
+    "€": "EUR", "eur": "EUR", "евро": "EUR",
+    "сом": "KGS", "kgs": "KGS", "с": "KGS",
+    "руб": "RUB", "rub": "RUB", "₽": "RUB",
+}
+
+
+def _currency_code(raw: str) -> str:
+    """Символ или код → код Битрикса. Незнакомое — пусто: лучше сделка без суммы, чем
+    отвергнутый порталом вызов, после которого не создаётся ничего."""
+    value = str(raw or "").strip().lower()
+    if not value:
+        return ""
+    if value.upper() in {"USD", "EUR", "KGS", "RUB"}:
+        return value.upper()
+    return _CURRENCY_CODES.get(value, "")
+
+
 def _opportunity(conv: Any) -> tuple[str, str]:
     """Сумма сделки и её ВАЛЮТА. ("", "") — если разобрать не удалось.
 
@@ -183,13 +206,15 @@ def _opportunity(conv: Any) -> tuple[str, str]:
     """
     value = getattr(conv, "estimated_value", None)
     if value is not None:
-        return str(value), (getattr(conv, "estimated_value_currency", "") or "KGS")
+        code = _currency_code(getattr(conv, "estimated_value_currency", ""))
+        return (str(value), code) if code else ("", "")
     budget = str((getattr(conv, "qualification", {}) or {}).get("budget") or "")
     from app.integrations.tourvisor.client import _parse_budget
     amount, currency = _parse_budget(budget)
     if not amount:
         return "", ""            # лучше пустое поле, чем неверная сумма в отчёте
-    return str(amount), currency or "USD"
+    code = _currency_code(currency) or "USD"
+    return str(amount), code
 
 
 async def read_back_once(*, adapter: Any = None) -> dict:
