@@ -36,7 +36,27 @@ from __future__ import annotations
 
 import pytest
 
-from app.agent import facts
+
+class _Missing:
+    """Модуля ещё нет — тест обязан УПАСТЬ, а не сорвать сбор всего прогона.
+
+    Красный гейт не должен мешать остальным 1130 тестам: импорт на уровне модуля
+    превратил бы отсутствие `app/agent/facts.py` в ошибку коллекции.
+    """
+
+    def __getattr__(self, name):
+        raise AssertionError("app/agent/facts.py ещё не написан — см. docs/task-tour-facts.md")
+
+
+def _mod():
+    try:
+        from app.agent import facts as module
+        return module
+    except ImportError:
+        return _Missing()
+
+
+facts = _mod()
 
 
 # --- положительные: фразы, ради которых всё затевается ------------------------
