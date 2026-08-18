@@ -464,11 +464,35 @@ TOURS_SPEC = FunnelSpec(
 )
 
 
+async def _absorb_client_facts(state: DialogState, user_text: str) -> None:
+    """Записать названное клиентом ДО хода модели.
+
+    Замер 18.08: факты доезжали до карточки только через аргументы `search_tours`. Бот не
+    вызвал поиск — карточка пустая (лид 186243) или, хуже, противоречит разговору
+    (лид 186247: клиент вернулся в Анталью, в карточке остался Дубай).
+
+    До модели, а не после: собранное попадает в контекст того же хода, и бот перестаёт
+    переспрашивать уже названное. Приоритет всё равно у аргументов инструмента — они
+    отрабатывают позже в этом же ходу и перетирают своим, потому что модель видит весь
+    диалог, а разбор — одну реплику.
+    """
+    if not await flags.get_flag("tour_facts_enabled", settings.tour_facts_enabled):
+        return
+    from app.agent import facts
+    found = facts.extract(user_text)
+    if not found:
+        return
+    state.qualification = facts.merge(state.qualification, found)
+    logger.info("facts absorbed fields=%s", ",".join(sorted(found)))
+    _sync_qualified_if_ready(state)
+
+
 async def run_tours_turn(state: DialogState, user_text: str) -> str | None:
     """Один ход клиента в воронке «Туры»."""
     # Ход мог упасть после поиска — тогда карточки остались в сохранённом состоянии. Без
     # этой чистки они приклеились бы к следующей, совсем другой реплике.
     state.pending_tour_cards, state.pending_offer_url = [], ""
+    await _absorb_client_facts(state, user_text)
     spec = TOURS_SPEC
     if state.manager_name:
         spec = replace(TOURS_SPEC, system=tours_system_for_manager(state.manager_name))

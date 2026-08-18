@@ -209,6 +209,7 @@ class Settings(BaseSettings):
     # [?] Внутренняя стадия бота → STATUS_ID ЛИДА Bitrix (напр. "IN_PROCESS"); пусто → не двигаем.
     bitrix_stage_map: dict[str, str] = {}
     bitrix_pipeline_enabled: bool = False
+    tour_facts_enabled: bool = False
     bitrix_autodeal_enabled: bool = False
     bitrix_read_back_days: int = 45
     bitrix_deal_category_id: str = "27"

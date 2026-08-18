@@ -99,6 +99,7 @@ services:
       BITRIX_ASSIGNEE_BY_MANAGER: ${BITRIX_ASSIGNEE_BY_MANAGER:-{}}
       # Подборка туров карточками + публичный адрес для ссылки «Подробнее здесь».
       TOURS_CARDS_ENABLED: ${TOURS_CARDS_ENABLED:-false}
+      TOUR_FACTS_ENABLED: ${TOUR_FACTS_ENABLED:-false}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
       STATE_BACKEND: ${STATE_BACKEND:-redis}
       PANEL_BACKEND: ${PANEL_BACKEND:-postgres}
