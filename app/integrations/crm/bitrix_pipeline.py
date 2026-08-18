@@ -169,13 +169,27 @@ async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
         return False
 
 
-def _opportunity(conv: Any) -> str:
+def _opportunity(conv: Any) -> tuple[str, str]:
+    """Сумма сделки и её ВАЛЮТА. ("", "") — если разобрать не удалось.
+
+    Валюта обязательна: воронка туров считает в сомах (базовая валюта портала KGS, живые
+    сделки 45000 и 58000 KGS). Без явной `CURRENCY_ID` бюджет «2500 USD» лёг бы в портал
+    как 2500 сом — впятеро-двадцатеро ниже правды, а заказчик меряет работу этими суммами.
+    Пересчёт для отчётов делает сам Битрикс: курсы у него настроены, свой мы не прибиваем —
+    он протухнет.
+
+    Разбор берём тот же, что и поиск туров (`_parse_budget`): голое число там означает
+    доллары, и расходиться с ним нельзя — клиенту показали цены в долларах.
+    """
     value = getattr(conv, "estimated_value", None)
     if value is not None:
-        return str(value)
+        return str(value), (getattr(conv, "estimated_value_currency", "") or "KGS")
     budget = str((getattr(conv, "qualification", {}) or {}).get("budget") or "")
-    match = re.search(r"\d[\d\s.,]*", budget)
-    return re.sub(r"[^\d.]", "", match.group(0).replace(",", ".")) if match else ""
+    from app.integrations.tourvisor.client import _parse_budget
+    amount, currency = _parse_budget(budget)
+    if not amount:
+        return "", ""            # лучше пустое поле, чем неверная сумма в отчёте
+    return str(amount), currency or "USD"
 
 
 async def read_back_once(*, adapter: Any = None) -> dict:
@@ -217,9 +231,10 @@ async def read_back_once(*, adapter: Any = None) -> dict:
             }
             if lead.get("ASSIGNED_BY_ID"):
                 fields["ASSIGNED_BY_ID"] = lead["ASSIGNED_BY_ID"]
-            opportunity = _opportunity(conv)
+            opportunity, currency = _opportunity(conv)
             if opportunity:
                 fields["OPPORTUNITY"] = opportunity
+                fields["CURRENCY_ID"] = currency
             deal_id = await client.create_deal(fields)
             if deal_id:
                 await store.update_meta(conv.user_id, bitrix_deal_id=deal_id)
