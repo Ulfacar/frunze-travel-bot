@@ -66,6 +66,21 @@ SCENARIOS: dict[str, list[tuple[str, str]]] = {
 }
 
 
+class NoticeBox:
+    """Перехват уведомлений менеджеру: в замере их надо ВИДЕТЬ, а не отправлять.
+
+    Подменяется транспорт, а не логика: решение «слать или молчать» остаётся настоящим,
+    до Telegram дело просто не доходит.
+    """
+
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, str]] = []
+
+    async def __call__(self, login: str, text: str) -> bool:
+        self.sent.append((login, text))
+        return True
+
+
 class CaptureChannel:
     """Канал-заглушка: ответ бота никуда не уходит, только запоминается."""
 
@@ -108,7 +123,7 @@ def _facts(comments: str) -> str:
     return " | ".join(picked) if picked else "(фактов нет)"
 
 
-async def run(bot_id: str, cleanup: bool, phone: str, scenario: str) -> int:
+async def run(bot_id: str, cleanup: bool, phone: str, scenario: str, owner: str) -> int:
     turns = SCENARIOS[scenario]
     # Боевые боты живут в `registry` (WhatsApp/Открытые линии), тестовые Telegram —
     # отдельным списком `settings.telegram_bots`, как их и поднимает `main.py`.
@@ -128,6 +143,10 @@ async def run(bot_id: str, cleanup: bool, phone: str, scenario: str) -> int:
 
     key = f"{bot_id}:{phone}"
     store = get_conversation_store()
+
+    from app.core import offer_change_notice as notice
+    notices = NoticeBox()
+    notice._default_send = notices
     channel = CaptureChannel()
     orch = Orchestrator(channel, bot=bot)
 
@@ -137,6 +156,7 @@ async def run(bot_id: str, cleanup: bool, phone: str, scenario: str) -> int:
 
     seen_comments = ""
     changes = 0
+    seen_notices = 0
     lead_id = ""
 
     for num, text in turns:
@@ -157,14 +177,23 @@ async def run(bot_id: str, cleanup: bool, phone: str, scenario: str) -> int:
         else:
             mark = "досье без изменений"
 
+        if owner:
+            await store.update_meta(key, assigned_to=owner)
+
         print(f"--- ход {num}")
         print(f"    клиент: {text}")
         print(f"    бот:    {reply[:200]}")
         print(f"    лид:    {lead_id or '(ещё нет)'}  стадия: {status or '—'}  [{mark}]")
         print(f"    в карточке: {_facts(comments)}")
+        for _login, body in notices.sent[seen_notices:]:
+            print("    📨 УВЕДОМЛЕНИЕ МЕНЕДЖЕРУ:")
+            for line in body.splitlines():
+                print(f"       {line}")
+        seen_notices = len(notices.sent)
         print()
 
     print(f"=== ИТОГ: карточка {lead_id}, досье менялось {changes} раз(а) за {len(turns)} ходов")
+    print(f"    уведомлений менеджеру: {len(notices.sent)}")
     print(f"    последнее состояние карточки: {_facts(seen_comments)}")
 
     if cleanup and lead_id:
@@ -179,6 +208,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--bot", default="frunze_tours_tg")
     ap.add_argument("--phone", default=SIM_PHONE)
+    ap.add_argument("--owner", default="", help="логин владельца диалога (адресат сигнала)")
     ap.add_argument("--scenario", default="drip", choices=sorted(SCENARIOS))
     ap.add_argument("--run", action="store_true", help="подтверждение: пишем в боевой портал")
     ap.add_argument("--cleanup", action="store_true", help="удалить тестовый лид в конце")
@@ -186,7 +216,7 @@ def main() -> int:
     if not args.run:
         print("Скрипт создаёт карточку в боевом Битриксе. Запускать с --run.")
         return 1
-    return asyncio.run(run(args.bot, args.cleanup, args.phone, args.scenario))
+    return asyncio.run(run(args.bot, args.cleanup, args.phone, args.scenario, args.owner))
 
 
 if __name__ == "__main__":
