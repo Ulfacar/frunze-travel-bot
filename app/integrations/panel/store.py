@@ -60,6 +60,7 @@ class ConversationView:
     bitrix_stage_by_bot: str = ""
     bitrix_dossier_by_bot: bool = False
     bitrix_deal_id: str = ""
+    offer_facts: dict[str, Any] = field(default_factory=dict)  # снимок «было» для уведомления
     # Мотор готовности «Покупатели сегодня» (детерминированный, из readiness.py).
     readiness_tier: str = ""          # green|warm|noise|insufficient|"" (не считался)
     readiness_reason: str = ""
@@ -178,6 +179,7 @@ class MemoryConversationStore:
                           bitrix_stage_by_bot: str | None = None,
                           bitrix_dossier_by_bot: bool | None = None,
                           bitrix_deal_id: str | None = None,
+                          offer_facts: dict | None = None,
                           readiness_tier: str | None = None,
                           readiness_reason: str | None = None,
                           readiness_signals: dict | None = None,
@@ -221,6 +223,8 @@ class MemoryConversationStore:
             conv.bitrix_dossier_by_bot = bitrix_dossier_by_bot
         if bitrix_deal_id is not None:
             conv.bitrix_deal_id = bitrix_deal_id
+        if offer_facts is not None:
+            conv.offer_facts = dict(offer_facts)
         if readiness_tier is not None:
             conv.readiness_tier = readiness_tier
             conv.readiness_scored_at = _now()
@@ -385,6 +389,7 @@ class PostgresConversationStore:
                           bitrix_stage_by_bot: str | None = None,
                           bitrix_dossier_by_bot: bool | None = None,
                           bitrix_deal_id: str | None = None,
+                          offer_facts: dict | None = None,
                           readiness_tier: str | None = None,
                           readiness_reason: str | None = None,
                           readiness_signals: dict | None = None,
@@ -430,6 +435,8 @@ class PostgresConversationStore:
                 conv.bitrix_dossier_by_bot = bitrix_dossier_by_bot
             if bitrix_deal_id is not None:
                 conv.bitrix_deal_id = bitrix_deal_id
+            if offer_facts is not None:
+                conv.offer_facts = dict(offer_facts)
             if readiness_tier is not None:
                 conv.readiness_tier = readiness_tier
                 conv.readiness_scored_at = _now()
@@ -581,6 +588,7 @@ def _view(conv) -> ConversationView:
         bitrix_stage_by_bot=getattr(conv, "bitrix_stage_by_bot", "") or "",
         bitrix_dossier_by_bot=bool(getattr(conv, "bitrix_dossier_by_bot", False)),
         bitrix_deal_id=getattr(conv, "bitrix_deal_id", "") or "",
+        offer_facts=dict(getattr(conv, "offer_facts", None) or {}),
         readiness_tier=getattr(conv, "readiness_tier", "") or "",
         readiness_reason=getattr(conv, "readiness_reason", "") or "",
         readiness_signals=dict(getattr(conv, "readiness_signals", None) or {}),

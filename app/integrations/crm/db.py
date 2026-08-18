@@ -95,6 +95,10 @@ class Conversation(Base):
     bitrix_stage_by_bot: Mapped[str] = mapped_column(String(32), default="")
     bitrix_dossier_by_bot: Mapped[bool] = mapped_column(Boolean, default=False)
     bitrix_deal_id: Mapped[str] = mapped_column(String(32), default="")
+    # Снимок значимых полей на момент последнего уведомления «клиент передумал».
+    # Живёт на диалоге, а не в памяти процесса: уведомление обязано быть однократным
+    # и после рестарта тоже (тот же закон, что у bitrix_stage_by_bot).
+    offer_facts: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     # Мотор готовности «Покупатели сегодня» (детерминированный, из app/core/readiness.py).
     readiness_tier: Mapped[str] = mapped_column(String(16), default="")       # green|warm|noise|insufficient
     readiness_reason: Mapped[str] = mapped_column(Text, default="")
@@ -290,6 +294,7 @@ async def init_models(engine: AsyncEngine) -> None:
             "bitrix_stage_by_bot": "VARCHAR(32) DEFAULT ''",
             "bitrix_dossier_by_bot": "BOOLEAN DEFAULT FALSE",
             "bitrix_deal_id": "VARCHAR(32) DEFAULT ''",
+            "offer_facts": "JSON DEFAULT '{}'",
             "archived": "BOOLEAN DEFAULT FALSE",
             "readiness_tier": "VARCHAR(16) DEFAULT ''",
             "readiness_reason": "TEXT DEFAULT ''",

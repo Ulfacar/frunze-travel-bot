@@ -441,6 +441,14 @@ FEATURE_FLAGS = {
         "default": lambda: settings.bitrix_pipeline_enabled,
         "note": lambda: "",
     },
+    "offer_change_notice_enabled": {
+        "title": "Сигнал «клиент передумал»",
+        "desc": ("Если клиент уже получил подборку и после этого сменил страну или город "
+                 "вылета, менеджеру уходит короткое сообщение «было → стало». Смену "
+                 "бюджета, дат и состава бот отрабатывает сам и не беспокоит."),
+        "default": lambda: False,
+        "note": lambda: "",
+    },
     "bitrix_autodeal_enabled": {
         "title": "Автосоздание сделок Bitrix",
         "desc": "Создавать сделку в туровой воронке после статуса «Подписан».",

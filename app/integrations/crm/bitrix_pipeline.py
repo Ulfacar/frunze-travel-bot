@@ -91,6 +91,9 @@ def render_dossier(conv: Any, qualification: dict) -> str:
     lines = [DOSSIER_MARKER]
     labels = (
         (("destination", "region", "country", "visa_country", "направление"), "Направление"),
+        # Город вылета менеджеру нужен так же, как страна: замер 18.08 — клиент ушёл на
+        # вылет из Алматы, бот пересчитал цены из Алматы, а в карточке об этом ни слова.
+        (("departure_city", "departure", "город вылета"), "Вылет"),
         (("budget", "бюджет"), "Бюджет"), (("dates", "nights", "даты"), "Даты"),
         (("tourists", "adults", "children", "children_ages", "companions",
           "взрослых", "детей"), "Состав"),
@@ -245,10 +248,21 @@ async def _advance_and_sync(conv_key: str, stage: str, qualification: dict | Non
     except Exception:  # noqa: BLE001
         log.warning("pipeline lead read failed conv_key=%s", conv_key, exc_info=True)
         return
-    await advance(conv_key, stage, adapter=client, _conv=conv, _lead=lead)
+    moved_to = await advance(conv_key, stage, adapter=client, _conv=conv, _lead=lead)
     await sync_dossier(
         conv_key, qualification=qualification, adapter=client, _conv=conv, _lead=lead,
     )
+
+    # Карточка обновлена — теперь решаем, надо ли будить человека. Порядок важен:
+    # досье пишется всегда, уведомление — только если клиент переиграл уже отправленное.
+    from app.core import offer_change_notice as notice
+    facts = qualification if qualification is not None else (
+        getattr(conv, "qualification", None) or {})
+    if moved_to and moved_to == (settings.bitrix_stage_map or {}).get("offer_sent", ""):
+        await notice.remember_offer(conv_key, facts)
+    else:
+        await notice.maybe_notify(
+            conv_key, old=getattr(conv, "offer_facts", None) or {}, new=facts)
 
 
 def fire(conv_key: str, stage: str, qualification: dict | None) -> None:
