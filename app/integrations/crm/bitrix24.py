@@ -33,6 +33,11 @@ LEAD_COMMENTS_MARKER = "Досье бота:"
 _BBCODE_TAG_RE = re.compile(r"\[/?[a-z][a-z0-9]*(?:=[^\]\r\n]*)?\]", re.IGNORECASE)
 
 
+def _bitrix_time(moment) -> str:
+    """Время в формате, который понимает фильтр Битрикса (ISO без микросекунд)."""
+    return moment.replace(microsecond=0).isoformat()
+
+
 def sanitize_lead_comments(text: str) -> str:
     """Remove characters that the portal cannot store in lead COMMENTS."""
     return "".join(ch for ch in str(text) if ord(ch) < 0x10000)
@@ -119,6 +124,32 @@ class Bitrix24Crm:
             "crm.lead.list",
             {"filter": {"@ID": [str(i) for i in ids]}, "select": ["ID", "SOURCE_ID"]})
         return list(detail.get("result") or [])
+
+    async def list_converted_leads(self, since) -> list[dict[str, Any]]:
+        """Лиды, отмеченные «Подписан» после `since`. Один список вместо тысячи запросов.
+
+        Раньше обратное чтение опрашивало КАЖДУЮ нашу карточку через `crm.lead.get` и
+        упиралось в потолок в 100 штук: при 1001 карточке в окне продажа на свежем лиде
+        не находилась никогда (замер 18.08, лид 186245). Спрашивать надо портал о том,
+        что изменилось, а не перебирать своё.
+
+        Пагинация Битрикса — по 50 на страницу через `start`; идём, пока он отдаёт `next`.
+        """
+        collected: list[dict[str, Any]] = []
+        start = 0
+        while True:
+            payload = {
+                "filter": {"STATUS_ID": "CONVERTED", ">DATE_MODIFY": _bitrix_time(since)},
+                "select": ["ID", "TITLE", "ASSIGNED_BY_ID", "STATUS_ID"],
+                "order": {"DATE_MODIFY": "DESC"},
+                "start": start,
+            }
+            resp = await self._call("crm.lead.list", payload)
+            collected.extend(resp.get("result") or [])
+            nxt = resp.get("next")
+            if not nxt or len(collected) >= 1000:   # предохранитель от бесконечной страницы
+                return collected
+            start = int(nxt)
 
     async def update_stage(self, deal_id: str, stage: str) -> None:
         """Обновить STATUS_ID лида (если стадия замаплена; иначе мягко пропустить)."""

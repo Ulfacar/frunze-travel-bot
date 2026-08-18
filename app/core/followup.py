@@ -53,6 +53,29 @@ def select_followup_targets(convs: list, now: datetime, cfg) -> list:
     return out
 
 
+def _mark_touch(conv, pings: int) -> None:
+    """Отметить касание в карточке Битрикса: «1 касание» / «2 касание».
+
+    Стадии `touch_1` и `touch_2` два месяца стояли в `BITRIX_STAGE_MAP` и не вызывались
+    никем: карточка прыгала с «Выявление потребностей» сразу в «Предложение отправлено»,
+    а колонки касаний в воронке оставались пустыми — по ним выходило, что бот не дожимает.
+
+    Касание у бота ровно одно — отправленный пинг дожима, поэтому отмечаем здесь. Третьего
+    и дальше в карте нет, и выдумывать стадию мы не будем. Правило «только вперёд» в
+    `advance` само не даст откатить карточку назад, если предложение уже отправлено.
+    """
+    if not getattr(conv, "bitrix_lead_id", ""):
+        return
+    stage = {1: "touch_1", 2: "touch_2"}.get(pings, "")
+    if not stage:
+        return
+    try:
+        from app.integrations.crm import bitrix_pipeline
+        bitrix_pipeline.fire(conv.user_id, stage, dict(getattr(conv, "qualification", None) or {}))
+    except Exception:  # noqa: BLE001 — карточка не должна ломать рассылку дожима
+        log.warning("followup: стадия касания не поставлена для %s", conv.user_id, exc_info=True)
+
+
 async def _send_followups(now: datetime, cfg) -> int:
     """Разослать по одному пингу всем текущим целям. Возвращает число отправленных."""
     store = get_conversation_store()
@@ -67,8 +90,10 @@ async def _send_followups(now: datetime, cfg) -> int:
             mark_own(provider)
             await store.add_message(c.user_id, "bot", text, status="sent",
                                     provider_msg_id=provider or "")
+            pings = followup_pings(c) + 1
             await store.update_meta(c.user_id, stage="follow_up", followup_sent=True,
-                                    followup_count=followup_pings(c) + 1)
+                                    followup_count=pings)
+            _mark_touch(c, pings)
             sent += 1
             log.info("followup #%d sent to %s (funnel=%s)",
                      followup_pings(c) + 1, c.user_id, c.funnel)

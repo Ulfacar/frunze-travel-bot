@@ -193,28 +193,40 @@ def _opportunity(conv: Any) -> tuple[str, str]:
 
 
 async def read_back_once(*, adapter: Any = None) -> dict:
+    """Забрать из портала продажи и завести по ним сделки.
+
+    Спрашиваем портал СПИСКОМ («какие лиды стали Подписаны после такого-то»), а не
+    опрашиваем каждую свою карточку. Прежний перебор с потолком в 100 штук при 1001
+    карточке в окне не находил продажу на свежем лиде никогда — проверено живьём на
+    лиде 186245 (замер 18.08). Тот же закон, что со сторожем каналов: спрашиваем
+    источник, а не гадаем перебором.
+    """
     stats = {key: 0 for key in ("checked", "moved", "frozen_manual", "dossier_written",
             "dossier_skipped_human", "won", "deals_created", "deals_dry_run", "errors")}
     client = _adapter(adapter)
     store = get_conversation_store()
-    convs = await store.all_conversations_light()
-    cutoff = datetime.now(timezone.utc) - timedelta(days=settings.bitrix_read_back_days)
+    since = datetime.now(timezone.utc) - timedelta(days=settings.bitrix_read_back_days)
 
-    def _recent(conv: Any) -> bool:
-        active = getattr(conv, "last_message_at", None)
-        if active is None:
-            return False
-        if active.tzinfo is None:
-            active = active.replace(tzinfo=timezone.utc)
-        return active >= cutoff
+    try:
+        converted = await client.list_converted_leads(since)
+    except Exception:  # noqa: BLE001 — портал недоступен, следующий тик попробует снова
+        log.warning("pipeline read-back: портал не отдал список продаж", exc_info=True)
+        stats["errors"] += 1
+        return stats
 
-    candidates = [c for c in convs if getattr(c, "bitrix_lead_id", "") and _recent(c)]
-    for conv in candidates[:READ_BACK_LIMIT]:
+    by_lead: dict[str, Any] = {}
+    for conv in await store.all_conversations_light():
+        lead_id = str(getattr(conv, "bitrix_lead_id", "") or "")
+        if lead_id:
+            by_lead[lead_id] = conv
+
+    for lead in converted:
+        lead_id = str(lead.get("ID") or "")
+        conv = by_lead.get(lead_id)
+        if conv is None:
+            continue                    # продажа по чужой карточке — не наш диалог
         try:
-            lead = await client.get_lead(conv.bitrix_lead_id)
             stats["checked"] += 1
-            if str(lead.get("STATUS_ID") or "") != "CONVERTED":
-                continue
             if (getattr(conv, "outcome", "") or "") != "won":
                 await store.update_meta(conv.user_id, outcome="won")
                 stats["won"] += 1
@@ -241,7 +253,7 @@ async def read_back_once(*, adapter: Any = None) -> dict:
                 stats["deals_created"] += 1
         except Exception:  # noqa: BLE001
             stats["errors"] += 1
-            log.warning("pipeline read-back failed conv_key=%s", conv.user_id, exc_info=True)
+            log.warning("pipeline read-back failed lead=%s", lead_id, exc_info=True)
     log.info("pipeline read-back stats=%s", stats)
     return stats
 

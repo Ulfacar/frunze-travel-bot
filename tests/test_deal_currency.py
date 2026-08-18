@@ -40,6 +40,12 @@ class FakeAdapter:
                      "ASSIGNED_BY_ID": "96451"}
         self.deals: list[dict] = []
 
+    async def list_converted_leads(self, since):
+        """Портал отвечает списком проданных — контракт сменился 18.08 вместе с тем,
+        что обратное чтение больше не опрашивает каждую карточку по отдельности."""
+        await asyncio.sleep(0)
+        return [dict(self.lead)] if str(self.lead.get("STATUS_ID")) == "CONVERTED" else []
+
     async def get_lead(self, lead_id):
         await asyncio.sleep(0)
         return dict(self.lead)
