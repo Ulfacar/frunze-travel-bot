@@ -476,7 +476,10 @@ async def _absorb_client_facts(state: DialogState, user_text: str) -> None:
     отрабатывают позже в этом же ходу и перетирают своим, потому что модель видит весь
     диалог, а разбор — одну реплику.
     """
-    if not await flags.get_flag("tour_facts_enabled", settings.tour_facts_enabled):
+    # Per-bot ключ поверх глобального — как у `bots_enabled`: обкатать на тест-боте,
+    # не трогая боевые каналы, где каждый лид оплачен рекламой.
+    globally = await flags.get_flag("tour_facts_enabled", settings.tour_facts_enabled)
+    if not await flags.get_flag(f"tour_facts_enabled:{state.bot_id}", globally):
         return
     from app.agent import facts
     found = facts.extract(user_text)
