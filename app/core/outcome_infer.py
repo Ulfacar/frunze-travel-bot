@@ -14,6 +14,7 @@ import time
 from datetime import datetime, timezone
 
 from app.config import settings
+from app.core.leadstate import looks_unseen_conversation
 
 log = logging.getLogger("outcome_infer")
 
@@ -55,6 +56,9 @@ def _candidates(convs: list, now: datetime, stale_hours: int, limit: int) -> lis
             continue                                   # ещё живой/свежий
         if not getattr(c, "messages", None):
             continue
+        if looks_unseen_conversation(c):
+            continue                                   # одни клиентские реплики — судить не по чему:
+                                                       # менеджер мог вести клиента мимо нас
         out.append(c)
     # приоритет: сперва ни разу не размеченные (""), потом "active" на переоценку; внутри — старые первыми
     out.sort(key=lambda c: ((getattr(c, "outcome_inferred", "") or "") != "",

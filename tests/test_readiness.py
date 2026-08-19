@@ -155,3 +155,29 @@ def test_readiness_green_is_sticky_after_hesitation():
     r = compute_readiness(state)
     assert r["readiness_tier"] == "green"          # safety-триггер «оплатить» стики
     assert r["readiness_signals"]["explicit_payment_intent"] is True
+
+
+# ---------- Разговор, который ведут мимо нас (19.08.2026) ----------
+#
+# Если менеджер отвечает клиенту с телефона, а эхо ответа до нас не долетает, в истории
+# остаются одни клиентские реплики. Мотор готовности видит «человек пишет, позитивных
+# сигналов нет» и опускает лид в «Шум» — то есть прячет из ленты клиента, с которым уже
+# работают. Судить о готовности по половине разговора нельзя: честный ответ — «мало данных».
+
+def _state_led_past_us():
+    return _state(user_texts=("здравствуйте, можно подробнее про визу",
+                              "а в другом агентстве как",
+                              "дорого, просто смотрю пока"))
+
+
+def test_readiness_does_not_call_it_noise_when_our_replies_are_missing():
+    result = compute_readiness(_state_led_past_us())
+
+    assert result["readiness_tier"] == "insufficient"
+
+
+def test_readiness_still_calls_it_noise_when_we_actually_replied():
+    state = _state_led_past_us()
+    state.history.insert(1, {"role": "assistant", "content": "Здравствуйте! Какая страна?"})
+
+    assert compute_readiness(state)["readiness_tier"] == "noise"

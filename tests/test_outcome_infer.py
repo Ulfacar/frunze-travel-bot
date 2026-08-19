@@ -143,3 +143,26 @@ def test_run_noop_when_disabled(monkeypatch):
     asyncio.run(store.add_message(uid, "client", "оплатить", channel="whatsapp", bot_id="frunze_tours"))
     asyncio.run(outcome_infer.run())
     assert (asyncio.run(store.get(uid)).outcome_inferred or "") == ""
+
+
+# ---------- Разговор, который ведут мимо нас (19.08.2026) ----------
+
+def _cv_unseen(uid, with_reply=False):
+    """Диалог, где клиент писал трижды. with_reply=True — наш ответ в истории есть."""
+    now = datetime.now(timezone.utc)
+    msgs = [MessageView("client", "текст", now) for _ in range(3)]
+    if with_reply:
+        msgs.insert(1, MessageView("bot", "Здравствуйте!", now))
+    return ConversationView(user_id=uid, funnel="tours", outcome="", outcome_inferred="",
+                            last_message_at=now - timedelta(hours=48), messages=msgs)
+
+
+def test_candidates_skip_conversation_without_any_reply_of_ours():
+    """Транскрипт из одних клиентских реплик — половина разговора; ИИ решил бы «lost»
+    по диалогу, который менеджер вёл с телефона, а эхо до нас не долетело."""
+    now = datetime.now(timezone.utc)
+    convs = [_cv_unseen("led_past_us"), _cv_unseen("we_replied", with_reply=True)]
+
+    picked = [c.user_id for c in outcome_infer._candidates(convs, now, stale_hours=24, limit=10)]
+
+    assert picked == ["we_replied"]

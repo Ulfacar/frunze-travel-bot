@@ -98,6 +98,22 @@ def _all_user_text(state: DialogState) -> str:
     ).lower()
 
 
+def _replies_missing(state: DialogState) -> bool:
+    """В истории одни клиентские реплики: разговор либо не начат, либо идёт мимо нас.
+
+    Второе — не гипотеза: замер прода 19.08.2026 показал 385 таких диалогов из 681 на
+    визовом канале, причём клиент в них отвечает на заданные вопросы, то есть менеджер с
+    ним работал, а эхо ответа с телефона до нас не долетело. Судить о готовности по
+    половине разговора нельзя: «Шум» спрятал бы из ленты живого клиента.
+    """
+    # Порог тот же, что у `leadstate.UNSEEN_MIN_CLIENT_MSGS`: одно-два сообщения без ответа
+    # бывают и в честно брошенном диалоге, а вот третье подряд означает, что человеку
+    # отвечает кто-то мимо нас.
+    if _client_message_count(state) < 3:
+        return False
+    return not any(h.get("role") != "user" for h in state.history)
+
+
 def _signals(state: DialogState) -> dict[str, Any]:
     q = state.qualification or {}
     # ПОЗИТИВ — стики: сканируем ВСЮ историю. Раз клиент показал намерение платить,
@@ -217,10 +233,16 @@ def compute_readiness(state: DialogState) -> dict[str, Any]:
     """Главный вход: сигналы → тир → причина + денежная оценка. Ноль LLM."""
     sig = _signals(state)
     tier = compute_tier(sig)
+    reason = _reason(tier, sig)
+    if tier == "noise" and _replies_missing(state):
+        # Негативные сигналы без единого нашего ответа — половина разговора, а не портрет
+        # клиента. Честный тир здесь «мало данных», иначе прячем в шум того, кого ведут.
+        tier = "insufficient"
+        reason = "Мало данных: наших ответов в диалоге нет — клиента могут вести мимо нас."
     value, currency = _estimate_value(state.qualification or {})
     return {
         "readiness_tier": tier,
-        "readiness_reason": _reason(tier, sig),
+        "readiness_reason": reason,
         "readiness_signals": sig,
         "estimated_value": value,
         "estimated_value_currency": currency,
