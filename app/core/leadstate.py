@@ -70,11 +70,44 @@ def is_noise(conv, now: datetime | None = None, cfg=None) -> bool:
     if getattr(conv, "last_sender", "") == "client" and link_or_media:
         return True
 
+    # Дальше идёт ветка «залежался и говорил только клиент» — ровно в неё проваливается
+    # диалог, где менеджер отвечает мимо нас. Повтор рекламной ссылки уже отсеян выше по
+    # тексту, так что здесь мы теряем только настоящий мусор, а не живой разговор.
+    if looks_unseen_conversation(conv):
+        return False
+
     now = _aware(now) or datetime.now(timezone.utc)
     last = _aware(getattr(conv, "last_message_at", None))
     stale_days = getattr(cfg, "noise_stale_days", 3)
     is_stale = bool(last and last <= now - timedelta(days=stale_days))
     return is_stale and _has_message(conv) and _only_client_messages(conv)
+
+
+# Сколько раз клиент должен написать без единого нашего ответа, чтобы счесть, что разговор
+# ведут без нас. Один-два неотвеченных сообщения — это настоящий брошенный лид (ради него
+# дожим и существует), а вот третье подряд означает, что человеку кто-то отвечает мимо нас.
+UNSEEN_MIN_CLIENT_MSGS = 3
+
+
+def looks_unseen_conversation(conv) -> bool:
+    """Диалог, который ведут без нас: клиент пишет раз за разом, наших реплик нет ни одной.
+
+    Так выглядит канал, где менеджер отвечает с телефона, а эхо ответа до нас не долетает.
+    Замер прода 19.08.2026: на визовом канале 385 из 681 диалога за 30 дней не имели ни
+    одного нашего сообщения, при том что клиент в них отвечает на заданные вопросы — то
+    есть человек с ним работал. Дожимать такого клиента нельзя: бот написал бы «вы ещё
+    думаете?» тому, кому менеджер вчера отправил счёт.
+
+    Осторожность в обе стороны: без загруженной истории (`all_conversations_light`)
+    функция молчит, поэтому сводки и доски ведут себя ровно как раньше.
+    """
+    messages = getattr(conv, "messages", None) or []
+    if not messages:
+        return False
+    if _has_bot_or_manager_message(conv):
+        return False
+    client_msgs = sum(1 for m in messages if getattr(m, "sender", "") == "client")
+    return client_msgs >= UNSEEN_MIN_CLIENT_MSGS
 
 
 def followup_pings(conv) -> int:
@@ -94,6 +127,8 @@ def is_silent(conv, now: datetime, cfg) -> bool:
     now = _aware(now) or datetime.now(timezone.utc)
     if getattr(conv, "intercepted", False):
         return False
+    if looks_unseen_conversation(conv):
+        return False  # с клиентом уже говорят, просто мимо нас — молчим, пока не увидим ответы
     pings = followup_pings(conv)
     if pings >= getattr(cfg, "followup_max_pings", 2):
         return False  # лимит пингов исчерпан — больше не дожимаем
