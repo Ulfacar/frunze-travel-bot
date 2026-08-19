@@ -39,6 +39,40 @@ def _aware(dt: datetime | None) -> datetime | None:
     return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
 
 
+# Порядок стадий для канбана. Бот двигает карточку только ВПЕРЁД: ручной перенос менеджера
+# главнее бота (решение владельца 16.07), а `_sync_card` пишет стадию на каждом ходу — без
+# этого порядка любой пересчёт сбрасывал бы карточку, которую менеджер перетащил руками.
+STAGE_RANK = {"": 0, "greeting": 0, "new": 0, "qualification": 1,
+              "progress": 2, "scoring": 2, "search": 2, "visa_scoring": 2,
+              "follow_up": 2, "followup": 2, "callback": 2,
+              "office": 3, "office_consultation": 3, "manager": 4, "manager_handoff": 4}
+
+# Сколько собранных полей анкеты означает, что разговор перешёл от знакомства к подбору.
+# На живых карточках заполненная анкета — это 7–8 полей (страна, даты, бюджет, состав…),
+# так что «три и больше» уверенно отделяет работу от первых двух вежливых ответов.
+PROGRESS_MIN_FIELDS = 3
+
+
+def derive_stage(state) -> str:
+    """Стадия, которую видно по самому разговору: знакомство → анкета → подбор.
+
+    До 19.08.2026 стадия жила только как флаг эскалации (`manager`/`office`), и 92%
+    диалогов навсегда оставались в «Приветствии» — включая те, где клиент написал 69
+    сообщений. Считаем по собранной анкете: она наполняется по ходу разговора и не
+    требует ни новых полей в БД, ни обращения к модели.
+    """
+    filled = sum(1 for v in (getattr(state, "qualification", None) or {}).values()
+                 if v not in (None, "", [], {}))
+    if filled == 0:
+        return "greeting"
+    return "progress" if filled >= PROGRESS_MIN_FIELDS else "qualification"
+
+
+def advance_stage(current: str, derived: str) -> str:
+    """Более поздняя из двух стадий. Бот не откатывает карточку назад — никогда."""
+    return derived if STAGE_RANK.get(derived, 0) > STAGE_RANK.get(current, 0) else (current or derived)
+
+
 def _has_message(conv) -> bool:
     return bool(getattr(conv, "messages", None) or getattr(conv, "last_text", "") or getattr(conv, "last_sender", ""))
 
