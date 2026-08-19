@@ -284,3 +284,62 @@ def test_webhook_ad_referral_persisted_e2e(monkeypatch):
     conv = asyncio.run(panel_store._memory_store.get("frunze_tours_1:996700123456"))
     assert conv.source == "ad"
     assert conv.source_headline.startswith("Тур в Дубай")
+
+
+# --- Источник из ТЕКСТА сообщения (19.08.2026) ------------------------------------------
+#
+# Замер прода: `source` пуст у ВСЕХ 1107 диалогов за 30 дней — payload Wappi рекламных полей
+# так и не прислал. При этом 168 клиентских сообщений за тот же месяц содержат ссылку
+# `fb.me`/Instagram прямо в тексте: реклама подставляет её первой строкой, когда человек
+# нажимает «Написать» под объявлением. Источник приходит — просто не там, где мы ждали.
+
+def test_referral_from_text_reads_facebook_short_link():
+    from app.channels.wappi import referral_from_text
+
+    ref = referral_from_text("https://fb.me/6hIOycVps Hello! Can I get more info on this?")
+
+    assert ref["source_type"] == "ad"
+    assert ref["source_id"] == "6hIOycVps"
+    assert ref["source_url"] == "https://fb.me/6hIOycVps"
+
+
+def test_referral_from_text_reads_instagram_post():
+    from app.channels.wappi import referral_from_text
+
+    ref = referral_from_text("https://www.instagram.com/p/DaSTt26MbIg/ Здравствуйте! Можете подробнее?")
+
+    assert ref["source_type"] == "post"
+    assert ref["source_id"] == "DaSTt26MbIg"
+
+
+def test_referral_from_text_ignores_ordinary_text_and_foreign_links():
+    from app.channels.wappi import referral_from_text
+
+    assert referral_from_text("здравствуйте, нужна виза в Италию") == {}
+    assert referral_from_text("вот отель https://booking.com/hotel/xyz") == {}
+    assert referral_from_text("") == {}
+
+
+def test_parse_falls_back_to_text_referral_when_payload_has_none():
+    """Payload пуст — источник берём из текста; это и есть тот случай, что живёт на проде."""
+    adapter = WappiAdapter()
+    raw = {"chatId": "996700112233@c.us", "from": "996700112233@c.us", "type": "chat",
+           "body": "https://fb.me/6hIOycVps Hello! Can I get more info on this?"}
+
+    msg = asyncio.run(adapter.parse(raw))
+
+    assert msg.referral.get("source_id") == "6hIOycVps"
+
+
+def test_payload_referral_wins_over_text_link():
+    """Настоящий CTWA-контекст богаче текстовой ссылки — он и должен победить."""
+    adapter = WappiAdapter()
+    raw = {"chatId": "996700112233@c.us", "from": "996700112233@c.us", "type": "chat",
+           "body": "https://fb.me/6hIOycVps привет",
+           "referral": {"source_id": "23851234567890", "source_url": "https://fb.com/ads/1",
+                        "headline": "Визы в Европу за 14 дней"}}
+
+    msg = asyncio.run(adapter.parse(raw))
+
+    assert msg.referral["source_id"] == "23851234567890"
+    assert msg.referral["headline"] == "Визы в Европу за 14 дней"

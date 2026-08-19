@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 
 import httpx
@@ -194,6 +195,46 @@ def extract_ad_referral(raw: dict) -> dict:
     return out
 
 
+# Рекламные ссылки, которые Meta подставляет первой строкой, когда человек жмёт «Написать»
+# под объявлением в Facebook или Instagram. Ключ — домен, значение — тип источника, в тех же
+# терминах, что и `referral.source_type` у Cloud API.
+_TEXT_REF_HOSTS = {
+    "fb.me": "ad", "m.me": "ad", "facebook.com": "ad", "fb.com": "ad",
+    "instagram.com": "post", "instagr.am": "post",
+}
+_TEXT_REF_RE = re.compile(
+    r"https?://(?:www\.)?(" + "|".join(h.replace(".", r"\.") for h in _TEXT_REF_HOSTS) + r")/([^\s?#]*)",
+    re.IGNORECASE,
+)
+
+
+def referral_from_text(text: str) -> dict:
+    """Рекламный источник, вытащенный из ТЕКСТА первого сообщения.
+
+    Зачем понадобилось. Payload Wappi рекламных полей так и не прислал: замер 19.08.2026 —
+    `source` пуст у всех 1107 диалогов за 30 дней, `[referral-miss]` в логах пуст тоже.
+    А вот сама ссылка приходит: 168 клиентских сообщений за тот же месяц начинаются с
+    `fb.me/...` или `instagram.com/p/...`, потому что Meta подставляет её в первое
+    сообщение. Источник у нас был всё это время — просто не в том поле, где мы искали.
+
+    Беднее настоящего CTWA-контекста (нет заголовка объявления и `ctwa_clid`), поэтому
+    используется только как запасной вариант — см. `parse`.
+    """
+    match = _TEXT_REF_RE.search(text or "")
+    if match is None:
+        return {}
+    host, tail = match.group(1).lower(), match.group(2).strip("/")
+    # `instagram.com/p/<код>` — идентификатор в последнем сегменте, у коротких ссылок он и есть весь путь.
+    ident = tail.rsplit("/", 1)[-1] if tail else ""
+    if not ident:
+        return {}
+    return {
+        "source_type": _TEXT_REF_HOSTS[host],
+        "source_id": ident[:_REF_LIMITS["source_id"]],
+        "source_url": match.group(0)[:_REF_LIMITS["source_url"]],
+    }
+
+
 # Подстроки, выдающие рекламный контекст в сыром payload. Если они есть, а
 # extract_ad_referral вернул {} — значит реальный формат Wappi не совпал с парсером:
 # логируем сырьё под [referral-miss], чтобы поймать настоящие ключи на живом трафике.
@@ -311,6 +352,12 @@ class WappiAdapter:
         else:
             # Парсер ничего не нашёл — но, возможно, формат Wappi просто не совпал.
             _log_referral_miss(raw)
+            # Запасной вход: ссылка объявления в самом тексте. Полтора месяца это был
+            # единственный сохранившийся след рекламы, и мы его выбрасывали.
+            referral = referral_from_text(body)
+            if referral:
+                logger.info("Wappi ad-referral из текста [referral-capture]: type=%s id=%s",
+                            referral.get("source_type"), referral.get("source_id"))
 
         if raw.get("type") == _TEXT_TYPE and body:
             kind, text = "text", body
