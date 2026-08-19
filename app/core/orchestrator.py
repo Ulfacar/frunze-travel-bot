@@ -23,6 +23,7 @@ from app.core.state import get_state_store
 from app.core import stt_guard, stt_metrics
 from app.funnels import get_funnel
 from app.integrations.panel.store import get_conversation_store
+from app.core.leadstate import STAGE_RANK, advance_stage, derive_stage
 
 log = logging.getLogger("orchestrator")
 
@@ -569,6 +570,13 @@ class Orchestrator:
             panel = get_conversation_store()
             brief = build_manager_brief(state)
             readiness = compute_readiness(state)
+            # Стадия карточки: считаем по собранной анкете и двигаем ТОЛЬКО вперёд. Раньше
+            # сюда уезжала `state.stage`, которая менялась лишь на эскалации, — 92% диалогов
+            # навсегда оставались в «Приветствии», а ручной перенос менеджера затирался
+            # первым же ходом бота (решение 16.07: человек главнее бота).
+            current = getattr(await panel.get(self._key(msg)), "stage", "") or ""
+            state.stage = advance_stage(max(current, state.stage, key=lambda st: STAGE_RANK.get(st, 0)),
+                                        derive_stage(state))
             await panel.update_meta(self._key(msg), funnel=state.funnel, stage=state.stage,
                                     qualification=state.qualification,
                                     outcome=_auto_outcome(state.stage), **brief, **readiness)
@@ -584,6 +592,7 @@ class Orchestrator:
                 return False
 
             from app.core.branding import ad_greeting, persona_greeting
+            from app.core.lang import looks_english
             from app.core.faq import is_bare_greeting
 
             if not is_bare_greeting(msg.text):
@@ -591,7 +600,8 @@ class Orchestrator:
             # Пришёл по рекламе → контекстное приветствие (подтверждаем оффер, не спрашиваем с нуля).
             greeting = ad_greeting(state.funnel, state.manager_name,
                                    (state.ad_referral or {}).get("headline", "")) \
-                or persona_greeting(state.funnel, state.manager_name)
+                or persona_greeting(state.funnel, state.manager_name,
+                                    english=looks_english(msg.text))
             if not greeting:
                 return False
 

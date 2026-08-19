@@ -186,3 +186,26 @@ def test_run_turn_persona_greeting_before_funnel_handle(monkeypatch):
     saved = asyncio.run(state_store.load("frunze_tours:persona-run-turn"))
     assert sent and "Адеми" in sent[0]
     assert len(saved.history) == 2
+
+
+# ---------- Английский клиент (19.08.2026) ----------
+#
+# «Hello» и «hi» проходят как голое приветствие, то есть ответ собирается БЕЗ LLM — и до
+# сегодня всегда был русским, сколько бы правил о языке ни лежало в системном промпте.
+
+def test_persona_greeting_answers_english_client_in_english():
+    from app.core.branding import persona_greeting
+
+    visa = persona_greeting("visa", "Медина", english=True)
+    tours = persona_greeting("tours", "Адеми", english=True)
+
+    assert "Hello" in visa and "Frunze Travel" in visa
+    assert "Hello" in tours
+    assert "Здравствуйте" not in visa and "Здравствуйте" not in tours
+
+
+def test_persona_greeting_stays_russian_by_default():
+    from app.core.branding import persona_greeting
+
+    assert "Здравствуйте" in persona_greeting("visa", "Медина")
+    assert "Здравствуйте" in persona_greeting("tours", "Адеми")

@@ -30,6 +30,7 @@ from app.core.visa_pricing import self_visa_reply, visa_price_reply
 from app.funnels.visa import score_visa, visa_category
 from app.integrations.crm import get_crm
 from app.integrations.tourvisor.client import TourVisorClient, TourVisorError
+from app.core.lang import looks_english
 
 logger = logging.getLogger("agent.runner")
 
@@ -109,6 +110,29 @@ def _date_context_message(now: datetime | None = None) -> dict:
     }
 
 
+def _language_context_message(history: list[dict]) -> dict | None:
+    """Заметка «клиент пишет по-английски» на конкретный ход — или None.
+
+    Правило языка есть в системном промпте с 06.07, но сам промпт и персона написаны
+    по-русски, и модель уезжала в русский: замер 19.08.2026 — 18 русских ответов на 21
+    английское сообщение за месяц. Лекарство то же, что от угаданной даты и воскресной
+    записи: не строка в общем промпте, а служебная заметка рядом с текущим ходом.
+
+    Смотрим ТОЛЬКО на последнюю реплику клиента: перешёл на русский — заметка исчезает,
+    и бот не залипает на английском.
+    """
+    last_client = next((h.get("content") for h in reversed(history)
+                        if h.get("role") == "user" and isinstance(h.get("content"), str)), "")
+    if not looks_english(last_client):
+        return None
+    return {
+        "role": "user",
+        "content": ("[Служебная заметка: клиент пишет по-английски (English). Ответь на этот "
+                    "ход ПО-АНГЛИЙСКИ, сохраняя ту же персону и правила. Вернётся к русскому "
+                    "или кыргызскому — снова отвечай на его языке.]"),
+    }
+
+
 def _schedule_context_message(bot_id: str, now: datetime | None = None) -> dict | None:
     """График приёма отдельным служебным сообщением — рядом с датой, на каждый ход.
 
@@ -157,6 +181,7 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
         window = _windowed_history(state.history, settings.llm_history_max_messages)
         prefix = [m for m in (_date_context_message(),
                               _schedule_context_message(state.bot_id),
+                              _language_context_message(state.history),
                               _ad_context_message(state.ad_referral),
                               _qual_context_message(state.qualification)) if m]
         messages = prefix + window

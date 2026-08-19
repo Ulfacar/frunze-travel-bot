@@ -180,3 +180,37 @@ def test_run_turn_sends_window_and_qual_each_tool_iteration(monkeypatch):
 
     assert len(state.history) == original_history_len + 4
     assert state.history[0] == {"role": "user", "content": "request 1"}
+
+
+# ---------- Языковая заметка (19.08.2026) ----------
+
+def test_language_note_appears_for_english_client():
+    """Клиент по-английски → служебная заметка на этот ход, как с датой и графиком."""
+    history = [{"role": "user", "content": "Hello! Can I get more info on this?"}]
+
+    note = runner._language_context_message(history)
+
+    assert note is not None
+    assert "English" in note["content"] or "английск" in note["content"]
+
+
+def test_language_note_absent_for_russian_client():
+    history = [{"role": "user", "content": "здравствуйте, нужна виза в Италию"}]
+
+    assert runner._language_context_message(history) is None
+
+
+def test_language_note_ignores_forwarded_hotel_names():
+    """Латинское название отеля от русскоязычного клиента заметку не поднимает."""
+    history = [{"role": "user", "content": "*KIMEROS PARK HOLIDAY VILLAGE 5*"}]
+
+    assert runner._language_context_message(history) is None
+
+
+def test_language_note_follows_the_last_client_message():
+    """Клиент перешёл на русский — заметка уходит, бот не залипает на английском."""
+    history = [{"role": "user", "content": "Hello! Can I get more info?"},
+               {"role": "assistant", "content": "Hello! Which country?"},
+               {"role": "user", "content": "давайте по-русски, нужна виза"}]
+
+    assert runner._language_context_message(history) is None

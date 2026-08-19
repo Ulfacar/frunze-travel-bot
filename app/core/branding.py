@@ -135,8 +135,19 @@ def quick_replies_for(funnel: str | None) -> dict[str, str]:
     return QUICK_REPLIES.get(funnel or "", _COMMON_QUICK)
 
 
-def persona_greeting(funnel: str | None, manager_name: str) -> str | None:
+def persona_greeting(funnel: str | None, manager_name: str, *, english: bool = False) -> str | None:
+    """Первое приветствие персоны. Собирается БЕЗ LLM (экономия с 02.07), поэтому язык
+    выбираем здесь же: до 19.08.2026 английскому клиенту всегда уходил русский текст, и
+    никакое правило в системном промпте на этот путь не влияло — модель тут не участвует."""
     name = (manager_name or "").strip() or ("Медина" if funnel == "visa" else "Адеми")
+    if english:
+        if funnel == "tours":
+            return (f"Hello! 😊 I'm {name}, your travel manager at Frunze Travel. "
+                    f"Which destination are you considering? (a country, or say «help me choose»)")
+        if funnel == "visa":
+            return (f"Hello! 😊 My name is {name}, I'm your visa expert at Frunze Travel. "
+                    f"May I have your name?")
+        return None
     if funnel == "tours":
         return (
             f"Здравствуйте! 😊 Я {name}, менеджер Frunze Travel по турам. "
