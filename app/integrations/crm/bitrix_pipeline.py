@@ -452,16 +452,18 @@ async def catchup_once(*, adapter: Any = None) -> dict:
     Проход идёт порциями (`bitrix_stage_catchup_limit` за тик): каждая карточка — это
     два запроса к порталу, а он не любит залпов.
     """
-    stats = {key: 0 for key in ("scanned", "eligible", "moved", "errors")}
+    stats = {key: 0 for key in ("scanned", "eligible", "moved", "dossiers", "errors")}
     if not await _catchup_enabled():
         return stats
     client = _adapter(adapter)
     store = get_conversation_store()
     since = datetime.now(timezone.utc) - timedelta(days=settings.bitrix_stage_catchup_days)
     limit = max(1, settings.bitrix_stage_catchup_limit)
+    dossier_on = await _dossier_when_intercepted_enabled()
+    touched = 0                          # карточек, по которым ходили в портал за этот тик
 
     for conv in await store.all_conversations_light():
-        if stats["moved"] >= limit:
+        if touched >= limit:
             break
         last = getattr(conv, "last_message_at", None)
         if last is not None and last.tzinfo is None:
@@ -474,13 +476,23 @@ async def catchup_once(*, adapter: Any = None) -> dict:
         stage = _catchup_stage(conv)
         if not stage:
             continue
-        # Уже стоим на этой стадии по нашей же отметке — портал дёргать незачем.
-        if (getattr(conv, "bitrix_stage_by_bot", "") or "") == (settings.bitrix_stage_map or {}).get(stage):
+        # Стадия уже наша — двигать нечего, но сводка в карточке могла и не появиться:
+        # 21.08 проход сдвинул 25 карточек, а досье не записал ни в одну, и менеджер
+        # получил половину обещанного — карточка переехала, а чего хочет клиент, не видно.
+        stage_done = ((getattr(conv, "bitrix_stage_by_bot", "") or "")
+                      == (settings.bitrix_stage_map or {}).get(stage))
+        dossier_done = bool(getattr(conv, "bitrix_dossier_by_bot", False))
+        if stage_done and (dossier_done or not dossier_on):
             continue
         stats["eligible"] += 1
+        touched += 1
         try:
-            if await advance(conv.user_id, stage, adapter=client, _conv=conv):
+            if not stage_done and await advance(conv.user_id, stage, adapter=client, _conv=conv):
                 stats["moved"] += 1
+            # Сводку пишем накопленным диалогам: новым бот заполнит её живым ходом сам,
+            # а вот те, где менеджер давно ведёт переписку, иначе не дождутся никогда.
+            if dossier_on and await sync_dossier(conv.user_id, adapter=client, _conv=conv):
+                stats["dossiers"] += 1
         except Exception:  # noqa: BLE001 — одна карточка не должна ронять проход
             stats["errors"] += 1
             log.warning("pipeline catchup failed conv_key=%s", conv.user_id, exc_info=True)

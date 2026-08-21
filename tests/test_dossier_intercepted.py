@@ -121,3 +121,51 @@ def test_dossier_skipped_on_terminal_status(status, flag_on):
     fake = FakeAdapter(status=status)
     assert _sync(_conv(intercepted=True), fake) is False
     assert not fake.comment_writes, "закрытую карточку не трогаем ни при каком тумблере"
+
+
+# ---------------- догоняющий проход: не только стадия, но и сводка -------------------
+# Замер 21.08, сразу после включения тумблеров: проход сдвинул 25 карточек из 559
+# просмотренных, а досье в них не появилось — `catchup_once` звал только `advance`.
+# Для менеджера это половина обещанного: карточка переехала в «Выявление потребностей»,
+# а что именно хочет клиент, в ней по-прежнему не написано. Сводка накопленным нужна
+# больше, чем новым: новые бот и так заполнит первым же ходом.
+def test_catchup_writes_dossier_too(monkeypatch):
+    from app.integrations.panel import store as ps
+
+    run(flags.set_flag("dossier_when_intercepted_enabled", True))
+    run(flags.set_flag("bitrix_stage_catchup_enabled", True))
+    monkeypatch.setattr(bp.settings, "bitrix_stage_map",
+                        {"qualified": "UC_S0NTF8"}, raising=False)
+    monkeypatch.setattr(bp.settings, "bitrix_stage_catchup_days", 30, raising=False)
+    monkeypatch.setattr(bp.settings, "bitrix_stage_catchup_limit", 25, raising=False)
+
+    key = _conv(intercepted=True)
+    conv = run(ps.get_conversation_store().get(key))
+    conv.last_message_at = datetime.now(timezone.utc)
+
+    fake = FakeAdapter()
+    stats = run(bp.catchup_once(adapter=fake))
+
+    assert stats["moved"] >= 1, "стадия обязана поехать, как и раньше"
+    assert fake.comment_writes, "и сводка обязана появиться в той же карточке"
+    assert "Анталья" in fake.comment_writes[-1]
+    assert stats.get("dossiers", 0) >= 1, "проход обязан отчитываться о записанных сводках"
+
+
+def test_catchup_dossier_respects_its_flag(monkeypatch):
+    """Ложноположительный: при снятом тумблере досье проход не пишет."""
+    from app.integrations.panel import store as ps
+
+    run(flags.set_flag("bitrix_stage_catchup_enabled", True))
+    monkeypatch.setattr(bp.settings, "bitrix_stage_map",
+                        {"qualified": "UC_S0NTF8"}, raising=False)
+    monkeypatch.setattr(bp.settings, "bitrix_stage_catchup_days", 30, raising=False)
+    monkeypatch.setattr(bp.settings, "bitrix_stage_catchup_limit", 25, raising=False)
+
+    key = _conv(intercepted=True)
+    conv = run(ps.get_conversation_store().get(key))
+    conv.last_message_at = datetime.now(timezone.utc)
+
+    fake = FakeAdapter()
+    run(bp.catchup_once(adapter=fake))
+    assert not fake.comment_writes
