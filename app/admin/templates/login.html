@@ -37,6 +37,8 @@
 </head>
 <body>
   <form class="card" method="post" action="/admin/login">
+    {# Куда вернуть после входа: менеджер приходит по ссылке на конкретный диалог. #}
+    <input type="hidden" name="next" value="{{ next|default('/admin') }}">
     <div class="logo">F</div>
     <h1>Frunze — панель менеджера</h1>
     <p class="sub">Войдите под своим логином</p>

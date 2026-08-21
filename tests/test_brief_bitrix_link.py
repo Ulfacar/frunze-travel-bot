@@ -98,7 +98,10 @@ def test_brief_shows_bitrix_link():
 def test_panel_link_is_kept_too():
     """Туровые менеджеры Битриксом не пользуются — их рабочую ссылку не отбираем."""
     text = cb.render_manager_brief_text(_brief([_card()]), "https://frunzetravel.kg")
-    assert "/admin/conversation/getvisa:996700111222" in text
+    # 21.08: ссылка на панель осталась, но ведёт дип-линком `?open=` — прежний
+    # `/admin/conversation/<id>` был HTMX-партиалом и открывался как сломанная
+    # страница (401 без сессии, кусок разметки после входа).
+    assert "/admin?open=getvisa%3A996700111222" in text
 
 
 def test_no_empty_line_when_lead_unknown():

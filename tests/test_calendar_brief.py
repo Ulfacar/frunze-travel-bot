@@ -65,7 +65,10 @@ def test_build_and_render_contains_tasks_and_night():
     assert "📅 План" in text and "перезвонить" in text and "14:00" in text  # 08:00 UTC = 14:00 Bishkek
     assert "ждёт визу в Дубай" in text
     assert "🌙 Ночные заявки" in text and "Асель" in text
-    assert "https://p.kg/admin/conversation/getvisa:996700111" in text
+    # 21.08: ссылка на панель осталась, но ведёт дип-линком `?open=` — прежний
+    # `/admin/conversation/<id>` был HTMX-партиалом и открывался как сломанная
+    # страница (401 без сессии, кусок разметки после входа).
+    assert "https://p.kg/admin?open=getvisa%3A996700111" in text
 
 
 def test_brief_gives_a_dialable_number_and_says_wait_once():

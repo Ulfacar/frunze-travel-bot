@@ -241,5 +241,8 @@ def test_push_keeps_panel_and_whatsapp_links(tmp_path):
     """Ссылку в панель и WhatsApp не отбираем: туровые Битриксом не пользуются."""
     asyncio.run(flags.set_flag("bitrix_prefer_openline_lead", True))
     text = _push(FakeAdapter([OPENLINE_VISA]), tmp_path, name="links.db")
-    assert "https://panel.test/admin/conversation/" in text
+    # 21.08: ссылка на панель осталась, но ведёт дип-линком `?open=` — прежний
+    # `/admin/conversation/<id>` был HTMX-партиалом и открывался как сломанная
+    # страница (401 без сессии, кусок разметки после входа).
+    assert "https://panel.test/admin?open=" in text
     assert "wa.me/996553250718" in text

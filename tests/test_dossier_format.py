@@ -97,3 +97,19 @@ def test_dossier_fits_portal():
                    tourists="4", children_ages="7, 10")
     assert sanitize_lead_comments(text) == text
     assert len(text) <= 2000
+
+
+# ---------------- ссылка в досье -----------------------------------------------------
+def test_dossier_link_opens_for_a_human(monkeypatch):
+    """Досье уезжает в карточку Битрикса — ссылка оттуда обязана открываться с телефона.
+
+    21.08 здесь жила вторая копия построения адреса, и она разошлась с оригиналом:
+    в карточку попадал `/admin/conversation/<id>` — HTMX-партиал, отдающий 401 без
+    сессии. Ссылку берём у `_client_link`, копий рядом не держим.
+    """
+    monkeypatch.setattr(bp.settings, "public_base_url", "https://frunzetravel.kg",
+                        raising=False)
+    line = next(ln for ln in _render(destination="Турция").splitlines()
+                if ln.startswith("Диалог:"))
+    assert "/admin/conversation/" not in line
+    assert "/admin?open=" in line

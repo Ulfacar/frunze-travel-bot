@@ -11,6 +11,7 @@ import secrets
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from urllib.parse import quote
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
                                RedirectResponse)
@@ -230,12 +231,29 @@ def _demo_managers() -> list[dict]:
     return list(by_login.values())
 
 
+def _safe_next(target: str | None) -> str:
+    """Куда вернуть менеджера после входа. Чужое — отбрасываем.
+
+    Менеджер приходит по ссылке из уведомления (`/admin?open=<диалог>`), логинится — и
+    без этого возврата попадал бы на главную, где нужный диалог опять надо искать.
+
+    Принимаем только собственные пути панели. `//evil.example` и `javascript:` браузер
+    трактует как внешний адрес, поэтому одной проверки на ведущий слэш мало: это
+    классическая дыра открытого редиректа, через неё уводят на фишинговый логин.
+    """
+    value = (target or "").strip()
+    if not value.startswith("/admin") or value.startswith("//") or "\\" in value:
+        return "/admin"
+    return value
+
+
 @router.get("/login", response_class=HTMLResponse)
-async def login_form(request: Request):
+async def login_form(request: Request, next: str = ""):
     if current_manager(request):
-        return RedirectResponse("/admin", status_code=303)
+        return RedirectResponse(_safe_next(next), status_code=303)
     return templates.TemplateResponse(request, "login.html",
-                                      {"error": None, "demo_managers": _demo_managers()},
+                                      {"error": None, "demo_managers": _demo_managers(),
+                                       "next": _safe_next(next)},
                                       headers={"Cache-Control": "no-store"})
 
 
@@ -259,22 +277,28 @@ async def login_demo(request: Request, login: str = Form(...)):
 
 
 @router.post("/login", response_class=HTMLResponse)
-async def login_submit(request: Request, login: str = Form(...), password: str = Form(...)):
+async def login_submit(request: Request, login: str = Form(...), password: str = Form(...),
+                       next: str = Form(default="")):
     from app.admin import ratelimit
     ip = request.client.host if request.client else "unknown"
+    target = _safe_next(next)
     if ratelimit.is_blocked(ip):
         return templates.TemplateResponse(request, "login.html",
                                           {"error": "Слишком много попыток. Подождите минуту.",
-                                           "demo_managers": _demo_managers()}, status_code=429)
+                                           "demo_managers": _demo_managers(),
+                                           "next": target}, status_code=429)
     manager = _check_credentials(login.strip(), password)
     if manager is None:
         ratelimit.note_failure(ip)        # к блокировке ведут только провалы
         return templates.TemplateResponse(request, "login.html",
                                           {"error": "Неверный логин или пароль",
-                                           "demo_managers": _demo_managers()}, status_code=401)
+                                           "demo_managers": _demo_managers(),
+                                           "next": target}, status_code=401)
     request.session["manager"] = manager
     await get_conversation_store().add_audit(manager["login"], "login")
-    return RedirectResponse("/admin", status_code=303)
+    # Возврат туда, откуда пришли: менеджер тапнул ссылку на диалог из уведомления,
+    # и после входа должен попасть в этот диалог, а не на общую доску.
+    return RedirectResponse(target, status_code=303)
 
 
 @router.post("/logout")
@@ -310,7 +334,10 @@ async def index(request: Request):
     """Главная страница панели с вкладками-досками. Без сессии — на форму логина."""
     manager = current_manager(request)
     if not manager:
-        return RedirectResponse("/admin/login", status_code=303)
+        # Запомнить, куда шли: ссылка из уведомления несёт `?open=<диалог>`, и без
+        # этого менеджер после входа оказывался на общей доске, теряя нужный диалог.
+        target = request.url.path + (f"?{request.url.query}" if request.url.query else "")
+        return RedirectResponse(f"/admin/login?next={quote(target, safe='')}", status_code=303)
     return templates.TemplateResponse(request, "boards.html",
                                       {"funnels": FUNNELS, "manager": manager,
                                        "is_admin": _manager_bot_scope(manager) is None},

@@ -100,7 +100,10 @@ def test_sends_once_to_the_owner(tmp_path, monkeypatch):
         assert "Айгуль" in text and "+996 700 00 00 01" in text
         assert "Анталья" in text and "до $2000" in text
         assert "Бот пообещал: «примерно $1600–1900" in text
-        assert "https://panel.test/admin/conversation/" in text
+        # 21.08: ссылка на панель осталась, но ведёт дип-линком `?open=` — прежний
+        # `/admin/conversation/<id>` был HTMX-партиалом и открывался как сломанная
+        # страница (401 без сессии, кусок разметки после входа).
+        assert "https://panel.test/admin?open=" in text
         assert await _notified_at(sm, "frunze_tours_sezim:996700000001") is not None
         await engine.dispose()
     _run(check, monkeypatch, spy=spy)

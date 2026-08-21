@@ -70,7 +70,10 @@ def test_wa_and_panel_links_survive(monkeypatch):
     _patch_portal(monkeypatch)
     text = _text([_task()], leads={USER_ID: "185639"})
     assert "https://wa.me/996700240970" in text
-    assert "https://frunzetravel.kg/admin/conversation/" in text
+    # 21.08: ссылка на панель осталась, но ведёт дип-линком `?open=` — прежний
+    # `/admin/conversation/<id>` был HTMX-партиалом и открывался как сломанная
+    # страница (401 без сессии, кусок разметки после входа).
+    assert "https://frunzetravel.kg/admin?open=" in text
 
 
 def test_night_block_still_has_its_link(monkeypatch):

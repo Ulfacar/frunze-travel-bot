@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 
 from app.config import settings
 from app.core.manager_scope import bot_scope_for
@@ -275,7 +276,18 @@ def render_owner_digest_text(digest: dict) -> str:
 
 
 def _client_link(user_id: str, base_url: str) -> str:
-    path = f"/admin/conversation/{user_id}"
+    """Адрес диалога для ЧЕЛОВЕКА с телефона — дип-линк в панель, а не партиал.
+
+    Раньше здесь стоял `/admin/conversation/<id>`, и ссылка была сломана дважды:
+    без сессии отдавала голый JSON «login required» вместо формы входа, а после входа
+    открыла бы HTMX-фрагмент — кусок разметки без вёрстки, который панель подгружает
+    внутрь себя. Замер 21.08: у визовых менеджеров из трёх ссылок в готовой заявке
+    работали две, эта отвечала 401.
+
+    `/admin?open=<id>` панель уже понимает (дип-линк «Горячего листа»): открывает
+    диалог в привычном интерфейсе, а без сессии по-человечески ведёт на логин.
+    """
+    path = f"/admin?open={quote(user_id, safe='')}"
     base = (base_url or "").rstrip("/")
     return f"{base}{path}" if base else path
 

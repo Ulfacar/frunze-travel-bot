@@ -192,9 +192,11 @@ def render_dossier(conv: Any, qualification: dict) -> str:
                 break
     if offer_url:
         lines.append(f"Предложено: {offer_url}")
-    base = settings.public_base_url.rstrip("/") if settings.public_base_url else ""
-    panel_path = f"/admin/conversation/{conv.user_id}"
-    lines.append(f"Диалог: {base + panel_path if base else panel_path}")
+    # Ссылку строит `_client_link`, а не своя копия рядом: 21.08 копия разошлась с
+    # оригиналом и досье уносило в карточку HTMX-партиал, который открывается как
+    # сломанная страница. Две копии одного адреса однажды разъезжаются всегда.
+    from app.core.calendar_brief import _client_link
+    lines.append(f"Диалог: {_client_link(conv.user_id, settings.public_base_url)}")
     if getattr(conv, "last_message_at", None):
         lines.append(f"Последнее сообщение: {conv.last_message_at:%d.%m.%Y %H:%M}")
     return sanitize_lead_comments("\n".join(lines))
