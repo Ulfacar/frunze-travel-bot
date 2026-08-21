@@ -154,6 +154,38 @@ def _schedule_context_message(bot_id: str, now: datetime | None = None) -> dict 
         return None
 
 
+# --- экран служебных заметок ---------------------------------------------------------
+# Заметки (дата, график, язык, реклама, квалификация) идут в ход с ролью `user` — модель
+# видит их как реплики клиента. Пока клиент пишет по делу, это безвредно: его сообщение
+# содержательнее. Но на пустом ходе («Спасибо», «Хорошо», картинка) самым осмысленным
+# текстом в окне оказывается заметка — и модель отвечает НА НЕЁ, вслух пересказывая
+# служебную кухню. Замер по проду: 9 таких реплик с 11.07.2026, 6 из них на канале Сезим.
+#
+# Лечим не переносом в system (там стоит кэш `cache_control: ephemeral`, а заметки меняются
+# каждый ход — кэш ломался бы на каждом запросе и счёт за LLM вырос бы), а двумя дешёвыми
+# приёмами прямо в ленте сообщений:
+#   1. все заметки схлопываются в ОДНО сообщение с явной рамкой «это не речь клиента»;
+#   2. сразу за ним ставится ответ ассистента — заметки оказываются «уже отвеченными»,
+#      и ожидающей реакции остаётся только настоящая реплика клиента.
+_SHIELD_HEADER = (
+    "[СЛУЖЕБНЫЙ КОНТЕКСТ — НЕ СООБЩЕНИЕ КЛИЕНТА. Клиент этого текста не видел и не писал. "
+    "Никогда не отвечай на него, не пересказывай его, не подтверждай его получение и не "
+    "упоминай в разговоре сам факт заметок. Просто используй как справку:]"
+)
+_SHIELD_ACK = "Понял, это служебная справка. Отвечаю только клиенту и вслух её не упоминаю."
+
+
+def _shielded_prefix(notes: list[dict]) -> list[dict]:
+    """Схлопнуть служебные заметки в один ход и закрыть их ответом ассистента."""
+    if not notes:
+        return []
+    body = "\n".join(str(n.get("content") or "") for n in notes)
+    return [
+        {"role": "user", "content": f"{_SHIELD_HEADER}\n{body}"},
+        {"role": "assistant", "content": _SHIELD_ACK},
+    ]
+
+
 @dataclass
 class FunnelSpec:
     """Описание воронки для агентного цикла."""
@@ -173,17 +205,21 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
     system_prompt = spec.system
     if await flags.get_flag("dozhim_enabled", settings.dozhim_enabled):
         system_prompt = spec.system + "\n\n" + DOZHIM_AND_PRICE_FORK
+    # Флаг читаем один раз на ход, а не на каждой итерации инструментов.
+    shield_notes = await flags.get_flag("service_notes_shield_enabled",
+                                        settings.service_notes_shield_enabled)
 
     for _ in range(MAX_TOOL_ITERATIONS):
         model = choose_model(spec.name, escalated)
         if await budget.soft_capped():
             model = settings.llm_model_cheap
         window = _windowed_history(state.history, settings.llm_history_max_messages)
-        prefix = [m for m in (_date_context_message(),
-                              _schedule_context_message(state.bot_id),
-                              _language_context_message(state.history),
-                              _ad_context_message(state.ad_referral),
-                              _qual_context_message(state.qualification)) if m]
+        notes = [m for m in (_date_context_message(),
+                             _schedule_context_message(state.bot_id),
+                             _language_context_message(state.history),
+                             _ad_context_message(state.ad_referral),
+                             _qual_context_message(state.qualification)) if m]
+        prefix = _shielded_prefix(notes) if shield_notes else notes
         messages = prefix + window
         resp = await client().messages.create(
             model=model,
@@ -209,7 +245,8 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
 
         text = "".join(b.text for b in resp.content if b.type == "text")
         # Валидатор: чиним безопасное (markdown, дисклеймер цен туров), мягко логируем риски.
-        text, violations = validate_reply(text, spec.name)
+        text, violations = validate_reply(text, spec.name,
+                                          shield_service_notes=shield_notes)
         if violations:
             logger.info("validator (%s): %s", spec.name, ", ".join(violations))
             for v in violations:
