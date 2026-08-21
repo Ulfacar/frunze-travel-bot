@@ -334,4 +334,6 @@ async def run() -> None:
     from app.core import ops_alert
     for bot_id, text in alerts:
         log.error("CHANNEL DOWN: %s", bot_id)
-        await ops_alert.send(text)
+        # Повод тут один — канал молчит, — но ключ всё равно нужен: без него заказчику
+        # уходит каждый повтор, а канал молчит сутками.
+        await ops_alert.send(text, key=f"silent:{bot_id}")

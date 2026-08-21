@@ -114,6 +114,30 @@ def _payment_text(bot_id: str, expires_at: float, now: float) -> str:
             f"Когда она кончится, канал умрёт молча — продлить заранее.")
 
 
+class Alert(tuple):
+    """`(bot_id, текст)` плюс повод, по которому тревога поднята.
+
+    Кортеж из двух элементов намеренно: старые распаковки `for bot_id, text in alerts`
+    и гейт 07.08 продолжают работать дословно. Повод нужен снаружи, чтобы уведомление
+    заказчику шло по щадящему ритму отдельно для разлогина и отдельно для подписки —
+    без него все поводы делили бы одну защёлку.
+    """
+
+    def __new__(cls, bot_id: str, text: str, reason: str = ""):
+        obj = super().__new__(cls, (bot_id, text))
+        obj._reason = reason                        # noqa: SLF001 — своё же поле
+        return obj
+
+    @property
+    def reason(self) -> str:
+        return getattr(self, "_reason", "")
+
+    @property
+    def key(self) -> str:
+        """Идентификатор повода для щадящего ритма: `logout:frunze_tours`."""
+        return f"{self.reason}:{self[0]}" if self.reason else ""
+
+
 def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> list[tuple[str, str]]:
     """Чистое решение: по каким каналам бить тревогу. Мутирует state.
 
@@ -161,7 +185,7 @@ def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> li
             if last_alert and now - last_alert < cooldown:
                 continue
             state[key] = now
-            alerts.append((bot_id, reasons[reason]))
+            alerts.append(Alert(bot_id, reasons[reason], reason))
 
     return alerts
 
@@ -323,6 +347,9 @@ async def run() -> None:
         return
 
     from app.core import ops_alert
-    for bot_id, text in alerts:
+    for alert in alerts:
+        bot_id, text = alert
         log.error("WAPPI UNHEALTHY: %s", bot_id)
-        await ops_alert.send(text)
+        # Ключ повода — чтобы заказчик получал повторы по щадящему ритму, а не наравне
+        # с владельцем: разлогин держится сутками, и без ключа это 16 сообщений на событие.
+        await ops_alert.send(text, key=getattr(alert, "key", ""))

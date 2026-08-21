@@ -54,10 +54,10 @@ async def lifespan(app: FastAPI):
         log.warning("FAQ defaults seed failed", exc_info=True)
     # Фоновые джобы: watchdog-алерты + автодожим. Автодожим регистрируем всегда —
     # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
-    from app.core import (awaiting, bitrix_pipeline_job, calendar_brief, channel_heartbeat, followup,
-                          instant_handoff, manager_sync, morning_brief, outcome_infer,
-                          rescore, scheduler, tours_health, tours_summary, wappi_health,
-                          watchdog)
+    from app.core import (awaiting, balance_guard, bitrix_pipeline_job, calendar_brief,
+                          channel_heartbeat, followup, instant_handoff, manager_sync,
+                          morning_brief, outcome_infer, rescore, scheduler, tours_health,
+                          tours_summary, wappi_health, watchdog)
     scheduler.register("watchdog", watchdog.run)
     # Основной сторож каналов: спрашивает у Wappi, авторизован ли профиль. Точный факт
     # вместо догадки по тишине — 03.08 Wappi знал о разлогине, а мы 12 часов не знали.
@@ -65,6 +65,9 @@ async def lifespan(app: FastAPI):
     # Предохранитель к нему: ловит «профиль жив, но вебхук до нас не доходит», чего
     # статус Wappi не покажет. Порог 12 часов — более чувствительные дают ложные тревоги.
     scheduler.register("channel_heartbeat", channel_heartbeat.run)
+    # Деньги и живость чужих систем: 21.08 бот замолчал на исходе баланса OpenRouter, и
+    # узнали об этом от клиента. Порог считается в днях остатка, а не в долларах (gated OFF).
+    scheduler.register("balance_guard", balance_guard.run)
     scheduler.register("awaiting", awaiting.run)
     scheduler.register("followup", followup.run)
     scheduler.register("rescore", rescore.run)          # ghost-ре-скоринг тира готовности

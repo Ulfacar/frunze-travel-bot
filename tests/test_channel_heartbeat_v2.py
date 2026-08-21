@@ -200,7 +200,9 @@ def test_latch_survives_restart(monkeypatch):
     async def fake_flag(_key, default=None):
         return True
 
-    async def fake_send(text):
+    async def fake_send(text, **kwargs):
+        # `key` — идентификатор повода, добавлен 21.08: по нему заказчику режется частота
+        # повторов. Мок принимает его молча, требование теста прежнее.
         sent.append(text)
         return True
 
