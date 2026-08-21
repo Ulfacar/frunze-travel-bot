@@ -182,7 +182,21 @@ class Settings(BaseSettings):
     stt_guard_glued_max_len: int = 20       # длина токена, после которой это склейка
     stt_guard_repeat_max: int = 3           # одно слово подряд N раз
     # Отдельный адресат технических аварий: карточки клиентских заявок сюда не попадают.
+    # Первый id — владелец (получает всё), остальные — заказчики: им повторы про один и тот
+    # же повод идут не чаще owner_reminder_hours. Замер 21.08: без этого заказчик получил бы
+    # ~30 сообщений в месяц, из них 16 — повторы про два лежащих канала.
     ops_alert_chat_ids: list[str] = []
+    owner_reminder_hours: int = 72
+    # Баланс OpenRouter. 21.08 бот замолчал на исходе счёта, узнали от клиента. Порог в ДНЯХ,
+    # а не в долларах: «осталось $5» при визовом трафике — две недели, при туровом — четыре дня.
+    openrouter_balance_check_enabled: bool = False
+    openrouter_balance_min_days: int = 7
+    openrouter_balance_cooldown_hours: int = 24
+    # Живость портала. Одиночный провал молчит: Битрикс моргает, и будить на один таймаут —
+    # тот же шум, что и на 34-секундный разлогин Wappi.
+    bitrix_health_enabled: bool = False
+    bitrix_health_confirm_ticks: int = 3
+    bitrix_health_cooldown_hours: int = 24
     media_capture_enabled: bool = True
     media_capture_keep: int = 50
     media_capture_ttl_seconds: int = 86400
@@ -225,6 +239,11 @@ class Settings(BaseSettings):
     bitrix_stage_catchup_enabled: bool = False
     bitrix_stage_catchup_days: int = 30      # как глубоко в прошлое догоняем стадии
     bitrix_stage_catchup_limit: int = 25     # карточек за тик: каждая — два запроса к порталу
+    # Досье в карточке ведётся и при перехвате. Требование заказчика по турам: бот ведёт
+    # карточку сам, менеджер лишь сверяется с клиентом в офисе. Замер 21.08: 8 из 11 туровых
+    # диалогов перехвачены — при старом правиле сводка не появлялась почти нигде. От затирания
+    # ручной правки защищает проверка владения полем по содержимому. Дефолт OFF.
+    dossier_when_intercepted_enabled: bool = False
     tour_facts_enabled: bool = False
     bitrix_autodeal_enabled: bool = False
     bitrix_read_back_days: int = 45

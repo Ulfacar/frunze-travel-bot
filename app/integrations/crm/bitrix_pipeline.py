@@ -55,6 +55,16 @@ async def _catchup_enabled() -> bool:
                                 settings.bitrix_stage_catchup_enabled)
 
 
+async def _dossier_when_intercepted_enabled() -> bool:
+    """Вести ли досье, пока диалог ведёт менеджер.
+
+    Отдельный тумблер от `bitrix_stage_catchup_enabled`: движение стадии и сводка в
+    карточке — разные обещания заказчику, и включать их порознь мы должны уметь.
+    """
+    return await flags.get_flag("dossier_when_intercepted_enabled",
+                                settings.dossier_when_intercepted_enabled)
+
+
 async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
                   _conv: Any = None, _lead: dict | None = None) -> str:
     """Move a lead forward if the bot still owns its stage; return the new STATUS_ID."""
@@ -99,6 +109,62 @@ async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
         return ""
 
 
+def _plural(count: int, one: str, few: str, many: str) -> str:
+    """Русское склонение по числу. Без него карточка говорит «1 туристов»."""
+    if 11 <= count % 100 <= 14:
+        return many
+    tail = count % 10
+    if tail == 1:
+        return one
+    if 2 <= tail <= 4:
+        return few
+    return many
+
+
+def _ages_phrase(raw: str) -> str:
+    """«7, 10» → «дети 7 и 10 лет»; «5» → «ребёнок 5 лет».
+
+    Менеджер сверяет заказ с клиентом голосом — возрасты должны читаться, а не
+    расшифровываться. Нечисловое оставляем как есть: чужую формулировку не переписываем.
+    """
+    ages = [part.strip() for part in re.split(r"[,;]", raw) if part.strip()]
+    if not ages or not all(age.isdigit() for age in ages):
+        return raw.strip()
+    if len(ages) == 1:
+        return f"ребёнок {ages[0]} лет"
+    listed = ", ".join(ages[:-1]) + f" и {ages[-1]}"
+    return f"дети {listed} лет"
+
+
+def _compose_line(q: dict) -> str:
+    """Строка «Состав» человеческим языком.
+
+    Было `Состав: 4 · 7, 10` — четверо туристов и дети семи и десяти лет, но догадаться
+    об этом менеджер обязан сам. Сводка, которую надо расшифровывать, свою работу
+    не делает (живой прогон на лиде 186261, 21.08.2026).
+    """
+    parts: list[str] = []
+    head = next((str(q[k]).strip() for k in ("tourists", "adults", "взрослых")
+                 if str(q.get(k) or "").strip()), "")
+    if head:
+        digits = re.fullmatch(r"(\d+)", head)
+        if digits:
+            count = int(digits.group(1))
+            parts.append(f"{count} {_plural(count, 'турист', 'туриста', 'туристов')}")
+        else:
+            parts.append(head)               # «мы вдвоём» — не склоняем чужие слова
+    ages = next((str(q[k]).strip() for k in ("children_ages", "детей")
+                 if str(q.get(k) or "").strip()), "")
+    if ages:
+        parts.append(_ages_phrase(ages))
+    elif str(q.get("children") or "").strip():
+        parts.append(str(q["children"]).strip())
+    companions = str(q.get("companions") or "").strip()
+    if companions:
+        parts.append(companions)
+    return ", ".join(parts)
+
+
 def render_dossier(conv: Any, qualification: dict) -> str:
     q = dict(qualification or {})
     lines = [DOSSIER_MARKER]
@@ -108,13 +174,15 @@ def render_dossier(conv: Any, qualification: dict) -> str:
         # вылет из Алматы, бот пересчитал цены из Алматы, а в карточке об этом ни слова.
         (("departure_city", "departure", "город вылета"), "Вылет"),
         (("budget", "бюджет"), "Бюджет"), (("dates", "nights", "даты"), "Даты"),
-        (("tourists", "adults", "children", "children_ages", "companions",
-          "взрослых", "детей"), "Состав"),
     )
     for keys, label in labels:
         values = [str(q[k]).strip() for k in keys if str(q.get(k) or "").strip()]
         if values:
-            lines.append(f"{label}: {' · '.join(values)}")
+            # Страна и курорт — одна сущность, а не два разных факта: читаем через запятую.
+            lines.append(f"{label}: {', '.join(values)}")
+    composition = _compose_line(q)
+    if composition:
+        lines.append(f"Состав: {composition}")
     offer_url = str(q.get("offer_url") or q.get("tour_url") or "").strip()
     if not offer_url:
         for message in reversed(getattr(conv, "messages", []) or []):
@@ -143,15 +211,60 @@ def _legacy_ours(text: str) -> bool:
     return True
 
 
-def _dossier_ours(text: str) -> bool:
-    """Recognise our marker in portal-normalised COMMENTS.
+# Строки, которые пишет только `render_dossier`. Всё, что не отсюда, — рука человека.
+_DOSSIER_PREFIXES = ("Направление:", "Вылет:", "Бюджет:", "Даты:", "Состав:",
+                     "Предложено:", "Диалог:", "Последнее сообщение:")
 
-    Bitrix may add BBCode around links on read-back.  Ownership lives only in the
-    first non-empty visible line; dossier contents are deliberately not compared.
+
+def _dossier_ours(text: str) -> bool:
+    """Recognise our own dossier in portal-normalised COMMENTS.
+
+    Bitrix may add BBCode around links on read-back, поэтому сначала снимаем разметку.
+
+    Маркера в первой строке НЕ достаточно: менеджер дописывает свою строку под нашей
+    сводкой, и по одному маркеру поле выглядело бы нашим — а следующее обновление
+    стирало бы дописанное. Поэтому нашим считаем текст, где каждая видимая строка —
+    наша: маркер либо известная метка.
     """
     visible = strip_lead_comments_bbcode(text)
-    first_line = next((line.strip() for line in visible.splitlines() if line.strip()), "")
-    return first_line.startswith(DOSSIER_MARKER)
+    lines = [line.strip() for line in visible.splitlines() if line.strip()]
+    if not lines or not lines[0].startswith(DOSSIER_MARKER):
+        return False
+    return all(line.startswith(_DOSSIER_PREFIXES) for line in lines[1:])
+
+
+def _no_human_lines(text: str) -> bool:
+    """Похоже ли поле на наше досье, даже если портал испортил сам маркер.
+
+    Здесь сходятся два требования, и оба выстраданы на проде.
+
+    17.08: портал вырезал «[бот]» как BBCode и съел эмодзи — маркер перестал совпадать,
+    бот не узнал собственный текст и замолчал по карточке навсегда. Отсюда правило
+    «кто писал — помним МЫ», источник истины не может быть чужим изменяемым текстом.
+
+    21.08: то же правило, применённое буквально, затирало правку менеджера — он дописал
+    «клиент передумал, летят из Оша», а бот перезаписал поле своей сводкой.
+
+    Развязка: память отвечает на вопрос «наше ли поле», а текст — на вопрос «трогал ли
+    его человек». Метки короткие и без спецсимволов, BBCode-парсеру портала в них
+    вцепиться не во что, поэтому по ним состав строк узнаётся и после искажения.
+
+    От первой строки требуем начинаться с корня маркера («Досье»): портал обрезает у неё
+    хвост, но не переписывает начало.
+
+    И требуем минимум двух строк. Однострочная запись иначе проскакивала бы всегда —
+    строк «после первой» у неё просто нет, а проверять нечего. Проверено на реалистичных
+    пометках менеджера: «Направление: уточнить у клиента» и «Досье клиента: хочет Египет»
+    обе считались нашими и были бы стёрты. Наше досье короче двух строк не бывает:
+    `render_dossier` всегда дописывает ссылку на диалог и время последнего сообщения.
+    """
+    visible = strip_lead_comments_bbcode(text)
+    lines = [line.strip() for line in visible.splitlines() if line.strip()]
+    if len(lines) < 2:
+        return False
+    if not lines[0].startswith(DOSSIER_MARKER.split()[0]):
+        return False
+    return all(line.startswith(_DOSSIER_PREFIXES) for line in lines[1:])
 
 
 async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
@@ -162,7 +275,13 @@ async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
     if conv is None or not await _enabled(conv):
         return False
     lead_id = getattr(conv, "bitrix_lead_id", "") or ""
-    if not lead_id or getattr(conv, "intercepted", False):
+    if not lead_id:
+        return False
+    # Перехват — «менеджер ПИШЕТ клиенту», и это не повод переставать вести карточку:
+    # сводка нужна ему ровно тогда, когда клиент стоит перед ним. Замер 21.08: из 11
+    # туровых диалогов за шесть часов после QR восемь перехвачены — при старом правиле
+    # досье не появилось бы почти нигде.
+    if getattr(conv, "intercepted", False) and not await _dossier_when_intercepted_enabled():
         return False
     client = _adapter(adapter)
     try:
@@ -170,8 +289,14 @@ async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
         if str(lead.get("STATUS_ID") or "") in TERMINAL_STATUSES:
             return False
         comments = str(lead.get("COMMENTS") or "")
+        # Два вопроса, и отвечают на них разные источники. «Наше ли это поле» — наша
+        # память (портал калечит текст, и угадывать по нему нельзя: шрам 17.08). «Трогал
+        # ли его человек» — сам текст: строка не из нашего шаблона означает, что менеджер
+        # писал руками, и его слова важнее свежести нашей сводки (шрам 21.08).
         remembered = bool(getattr(conv, "bitrix_dossier_by_bot", False))
-        if not remembered and comments and not _dossier_ours(comments) and not _legacy_ours(comments):
+        writable = (_dossier_ours(comments) or _legacy_ours(comments)
+                    or (remembered and _no_human_lines(comments)))
+        if comments and not writable:
             return False
         text = render_dossier(conv, conv.qualification if qualification is None else qualification)
         await client.update_comments(lead_id, text)
