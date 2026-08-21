@@ -217,6 +217,14 @@ class Settings(BaseSettings):
     # [?] Внутренняя стадия бота → STATUS_ID ЛИДА Bitrix (напр. "IN_PROCESS"); пусто → не двигаем.
     bitrix_stage_map: dict[str, str] = {}
     bitrix_pipeline_enabled: bool = False
+    # Карточка едет по собранным фактам, даже когда диалог ведёт менеджер. Замер 21.08.2026:
+    # перехвачено 69–88% туровых диалогов, 64 из них с полной квалификацией стояли в NEW, а
+    # в портале 45 из 59 туровых лидов вообще никем не двигались. Перехват означает «менеджер
+    # пишет в чат», а не «менеджер двигал карточку» — от перезаписи ручного переноса защищают
+    # frozen_manual, терминальные статусы и движение только вперёд. Дефолт OFF.
+    bitrix_stage_catchup_enabled: bool = False
+    bitrix_stage_catchup_days: int = 30      # как глубоко в прошлое догоняем стадии
+    bitrix_stage_catchup_limit: int = 25     # карточек за тик: каждая — два запроса к порталу
     tour_facts_enabled: bool = False
     bitrix_autodeal_enabled: bool = False
     bitrix_read_back_days: int = 45

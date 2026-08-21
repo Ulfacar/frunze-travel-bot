@@ -49,6 +49,12 @@ async def _enabled(conv: Any) -> bool:
     return await flags.get_flag(f"bitrix_pipeline_enabled:{bot_id}", global_on)
 
 
+async def _catchup_enabled() -> bool:
+    """Один тумблер на всю фичу «карточка едет, даже если диалог ведёт менеджер»."""
+    return await flags.get_flag("bitrix_stage_catchup_enabled",
+                                settings.bitrix_stage_catchup_enabled)
+
+
 async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
                   _conv: Any = None, _lead: dict | None = None) -> str:
     """Move a lead forward if the bot still owns its stage; return the new STATUS_ID."""
@@ -59,7 +65,14 @@ async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
         return ""
     lead_id = getattr(conv, "bitrix_lead_id", "") or ""
     target = stage_map.get(internal_stage, "")
-    if not lead_id or not target or getattr(conv, "intercepted", False):
+    if not lead_id or not target:
+        return ""
+    # Перехват — «менеджер пишет в чат», а НЕ «менеджер двигал карточку»: это разные вещи,
+    # а раньше первое запрещало второе. Цена замера (август, туры): перехвачено 69–88%
+    # диалогов, из них 64 с полностью собранными фактами так и стояли в NEW. От реальной
+    # перезаписи ручного переноса защищает `frozen_manual` ниже (стадия сменилась не ботом
+    # → замираем), терминальные статусы и движение только вперёд по STAGE_SEQUENCE.
+    if getattr(conv, "intercepted", False) and not await _catchup_enabled():
         return ""
     client = _adapter(adapter)
     try:
@@ -280,6 +293,72 @@ async def read_back_once(*, adapter: Any = None) -> dict:
             stats["errors"] += 1
             log.warning("pipeline read-back failed lead=%s", lead_id, exc_info=True)
     log.info("pipeline read-back stats=%s", stats)
+    return stats
+
+
+def _catchup_stage(conv: Any) -> str:
+    """Какую стадию карточка заслужила по уже собранным фактам — или пусто.
+
+    Только `qualified`: это факт, проверяемый по самой карточке (направление + даты +
+    туристы собраны). `offer_sent` здесь НЕ ставим — «подборку отдали» знает лишь живой
+    ход, который её отправил (`runner._attach_tour_cards`), и догадываться об этом задним
+    числом нельзя: соврать в CRM хуже, чем отстать на одну стадию.
+
+    Правило квалификации берём из `runner._is_qualified`, а не переписываем рядом: две
+    копии одного порога однажды разъедутся, и карточки поедут не туда.
+    """
+    from app.agent.runner import _is_qualified
+    try:
+        return "qualified" if _is_qualified(conv) else ""
+    except Exception:  # noqa: BLE001 — кривая квалификация не должна ронять весь проход
+        return ""
+
+
+async def catchup_once(*, adapter: Any = None) -> dict:
+    """Подтянуть стадии карточек, которые живой ход пропустил.
+
+    Зачем отдельный проход: при перехвате `run_turn` выходит на первой строке, поэтому
+    `_sync_qualified_if_ready` для таких диалогов не вызывается вообще — факты в карточке
+    есть, а стадия не поедет никогда, сколько бы тумблеров ни включили. Замер 21.08.2026:
+    64 туровых диалога за август с полной квалификацией стояли в NEW.
+
+    Проход идёт порциями (`bitrix_stage_catchup_limit` за тик): каждая карточка — это
+    два запроса к порталу, а он не любит залпов.
+    """
+    stats = {key: 0 for key in ("scanned", "eligible", "moved", "errors")}
+    if not await _catchup_enabled():
+        return stats
+    client = _adapter(adapter)
+    store = get_conversation_store()
+    since = datetime.now(timezone.utc) - timedelta(days=settings.bitrix_stage_catchup_days)
+    limit = max(1, settings.bitrix_stage_catchup_limit)
+
+    for conv in await store.all_conversations_light():
+        if stats["moved"] >= limit:
+            break
+        last = getattr(conv, "last_message_at", None)
+        if last is not None and last.tzinfo is None:
+            last = last.replace(tzinfo=timezone.utc)
+        if last is not None and last < since:
+            continue
+        if not (getattr(conv, "bitrix_lead_id", "") or ""):
+            continue
+        stats["scanned"] += 1
+        stage = _catchup_stage(conv)
+        if not stage:
+            continue
+        # Уже стоим на этой стадии по нашей же отметке — портал дёргать незачем.
+        if (getattr(conv, "bitrix_stage_by_bot", "") or "") == (settings.bitrix_stage_map or {}).get(stage):
+            continue
+        stats["eligible"] += 1
+        try:
+            if await advance(conv.user_id, stage, adapter=client, _conv=conv):
+                stats["moved"] += 1
+        except Exception:  # noqa: BLE001 — одна карточка не должна ронять проход
+            stats["errors"] += 1
+            log.warning("pipeline catchup failed conv_key=%s", conv.user_id, exc_info=True)
+
+    log.info("pipeline catchup stats=%s", stats)
     return stats
 
 

@@ -1,7 +1,7 @@
 """Ten-minute scheduler cadence for Bitrix pipeline read-back."""
 from __future__ import annotations
 
-from app.integrations.crm.bitrix_pipeline import read_back_once
+from app.integrations.crm.bitrix_pipeline import catchup_once, read_back_once
 
 _ticks = 0
 
@@ -12,3 +12,5 @@ async def run() -> None:
     # The shared scheduler ticks every five minutes. Start read-back at minute ten.
     if _ticks % 2 == 0:
         await read_back_once()
+        # Догоняющий проход по стадиям: сам себя выключает, если тумблер снят.
+        await catchup_once()
