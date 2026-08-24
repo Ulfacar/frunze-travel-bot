@@ -98,6 +98,18 @@ def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
         if bot_id in reported:
             continue        # про этот канал уже сказал детектор Wappi — не дублируем
 
+        # Тишина нужна ради ОДНОГО случая, которого точный сторож не видит: профиль жив,
+        # Wappi принимает сообщения, а до нас они не доходят. «Тихо и там, и у нас» —
+        # это отсутствие клиентов, а не авария: 23-24.08 владелец получил четыре красных
+        # тревоги по здоровым каналам, три из них сразу после ночи, и в каждой стояло
+        # «дело не в технике» — то есть сторож будил, уже зная, что чинить нечего.
+        # Неизвестный диагноз будим по-прежнему: молчать про неизвестность опаснее.
+        diagnosis = (diagnoses or {}).get(bot_id, "")
+        if diagnosis == "no_traffic" and getattr(cfg, "silence_alert_only_on_gap", False):
+            # Защёлку НЕ ставим: если следом вскроется настоящая поломка по этому же
+            # каналу, сообщение о ней не должно попасть под суточный cooldown.
+            continue
+
         # Один инцидент — одно сообщение; напоминание не чаще cooldown (сутки). Иначе
         # при тике в 5 минут суточный простой дал бы 288 сообщений, и сторожа отключат.
         last_alert = state.get(f"alerted:{bot_id}")
@@ -107,7 +119,7 @@ def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
 
         alerts.append((bot_id, _text(bot_id, silent_minutes,
                                      reminder=last_alert is not None,
-                                     diagnosis=(diagnoses or {}).get(bot_id, ""))))
+                                     diagnosis=diagnosis)))
 
     return alerts
 
@@ -323,7 +335,22 @@ async def run() -> None:
     reported = await wappi_health.open_incidents()
     # Почему тихо — спрашиваем у Wappi, а не советуем «проверь QR и вебхук» наугад.
     diagnoses = await wappi_health.diagnoses()
-    alerts = decide(now, await _load_last_seen(), state, settings,
+
+    # Рантайм-тумблер поверх env: решающая функция чистая и читает только cfg, поэтому
+    # подаём ей конфиг с уже разрешённым флагом — иначе кнопка в админке молчала бы.
+    only_on_gap = await flags.get_flag("silence_alert_only_on_gap",
+                                       settings.silence_alert_only_on_gap)
+
+    class _Cfg:
+        channel_heartbeat_enabled = True
+        channel_silence_minutes = settings.channel_silence_minutes
+        channel_silence_night_minutes = settings.channel_silence_night_minutes
+        channel_alert_cooldown_minutes = settings.channel_alert_cooldown_minutes
+        channel_heartbeat_quiet_from = getattr(settings, "channel_heartbeat_quiet_from", 22)
+        channel_heartbeat_quiet_to = getattr(settings, "channel_heartbeat_quiet_to", 9)
+        silence_alert_only_on_gap = only_on_gap
+
+    alerts = decide(now, await _load_last_seen(), state, _Cfg,
                     bishkek_hour=local.hour, reported=reported, diagnoses=diagnoses)
     # Сохраняем ДО проверки на пустоту: `decide` снимает защёлку с ожившего канала, и
     # эту отмену нужно записать не меньше, чем сам факт алерта.
