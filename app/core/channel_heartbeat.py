@@ -69,7 +69,8 @@ def _human(minutes: float) -> str:
 
 def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
            *, bishkek_hour: int, reported=frozenset(),
-           diagnoses: dict[str, str] | None = None) -> list[tuple[str, str]]:
+           diagnoses: dict[str, str] | None = None,
+           healthy: dict[str, bool] | None = None) -> list[tuple[str, str]]:
     """Чистое решение: по каким каналам пора бить тревогу. Мутирует state.
 
     Возвращает список `(bot_id, текст)`. Пустой список — всё в порядке.
@@ -77,6 +78,11 @@ def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
     `reported` — каналы, про которые уже сказал детектор Wappi. Разлогин профиля это
     одновременно и «Wappi говорит: отвалился», и «входящих нет»; факт один, и сообщение
     про него должно быть одно.
+
+    `healthy` — что Wappi думает о самом профиле (`bot_id → True/False`, канала нет в
+    словаре, если статус не прочитан). На РЕШЕНИЕ будить не влияет: здоровый профиль не
+    отменяет поломку вебхука, ради которой этот сторож и существует. Влияет только на
+    СОВЕТ — чтобы по живому каналу не звучало «отсканируй QR».
     """
     if not getattr(cfg, "channel_heartbeat_enabled", True):
         return []
@@ -119,18 +125,24 @@ def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
 
         alerts.append((bot_id, _text(bot_id, silent_minutes,
                                      reminder=last_alert is not None,
-                                     diagnosis=diagnosis)))
+                                     diagnosis=diagnosis,
+                                     healthy=(healthy or {}).get(bot_id))))
 
     return alerts
 
 
-def _advice(diagnosis: str) -> str:
+def _advice(diagnosis: str, healthy: bool | None = None) -> str:
     """Совет по факту, а не один на все случаи.
 
     08.08 по каналу Айсины ушло «проверь профиль в Wappi: авторизация (QR) и адрес
     вебхука», хотя оба были в порядке — на номер просто перестали писать (новые диалоги
     13 → 4 → 8 → 3 → 1 → 0 при ровных соседних каналах). Совет увёл в сторону от
     настоящей причины, а она была не техническая.
+
+    01.09 та же фраза ушла по каналу Медины, и снова мимо: Wappi в ту же минуту отвечал
+    `authorized=true, app_status=open`. Факт о здоровье профиля у нас БЫЛ — его читает
+    `wappi_health` каждые пять минут, — но до текста не доезжал. Теперь доезжает:
+    инструкция сканировать QR звучит только если Wappi сам сказал, что с профилем плохо.
     """
     if diagnosis == "webhook":
         return ("Сообщения в Wappi приходят, а до нас не доходят — смотри адрес вебхука "
@@ -138,11 +150,28 @@ def _advice(diagnosis: str) -> str:
     if diagnosis == "no_traffic":
         return ("В Wappi по этому номеру тоже тихо — значит дело не в технике. "
                 "Проверь, куда ведёт реклама, и не ограничен ли сам номер в WhatsApp.")
+    if healthy is True:
+        return ("Профиль в Wappi авторизован и на связи — QR сканировать не нужно. "
+                "Почему тихо, определить не вышло: смотри адрес вебхука у этого профиля.")
+    if healthy is False:
+        return "Wappi показывает профиль нездоровым — проверь авторизацию (QR) в кабинете."
     return "Проверь профиль в Wappi: авторизация (QR) и адрес вебхука."
 
 
+def down_log_line(bot_id: str, silent_minutes: float, *, diagnosis: str = "",
+                  healthy: bool | None = None) -> str:
+    """Строка в лог рядом с тревогой: почему она поднята.
+
+    01.09 в логе стояло только «CHANNEL DOWN: getvisa», и разбирать ложное уведомление
+    пришлось по скриншоту из Telegram. Повод обязан лежать рядом с фактом.
+    """
+    health = {True: "здоров", False: "нездоров", None: "неизвестен"}[healthy]
+    return (f"CHANNEL DOWN: {bot_id} (тишина {silent_minutes:.0f} мин, "
+            f"диагноз={diagnosis or 'неизвестен'}, профиль={health})")
+
+
 def _text(bot_id: str, silent_minutes: float, *, reminder: bool = False,
-          diagnosis: str = "") -> str:
+          diagnosis: str = "", healthy: bool | None = None) -> str:
     name = ""
     try:
         from app.core.bots import registry
@@ -154,9 +183,9 @@ def _text(bot_id: str, silent_minutes: float, *, reminder: bool = False,
     # самое сообщение второй раз, а владелец просил ровно обратного.
     if reminder:
         return (f"🔁 Напоминаю: канал {bot_id}{name} так и молчит — уже "
-                f"{_human(silent_minutes)}, входящих нет.\n{_advice(diagnosis)}")
+                f"{_human(silent_minutes)}, входящих нет.\n{_advice(diagnosis, healthy)}")
     return (f"🔴 Канал {bot_id}{name} молчит {_human(silent_minutes)} — входящих нет.\n"
-            f"{_advice(diagnosis)}")
+            f"{_advice(diagnosis, healthy)}")
 
 
 async def note_inbound(bot_id: str) -> None:
@@ -334,7 +363,9 @@ async def run() -> None:
     from app.core import wappi_health
     reported = await wappi_health.open_incidents()
     # Почему тихо — спрашиваем у Wappi, а не советуем «проверь QR и вебхук» наугад.
-    diagnoses = await wappi_health.diagnoses()
+    # Диагноз и здоровье профиля берём одним проходом: это один и тот же ответ Wappi,
+    # второй запрос за ним был бы лишним.
+    diagnoses, healthy = await wappi_health.diagnoses_and_health()
 
     # Рантайм-тумблер поверх env: решающая функция чистая и читает только cfg, поэтому
     # подаём ей конфиг с уже разрешённым флагом — иначе кнопка в админке молчала бы.
@@ -350,8 +381,10 @@ async def run() -> None:
         channel_heartbeat_quiet_to = getattr(settings, "channel_heartbeat_quiet_to", 9)
         silence_alert_only_on_gap = only_on_gap
 
-    alerts = decide(now, await _load_last_seen(), state, _Cfg,
-                    bishkek_hour=local.hour, reported=reported, diagnoses=diagnoses)
+    last_seen = await _load_last_seen()
+    alerts = decide(now, last_seen, state, _Cfg,
+                    bishkek_hour=local.hour, reported=reported, diagnoses=diagnoses,
+                    healthy=healthy)
     # Сохраняем ДО проверки на пустоту: `decide` снимает защёлку с ожившего канала, и
     # эту отмену нужно записать не меньше, чем сам факт алерта.
     await _state_save(state)
@@ -360,7 +393,10 @@ async def run() -> None:
 
     from app.core import ops_alert
     for bot_id, text in alerts:
-        log.error("CHANNEL DOWN: %s", bot_id)
+        seen_at = last_seen.get(bot_id)
+        log.error("%s", down_log_line(bot_id, (now - seen_at) / 60 if seen_at else 0.0,
+                                      diagnosis=diagnoses.get(bot_id, ""),
+                                      healthy=healthy.get(bot_id)))
         # Повод тут один — канал молчит, — но ключ всё равно нужен: без него заказчику
         # уходит каждый повтор, а канал молчит сутками.
         await ops_alert.send(text, key=f"silent:{bot_id}")

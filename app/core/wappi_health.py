@@ -200,14 +200,36 @@ def open_incidents_from_state(state: dict) -> set[str]:
             if key.startswith("logout:") and key.split(":", 1)[1]}
 
 
+def profile_health(status) -> bool | None:
+    """Здоров ли профиль по мнению самого Wappi. `None` — статус не прочитан.
+
+    Тот же критерий, по которому `decide` поднимает повод «logout»: авторизован и
+    приложение в состоянии `open`. Отдельной функцией — чтобы сторож тишины советовал
+    QR только тогда, когда QR действительно при чём (01.09 он посоветовал его по живому
+    каналу, потому что этого факта в тексте алерта не было).
+    """
+    if not isinstance(status, dict):
+        return None
+    return bool(status.get("authorized")) and str(status.get("app_status") or "") == "open"
+
+
 async def diagnoses() -> dict[str, str]:
-    """Почему по каждому каналу тихо — для текста алерта сторожа тишины.
+    """Почему по каждому каналу тихо — для текста алерта сторожа тишины."""
+    return (await diagnoses_and_health())[0]
+
+
+async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool]]:
+    """Диагноз тишины и здоровье профиля — из ОДНОГО ответа Wappi, за один проход.
 
     Снимок счётчика Wappi храним между тиками и сравниваем заодно с нашей отметкой
     последнего входящего: выросло у них, но не у нас — теряется по дороге; не выросло
     нигде — на номер просто не пишут.
+
+    Здоровье возвращаем отдельным словарём: канала в нём нет, если статус не прочитан, —
+    «не знаю» и «нездоров» это разные вещи, и путать их в совете нельзя.
     """
     out: dict[str, str] = {}
+    health: dict[str, bool] = {}
     try:
         from app.core.bots import registry
         from app.core.channel_heartbeat import _load_last_seen
@@ -216,6 +238,9 @@ async def diagnoses() -> dict[str, str]:
             if not bot.wappi_profile_id:
                 continue
             status = await fetch_status(bot.wappi_profile_id)
+            verdict_health = profile_health(status)
+            if verdict_health is not None:
+                health[bot.id] = verdict_health
             counter = status.get("message_count") if isinstance(status, dict) else None
             base_counter, base_seen = await _counter_snapshot(bot.id)
             our_seen = last_seen.get(bot.id)
@@ -232,7 +257,7 @@ async def diagnoses() -> dict[str, str]:
                 out[bot.id] = verdict
     except Exception:  # noqa: BLE001 — без диагноза алерт уйдёт с нейтральным текстом
         log.warning("диагноз каналов не собран", exc_info=True)
-    return out
+    return out, health
 
 
 async def _counter_snapshot(bot_id: str) -> tuple[int | None, float | None]:
