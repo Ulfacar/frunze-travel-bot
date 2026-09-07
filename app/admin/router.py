@@ -431,10 +431,25 @@ async def cards(request: Request, manager: dict = Depends(require_full_admin)):
     должна открываться мгновенно. Полный срез с порталом снимает
     `scripts/tour_funnel_report.py`.
     """
+    from app.core import flags as _flags
     from app.core import pipeline_metrics
+    from app.core.bots import registry
     from app.integrations.crm.bitrix_pipeline import _catchup_stage, _stage_reached, _work_started
 
     snap = await pipeline_metrics.status()
+    # Кто попадает на экран: только каналы, где стадией управляет бот. Визы сюда не входят —
+    # там карточки двигают руками менеджеры, и наше `bitrix_stage_by_bot` о них ничего не
+    # знает. Без этого фильтра страница показывала 1115 «ждут движения», хотя реальная
+    # очередь была 153: остальное — визовые диалоги, которые никуда и не поедут.
+    pipeline_on, started_on = set(), set()
+    global_pipe = await _flags.get_flag("bitrix_pipeline_enabled", settings.bitrix_pipeline_enabled)
+    global_started = await _flags.get_flag("bitrix_stage_dialog_started_enabled",
+                                           settings.bitrix_stage_dialog_started_enabled)
+    for bot in registry.all():
+        if await _flags.get_flag(f"bitrix_pipeline_enabled:{bot.id}", global_pipe):
+            pipeline_on.add(bot.id)
+        if await _flags.get_flag(f"bitrix_stage_dialog_started_enabled:{bot.id}", global_started):
+            started_on.add(bot.id)
     stage_map = settings.bitrix_stage_map or {}
     titles = {"NEW": "Новый лид", "UC_S0NTF8": "Выявление потребностей",
               "UC_Y4VY7B": "Переписка/Недозвоны", "UC_1I1YV0": "1 касание",
@@ -452,6 +467,9 @@ async def cards(request: Request, manager: dict = Depends(require_full_admin)):
             last = last.replace(tzinfo=timezone.utc)
         if last is not None and last < since:
             continue
+        bot_id = (getattr(conv, "bot_id", "") or str(conv.user_id).partition(":")[0]).strip()
+        if bot_id not in pipeline_on:
+            continue
         totals["dialogs"] += 1
         if not (getattr(conv, "bitrix_lead_id", "") or ""):
             continue
@@ -460,7 +478,7 @@ async def cards(request: Request, manager: dict = Depends(require_full_admin)):
         funnel[by_bot] = funnel.get(by_bot, 0) + 1
         if _work_started(conv):
             totals["work_started"] += 1
-        stage = _catchup_stage(conv, dialog_started=True)
+        stage = _catchup_stage(conv, dialog_started=bot_id in started_on)
         if stage and not _stage_reached(getattr(conv, "bitrix_stage_by_bot", "") or "",
                                         stage_map.get(stage, "")):
             totals["waiting"] += 1
