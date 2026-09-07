@@ -41,16 +41,41 @@ def is_quiet_hour(local_hour: int, cfg) -> bool:
 
 
 def select_followup_targets(convs: list, now: datetime, cfg) -> list:
-    """Кого пора дожать: единая формула «молчит» + ограничения живого WhatsApp."""
+    """Кого пора дожать: формула «молчит» + окно свежести + порция на один прогон.
+
+    Два ограничителя появились после сухого прогона на проде 07.09.2026: без них первое
+    же включение отправило бы **818 сообщений залпом** (визы 589, Айсина 153, Адеми 76) —
+    по всей базе, накопленной за месяцы. Клиент, замолчавший в июле, получил бы «вы ещё
+    думаете над поездкой?». Это спам, жалобы и риск блокировки номера, а канал у нас один
+    на весь бизнес.
+
+    * `followup_max_age_days` — верхняя граница молчания. Ниже порога человек ещё в теме,
+      выше — он уже не вернётся, и касание читается как рассылка.
+    * `followup_batch_limit` — сколько уходит за один прогон. Очередь разбирается
+      порциями; следующий прогон возьмёт следующих.
+
+    Порядок: сначала те, кого ещё ни разу не касались, внутри группы — свежие первыми.
+    Сортировка только по свежести залипала бы на одних и тех же: отправка обновляет
+    время последнего сообщения, и дожатый клиент снова оказывался бы первым в очереди,
+    отодвигая тех, кто ждёт первого касания (поймано гейтом до выкатки).
+    """
     now = _aware(now)
+    max_age_days = getattr(cfg, "followup_max_age_days", 14)
+    oldest = now - timedelta(days=max_age_days) if max_age_days else None
     out = []
     for c in convs:
         if not is_silent(c, now, cfg):
             continue
         if c.channel != "whatsapp" or not (c.chat_id or c.user_id) or not c.bot_id:
             continue                                   # дожимаем только живой WhatsApp-канал
+        last = _aware(getattr(c, "last_message_at", None))
+        if oldest is not None and last is not None and last < oldest:
+            continue                                   # молчит слишком давно — это уже не касание
         out.append(c)
-    return out
+    out.sort(key=lambda c: (followup_pings(c),
+                           -(_aware(getattr(c, "last_message_at", None)) or now).timestamp()))
+    limit = max(0, int(getattr(cfg, "followup_batch_limit", 20)))
+    return out[:limit] if limit else out
 
 
 def _mark_touch(conv, pings: int) -> None:
