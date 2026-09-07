@@ -105,7 +105,15 @@ async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
             log.info("pipeline skip terminal conv_key=%s from=%s to=%s", conv_key, current, target)
             return ""
         if remembered and current != remembered:
-            log.info("pipeline skip frozen_manual conv_key=%s from=%s to=%s", conv_key, current, target)
+            drift = classify_drift(current, remembered)
+            log.info("pipeline skip frozen_manual conv_key=%s from=%s to=%s drift=%s",
+                     conv_key, current, target, drift or "unknown")
+            if drift == "behind":
+                # Воронка сама назад не ходит: карточку вернули руками или её подменили.
+                # Чинить молча нельзя — это боевой CRM, — но человек должен узнать.
+                from app.core import pipeline_metrics
+                await pipeline_metrics.note_conflict(
+                    "stage_backwards", conv_key, detail=f"{current} ← {remembered}")
             return ""
         if target not in STAGE_SEQUENCE or current not in STAGE_SEQUENCE:
             return ""
@@ -435,6 +443,24 @@ async def read_back_once(*, adapter: Any = None) -> dict:
     return stats
 
 
+def classify_drift(current: str, remembered: str) -> str:
+    """Куда уехала карточка относительно того, что записал бот: `ahead` | `behind` | ``.
+
+    До этого оба случая были одним: «стадия не та, что мы помним» → замираем молча.
+    Но это две разные вещи. Менеджер двинул карточку ВПЕРЁД — он работает, всё правильно,
+    бот уступает. Карточка уехала НАЗАД (или её вернули в «Новый лид») — так сама собой
+    воронка не ходит, и человек должен об этом узнать.
+
+    Стадии вне известной последовательности не судим: портал могли перенастроить, и
+    выдумывать смысл незнакомому статусу опаснее, чем промолчать.
+    """
+    if not current or not remembered or current == remembered:
+        return ""
+    if current not in STAGE_SEQUENCE or remembered not in STAGE_SEQUENCE:
+        return ""
+    return "ahead" if STAGE_SEQUENCE.index(current) > STAGE_SEQUENCE.index(remembered) else "behind"
+
+
 def _stage_reached(by_bot: str, target: str) -> bool:
     """Дошла ли карточка до целевой стадии — или уже уехала дальше неё.
 
@@ -505,7 +531,8 @@ async def catchup_once(*, adapter: Any = None) -> dict:
     Проход идёт порциями (`bitrix_stage_catchup_limit` за тик): каждая карточка — это
     два запроса к порталу, а он не любит залпов.
     """
-    stats = {key: 0 for key in ("scanned", "eligible", "moved", "dossiers", "errors")}
+    stats = {key: 0 for key in
+             ("scanned", "eligible", "moved", "dossiers", "errors", "waiting")}
     if not await _catchup_enabled():
         return stats
     client = _adapter(adapter)
@@ -516,8 +543,6 @@ async def catchup_once(*, adapter: Any = None) -> dict:
     touched = 0                          # карточек, по которым ходили в портал за этот тик
 
     for conv in await store.all_conversations_light():
-        if touched >= limit:
-            break
         last = getattr(conv, "last_message_at", None)
         if last is not None and last.tzinfo is None:
             last = last.replace(tzinfo=timezone.utc)
@@ -536,6 +561,12 @@ async def catchup_once(*, adapter: Any = None) -> dict:
                                     (settings.bitrix_stage_map or {}).get(stage, ""))
         dossier_done = bool(getattr(conv, "bitrix_dossier_by_bot", False))
         if stage_done and (dossier_done or not dossier_on):
+            continue
+        # Лимит исчерпан — дальше только СЧИТАЕМ очередь, в портал не ходим. Без этого
+        # числа длина очереди была невидима, и застревание прохода (07.09: moved=0 сутки
+        # подряд) нельзя было отличить от «работы больше нет».
+        if touched >= limit:
+            stats["waiting"] += 1
             continue
         stats["eligible"] += 1
         touched += 1

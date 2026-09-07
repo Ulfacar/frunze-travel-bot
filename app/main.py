@@ -92,6 +92,10 @@ async def lifespan(app: FastAPI):
     # диалоги вечно висят «ждёт ответа». Подтягиваем их сами, пока тип вебхука не включён.
     scheduler.register("manager_sync", manager_sync.run)
     scheduler.register("bitrix_pipeline_read_back", bitrix_pipeline_job.run)
+    # Сторож самого контроллера карточек: очередь стоит, джоба встала, портал сыплет
+    # ошибками. 07.09 проход сутки отдавал moved=0, и это не заметил никто (gated OFF).
+    from app.core import pipeline_metrics
+    scheduler.register("pipeline_controller", pipeline_metrics.run)
     scheduler.start()
     try:
         yield

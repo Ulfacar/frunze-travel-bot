@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frunze — карточки Битрикса</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#F1F5F9; --surface:#FFFFFF; --border:#E2E8F0; --text:#0F172A;
+            --muted:#64748B; --accent:#2563EB; --warm:#D97706; --hot:#DC2626; --green:#059669;
+            --mono:'Fira Code', ui-monospace, monospace; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:'Fira Sans',system-ui,sans-serif; font-size:14px; }
+    .topbar { display:flex; align-items:center; gap:16px; padding:0 20px; height:58px;
+              background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; }
+    .topbar a { color:var(--accent); text-decoration:none; font-weight:600; }
+    .wrap { padding:22px; max-width:980px; margin:0 auto; }
+    h1 { font-size:20px; margin:0 0 6px; }
+    .sub { color:var(--muted); margin:0 0 18px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:15px 17px; }
+    .card .l { color:var(--muted); font-size:12.5px; margin-bottom:6px; }
+    .card .v { font-size:20px; font-weight:600; }
+    .card .v.small { font-size:15px; font-weight:500; }
+    .dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:7px; }
+    .ok { background:var(--green); } .bad { background:var(--hot); } .warn { background:var(--warm); } .off { background:#94A3B8; }
+    .panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-top:18px; }
+    .panel h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 12px; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--border); }
+    th { color:var(--muted); font-weight:500; font-size:12.5px; }
+    .mono { font-family:var(--mono); font-size:12.5px; }
+    .muted { color:var(--muted); }
+    .bar { height:8px; border-radius:4px; background:var(--accent); min-width:3px; }
+    .bar.new { background:#94A3B8; }
+    .empty { color:var(--muted); padding:10px 4px; }
+    .pill { display:inline-block; padding:1px 8px; border-radius:20px; font-size:12px;
+            background:var(--elev,#F1F5F9); border:1px solid var(--border); color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/admin/boards">← Диалоги</a>
+    <a href="/admin/system">Система</a>
+    <span class="muted">Карточки Битрикса</span>
+  </div>
+
+  <div class="wrap">
+    <h1>Состояние карточек</h1>
+    <p class="sub">Что контроллер сделал за сутки и что осталось. Данные — из нашей базы,
+      портал не опрашивается. Полный срез с порталом: <span class="mono">scripts/tour_funnel_report.py</span></p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="l">Прогонов за сутки</div>
+        <div class="v">
+          {% if snap.last_run_at and (now - snap.last_run_at) > 7200 %}<span class="dot bad"></span>
+          {% elif snap.runs %}<span class="dot ok"></span>
+          {% else %}<span class="dot off"></span>{% endif %}{{ snap.runs }}
+        </div>
+      </div>
+      <div class="card">
+        <div class="l">Карточек сдвинуто</div>
+        <div class="v">{{ snap.moved }}</div>
+      </div>
+      <div class="card">
+        <div class="l">Сводок записано</div>
+        <div class="v">{{ snap.dossiers }}</div>
+      </div>
+      <div class="card">
+        <div class="l">Ждут очереди</div>
+        <div class="v">
+          {% if totals.waiting and snap.stall_runs >= 3 %}<span class="dot bad"></span>
+          {% elif totals.waiting %}<span class="dot warn"></span>
+          {% else %}<span class="dot ok"></span>{% endif %}{{ totals.waiting }}
+        </div>
+      </div>
+      <div class="card">
+        <div class="l">Ошибок портала</div>
+        <div class="v">{% if snap.errors %}<span class="dot warn"></span>{% endif %}{{ snap.errors }}</div>
+      </div>
+      <div class="card">
+        <div class="l">Последний прогон</div>
+        <div class="v small">
+          {% if snap.last_run_at %}{{ ((now - snap.last_run_at) / 60) | round(0, 'floor') | int }} мин назад
+          {% else %}<span class="muted">ещё не было</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Воронка — куда бот довёл карточки</h2>
+      {% if rows %}
+      <table>
+        <tr><th>Стадия</th><th style="width:90px">Карточек</th><th>Доля</th></tr>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.title }} <span class="mono muted">{{ r.id }}</span></td>
+          <td>{{ r.count }}</td>
+          <td><div class="bar {% if r.id == 'NEW' %}new{% endif %}"
+                   style="width: {{ (r.count * 100 / (totals.with_lead or 1)) | round(0, 'floor') | int }}%"></div></td>
+        </tr>
+        {% endfor %}
+      </table>
+      <p class="muted" style="margin:12px 0 0">
+        Диалогов за окно: {{ totals.dialogs }} · с карточкой: {{ totals.with_lead }} ·
+        с клиентом начали работать: {{ totals.work_started }}
+      </p>
+      {% else %}
+      <div class="empty">Карточек за окно нет.</div>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <h2>Требуют человека — расхождения</h2>
+      {% if conflicts %}
+      <table>
+        <tr><th>Что</th><th>Диалог</th><th>Подробности</th></tr>
+        {% for c in conflicts %}
+        <tr>
+          <td>{% if c.kind == 'stage_backwards' %}Стадия уехала назад{% else %}{{ c.kind }}{% endif %}</td>
+          <td class="mono">{{ c.conv_key }}</td>
+          <td class="mono muted">{{ c.detail }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      <p class="muted" style="margin:12px 0 0">Такое бот не чинит сам: воронка назад не ходит,
+        значит карточку вернули руками или подменили лид.</p>
+      {% else %}
+      <div class="empty">Расхождений нет.</div>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <h2>Очередь — карточки, ждущие движения</h2>
+      {% if stuck %}
+      <table>
+        <tr><th>Диалог</th><th>Лид</th><th>Куда поедет</th><th></th></tr>
+        {% for s in stuck %}
+        <tr>
+          <td class="mono">{{ s.conv_key }}</td>
+          <td class="mono">{{ s.lead }}</td>
+          <td>{{ s.target }}</td>
+          <td>{% if s.intercepted %}<span class="pill">ведёт менеджер</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      <p class="muted" style="margin:12px 0 0">Показаны первые 30. Разбираются порциями
+        по {{ 25 }} каждые десять минут.</p>
+      {% else %}
+      <div class="empty">Очередь пуста — все карточки на своих стадиях.</div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

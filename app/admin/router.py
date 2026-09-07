@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import secrets
+import time
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -422,6 +423,65 @@ async def buyers_claim(user_id: str, manager: dict = Depends(require_admin)):
     return HTMLResponse("")  # успешный claim → карточка убирается из ленты
 
 
+@router.get("/cards", response_class=HTMLResponse)
+async def cards(request: Request, manager: dict = Depends(require_full_admin)):
+    """Состояние карточек Битрикса: что сделал контроллер, что застряло, что требует людей.
+
+    Всё считается по нашей базе и накопленным метрикам, БЕЗ похода в портал: страница
+    должна открываться мгновенно. Полный срез с порталом снимает
+    `scripts/tour_funnel_report.py`.
+    """
+    from app.core import pipeline_metrics
+    from app.integrations.crm.bitrix_pipeline import _catchup_stage, _stage_reached, _work_started
+
+    snap = await pipeline_metrics.status()
+    stage_map = settings.bitrix_stage_map or {}
+    titles = {"NEW": "Новый лид", "UC_S0NTF8": "Выявление потребностей",
+              "UC_Y4VY7B": "Переписка/Недозвоны", "UC_1I1YV0": "1 касание",
+              "UC_T9AEO4": "2 касание", "UC_A492DB": "3 касание",
+              "UC_PNSIIB": "Предложение отправлено"}
+    since = datetime.now(timezone.utc) - timedelta(days=settings.bitrix_stage_catchup_days)
+
+    funnel: dict[str, int] = {}
+    stuck: list[dict] = []
+    totals = {"dialogs": 0, "with_lead": 0, "work_started": 0, "waiting": 0}
+    store = get_conversation_store()
+    for conv in await store.all_conversations_light():
+        last = getattr(conv, "last_message_at", None)
+        if last is not None and last.tzinfo is None:
+            last = last.replace(tzinfo=timezone.utc)
+        if last is not None and last < since:
+            continue
+        totals["dialogs"] += 1
+        if not (getattr(conv, "bitrix_lead_id", "") or ""):
+            continue
+        totals["with_lead"] += 1
+        by_bot = getattr(conv, "bitrix_stage_by_bot", "") or "NEW"
+        funnel[by_bot] = funnel.get(by_bot, 0) + 1
+        if _work_started(conv):
+            totals["work_started"] += 1
+        stage = _catchup_stage(conv, dialog_started=True)
+        if stage and not _stage_reached(getattr(conv, "bitrix_stage_by_bot", "") or "",
+                                        stage_map.get(stage, "")):
+            totals["waiting"] += 1
+            if len(stuck) < 30:
+                stuck.append({"conv_key": conv.user_id,
+                              "lead": getattr(conv, "bitrix_lead_id", ""),
+                              "stage": stage,
+                              "target": titles.get(stage_map.get(stage, ""), "—"),
+                              "intercepted": bool(getattr(conv, "intercepted", False))})
+
+    order = ("NEW", "UC_S0NTF8", "UC_Y4VY7B", "UC_1I1YV0", "UC_T9AEO4", "UC_A492DB", "UC_PNSIIB")
+    rows = [{"id": st, "title": titles.get(st, st), "count": funnel.get(st, 0)}
+            for st in order if funnel.get(st)]
+    return templates.TemplateResponse(
+        request, "cards.html",
+        {"manager": manager, "snap": snap, "rows": rows, "totals": totals,
+         "stuck": stuck, "conflicts": await pipeline_metrics.conflicts(),
+         "now": time.time()},
+        headers={"Cache-Control": "no-store"})
+
+
 @router.get("/system", response_class=HTMLResponse)
 async def system(request: Request, manager: dict = Depends(require_full_admin)):
     """Статус системы: LLM, тишина вебхуков, бэкенды, счётчики сбоев, боты."""
@@ -480,6 +540,18 @@ FEATURE_FLAGS = {
         "default": lambda: settings.bitrix_stage_catchup_enabled,
         "note": lambda: ("" if settings.bitrix_stage_map
                          else "⚠️ Пустой BITRIX_STAGE_MAP — двигать некуда."),
+    },
+    "pipeline_controller_alert_enabled": {
+        "title": "Сообщать, когда контроллер карточек встал",
+        "desc": ("07.09 догоняющий проход сутки подряд не двигал ни одной карточки "
+                 "при очереди в 27 штук, и об этом не узнал никто: результат прогона "
+                 "уходил только в лог. Тумблер включает сторожа: очередь стоит "
+                 "несколько прогонов подряд, джоба не отработала два часа, портал "
+                 "сыплет ошибками или карточку вернули назад — приходит сообщение. "
+                 "Пустая очередь при нулевом движении молчит: делать было нечего."),
+        "default": lambda: settings.pipeline_controller_alert_enabled,
+        "note": lambda: ("" if settings.ops_alert_chat_ids
+                         else "⚠️ Пустой OPS_ALERT_CHAT_IDS — сообщать некому."),
     },
     "bitrix_stage_dialog_started_enabled": {
         "title": "Уводить карточку из «Нового лида», как только начали работать",

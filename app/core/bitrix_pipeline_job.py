@@ -13,4 +13,8 @@ async def run() -> None:
     if _ticks % 2 == 0:
         await read_back_once()
         # Догоняющий проход по стадиям: сам себя выключает, если тумблер снят.
-        await catchup_once()
+        stats = await catchup_once()
+        # Результат прогона раньше выбрасывался, и застревание прохода (07.09: moved=0
+        # сутки подряд при непустой очереди) не видел никто — оно жило только в логах.
+        from app.core import pipeline_metrics
+        await pipeline_metrics.note_run(stats or {})
