@@ -55,6 +55,18 @@ async def _catchup_enabled() -> bool:
                                 settings.bitrix_stage_catchup_enabled)
 
 
+async def _dialog_started_enabled(conv: Any) -> bool:
+    """Уводить ли карточку из «Нового лида» по началу работы с клиентом. Per-bot.
+
+    Заказчик просил трогать только туры: у виз менеджеры двигают карточки сами, и лезть
+    туда незачем. Поэтому тумблер читается по боту, как `bitrix_pipeline_enabled`.
+    """
+    global_on = await flags.get_flag("bitrix_stage_dialog_started_enabled",
+                                     settings.bitrix_stage_dialog_started_enabled)
+    bot_id = (getattr(conv, "bot_id", "") or str(conv.user_id).partition(":")[0]).strip()
+    return await flags.get_flag(f"bitrix_stage_dialog_started_enabled:{bot_id}", global_on)
+
+
 async def _dossier_when_intercepted_enabled() -> bool:
     """Вести ли досье, пока диалог ведёт менеджер.
 
@@ -423,22 +435,63 @@ async def read_back_once(*, adapter: Any = None) -> dict:
     return stats
 
 
-def _catchup_stage(conv: Any) -> str:
+def _stage_reached(by_bot: str, target: str) -> bool:
+    """Дошла ли карточка до целевой стадии — или уже уехала дальше неё.
+
+    Сравнение на равенство здесь стоило нам всего догоняющего прохода: карточка на
+    «Предложение отправлено» при цели «Выявление потребностей» считалась недоделанной,
+    каждый тик попадала в очередь и занимала слот лимита. Замер 07.09: 27 таких карточек
+    держали все 25 слотов, `moved` был нулём во всех прогонах за сутки, а пять карточек,
+    которые правда ждали движения, не обрабатывались вообще.
+    """
+    if not target:
+        return False
+    if by_bot == target:
+        return True
+    if by_bot in STAGE_SEQUENCE and target in STAGE_SEQUENCE:
+        return STAGE_SEQUENCE.index(by_bot) > STAGE_SEQUENCE.index(target)
+    return False
+
+
+def _work_started(conv: Any) -> bool:
+    """Начали ли с этим лидом работать. Только факты, которые видны в диалоге.
+
+    Счётчика сообщений в `all_conversations_light` нет — и не надо: любого из признаков
+    ниже достаточно, чтобы карточка перестала быть «Новым лидом», которого никто не касался.
+    Ни одного признака — клиент написал, и ему не ответили; это честный `NEW`.
+    """
+    if getattr(conv, "intercepted", False):
+        return True                                     # менеджер вступил в переписку
+    if (getattr(conv, "assigned_to", "") or "").strip():
+        return True                                     # диалог закреплён за менеджером
+    if getattr(conv, "last_sender", "") in ("bot", "manager"):
+        return True                                     # клиенту ответили
+    return any(str(v or "").strip() for v in (getattr(conv, "qualification", None) or {}).values())
+
+
+def _catchup_stage(conv: Any, *, dialog_started: bool = False) -> str:
     """Какую стадию карточка заслужила по уже собранным фактам — или пусто.
 
-    Только `qualified`: это факт, проверяемый по самой карточке (направление + даты +
-    туристы собраны). `offer_sent` здесь НЕ ставим — «подборку отдали» знает лишь живой
-    ход, который её отправил (`runner._attach_tour_cards`), и догадываться об этом задним
-    числом нельзя: соврать в CRM хуже, чем отстать на одну стадию.
+    `qualified` — факт, проверяемый по самой карточке (направление + даты + туристы).
+    `offer_sent` здесь НЕ ставим — «подборку отдали» знает лишь живой ход, который её
+    отправил (`runner._attach_tour_cards`), и догадываться об этом задним числом нельзя:
+    соврать в CRM хуже, чем отстать на одну стадию.
+
+    `dialog_started` (за тумблером) — вторая, более ранняя ступень: с клиентом начали
+    работать, но до полной квалификации не дошло. Без неё карточка стоит в «Новом лиде»
+    навсегда, потому что порог квалификации проходят 11% туровых диалогов — 85% забирает
+    менеджер раньше, чем бот успевает выяснить направление, даты и состав.
 
     Правило квалификации берём из `runner._is_qualified`, а не переписываем рядом: две
     копии одного порога однажды разъедутся, и карточки поедут не туда.
     """
     from app.agent.runner import _is_qualified
     try:
-        return "qualified" if _is_qualified(conv) else ""
+        if _is_qualified(conv):
+            return "qualified"
     except Exception:  # noqa: BLE001 — кривая квалификация не должна ронять весь проход
         return ""
+    return "dialog_started" if dialog_started and _work_started(conv) else ""
 
 
 async def catchup_once(*, adapter: Any = None) -> dict:
@@ -473,14 +526,14 @@ async def catchup_once(*, adapter: Any = None) -> dict:
         if not (getattr(conv, "bitrix_lead_id", "") or ""):
             continue
         stats["scanned"] += 1
-        stage = _catchup_stage(conv)
+        stage = _catchup_stage(conv, dialog_started=await _dialog_started_enabled(conv))
         if not stage:
             continue
         # Стадия уже наша — двигать нечего, но сводка в карточке могла и не появиться:
         # 21.08 проход сдвинул 25 карточек, а досье не записал ни в одну, и менеджер
         # получил половину обещанного — карточка переехала, а чего хочет клиент, не видно.
-        stage_done = ((getattr(conv, "bitrix_stage_by_bot", "") or "")
-                      == (settings.bitrix_stage_map or {}).get(stage))
+        stage_done = _stage_reached(getattr(conv, "bitrix_stage_by_bot", "") or "",
+                                    (settings.bitrix_stage_map or {}).get(stage, ""))
         dossier_done = bool(getattr(conv, "bitrix_dossier_by_bot", False))
         if stage_done and (dossier_done or not dossier_on):
             continue
