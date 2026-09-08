@@ -124,6 +124,11 @@ async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
         if target not in STAGE_SEQUENCE or current not in STAGE_SEQUENCE:
             return ""
         if STAGE_SEQUENCE.index(target) <= STAGE_SEQUENCE.index(current):
+            # Карточка уже на цели или дальше — двигать нечего. Запоминаем УВИДЕННОЕ, иначе
+            # очередь будет ходить в портал за ней вечно: замер 08.09 показал 22 такие
+            # карточки из 25 в голове очереди, и все они запрашивались каждый прогон.
+            if remembered != current:
+                await store.update_meta(conv_key, bitrix_stage_by_bot=current)
             return ""
         await client.update_stage_status(lead_id, target)
         lead["STATUS_ID"] = target
