@@ -102,6 +102,12 @@ async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
         current = str(lead.get("STATUS_ID") or "")
         remembered = getattr(conv, "bitrix_stage_by_bot", "") or ""
         if current in TERMINAL_STATUSES:
+            # Запоминаем в самой карточке, а не в памяти процесса: закрытая карточка
+            # закрыта навсегда, и после рестарта это должно остаться правдой. Без отметки
+            # 10 карточек в JUNK давали 815 обращений к порталу за сутки и держали слоты
+            # лимита, пока 278 живых ждали очереди (замер 08.09.2026).
+            if remembered != current:
+                await store.update_meta(conv_key, bitrix_stage_by_bot=current)
             log.info("pipeline skip terminal conv_key=%s from=%s to=%s", conv_key, current, target)
             return ""
         if remembered and current != remembered:
@@ -127,6 +133,12 @@ async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
     except Exception:  # noqa: BLE001 - CRM side channel is fail-open
         log.warning("pipeline advance failed conv_key=%s", conv_key, exc_info=True)
         return ""
+
+
+def _reset_skip_cache_for_tests() -> None:
+    """Оставлено для гейта: отметка о закрытой карточке живёт в самой карточке, а не в
+    памяти процесса, поэтому сбрасывать в модуле уже нечего."""
+    return None
 
 
 def _plural(count: int, one: str, few: str, many: str) -> str:
@@ -550,6 +562,8 @@ async def catchup_once(*, adapter: Any = None) -> dict:
             continue
         if not (getattr(conv, "bitrix_lead_id", "") or ""):
             continue
+        if (getattr(conv, "bitrix_stage_by_bot", "") or "") in TERMINAL_STATUSES:
+            continue                        # закрытая карточка: ни двигать, ни писать нечего
         stats["scanned"] += 1
         stage = _catchup_stage(conv, dialog_started=await _dialog_started_enabled(conv))
         if not stage:
@@ -573,9 +587,12 @@ async def catchup_once(*, adapter: Any = None) -> dict:
         try:
             if not stage_done and await advance(conv.user_id, stage, adapter=client, _conv=conv):
                 stats["moved"] += 1
-            # Сводку пишем накопленным диалогам: новым бот заполнит её живым ходом сам,
-            # а вот те, где менеджер давно ведёт переписку, иначе не дождутся никогда.
-            if dossier_on and await sync_dossier(conv.user_id, adapter=client, _conv=conv):
+            # Сводку пишем там, где её ЕЩЁ НЕТ. Свежие факты в уже записанную доносит живой
+            # ход; догоняющему проходу переписывать её незачем. Замер 08.09: 1949 записей на
+            # 154 карточки — по двенадцать переписываний за сутки, и все 25 слотов лимита
+            # уходили на это вместо движения очереди.
+            if dossier_on and not dossier_done and await sync_dossier(
+                    conv.user_id, adapter=client, _conv=conv):
                 stats["dossiers"] += 1
         except Exception:  # noqa: BLE001 — одна карточка не должна ронять проход
             stats["errors"] += 1
