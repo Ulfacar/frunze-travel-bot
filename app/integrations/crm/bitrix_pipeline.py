@@ -114,12 +114,15 @@ async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
             drift = classify_drift(current, remembered)
             log.info("pipeline skip frozen_manual conv_key=%s from=%s to=%s drift=%s",
                      conv_key, current, target, drift or "unknown")
+            from app.core import pipeline_metrics
             if drift == "behind":
                 # Воронка сама назад не ходит: карточку вернули руками или её подменили.
                 # Чинить молча нельзя — это боевой CRM, — но человек должен узнать.
-                from app.core import pipeline_metrics
                 await pipeline_metrics.note_conflict(
                     "stage_backwards", conv_key, detail=f"{current} ← {remembered}")
+            # Карточку ведёт человек: писать в неё мы и так не будем, но и перебирать её
+            # каждый прогон незачем. 09.09 такие 25 карточек держали все слоты лимита.
+            await pipeline_metrics.mark_human_led(conv_key, conv)
             return ""
         if target not in STAGE_SEQUENCE or current not in STAGE_SEQUENCE:
             return ""
@@ -552,6 +555,7 @@ async def catchup_once(*, adapter: Any = None) -> dict:
              ("scanned", "eligible", "moved", "dossiers", "errors", "waiting")}
     if not await _catchup_enabled():
         return stats
+    from app.core import pipeline_metrics
     client = _adapter(adapter)
     store = get_conversation_store()
     since = datetime.now(timezone.utc) - timedelta(days=settings.bitrix_stage_catchup_days)
@@ -569,6 +573,8 @@ async def catchup_once(*, adapter: Any = None) -> dict:
             continue
         if (getattr(conv, "bitrix_stage_by_bot", "") or "") in TERMINAL_STATUSES:
             continue                        # закрытая карточка: ни двигать, ни писать нечего
+        if await pipeline_metrics.is_human_led(conv.user_id, conv):
+            continue                        # карточку ведёт человек — слот нужен другим
         stats["scanned"] += 1
         stage = _catchup_stage(conv, dialog_started=await _dialog_started_enabled(conv))
         if not stage:

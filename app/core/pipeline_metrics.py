@@ -132,6 +132,45 @@ async def note_conflict(kind: str, conv_key: str, *, detail: str = "") -> None:
         log.warning("pipeline_metrics: расхождение не записано", exc_info=True)
 
 
+_HUMAN_LED_TTL_SECONDS = 7 * 24 * 3600
+
+
+async def mark_human_led(conv_key: str, conv: Any = None) -> None:
+    """Запомнить, что карточку ведёт человек: её больше не перебирает очередь.
+
+    Правило «человек главнее» не меняется — бот и так ничего не пишет в такую карточку.
+    Меняется только то, что контроллер перестаёт ходить за ней в портал каждый прогон:
+    замер 09.09 показал 25 таких карточек, занимавших все слоты лимита, пока живые ждали.
+
+    Отметка живёт в двух местах, и это не дублирование: на самом объекте диалога (чтобы
+    исчезнуть вместе с ним) и в Redis на неделю (чтобы пережить рестарт). Модульного
+    множества здесь быть не должно — такое уже протекало между тестами дважды: состояние
+    карточки обязано жить с карточкой.
+    """
+    if conv is not None:
+        try:
+            conv._human_led = True          # noqa: SLF001 — своя пометка на своём объекте
+        except Exception:  # noqa: BLE001 — объект может быть неизменяемым
+            pass
+    try:
+        if settings.state_backend == "redis":
+            await _redis().set(f"pipe:human:{conv_key}", "1", ex=_HUMAN_LED_TTL_SECONDS)
+    except Exception:  # noqa: BLE001 — отметка не важнее работы контроллера
+        log.warning("pipeline_metrics: отметка «ведёт человек» не записана", exc_info=True)
+
+
+async def is_human_led(conv_key: str, conv: Any = None) -> bool:
+    """Ведёт ли карточку человек. Сбой хранилища → False: лучше лишний запрос, чем пропуск."""
+    if conv is not None and getattr(conv, "_human_led", False):
+        return True
+    try:
+        if settings.state_backend == "redis":
+            return bool(await _redis().get(f"pipe:human:{conv_key}"))
+    except Exception:  # noqa: BLE001
+        return False
+    return False
+
+
 async def conflicts() -> list[dict]:
     """Последние расхождения — для экрана. Пусто, если хранилище недоступно."""
     try:
