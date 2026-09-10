@@ -304,9 +304,19 @@ async def sale_confirm(token: str) -> HTMLResponse:
         return HTMLResponse(_sale_page(
             "Уже отмечено",
             f"По диалогу {who} уже стоит «{already}». Если это ошибка — поправьте в панели."))
+    # Что записал бот — прямо здесь: менеджер сверяет то, что видит, а не то, ради чего
+    # надо открыть Битрикс и найти клиента руками.
+    facts = sale_check.recorded_facts(conv)
+    rows = "".join(f"<tr><td>{html.escape(k)}</td><td>{html.escape(v)}</td></tr>"
+                   for k, v in facts)
+    check = (f'<div class=facts><div class=facts-head>Бот записал так — проверьте:</div>'
+             f'<table>{rows}</table></div>') if rows else ""
+    link = sale_check.card_link(conv, settings)
+    edit = (f'<a class=card-link href="{html.escape(link)}" target="_blank" '
+            f'rel="noopener">Открыть карточку в Битриксе</a>') if link else ""
     form = (f'<form method="post" action="/sale/{html.escape(token)}">'
             f'<button type="submit">Подтвердить</button></form>')
-    return HTMLResponse(_sale_page(title, f"{who}<br><br>{body}", extra=form))
+    return HTMLResponse(_sale_page(title, f"{who}<br><br>{body}", extra=check + form + edit))
 
 
 @app.post("/sale/{token}", response_class=HTMLResponse)
@@ -353,6 +363,13 @@ def _sale_page(title: str, body: str, extra: str = "") -> str:
         "h1{font-size:22px;margin:0 0 10px}p{color:#475569;font-size:15px;line-height:1.5;margin:0}"
         "button{margin-top:22px;width:100%;padding:15px 20px;font-size:17px;font-weight:600;"
         "color:#fff;background:#0E5C57;border:0;border-radius:12px;cursor:pointer}"
+        ".facts{margin-top:20px;padding:14px 16px;background:#F8FAFC;border:1px solid #E2E8F0;"
+        "border-radius:12px;text-align:left}"
+        ".facts-head{font-size:13px;font-weight:600;color:#0E5C57;margin-bottom:8px}"
+        ".facts table{width:100%;border-collapse:collapse;font-size:14px}"
+        ".facts td{padding:4px 0;vertical-align:top;color:#0F172A}"
+        ".facts td:first-child{color:#64748B;width:44%;padding-right:10px}"
+        ".card-link{display:inline-block;margin-top:16px;font-size:14px;color:#0E5C57}"
         "</style></head><body><div class=card>"
         f"<h1>{title}</h1><p>{body}</p>{extra}</div></body></html>"
     )

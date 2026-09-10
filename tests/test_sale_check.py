@@ -383,6 +383,8 @@ def _row(user_id="frunze_tours:996700000001", **kw):
     kw.setdefault("assigned_to", "ademi")
     kw.setdefault("last_message_at", NOW - timedelta(hours=24))
     kw.setdefault("bitrix_lead_id", "186000")
+    kw.setdefault("qualification", {"destination": "Турция", "dates": "октябрь",
+                                    "tourists": "2"})
     return Conversation(user_id=user_id, **kw)
 
 
@@ -554,6 +556,7 @@ def test_get_does_not_write_only_post_does(tmp_path, monkeypatch):
     monkeypatch.setattr(sale_check, "_convert_lead", fake_convert)
     monkeypatch.setattr(settings, "webhook_secret", "test-secret")
     monkeypatch.setattr(settings, "public_base_url", "https://frunzetravel.kg")
+    monkeypatch.setattr(settings, "bitrix_portal_url", "https://getvisakg.bitrix24.kz")
 
     import app.main as main_mod
 
@@ -563,6 +566,10 @@ def test_get_does_not_write_only_post_does(tmp_path, monkeypatch):
         page = client.get(f"/sale/{token}")
         assert page.status_code == 200
         assert "Подтвердить" in page.text
+        # менеджер сверяет записанное ботом здесь же, не открывая Битрикс
+        assert "Бот записал так" in page.text
+        assert "направление" in page.text and "Турция" in page.text
+        assert "/crm/lead/details/186000/" in page.text
         assert run(store.get("frunze_tours:996700000001")).outcome == "manager"
         assert portal == [], "GET сходил в портал — превью Telegram отметит продажу само"
 

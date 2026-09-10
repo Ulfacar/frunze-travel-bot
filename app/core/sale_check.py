@@ -234,6 +234,31 @@ def describe(conv: Any, now: datetime | None = None) -> str:
     return " · ".join(x for x in (f"…{tail}", where, _ago(conv, now)) if x)
 
 
+def recorded_facts(conv: Any) -> list[tuple[str, str]]:
+    """Что бот записал по клиенту — парами «подпись, значение», в порядке анкеты.
+
+    Показываем это менеджеру на странице подтверждения, а не отправляем его сверять
+    карточку в Битриксе: человек проверяет то, что видит, и не проверяет то, ради чего
+    надо открыть второе приложение и найти клиента руками.
+    """
+    from app.core.manager_brief import FIELD_LABELS
+
+    data = dict(getattr(conv, "qualification", None) or {})
+    out = []
+    for key, value in data.items():
+        if value in (None, "", [], {}):
+            continue
+        out.append((FIELD_LABELS.get(key, key), _clip(str(value), 60)))
+    return out
+
+
+def card_link(conv: Any, cfg: Any) -> str:
+    """Прямая ссылка на карточку клиента в портале. Пусто, если вести некуда."""
+    base = str(getattr(cfg, "bitrix_portal_url", "") or "").rstrip("/")
+    lead_id = str(getattr(conv, "bitrix_lead_id", "") or "").strip()
+    return f"{base}/crm/lead/details/{lead_id}/" if base and lead_id else ""
+
+
 def render_message(convs: list, cfg: Any, now: datetime | None = None,
                    login: str = "") -> str:
     """Одно сообщение менеджеру со списком и тремя ссылками на каждый диалог."""
