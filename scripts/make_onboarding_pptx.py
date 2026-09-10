@@ -94,6 +94,141 @@ def slide_where(prs):
     add_footer(s, 2)
 
 
+
+# --- 3. Колонки в «Лидах» --------------------------------------------------------------
+def slide_columns(prs):
+    s = _blank(prs)
+    add_bg(s)
+    add_title(s, "Что за колонки в «Лидах»", kicker="Замер на 10.09.2026")
+
+    rows = [
+        ("Переписка / Недозвоны", 327, "Разговор идёт или клиент не отвечает", Palette.teal),
+        ("Бот пока не двигал", 233, "Написали «здравствуйте» и пропали", Palette.grey),
+        ("Выявление потребностей", 95, "Бот выясняет: куда, когда, сколько человек", Palette.teal),
+        ("Предложение отправлено", 38, "Клиенту ушла подборка туров с ценами", Palette.amber),
+        ("Некачественный", 24, "Не туда попал, спам, не наш профиль", Palette.grey),
+    ]
+    y = 2.05
+    for title, count, body, accent in rows:
+        add_card(s, SAFE_L, y, 12.1, 0.72, Palette.white, Palette.line)
+        add_shape(s, MSO_SHAPE.RECTANGLE, SAFE_L, y, 0.08, 0.72, accent, label="bar")
+        add_text(s, SAFE_L + 0.4, y + 0.18, 4.3, 0.34, title, 14, True, Palette.ink)
+        add_text(s, SAFE_L + 4.9, y + 0.13, 1.3, 0.42, str(count), 20, True, accent,
+                 PP_ALIGN.RIGHT)
+        add_text(s, SAFE_L + 6.5, y + 0.22, 5.4, 0.32, body, 11.5, False, Palette.slate)
+        y += 0.8
+
+    add_card(s, SAFE_L, 6.14, 12.1, 0.62, Palette.green_soft, Palette.teal)
+    add_text(s, SAFE_L + 0.35, 6.28, 11.4, 0.36,
+             "В 478 карточках бот написал сводку разговора — блок «Досье бота» внутри карточки.",
+             13, True, Palette.ink)
+    add_footer(s, 3)
+
+
+# --- 6. Что сделано --------------------------------------------------------------------
+def slide_done(prs):
+    s = _blank(prs)
+    add_bg(s)
+    add_title(s, "Что сделано за эти дни", kicker="Коротко, для владельцев")
+
+    items = [
+        ("Карточки поехали",
+         "Очередь застрявших была 351 — сейчас 0. Сняты четыре слоя дефектов: результат "
+         "похода в портал нигде не сохранялся, и очередь ходила по кругу."),
+        ("Стадия перестала врать",
+         "Бот ставил «Выявление потребностей» там, где ничего не выяснил — в 93% случаев. "
+         "Теперь карточка едет в честную «Переписку»."),
+        ("Вечерний вопрос про оплату",
+         "Одно сообщение в Telegram, три ссылки, заходить в панель не нужно. "
+         "Включено на одном менеджере, остальных не трогает."),
+        ("Страница сверки",
+         "Перед подтверждением менеджер видит всё, что бот записал по клиенту, "
+         "и ссылку на карточку для правок."),
+    ]
+    y = 2.05
+    for title, body in items:
+        add_card(s, SAFE_L, y, 12.1, 1.05, Palette.white, Palette.line)
+        add_shape(s, MSO_SHAPE.OVAL, SAFE_L + 0.32, y + 0.32, 0.4, 0.4, Palette.teal,
+                  label="tick")
+        add_text(s, SAFE_L + 0.32, y + 0.37, 0.4, 0.3, "V", 13, True, Palette.white,
+                 PP_ALIGN.CENTER)
+        add_text(s, SAFE_L + 1.0, y + 0.18, 10.8, 0.32, title, 15, True, Palette.ink)
+        add_text(s, SAFE_L + 1.0, y + 0.54, 10.8, 0.42, body, 11.5, False, Palette.slate)
+        y += 1.15
+
+    add_text(s, SAFE_L, 6.62, 12.1, 0.3,
+             "Всё выкачено на боевой сервер и проверено на живых данных, а не на тестовых.",
+             12, True, Palette.teal_dark)
+    add_footer(s, 6)
+
+
+# --- 11. Памятка на первый вечер -------------------------------------------------------
+def slide_first_evening(prs):
+    s = _blank(prs)
+    add_bg(s)
+    add_title(s, "Памятка: ваш первый вечер", kicker="Займёт минуту")
+
+    steps = [
+        ("1", "В 18:00 придёт сообщение", "От бота, в Telegram. Одно, не пять."),
+        ("2", "Посмотрите на список",
+         "До пяти клиентов: последние 4 цифры номера, направление, когда говорили, "
+         "последняя реплика."),
+        ("3", "Вспомнили клиента — жмите ссылку",
+         "Оплатил / Не сложилось / Ещё думает. Откроется страница, ничего пока не записано."),
+        ("4", "Сверьте, что записал бот",
+         "На странице список: направление, даты, туристы. Не так — откройте карточку "
+         "по ссылке снизу и поправьте."),
+        ("5", "Нажмите «Подтвердить»", "Всё. Возвращаться и что-то дозаполнять не нужно."),
+    ]
+    y = 2.05
+    for num, title, body in steps:
+        add_card(s, SAFE_L, y, 12.1, 0.86, Palette.white, Palette.line)
+        add_shape(s, MSO_SHAPE.OVAL, SAFE_L + 0.3, y + 0.22, 0.42, 0.42, Palette.teal_dark,
+                  label="num")
+        add_text(s, SAFE_L + 0.3, y + 0.28, 0.42, 0.3, num, 14, True, Palette.white,
+                 PP_ALIGN.CENTER)
+        add_text(s, SAFE_L + 0.95, y + 0.14, 10.9, 0.32, title, 14, True, Palette.ink)
+        add_text(s, SAFE_L + 0.95, y + 0.48, 10.9, 0.3, body, 11.5, False, Palette.slate)
+        y += 0.9
+
+    add_card(s, SAFE_L, 6.5, 12.1, 0.45, Palette.amber_soft, Palette.amber)
+    add_text(s, SAFE_L + 0.35, 6.58, 11.4, 0.3,
+             "Не уверены в клиенте — «Ещё думает». Это честнее, чем угадать.", 12, True,
+             Palette.ink)
+    add_footer(s, 11)
+
+
+# --- 13. Честно о границах -------------------------------------------------------------
+def slide_limits(prs):
+    s = _blank(prs)
+    add_bg(s)
+    add_title(s, "Честно: чего эта кнопка не сделает", kicker="Чтобы не ждать не того")
+
+    items = [
+        ("Не увеличит продажи",
+         "Она их записывает. Если за неделю продали три тура — в отчёте будет три, "
+         "а не «0». Цифра станет настоящей, какой бы она ни была.", Palette.amber),
+        ("Не про всех клиентов есть что показать",
+         "В первом вечернем списке Адеми сводка бота есть у 2 диалогов из 5: в остальных "
+         "клиент ушёл раньше, чем бот успел что-то выяснить.", Palette.amber),
+        ("Ошибочную отметку из ссылки не отменить",
+         "Исход меняется в панели, а карточку в Битриксе возвращают руками. Поэтому ссылка "
+         "и открывает страницу с кнопкой, а не срабатывает сразу.", Palette.red),
+        ("Не заменит разговор с командой",
+         "Если через неделю ссылками не пользуются — значит дело не в удобстве. Скажем "
+         "прямо, а не будем докручивать интерфейс.", Palette.grey),
+    ]
+    y = 2.05
+    for title, body, accent in items:
+        add_card(s, SAFE_L, y, 12.1, 1.08, Palette.white, Palette.line)
+        add_shape(s, MSO_SHAPE.RECTANGLE, SAFE_L, y, 0.08, 1.08, accent, label="bar")
+        add_text(s, SAFE_L + 0.4, y + 0.18, 11.4, 0.32, title, 15, True, Palette.ink)
+        add_text(s, SAFE_L + 0.4, y + 0.55, 11.4, 0.44, body, 12, False, Palette.slate)
+        y += 1.18
+
+    add_footer(s, 13)
+
+
 # --- 3. Что бот делает сам -------------------------------------------------------------
 def slide_bot_does(prs):
     s = _blank(prs)
@@ -121,7 +256,7 @@ def slide_bot_does(prs):
                  PP_ALIGN.CENTER)
         add_text(s, left + 0.95, top + 0.28, 4.7, 0.34, title, 15, True, Palette.ink)
         add_text(s, left + 0.95, top + 0.66, 4.7, 0.5, body, 11.5, False, Palette.slate)
-    add_footer(s, 3)
+    add_footer(s, 4)
 
 
 # --- 4. Где рвётся ---------------------------------------------------------------------
@@ -157,7 +292,7 @@ def slide_gap(prs):
              "Кнопка «Оплатил» в панели есть с июля.\nЗа 90 дней её нажали 1–3 раза:\n"
              "в момент продажи менеджер в WhatsApp,\nа не в админке.",
              11, False, Palette.muted_dark)
-    add_footer(s, 4)
+    add_footer(s, 5)
 
 
 # --- 5. Что меняется -------------------------------------------------------------------
@@ -192,7 +327,7 @@ def slide_change(prs):
     add_text(s, SAFE_L + 0.35, 6.32, 11.4, 0.42,
              "Не ответили — ничего страшного. Про этот диалог больше не спросим, "
              "напоминать каждый вечер не будем.", 13, True, Palette.ink)
-    add_footer(s, 5)
+    add_footer(s, 7)
 
 
 # --- 6. Как выглядит сообщение ---------------------------------------------------------
@@ -234,7 +369,7 @@ def slide_message(prs):
         add_text(s, 8.6, y, 3.8, 0.3, key, 13, True, Palette.ink)
         add_text(s, 8.6, y + 0.3, 3.8, 0.55, body, 11, False, Palette.slate)
         y += 0.92
-    add_footer(s, 6)
+    add_footer(s, 8)
 
 
 # --- 7. Страница: сверить и подтвердить ------------------------------------------------
@@ -285,7 +420,7 @@ def slide_page(prs):
         add_text(s, 7.05, y + 0.13, 5.4, 0.3, title, 13, True, Palette.ink)
         add_text(s, 7.05, y + 0.45, 5.4, 0.3, body, 11.5, False, Palette.slate)
         y += 0.95
-    add_footer(s, 7)
+    add_footer(s, 9)
 
 
 # --- 8. Если что-то не так -------------------------------------------------------------
@@ -321,7 +456,7 @@ def slide_fix(prs):
     add_text(s, SAFE_L, 6.55, 12.1, 0.32,
              "Главное правило: решение всегда за человеком. Бот не ставит «Некачественный» "
              "и не отменяет ваших правок.", 13, True, Palette.ink)
-    add_footer(s, 8)
+    add_footer(s, 10)
 
 
 # --- 9. План внедрения -----------------------------------------------------------------
@@ -358,7 +493,7 @@ def slide_rollout(prs):
     add_text(s, SAFE_L + 0.35, 6.08, 11.4, 0.3,
              "Бот не увеличивает продажи — он их записывает. Цифра станет настоящей, "
              "какой бы она ни была.", 12, False, Palette.slate)
-    add_footer(s, 9)
+    add_footer(s, 12)
 
 
 # --- 10. Итог --------------------------------------------------------------------------
@@ -386,15 +521,16 @@ def slide_summary(prs):
     add_text(s, SAFE_L, 6.55, 11.6, 0.34,
              "Если после недели ссылками не пользуются — скажем прямо, а не будем "
              "докручивать интерфейс.", 13, True, Palette.teal)
-    add_footer(s, 10, dark=True)
+    add_footer(s, 14, dark=True)
 
 
 def main() -> None:
     prs = Presentation()
     prs.slide_width = emu(SLIDE_W)
     prs.slide_height = emu(SLIDE_H)
-    for builder in (slide_title, slide_where, slide_bot_does, slide_gap, slide_change,
-                    slide_message, slide_page, slide_fix, slide_rollout, slide_summary):
+    for builder in (slide_title, slide_where, slide_columns, slide_bot_does, slide_gap,
+                    slide_done, slide_change, slide_message, slide_page, slide_fix,
+                    slide_first_evening, slide_rollout, slide_limits, slide_summary):
         builder(prs)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     prs.save(OUT)
