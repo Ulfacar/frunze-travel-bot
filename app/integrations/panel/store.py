@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import selectinload
 
@@ -51,6 +51,10 @@ class ConversationView:
     lead_temperature: str = "new"
     assigned_to: str = ""         # логин менеджера, ведущего диалог
     outcome: str = ""             # in_progress|office|manager|won|lost
+    # Когда спросили менеджера про исход. None — ещё не спрашивали.
+    sale_check_asked_at: Any = None
+    # «Клиент ещё думает»: до этой даты вопрос не повторяем.
+    sale_check_snooze_until: Any = None
     last_text: str = ""
     last_sender: str = ""
     last_message_at: datetime | None = None
@@ -189,7 +193,10 @@ class MemoryConversationStore:
                           outcome_inferred_reason: str | None = None,
                           source: str | None = None, source_id: str | None = None,
                           source_headline: str | None = None, source_url: str | None = None,
-                          source_payload: dict | None = None) -> None:
+                          source_payload: dict | None = None,
+                          sale_check_asked_at: Any = None,
+                          sale_check_snooze_until: Any = None,
+                          clear_sale_snooze: bool = False) -> None:
         conv = await self.ensure(user_id)
         if funnel is not None:
             conv.funnel = funnel
@@ -241,6 +248,12 @@ class MemoryConversationStore:
         if outcome_inferred_reason is not None:
             conv.outcome_inferred_reason = outcome_inferred_reason
         _apply_source(conv, source, source_id, source_headline, source_url, source_payload)
+        if sale_check_asked_at is not None:
+            conv.sale_check_asked_at = sale_check_asked_at
+        if sale_check_snooze_until is not None:
+            conv.sale_check_snooze_until = sale_check_snooze_until
+        if clear_sale_snooze:
+            conv.sale_check_snooze_until = None
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
         await self.update_meta(user_id, intercepted=value)
@@ -268,6 +281,21 @@ class MemoryConversationStore:
     async def list_audit(self, limit: int = 200) -> list[dict]:
         """Последние записи аудита (новые сверху)."""
         return list(reversed(self._audit[-limit:]))
+
+    async def claim_outcome(self, user_id: str, outcome: str) -> bool:
+        """Атомарно поставить ФИНАЛЬНЫЙ исход (`won`/`lost`), если его ещё нет.
+
+        True — защёлка наша, можно идти в Битрикс. Нужна именно атомарность: по ссылке из
+        телеграма легко тапнуть дважды (двойной клик, ретрай браузера), а «прочитал —
+        проверил — записал» в двух запросах пропускает оба тапа и шлёт в портал два
+        `crm.lead.update`. Рабочие авто-статусы оркестратора (`in_progress`/`office`/
+        `manager`) финалом не считаются и защёлку не занимают.
+        """
+        conv = self._conv.get(user_id)
+        if conv is None or (conv.outcome or "") in ("won", "lost"):
+            return False
+        conv.outcome = outcome
+        return True
 
     async def claim(self, user_id: str, manager: str) -> bool:
         """Закрепить диалог за менеджером, если свободен или уже его. True — владеет manager."""
@@ -399,7 +427,10 @@ class PostgresConversationStore:
                           outcome_inferred_reason: str | None = None,
                           source: str | None = None, source_id: str | None = None,
                           source_headline: str | None = None, source_url: str | None = None,
-                          source_payload: dict | None = None) -> None:
+                          source_payload: dict | None = None,
+                          sale_check_asked_at: Any = None,
+                          sale_check_snooze_until: Any = None,
+                          clear_sale_snooze: bool = False) -> None:
         async with self._sm()() as session:
             conv = await self._ensure_row(session, user_id, "", "")
             if funnel is not None:
@@ -452,6 +483,12 @@ class PostgresConversationStore:
             if outcome_inferred_reason is not None:
                 conv.outcome_inferred_reason = outcome_inferred_reason
             _apply_source(conv, source, source_id, source_headline, source_url, source_payload)
+            if sale_check_asked_at is not None:
+                conv.sale_check_asked_at = sale_check_asked_at
+            if sale_check_snooze_until is not None:
+                conv.sale_check_snooze_until = sale_check_snooze_until
+            if clear_sale_snooze:
+                conv.sale_check_snooze_until = None
             await session.commit()
 
     async def set_intercepted(self, user_id: str, value: bool) -> None:
@@ -477,6 +514,26 @@ class PostgresConversationStore:
             )
             await session.commit()
             return int(result.rowcount or 0)
+
+    async def claim_outcome(self, user_id: str, outcome: str) -> bool:
+        """Атомарно поставить ФИНАЛЬНЫЙ исход (`won`/`lost`), если его ещё нет.
+
+        True — защёлка наша, можно идти в Битрикс. Нужна именно атомарность: по ссылке из
+        телеграма легко тапнуть дважды (двойной клик, ретрай браузера), а «прочитал —
+        проверил — записал» в двух запросах пропускает оба тапа и шлёт в портал два
+        `crm.lead.update`. Рабочие авто-статусы оркестратора (`in_progress`/`office`/
+        `manager`) финалом не считаются и защёлку не занимают.
+        """
+        from app.integrations.crm.db import Conversation
+        async with self._sm()() as session:
+            res = await session.execute(
+                update(Conversation)
+                .where(Conversation.user_id == user_id)
+                .where(or_(Conversation.outcome.is_(None),
+                          Conversation.outcome.not_in(("won", "lost"))))
+                .values(outcome=outcome))
+            await session.commit()
+            return bool(res.rowcount)
 
     async def claim(self, user_id: str, manager: str) -> bool:
         """Атомарно закрепить диалог за менеджером, если свободен или уже его."""
@@ -580,6 +637,8 @@ def _view(conv) -> ConversationView:
         lead_temperature=getattr(conv, "lead_temperature", "new") or "new",
         assigned_to=getattr(conv, "assigned_to", "") or "",
         outcome=getattr(conv, "outcome", "") or "",
+        sale_check_asked_at=getattr(conv, "sale_check_asked_at", None),
+        sale_check_snooze_until=getattr(conv, "sale_check_snooze_until", None),
         last_text=conv.last_text,
         last_sender=conv.last_sender, last_message_at=conv.last_message_at,
         followup_sent=getattr(conv, "followup_sent", False) or False,

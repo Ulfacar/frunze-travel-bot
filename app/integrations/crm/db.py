@@ -109,6 +109,11 @@ class Conversation(Base):
     # Авто-исход через LLM (advisory, НЕ затирает ручной outcome). Пусто, пока фича выключена.
     outcome_inferred: Mapped[str] = mapped_column(String(16), default="")       # won|lost|ghosted|active
     outcome_inferred_reason: Mapped[str] = mapped_column(Text, default="")
+    # Когда спросили менеджера «клиент оплатил?». Живёт в карточке, а не в памяти
+    # процесса: один диалог — один вопрос, и это правило должно пережить рестарт.
+    sale_check_asked_at: Mapped[Any] = mapped_column(DateTime(timezone=True), nullable=True)
+    # «Клиент ещё думает» — до этой даты вопрос не повторяем.
+    sale_check_snooze_until: Mapped[Any] = mapped_column(DateTime(timezone=True), nullable=True)
     # Источник лида (Click-to-WhatsApp Ads): откуда пришёл клиент. Write-once — первое касание.
     source: Mapped[str] = mapped_column(String(16), default="")        # ad | post | "" (organic/неизвестно)
     source_id: Mapped[str] = mapped_column(String(128), default="")    # id объявления/поста
@@ -304,6 +309,8 @@ async def init_models(engine: AsyncEngine) -> None:
             "estimated_value_currency": "VARCHAR(8) DEFAULT ''",
             "outcome_inferred": "VARCHAR(16) DEFAULT ''",
             "outcome_inferred_reason": "TEXT DEFAULT ''",
+            "sale_check_asked_at": "TIMESTAMPTZ",
+            "sale_check_snooze_until": "TIMESTAMPTZ",
             "source": "VARCHAR(16) DEFAULT ''",
             "source_id": "VARCHAR(128) DEFAULT ''",
             "source_headline": "VARCHAR(300) DEFAULT ''",

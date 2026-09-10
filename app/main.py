@@ -1,6 +1,7 @@
 """Точка входа FastAPI: вебхуки каналов + healthcheck."""
 from __future__ import annotations
 
+import html
 import logging
 import secrets
 from contextlib import asynccontextmanager
@@ -8,7 +9,7 @@ from contextlib import asynccontextmanager
 from collections import OrderedDict
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.channels.bitrix_openlines import BitrixOpenLinesAdapter, bot_id_from_event, nest_form
@@ -96,6 +97,10 @@ async def lifespan(app: FastAPI):
     # ошибками. 07.09 проход сутки отдавал moved=0, и это не заметил никто (gated OFF).
     from app.core import pipeline_metrics
     scheduler.register("pipeline_controller", pipeline_metrics.run)
+    # Вечерний вопрос менеджеру «клиент оплатил?»: без него продажи не доезжают до
+    # отчёта, и владелец пятую неделю видит «Продано: 0» (gated OFF).
+    from app.core import sale_check
+    scheduler.register("sale_check", sale_check.run)
     scheduler.start()
     try:
         yield
@@ -261,6 +266,96 @@ async def health() -> dict:
         "status": "ok",
         "last_inbound_seconds_ago": observ.last_inbound_ago(),
     }
+
+
+_SALE_TITLES = {
+    "won": ("Клиент оплатил", "Продажа попадёт в отчёт по турам, а карточка уедет в «Подписан»."),
+    "lost": ("Сделка не состоялась", "Отметим, что клиент не купил. Карточку в Битриксе не трогаем."),
+    "thinking": ("Клиент ещё думает", "Отложим вопрос и вернёмся к нему через несколько дней."),
+}
+
+
+@app.get("/sale/{token}", response_class=HTMLResponse)
+async def sale_confirm(token: str) -> HTMLResponse:
+    """Страница подтверждения. НИЧЕГО не записывает — записывает только POST с кнопки.
+
+    Открытие ссылки обязано быть безопасным: Telegram сам ходит GET-ом по первой ссылке
+    в сообщении, чтобы построить превью, и записал бы продажу за менеджера в первый же
+    вечер. То же делают антивирус на телефоне и предзагрузка браузера.
+    """
+    from app.core import sale_check
+
+    parsed = sale_check.verify_token(token, settings)
+    if parsed is None:
+        return HTMLResponse(_sale_page("Ссылка недействительна",
+                                       "Похоже, адрес повреждён. Отметьте исход в панели."),
+                            status_code=400)
+    cid, outcome, _login = parsed
+    conv = await sale_check._find_by_cid(cid, settings)
+    if conv is None:
+        return HTMLResponse(_sale_page("Ссылка устарела",
+                                       "Такого диалога больше нет. Отметьте исход в панели."),
+                            status_code=404)
+    title, body = _SALE_TITLES.get(outcome, ("Отметить исход", ""))
+    who = html.escape(sale_check.describe(conv))
+    current = str(getattr(conv, "outcome", "") or "")
+    if outcome != "thinking" and current in sale_check.FINAL_OUTCOMES:
+        already = "оплатил" if current == "won" else "не купил"
+        return HTMLResponse(_sale_page(
+            "Уже отмечено",
+            f"По диалогу {who} уже стоит «{already}». Если это ошибка — поправьте в панели."))
+    form = (f'<form method="post" action="/sale/{html.escape(token)}">'
+            f'<button type="submit">Подтвердить</button></form>')
+    return HTMLResponse(_sale_page(title, f"{who}<br><br>{body}", extra=form))
+
+
+@app.post("/sale/{token}", response_class=HTMLResponse)
+async def sale_apply(token: str) -> HTMLResponse:
+    """Менеджер нажал кнопку на странице — только здесь что-то меняется."""
+    from app.core import sale_check
+
+    parsed = sale_check.verify_token(token, settings)
+    if parsed is None:
+        return HTMLResponse(_sale_page("Ссылка недействительна",
+                                       "Похоже, адрес повреждён. Отметьте исход в панели."),
+                            status_code=400)
+    cid, outcome, login = parsed
+    result, conv = await sale_check.mark(cid, outcome, settings, login)
+    who = html.escape(sale_check.describe(conv)) if conv is not None else ""
+    pages = {
+        "saved": ("Записано ✅",
+                  "Спасибо! Продажа учтена — она попадёт в отчёт по турам."
+                  if outcome == "won" else "Спасибо! Отметили, что сделка не состоялась."),
+        "saved_no_crm": ("Записано ✅",
+                         "Ответ сохранён. Карточку в Битриксе обновить не удалось — "
+                         "проверьте её вручную."),
+        "snoozed": ("Отложили ⏳", "Хорошо, спросим про этот диалог ещё раз через пару дней."),
+        "repeat": ("Уже отмечено", "Этот диалог отметили раньше. Ничего менять не нужно."),
+        "unknown": ("Ссылка устарела", "Такого диалога больше нет. Отметьте исход в панели."),
+    }
+    title, body = pages.get(result, pages["unknown"])
+    status = 404 if result == "unknown" else 200
+    return HTMLResponse(_sale_page(title, f"{who}<br><br>{body}" if who else body),
+                        status_code=status)
+
+
+def _sale_page(title: str, body: str, extra: str = "") -> str:
+    """Простая страница: менеджер открывает её с телефона на секунду."""
+    return (
+        "<!doctype html><html lang=ru><head><meta charset=utf-8>"
+        "<meta name=viewport content='width=device-width, initial-scale=1'>"
+        "<meta name=robots content='noindex'>"
+        f"<title>{title}</title><style>"
+        "body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;"
+        "background:#F1F5F9;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#0F172A}"
+        ".card{background:#fff;border-radius:16px;padding:32px 28px;max-width:420px;margin:20px;"
+        "box-shadow:0 6px 24px rgba(15,23,42,.08);text-align:center}"
+        "h1{font-size:22px;margin:0 0 10px}p{color:#475569;font-size:15px;line-height:1.5;margin:0}"
+        "button{margin-top:22px;width:100%;padding:15px 20px;font-size:17px;font-weight:600;"
+        "color:#fff;background:#0E5C57;border:0;border-radius:12px;cursor:pointer}"
+        "</style></head><body><div class=card>"
+        f"<h1>{title}</h1><p>{body}</p>{extra}</div></body></html>"
+    )
 
 
 @app.post("/webhook/telegram")

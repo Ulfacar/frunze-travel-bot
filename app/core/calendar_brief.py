@@ -411,7 +411,7 @@ def _token() -> str:
     return (settings.managers_telegram_bot_token or settings.telegram_bot_token or "").strip()
 
 
-async def _push_telegram(token: str, chat_id: str, text: str) -> bool:
+async def _push_telegram(token: str, chat_id: str, text: str, **kwargs) -> bool:
     """Send one manager's brief. Returns True on success. chat_id is never logged.
 
     Длинный бриф уходит несколькими сообщениями подряд: Telegram отвергает всё, что
@@ -421,7 +421,7 @@ async def _push_telegram(token: str, chat_id: str, text: str) -> bool:
         from app.channels.telegram import get_adapter
         adapter = get_adapter(token)
         for part in split_for_telegram(text):
-            await adapter.send(chat_id, part)
+            await adapter.send(chat_id, part, **kwargs)
         return True
     except Exception:  # noqa: BLE001 — push must not break the scheduler
         log.warning("calendar brief push failed for manager=%s", "<redacted-chat>",
