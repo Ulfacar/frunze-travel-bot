@@ -65,12 +65,12 @@ def slide_where(prs):
     add_card(s, SAFE_L, 2.05, 5.9, 3.15, Palette.green_soft, Palette.teal)
     add_text(s, SAFE_L + 0.4, 2.3, 5.1, 0.32, "ЛИДЫ — здесь работает бот", 12, True,
              Palette.teal_dark)
-    add_text(s, SAFE_L + 0.4, 2.7, 5.1, 0.8, "719", 44, True, Palette.teal_dark)
-    add_text(s, SAFE_L + 0.4, 3.55, 5.1, 0.34, "карточек создано ботом", 14, True, Palette.ink)
+    add_text(s, SAFE_L + 0.4, 2.7, 5.1, 0.8, "944", 44, True, Palette.teal_dark)
+    add_text(s, SAFE_L + 0.4, 3.55, 5.1, 0.34, "карточки завёл бот", 14, True, Palette.ink)
     add_text(s, SAFE_L + 0.4, 3.95, 5.1, 1.1,
              "Каждый, кто написал в WhatsApp, получает карточку.\n"
              "Бот сам её заполняет и двигает по колонкам.\n"
-             "486 карточек он уже передвинул, в 478 написал сводку.",
+             "501 карточку он передвинул, в 500 написал досье.",
              12, False, Palette.slate)
 
     add_card(s, 6.85, 2.05, 5.85, 3.15, Palette.amber_soft, Palette.amber)
@@ -91,15 +91,90 @@ def slide_where(prs):
     add_text(s, SAFE_L + 0.35, 5.95, 11.4, 0.32,
              "Карточки бота — в верхнем меню «Лиды», слева от «Сделок».",
              13, False, Palette.slate)
+    add_footer(s, 4)
+
+
+
+
+# --- Статистика: трафик -----------------------------------------------------------------
+def slide_stats_traffic(prs):
+    s = _blank(prs)
+    add_bg(s)
+    add_title(s, "Статистика: что прошло через бота",
+              kicker="С 01.07.2026 по 10.09.2026 — 72 дня боевой работы")
+
+    big = [
+        ("2767", "обращений всего", Palette.teal_dark),
+        ("1128", "по турам", Palette.teal),
+        ("1639", "по визам", Palette.teal),
+        ("34 430", "сообщений в переписках", Palette.slate),
+    ]
+    x = SAFE_L
+    for value, label, color in big:
+        add_card(s, x, 2.05, 2.9, 1.35, Palette.white, Palette.line)
+        add_text(s, x + 0.2, 2.25, 2.5, 0.6, value, 30, True, color, PP_ALIGN.CENTER)
+        add_text(s, x + 0.2, 2.92, 2.5, 0.34, label, 11.5, False, Palette.slate, PP_ALIGN.CENTER)
+        x += 3.07
+
+    rows = [
+        ("Кто сколько написал",
+         "19 921 сообщение от клиентов · 7 621 реплика бота · 6 888 реплик менеджеров"),
+        ("Голосовые",
+         "945 голосовых от клиентов — бот их расшифровывает и отвечает по смыслу"),
+        ("Ночь и выходные",
+         "1017 обращений (37%) пришли вне 09:00–19:00 — раньше они ждали утра"),
+        ("Реклама",
+         "649 обращений (23%) пришли по рекламе из WhatsApp и опознаны как рекламные"),
+        ("Поток сейчас",
+         "1236 обращений за последние 30 дней · 495 за последнюю неделю"),
+    ]
+    y = 3.65
+    for title, body in rows:
+        add_card(s, SAFE_L, y, 12.1, 0.62, Palette.white, Palette.line)
+        add_shape(s, MSO_SHAPE.RECTANGLE, SAFE_L, y, 0.08, 0.62, Palette.teal, label="bar")
+        add_text(s, SAFE_L + 0.4, y + 0.15, 3.4, 0.32, title, 13, True, Palette.ink)
+        add_text(s, SAFE_L + 3.9, y + 0.16, 8.0, 0.32, body, 11.5, False, Palette.slate)
+        y += 0.68
     add_footer(s, 2)
 
+
+# --- Статистика: воронка ----------------------------------------------------------------
+def slide_stats_funnel(prs):
+    s = _blank(prs)
+    add_bg(s)
+    add_title(s, "Статистика: путь по турам от обращения до продажи",
+              kicker="1380 туровых переписок за всё время")
+
+    steps = [
+        ("Написали в WhatsApp", 1380, 10.30, Palette.teal_dark),
+        ("Бот ответил", 895, 6.68, Palette.teal),
+        ("Бот написал сводку разговора", 874, 6.52, Palette.teal),
+        ("Карточка заведена в Битриксе", 944, 7.05, Palette.teal),
+        ("Бот подвинул карточку по колонкам", 501, 3.74, Palette.amber),
+        ("Дошло до подборки туров", 38, 2.60, Palette.red),
+        ("Отмечено «клиент оплатил»", 0, 2.60, Palette.red),
+    ]
+    y = 2.05
+    for label, value, width, color in steps:
+        add_shape(s, MSO_SHAPE.ROUNDED_RECTANGLE, SAFE_L, y, width, 0.5, color, label="bar")
+        add_text(s, SAFE_L + 0.25, y + 0.11, width - 0.4, 0.3, label, 11.5, True,
+                 Palette.white)
+        add_text(s, SAFE_L + width + 0.15, y + 0.11, 1.2, 0.3, str(value), 14, True, color)
+        y += 0.62
+
+    add_card(s, SAFE_L, 6.4, 12.1, 0.55, Palette.red_soft, Palette.red)
+    add_text(s, SAFE_L + 0.35, 6.52, 11.4, 0.34,
+             "Ноль отметок об оплате за 72 дня работы — поэтому в отчёте «Продано: 0». "
+             "Именно это чинит кнопка.", 13, True, Palette.ink)
+    add_footer(s, 3)
 
 
 # --- 3. Колонки в «Лидах» --------------------------------------------------------------
 def slide_columns(prs):
     s = _blank(prs)
     add_bg(s)
-    add_title(s, "Что за колонки в «Лидах»", kicker="Замер на 10.09.2026")
+    add_title(s, "Что за колонки в «Лидах»",
+              kicker="Замер на 10.09.2026 · сейчас в работе 719 карточек")
 
     rows = [
         ("Переписка / Недозвоны", 327, "Разговор идёт или клиент не отвечает", Palette.teal),
@@ -122,7 +197,7 @@ def slide_columns(prs):
     add_text(s, SAFE_L + 0.35, 6.28, 11.4, 0.36,
              "В 478 карточках бот написал сводку разговора — блок «Досье бота» внутри карточки.",
              13, True, Palette.ink)
-    add_footer(s, 3)
+    add_footer(s, 5)
 
 
 # --- 6. Что сделано --------------------------------------------------------------------
@@ -159,7 +234,7 @@ def slide_done(prs):
     add_text(s, SAFE_L, 6.62, 12.1, 0.3,
              "Всё выкачено на боевой сервер и проверено на живых данных, а не на тестовых.",
              12, True, Palette.teal_dark)
-    add_footer(s, 6)
+    add_footer(s, 8)
 
 
 # --- 11. Памятка на первый вечер -------------------------------------------------------
@@ -195,7 +270,7 @@ def slide_first_evening(prs):
     add_text(s, SAFE_L + 0.35, 6.58, 11.4, 0.3,
              "Не уверены в клиенте — «Ещё думает». Это честнее, чем угадать.", 12, True,
              Palette.ink)
-    add_footer(s, 11)
+    add_footer(s, 13)
 
 
 # --- 13. Честно о границах -------------------------------------------------------------
@@ -226,7 +301,7 @@ def slide_limits(prs):
         add_text(s, SAFE_L + 0.4, y + 0.55, 11.4, 0.44, body, 12, False, Palette.slate)
         y += 1.18
 
-    add_footer(s, 13)
+    add_footer(s, 15)
 
 
 # --- 3. Что бот делает сам -------------------------------------------------------------
@@ -256,7 +331,7 @@ def slide_bot_does(prs):
                  PP_ALIGN.CENTER)
         add_text(s, left + 0.95, top + 0.28, 4.7, 0.34, title, 15, True, Palette.ink)
         add_text(s, left + 0.95, top + 0.66, 4.7, 0.5, body, 11.5, False, Palette.slate)
-    add_footer(s, 4)
+    add_footer(s, 6)
 
 
 # --- 4. Где рвётся ---------------------------------------------------------------------
@@ -289,10 +364,10 @@ def slide_gap(prs):
     add_text(s, 8.7, 4.05, 3.7, 0.6, "0", 38, True, Palette.red)
     add_text(s, 8.7, 4.7, 3.7, 0.32, "продаж в отчёте", 13, False, Palette.muted_dark)
     add_text(s, 8.7, 5.25, 3.7, 0.9,
-             "Кнопка «Оплатил» в панели есть с июля.\nЗа 90 дней её нажали 1–3 раза:\n"
+             "Кнопка «Оплатил» в панели есть с июля.\nЗа 72 дня её не нажали НИ РАЗУ:\n"
              "в момент продажи менеджер в WhatsApp,\nа не в админке.",
              11, False, Palette.muted_dark)
-    add_footer(s, 5)
+    add_footer(s, 7)
 
 
 # --- 5. Что меняется -------------------------------------------------------------------
@@ -327,7 +402,7 @@ def slide_change(prs):
     add_text(s, SAFE_L + 0.35, 6.32, 11.4, 0.42,
              "Не ответили — ничего страшного. Про этот диалог больше не спросим, "
              "напоминать каждый вечер не будем.", 13, True, Palette.ink)
-    add_footer(s, 7)
+    add_footer(s, 9)
 
 
 # --- 6. Как выглядит сообщение ---------------------------------------------------------
@@ -369,7 +444,7 @@ def slide_message(prs):
         add_text(s, 8.6, y, 3.8, 0.3, key, 13, True, Palette.ink)
         add_text(s, 8.6, y + 0.3, 3.8, 0.55, body, 11, False, Palette.slate)
         y += 0.92
-    add_footer(s, 8)
+    add_footer(s, 10)
 
 
 # --- 7. Страница: сверить и подтвердить ------------------------------------------------
@@ -420,7 +495,7 @@ def slide_page(prs):
         add_text(s, 7.05, y + 0.13, 5.4, 0.3, title, 13, True, Palette.ink)
         add_text(s, 7.05, y + 0.45, 5.4, 0.3, body, 11.5, False, Palette.slate)
         y += 0.95
-    add_footer(s, 9)
+    add_footer(s, 11)
 
 
 # --- 8. Если что-то не так -------------------------------------------------------------
@@ -456,7 +531,7 @@ def slide_fix(prs):
     add_text(s, SAFE_L, 6.55, 12.1, 0.32,
              "Главное правило: решение всегда за человеком. Бот не ставит «Некачественный» "
              "и не отменяет ваших правок.", 13, True, Palette.ink)
-    add_footer(s, 10)
+    add_footer(s, 12)
 
 
 # --- 9. План внедрения -----------------------------------------------------------------
@@ -493,7 +568,7 @@ def slide_rollout(prs):
     add_text(s, SAFE_L + 0.35, 6.08, 11.4, 0.3,
              "Бот не увеличивает продажи — он их записывает. Цифра станет настоящей, "
              "какой бы она ни была.", 12, False, Palette.slate)
-    add_footer(s, 12)
+    add_footer(s, 14)
 
 
 # --- 10. Итог --------------------------------------------------------------------------
@@ -521,16 +596,17 @@ def slide_summary(prs):
     add_text(s, SAFE_L, 6.55, 11.6, 0.34,
              "Если после недели ссылками не пользуются — скажем прямо, а не будем "
              "докручивать интерфейс.", 13, True, Palette.teal)
-    add_footer(s, 14, dark=True)
+    add_footer(s, 16, dark=True)
 
 
 def main() -> None:
     prs = Presentation()
     prs.slide_width = emu(SLIDE_W)
     prs.slide_height = emu(SLIDE_H)
-    for builder in (slide_title, slide_where, slide_columns, slide_bot_does, slide_gap,
-                    slide_done, slide_change, slide_message, slide_page, slide_fix,
-                    slide_first_evening, slide_rollout, slide_limits, slide_summary):
+    for builder in (slide_title, slide_stats_traffic, slide_stats_funnel, slide_where,
+                    slide_columns, slide_bot_does, slide_gap, slide_done, slide_change,
+                    slide_message, slide_page, slide_fix, slide_first_evening,
+                    slide_rollout, slide_limits, slide_summary):
         builder(prs)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     prs.save(OUT)
