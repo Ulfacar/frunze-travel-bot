@@ -504,14 +504,22 @@
         }
       } catch (_) { /* сеть моргнула — следующий автообновление подтянет состояние */ }
     }
-    // Прокрутка переписки: НЕ дёргаем менеджера вниз, если он листает вверх.
-    // Перед обновлением запоминаем позицию и был ли он у низа; после — восстанавливаем.
-    var _chatScroll = { top: 0, atBottom: true };
+    // Прокрутка переписки. Два разных случая, и путать их нельзя:
+    //   ОТКРЫЛИ ДРУГОЙ ДИАЛОГ — всегда показываем последнюю реплику. Иначе менеджер
+    //     видит «здравствуйте» месячной давности и листает вниз руками (жалоба 11.09),
+    //     а при переходе между диалогами ещё и наследует прокрутку от предыдущего.
+    //   ОБНОВИЛСЯ ТОТ ЖЕ ДИАЛОГ — не дёргаем вниз, если он листает историю.
+    var _chatScroll = { top: 0, atBottom: true, key: '' };
     function _chatScrollEl() {
       return document.querySelector('#chat .panel-scroll') || document.querySelector('#chat .msgs');
     }
+    function _chatKey() {
+      var m = document.querySelector('#chat .msgs');
+      return m ? (m.id || '') : '';
+    }
     document.body.addEventListener('htmx:beforeSwap', function () {
       var m = _chatScrollEl();
+      _chatScroll.key = _chatKey();
       if (m) {
         _chatScroll.top = m.scrollTop;
         _chatScroll.atBottom = (m.scrollHeight - m.scrollTop - m.clientHeight) < 60;
@@ -520,7 +528,9 @@
     document.body.addEventListener('htmx:afterSwap', function () {
       var m = _chatScrollEl();
       if (!m) return;
-      if (_chatScroll.atBottom) {
+      if (_chatKey() !== _chatScroll.key) {
+        m.scrollTop = m.scrollHeight;     // другой диалог → открываем на последней реплике
+      } else if (_chatScroll.atBottom) {
         m.scrollTop = m.scrollHeight;     // был внизу → показываем новые сообщения
       } else {
         m.scrollTop = _chatScroll.top;    // листал историю → оставляем где был

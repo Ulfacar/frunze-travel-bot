@@ -231,7 +231,10 @@ def describe(conv: Any, now: datetime | None = None) -> str:
     tail = phone[-4:] if len(phone) >= 4 else phone
     q = dict(getattr(conv, "qualification", None) or {})
     where = str(q.get("destination") or q.get("country") or "").strip()
-    return " · ".join(x for x in (f"…{tail}", where, _ago(conv, now)) if x)
+    # Список общий на обеих менеджерок (заказы по турам общие — решение Алана 11.09),
+    # поэтому надо видеть, свой это клиент или коллеги.
+    owner = str(getattr(conv, "assigned_to", "") or "").strip() or "ничей"
+    return " · ".join(x for x in (f"…{tail}", where, _ago(conv, now), owner) if x)
 
 
 def recorded_facts(conv: Any) -> list[tuple[str, str]]:
@@ -397,9 +400,6 @@ async def run(now: datetime | None = None) -> None:
     local = now + timedelta(hours=BISHKEK_UTC_OFFSET)
     if local.hour != hour:
         return                             # спрашиваем раз в день, в один и тот же час
-    day_key = f"sale_check_sent_{local:%Y%m%d}"
-    if await flags.get_flag(day_key, False):
-        return                             # за сегодня уже спросили
 
     token = _token()
     if not token:
@@ -407,33 +407,40 @@ async def run(now: datetime | None = None) -> None:
     store = get_conversation_store()
     convs = await store.all_conversations_light()
 
-    # Спрашиваем каждого менеджера про ЕГО диалоги: чужие исходы человек не знает.
-    by_manager: dict[str, list] = {}
-    for conv in convs:
-        owner = str(getattr(conv, "assigned_to", "") or "").strip().lower()
-        if owner:
-            by_manager.setdefault(owner, []).append(conv)
+    # Очередь ОДНА на всех: заказы по турам у менеджеров общие, и делить их по владельцу
+    # значит терять 29 ничейных диалогов в неделю (17% потока) — их не спросили бы никогда.
+    # Кто первым нажал, тот и закрыл: повторное нажатие ловит атомарная защёлка исхода.
+    targets = select_targets(convs, now, settings, enabled=True)
+    if not targets:
+        return
 
     only = {str(x).strip().lower() for x in (settings.sale_check_managers or []) if str(x).strip()}
+    asked = False
     for mgr in settings.manager_list():
         login = (mgr.login or "").strip().lower()
         chat_id = (getattr(mgr, "telegram_chat_id", "") or "").strip()
         if only and login not in only:
-            continue                       # обкатка на одном человеке — остальных не трогаем
-        if not chat_id or login not in by_manager:
+            continue                       # получатели заданы явно — остальных не трогаем
+        if not chat_id:
             continue                       # некому слать — молча пропускаем
-        targets = select_targets(by_manager[login], now, settings, enabled=True)
-        if not targets:
-            continue
+        # Защёлка на КАЖДОГО менеджера отдельно, как у календарного брифа. Одна общая
+        # блокировала весь день всем: 11.09 рассылка ушла одной Адеми, и вторая туровая
+        # менеджер (Айсина, у неё половина трафика) не получила бы вопрос вовсе.
+        sent_key = f"sale_check_sent_{login}_{local:%Y%m%d}"
+        if await flags.get_flag(sent_key, False):
+            continue                       # этому менеджеру за сегодня уже писали
         text = render_message(targets, settings, now, login)
         # Превью гасим: сервер Telegram сам ходит GET-ом по первой ссылке в сообщении.
         if not await _push_telegram(token, chat_id, text, disable_web_page_preview=True):
             continue                       # не дошло — отметку не ставим, спросим завтра
-        # Защёлку дня ставим по факту ПЕРВОЙ доставки: рестарт контейнера в этот же час
-        # иначе даёт менеджеру второе такое же сообщение.
-        await flags.set_flag(day_key, True)
+        # Защёлку ставим по факту доставки: рестарт контейнера в этот же час иначе даёт
+        # менеджеру второе такое же сообщение.
+        await flags.set_flag(sent_key, True)
+        asked = True
+        log.info("sale check: спросили менеджера %s про %d диалог(ов)", login, len(targets))
+
+    if asked:
         for conv in targets:
             # Спросили — снимаем отсрочку: «ещё думает» покупает ровно один новый вопрос.
             await store.update_meta(conv.user_id, sale_check_asked_at=now,
                                     clear_sale_snooze=True)
-        log.info("sale check: спросили менеджера %s про %d диалог(ов)", login, len(targets))

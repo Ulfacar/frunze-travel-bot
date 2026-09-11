@@ -579,3 +579,108 @@ def test_get_does_not_write_only_post_does(tmp_path, monkeypatch):
         assert portal == ["186000"]
 
     run(engine.dispose())
+
+
+def test_each_manager_has_a_separate_day_latch(tmp_path, monkeypatch):
+    """ЗАМЕР 11.09: защёлка «сегодня уже спросили» была ОДНА на всех менеджеров.
+
+    По турам менеджеров двое, и трафик поделён почти поровну (356 диалогов у одной,
+    375 у другой). С общей защёлкой утренняя рассылка одной из них закрывала день
+    второй — то есть половина продаж не измерялась бы вообще. У календарного брифа
+    защёлка давно пер-менеджерная, здесь её просто забыли развести.
+    """
+    from app.integrations.panel import store as store_mod
+
+    sent: list[str] = []
+
+    async def fake_push(token, chat_id, text, **kwargs):
+        sent.append(chat_id)
+        return True
+
+    async def scenario():
+        flags.reset()
+        engine, store = await _store(
+            tmp_path,
+            [_row(), _row("frunze_tours:996700000002", assigned_to="aisina")],
+            name="latch.db")
+        monkeypatch.setattr(store_mod, "get_conversation_store", lambda: store)
+        monkeypatch.setattr(settings, "managers", [
+            ManagerConfig(login="ademi", password="x", telegram_chat_id="111"),
+            ManagerConfig(login="aisina", password="x", telegram_chat_id="222"),
+        ])
+        monkeypatch.setattr(settings, "sale_check_managers", ["ademi", "aisina"])
+        monkeypatch.setattr(settings, "sale_check_enabled", True)
+        monkeypatch.setattr(settings, "sale_check_hour", 18)
+        monkeypatch.setattr(settings, "webhook_secret", "test-secret")
+        monkeypatch.setattr(settings, "public_base_url", "https://frunzetravel.kg")
+        monkeypatch.setattr("app.core.calendar_brief._token", lambda: "tg-token")
+        monkeypatch.setattr("app.core.calendar_brief._push_telegram", fake_push)
+
+        # Одной уже писали сегодня — вторая всё равно обязана получить своё.
+        await flags.set_flag(f"sale_check_sent_ademi_{NOW:%Y%m%d}", True)
+        await sale_check.run(NOW)
+        await sale_check.run(NOW + timedelta(minutes=5))   # следующий тик того же часа
+        await engine.dispose()
+
+    run(scenario())
+    assert sent == ["222"], f"ожидали письмо только второй менеджеру, ушло: {sent}"
+
+
+# ======================================================================================
+# РЕШЕНИЕ АЛАНА 11.09: туровые заказы общие, по владельцу их не делим.
+#
+# Замер: трафик поделён почти поровну (356 диалогов у одной менеджерки, 375 у другой),
+# а 29 туровых диалогов в неделю (17%) не закреплены ни за кем — при отборе по владельцу
+# про них не спросили бы никогда. Поэтому очередь одна, список один на обеих, кто первый
+# нажал — тот и закрыл.
+# ======================================================================================
+
+def test_queue_is_shared_and_includes_ownerless(tmp_path, monkeypatch):
+    """Обе менеджерки получают ОДИН И ТОТ ЖЕ список, включая ничейные диалоги."""
+    from app.integrations.panel import store as store_mod
+
+    sent: list[tuple[str, str]] = []
+
+    async def fake_push(token, chat_id, text, **kwargs):
+        sent.append((chat_id, text))
+        return True
+
+    async def scenario():
+        flags.reset()
+        engine, store = await _store(tmp_path, [
+            _row("frunze_tours:996700000001", assigned_to="ademi"),
+            _row("frunze_tours_sezim:996700000002", assigned_to="aisina"),
+            _row("frunze_tours:996700000003", assigned_to=""),      # ничей
+        ], name="shared.db")
+        monkeypatch.setattr(store_mod, "get_conversation_store", lambda: store)
+        monkeypatch.setattr(settings, "managers", [
+            ManagerConfig(login="ademi", password="x", telegram_chat_id="111"),
+            ManagerConfig(login="aisina", password="x", telegram_chat_id="222"),
+        ])
+        monkeypatch.setattr(settings, "sale_check_managers", ["ademi", "aisina"])
+        monkeypatch.setattr(settings, "sale_check_enabled", True)
+        monkeypatch.setattr(settings, "sale_check_hour", 18)
+        monkeypatch.setattr(settings, "webhook_secret", "test-secret")
+        monkeypatch.setattr(settings, "public_base_url", "https://frunzetravel.kg")
+        monkeypatch.setattr("app.core.calendar_brief._token", lambda: "tg-token")
+        monkeypatch.setattr("app.core.calendar_brief._push_telegram", fake_push)
+        await sale_check.run(NOW)
+        conv = await store.get("frunze_tours:996700000003")
+        await engine.dispose()
+        return conv
+
+    ownerless = run(scenario())
+    assert sorted(c for c, _ in sent) == ["111", "222"], f"ушло не обеим: {sent}"
+    for _, text in sent:
+        assert "0001" in text and "0002" in text and "0003" in text, \
+            "список не общий: в нём нет всех троих"
+    assert ownerless.sale_check_asked_at is not None, "ничейный диалог не отмечен спрошенным"
+
+
+def test_message_shows_who_leads_the_dialog():
+    """Раз список общий, менеджер должен видеть, свой это клиент или коллеги."""
+    convs = [Conv("frunze_tours:996700004477", stage="manager", assigned_to="aisina"),
+             Conv("frunze_tours:996700008812", stage="manager", assigned_to="")]
+    text = sale_check.render_message(convs, Cfg, NOW, "ademi")
+    assert "aisina" in text.lower()
+    assert "ничей" in text.lower()
