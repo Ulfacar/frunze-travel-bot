@@ -306,3 +306,52 @@ def test_adults_with_children_still_counted():
     assert facts.extract("Двое взрослых, двое детей").get("tourists") == "4"
     assert facts.extract("2 взрослых 1 ребенок 6 лет").get("tourists") == "3"
     assert facts.extract("едем вчетвером с ребенком 5 лет").get("tourists") == "4"
+
+
+# ======================================================================================
+# ЗАМЕР 11.09 17:10 — контрольный прогон сразу после включения на боевом канале.
+#
+# «Я нашел ares city 181 тысяч на 2 октября» → бюджет 181 000 USD.
+# Клиент назвал цену найденного им тура в СОМАХ, а бот записал её долларами — и эта
+# сумма уезжает в поле сделки. Сто восемьдесят одна тысяча долларов за тур.
+#
+# Две причины сразу:
+#   1) длину реплики мерили ПОСЛЕ вырезания даты: «на 2 октября» ушло, 39 символов
+#      превратились в 30 и прошли порог «короткая реплика — это и есть сумма»;
+#   2) «тысяч» без валюты считалось долларами. В Бишкеке это сомы.
+# ======================================================================================
+
+def test_price_of_a_tour_the_client_found_is_not_his_budget():
+    """Клиент назвал цену чужого предложения — это не его бюджет."""
+    found = facts.extract("Я нашел ares city 181 тысяч на 2 октября")
+    assert "budget" not in found, found
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("бюджет 150 тысяч", "150000 KGS"),
+    ("до 200 тысяч сом", "200000 KGS"),
+])
+def test_thousands_without_currency_are_som(text, expected):
+    """«Тысяч» без валюты — это сомы: мы в Бишкеке, а не в Нью-Йорке."""
+    assert facts.extract(text).get("budget") == expected, facts.extract(text)
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("бюджет 3000 долларов", "3000 USD"),
+    ("до 1500$", "1500 USD"),
+    ("укладываемся в 2000 евро", "2000 EUR"),
+])
+def test_explicit_currency_is_respected(text, expected):
+    """Регрессия не допускается: валюта названа явно — её и берём."""
+    assert facts.extract(text).get("budget") == expected, facts.extract(text)
+
+
+def test_absurd_amount_is_dropped():
+    """Ложноположительный: сумма больше любого разумного тура — это не бюджет."""
+    assert "budget" not in facts.extract("бюджет 500000 долларов")
+
+
+def test_length_is_measured_on_the_original_text():
+    """Вырезание даты не должно превращать длинную реплику в короткую."""
+    long_one = "Смотрели тур в Анталью на 2 октября и ещё думаем про Кемер"
+    assert "budget" not in facts.extract(long_one)

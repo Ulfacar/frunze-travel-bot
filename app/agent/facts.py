@@ -258,6 +258,16 @@ _BUDGET_INTENT = re.compile(
     r"есть\s+\d|готов\w*\s+потрат", re.IGNORECASE,
 )
 _SHORT_MONEY = 32          # «1700 долларов», «До 1000$» — сумма и есть всё сообщение
+# Выше этого тур не стоит. Замер 11.09: «Я нашел ares city 181 тысяч на 2 октября» дало
+# бюджет 181 000 USD — цену чужого предложения в сомах, записанную долларами, и эта
+# сумма уезжает в поле сделки. Пропустить дешевле, чем соврать.
+_MAX_BUDGET = {"USD": 20000, "EUR": 20000, "KGS": 2000000}
+# «Тысяч» без названия валюты в Бишкеке — это сомы, а не доллары.
+_THOUSANDS_NO_CURRENCY = re.compile(r"тыс\.?|тысяч\w*", re.IGNORECASE)
+_EXPLICIT_CURRENCY = re.compile(
+    r"\$|€|долл\w*|\busd\b|\beur\b|евро|\bсом\b|\bсома\b|\bсомов\b|\bkgs\b|рубл\w*",
+    re.IGNORECASE,
+)
 
 
 def _budget(text: str) -> str:
@@ -267,12 +277,21 @@ def _budget(text: str) -> str:
         return ""
     if not _BUDGET_INTENT.search(clean):
         # Короткая реплика без вопроса, где сумма — это и есть ответ («1700 долларов»).
-        if len(clean.strip()) > _SHORT_MONEY or "?" in clean:
+        # Длину меряем по ИСХОДНОМУ тексту: вырезание даты укорачивало реплику и
+        # превращало «Я нашел ares city 181 тысяч на 2 октября» в «короткий ответ».
+        if len(text.strip()) > _SHORT_MONEY or "?" in clean:
             return ""
     from app.integrations.tourvisor.client import _parse_budget
     amount, currency = _parse_budget(clean)
     if not amount:
         return ""
+    # Разборщик писался для аргументов инструмента, где текст уже отобран моделью, и
+    # голое число там значит доллары. В свободной речи клиента «150 тысяч» — сомы.
+    if (currency == "USD" and _THOUSANDS_NO_CURRENCY.search(clean)
+            and not _EXPLICIT_CURRENCY.search(clean)):
+        currency = "KGS"
+    if amount > _MAX_BUDGET.get(currency, 20000):
+        return ""                      # столько тур не стоит — значит разобрали не то
     return f"{int(amount)} {currency}".strip()
 
 
