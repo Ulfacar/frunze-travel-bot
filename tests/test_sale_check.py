@@ -684,3 +684,65 @@ def test_message_shows_who_leads_the_dialog():
     text = sale_check.render_message(convs, Cfg, NOW, "ademi")
     assert "aisina" in text.lower()
     assert "ничей" in text.lower()
+
+
+# ======================================================================================
+# РЕВЬЮ 11.09 — две дыры в общей очереди.
+# ======================================================================================
+
+def test_partial_delivery_does_not_burn_the_day(tmp_path, monkeypatch):
+    """Сорвалась доставка одной — диалоги НЕ помечаем, иначе вторая теряет день молча.
+
+    Список считается один раз и помечается «спрошенным» в конце. Если первой доставили,
+    а второй нет, пометка выбрасывала вторую из сегодняшнего дня навсегда: на следующем
+    тике отбор возвращал пусто, а назавтра диалоги уже вне окна свежести. Ровно тот исход,
+    который эта фича должна была починить, только наступающий от одной сетевой ошибки.
+    """
+    from app.integrations.panel import store as store_mod
+
+    sent: list[str] = []
+
+    async def flaky_push(token, chat_id, text, **kwargs):
+        if chat_id == "222":
+            return False                   # второй менеджер недоступен
+        sent.append(chat_id)
+        return True
+
+    async def scenario():
+        flags.reset()
+        engine, store = await _store(tmp_path, [_row()], name="partial.db")
+        monkeypatch.setattr(store_mod, "get_conversation_store", lambda: store)
+        monkeypatch.setattr(settings, "managers", [
+            ManagerConfig(login="ademi", password="x", telegram_chat_id="111"),
+            ManagerConfig(login="aisina", password="x", telegram_chat_id="222"),
+        ])
+        monkeypatch.setattr(settings, "sale_check_managers", ["ademi", "aisina"])
+        monkeypatch.setattr(settings, "sale_check_enabled", True)
+        monkeypatch.setattr(settings, "sale_check_hour", 18)
+        monkeypatch.setattr(settings, "webhook_secret", "test-secret")
+        monkeypatch.setattr(settings, "public_base_url", "https://frunzetravel.kg")
+        monkeypatch.setattr("app.core.calendar_brief._token", lambda: "tg-token")
+        monkeypatch.setattr("app.core.calendar_brief._push_telegram", flaky_push)
+        await sale_check.run(NOW)
+        conv = await store.get("frunze_tours:996700000001")
+        await engine.dispose()
+        return conv
+
+    conv = run(scenario())
+    assert sent == ["111"], sent
+    assert conv.sale_check_asked_at is None, \
+        "диалог помечен спрошенным, хотя вторая менеджерка сообщение не получила"
+
+
+def test_own_service_numbers_are_not_asked_about():
+    """Наши собственные номера — это партнёрские чаты, а не клиенты.
+
+    В очередь на 11.09 попали +996707660009 и +996706660009 — номера самих ботов
+    Frunze Travel и GetVisa. Переписка там про ваучеры и страховые полисы с коллегами;
+    вопрос «клиент оплатил?» по ним бессмыслен, а нажатие «Оплатил» заведёт сделку
+    в боевом портале.
+    """
+    own = [Conv("frunze_tours:996707660009", stage="manager"),
+           Conv("frunze_tours:996706660009", stage="manager")]
+    client = Conv("frunze_tours:996700004477", stage="manager")
+    assert sale_check.select_targets(own + [client], NOW, Cfg) == [client]

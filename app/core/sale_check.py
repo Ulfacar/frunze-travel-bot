@@ -64,6 +64,10 @@ WORKED_STAGES = {"office", "office_consultation", "manager", "manager_handoff",
                  "progress", "search", "follow_up"}
 # Часы по Бишкеку, когда человеку вообще можно писать.
 DAY_HOURS = range(9, 22)
+# Наши собственные номера: это партнёрские чаты (ваучеры, страховки, трансферы), а не
+# клиенты. Замер 11.09: они попали в вечернюю очередь, и менеджеру ушёл бы вопрос
+# «клиент оплатил?» про переписку с коллегами, а нажатие завело бы сделку в портале.
+OWN_NUMBERS = ("996707660009", "996706660009")
 
 
 def _aware(dt: datetime | None) -> datetime | None:
@@ -116,6 +120,9 @@ def select_targets(convs: list, now: datetime, cfg: Any, *, enabled: bool | None
             continue
         if not _is_tour(conv):
             continue
+        phone = str(getattr(conv, "phone", "") or getattr(conv, "user_id", ""))
+        if any(phone.endswith(own) for own in OWN_NUMBERS):
+            continue                       # наш же номер — партнёрский чат, не клиент
         if str(getattr(conv, "outcome", "") or "") in FINAL_OUTCOMES:
             continue                       # человек уже отметил исход — вопрос закрыт
         if not _askable(conv, now):
@@ -415,7 +422,7 @@ async def run(now: datetime | None = None) -> None:
         return
 
     only = {str(x).strip().lower() for x in (settings.sale_check_managers or []) if str(x).strip()}
-    asked = False
+    asked = failed = 0
     for mgr in settings.manager_list():
         login = (mgr.login or "").strip().lower()
         chat_id = (getattr(mgr, "telegram_chat_id", "") or "").strip()
@@ -432,14 +439,19 @@ async def run(now: datetime | None = None) -> None:
         text = render_message(targets, settings, now, login)
         # Превью гасим: сервер Telegram сам ходит GET-ом по первой ссылке в сообщении.
         if not await _push_telegram(token, chat_id, text, disable_web_page_preview=True):
-            continue                       # не дошло — отметку не ставим, спросим завтра
+            failed += 1                    # не дошло — на следующем тике попробуем снова
+            continue
         # Защёлку ставим по факту доставки: рестарт контейнера в этот же час иначе даёт
         # менеджеру второе такое же сообщение.
         await flags.set_flag(sent_key, True)
-        asked = True
+        asked += 1
         log.info("sale check: спросили менеджера %s про %d диалог(ов)", login, len(targets))
 
-    if asked:
+    # Помечаем диалоги спрошенными, только когда СПИСОК ДОШЁЛ ДО ВСЕХ. Иначе сбой доставки
+    # одному тихо выбрасывал остальных из сегодняшнего дня: отбор на следующем тике вернул
+    # бы пусто, а назавтра эти диалоги уже вне окна свежести. Кому дошло — тот защищён
+    # своей защёлкой и второго сообщения не получит.
+    if asked and not failed:
         for conv in targets:
             # Спросили — снимаем отсрочку: «ещё думает» покупает ровно один новый вопрос.
             await store.update_meta(conv.user_id, sale_check_asked_at=now,

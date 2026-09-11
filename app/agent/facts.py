@@ -152,6 +152,10 @@ _PARTY_WORDS: dict[str, int] = {
     "пятеро": 5, "пятерых": 5, "шестеро": 6,
 }
 
+# Возраст в месяцах в годовое поле не пускаем: «другой 0,7 месяцев» — это не семилетка,
+# а десятичная запятая, разбитая на два числа. Проще промолчать.
+_MONTHS = re.compile(r"месяц\w*|мес\.", re.IGNORECASE)
+
 _MAX_CHILD_AGE = 17
 _MAX_PARTY = 12
 
@@ -199,8 +203,14 @@ def _party(text: str) -> tuple[str, str]:
         return int(token) if token.isdigit() else _WORD_NUMBERS.get(token, 0)
 
     ages: list[int] = []
-    kids_word = re.search(r"дет[ьейия]\w*|реб[её]н\w*|малыш\w*", text, re.IGNORECASE)
-    if kids_word:
+    # Границу слова ставим обязательно: «наДЕТЬ» и «оДЕТЬся» содержат «деть», и без \b
+    # «нам надеть нечего, 3 чемодана» превращалось в ребёнка трёх лет.
+    # Берём ПОСЛЕДНЕЕ слово о детях, а не первое: во фразе «с детьми ... 3 детей 10-8-4»
+    # счёт «3» стоит между ними и иначе уезжает в возрасты.
+    kids_words = list(re.finditer(r"\bдет[ьейия]\w*|\bреб[её]н\w*|\bмалыш\w*",
+                                  text, re.IGNORECASE))
+    kids_word = kids_words[-1] if kids_words else None
+    if kids_word and not _MONTHS.search(text):
         ages = [int(n) for n in re.findall(r"\d+", text[kids_word.end():])
                 if int(n) <= _MAX_CHILD_AGE]
 
@@ -227,10 +237,15 @@ def _party(text: str) -> tuple[str, str]:
                 total = value
                 break
     if not total:
+        # Названы ТОЛЬКО дети («Детям 6 и 17 лет») — взрослых никто не отменял, и сколько
+        # их, мы не знаем. Раньше сюда попадало число детей, и оно затирало верный состав
+        # из предыдущей реплики: замер ревью 11.09 — 39 таких затираний в истории.
+        if not adults and not kids_count:
+            return "", ", ".join(str(a) for a in ages)
         total = adults + max(kids_count, len(ages))
 
     if not total or total > _MAX_PARTY:
-        return "", ""
+        return "", ", ".join(str(a) for a in ages)
     ages = ages[:max(kids_count, len(ages))]
     return str(total), ", ".join(str(a) for a in ages)
 

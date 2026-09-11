@@ -250,3 +250,59 @@ def test_composition_by_roles_still_wins():
     found = facts.extract("2 взрослых 1 ребенок 6 лет")
     assert found["tourists"] == "3"
     assert found["children_ages"] == "6"
+
+
+# ======================================================================================
+# РЕВЬЮ 11.09 (прогон по 11 627 настоящим клиентским репликам с прода).
+# Расширение шаблона «детей» дало три новых класса вранья — все ниже.
+# ======================================================================================
+
+@pytest.mark.parametrize("text,ages", [
+    ("Детям 6 и 17 лет", "6, 17"),
+    ("Детям 16,17 и 9 лет.", "16, 17, 9"),
+    ("с детьми 6- 11 и 12 лет", "6, 11, 12"),
+])
+def test_only_children_named_means_unknown_party(text, ages):
+    """Названы ТОЛЬКО дети — состав неизвестен, а не «столько, сколько детей».
+
+    Было: «Детям 6 и 17 лет» давало двух туристов, и это затирало верные 4, записанные
+    предыдущей репликой. Молчание безопаснее: пустая карточка заставит менеджера прочитать
+    диалог, карточка с двумя туристами вместо четырёх его обманет.
+    """
+    found = facts.extract(text)
+    assert "tourists" not in found, f"«{text}» → {found}"
+    assert found.get("children_ages") == ages
+
+
+def test_count_of_children_is_not_an_age():
+    """«3 детей 10-8-4 года» — тройка это количество детей, а не возраст четвёртого.
+
+    Состав при этом остаётся НЕизвестным: сколько с ними взрослых, фраза не говорит,
+    а записать в карточку «трое туристов» значит соврать ровно так же, как раньше.
+    """
+    found = facts.extract("с детьми сколько будет все включено 3 детей 10-8-4 года")
+    assert found.get("children_ages") == "10, 8, 4", found
+    assert "tourists" not in found, found
+
+
+def test_months_are_not_years():
+    """Возраст в месяцах в годовое поле не уедет: «0,7 месяцев» — это не семилетка."""
+    found = facts.extract("Детям одному 2,5 другой 0,7 месяцев")
+    assert "children_ages" not in found, found
+
+
+@pytest.mark.parametrize("text", [
+    "нам надеть нечего, 3 чемодана",
+    "одеться потеплее на 5 дней",
+])
+def test_dress_words_are_not_children(text):
+    """Ложноположительный: «надеть» и «одеться» содержат «деть», но детей там нет."""
+    found = facts.extract(text)
+    assert "tourists" not in found and "children_ages" not in found, f"«{text}» → {found}"
+
+
+def test_adults_with_children_still_counted():
+    """Регрессия не допускается: явный состав по ролям считается как раньше."""
+    assert facts.extract("Двое взрослых, двое детей").get("tourists") == "4"
+    assert facts.extract("2 взрослых 1 ребенок 6 лет").get("tourists") == "3"
+    assert facts.extract("едем вчетвером с ребенком 5 лет").get("tourists") == "4"
