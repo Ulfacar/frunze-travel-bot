@@ -849,6 +849,19 @@ FEATURE_FLAGS = {
         "default": lambda: settings.visa_autoassign_enabled,
         "note": lambda: "",
     },
+    "awaiting_telegram_enabled": {
+        "title": "Напоминать о ждущем клиенте",
+        "desc": ("Если клиент написал, диалог у человека (перехват или передача), и никто "
+                 "не ответил дольше 10 минут — владелец диалога получает напоминание в "
+                 "личный Telegram. Не чаще раза в час на диалог, не больше 8 за тик и "
+                 "только по свежим (до суток): старый лид уже не спасти, а дёргать по нему "
+                 "менеджера незачем."),
+        "default": lambda: settings.awaiting_telegram_enabled,
+        "note": lambda: ("" if any((getattr(m, "telegram_chat_id", "") or "").strip()
+                                   for m in settings.manager_list())
+                         else "⚠️ Ни у одного менеджера не задан telegram_chat_id — "
+                              "напоминания уйдут только владельцу бизнеса."),
+    },
     "alerts_enabled": {
         "title": "Watchdog-алерты",
         "desc": ("Уведомлять администратора в WhatsApp, если бот не получает входящих дольше "

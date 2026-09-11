@@ -25,7 +25,15 @@ _HANDOFF_STAGES = {"manager", "manager_handoff"}
 _TERMINAL_OUTCOMES = {"won", "lost"}
 
 # Время последнего алерта по диалогу (in-memory; сбрасывается при рестарте — ок).
+# Словарь общий для обоих адресатов намеренно: менеджер должен получить одно
+# напоминание на диалог, а не по одному от каждого канала доставки.
 _alerted: dict[str, float] = {}
+
+FLAG = "awaiting_telegram_enabled"
+# Сколько диалогов поднимаем за тик. Замер 11.09: в хвосте 196 ждущих клиентов, и
+# первое же включение вывалило бы их менеджеру пачкой. «Главное, чтобы их это не
+# доставало» (встреча 29.07) — ограничение того же рода, что CATCHUP_CAP у заявок.
+TELEGRAM_CAP = 8
 
 
 def _aware(dt: datetime | None) -> datetime | None:
@@ -57,6 +65,104 @@ def select_awaiting_targets(convs: list, now: datetime, cfg) -> list:
             continue                       # ещё не намолчался
         out.append(c)
     return out
+
+
+def select_telegram_targets(convs: list, now: datetime, cfg) -> list:
+    """То же, что `select_awaiting_targets`, но с двумя границами под личный пуш.
+
+    Личный телеграм менеджера — канал дорогой: он звонит в кармане. Поэтому сюда
+    попадает только то, по чему ещё есть смысл звонить:
+
+    * не старше `awaiting_max_age_hours` — недельный лид уже мёртв, напоминание по
+      нему только злит (то же правило, что в догоняющей отправке заявок);
+    * не больше `TELEGRAM_CAP` за тик, самые свежие первыми — накопленный хвост
+      разбирается за несколько тиков, а не одним залпом.
+    """
+    targets = select_awaiting_targets(convs, now, cfg)
+    max_age = timedelta(hours=float(getattr(cfg, "awaiting_max_age_hours", 24)))
+    fresh = [c for c in targets
+             if _aware(c.last_message_at) is not None
+             and _aware(c.last_message_at) >= _aware(now) - max_age]
+    fresh.sort(key=lambda c: _aware(c.last_message_at), reverse=True)
+    return fresh[:TELEGRAM_CAP]
+
+
+async def _all_conversations() -> list:
+    """Отдельной функцией — это шов для теста (хранилище в тесте не поднимаем)."""
+    return await get_conversation_store().all_conversations()
+
+
+def render_awaiting_text(conv, minutes: int) -> str:
+    """Текст пуша. Сколько ждёт и что спросил — чтобы менеджер решал, не открывая панель."""
+    from app.core.calendar_brief import _client_link, _phone_display
+    who = _phone_display(getattr(conv, "phone", "") or conv.user_id)
+    name = ((getattr(conv, "qualification", None) or {}).get("name") or "").strip()
+    head = f"⏳ Клиент ждёт вас {minutes} мин"
+    lines = [head, " · ".join(x for x in (name, who) if x) or "клиент без имени"]
+    last = (getattr(conv, "last_text", "") or "").strip().replace("\n", " ")
+    if last:
+        lines.append(f"Последнее от клиента: «{last[:180]}»")
+    link = _client_link(conv.user_id, settings.admin_base_url)
+    if link:
+        lines.append(f"👉 открыть диалог: {link}")
+    return "\n".join(lines)
+
+
+async def _push_owner(login: str, text: str, conv) -> bool:
+    """Личный телеграм владельца диалога; ничей диалог — копия владельцу бизнеса.
+
+    Переиспользуем доставку мгновенной заявки: она проверена живьём, медиана реакции
+    по ней 19 минут за последние 28 дней. Заводить второй путь ради того же адресата
+    незачем.
+    """
+    from app.core.calendar_brief import _push_telegram, _token
+    from app.core.instant_handoff import _chat_id_for, _send_cc
+
+    token = _token()
+    if not token:
+        return False
+    chat_id = _chat_id_for(login) if login else ""
+    if chat_id:
+        return await _push_telegram(token, chat_id, text)
+    # Владельца нет — молчать нельзя: именно ничейные диалоги и теряются.
+    return await _send_cc(text, owner_login=login or "—")
+
+
+async def run_telegram(*, now: datetime | None = None, cfg=None) -> int:
+    """Джоба: напомнить владельцу о клиенте, который ждёт живого человека.
+
+    Возвращает число отправленных напоминаний. Никогда не поднимает исключение:
+    сторож не имеет права ронять тик планировщика.
+    """
+    try:
+        from app.core import flags
+        cfg = cfg or settings
+        if not await flags.get_flag("alerts_enabled", True):
+            return 0
+        if not await flags.get_flag(FLAG, getattr(cfg, "awaiting_telegram_enabled", False)):
+            return 0
+        now_dt = _aware(now) or datetime.now(timezone.utc)
+        targets = select_telegram_targets(await _all_conversations(), now_dt, cfg)
+        cooldown = float(getattr(cfg, "alert_cooldown_minutes", 60)) * 60
+        stamp = now_dt.timestamp()
+        sent = 0
+        for c in targets:
+            if stamp - _alerted.get(c.user_id, 0.0) < cooldown:
+                continue
+            minutes = int((now_dt - _aware(c.last_message_at)).total_seconds() // 60)
+            login = (getattr(c, "assigned_to", "") or "").strip()
+            try:
+                if await _push_owner(login, render_awaiting_text(c, minutes), c):
+                    _alerted[c.user_id] = stamp
+                    sent += 1
+                    log.warning("awaiting: напомнили %s по диалогу %s (%d мин)",
+                                login or "владельцу бизнеса", c.user_id, minutes)
+            except Exception:  # noqa: BLE001 — один сбой не останавливает рассылку
+                log.error("awaiting: напоминание не ушло (key=%s)", c.user_id, exc_info=True)
+        return sent
+    except Exception:  # noqa: BLE001
+        log.warning("awaiting telegram failed", exc_info=True)
+        return 0
 
 
 async def run() -> None:

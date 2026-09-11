@@ -70,6 +70,7 @@ async def lifespan(app: FastAPI):
     # узнали об этом от клиента. Порог считается в днях остатка, а не в долларах (gated OFF).
     scheduler.register("balance_guard", balance_guard.run)
     scheduler.register("awaiting", awaiting.run)
+    scheduler.register("awaiting_telegram", awaiting.run_telegram)
     scheduler.register("followup", followup.run)
     scheduler.register("rescore", rescore.run)          # ghost-ре-скоринг тира готовности
     scheduler.register("outcome_infer", outcome_infer.run)  # LLM-исход (gated OFF)
