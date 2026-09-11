@@ -201,9 +201,15 @@ class RequestIdLogFilter(logging.Filter):
 
 
 def install_request_id_logging() -> None:
-    """Attach the request-id filter + format to the root log handlers."""
+    """Attach the request-id filter + format to the root log handlers.
+
+    Формат заодно вырезает секреты (`redact.RedactingFormatter`): ключи Битрикса и
+    TourVisor живут прямо в URL, и текст любой HTTP-ошибки печатает их в лог.
+    """
+    from app.core.redact import RedactingFormatter
+
     root = logging.getLogger()
-    fmt = logging.Formatter(
+    fmt = RedactingFormatter(
         "%(asctime)s %(levelname)s [%(request_id)s] %(name)s: %(message)s")
     filt = RequestIdLogFilter()
     for handler in root.handlers:
