@@ -59,6 +59,10 @@ class TourSearch:
     min_price: str = ""
     query: dict | None = None
     budget_fit_count: int | None = None
+    # Что пришлось ослабить, чтобы хоть что-то нашлось («длительность», «курорт»).
+    # Пусто — нашли ровно по запросу клиента. Агент ОБЯЗАН назвать это вслух: выдать
+    # чужие условия за условия клиента — тот же обман, что и выдуманная причина отказа.
+    relaxed: str = ""
     # Сырые отели как их отдал TourVisor. Раньше наверх уходили только текстовые строки, и
     # разведка 11.08 показала цену этого решения: в ответе лежат `room`, `placement`, фото,
     # описание и рейтинг — всё, из чего менеджеры собирают свою карточку, — а мы их молча
@@ -255,16 +259,8 @@ class TourVisorClient:
                     return TourSearch([], 0, "no_destination", "", False)
 
                 departure = str(query.get("departure") or BISHKEK_ID)
-                hotels = await self._search_once(client, query)
-
-                # Из Бишкека продаётся малая часть направлений (Египет/Таиланд/Кипр — ноль).
-                # Правило менеджеров (branding.FRUNZE_DESTINATIONS): нет из Бишкека — смотрим
-                # из Алматы. Раньше этого не делал никто, и живые заявки уходили в пустоту.
-                fallback = False
-                if not hotels and departure == BISHKEK_ID:
-                    hotels = await self._search_once(client, {**query, "departure": ALMATY_ID})
-                    if hotels:
-                        departure, fallback = ALMATY_ID, True
+                hotels, departure, fallback, relaxed = await self._search_relaxing(
+                    client, query, departure)
 
                 names = await self._ref(client, "departure", "departures", "departure")
                 dep_name = next((d.get("name", "") for d in names if str(d.get("id")) == departure), "")
@@ -290,11 +286,50 @@ class TourVisorClient:
                     query=query,
                     budget_fit_count=fit_count,
                     hotels=hotels,
+                    relaxed=relaxed,
                 )
             except TourVisorError as e:
                 logger.warning("TourVisor API: %s", e)
                 # Пробрасываем понятный маркер наверх — агент сообщит, что подбор временно недоступен.
                 raise
+
+    async def _search_relaxing(self, client: httpx.AsyncClient, query: dict,
+                               departure: str) -> tuple[list[dict], str, bool, str]:
+        """Ищем по запросу клиента, а если пусто — ослабляем условия по одному.
+
+        Замер 11.09 на живом диалоге: клиент просил «Турцию из Алматы на неделю», бот
+        честно вернул «ничего нет» — а тур был: чартер Бишкек→Анталья на 5 ночей,
+        181 856 сом. Не совпали ровно два условия, и оба бот получил от самого клиента.
+        Отказ по буквальному запросу — это потерянный клиент, а не честность.
+
+        Порядок по убыванию вероятности, и не больше четырёх заходов в портал: у него
+        лимит два запроса в секунду, а каждый заход — это ещё и опрос результата.
+        """
+        hotels = await self._search_once(client, query)
+        if hotels:
+            return hotels, departure, False, ""
+
+        other = ALMATY_ID if departure == BISHKEK_ID else BISHKEK_ID
+        hotels = await self._search_once(client, {**query, "departure": other})
+        if hotels:
+            return hotels, other, True, ""
+
+        # Жёсткая длительность отсекает чартеры: «неделя» против 5 ночей.
+        if query.get("nightsfrom") or query.get("nightsto"):
+            loose = {k: v for k, v in query.items()
+                     if k not in ("nightsfrom", "nightsto")}
+            hotels = await self._search_once(client, loose)
+            if hotels:
+                return hotels, departure, False, "длительность"
+
+        # Конкретный курорт — последнее, что снимаем: по стране почти всегда что-то есть.
+        if query.get("regions"):
+            loose = {k: v for k, v in query.items() if k != "regions"}
+            hotels = await self._search_once(client, loose)
+            if hotels:
+                return hotels, departure, False, "курорт"
+
+        return [], departure, False, ""
 
     async def _search_once(self, client: httpx.AsyncClient, query: dict) -> list[dict]:
         """Один полный проход: запустить поиск и дождаться результата."""
