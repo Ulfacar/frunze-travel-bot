@@ -102,7 +102,9 @@ class Conv:
         self.sale_check_asked_at = NOW - timedelta(days=1) if asked else None
         self.sale_check_snooze_until = (NOW + timedelta(days=snooze_days)
                                         if snooze_days is not None else None)
-        self.bitrix_lead_id = "186000"
+        # Своя карточка на диалог. Общая карточка — отдельный случай, его строит
+        # `_shared()`, и путать эти две вещи в заготовке нельзя.
+        self.bitrix_lead_id = "18" + key[-4:]
 
 
 def run(coro):
@@ -310,7 +312,7 @@ def test_apply_marks_outcome_and_converts_lead():
     result = run(sale_check.apply_outcome(conv, "won", convert=fake_convert))
     assert result is True
     assert conv.outcome == "won"
-    assert calls["lead"] == ("frunze_tours:996700000001", "186000")
+    assert calls["lead"] == ("frunze_tours:996700000001", "18" + "0001")
 
 
 def test_apply_lost_does_not_touch_the_lead():
@@ -382,7 +384,7 @@ def _row(user_id="frunze_tours:996700000001", **kw):
     kw.setdefault("outcome", "manager")        # рабочий авто-статус, как на проде
     kw.setdefault("assigned_to", "ademi")
     kw.setdefault("last_message_at", NOW - timedelta(hours=24))
-    kw.setdefault("bitrix_lead_id", "186000")
+    kw.setdefault("bitrix_lead_id", "18" + user_id[-4:])
     kw.setdefault("qualification", {"destination": "Турция", "dates": "октябрь",
                                     "tourists": "2"})
     return Conversation(user_id=user_id, **kw)
@@ -493,7 +495,7 @@ def test_tap_writes_outcome_and_survives_a_double_click(tmp_path, monkeypatch):
     assert first == "saved"
     assert second == "repeat"
     assert conv.outcome == "won"
-    assert portal == ["186000"], f"походов в портал: {portal}"
+    assert portal == ["180001"], f"походов в портал: {portal}"
 
 
 def test_thinking_tap_defers_and_writes_no_outcome(tmp_path, monkeypatch):
@@ -569,14 +571,14 @@ def test_get_does_not_write_only_post_does(tmp_path, monkeypatch):
         # менеджер сверяет записанное ботом здесь же, не открывая Битрикс
         assert "Бот записал так" in page.text
         assert "направление" in page.text and "Турция" in page.text
-        assert "/crm/lead/details/186000/" in page.text
+        assert "/crm/lead/details/180001/" in page.text
         assert run(store.get("frunze_tours:996700000001")).outcome == "manager"
         assert portal == [], "GET сходил в портал — превью Telegram отметит продажу само"
 
         done = client.post(f"/sale/{token}")
         assert done.status_code == 200
         assert run(store.get("frunze_tours:996700000001")).outcome == "won"
-        assert portal == ["186000"]
+        assert portal == ["180001"]
 
     run(engine.dispose())
 
@@ -746,3 +748,89 @@ def test_own_service_numbers_are_not_asked_about():
            Conv("frunze_tours:996706660009", stage="manager")]
     client = Conv("frunze_tours:996700004477", stage="manager")
     assert sale_check.select_targets(own + [client], NOW, Cfg) == [client]
+
+
+# ======================================================================================
+# 🔴 ЗАМЕР 11.09 16:23 — мина, взведённая в боевой очереди.
+#
+# В портале есть «общие карточки» Открытой линии: один лид хранит десятки разных
+# телефонов. Замер: таких карточек 74, на них висят 203 туровых диалога; на лиде 181665
+# сидят 19 наших клиентов. В вечерней очереди на сегодня 3 кандидата из 5 — на общих
+# карточках.
+#
+# Нажатие «Оплатил» по такому диалогу уводит в «Подписан» карточку ВСЕХ, кто на ней
+# сидит. Дальше обратное чтение выбирает из них ОДИН произвольный диалог, ставит ему
+# «продано» и заводит сделку с именем чужого клиента, а остальные выпадают из конвейера
+# навсегда — их стадия становится терминальной.
+#
+# Две линии защиты, потому что ссылки уже разосланы и лежат у менеджера в телефоне:
+#   1) такие диалоги не попадают в новые рассылки;
+#   2) нажатие по уже отправленной ссылке не трогает портал.
+# ======================================================================================
+
+def _shared(key, lead, **kw):
+    c = Conv(key, stage="manager", **kw)
+    c.bitrix_lead_id = lead
+    return c
+
+
+def test_dialogs_on_a_shared_card_are_not_asked_about():
+    """Первая линия: общая карточка в вечернюю рассылку не попадает."""
+    a = _shared("frunze_tours:996700000001", "181665")
+    b = _shared("frunze_tours:996700000002", "181665")   # тот же лид — общая карточка
+    solo = _shared("frunze_tours:996700000003", "184417")
+    assert sale_check.select_targets([a, b, solo], NOW, Cfg) == [solo]
+
+
+def test_single_dialog_per_card_still_asked():
+    """Ложноположительный, обязан пройти: обычная карточка спрашивается как раньше."""
+    solo = _shared("frunze_tours:996700000004", "186777")
+    assert sale_check.select_targets([solo], NOW, Cfg) == [solo]
+
+
+def test_dialog_without_a_card_is_not_treated_as_shared():
+    """Диалоги без карточки не должны схлопываться в одну «общую» по пустому id."""
+    a = Conv("frunze_tours:996700000005", stage="manager")
+    b = Conv("frunze_tours:996700000006", stage="manager")
+    a.bitrix_lead_id = b.bitrix_lead_id = ""
+    assert len(sale_check.select_targets([a, b], NOW, Cfg)) == 2
+
+
+def test_convert_refuses_a_shared_card(tmp_path, monkeypatch):
+    """Вторая линия: нажатие по УЖЕ отправленной ссылке портал не трогает.
+
+    Ссылки на общие карточки ушли Адеми сегодня утром — отозвать их нельзя, значит
+    защита обязана стоять на самом нажатии, а не только в отборе.
+    """
+    from app.integrations.panel import store as store_mod
+
+    portal: list[str] = []
+
+    async def spy_convert(lead_id, status):
+        portal.append(lead_id)
+
+    async def scenario():
+        engine, store = await _store(tmp_path, [
+            _row("frunze_tours:996700000001", bitrix_lead_id="181665"),
+            _row("frunze_tours:996700000002", bitrix_lead_id="181665"),
+        ], name="shared_convert.db")
+        monkeypatch.setattr(store_mod, "get_conversation_store", lambda: store)
+
+        class FakeCrm:
+            async def get_lead(self, lead_id):
+                return {"ID": lead_id, "STATUS_ID": "UC_PNSIIB"}
+
+            async def update_stage_status(self, lead_id, status):
+                await spy_convert(lead_id, status)
+
+        monkeypatch.setattr("app.integrations.crm.bitrix24.Bitrix24Crm", lambda: FakeCrm())
+        cid = sale_check._cid("frunze_tours:996700000001", Cfg)
+        result, _ = await sale_check.mark(cid, "won", Cfg, "ademi")
+        conv = await store.get("frunze_tours:996700000001")
+        await engine.dispose()
+        return result, conv
+
+    result, conv = run(scenario())
+    assert portal == [], f"общую карточку двинули в портале: {portal}"
+    assert conv.outcome == "won", "ответ менеджера всё равно должен сохраниться"
+    assert result in ("saved", "saved_no_crm"), result

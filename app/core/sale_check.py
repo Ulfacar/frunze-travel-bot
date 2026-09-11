@@ -88,6 +88,22 @@ def _is_tour(conv: Any) -> bool:
     return str(getattr(conv, "funnel", "") or "") == "tours"
 
 
+def _shared_leads(convs: list) -> set[str]:
+    """Карточки Открытой линии, на которых сидит больше одного нашего клиента.
+
+    Замер 11.09: таких карточек 74, на них 203 туровых диалога, на одной — 19 клиентов
+    и 73 телефона внутри самой карточки. Нажатие «Оплатил» по такому диалогу увело бы
+    в «Подписан» карточку всех сразу, а обратное чтение завело бы сделку с именем
+    произвольного из них — остальные выпали бы из конвейера навсегда.
+    """
+    seen: dict[str, int] = {}
+    for conv in convs:
+        lead = str(getattr(conv, "bitrix_lead_id", "") or "").strip()
+        if lead:
+            seen[lead] = seen.get(lead, 0) + 1
+    return {lead for lead, count in seen.items() if count > 1}
+
+
 def _askable(conv: Any, now: datetime) -> bool:
     """Можно ли спрашивать. Один диалог — один вопрос; «клиент думает» покупает ещё один.
 
@@ -114,6 +130,7 @@ def select_targets(convs: list, now: datetime, cfg: Any, *, enabled: bool | None
     now = _aware(now) or datetime.now(timezone.utc)
     min_age = timedelta(hours=float(getattr(cfg, "sale_check_min_age_hours", 12)))
     max_age = timedelta(days=float(getattr(cfg, "sale_check_max_age_days", 14)))
+    shared = _shared_leads(convs)
     out = []
     for conv in convs:
         if getattr(conv, "archived", False):
@@ -123,6 +140,8 @@ def select_targets(convs: list, now: datetime, cfg: Any, *, enabled: bool | None
         phone = str(getattr(conv, "phone", "") or getattr(conv, "user_id", ""))
         if any(phone.endswith(own) for own in OWN_NUMBERS):
             continue                       # наш же номер — партнёрский чат, не клиент
+        if str(getattr(conv, "bitrix_lead_id", "") or "").strip() in shared:
+            continue                       # общая карточка — спрашивать про неё нельзя
         if str(getattr(conv, "outcome", "") or "") in FINAL_OUTCOMES:
             continue                       # человек уже отметил исход — вопрос закрыт
         if not _askable(conv, now):
@@ -317,9 +336,17 @@ async def _convert_lead(conv_key: str, lead_id: str, *, conv: Any = None) -> Non
     """
     from app.integrations.crm import bitrix_pipeline
     from app.integrations.crm.bitrix24 import Bitrix24Crm
+    from app.integrations.panel.store import get_conversation_store
 
     if conv is not None and not await bitrix_pipeline._enabled(conv):
         log.info("sale check: связка с Битриксом выключена, лид не трогаем conv=%s", conv_key)
+        return
+    # Ссылки на общие карточки уже разосланы менеджерам — отозвать их нельзя, поэтому
+    # защита стоит и на самом нажатии, а не только в отборе. Ответ менеджера при этом
+    # сохраняется: врать в отчёте нельзя, но и чужую карточку двигать нельзя.
+    if lead_id in _shared_leads(await get_conversation_store().all_conversations_light()):
+        log.warning("sale check: лид %s общий для нескольких клиентов — в портал не пишем"
+                    " (conv=%s)", lead_id, conv_key)
         return
     crm = Bitrix24Crm()
     status = str((await crm.get_lead(lead_id)).get("STATUS_ID") or "")
