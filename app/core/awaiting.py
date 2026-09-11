@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -30,6 +31,39 @@ _TERMINAL_OUTCOMES = {"won", "lost"}
 _alerted: dict[str, float] = {}
 
 FLAG = "awaiting_telegram_enabled"
+
+# Прощание — не ожидание ответа. Живой прогон 11.09: в первом же тике 3 из 8
+# напоминаний были ложными («Удачи вам», «Спасибо 🌸🌸🌸», автоответ чужой фирмы).
+# Фильтр намеренно узкий: реплика должна СОСТОЯТЬ из вежливости, а не содержать её.
+# «Спасибо, а на 5 ночей есть?» — живой разговор, и промолчать тут дороже, чем
+# лишний раз дёрнуть менеджера.
+_CLOSING = re.compile(
+    r"^(?:спасибо\w*|благодар\w+|удачи|всего\s+добр\w+|до\s+свидан\w+|пока|"
+    r"хорошо\s+спасибо|"
+    r"хорошо|ок|окей|ладно|понятн\w*|понял\w*|поняла|ясно|принял\w*|"
+    r"thanks?|thank\s+you|ok|okay)(?:\s+(?:вам|тебе|большое|огромное))*$",
+    re.IGNORECASE,
+)
+# Автоответ чужой компании: наш номер написал в другую фирму (или клиент переслал).
+# Это не клиент, который ждёт, — менеджеру там делать нечего.
+_FOREIGN_BOT = re.compile(
+    r"спасибо\s+за\s+обращение|ваше\s+обращение\s+принято|чем\s+могу\s+помочь\s*\?*$|"
+    r"мы\s+ответим\s+вам|оператор\s+ответит",
+    re.IGNORECASE,
+)
+
+
+def _is_closing(text: str) -> bool:
+    """Реплика закрывает разговор, а не ждёт ответа."""
+    clean = str(text or "").strip()
+    if not clean:
+        return False                      # голосовое/картинка без текста — это ожидание
+    if _FOREIGN_BOT.search(clean):
+        return True
+    # Снимаем эмодзи и знаки, чтобы «Спасибо 🌸🌸🌸» и «Спасибо!» считались одинаково.
+    bare = re.sub(r"[^\w\s]", " ", clean, flags=re.UNICODE)
+    bare = re.sub(r"\s+", " ", bare).strip()
+    return bool(_CLOSING.match(bare))
 # Сколько диалогов поднимаем за тик. Замер 11.09: в хвосте 196 ждущих клиентов, и
 # первое же включение вывалило бы их менеджеру пачкой. «Главное, чтобы их это не
 # доставало» (встреча 29.07) — ограничение того же рода, что CATCHUP_CAP у заявок.
@@ -82,7 +116,8 @@ def select_telegram_targets(convs: list, now: datetime, cfg) -> list:
     max_age = timedelta(hours=float(getattr(cfg, "awaiting_max_age_hours", 24)))
     fresh = [c for c in targets
              if _aware(c.last_message_at) is not None
-             and _aware(c.last_message_at) >= _aware(now) - max_age]
+             and _aware(c.last_message_at) >= _aware(now) - max_age
+             and not _is_closing(getattr(c, "last_text", ""))]
     fresh.sort(key=lambda c: _aware(c.last_message_at), reverse=True)
     return fresh[:TELEGRAM_CAP]
 
