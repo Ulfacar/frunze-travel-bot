@@ -55,6 +55,8 @@ class ConversationView:
     sale_check_asked_at: Any = None
     # «Клиент ещё думает»: до этой даты вопрос не повторяем.
     sale_check_snooze_until: Any = None
+    # Когда напомнили владельцу про ждущего клиента. None — ещё не напоминали.
+    awaiting_pinged_at: Any = None
     last_text: str = ""
     last_sender: str = ""
     last_message_at: datetime | None = None
@@ -195,6 +197,7 @@ class MemoryConversationStore:
                           source_headline: str | None = None, source_url: str | None = None,
                           source_payload: dict | None = None,
                           sale_check_asked_at: Any = None,
+                          awaiting_pinged_at: Any = None,
                           sale_check_snooze_until: Any = None,
                           clear_sale_snooze: bool = False) -> None:
         conv = await self.ensure(user_id)
@@ -250,6 +253,8 @@ class MemoryConversationStore:
         _apply_source(conv, source, source_id, source_headline, source_url, source_payload)
         if sale_check_asked_at is not None:
             conv.sale_check_asked_at = sale_check_asked_at
+        if awaiting_pinged_at is not None:
+            conv.awaiting_pinged_at = awaiting_pinged_at
         if sale_check_snooze_until is not None:
             conv.sale_check_snooze_until = sale_check_snooze_until
         if clear_sale_snooze:
@@ -429,6 +434,7 @@ class PostgresConversationStore:
                           source_headline: str | None = None, source_url: str | None = None,
                           source_payload: dict | None = None,
                           sale_check_asked_at: Any = None,
+                          awaiting_pinged_at: Any = None,
                           sale_check_snooze_until: Any = None,
                           clear_sale_snooze: bool = False) -> None:
         async with self._sm()() as session:
@@ -485,6 +491,8 @@ class PostgresConversationStore:
             _apply_source(conv, source, source_id, source_headline, source_url, source_payload)
             if sale_check_asked_at is not None:
                 conv.sale_check_asked_at = sale_check_asked_at
+            if awaiting_pinged_at is not None:
+                conv.awaiting_pinged_at = awaiting_pinged_at
             if sale_check_snooze_until is not None:
                 conv.sale_check_snooze_until = sale_check_snooze_until
             if clear_sale_snooze:
@@ -639,6 +647,7 @@ def _view(conv) -> ConversationView:
         outcome=getattr(conv, "outcome", "") or "",
         sale_check_asked_at=getattr(conv, "sale_check_asked_at", None),
         sale_check_snooze_until=getattr(conv, "sale_check_snooze_until", None),
+        awaiting_pinged_at=getattr(conv, "awaiting_pinged_at", None),
         last_text=conv.last_text,
         last_sender=conv.last_sender, last_message_at=conv.last_message_at,
         followup_sent=getattr(conv, "followup_sent", False) or False,

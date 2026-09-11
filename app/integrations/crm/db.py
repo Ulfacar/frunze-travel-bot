@@ -114,6 +114,10 @@ class Conversation(Base):
     sale_check_asked_at: Mapped[Any] = mapped_column(DateTime(timezone=True), nullable=True)
     # «Клиент ещё думает» — до этой даты вопрос не повторяем.
     sale_check_snooze_until: Mapped[Any] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Когда в последний раз напомнили владельцу, что клиент ждёт. В карточке, а не в
+    # памяти процесса: словарь в памяти пуст у каждого воркера и после каждого деплоя,
+    # а деплоев у нас по несколько в день — менеджер получал бы пачку заново.
+    awaiting_pinged_at: Mapped[Any] = mapped_column(DateTime(timezone=True), nullable=True)
     # Источник лида (Click-to-WhatsApp Ads): откуда пришёл клиент. Write-once — первое касание.
     source: Mapped[str] = mapped_column(String(16), default="")        # ad | post | "" (organic/неизвестно)
     source_id: Mapped[str] = mapped_column(String(128), default="")    # id объявления/поста
@@ -311,6 +315,7 @@ async def init_models(engine: AsyncEngine) -> None:
             "outcome_inferred_reason": "TEXT DEFAULT ''",
             "sale_check_asked_at": "TIMESTAMPTZ",
             "sale_check_snooze_until": "TIMESTAMPTZ",
+            "awaiting_pinged_at": "TIMESTAMPTZ",
             "source": "VARCHAR(16) DEFAULT ''",
             "source_id": "VARCHAR(128) DEFAULT ''",
             "source_headline": "VARCHAR(300) DEFAULT ''",

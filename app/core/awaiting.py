@@ -117,9 +117,29 @@ def select_telegram_targets(convs: list, now: datetime, cfg) -> list:
     fresh = [c for c in targets
              if _aware(c.last_message_at) is not None
              and _aware(c.last_message_at) >= _aware(now) - max_age
-             and not _is_closing(getattr(c, "last_text", ""))]
+             and not _is_closing(getattr(c, "last_text", ""))
+             and not _pinged_recently(c, now, cfg)]
     fresh.sort(key=lambda c: _aware(c.last_message_at), reverse=True)
     return fresh[:TELEGRAM_CAP]
+
+
+def _pinged_recently(conv, now: datetime, cfg) -> bool:
+    """Напоминали недавно? Отметка лежит в карточке и переживает рестарт."""
+    last = _aware(getattr(conv, "awaiting_pinged_at", None))
+    if last is None:
+        return False
+    cooldown = timedelta(minutes=float(getattr(cfg, "alert_cooldown_minutes", 60)))
+    return last > _aware(now) - cooldown
+
+
+async def _remember_ping(user_id: str, moment: datetime) -> None:
+    """Записать отметку. Сбой записи не должен ронять рассылку — но и молчать нельзя:
+    без отметки клиент получит второе напоминание, и это видно в логе."""
+    try:
+        await get_conversation_store().update_meta(user_id, awaiting_pinged_at=moment)
+    except Exception:  # noqa: BLE001
+        log.warning("awaiting: отметка о напоминании не записана (key=%s)", user_id,
+                    exc_info=True)
 
 
 async def _all_conversations() -> list:
@@ -189,6 +209,7 @@ async def run_telegram(*, now: datetime | None = None, cfg=None) -> int:
             try:
                 if await _push_owner(login, render_awaiting_text(c, minutes), c):
                     _alerted[c.user_id] = stamp
+                    await _remember_ping(c.user_id, now_dt)
                     sent += 1
                     log.warning("awaiting: напомнили %s по диалогу %s (%d мин)",
                                 login or "владельцу бизнеса", c.user_id, minutes)
