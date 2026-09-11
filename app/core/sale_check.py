@@ -96,12 +96,18 @@ def _shared_leads(convs: list) -> set[str]:
     в «Подписан» карточку всех сразу, а обратное чтение завело бы сделку с именем
     произвольного из них — остальные выпали бы из конвейера навсегда.
     """
-    seen: dict[str, int] = {}
+    seen: dict[str, set[str]] = {}
     for conv in convs:
         lead = str(getattr(conv, "bitrix_lead_id", "") or "").strip()
-        if lead:
-            seen[lead] = seen.get(lead, 0) + 1
-    return {lead for lead, count in seen.items() if count > 1}
+        if not lead:
+            continue
+        # Ключ диалога — «<бот>:<телефон>». Считаем ЛЮДЕЙ, а не строки: один клиент,
+        # написавший и в туры, и в визы, даёт два диалога на одной карточке, и это
+        # не контейнер, а тот же человек. Замер 11.09: таких карточек 78 против 17
+        # настоящих общих — считая диалоги, фильтр ошибался чаще, чем срабатывал.
+        phone = str(getattr(conv, "user_id", "") or "").rsplit(":", 1)[-1]
+        seen.setdefault(lead, set()).add(phone)
+    return {lead for lead, phones in seen.items() if len(phones) > 1}
 
 
 def _askable(conv: Any, now: datetime) -> bool:
