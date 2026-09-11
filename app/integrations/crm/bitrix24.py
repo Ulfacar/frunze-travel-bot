@@ -177,6 +177,31 @@ class Bitrix24Crm:
             {"id": lead_id, "fields": {"COMMENTS": sanitize_lead_comments(text)}},
         )
 
+    async def find_contact_id_by_phone(self, phone: str) -> str:
+        """Контакт с этим телефоном, если он в портале уже есть. "" — если нет.
+
+        Ищем тем же `crm.duplicate.findbycomm`, что и лиды: он нормализует номер, формат
+        с `+` и без находится одинаково. Свой контакт заводить, когда чужой уже есть, —
+        значит плодить дубли в CRM заказчика.
+        """
+        phone = str(phone or "").strip()
+        if not phone:
+            return ""
+        resp = await self._call(
+            "crm.duplicate.findbycomm",
+            {"type": "PHONE", "values": [phone], "entity_type": "CONTACT"})
+        ids = ((resp.get("result") or {}).get("CONTACT")) or []
+        return str(ids[0]) if ids else ""
+
+    async def create_contact(self, name: str, phone: str) -> str:
+        """Завести контакт с именем и телефоном. Возвращает id."""
+        resp = await self._call("crm.contact.add", {"fields": {
+            "NAME": str(name or phone).strip(),
+            "PHONE": [{"VALUE": str(phone).strip(), "VALUE_TYPE": "MOBILE"}],
+            "OPENED": "Y",
+        }})
+        return str(resp.get("result") or "")
+
     async def create_deal(self, fields: dict[str, Any]) -> str:
         resp = await self._call("crm.deal.add", {"fields": fields})
         return str(resp.get("result") or "")

@@ -266,6 +266,10 @@ class Settings(BaseSettings):
     dossier_when_intercepted_enabled: bool = False
     tour_facts_enabled: bool = False
     bitrix_autodeal_enabled: bool = False
+    # Привязывать ли к сделке контакт клиента. В Битриксе телефон живёт у контакта, а не
+    # у сделки: без него менеджер не может позвонить прямо из карточки. Но это НОВЫЕ
+    # записи в CRM заказчика, поэтому по умолчанию выключено — включаем по его слову.
+    bitrix_deal_contact_enabled: bool = False
     bitrix_read_back_days: int = 45
     bitrix_deal_category_id: str = "27"
     bitrix_deal_stage_id: str = "C27:NEW"

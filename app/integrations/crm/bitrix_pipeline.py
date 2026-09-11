@@ -12,6 +12,7 @@ from app.core import flags
 from app.integrations.crm.bitrix24 import (
     LEAD_COMMENTS_MARKER,
     sanitize_lead_comments,
+    sanitize_lead_comments,
     strip_lead_comments_bbcode,
 )
 from app.integrations.panel.store import get_conversation_store
@@ -440,18 +441,10 @@ async def read_back_once(*, adapter: Any = None) -> dict:
             if not await flags.get_flag("bitrix_autodeal_enabled", settings.bitrix_autodeal_enabled):
                 stats["deals_dry_run"] += 1
                 continue
-            fields = {
-                "CATEGORY_ID": settings.bitrix_deal_category_id,
-                "STAGE_ID": settings.bitrix_deal_stage_id,
-                "TITLE": str(lead.get("TITLE") or f"Тур: {getattr(conv, 'phone', conv.user_id)}"),
-                "COMMENTS": f"Диалог: /admin/conversation/{conv.user_id}",
-            }
-            if lead.get("ASSIGNED_BY_ID"):
-                fields["ASSIGNED_BY_ID"] = lead["ASSIGNED_BY_ID"]
-            opportunity, currency = _opportunity(conv)
-            if opportunity:
-                fields["OPPORTUNITY"] = opportunity
-                fields["CURRENCY_ID"] = currency
+            fields = deal_fields(conv, lead)
+            contact_id = await _deal_contact_id(conv, lead, client)
+            if contact_id:
+                fields["CONTACT_ID"] = contact_id
             deal_id = await client.create_deal(fields)
             if deal_id:
                 await store.update_meta(conv.user_id, bitrix_deal_id=deal_id)
@@ -461,6 +454,98 @@ async def read_back_once(*, adapter: Any = None) -> dict:
             log.warning("pipeline read-back failed lead=%s", lead_id, exc_info=True)
     log.info("pipeline read-back stats=%s", stats)
     return stats
+
+
+
+def deal_title(conv: Any, lead: dict) -> str:
+    """Название сделки — про тур, а не про канал.
+
+    Замер 11.09: сделка называлась «Al - WhatsApp Wappi: GetVisa», и в списке пять таких
+    отличались только именем. Менеджер должен опознавать сделку не открывая её, поэтому
+    собираем из того, что клиент сказал: куда, сколько человек, когда.
+    """
+    q = dict(getattr(conv, "qualification", None) or {})
+    where = ", ".join(x for x in (str(q.get("destination") or "").strip(),
+                                  str(q.get("region") or "").strip()) if x)
+    who = str(q.get("tourists") or "").strip()
+    when = str(q.get("dates") or "").strip()
+    parts = [x for x in (where, f"{who} чел" if who else "", when) if x]
+    if parts:
+        return "Тур: " + " · ".join(parts)
+    # Анкета пустая — разговор был ни о чём. Берём название лида, а если и его нет,
+    # хотя бы телефон: сделка без названия в портале выглядит как строка-призрак.
+    return str(lead.get("TITLE") or "").strip() or \
+        f"Тур: {getattr(conv, 'phone', '') or conv.user_id}"
+
+
+def deal_fields(conv: Any, lead: dict) -> dict:
+    """Поля новой сделки. Чистая функция — проверяется без обращений к порталу.
+
+    Что сюда НЕ попадает и почему:
+    * `LEAD_ID` — в сделке доступен только для чтения (`crm.deal.fields`), портал
+      отвергнет запись. Связь с карточкой клиента кладём ссылкой в комментарий.
+    * `OPPORTUNITY` — сколько клиент реально заплатил, бот не знает: оплата идёт в офисе
+      и по телефону. Сумму вписывает менеджер (решение владельца 11.09). Раньше сюда
+      уезжал бюджет из анкеты, то есть «сколько клиент хотел потратить» — в отчёте о
+      выручке это враньё.
+    * `CONTACT_ID` — добавляется отдельно и только при включённом тумблере: контакт это
+      новая запись в CRM заказчика.
+    """
+    q = dict(getattr(conv, "qualification", None) or {})
+    # Досье собираем ТОЙ ЖЕ функцией, что пишет в лид. Вторая копия текста однажды
+    # разъедется с оригиналом — это уже было 21.08 со ссылкой на диалог.
+    comments = [render_dossier(conv, q)]
+    lead_id = str(lead.get("ID") or "").strip()
+    if lead_id:
+        # Номер карточки пишем ВСЕГДА, ссылку — когда известен адрес портала. Связь
+        # сделки с карточкой иначе теряется совсем: поле `LEAD_ID` только для чтения.
+        base = (settings.bitrix_portal_url or "").rstrip("/")
+        where = f"{base}/crm/lead/details/{lead_id}/" if base else f"№{lead_id}"
+        comments.append(f"Карточка клиента: {where}")
+
+    fields = {
+        "CATEGORY_ID": settings.bitrix_deal_category_id,
+        "STAGE_ID": settings.bitrix_deal_stage_id,
+        "TITLE": deal_title(conv, lead),
+        "COMMENTS": sanitize_lead_comments("\n".join(x for x in comments if x)),
+    }
+    for key in ("ASSIGNED_BY_ID", "SOURCE_ID", "SOURCE_DESCRIPTION"):
+        if lead.get(key):
+            fields[key] = lead[key]
+    # Сумму кладём ТОЛЬКО когда её удалось разобрать, и обязательно с валютой: воронка
+    # туров считает в сомах, и «2500 USD» без валюты легло бы как 2500 сом — в двадцать
+    # раз ниже правды (гейт tests/test_deal_currency.py, замер портала 18.08). Это оценка
+    # из разговора, а не факт оплаты: менеджер правит её в карточке.
+    opportunity, currency = _opportunity(conv)
+    if opportunity:
+        fields["OPPORTUNITY"] = opportunity
+        fields["CURRENCY_ID"] = currency
+    return fields
+
+
+async def _deal_contact_id(conv: Any, lead: dict, client: Any) -> str:
+    """Контакт для сделки: найти по телефону, иначе создать. "" — если нельзя или нечем.
+
+    Без контакта из сделки нельзя позвонить — в Битриксе телефон живёт у контакта, а не
+    у сделки. Но создание контакта это новая запись в CRM заказчика, поэтому за тумблером
+    и по умолчанию выключено.
+    """
+    if not await flags.get_flag("bitrix_deal_contact_enabled",
+                                settings.bitrix_deal_contact_enabled):
+        return ""
+    phone = str(getattr(conv, "phone", "") or "").strip()
+    if not phone:
+        return ""
+    try:
+        found = await client.find_contact_id_by_phone(phone)
+        if found:
+            return found
+        name = str(lead.get("NAME") or "").strip() or phone
+        return await client.create_contact(name, phone)
+    except Exception:  # noqa: BLE001 — без контакта сделка всё равно нужнее, чем без сделки
+        log.warning("pipeline: контакт для сделки не получен (conv=%s)", conv.user_id,
+                    exc_info=True)
+        return ""
 
 
 def classify_drift(current: str, remembered: str) -> str:
