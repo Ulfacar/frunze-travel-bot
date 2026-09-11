@@ -467,9 +467,14 @@ def deal_title(conv: Any, lead: dict) -> str:
     q = dict(getattr(conv, "qualification", None) or {})
     where = ", ".join(x for x in (str(q.get("destination") or "").strip(),
                                   str(q.get("region") or "").strip()) if x)
+    # «чел» дописываем ТОЛЬКО к голому числу. Состав часто приходит фразой («2 взрослых,
+    # 1 ребенок»), и тогда получалось «2 взрослых, 1 ребенок чел» — мусор в названии,
+    # который менеджер видит в списке сделок (прогон по 734 диалогам 11.09).
     who = str(q.get("tourists") or "").strip()
+    if who:
+        who = f"{who} чел" if who.isdigit() else who
     when = str(q.get("dates") or "").strip()
-    parts = [x for x in (where, f"{who} чел" if who else "", when) if x]
+    parts = [x for x in (where, who, when) if x]
     if parts:
         return "Тур: " + " · ".join(parts)
     # Анкета пустая — разговор был ни о чём. Берём название лида, а если и его нет,

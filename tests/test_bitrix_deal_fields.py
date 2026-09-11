@@ -156,3 +156,34 @@ def test_lead_id_is_not_written_directly():
     """`LEAD_ID` в сделке доступен только для чтения — портал отвергнет запись."""
     fields = bitrix_pipeline.deal_fields(Conv(qualification=FULL), LEAD)
     assert "LEAD_ID" not in fields
+
+
+# ======================================================================================
+# ПРОГОН ПО 734 ЖИВЫМ ДИАЛОГАМ 11.09 — состав в названии искажался.
+# «Тур: Турция, Анталья · 2 взрослых, 1 ребенок чел · сентябрь» — слово «чел»
+# дописывалось всегда, даже когда состав записан фразой и слово там уже есть.
+# ======================================================================================
+
+def test_bare_number_of_tourists_gets_the_word():
+    title = bitrix_pipeline.deal_title(Conv(qualification={**FULL, "tourists": "3"}), LEAD)
+    assert "3 чел" in title, title
+
+
+@pytest.mark.parametrize("tourists", [
+    "2 взрослых, 1 ребенок",
+    "2 взрослых",
+    "семья из 5 человек",
+])
+def test_phrase_composition_is_taken_as_is(tourists):
+    """Состав фразой берём как есть: «2 взрослых чел» — это мусор в названии."""
+    title = bitrix_pipeline.deal_title(Conv(qualification={**FULL, "tourists": tourists}), LEAD)
+    assert tourists in title, title
+    assert f"{tourists} чел" not in title, title
+
+
+def test_no_composition_block_when_unknown():
+    """Ложноположительный: состава нет — название собирается без него и не ломается."""
+    q = {k: v for k, v in FULL.items() if k != "tourists"}
+    title = bitrix_pipeline.deal_title(Conv(qualification=q), LEAD)
+    assert title.startswith("Тур: ")
+    assert "чел" not in title, title

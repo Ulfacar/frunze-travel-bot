@@ -140,7 +140,10 @@ class Bitrix24Crm:
         while True:
             payload = {
                 "filter": {"STATUS_ID": "CONVERTED", ">DATE_MODIFY": _bitrix_time(since)},
-                "select": ["ID", "TITLE", "ASSIGNED_BY_ID", "STATUS_ID"],
+                # SOURCE_* нужны сделке: без них в карточке не видно, откуда пришёл
+                # клиент. Просим их здесь, а не отдельным запросом на каждый лид.
+                "select": ["ID", "TITLE", "ASSIGNED_BY_ID", "STATUS_ID",
+                           "SOURCE_ID", "SOURCE_DESCRIPTION", "NAME"],
                 "order": {"DATE_MODIFY": "DESC"},
                 "start": start,
             }
