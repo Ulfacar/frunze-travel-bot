@@ -398,6 +398,20 @@ def _opportunity(conv: Any) -> tuple[str, str]:
     return str(amount), code
 
 
+def _is_tour(conv: Any) -> bool:
+    """Диалог туровый? Сделки заводятся в одну воронку — CATEGORY_ID 27 «FrunzeTravel».
+
+    Без этой проверки обратное чтение сопоставляло проданный лид с ЛЮБЫМ нашим диалогом
+    по номеру карточки. Визовые менеджеры двигают лиды в «Подписан» сотнями в месяц, и
+    каждая такая продажа помечала визовый диалог как выигранный и заводила сделку в
+    туровой воронке. Замер 13.09: флаг автосделки на проде включён, один визовый диалог
+    уже помечен продажей. Загрязнялась ровно та статистика, ради которой конвейер и есть.
+
+    Пустая воронка туровой не считается: «не знаю» — это не «тур».
+    """
+    return str(getattr(conv, "funnel", "") or "") == "tours"
+
+
 async def read_back_once(*, adapter: Any = None) -> dict:
     """Забрать из портала продажи и завести по ним сделки.
 
@@ -422,6 +436,8 @@ async def read_back_once(*, adapter: Any = None) -> dict:
 
     by_lead: dict[str, Any] = {}
     for conv in await store.all_conversations_light():
+        if not _is_tour(conv):
+            continue            # воронка FrunzeTravel — только туры, см. `_is_tour`
         lead_id = str(getattr(conv, "bitrix_lead_id", "") or "")
         if lead_id:
             by_lead[lead_id] = conv

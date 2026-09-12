@@ -92,6 +92,22 @@ def test_party_with_children_ages():
     assert "7" in ages and "10" in ages
 
 
+_MONTHS_RU = ("января", "февраля", "марта", "апреля", "мая", "июня", "июля",
+              "августа", "сентября", "октября", "ноября", "декабря")
+
+
+def _future_month() -> str:
+    """Месяц через два от сегодняшнего, в родительном падеже.
+
+    Прибито к календарю, а не к строке: тесты с датами «12-18 сентября» ломались сами
+    собой, когда день наступал, — разбор справедливо отказывается видеть прошедшую дату.
+    Два месяца вперёд, а не один: иначе в последних числах месяца «1-8 <следующий>»
+    оказывалось бы слишком близко к границе.
+    """
+    from datetime import date
+    return _MONTHS_RU[(date.today().month + 1) % 12]
+
+
 def test_return_to_previous_destination():
     """Случай лида 186247: возврат в Анталью обязан доехать до карточки."""
     got = facts.extract("Хотя нет, всё-таки вернёмся к Турции, Анталья")
@@ -100,14 +116,14 @@ def test_return_to_previous_destination():
 
 
 def test_resort_and_dates_in_one_question():
-    got = facts.extract("А Кемер на 1-8 октября что стоит? тоже двое, всё включено")
+    got = facts.extract(f"А Кемер на 1-8 {_future_month()} что стоит? тоже двое, всё включено")
     assert got.get("region") == "Кемер"
     assert got.get("dates")
     assert str(got.get("tourists")) == "2"
 
 
 def test_dates_shift():
-    got = facts.extract("А даты сдвинем на 12-18 сентября")
+    got = facts.extract(f"А даты сдвинем на 12-18 {_future_month()}")
     assert got.get("dates")
 
 

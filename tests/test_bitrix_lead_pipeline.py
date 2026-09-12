@@ -139,13 +139,15 @@ def _clean(monkeypatch):
 
 
 def _conv(*, lead=LEAD, stage_by_bot="", intercepted=False, qualification=None,
-          bot_id="frunze_tours"):
+          bot_id="frunze_tours", funnel="tours"):
     key = _key(bot_id)
     store = ps.get_conversation_store()
     run(store.ensure(key, bot_id=bot_id))
     run(store.add_message(key, sender="client", text="хочу в Анталью"))
+    # Воронку проставляем как в бою: обратное чтение заводит сделки только по турам
+    # (`_is_tour`), и диалог без воронки туровым не считается.
     run(store.update_meta(key, bitrix_lead_id=lead, intercepted=intercepted,
-                          qualification=qualification or {}))
+                          funnel=funnel, qualification=qualification or {}))
     if stage_by_bot:
         run(store.update_meta(key, bitrix_stage_by_bot=stage_by_bot))
     return store

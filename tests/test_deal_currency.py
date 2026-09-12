@@ -85,7 +85,13 @@ def _conv(budget: str, *, value=None, currency=""):
     store = ps.get_conversation_store()
     run(store.ensure(KEY, bot_id=BOT))
     run(store.add_message(KEY, sender="client", text="хочу в Дубай"))
-    run(store.update_meta(KEY, bitrix_lead_id=LEAD, qualification={"budget": budget},
+    # `funnel` добавлен 13.09: обратное чтение заводит сделки только по турам
+    # (`bitrix_pipeline._is_tour`), иначе визовые продажи падали в туровую воронку.
+    # На проде туровый бот проставляет воронку ВСЕГДА — 1412 диалогов, пустых ноль,
+    # так что без этого поля фикстура просто не похожа на бой. Ни одно ожидание
+    # этого гейта не изменено.
+    run(store.update_meta(KEY, bitrix_lead_id=LEAD, funnel="tours",
+                          qualification={"budget": budget},
                           estimated_value=value, estimated_value_currency=currency))
     return store
 

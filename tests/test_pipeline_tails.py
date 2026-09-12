@@ -117,11 +117,12 @@ def _many_convs(count: int, *, converted_key: str, lead: str) -> None:
         key = f"{BOT}:99670011{i:04d}"
         run(store.ensure(key, bot_id=BOT))
         run(store.add_message(key, sender="client", text="хочу тур"))
-        run(store.update_meta(key, bitrix_lead_id=str(180000 + i),
+        run(store.update_meta(key, bitrix_lead_id=str(180000 + i), funnel="tours",
                               qualification={"budget": "1500 USD"}))
     run(store.ensure(converted_key, bot_id=BOT))
     run(store.add_message(converted_key, sender="client", text="беру"))
-    run(store.update_meta(converted_key, bitrix_lead_id=lead,
+    # Воронка как в бою: обратное чтение заводит сделки только по турам (`_is_tour`).
+    run(store.update_meta(converted_key, bitrix_lead_id=lead, funnel="tours",
                           qualification={"budget": "2500 USD"}))
 
 
