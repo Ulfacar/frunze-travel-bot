@@ -256,7 +256,10 @@ def _party(text: str) -> tuple[str, str]:
         # показал, что иначе «едем вчетвером с ребенком 5 лет» давало одного туриста —
         # то самое враньё в карточке, против которого написан весь модуль.
         for word, value in _PARTY_WORDS.items():
-            if re.search(rf"\b{word}\b", text, re.IGNORECASE):
+            # «за двое суток», «трое суток» — это срок, а не состав. Замер сухого
+            # прогона 13.09: служебная переписка менеджеров «Она вроде за двое суток
+            # можно деп отвечала» давала двух туристов.
+            if re.search(rf"\b{word}\b(?!\s*(?:сут|дн|ноч|недел|мес))", text, re.IGNORECASE):
                 total = value
                 break
     if not total:
@@ -435,6 +438,14 @@ async def allowed(found: dict, *, bot_id: str = "") -> dict:
     if await _flags.get_flag(f"tour_facts_budget_enabled:{bot_id}", globally):
         return found
     return {k: v for k, v in found.items() if k not in _GATED_FIELDS}
+
+
+def resort_country(resort: str) -> str:
+    """Страна курорта по названию. Пусто — курорт незнакомый."""
+    for row in _RESORTS:
+        if str(row[1]).lower() == str(resort or "").lower():
+            return row[2]
+    return ""
 
 
 def fill_gaps(known: dict | None, found: dict | None) -> dict:

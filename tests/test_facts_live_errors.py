@@ -138,3 +138,22 @@ def test_real_budgets_survive_the_floor():
     assert facts.extract("Бюджет 1500-1700 долл").get("budget") == "1700 USD"
     assert facts.extract("Ну 150-200 тысяч сом").get("budget") == "200000 KGS"
     assert facts.extract("По500евро").get("budget") == "500 EUR"
+
+
+# --- найдено СУХИМ ПРОГОНОМ по истории ---------------------------------------------------
+
+def test_two_days_is_not_two_tourists():
+    """Служебная переписка менеджеров: «за двое суток» давало двух туристов."""
+    text = "Уточни у Адеми тоже Она вроде за двое суток можно деп отвечала"
+    assert not facts.extract(text).get("tourists")
+
+
+def test_word_party_still_works():
+    """Ложное срабатывание дороже: «едем вдвоём» обязано читаться."""
+    assert str(facts.extract("Едем вдвоём в Турцию").get("tourists")) == "2"
+
+
+def test_resort_knows_its_country():
+    assert facts.resort_country("Дубай") == "ОАЭ"
+    assert facts.resort_country("Анталья") == "Турция"
+    assert facts.resort_country("Неизвестно") == ""

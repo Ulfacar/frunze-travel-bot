@@ -58,14 +58,37 @@ async def _candidates(limit: int, bot_prefix: str, days: int) -> list[dict]:
             " order by c.last_message_at desc nulls last"
         ), {"prefix": f"{bot_prefix}%", "days": str(days)})).mappings().all()
 
+    # Общие карточки Открытой линии: на одном лиде сидят разные клиенты. Сухой прогон
+    # 13.09 показал такой диалог на 194 реплики, куда стеклись факты нескольких человек —
+    # даты из пересланного прайса, состав из чужого номера телефона. Дозаполнять такое
+    # нельзя: мы впишем одному клиенту чужую поездку.
+    shared = await _shared_leads()
+
     out = []
     for row in rows:
         if int(row["msgs"] or 0) < MIN_CLIENT_MESSAGES:
+            continue
+        if str(row["bitrix_lead_id"] or "") in shared:
             continue
         out.append(dict(row))
         if len(out) >= limit:
             break
     return out
+
+
+async def _shared_leads() -> set[str]:
+    """Карточки, на которых больше одного телефона."""
+    from sqlalchemy import text as sql
+
+    from app.integrations.crm.db import get_sessionmaker
+
+    async with get_sessionmaker()() as session:
+        rows = (await session.execute(sql(
+            "select bitrix_lead_id from conversations"
+            " where coalesce(bitrix_lead_id,'') <> ''"
+            " group by bitrix_lead_id"
+            " having count(distinct split_part(user_id, ':', 2)) > 1"))).scalars().all()
+    return {str(r) for r in rows}
 
 
 async def _client_messages(conv_id: int) -> list[str]:
@@ -95,6 +118,14 @@ async def _replay(conv: dict, bot_id: str) -> tuple[dict, dict[str, str]]:
                 sources[key] = message.replace("\n", " ")[:70]
         known = filled
     added = {k: v for k, v in known.items() if before.get(k) in (None, "", [], {})}
+    # Курорт и страна обязаны сходиться. Клиент передумал по ходу разговора, а поля
+    # брались из разных сообщений: сухой прогон дал «направление Египет, курорт Дубай».
+    # Курорт снимаем — он уточнение, а страна важнее.
+    resort = added.get("region") or known.get("region")
+    country = added.get("destination") or known.get("destination")
+    if resort and country and facts.resort_country(resort) not in ("", country):
+        added.pop("region", None)
+        sources.pop("region", None)
     return added, sources
 
 
