@@ -49,6 +49,20 @@ def test_exchange_fee_is_not_a_budget():
     assert not facts.extract("За обмен 185$").get("budget")
 
 
+def test_transfer_price_list_is_not_a_budget():
+    """Найдено ПОЛНЫМ прогоном (5000 сообщений), когда шесть первых классов уже были
+    закрыты: прайс на трансфер по Сеулу лёг бюджетом 502 USD. Случай дописан в гейт
+    после правки — он её ужесточает, а не смягчает."""
+    text = ("Airport pickup/sending - стоимость в одну сторону\n"
+            "Cедан 225$\nМинивэн 200$\n\nAll day\nСедан 502$\nМинивэн 396$")
+    assert not facts.extract(text).get("budget")
+
+
+def test_a_range_is_still_one_budget():
+    """Ложное срабатывание нового правила: вилка — это одна сумма, а не список."""
+    assert facts.extract("бюджет 800-1000$").get("budget")
+
+
 # --- (г) город прилёта — не город вылета ------------------------------------------------
 
 def test_arrival_city_is_not_departure():
