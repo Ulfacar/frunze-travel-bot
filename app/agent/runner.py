@@ -554,7 +554,7 @@ async def _absorb_client_facts(state: DialogState, user_text: str) -> None:
     if not await flags.get_flag(f"tour_facts_enabled:{state.bot_id}", globally):
         return
     from app.agent import facts
-    found = facts.extract(user_text)
+    found = await facts.allowed(facts.extract(user_text), bot_id=state.bot_id)
     if not found:
         return
     state.qualification = facts.merge(state.qualification, found)

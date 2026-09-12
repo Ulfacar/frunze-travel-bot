@@ -414,6 +414,29 @@ def extract(text: str) -> dict:
         return {}
 
 
+# Поля, которые дороже ошибиться, чем пропустить. Бюджет один такой: полный прогон по
+# 10 000 боевых сообщений оставил в нём семантические ошибки, регуляркой не берущиеся
+# («До этого вы писали цену 420 $» — это НАША цена, процитированная обратно; «500$ за
+# номер» — цена за комнату; «Мы за 1800$ брали на ноябрь» — прошлая покупка). Остальные
+# шесть полей на том же прогоне читаются чисто, и держать их взаперти из-за бюджета
+# незачем: карточка нужна менеджеру сегодня.
+_GATED_FIELDS = ("budget",)
+
+
+async def allowed(found: dict, *, bot_id: str = "") -> dict:
+    """Отсеять поля, которым пока нельзя в карточку. Тумблер общий + per-bot."""
+    if not found or not any(f in found for f in _GATED_FIELDS):
+        return found
+    from app.config import settings as _settings
+    from app.core import flags as _flags
+
+    globally = await _flags.get_flag("tour_facts_budget_enabled",
+                                     getattr(_settings, "tour_facts_budget_enabled", False))
+    if await _flags.get_flag(f"tour_facts_budget_enabled:{bot_id}", globally):
+        return found
+    return {k: v for k, v in found.items() if k not in _GATED_FIELDS}
+
+
 def merge(known: dict, found: dict) -> dict:
     """Слить найденное с уже известным. Пустое НЕ затирает известное (урок cb7f427)."""
     merged = dict(known or {})

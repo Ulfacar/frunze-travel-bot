@@ -619,7 +619,7 @@ class Orchestrator:
             if not text:
                 return
             from app.agent import facts
-            found = facts.extract(text)
+            found = await facts.allowed(facts.extract(text), bot_id=state.bot_id)
             if not found:
                 return
             state.qualification = merge_qualification(state.qualification, found)
