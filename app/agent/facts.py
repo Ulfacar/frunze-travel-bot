@@ -437,6 +437,22 @@ async def allowed(found: dict, *, bot_id: str = "") -> dict:
     return {k: v for k, v in found.items() if k not in _GATED_FIELDS}
 
 
+def fill_gaps(known: dict | None, found: dict | None) -> dict:
+    """Дописать только то, чего в карточке нет. Известное не трогаем НИКОГДА.
+
+    `merge` перезаписывает известное свежим — это правильно в живом разговоре, где клиент
+    передумал. Для прогона по истории правило обратное: в карточке может стоять то, что
+    менеджер завёл руками, и разбор старой реплики не имеет права с ним спорить.
+    """
+    out = dict(known or {})
+    for key, value in (found or {}).items():
+        if value in (None, "", [], {}):
+            continue
+        if out.get(key) in (None, "", [], {}):
+            out[key] = value
+    return out
+
+
 def merge(known: dict, found: dict) -> dict:
     """Слить найденное с уже известным. Пустое НЕ затирает известное (урок cb7f427)."""
     merged = dict(known or {})
