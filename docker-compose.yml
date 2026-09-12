@@ -96,6 +96,8 @@ services:
       AWAITING_TELEGRAM_ENABLED: ${AWAITING_TELEGRAM_ENABLED:-false}
       AWAITING_MAX_AGE_HOURS: ${AWAITING_MAX_AGE_HOURS:-24}
       AWAITING_MAX_PINGS: ${AWAITING_MAX_PINGS:-2}
+      # Молчаливое дочитывание переписки при перехвате. Default OFF.
+      FACTS_WHEN_SILENT_ENABLED: ${FACTS_WHEN_SILENT_ENABLED:-false}
       CHANNEL_HEARTBEAT_QUIET_FROM: ${CHANNEL_HEARTBEAT_QUIET_FROM:-22}
       CHANNEL_HEARTBEAT_QUIET_TO: ${CHANNEL_HEARTBEAT_QUIET_TO:-9}
       # guard v1 — фильтр доверия к расшифровке. Дефолт = shadow (считаем и показываем

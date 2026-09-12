@@ -373,6 +373,11 @@ class Orchestrator:
         # менеджер не подключился, один раз честно подтверждаем клиенту, что запрос передан и
         # когда ответят — иначе клиент висит в тишине («Алло… когда звонок?» по 15 сообщений).
         if state.intercepted:
+            # Молчим — но продолжаем ЧИТАТЬ. Замер 13.09: из 739 перехваченных туровых
+            # диалогов анкета пуста у 591, и есть диалог со 131 сообщением клиента при
+            # полностью пустой карточке. Перехват наступает раньше, чем бот успевает
+            # выяснить направление, и всё, что заполняет карточку, живёт НИЖЕ этой ветки.
+            await self._absorb_silent(msg, state)
             if state.stage == "manager":
                 await self._maybe_wait_ack(msg, state, store)
             return
@@ -585,7 +590,46 @@ class Orchestrator:
                     pass
             log.warning("bot send failed (channel=%s)", msg.channel, exc_info=True)
 
-    async def _sync_card(self, msg: Message, state) -> None:
+    async def _absorb_silent(self, msg: Message, state) -> None:
+        """Вынуть факты из реплики клиента, ничего ему не отвечая.
+
+        Три ограничения, каждое — обещание заказчику, а не вкусовщина:
+
+        * **ни одного вызова модели и ни одной отправки.** Здесь только `facts.extract` —
+          регулярки, ноль стоимости и ноль риска заговорить. Метод не имеет доступа к
+          каналу по построению;
+        * **только реплика клиента.** Сюда приходит входящее клиента: ответы менеджера
+          идут отдельной дорогой (эхо Wappi, `manager_sync`) и в оркестратор не заходят.
+          Это важно: менеджер присылает прайсы, и его «Анталья 1200$» уехала бы в бюджет
+          клиента, а оттуда в сумму сделки;
+        * **стадию не двигаем.** Карточку ведёт человек (решение 16.07), а заполнение
+          анкеты через `derive_stage` потащило бы её само.
+
+        Только туры: у виз своя анкета и свой смысл полей.
+        """
+        try:
+            if (state.funnel or "") != "tours":
+                return
+            from app.core import flags as _flags
+            globally = await _flags.get_flag("facts_when_silent_enabled",
+                                             settings.facts_when_silent_enabled)
+            if not await _flags.get_flag(f"facts_when_silent_enabled:{state.bot_id}", globally):
+                return
+            text = (msg.text or "").strip()
+            if not text:
+                return
+            from app.agent import facts
+            found = facts.extract(text)
+            if not found:
+                return
+            state.qualification = merge_qualification(state.qualification, found)
+            await get_state_store().save(state)
+            await self._sync_card(msg, state, move_stage=False)
+            log.info("facts absorbed silently fields=%s", ",".join(sorted(found)))
+        except Exception:  # noqa: BLE001 — чтение фактов не имеет права ронять живой ход
+            log.warning("silent absorb failed (key=%s)", self._key(msg), exc_info=True)
+
+    async def _sync_card(self, msg: Message, state, *, move_stage: bool = True) -> None:
         try:
             panel = get_conversation_store()
             brief = build_manager_brief(state)
@@ -596,8 +640,13 @@ class Orchestrator:
             # первым же ходом бота (решение 16.07: человек главнее бота).
             card = await panel.get(self._key(msg))
             current = getattr(card, "stage", "") or ""
-            state.stage = advance_stage(max(current, state.stage, key=lambda st: STAGE_RANK.get(st, 0)),
-                                        derive_stage(state))
+            if move_stage:
+                state.stage = advance_stage(
+                    max(current, state.stage, key=lambda st: STAGE_RANK.get(st, 0)),
+                    derive_stage(state))
+            else:
+                # Молчаливое дочитывание: анкету обновляем, стадию оставляем как есть.
+                state.stage = current or state.stage
             # Анкету сливаем, а не заменяем: см. `merge_qualification`. Результат кладём
             # обратно в состояние — иначе следующий ход опять поедет с неполным набором
             # и `derive_stage` посчитает стадию по обрезанной анкете.
