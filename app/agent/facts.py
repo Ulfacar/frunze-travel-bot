@@ -125,6 +125,10 @@ _BROADCAST = re.compile(r"📢|❗|ВАЖНО!|документы для виз�
 _MAX_LEN = 400
 
 # Слово о людях рядом с числом. Без него «2 с багажом 1 ручная» станет двумя туристами.
+# Дробный возраст: «1,5 года», «2.5 лет». Единица измерения обязательна — без неё
+# «16,17 и 9 лет» это перечисление возрастов троих детей, а не дробь.
+_DECIMAL_AGE = re.compile(r"\d+[.,]\d+\s*(?:год\w*|лет|мес\w*)", re.IGNORECASE)
+
 _PARTY_MARKER = re.compile(
     r"нас\s+будет|нас\s+\d|взросл\w*|дет[ьейия]\w*|реб[её]н\w*|малыш\w*|человек\w*|"
     r"\bчел\b|вдво[её]м|втро[её]м|вчетвер\w*|дво[еиё]\w*|тро[еиё]\w*|"
@@ -173,12 +177,19 @@ def _found(patterns, text: str):
 def _departure_city(text: str) -> str:
     """Город вылета. «Не из Бишкека, а из Алматы» → Алматы, а не Бишкек."""
     contrast = re.search(r"не\s+из\s+\S+.{0,20}?\bа?\s*(?:из|с)\s+(\S+)", text, re.IGNORECASE)
-    scope = contrast.group(1) if contrast else text
-    if not contrast and not re.search(r"вылет\w*|выезж\w*|\bиз\b|летим|полетим", text,
-                                      re.IGNORECASE):
+    if contrast:
+        hit = _found(_DEPARTURE_CITIES, contrast.group(1))
+        return hit[1] if hit else ""
+    if not re.search(r"вылет\w*|выезж\w*|\bиз\b|\bс\b|летим|полетим", text, re.IGNORECASE):
         return ""            # город без слова о вылете — это может быть что угодно
-    hit = _found(_DEPARTURE_CITIES, scope)
-    return hit[1] if hit else ""
+    # Ищем город ПОСЛЕ предлога, а не где угодно в тексте. Замер: «рейс из Дубая
+    # в Бишкек» давал вылет из Бишкека — то есть ровно наоборот, потому что Дубая нет
+    # в списке городов вылета, а Бишкек нашёлся дальше по строке.
+    for match in re.finditer(r"\b(?:из|с|со|от)\s+([А-Яа-яЁёA-Za-z\-]+)", text):
+        hit = _found(_DEPARTURE_CITIES, match.group(1))
+        if hit:
+            return hit[1]
+    return ""
 
 
 def _place(text: str) -> tuple[str, str]:
@@ -196,7 +207,9 @@ def _party(text: str) -> tuple[str, str]:
         return "", ""
 
     def number_before(word_pattern: str) -> int:
-        match = re.search(r"(\d+|[а-яё]+)\s+" + word_pattern, text, re.IGNORECASE)
+        # `(?<![\d.,])` отсекает хвост десятичной дроби: «2,5 человек» давало пятерых
+        # туристов, потому что «5» стоит прямо перед словом. Полтора человека не бывает.
+        match = re.search(r"(?<![\d.,])(\d+|[а-яё]+)\s+" + word_pattern, text, re.IGNORECASE)
         if not match:
             return 0
         token = match.group(1).lower()
@@ -211,9 +224,19 @@ def _party(text: str) -> tuple[str, str]:
                                   text, re.IGNORECASE))
     kids_word = kids_words[-1] if kids_words else None
     if kids_word and not _MONTHS.search(text):
-        ages = [int(n) for n in re.findall(r"\d+", text[kids_word.end():])
-                if int(n) <= _MAX_CHILD_AGE]
+        # «Ребёнок 1,5 года» давал возрасты «1, 5» — одного малыша превращало в двоих
+        # детей, и состав вырастал на человека. Но «Детям 16,17 и 9 лет» — это
+        # ПЕРЕЧИСЛЕНИЕ через запятую, и его ломать нельзя. Отличаем по единице
+        # измерения: дробью считаем только то, за чем прямо стоит «года/лет/месяца».
+        tail = _DECIMAL_AGE.sub(" ", text[kids_word.end():])
+        ages = [int(n) for n in re.findall(r"\d+", tail) if int(n) <= _MAX_CHILD_AGE]
 
+    # Несколько номеров в одной реплике («2 взрослых в одном номере и 2 взрослых +
+    # ребёнок во втором») — это не один состав, а разбивка по комнатам. Сложить их
+    # правильно мы не умеем, а взять первое число значит соврать: замер дал 4 туриста
+    # там, где их пятеро. Молчим и оставляем менеджеру.
+    if len(re.findall(r"(?<![\d.,])\d+\s+взросл", text, re.IGNORECASE)) > 1:
+        return "", ""
     adults = number_before(r"взросл")
     kids_count = number_before(r"(?:дет|реб|малыш)")
     # «2 человека», «на 4 человека», «семья из 5 человек» — так пишет большинство, и это
@@ -268,6 +291,22 @@ _EXPLICIT_CURRENCY = re.compile(
     r"\$|€|долл\w*|\busd\b|\beur\b|евро|\bсом\b|\bсома\b|\bсомов\b|\bkgs\b|рубл\w*",
     re.IGNORECASE,
 )
+# Валюты, курса которых мы не знаем. Замер: «Цена 968 тыс вонн» легла бюджетом
+# 968 000 сом — клиент пересказывал чужую цену в корейских вонах. Пересчитывать нечем и
+# незачем: пропустить дешевле, чем соврать на два порядка.
+_FOREIGN_CURRENCY = re.compile(
+    r"\bвон\w*|\bтенге\b|\bлир\w*|дирхам\w*|\bюан\w*|\bбат\b|\bбата\b|"
+    r"рупи\w*|\bзлот\w*|\bйен\w*|\bдонг\w*",
+    re.IGNORECASE,
+)
+# Деньги в реплике есть, но это не бюджет клиента: жалоба на невозврат, комиссия за
+# обмен, штраф. Замеры: «жалко им 200 долл невернут», «За обмен 185$».
+_NOT_A_BUDGET = re.compile(
+    r"не\s*вернут\w*|невернут\w*|не\s*верн[её]т|возврат\w*|"
+    r"за\s+обмен|обмен\w*\s+валют|комисси\w*|штраф\w*|удержал\w*|пеня|"
+    r"сбор\s+за|доплат\w*\s+за\s+багаж",
+    re.IGNORECASE,
+)
 
 
 def _budget(text: str) -> str:
@@ -275,6 +314,10 @@ def _budget(text: str) -> str:
     clean = _DATEISH.sub(" ", _LONG_DIGITS.sub(" ", _URL.sub(" ", text)))
     if not _BUDGET_MARKER.search(clean):
         return ""
+    if _FOREIGN_CURRENCY.search(clean):
+        return ""          # воны, тенге, дирхамы — курса не знаем, выдумывать не будем
+    if _NOT_A_BUDGET.search(clean):
+        return ""          # жалоба на невозврат или комиссия — это не бюджет поездки
     if not _BUDGET_INTENT.search(clean):
         # Короткая реплика без вопроса, где сумма — это и есть ответ («1700 долларов»).
         # Длину меряем по ИСХОДНОМУ тексту: вырезание даты укорачивало реплику и
