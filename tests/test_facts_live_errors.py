@@ -111,3 +111,30 @@ def test_still_reads_children_ages():
     got = facts.extract("Едем вчетвером с ребенком 5 лет")
     assert str(got.get("tourists")) == "4"
     assert got.get("children_ages") == "5"
+
+
+# --- найдено ПОЛНЫМ прогоном по 10 000 сообщений ----------------------------------------
+
+def test_dot_as_thousands_separator():
+    """«Расчет брали до 100.000 сом» давало 100 сом — ошибка в тысячу раз."""
+    assert facts.extract("Расчет брали до 100.000 сом").get("budget") == "100000 KGS"
+
+
+def test_europe_is_not_euro():
+    """«еще 2 чел из Европы» давало бюджет 2 EUR: «евро» матчилось внутри «Европы»."""
+    assert not facts.extract("еще 2 чел из Европы").get("budget")
+
+
+def test_one_ticket_is_not_one_dollar():
+    assert not facts.extract("Модно в долларах за 1 билет").get("budget")
+
+
+def test_child_age_is_not_a_budget():
+    assert not facts.extract("Бабушка с ребёнком 6 лет").get("budget")
+
+
+def test_real_budgets_survive_the_floor():
+    """Ложное срабатывание нижнего порога дороже: настоящие бюджеты обязаны пройти."""
+    assert facts.extract("Бюджет 1500-1700 долл").get("budget") == "1700 USD"
+    assert facts.extract("Ну 150-200 тысяч сом").get("budget") == "200000 KGS"
+    assert facts.extract("По500евро").get("budget") == "500 EUR"
