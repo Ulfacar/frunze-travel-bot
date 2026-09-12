@@ -121,6 +121,10 @@ class Conversation(Base):
     # Сколько напоминаний уже отправлено по текущему ожиданию. Обнуляется, когда клиент
     # пишет снова: это новое ожидание, а не продолжение старого.
     awaiting_ping_count: Mapped[int] = mapped_column(Integer, default=0)
+    # Сколько клиент реально заплатил — называет менеджер при подтверждении продажи.
+    # Это НЕ бюджет из разговора: бюджет — пожелание, а в отчёте о выручке нужна оплата.
+    sale_amount: Mapped[Any] = mapped_column(Float, nullable=True)
+    sale_currency: Mapped[str] = mapped_column(String(8), default="")
     # Источник лида (Click-to-WhatsApp Ads): откуда пришёл клиент. Write-once — первое касание.
     source: Mapped[str] = mapped_column(String(16), default="")        # ad | post | "" (organic/неизвестно)
     source_id: Mapped[str] = mapped_column(String(128), default="")    # id объявления/поста
@@ -320,6 +324,8 @@ async def init_models(engine: AsyncEngine) -> None:
             "sale_check_snooze_until": "TIMESTAMPTZ",
             "awaiting_pinged_at": "TIMESTAMPTZ",
             "awaiting_ping_count": "INTEGER DEFAULT 0",
+            "sale_amount": "DOUBLE PRECISION",
+            "sale_currency": "VARCHAR(8) DEFAULT ''",
             "source": "VARCHAR(16) DEFAULT ''",
             "source_id": "VARCHAR(128) DEFAULT ''",
             "source_headline": "VARCHAR(300) DEFAULT ''",

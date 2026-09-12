@@ -88,6 +88,49 @@ def _is_tour(conv: Any) -> bool:
     return str(getattr(conv, "funnel", "") or "") == "tours"
 
 
+# Валюты, которые менеджер может выбрать на странице подтверждения. Сом первым: воронка
+# туров считает в сомах, базовая валюта портала — KGS.
+SALE_CURRENCIES = ("KGS", "USD")
+# Выше этого продажа тура не бывает — защита от лишнего нуля, набранного с телефона.
+_MAX_SALE = {"KGS": 5_000_000, "USD": 60_000}
+
+
+def parse_amount(raw: str, currency: str = "KGS") -> float | None:
+    """Сумма оплаты из того, что менеджер набрал с телефона.
+
+    «120 000», «120000», «96,5» — обычная запись. Мусор («не помню»), ноль и отрицательное
+    не принимаем: пустая сумма это вопрос менеджеру, а неверная — испорченный отчёт.
+    """
+    text = str(raw or "").strip().replace(" ", " ")
+    text = text.replace(" ", "").replace(",", ".")
+    if not text:
+        return None
+    try:
+        value = float(text)
+    except ValueError:
+        return None
+    if value <= 0:
+        return None
+    if value > _MAX_SALE.get(str(currency or "KGS").upper(), _MAX_SALE["KGS"]):
+        return None
+    return value
+
+
+async def _save_amount(conv_key: str, raw: str, currency: str) -> float | None:
+    """Записать названную менеджером оплату. Не разобрали — подтверждение всё равно живёт."""
+    code = str(currency or "KGS").upper()
+    if code not in SALE_CURRENCIES:
+        code = SALE_CURRENCIES[0]
+    value = parse_amount(raw, code)
+    if value is None:
+        return None
+    from app.integrations.panel.store import get_conversation_store
+    await get_conversation_store().update_meta(conv_key, sale_amount=value,
+                                               sale_currency=code)
+    log.info("sale check: менеджер назвал сумму conv=%s currency=%s", conv_key, code)
+    return value
+
+
 def _shared_leads(convs: list) -> set[str]:
     """Карточки Открытой линии, на которых сидит больше одного нашего клиента.
 
@@ -374,7 +417,8 @@ async def _find_by_cid(cid: str, cfg: Any):
     return None
 
 
-async def mark(cid: str, outcome: str, cfg: Any, login: str = "") -> tuple[str, Any]:
+async def mark(cid: str, outcome: str, cfg: Any, login: str = "", *,
+               amount: str = "", currency: str = "KGS") -> tuple[str, Any]:
     """Записать ответ менеджера. Возвращает `(результат, диалог)`.
 
     Результат: `saved` / `saved_no_crm` / `repeat` / `snoozed` / `unknown`. Менеджеру это
@@ -404,6 +448,12 @@ async def mark(cid: str, outcome: str, cfg: Any, login: str = "") -> tuple[str, 
         return "repeat", conv              # кто-то успел раньше — второй записи не будет
     await store.add_audit(login or "sale-link", f"sale_check_{outcome}", conv_key,
                           "отметка по ссылке из вечернего вопроса")
+    # Сумму пишем ПОСЛЕ защёлки исхода и только у продажи: она уезжает в поле выручки
+    # сделки, и повторное нажатие не должно её переписывать. Не разобрали — подтверждение
+    # всё равно сохранено, сумму менеджер проставит в карточке.
+    if outcome == "won" and amount:
+        if await _save_amount(conv_key, amount, currency) is not None:
+            conv = await store.get(conv_key) or conv
     try:
         await apply_outcome(conv, outcome,
                             convert=functools.partial(_convert_lead, conv=conv))

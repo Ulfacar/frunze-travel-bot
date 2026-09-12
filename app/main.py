@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from collections import OrderedDict
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -276,6 +276,24 @@ _SALE_TITLES = {
 }
 
 
+def _sale_saved_text(outcome: str, conv) -> str:
+    """Что ответить менеджеру. Названную сумму повторяем: человек должен увидеть, что
+    записалось именно то, что он набрал, — иначе опечатку в 10 раз никто не заметит."""
+    if outcome != "won":
+        return "Спасибо! Отметили, что сделка не состоялась."
+    try:
+        amount = float(getattr(conv, "sale_amount", None) or 0)
+    except (TypeError, ValueError):
+        amount = 0
+    if amount > 0:
+        code = str(getattr(conv, "sale_currency", "") or "KGS").upper()
+        label = {"KGS": "сом", "USD": "$"}.get(code, code)
+        return (f"Спасибо! Записали оплату {amount:,.0f} {label} — она попадёт в отчёт "
+                f"по турам.".replace(",", " "))
+    return ("Спасибо! Продажа учтена — она попадёт в отчёт по турам. "
+            "Сумму проставьте в карточке Битрикса.")
+
+
 @app.get("/sale/{token}", response_class=HTMLResponse)
 async def sale_confirm(token: str) -> HTMLResponse:
     """Страница подтверждения. НИЧЕГО не записывает — записывает только POST с кнопки.
@@ -315,13 +333,30 @@ async def sale_confirm(token: str) -> HTMLResponse:
     link = sale_check.card_link(conv, settings)
     edit = (f'<a class=card-link href="{html.escape(link)}" target="_blank" '
             f'rel="noopener">Открыть карточку в Битриксе</a>') if link else ""
+    # Сумма спрашивается только у продажи и только одним полем: менеджер отвечает с
+    # телефона за секунды, и любое лишнее поле здесь стоит нам ответа целиком. Без суммы
+    # подтверждение всё равно принимается — пустая сумма это вопрос, неверная это
+    # испорченный отчёт.
+    money = ""
+    if outcome == "won":
+        options = "".join(
+            f'<option value="{code}">{label}</option>'
+            for code, label in (("KGS", "сом"), ("USD", "$")))
+        money = ('<div class=money><label for=amount>Сколько оплатил</label>'
+                 '<div class=money-row>'
+                 '<input id=amount name=amount type=text inputmode=decimal '
+                 'autocomplete=off placeholder="например 120 000">'
+                 f'<select name=currency aria-label=Валюта>{options}</select></div>'
+                 '<div class=money-hint>Можно оставить пустым — тогда сумму '
+                 'проставите в Битриксе.</div></div>')
     form = (f'<form method="post" action="/sale/{html.escape(token)}">'
-            f'<button type="submit">Подтвердить</button></form>')
+            f'{money}<button type="submit">Подтвердить</button></form>')
     return HTMLResponse(_sale_page(title, f"{who}<br><br>{body}", extra=check + form + edit))
 
 
 @app.post("/sale/{token}", response_class=HTMLResponse)
-async def sale_apply(token: str) -> HTMLResponse:
+async def sale_apply(token: str, amount: str = Form(default=""),
+                     currency: str = Form(default="KGS")) -> HTMLResponse:
     """Менеджер нажал кнопку на странице — только здесь что-то меняется."""
     from app.core import sale_check
 
@@ -331,12 +366,11 @@ async def sale_apply(token: str) -> HTMLResponse:
                                        "Похоже, адрес повреждён. Отметьте исход в панели."),
                             status_code=400)
     cid, outcome, login = parsed
-    result, conv = await sale_check.mark(cid, outcome, settings, login)
+    result, conv = await sale_check.mark(cid, outcome, settings, login,
+                                         amount=amount, currency=currency)
     who = html.escape(sale_check.describe(conv)) if conv is not None else ""
     pages = {
-        "saved": ("Записано ✅",
-                  "Спасибо! Продажа учтена — она попадёт в отчёт по турам."
-                  if outcome == "won" else "Спасибо! Отметили, что сделка не состоялась."),
+        "saved": ("Записано ✅", _sale_saved_text(outcome, conv)),
         "saved_no_crm": ("Записано ✅",
                          "Ответ сохранён. Карточку в Битриксе обновить не удалось — "
                          "проверьте её вручную."),
@@ -371,6 +405,15 @@ def _sale_page(title: str, body: str, extra: str = "") -> str:
         ".facts td{padding:4px 0;vertical-align:top;color:#0F172A}"
         ".facts td:first-child{color:#64748B;width:44%;padding-right:10px}"
         ".card-link{display:inline-block;margin-top:16px;font-size:14px;color:#0E5C57}"
+        ".money{margin-top:20px;text-align:left}"
+        ".money label{display:block;font-size:13px;font-weight:600;color:#0E5C57;"
+        "margin-bottom:6px}"
+        ".money-row{display:flex;gap:8px}"
+        ".money input{flex:1;min-width:0;padding:13px 14px;font-size:17px;"
+        "border:1px solid #CBD5E1;border-radius:10px;color:#0F172A;background:#fff}"
+        ".money select{padding:13px 10px;font-size:16px;border:1px solid #CBD5E1;"
+        "border-radius:10px;background:#fff;color:#0F172A}"
+        ".money-hint{margin-top:6px;font-size:12px;color:#94A3B8}"
         "</style></head><body><div class=card>"
         f"<h1>{title}</h1><p>{body}</p>{extra}</div></body></html>"
     )

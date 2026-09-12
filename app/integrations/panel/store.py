@@ -59,6 +59,9 @@ class ConversationView:
     awaiting_pinged_at: Any = None
     # Сколько напоминаний уже ушло по текущему ожиданию.
     awaiting_ping_count: int = 0
+    # Сумма оплаты, названная менеджером при подтверждении продажи.
+    sale_amount: Any = None
+    sale_currency: str = ""
     last_text: str = ""
     last_sender: str = ""
     last_message_at: datetime | None = None
@@ -201,6 +204,8 @@ class MemoryConversationStore:
                           sale_check_asked_at: Any = None,
                           awaiting_pinged_at: Any = None,
                           awaiting_ping_count: Any = None,
+                          sale_amount: Any = None,
+                          sale_currency: str | None = None,
                           sale_check_snooze_until: Any = None,
                           clear_sale_snooze: bool = False) -> None:
         conv = await self.ensure(user_id)
@@ -260,6 +265,10 @@ class MemoryConversationStore:
             conv.awaiting_pinged_at = awaiting_pinged_at
         if awaiting_ping_count is not None:
             conv.awaiting_ping_count = int(awaiting_ping_count)
+        if sale_amount is not None:
+            conv.sale_amount = float(sale_amount)
+        if sale_currency is not None:
+            conv.sale_currency = sale_currency
         if sale_check_snooze_until is not None:
             conv.sale_check_snooze_until = sale_check_snooze_until
         if clear_sale_snooze:
@@ -441,6 +450,8 @@ class PostgresConversationStore:
                           sale_check_asked_at: Any = None,
                           awaiting_pinged_at: Any = None,
                           awaiting_ping_count: Any = None,
+                          sale_amount: Any = None,
+                          sale_currency: str | None = None,
                           sale_check_snooze_until: Any = None,
                           clear_sale_snooze: bool = False) -> None:
         async with self._sm()() as session:
@@ -501,6 +512,10 @@ class PostgresConversationStore:
                 conv.awaiting_pinged_at = awaiting_pinged_at
             if awaiting_ping_count is not None:
                 conv.awaiting_ping_count = int(awaiting_ping_count)
+            if sale_amount is not None:
+                conv.sale_amount = float(sale_amount)
+            if sale_currency is not None:
+                conv.sale_currency = sale_currency
             if sale_check_snooze_until is not None:
                 conv.sale_check_snooze_until = sale_check_snooze_until
             if clear_sale_snooze:
@@ -657,6 +672,8 @@ def _view(conv) -> ConversationView:
         sale_check_snooze_until=getattr(conv, "sale_check_snooze_until", None),
         awaiting_pinged_at=getattr(conv, "awaiting_pinged_at", None),
         awaiting_ping_count=int(getattr(conv, "awaiting_ping_count", 0) or 0),
+        sale_amount=getattr(conv, "sale_amount", None),
+        sale_currency=getattr(conv, "sale_currency", "") or "",
         last_text=conv.last_text,
         last_sender=conv.last_sender, last_message_at=conv.last_message_at,
         followup_sent=getattr(conv, "followup_sent", False) or False,

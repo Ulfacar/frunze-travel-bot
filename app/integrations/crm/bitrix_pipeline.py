@@ -373,6 +373,26 @@ def _currency_code(raw: str) -> str:
     return _CURRENCY_CODES.get(value, "")
 
 
+def _sale_amount(conv: Any) -> tuple[str, str] | None:
+    """Оплата, названная менеджером при подтверждении продажи. Она главнее всего.
+
+    Бюджет из разговора — это «сколько клиент хотел потратить», и в отчёте о выручке он
+    врёт. Пока менеджеру негде было назвать сумму, приходилось брать бюджет; теперь поле
+    на странице подтверждения есть, и если оно заполнено — в сделку идёт оно.
+
+    Отдаём строкой, как и `_opportunity`: портал принимает сумму строкой, а float с
+    хвостом вроде 119999.99999 в карточке выглядит как ошибка.
+    """
+    try:
+        amount = float(getattr(conv, "sale_amount", None) or 0)
+    except (TypeError, ValueError):
+        return None
+    if amount <= 0:
+        return None
+    currency = str(getattr(conv, "sale_currency", "") or "KGS").upper()
+    return (f"{amount:.2f}", currency)
+
+
 def _opportunity(conv: Any) -> tuple[str, str]:
     """Сумма сделки и её ВАЛЮТА. ("", "") — если разобрать не удалось.
 
@@ -537,7 +557,7 @@ def deal_fields(conv: Any, lead: dict) -> dict:
     # туров считает в сомах, и «2500 USD» без валюты легло бы как 2500 сом — в двадцать
     # раз ниже правды (гейт tests/test_deal_currency.py, замер портала 18.08). Это оценка
     # из разговора, а не факт оплаты: менеджер правит её в карточке.
-    opportunity, currency = _opportunity(conv)
+    opportunity, currency = _sale_amount(conv) or _opportunity(conv)
     if opportunity:
         fields["OPPORTUNITY"] = opportunity
         fields["CURRENCY_ID"] = currency
