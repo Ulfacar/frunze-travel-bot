@@ -118,9 +118,29 @@ def select_telegram_targets(convs: list, now: datetime, cfg) -> list:
              if _aware(c.last_message_at) is not None
              and _aware(c.last_message_at) >= _aware(now) - max_age
              and not _is_closing(getattr(c, "last_text", ""))
-             and not _pinged_recently(c, now, cfg)]
+             and not _pinged_recently(c, now, cfg)
+             and _ping_budget_left(c, cfg)]
     fresh.sort(key=lambda c: _aware(c.last_message_at), reverse=True)
     return fresh[:TELEGRAM_CAP]
+
+
+def _ping_budget_left(conv, cfg) -> bool:
+    """Осталось ли право напомнить по этому ожиданию.
+
+    Частота (`_pinged_recently`) ограничивает промежуток, но не общее число: клиент,
+    которому так и не ответили, за сутки набирал по 23 напоминания. Замер первых суток:
+    менеджер приходил в 16 случаях из 36 и медиана 14 минут — то есть работает первое
+    или второе напоминание, а не двадцатое.
+
+    Клиент написал снова после последнего напоминания — это НОВОЕ ожидание, счётчик
+    больше не действует: человек ждёт заново, и молчать об этом нельзя.
+    """
+    count = int(getattr(conv, "awaiting_ping_count", 0) or 0)
+    if count < int(getattr(cfg, "awaiting_max_pings", 2)):
+        return True
+    last_ping = _aware(getattr(conv, "awaiting_pinged_at", None))
+    last_msg = _aware(getattr(conv, "last_message_at", None))
+    return bool(last_ping and last_msg and last_msg > last_ping)
 
 
 def _pinged_recently(conv, now: datetime, cfg) -> bool:
@@ -132,11 +152,13 @@ def _pinged_recently(conv, now: datetime, cfg) -> bool:
     return last > _aware(now) - cooldown
 
 
-async def _remember_ping(user_id: str, moment: datetime) -> None:
-    """Записать отметку. Сбой записи не должен ронять рассылку — но и молчать нельзя:
-    без отметки клиент получит второе напоминание, и это видно в логе."""
+async def _remember_ping(user_id: str, moment: datetime, count: int) -> None:
+    """Записать отметку и номер напоминания. Сбой записи не должен ронять рассылку —
+    но и молчать нельзя: без отметки клиент получит лишнее напоминание, и это видно
+    в логе."""
     try:
-        await get_conversation_store().update_meta(user_id, awaiting_pinged_at=moment)
+        await get_conversation_store().update_meta(
+            user_id, awaiting_pinged_at=moment, awaiting_ping_count=count)
     except Exception:  # noqa: BLE001
         log.warning("awaiting: отметка о напоминании не записана (key=%s)", user_id,
                     exc_info=True)
@@ -209,7 +231,12 @@ async def run_telegram(*, now: datetime | None = None, cfg=None) -> int:
             try:
                 if await _push_owner(login, render_awaiting_text(c, minutes), c):
                     _alerted[c.user_id] = stamp
-                    await _remember_ping(c.user_id, now_dt)
+                    was = int(getattr(c, "awaiting_ping_count", 0) or 0)
+                    last_ping = _aware(getattr(c, "awaiting_pinged_at", None))
+                    last_msg = _aware(getattr(c, "last_message_at", None))
+                    if last_ping and last_msg and last_msg > last_ping:
+                        was = 0            # клиент написал снова — ожидание новое
+                    await _remember_ping(c.user_id, now_dt, was + 1)
                     sent += 1
                     log.warning("awaiting: напомнили %s по диалогу %s (%d мин)",
                                 login or "владельцу бизнеса", c.user_id, minutes)

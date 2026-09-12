@@ -58,7 +58,7 @@ async def test_successful_send_is_written_to_the_record(monkeypatch):
     async def push(login, text, conv_obj):
         return True
 
-    async def remember(user_id, moment):
+    async def remember(user_id, moment, count):   # сигнатура выросла: счётчик
         written[user_id] = moment
 
     monkeypatch.setattr(awaiting, "_push_owner", push)
@@ -77,7 +77,7 @@ async def test_failed_send_is_not_written(monkeypatch):
     async def push(login, text, conv_obj):
         return False
 
-    async def remember(user_id, moment):
+    async def remember(user_id, moment, count):   # сигнатура выросла: счётчик
         written[user_id] = moment
 
     monkeypatch.setattr(awaiting, "_push_owner", push)

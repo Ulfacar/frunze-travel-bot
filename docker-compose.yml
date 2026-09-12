@@ -95,6 +95,7 @@ services:
       # Напоминание владельцу о ждущем клиенте. Default OFF — щёлкается в админке.
       AWAITING_TELEGRAM_ENABLED: ${AWAITING_TELEGRAM_ENABLED:-false}
       AWAITING_MAX_AGE_HOURS: ${AWAITING_MAX_AGE_HOURS:-24}
+      AWAITING_MAX_PINGS: ${AWAITING_MAX_PINGS:-2}
       CHANNEL_HEARTBEAT_QUIET_FROM: ${CHANNEL_HEARTBEAT_QUIET_FROM:-22}
       CHANNEL_HEARTBEAT_QUIET_TO: ${CHANNEL_HEARTBEAT_QUIET_TO:-9}
       # guard v1 — фильтр доверия к расшифровке. Дефолт = shadow (считаем и показываем

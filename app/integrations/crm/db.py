@@ -118,6 +118,9 @@ class Conversation(Base):
     # памяти процесса: словарь в памяти пуст у каждого воркера и после каждого деплоя,
     # а деплоев у нас по несколько в день — менеджер получал бы пачку заново.
     awaiting_pinged_at: Mapped[Any] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Сколько напоминаний уже отправлено по текущему ожиданию. Обнуляется, когда клиент
+    # пишет снова: это новое ожидание, а не продолжение старого.
+    awaiting_ping_count: Mapped[int] = mapped_column(Integer, default=0)
     # Источник лида (Click-to-WhatsApp Ads): откуда пришёл клиент. Write-once — первое касание.
     source: Mapped[str] = mapped_column(String(16), default="")        # ad | post | "" (organic/неизвестно)
     source_id: Mapped[str] = mapped_column(String(128), default="")    # id объявления/поста
@@ -316,6 +319,7 @@ async def init_models(engine: AsyncEngine) -> None:
             "sale_check_asked_at": "TIMESTAMPTZ",
             "sale_check_snooze_until": "TIMESTAMPTZ",
             "awaiting_pinged_at": "TIMESTAMPTZ",
+            "awaiting_ping_count": "INTEGER DEFAULT 0",
             "source": "VARCHAR(16) DEFAULT ''",
             "source_id": "VARCHAR(128) DEFAULT ''",
             "source_headline": "VARCHAR(300) DEFAULT ''",
