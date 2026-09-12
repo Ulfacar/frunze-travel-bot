@@ -157,3 +157,14 @@ def test_resort_knows_its_country():
     assert facts.resort_country("Дубай") == "ОАЭ"
     assert facts.resort_country("Анталья") == "Турция"
     assert facts.resort_country("Неизвестно") == ""
+
+
+def test_samaya_is_not_may():
+    """«Самая ближайшее время» давало май 2027: «мая» нашлось внутри слова «Самая»."""
+    assert not facts.extract("Самая ближайшее время").get("dates")
+
+
+def test_month_at_the_start_of_a_word_still_counts():
+    """Ложное срабатывание дороже: месяц в начале слова обязан читаться."""
+    assert facts.extract("поедем в июне").get("dates")
+    assert facts.extract("в мае").get("dates")

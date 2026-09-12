@@ -442,8 +442,14 @@ def _roll_to_future(d1: date, d2: date) -> tuple[date, date]:
 
 
 def _month_from_text(text: str) -> int | None:
+    """Месяц словами. Основа должна начинать слово, а не лежать внутри него.
+
+    Замер сухого прогона 13.09: «Самая ближайшее время» давало май 2027 — «мая»
+    нашлось внутри «Самая». Так же ловились бы «мартышка», «июньский» ловится
+    правильно (основа в начале слова), а «Самая», «домашний», «римская» — нет.
+    """
     for stem, num in _RU_MONTHS:
-        if stem in text:
+        if re.search(r"\b" + stem, text, re.IGNORECASE):
             return num
     return None
 
@@ -491,7 +497,9 @@ def _parse_date_range(text: str) -> tuple[date | None, date | None, int | None]:
 
     # Числа ДО названия месяца — это дни («с 10 по 16 августа»). Год стоит после и сюда
     # не попадает.
-    head = t[: t.index(next(s for s, n in _RU_MONTHS if s in t and n == month))]
+    match = next(m for m in (re.search(r"\b" + s, t, re.IGNORECASE)
+                             for s, n in _RU_MONTHS if n == month) if m)
+    head = t[: match.start()]
     days = [int(n) for n in re.findall(r"\b(\d{1,2})\b", head) if 1 <= int(n) <= 31]
 
     try:
