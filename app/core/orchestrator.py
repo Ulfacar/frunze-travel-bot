@@ -116,6 +116,26 @@ LLM_ERROR_FALLBACK = (
 )
 
 
+def merge_qualification(known: dict | None, fresh: dict | None) -> dict:
+    """Слить анкету карточки с анкетой состояния. Новое главнее, пустое не стирает.
+
+    Запись в панель заменяет поле целиком (`store.update_meta`), а состояние диалога
+    живёт в Redis семь дней и при истечении поднимается ПУСТЫМ — из карточки оно не
+    восстанавливается. Значит клиент, вернувшийся через восемь дней, первым же ходом
+    бота стирал всё, что о нём собрали. Замер 13.09: 87 туровых диалогов с паузой
+    больше недели, у 80 анкета пуста, в 14 клиент называл направление прямым текстом.
+
+    Пустая строка в свежей анкете — это «не знаю», а не «сотри»: бот, не распознавший
+    направление в этом ходу, не имеет права забыть названное три реплики назад.
+    """
+    out = dict(known or {})
+    for key, value in (fresh or {}).items():
+        if value in (None, "", [], {}):
+            continue
+        out[key] = value
+    return out
+
+
 class Orchestrator:
     """Ведёт диалог одного бота. Если `bot` задан, его сценарий жёстко определяет
     воронку (тур-боты не угадывают её по ключевым словам). Без `bot` (дев-демо в
@@ -574,9 +594,15 @@ class Orchestrator:
             # сюда уезжала `state.stage`, которая менялась лишь на эскалации, — 92% диалогов
             # навсегда оставались в «Приветствии», а ручной перенос менеджера затирался
             # первым же ходом бота (решение 16.07: человек главнее бота).
-            current = getattr(await panel.get(self._key(msg)), "stage", "") or ""
+            card = await panel.get(self._key(msg))
+            current = getattr(card, "stage", "") or ""
             state.stage = advance_stage(max(current, state.stage, key=lambda st: STAGE_RANK.get(st, 0)),
                                         derive_stage(state))
+            # Анкету сливаем, а не заменяем: см. `merge_qualification`. Результат кладём
+            # обратно в состояние — иначе следующий ход опять поедет с неполным набором
+            # и `derive_stage` посчитает стадию по обрезанной анкете.
+            state.qualification = merge_qualification(
+                getattr(card, "qualification", None), state.qualification)
             await panel.update_meta(self._key(msg), funnel=state.funnel, stage=state.stage,
                                     qualification=state.qualification,
                                     outcome=_auto_outcome(state.stage), **brief, **readiness)
