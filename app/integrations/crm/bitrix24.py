@@ -221,6 +221,13 @@ class Bitrix24Crm:
         }})
         return str(resp.get("result") or "")
 
+    async def find_deal_by_lead(self, lead_id: str) -> str:
+        """ID сделки, заведённой из этого лида конвертацией в портале. "" — если нет."""
+        resp = await self._call("crm.deal.list", {"filter": {"LEAD_ID": lead_id},
+                                                  "select": ["ID"], "order": {"ID": "ASC"}})
+        deals = resp.get("result") or []
+        return str(deals[0].get("ID") or "") if deals else ""
+
     async def create_deal(self, fields: dict[str, Any]) -> str:
         resp = await self._call("crm.deal.add", {"fields": fields})
         return str(resp.get("result") or "")

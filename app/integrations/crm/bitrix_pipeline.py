@@ -505,7 +505,8 @@ async def read_back_once(*, adapter: Any = None) -> dict:
     источник, а не гадаем перебором.
     """
     stats = {key: 0 for key in ("checked", "moved", "frozen_manual", "dossier_written",
-            "dossier_skipped_human", "won", "deals_created", "deals_dry_run", "errors")}
+            "dossier_skipped_human", "won", "deals_created", "deals_linked", "deals_dry_run",
+            "errors")}
     client = _adapter(adapter)
     store = get_conversation_store()
     since = datetime.now(timezone.utc) - timedelta(days=settings.bitrix_read_back_days)
@@ -539,6 +540,14 @@ async def read_back_once(*, adapter: Any = None) -> dict:
                 continue
             if not await flags.get_flag("bitrix_autodeal_enabled", settings.bitrix_autodeal_enabled):
                 stats["deals_dry_run"] += 1
+                continue
+            # Менеджер мог сконвертировать лид сам — тогда портал уже завёл сделку, и наша
+            # была бы второй. Замер 14.09: лид 187095 Адеми перевела в «Подписан» кнопкой
+            # портала в 13:31 (сделка 5699, 36 305), а мы в 13:41 завели пустую 5701.
+            existing = await client.find_deal_by_lead(lead_id)
+            if existing:
+                await store.update_meta(conv.user_id, bitrix_deal_id=existing)
+                stats["deals_linked"] += 1
                 continue
             fields = deal_fields(conv, lead)
             contact_id = await _deal_contact_id(conv, lead, client)

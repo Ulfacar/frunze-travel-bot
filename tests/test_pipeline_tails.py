@@ -91,6 +91,11 @@ class FakeAdapter:
         await asyncio.sleep(0)
         self.comment_calls.append((str(lead_id), text))
 
+    async def find_deal_by_lead(self, lead_id):
+
+        return getattr(self, "portal_deal", "")  # сделка, заведённая конвертацией в портале
+
+
     async def create_deal(self, fields):
         await asyncio.sleep(0)
         self.deals.append(dict(fields))
