@@ -294,6 +294,16 @@ def test_message_shows_the_last_line_of_the_dialog():
     assert "вчера" in text
 
 
+def test_manager_line_is_not_attributed_to_the_reader():
+    """Список общий на двоих: реплику Адеми Айсина не должна читать как свою («вы»)."""
+    conv = Conv("frunze_tours:996700004477", stage="manager")
+    conv.last_text = "*Ademi Orozakunova:* Добрый день, рассмотрели варианты?"
+    conv.last_sender = "manager"
+    text = sale_check.render_message([conv], Cfg, NOW, "aisina")
+    assert "менеджер: «*Ademi Orozakunova:* Добрый день" in text
+    assert "вы:" not in text
+
+
 def test_message_does_not_leak_full_phone():
     """Приватность: в сообщение не уходит номер целиком."""
     convs = [Conv("frunze_tours:996700004477", stage="manager")]
