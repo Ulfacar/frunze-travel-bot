@@ -16,6 +16,7 @@ HTTP-клиент инъектируется (тесты) — иначе соз�
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from typing import Any
@@ -38,6 +39,10 @@ TOUR_LEAD_FIELDS = {
     "dates": "UF_CRM_1650441175540",         # «Даты поездки ?»
     "tourists": "UF_CRM_1650441245612",      # «Количество туристов ( взрослые), (дети)»
 }
+
+# Паузы между повторами при сбое соединения, секунды. Два повтора укладываются в ~3 с:
+# этого хватает, чтобы пережить разовый таймаут DNS, и не держит фоновые задачи долго.
+_CONNECT_RETRY_PAUSES = (1.0, 2.0)
 
 _BBCODE_TAG_RE = re.compile(r"\[/?[a-z][a-z0-9]*(?:=[^\]\r\n]*)?\]", re.IGNORECASE)
 
@@ -63,11 +68,26 @@ class Bitrix24Crm:
         self._client = client
 
     async def _call(self, method: str, payload: dict) -> dict:
-        """Вызов REST-метода. Возвращает тело ответа (с ключом `result`)."""
+        """Вызов REST-метода. Возвращает тело ответа (с ключом `result`).
+
+        Повторяем ТОЛЬКО сбой соединения. 14.09 DNS хостинга 46 раз за день не ответил
+        вовремя, и реплики клиентов не доезжали в ленту карточки с первой же попытки.
+        `ConnectError`/`ConnectTimeout` значат, что запрос до портала не дошёл, — повтор
+        безопасен даже для `crm.*.add`. Таймаут чтения не повторяем: портал мог запись
+        уже принять, и повтор завёл бы дубль.
+        """
         owns = self._client is None
         client = self._client or httpx.AsyncClient(timeout=20)
         try:
-            resp = await client.post(f"{self._base}/{method}.json", json=payload)
+            for attempt, pause in enumerate((*_CONNECT_RETRY_PAUSES, None)):
+                try:
+                    resp = await client.post(f"{self._base}/{method}.json", json=payload)
+                    break
+                except (httpx.ConnectError, httpx.ConnectTimeout):
+                    if pause is None:
+                        raise
+                    logger.info("Bitrix %s: нет соединения, повтор %d", method, attempt + 1)
+                    await asyncio.sleep(pause)
             resp.raise_for_status()
             return resp.json()
         finally:
