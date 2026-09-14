@@ -11,6 +11,7 @@ from app.config import settings
 from app.core import flags
 from app.integrations.crm.bitrix24 import (
     LEAD_COMMENTS_MARKER,
+    TOUR_LEAD_FIELDS,
     sanitize_lead_comments,
     sanitize_lead_comments,
     strip_lead_comments_bbcode,
@@ -76,6 +77,15 @@ async def _dossier_when_intercepted_enabled() -> bool:
     """
     return await flags.get_flag("dossier_when_intercepted_enabled",
                                 settings.dossier_when_intercepted_enabled)
+
+
+async def _dossier_refresh_enabled() -> bool:
+    return await flags.get_flag("dossier_refresh_enabled", settings.dossier_refresh_enabled)
+
+
+async def _lead_fields_enabled() -> bool:
+    return await flags.get_flag("bitrix_lead_fields_enabled",
+                                settings.bitrix_lead_fields_enabled)
 
 
 async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
@@ -331,6 +341,14 @@ async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
         lead = _lead if _lead is not None else await client.get_lead(lead_id)
         if str(lead.get("STATUS_ID") or "") in TERMINAL_STATUSES:
             return False
+        facts = conv.qualification if qualification is None else qualification
+        # Поля — до проверки владения комментарием: менеджер мог дописать в комментарий
+        # своё, и досье мы не тронем, но пустое поле «Какая страна ?» от этого не
+        # перестаёт быть пустым.
+        try:
+            await fill_empty_lead_fields(conv, lead, facts, client)
+        except Exception:  # noqa: BLE001 — сбой полей не должен стоить карточке досье
+            log.warning("pipeline lead fields failed conv_key=%s", conv_key, exc_info=True)
         comments = str(lead.get("COMMENTS") or "")
         # Два вопроса, и отвечают на них разные источники. «Наше ли это поле» — наша
         # память (портал калечит текст, и угадывать по нему нельзя: шрам 17.08). «Трогал
@@ -341,13 +359,58 @@ async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
                     or (remembered and _no_human_lines(comments)))
         if comments and not writable:
             return False
-        text = render_dossier(conv, conv.qualification if qualification is None else qualification)
+        text = render_dossier(conv, facts)
         await client.update_comments(lead_id, text)
         await store.update_meta(conv_key, bitrix_dossier_by_bot=True)
         return True
     except Exception:  # noqa: BLE001
         log.warning("pipeline dossier failed conv_key=%s", conv_key, exc_info=True)
         return False
+
+
+def lead_field_values(qualification: dict) -> dict[str, str]:
+    """Наши факты → текст для туровых полей портала. Пустое значение не возвращаем.
+
+    Формулировки те же, что в досье: менеджер не должен видеть в поле одно, а в
+    комментарии другое.
+    """
+    q = dict(qualification or {})
+    place = ", ".join(str(q[k]).strip() for k in ("destination", "region", "country")
+                      if str(q.get(k) or "").strip())
+    dates = ", ".join(str(q[k]).strip() for k in ("dates", "nights")
+                      if str(q.get(k) or "").strip())
+    values = {"destination": place, "dates": dates, "tourists": _compose_line(q)}
+    return {key: value for key, value in values.items() if value}
+
+
+async def fill_empty_lead_fields(conv: Any, lead: dict, qualification: dict | None,
+                                 client: Any) -> dict[str, str]:
+    """Дописать туровые поля лида, которые в портале пусты. Возвращает записанное.
+
+    Три запрета, каждый проверяется здесь:
+    * только туры — у виз в этих полях другой смысл, а поля «Какая страна ?» у визовых
+      лидов заполняют менеджеры руками;
+    * только ПУСТОЕ поле — что вписал человек, то и остаётся, даже если бот знает новее;
+    * не общая карточка Открытой линии — на ней десятки клиентов (замер 11.09: 19 на
+      одной), и страна первого попавшегося была бы враньём про всех остальных.
+    """
+    if not _is_tour(conv) or not await _lead_fields_enabled():
+        return {}
+    field_map = TOUR_LEAD_FIELDS
+    wanted = {field_map[key]: value
+              for key, value in lead_field_values(qualification or {}).items()
+              if field_map.get(key)}
+    empty = {code: value for code, value in wanted.items()
+             if not str(lead.get(code) or "").strip()}
+    if not empty:
+        return {}
+    lead_id = str(getattr(conv, "bitrix_lead_id", "") or "")
+    from app.core.sale_check import _shared_leads
+    if lead_id in _shared_leads(await get_conversation_store().all_conversations_light()):
+        return {}
+    await client.update_lead_fields(lead_id, empty)
+    lead.update(empty)
+    return empty
 
 
 # Портал принимает КОДЫ валют, а движок оценки чека хранит СИМВОЛЫ («$», «€», «сом» —
@@ -791,6 +854,29 @@ async def _advance_and_sync(conv_key: str, stage: str, qualification: dict | Non
     else:
         await notice.maybe_notify(
             conv_key, old=getattr(conv, "offer_facts", None) or {}, new=facts)
+
+
+async def refresh_dossier(conv_key: str, qualification: dict) -> bool:
+    """Донести новые факты в карточку, НЕ двигая стадию. Для диалогов, где бот молчит.
+
+    Замер 14.09: у 25 перехваченных диалогов досье записалось в начале пустым и больше не
+    обновлялось. Молчаливое дочитывание клало факты только в нашу базу, а фоновый проход
+    пишет досье лишь туда, где его ещё нет. Стадию здесь не трогаем: карточку ведёт человек.
+    """
+    if not await _dossier_refresh_enabled():
+        return False
+    return await sync_dossier(conv_key, qualification=qualification)
+
+
+def fire_dossier(conv_key: str, qualification: dict) -> None:
+    """Запланировать `refresh_dossier`, не задерживая обработку сообщения."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+    task = loop.create_task(refresh_dossier(conv_key, dict(qualification)))
+    _tasks.add(task)
+    task.add_done_callback(_tasks.discard)
 
 
 def fire(conv_key: str, stage: str, qualification: dict | None) -> None:

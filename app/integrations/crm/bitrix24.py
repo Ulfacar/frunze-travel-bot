@@ -30,6 +30,15 @@ logger = logging.getLogger("crm.bitrix24")
 # обрезает поле на первом символе вне BMP, а неизвестные [tags] вырезает.
 LEAD_COMMENTS_MARKER = "Досье бота:"
 
+# Наш ключ анкеты → код турового поля лида в портале getvisakg (`crm.lead.fields`, 14.09).
+# Константа, а не настройка: портал один, а словарь из env с пустым дефолтом в compose
+# уронил бы разбор настроек при старте.
+TOUR_LEAD_FIELDS = {
+    "destination": "UF_CRM_1650440002892",   # «Какая страна ?»
+    "dates": "UF_CRM_1650441175540",         # «Даты поездки ?»
+    "tourists": "UF_CRM_1650441245612",      # «Количество туристов ( взрослые), (дети)»
+}
+
 _BBCODE_TAG_RE = re.compile(r"\[/?[a-z][a-z0-9]*(?:=[^\]\r\n]*)?\]", re.IGNORECASE)
 
 
@@ -165,10 +174,17 @@ class Bitrix24Crm:
 
     async def get_lead(self, lead_id: str) -> dict[str, Any]:
         """Прочитать поля лида, нужные конвейеру."""
-        resp = await self._call(
-            "crm.lead.get", {"id": lead_id, "select": ["ID", "STATUS_ID", "COMMENTS",
-                                                        "ASSIGNED_BY_ID", "TITLE"]})
+        # Туровые поля портала читаем тем же запросом: писать в них можно только в пустое,
+        # а узнать «пустое ли» без чтения нельзя.
+        select = ["ID", "STATUS_ID", "COMMENTS", "ASSIGNED_BY_ID", "TITLE",
+                  *TOUR_LEAD_FIELDS.values()]
+        resp = await self._call("crm.lead.get", {"id": lead_id, "select": select})
         return dict(resp.get("result") or {})
+
+    async def update_lead_fields(self, lead_id: str, fields: dict[str, str]) -> None:
+        """Записать поля лида одним запросом (текст чистим так же, как COMMENTS)."""
+        clean = {code: sanitize_lead_comments(value) for code, value in fields.items()}
+        await self._call("crm.lead.update", {"id": lead_id, "fields": clean})
 
     async def update_stage_status(self, lead_id: str, status_id: str) -> None:
         """Поставить уже разрешённый STATUS_ID без повторного внутреннего маппинга."""

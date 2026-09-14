@@ -622,10 +622,21 @@ class Orchestrator:
             found = await facts.allowed(facts.extract(text), bot_id=state.bot_id)
             if not found:
                 return
+            # «До» считаем вместе с карточкой: состояние в Redis живёт 7 дней и может не
+            # помнить того, что давно лежит в базе, — иначе каждое сообщение выглядело бы
+            # новостью.
+            card = await get_conversation_store().get(self._key(msg))
+            before = {k: v for k, v in merge_qualification(
+                getattr(card, "qualification", None), state.qualification).items() if v}
             state.qualification = merge_qualification(state.qualification, found)
             await get_state_store().save(state)
             await self._sync_card(msg, state, move_stage=False)
             log.info("facts absorbed silently fields=%s", ",".join(sorted(found)))
+            # В Битрикс идём, только если анкета действительно изменилась: клиент, который
+            # десятый раз пишет «Турция», не должен стоить порталу записи.
+            if {k: v for k, v in (state.qualification or {}).items() if v} != before:
+                from app.integrations.crm import bitrix_pipeline
+                bitrix_pipeline.fire_dossier(self._key(msg), state.qualification)
         except Exception:  # noqa: BLE001 — чтение фактов не имеет права ронять живой ход
             log.warning("silent absorb failed (key=%s)", self._key(msg), exc_info=True)
 
