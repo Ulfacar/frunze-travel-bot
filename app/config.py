@@ -277,6 +277,11 @@ class Settings(BaseSettings):
     # сводку последнего написавшего как сводку про всех. С флагом каждая секция подписана
     # номером клиента, чужие секции сохраняются, показываем 10 свежих. Дефолт OFF.
     dossier_shared_cards_enabled: bool = False
+    # Сторож всплеска сбоев шлёт в Telegram, когда WhatsApp-адресат не задан. Замер 15.09:
+    # ALERT_WHATSAPP_TO и ALERT_BOT_ID на проде пусты, поэтому `watchdog.run` выходил
+    # первой строкой и молчал — при живом Telegram-канале с двумя получателями. Дефолт OFF:
+    # оживший сторож начинает писать людям, это включают решением, а не деплоем.
+    watchdog_telegram_enabled: bool = False
     tour_facts_enabled: bool = False
     bitrix_autodeal_enabled: bool = False
     # Привязывать ли к сделке контакт клиента. В Битриксе телефон живёт у контакта, а не

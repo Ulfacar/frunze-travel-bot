@@ -675,6 +675,17 @@ FEATURE_FLAGS = {
         "default": lambda: settings.dossier_shared_cards_enabled,
         "note": lambda: "",
     },
+    "watchdog_telegram_enabled": {
+        "title": "Сторож сбоев пишет в Telegram",
+        "desc": ("Сторож всплеска сбоев (LLM и отправка) настроен на WhatsApp-номер, "
+                 "которого нет: поля пусты, и он молчал всё это время. С тумблером он "
+                 "шлёт в тот же Telegram, куда уже приходят баланс и сторож карточек. "
+                 "Ночью про тишину вебхуков не пишет — ночью клиенты и так не пишут, "
+                 "а упавший канал ловит сторож Wappi, который спрашивает статус профиля."),
+        "default": lambda: settings.watchdog_telegram_enabled,
+        "note": lambda: ("адресат WhatsApp не задан — работает Telegram"
+                         if not (settings.alert_whatsapp_to and settings.alert_bot_id) else ""),
+    },
     "openrouter_balance_check_enabled": {
         "title": "Следить за балансом OpenRouter",
         "desc": ("Предупреждает заранее: «осталось столько-то, хватит примерно на N дней». "
