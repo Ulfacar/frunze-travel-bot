@@ -40,7 +40,8 @@ def is_quiet_hour(local_hour: int, cfg) -> bool:
     return local_hour >= a or local_hour < b  # окно через полночь (напр. 22→9)
 
 
-def select_followup_targets(convs: list, now: datetime, cfg) -> list:
+def select_followup_targets(convs: list, now: datetime, cfg,
+                            allowed_funnels: set[str] | None = None) -> list:
     """Кого пора дожать: формула «молчит» + окно свежести + порция на один прогон.
 
     Два ограничителя появились после сухого прогона на проде 07.09.2026: без них первое
@@ -54,6 +55,10 @@ def select_followup_targets(convs: list, now: datetime, cfg) -> list:
     * `followup_batch_limit` — сколько уходит за один прогон. Очередь разбирается
       порциями; следующий прогон возьмёт следующих.
 
+    `allowed_funnels` — какие воронки дожимаем сейчас. Фильтр стоит ДО порции: иначе
+    включённые туры получали бы остаток от порции, занятой выключенными визами, и очередь
+    почти не двигалась бы. `None` — без ограничения (прежнее поведение).
+
     Порядок: сначала те, кого ещё ни разу не касались, внутри группы — свежие первыми.
     Сортировка только по свежести залипала бы на одних и тех же: отправка обновляет
     время последнего сообщения, и дожатый клиент снова оказывался бы первым в очереди,
@@ -66,6 +71,8 @@ def select_followup_targets(convs: list, now: datetime, cfg) -> list:
     for c in convs:
         if not is_silent(c, now, cfg):
             continue
+        if allowed_funnels is not None and str(getattr(c, "funnel", "") or "") not in allowed_funnels:
+            continue                                   # эта воронка сейчас не дожимается
         if c.channel != "whatsapp" or not (c.chat_id or c.user_id) or not c.bot_id:
             continue                                   # дожимаем только живой WhatsApp-канал
         last = _aware(getattr(c, "last_message_at", None))
@@ -101,10 +108,29 @@ def _mark_touch(conv, pings: int) -> None:
         log.warning("followup: стадия касания не поставлена для %s", conv.user_id, exc_info=True)
 
 
-async def _send_followups(now: datetime, cfg) -> int:
+FUNNELS = ("tours", "visa", "tickets")
+
+
+async def enabled_funnels(cfg) -> set[str]:
+    """Какие воронки дожимаются сейчас: `followup_enabled:<воронка>`, дефолт — общий флаг.
+
+    Воронка, а не бот: у туров и виз разные заказчики (Даулет и Гриша) и разные номера,
+    и включать дожим им надо порознь. Включение «всем сразу» — это 77 сообщений клиентам
+    Гриши без его ведома (замер 15.09), чего мы делать не вправе.
+    """
+    from app.core import flags
+    global_on = await flags.get_flag("followup_enabled", cfg.followup_enabled)
+    out = set()
+    for funnel in FUNNELS:
+        if await flags.get_flag(f"followup_enabled:{funnel}", global_on):
+            out.add(funnel)
+    return out
+
+
+async def _send_followups(now: datetime, cfg, allowed: set[str] | None = None) -> int:
     """Разослать по одному пингу всем текущим целям. Возвращает число отправленных."""
     store = get_conversation_store()
-    targets = select_followup_targets(await store.all_conversations(), now, cfg)
+    targets = select_followup_targets(await store.all_conversations(), now, cfg, allowed)
     sent = 0
     for c in targets:
         post_consult = STAGE_TO_COLUMN.get(getattr(c, "stage", ""), "") == "office"
@@ -129,15 +155,15 @@ async def _send_followups(now: datetime, cfg) -> int:
 
 async def run() -> None:
     """Джоба планировщика: разослать дожимы (если включён авто-флаг и не «тихие часы»)."""
-    from app.core import flags
     cfg = settings
-    if not await flags.get_flag("followup_enabled", cfg.followup_enabled):
-        return  # авто-режим выключен (рантайм-флаг из админки; дефолт — из env)
+    allowed = await enabled_funnels(cfg)
+    if not allowed:
+        return  # выключено везде: ни диалоги, ни портал не трогаем (дорогая загрузка)
     now = datetime.now(timezone.utc)
     local_hour = (now + timedelta(hours=BISHKEK_UTC_OFFSET)).hour
     if is_quiet_hour(local_hour, cfg):
         return  # ночь в Бишкеке — переносим на следующий тик
-    await _send_followups(now, cfg)
+    await _send_followups(now, cfg, allowed)
 
 
 async def run_manual() -> dict:
