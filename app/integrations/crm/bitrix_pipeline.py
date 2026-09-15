@@ -88,6 +88,18 @@ async def _lead_fields_enabled() -> bool:
                                 settings.bitrix_lead_fields_enabled)
 
 
+async def _shared_dossier_enabled() -> bool:
+    """Подписывать ли досье на общей карточке Открытой линии телефоном клиента."""
+    return await flags.get_flag("dossier_shared_cards_enabled",
+                                settings.dossier_shared_cards_enabled)
+
+
+async def _is_shared_card(lead_id: str) -> bool:
+    from app.core.sale_check import _shared_leads
+    return str(lead_id) in _shared_leads(
+        await get_conversation_store().all_conversations_light())
+
+
 async def advance(conv_key: str, internal_stage: str, *, adapter: Any = None,
                   _conv: Any = None, _lead: dict | None = None) -> str:
     """Move a lead forward if the bot still owns its stage; return the new STATUS_ID."""
@@ -216,9 +228,10 @@ def _compose_line(q: dict) -> str:
     return ", ".join(parts)
 
 
-def render_dossier(conv: Any, qualification: dict) -> str:
+def _dossier_lines(conv: Any, qualification: dict) -> list[str]:
+    """Тело досье БЕЗ маркера. Оно же — секция одного клиента на общей карточке."""
     q = dict(qualification or {})
-    lines = [DOSSIER_MARKER]
+    lines: list[str] = []
     labels = (
         (("destination", "region", "country", "visa_country", "направление"), "Направление"),
         # Город вылета менеджеру нужен так же, как страна: замер 18.08 — клиент ушёл на
@@ -250,7 +263,12 @@ def render_dossier(conv: Any, qualification: dict) -> str:
     lines.append(f"Диалог: {_client_link(conv.user_id, settings.public_base_url)}")
     if getattr(conv, "last_message_at", None):
         lines.append(f"Последнее сообщение: {conv.last_message_at:%d.%m.%Y %H:%M}")
-    return sanitize_lead_comments("\n".join(lines))
+    return lines
+
+
+def render_dossier(conv: Any, qualification: dict) -> str:
+    return sanitize_lead_comments(
+        "\n".join([DOSSIER_MARKER, *_dossier_lines(conv, qualification)]))
 
 
 def _legacy_ours(text: str) -> bool:
@@ -266,7 +284,144 @@ def _legacy_ours(text: str) -> bool:
 
 # Строки, которые пишет только `render_dossier`. Всё, что не отсюда, — рука человека.
 _DOSSIER_PREFIXES = ("Направление:", "Вылет:", "Бюджет:", "Даты:", "Состав:",
-                     "Предложено:", "Диалог:", "Последнее сообщение:")
+                     "Предложено:", "Диалог:", "Последнее сообщение:", "Ещё клиентов:")
+
+# Заголовок секции на общей карточке: «Клиент: +996700123456, Азамат».
+_SHARED_CLIENT_PREFIX = "Клиент:"
+# Нашей эту строку делает НОМЕР сразу после метки. Просто «Клиент:» в список префиксов
+# класть нельзя: менеджер пишет в карточке «Клиент: перезвонить после обеда», и такая
+# строка стала бы «нашей» — а значит, была бы стёрта следующим обновлением досье.
+_SHARED_CLIENT_RE = re.compile(r"^Клиент:\s*\+?\d")
+# Сколько клиентов показываем на общей карточке. Замер 15.09 по живым карточкам за 30
+# дней: их 15, медиана 2 клиента, максимум 10; на худшей за всю историю (11.09) — 19
+# человек. Без потолка комментарий вырастает в сотню строк, и менеджер не читает его
+# вовсе. Показываем свежих, остальных считаем строкой «Ещё клиентов: N».
+MAX_SHARED_SECTIONS = 10
+
+
+def _our_line(line: str) -> bool:
+    if line.startswith(_SHARED_CLIENT_PREFIX):
+        return bool(_SHARED_CLIENT_RE.match(line))
+    return line.startswith(_DOSSIER_PREFIXES)
+
+
+def _client_label(conv: Any, qualification: dict) -> str:
+    """Подпись секции: номер клиента и, если знаем, имя.
+
+    Номер — ключ секции при следующем обновлении, поэтому он идёт первым и всегда.
+    """
+    phone = _conv_phone(conv)
+    name = " ".join(str((qualification or {}).get("name") or "").split())[:40]
+    return ", ".join(part for part in (phone, name) if part)
+
+
+def _conv_phone(conv: Any) -> str:
+    # Ключ диалога — «<бот>:<номер>»; `phone` для показа заполнен не везде (старые строки).
+    phone = str(getattr(conv, "phone", "") or "").strip()
+    return phone or str(getattr(conv, "user_id", "") or "").rsplit(":", 1)[-1].strip()
+
+
+# Номер клиента в ссылке на диалог: «...open=frunze_tours%3A996705153545».
+_DIALOG_PHONE_RE = re.compile(r"open=[^\s\]]*?(?:%3A|%3a|:)(\d{6,})")
+
+
+def _adopt_legacy(lines: list[str]) -> list[str] | None:
+    """Старую НЕподписанную сводку подписать её же владельцем, а не выбросить.
+
+    До этого тумблера досье на общей карточке писалось без подписи — понять, про кого
+    оно, вроде бы не по чему. Но сводка всегда носит ссылку на диалог, а в ссылке стоит
+    номер: «open=frunze_tours%3A996705153545». Этого хватает, чтобы сохранить факты
+    первого клиента при переходе на секции, а не потерять их до его следующего сообщения.
+    """
+    body = [line for line in lines if _our_line(line)]
+    if not body:
+        return None
+    for line in body:
+        match = _DIALOG_PHONE_RE.search(line)
+        if match:
+            return [f"{_SHARED_CLIENT_PREFIX} {match.group(1)}", *body]
+    return None
+
+
+def _split_shared_sections(text: str) -> list[list[str]]:
+    """Видимые строки досье → секции по клиентам, по одной на «Клиент: <номер>».
+
+    Текст до первой такой строки — маркер и, возможно, досье в старом неподписанном
+    виде; его отдаём `_adopt_legacy`. Если владельца не опознать, строки отбрасываются:
+    неподписанная сводка и есть то, что мы чиним. Потери фактов и тогда нет — они живут
+    в нашей базе, и секция вернётся со следующим сообщением клиента.
+    """
+    visible = strip_lead_comments_bbcode(text)
+    sections: list[list[str]] = []
+    head: list[str] = []
+    for line in (raw.strip() for raw in visible.splitlines()):
+        if not line or line.startswith("Ещё клиентов:"):
+            continue
+        if line.startswith(_SHARED_CLIENT_PREFIX) and _SHARED_CLIENT_RE.match(line):
+            sections.append([line])
+        elif sections:
+            sections[-1].append(line)
+        else:
+            head.append(line)
+    legacy = _adopt_legacy(head)
+    return ([legacy] + sections) if legacy else sections
+
+
+def _digits(phone: str) -> str:
+    """Ключ секции — только цифры номера.
+
+    В базе номер сегодня без «+» (замер 15.09: 55 из 55), но ключ, который зависит от
+    формата записи, однажды разъезжается — и секция клиента встаёт в карточку второй раз
+    вместо того, чтобы обновиться.
+    """
+    return "".join(ch for ch in str(phone) if ch.isdigit())
+
+
+def _section_phone(section: list[str]) -> str:
+    return _digits(section[0].partition(":")[2].split(",")[0])
+
+
+def _section_time(section: list[str]) -> datetime:
+    """Когда клиент этой секции писал последний раз — по её же строке.
+
+    Порядок секций читается из самого комментария, а не из базы: чужие секции мог
+    написать другой инстанс, и сверять их с нашей памятью не по чему.
+    """
+    for line in section:
+        if line.startswith("Последнее сообщение:"):
+            try:
+                return datetime.strptime(line.partition(":")[2].strip(), "%d.%m.%Y %H:%M")
+            except ValueError:
+                break
+    return datetime.min
+
+
+def render_shared_dossier(comments: str, conv: Any, qualification: dict) -> str:
+    """Досье на общей карточке: наша секция обновляется, чужие сохраняются.
+
+    Общая карточка Открытой линии держит нескольких наших клиентов сразу (замер 11.09 по
+    всей истории: 74 такие карточки, на одной 19 человек; замер 15.09 по живым за 30 дней:
+    15 карточек, медиана 2, максимум 10). Перезапись комментария целиком означала, что
+    менеджер видит сводку последнего написавшего и принимает её за сводку всей карточки.
+    Подпись номером снимает ровно это: видно, чей факт.
+    """
+    mine = [f"{_SHARED_CLIENT_PREFIX} {_client_label(conv, qualification)}",
+            *_dossier_lines(conv, qualification)]
+    phone = _digits(_conv_phone(conv))
+    others = [section for section in _split_shared_sections(comments)
+              if _section_phone(section) != phone]
+    others.sort(key=_section_time, reverse=True)
+    # Наша секция первой: карточку открывают из-за клиента, который только что написал.
+    kept = [mine, *others][:MAX_SHARED_SECTIONS]
+    hidden = 1 + len(others) - len(kept)
+    lines = [DOSSIER_MARKER]
+    for section in kept:
+        lines.append("")
+        lines.extend(section)
+    if hidden > 0:
+        lines.append("")
+        lines.append(f"Ещё клиентов: {hidden} — они видны в панели, в диалогах.")
+    return sanitize_lead_comments("\n".join(lines))
 
 
 def _dossier_ours(text: str) -> bool:
@@ -283,7 +438,7 @@ def _dossier_ours(text: str) -> bool:
     lines = [line.strip() for line in visible.splitlines() if line.strip()]
     if not lines or not lines[0].startswith(DOSSIER_MARKER):
         return False
-    return all(line.startswith(_DOSSIER_PREFIXES) for line in lines[1:])
+    return all(_our_line(line) for line in lines[1:])
 
 
 def _no_human_lines(text: str) -> bool:
@@ -317,7 +472,7 @@ def _no_human_lines(text: str) -> bool:
         return False
     if not lines[0].startswith(DOSSIER_MARKER.split()[0]):
         return False
-    return all(line.startswith(_DOSSIER_PREFIXES) for line in lines[1:])
+    return all(_our_line(line) for line in lines[1:])
 
 
 async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
@@ -342,11 +497,17 @@ async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
         if str(lead.get("STATUS_ID") or "") in TERMINAL_STATUSES:
             return False
         facts = conv.qualification if qualification is None else qualification
+        # Общую карточку узнаём один раз на проход и отдаём в поля готовым ответом:
+        # `_shared_leads` читает все живые диалоги, и делать это дважды за сообщение незачем.
+        # При выключенном тумблере не считаем вовсе — поля посчитают сами, как и раньше.
+        shared: bool | None = None
+        if await _shared_dossier_enabled():
+            shared = await _is_shared_card(lead_id)
         # Поля — до проверки владения комментарием: менеджер мог дописать в комментарий
         # своё, и досье мы не тронем, но пустое поле «Какая страна ?» от этого не
         # перестаёт быть пустым.
         try:
-            await fill_empty_lead_fields(conv, lead, facts, client)
+            await fill_empty_lead_fields(conv, lead, facts, client, shared=shared)
         except Exception:  # noqa: BLE001 — сбой полей не должен стоить карточке досье
             log.warning("pipeline lead fields failed conv_key=%s", conv_key, exc_info=True)
         comments = str(lead.get("COMMENTS") or "")
@@ -359,7 +520,10 @@ async def sync_dossier(conv_key: str, *, qualification: dict | None = None,
                     or (remembered and _no_human_lines(comments)))
         if comments and not writable:
             return False
-        text = render_dossier(conv, facts)
+        # На общей карточке пишем СВОЮ секцию, а чужие оставляем: без подписи менеджер
+        # читал сводку последнего написавшего как сводку про всю карточку.
+        text = (render_shared_dossier(comments, conv, facts) if shared
+                else render_dossier(conv, facts))
         await client.update_comments(lead_id, text)
         await store.update_meta(conv_key, bitrix_dossier_by_bot=True)
         return True
@@ -384,7 +548,7 @@ def lead_field_values(qualification: dict) -> dict[str, str]:
 
 
 async def fill_empty_lead_fields(conv: Any, lead: dict, qualification: dict | None,
-                                 client: Any) -> dict[str, str]:
+                                 client: Any, *, shared: bool | None = None) -> dict[str, str]:
     """Дописать туровые поля лида, которые в портале пусты. Возвращает записанное.
 
     Три запрета, каждый проверяется здесь:
@@ -405,8 +569,10 @@ async def fill_empty_lead_fields(conv: Any, lead: dict, qualification: dict | No
     if not empty:
         return {}
     lead_id = str(getattr(conv, "bitrix_lead_id", "") or "")
-    from app.core.sale_check import _shared_leads
-    if lead_id in _shared_leads(await get_conversation_store().all_conversations_light()):
+    # `shared` уже посчитан вызывающим — считаем сами только если его не дали.
+    if shared is None:
+        shared = await _is_shared_card(lead_id)
+    if shared:
         return {}
     await client.update_lead_fields(lead_id, empty)
     lead.update(empty)
