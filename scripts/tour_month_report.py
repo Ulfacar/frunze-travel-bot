@@ -331,6 +331,14 @@ def render(cur: dict, prev: dict | None) -> None:
     print(f"\n=== ТУРЫ ЗА {cur['title']} ===")
     print(f"    снято {datetime.now(BISHKEK):%d.%m.%Y %H:%M} по Бишкеку"
           + (f", сравнение с {prev['title']}" if prev else ""))
+    # Незакрытый месяц рядом с полным прошлым читается как падение: 15.09 отчёт показал
+    # «-34% к прошлому (хуже)», хотя прошла ровно половина сентября.
+    now = datetime.now(timezone.utc)
+    if cur["start"] <= now < cur["end"]:
+        done = (now - cur["start"]).days + 1
+        full = (cur["end"] - cur["start"]).days
+        print(f"    ВНИМАНИЕ: месяц не закончен — прошло {done} дней из {full}."
+              " Сравнение с полным прошлым месяцем занижено, это не падение.")
 
     print("\nСКОЛЬКО ПРИШЛО")
     print(_fmt("новых обращений", f"{d['leads']}{_delta(d['leads'], pd.get('leads'))}"))
