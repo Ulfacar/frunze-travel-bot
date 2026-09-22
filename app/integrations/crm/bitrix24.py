@@ -88,6 +88,15 @@ class Bitrix24Crm:
                         raise
                     logger.info("Bitrix %s: нет соединения, повтор %d", method, attempt + 1)
                     await asyncio.sleep(pause)
+            if resp.status_code >= 400:
+                # Причину называет только тело ответа. У Битрикса 403 — это и «нет прав»,
+                # и выбранный лимит запросов (`QUERY_LIMIT_EXCEEDED`), и исчерпанное время
+                # операций (`OPERATION_TIME_LIMIT`): болезни разные, лечение разное.
+                # `raise_for_status` их не различает, и 869 ночных 403 за 20–22.09 остались
+                # без диагноза. URL в сообщение не кладём — токен вебхука вырежет `redact`,
+                # но и давать ему лишний повод незачем.
+                logger.warning("Bitrix %s: HTTP %s, ответ портала: %s",
+                               method, resp.status_code, resp.text[:300])
             resp.raise_for_status()
             return resp.json()
         finally:
