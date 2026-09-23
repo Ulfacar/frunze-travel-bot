@@ -211,3 +211,47 @@ def test_burst_text_differs_from_creep_text():
     burst = watchdog.decide(NOW, None, {"llm_failures": 9, "send_failures": 0},
                             state, Cfg, night=False)
     assert "за последние минуты" in burst[0][1]
+
+
+# ---------------- 5. тишина всех каналов (разбор 23.09) ---------------------------------
+# 23.09 в 20:34 пришло «Бот не получал сообщений ~33 мин. Проверьте Wappi/вебхуки» при
+# живых вебхуках: клиенты просто молчали. За 14 дней таких дневных пауз 45. Тишина теперь
+# за своим тумблером, дефолт OFF; сбои сторож шлёт без него.
+def _silent_hour_no_failures(monkeypatch):
+    _patch_cfg(monkeypatch, alert_whatsapp_to="", alert_bot_id="",
+               channel_heartbeat_quiet_from=24, channel_heartbeat_quiet_to=0)
+    watchdog._state.update(alert_silence_ts=0.0, alert_fail_ts=0.0, fail_baseline=0.0,
+                           fail_window=[])
+    run(flags.set_flag("watchdog_telegram_enabled", True))
+    monkeypatch.setattr(watchdog.observ, "last_inbound_ago", lambda: 60 * 60)
+    monkeypatch.setattr(watchdog.observ, "snapshot", lambda: {})
+    pushed = []
+    from app.core import ops_alert
+
+    async def fake_send(text, *, key="", **kw):
+        pushed.append(key)
+        return True
+
+    monkeypatch.setattr(ops_alert, "send", fake_send)
+    return pushed
+
+
+def test_silence_is_off_by_default(monkeypatch):
+    pushed = _silent_hour_no_failures(monkeypatch)
+    run(watchdog.run())
+    assert pushed == []
+
+
+def test_silence_alerts_when_switched_on(monkeypatch):
+    pushed = _silent_hour_no_failures(monkeypatch)
+    run(flags.set_flag("watchdog_silence_enabled", True))
+    run(watchdog.run())
+    assert pushed == ["watchdog:silence"]
+
+
+def test_failures_still_alert_with_silence_off(monkeypatch):
+    pushed = _silent_hour_no_failures(monkeypatch)
+    monkeypatch.setattr(watchdog.observ, "snapshot",
+                        lambda: {"llm_failures": 9, "send_failures": 0})
+    run(watchdog.run())
+    assert pushed == ["watchdog:failures"]

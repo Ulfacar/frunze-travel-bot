@@ -686,6 +686,16 @@ FEATURE_FLAGS = {
         "note": lambda: ("адресат WhatsApp не задан — работает Telegram"
                          if not (settings.alert_whatsapp_to and settings.alert_bot_id) else ""),
     },
+    "watchdog_silence_enabled": {
+        "title": "Сторож сбоев тревожит при тишине всех каналов",
+        "desc": ("Алерт «Бот не получал сообщений ~N мин» по затишью всех каналов разом. "
+                 "Замер 23.09: за 14 дней 45 дневных пауз клиентов дольше 30 минут — "
+                 "обычное затишье, а совет «проверьте Wappi/вебхуки» ложный. Упавший "
+                 "канал ловит сторож Wappi по статусу профиля. Сбои LLM и отправки "
+                 "сторож шлёт независимо от этого тумблера."),
+        "default": lambda: settings.watchdog_silence_enabled,
+        "note": lambda: "",
+    },
     "llm_fallback_handoff_enabled": {
         "title": "При сбое бот зовёт менеджера, а не обещает вернуться",
         "desc": ("Когда ход не удался (у LLM кончились деньги, упал инструмент), бот "
