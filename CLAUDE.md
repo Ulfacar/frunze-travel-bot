@@ -263,7 +263,9 @@ channel_heartbeat_enabled / wappi_health_enabled         сторож канал
   деплой копированием файлов. С 15.08 деплой — git-checkout скриптом (см. §4).
 - `PROJECT_CONTEXT_2026-07-02.md`, `HANDOVER.md` — снимки июля, читать как историю.
 
-**Актуальное читать здесь:** `docs/HANDOVER-ACTUAL-2026-08-03.md` (подробный разбор
+**Актуальное читать здесь:** `docs/project-journey.md` (**полный путь проекта: хронология,
+грабли по системам, уроки — читать первым, если садишься за проект впервые**),
+`docs/HANDOVER-ACTUAL-2026-08-03.md` (подробный разбор
 состояния), `docs/protocol.md` (процесс; `venom-v2.md` — архив), `docs/module-stt-voice-2026-08-04.md`,
 `docs/task-*.md` (ТЗ по модулям), `docs/plan-avgust-3007.md` (рабочий план августа).
 
