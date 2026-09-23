@@ -339,7 +339,16 @@ class Settings(BaseSettings):
     alert_whatsapp_to: str = ""          # номер админа (chat_id), напр. 996700...@c.us или 996700...
     alert_bot_id: str = ""               # с какого бота слать (frunze_tours|getvisa)
     alert_silence_minutes: int = 30      # тишина дольше → алерт
-    alert_fail_threshold: int = 5        # столько новых сбоев за тик → алерт
+    alert_fail_threshold: int = 5        # столько новых сбоев за тик → алерт (всплеск)
+    # Медленная деградация. 17-22.09 OpenRouter отдавал 402 ровным потоком (~1.7 сбоя за
+    # тик при пороге 5), и сторож молчал шесть дней. Окно ловит именно это. Порог взят
+    # не из головы: прогон `scripts/watchdog_replay.py` по 30 дням прода — см. его шапку.
+    alert_fail_window_minutes: int = 60
+    alert_fail_window_threshold: int = 6
+    # Честная отписка при сбое LLM вместо «вернусь к вам» + диалог остаётся неотвеченным,
+    # чтобы сторож `awaiting` позвал человека. Меняет то, что читает клиент → по умолчанию
+    # OFF, включается отдельным решением (тумблер `llm_fallback_handoff_enabled`).
+    llm_fallback_handoff_enabled: bool = False
     alert_cooldown_minutes: int = 60     # не повторять один и тот же алерт чаще
     alert_awaiting_minutes: int = 10     # клиент ждёт живого менеджера дольше → алерт команде
     # Напоминание владельцу диалога в личный Telegram о клиенте, который ждёт

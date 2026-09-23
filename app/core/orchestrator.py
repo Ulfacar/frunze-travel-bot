@@ -115,6 +115,20 @@ LLM_ERROR_FALLBACK = (
     "Секундочку, уточню детали и вернусь к вам 🙏"
 )
 
+# Честный вариант той же отписки (флаг `llm_fallback_handoff_enabled`).
+#
+# Разбор 17-22.09.2026: шесть дней подряд, 178 раз, клиенты получали «вернусь к вам» —
+# и никто не вернулся, потому что возвращаться было нечему: у бота кончились деньги на
+# LLM. Обещание за менеджера бот давать не вправе, а обещание за себя выполнить не мог.
+# Новый текст не обещает ничего, чего не обеспечивает механизм: диалог остаётся
+# неотвеченным (`counts_as_reply=False`), и сторож `awaiting` зовёт живого человека.
+LLM_ERROR_FALLBACK_HANDOFF = (
+    "Извините, у меня техническая заминка — не могу ответить прямо сейчас. "
+    "Передаю ваш вопрос менеджеру, он напишет вам здесь же."
+)
+
+FALLBACK_HANDOFF_FLAG = "llm_fallback_handoff_enabled"
+
 
 def merge_qualification(known: dict | None, fresh: dict | None) -> dict:
     """Слить анкету карточки с анкетой состояния. Новое главнее, пустое не стирает.
@@ -412,7 +426,19 @@ class Orchestrator:
                 state, fresh, auto_handoff=state.stage == "manager"
             )
             await store.save(state)               # сохраняем то, что успело накопиться в ходе
-            await self._reply(msg, LLM_ERROR_FALLBACK)
+            # Читать флаг здесь — значит идти в хранилище в тот самый момент, когда
+            # инфраструктура уже сыпется (сбой LLM редко приходит один). Падение тут
+            # вынесло бы исключение из `handle()` и оборвало разбор остальных событий
+            # пачки в `main.wappi_webhook`. В аварийном пути выбираем прежнее поведение.
+            from app.core import flags
+            try:
+                honest = await flags.get_flag(FALLBACK_HANDOFF_FLAG,
+                                              settings.llm_fallback_handoff_enabled)
+            except Exception:  # noqa: BLE001
+                honest = False
+            await self._reply(msg,
+                              LLM_ERROR_FALLBACK_HANDOFF if honest else LLM_ERROR_FALLBACK,
+                              counts_as_reply=not honest)
             return
 
         # Передача менеджеру = бот замолкает (решение заказчика 23.06.2026): прощальную
@@ -550,7 +576,10 @@ class Orchestrator:
         except Exception:  # noqa: BLE001 — наблюдение не имеет права мешать ответу
             return
 
-    async def _reply(self, msg: Message, text: str) -> None:
+    async def _reply(self, msg: Message, text: str, *, counts_as_reply: bool = True) -> None:
+        """`counts_as_reply=False` — реплику видно в переписке, но диалог остаётся
+        неотвеченным: так уходит аварийная отписка, чтобы сторож `awaiting` позвал человека.
+        """
         self._note_schedule_violation(text)
         # Логируем исходящее как pending → шлём → отмечаем доставку (sent/failed).
         panel = get_conversation_store()
@@ -558,7 +587,8 @@ class Orchestrator:
         try:
             msg_id = await panel.add_message(self._key(msg), "bot", text,
                                              channel=msg.channel, bot_id=self._bot_id,
-                                             status="pending", phone=msg.user_id)
+                                             status="pending", phone=msg.user_id,
+                                             counts_as_reply=counts_as_reply)
         except Exception:  # noqa: BLE001
             log.warning("panel log_out failed", exc_info=True)
         try:

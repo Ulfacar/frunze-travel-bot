@@ -146,7 +146,17 @@ class MemoryConversationStore:
     async def add_message(self, user_id: str, sender: str, text: str,
                           channel: str = "", bot_id: str = "", chat_id: str = "",
                           status: str = "", provider_msg_id: str = "",
-                          idempotency_key: str = "", phone: str = "") -> int:
+                          idempotency_key: str = "", phone: str = "",
+                          counts_as_reply: bool = True) -> int:
+        """`counts_as_reply=False` — сообщение видно в переписке, но диалог остаётся
+        неотвеченным.
+
+        Нужно ровно для одного случая: аварийной отписки при сбое LLM. 17-22.09.2026 бот
+        шесть дней отвечал «Секундочку, уточню детали и вернусь к вам», и по `last_sender`
+        диалог выглядел отвеченным — поэтому сторож «клиент ждёт» (`awaiting.py`), горячий
+        лист и панель дружно считали, что всё в порядке. Отписка — не ответ, и система
+        не должна принимать её за ответ.
+        """
         conv = await self.ensure(user_id, channel, bot_id, chat_id, phone)
         if idempotency_key:  # дедуп: повтор той же отправки не создаёт второй записи
             for m in conv.messages:
@@ -158,9 +168,10 @@ class MemoryConversationStore:
         msg._idem = idempotency_key  # type: ignore[attr-defined]
         conv.messages.append(msg)
         conv.archived = False  # новое сообщение возвращает диалог в рабочие списки
-        conv.last_text = text
-        conv.last_sender = sender
-        conv.last_message_at = _now()
+        if counts_as_reply:
+            conv.last_text = text
+            conv.last_sender = sender
+            conv.last_message_at = _now()
         return msg.id
 
     async def mark_message_status(self, *, message_id: int | None = None,
@@ -380,7 +391,8 @@ class PostgresConversationStore:
     async def add_message(self, user_id: str, sender: str, text: str,
                           channel: str = "", bot_id: str = "", chat_id: str = "",
                           status: str = "", provider_msg_id: str = "",
-                          idempotency_key: str = "", phone: str = "") -> int:
+                          idempotency_key: str = "", phone: str = "",
+                          counts_as_reply: bool = True) -> int:
         from app.integrations.crm.db import ConvMessage
         async with self._sm()() as session:
             conv = await self._ensure_row(session, user_id, channel, bot_id, chat_id, phone)
@@ -395,9 +407,10 @@ class PostgresConversationStore:
                               idempotency_key=idempotency_key)
             session.add(msg)
             conv.archived = False  # новое сообщение возвращает диалог в рабочие списки
-            conv.last_text = text
-            conv.last_sender = sender
-            conv.last_message_at = _now()
+            if counts_as_reply:
+                conv.last_text = text
+                conv.last_sender = sender
+                conv.last_message_at = _now()
             await session.commit()
             return msg.id
 

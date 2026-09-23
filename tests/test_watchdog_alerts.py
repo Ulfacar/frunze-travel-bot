@@ -16,6 +16,17 @@
 4. **Ночью про тишину вебхуков не пишем.** Порог 30 минут при cooldown в час дал бы до
    десяти сообщений за ночь, когда клиенты просто спят. Шумного сторожа выключают.
 5. Всплеск сбоев ночью НЕ глушим: это реальные ошибки, а не отсутствие трафика.
+
+## Разбор 23.09.2026: порог мерил не то
+
+Авария 17-22.09 шла ровным потоком — OpenRouter отдавал `402` примерно 20 раз в час,
+это 1.7 сбоя за тик при пороге 5. Прогон `scripts/watchdog_replay.py` по 179 реальным
+событиям: прежняя логика дала бы **2 тревоги за шесть дней аварии**, обе 18.09, а дни
+с 39, 26, 24 и 16 сбоями прошли бы молча. С окном 60 мин и порогом 6 — 16 тревог,
+1.49 в сутки, и авария заметна **в первый же день**. На спокойном дне (1 сбой) — ноль.
+
+6. Медленная деградация тревожит наравне со всплеском.
+7. Одиночные редкие сбои молчат — иначе сторожа выключат.
 """
 import asyncio
 
@@ -27,6 +38,8 @@ from app.core import flags, watchdog
 class Cfg:
     alert_silence_minutes = 30
     alert_fail_threshold = 5
+    alert_fail_window_minutes = 60
+    alert_fail_window_threshold = 6
     alert_cooldown_minutes = 60
     channel_heartbeat_quiet_from = 22
     channel_heartbeat_quiet_to = 9
@@ -46,7 +59,7 @@ def run(coro):
 def _clean():
     flags.reset()
     watchdog._state.update({"alert_silence_ts": 0.0, "alert_fail_ts": 0.0,
-                            "fail_baseline": 0.0})
+                            "fail_baseline": 0.0, "fail_window": []})
     yield
     flags.reset()
 
@@ -152,3 +165,49 @@ def test_night_window_wraps_midnight():
     assert watchdog._is_night(23, Cfg) and watchdog._is_night(3, Cfg)
     assert not watchdog._is_night(12, Cfg)
     assert watchdog._is_night(22, Cfg) and not watchdog._is_night(9, Cfg)
+
+
+# ---------------- 4. медленная деградация (разбор 23.09) --------------------------------
+def test_steady_trickle_raises_alarm():
+    """1-2 сбоя за тик в течение часа — это авария 17-22.09, и её надо заметить."""
+    state = dict(watchdog._state)
+    state["fail_window"] = []
+    alerts, total = [], 0
+    for tick in range(12):                      # 12 тиков по 300 c = час
+        total += 2                              # ниже порога всплеска (5), но поток ровный
+        alerts = watchdog.decide(NOW + tick * 300, None,
+                                 {"llm_failures": total, "send_failures": 0},
+                                 state, Cfg, night=False)
+        if alerts:
+            break
+    assert [reason for reason, _ in alerts] == ["failures"]
+    assert "60 мин" in alerts[0][1]
+
+
+def test_rare_single_failures_stay_quiet():
+    """По сбою в час — шум, а не авария. Шумного сторожа выключают."""
+    state = dict(watchdog._state)
+    state["fail_window"] = []
+    total = 0
+    for tick in range(24):                      # сутки по тику в час
+        total += 1
+        alerts = watchdog.decide(NOW + tick * 3600, None,
+                                 {"llm_failures": total, "send_failures": 0},
+                                 state, Cfg, night=False)
+        assert alerts == [], f"ложная тревога на тике {tick}"
+
+
+def test_window_forgets_the_old_tail():
+    """Сбои позавчера не должны складываться с сегодняшними."""
+    window = [[NOW - 7200, 5.0], [NOW - 60, 2.0]]
+    assert watchdog._window_total(window, NOW, 3600) == 2.0
+    assert len(window) == 1                     # хвост отброшен на месте
+
+
+def test_burst_text_differs_from_creep_text():
+    """Человеку должно быть видно, что случилось: обвал или гниение."""
+    state = dict(watchdog._state)
+    state["fail_window"] = []
+    burst = watchdog.decide(NOW, None, {"llm_failures": 9, "send_failures": 0},
+                            state, Cfg, night=False)
+    assert "за последние минуты" in burst[0][1]

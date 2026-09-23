@@ -19,7 +19,16 @@ from app.core.morning_brief import BISHKEK_UTC_OFFSET
 log = logging.getLogger("watchdog")
 
 # Состояние между тиками: время последнего алерта по типу + база счётчика сбоев.
+# `fail_window` — приросты за последние тики, список пар [время, прирост]: по нему видно
+# медленную деградацию, которой всплеск за один тик не видит.
 _state: dict[str, float] = {"alert_silence_ts": 0.0, "alert_fail_ts": 0.0, "fail_baseline": 0.0}
+
+
+def _window_total(window: list, now: float, span: float) -> float:
+    """Сумма приростов внутри окна. Хвост старше `span` отбрасывается на месте."""
+    while window and now - window[0][0] > span:
+        window.pop(0)
+    return sum(delta for _, delta in window)
 
 
 def decide(now: float, last_inbound_ago: float | None, snapshot: dict,
@@ -45,13 +54,37 @@ def decide(now: float, last_inbound_ago: float | None, snapshot: dict,
                            f"⚠️ Бот не получал сообщений ~{mins} мин. Проверьте Wappi/вебхуки."))
             state["alert_silence_ts"] = now
 
-    # 2) Всплеск сбоев (LLM + отправка) за период.
+    # 2) Сбои (LLM + отправка). Два разных явления, одна тревога.
+    #
+    # Всплеск за тик ловит «резко упало». Авария 17-22.09 была не такой: OpenRouter отдавал
+    # 402 ровным потоком, около 20 отказов в час, то есть 1.7 за тик при пороге 5 — сторож
+    # не сказал ни слова за шесть дней, пока клиенты получали отписку вместо ответа.
+    # Поэтому вторым условием смотрим СУММУ за окно: медленное гниение так же опасно, как
+    # обвал, просто его не видно за один тик.
+    #
+    # Тревога одна на оба условия (и cooldown общий): у них один адресат и одно действие —
+    # пойти и посмотреть, что с OpenRouter и Wappi. Два сообщения подряд про одно и то же
+    # приучают их не читать.
     total = snapshot.get("llm_failures", 0) + snapshot.get("send_failures", 0)
     delta = total - state.get("fail_baseline", 0.0)
-    if delta >= cfg.alert_fail_threshold and now - state.get("alert_fail_ts", 0.0) >= cooldown:
+
+    window = state.setdefault("fail_window", [])
+    if delta > 0:
+        window.append([now, delta])
+    # Настройки читаем через getattr: сторож не должен падать (то есть замолкать) из-за
+    # конфига, в котором чего-то не хватает. Тот же приём в `balance_guard.decide`.
+    span_minutes = float(getattr(cfg, "alert_fail_window_minutes", 60) or 60)
+    window_total = _window_total(window, now, span_minutes * 60)
+
+    burst = delta >= cfg.alert_fail_threshold
+    creep = window_total >= float(getattr(cfg, "alert_fail_window_threshold", 6) or 6)
+    if (burst or creep) and now - state.get("alert_fail_ts", 0.0) >= cooldown:
+        if burst:
+            body = f"{int(delta)} сбоев за последние минуты"
+        else:
+            body = f"{int(window_total)} сбоев за {int(span_minutes)} мин"
         alerts.append(("failures",
-                       f"⚠️ {int(delta)} сбоев бота за период (LLM/отправка). "
-                       f"Проверьте OpenRouter/Wappi."))
+                       f"⚠️ {body} (LLM/отправка). Проверьте OpenRouter/Wappi."))
         state["alert_fail_ts"] = now
     state["fail_baseline"] = total  # база сдвигается каждый тик → измеряем дельту за тик
 
