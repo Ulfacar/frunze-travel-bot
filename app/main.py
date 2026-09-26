@@ -503,6 +503,22 @@ async def wappi_webhook(request: Request) -> dict:
         log.info("wappi event: wh_type=%s is_me=%s type=%s",
                  raw.get("wh_type"), raw.get("is_me"), raw.get("type"))
 
+        # Чужое НЕклиентское событие по каналу — доказательство, что труба от Wappi до нас
+        # работает, и адрес вебхука ни при чём. Нужно сторожу тишины: собственный счётчик
+        # Wappi не делится по направлению, и ответ менеджера в старый чат выглядел в нём
+        # как «сообщения приходят, а до вас не доходят» (ложная тревога 26.09).
+        #
+        # Два исключения, без которых доказательство подтверждало бы само себя:
+        #   - клиентское входящее — у него своя отметка `note_inbound` ниже;
+        #   - всё, что вызвали МЫ САМИ (`is_own`): эхо нашей же реплики под
+        #     `outgoing_message_api` и статусы доставки наших сообщений. Иначе ночной дожим
+        #     по старым лидам вечно освежал бы «доказательство» на канале, который в это
+        #     время не принимает входящие вообще.
+        if not is_incoming_user_message(raw) and not is_own(str(raw.get("id", ""))):
+            from app.core import channel_heartbeat as _hb
+            _service_orch = _wappi_orchestrators.get(str(raw.get("profile_id", "")))
+            await _hb.note_service_event(getattr(getattr(_service_orch, "bot", None), "id", ""))
+
         # Статус доставки/прочтения нашего исходящего → обновляем галочку в панели.
         if is_delivery_status(raw):
             provider_msg_id, status = parse_delivery_status(raw)

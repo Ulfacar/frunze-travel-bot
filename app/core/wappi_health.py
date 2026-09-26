@@ -67,19 +67,61 @@ def _name(bot_id: str) -> str:
     return ""
 
 
-def classify_gap(counter_now, counter_prev, our_inbound_moved: bool) -> str:
+def classify_gap(counter_now, counter_prev, our_inbound_moved: bool, *,
+                 service_event_moved: bool = False,
+                 incoming_subscribed: bool = True) -> str:
     """Почему по каналу тихо: «webhook» | «no_traffic» | «» (не знаем).
 
     Различие видно из того же ответа Wappi, что мы и так читаем. 08.08 уведомление по
     каналу Айсины советовало «проверь QR и вебхук», хотя и авторизация, и вебхук были
     в порядке: на номер просто перестали писать. Счётчик Wappi вырос за 19 часов на 9 —
     значит сообщения не терялись по дороге, их не было. Совет уводил в сторону.
+
+    26.09 тот же вывод оказался ложным уже на выросшем счётчике: `message_count` в ответе
+    Wappi ОДИН на всё — разбивки по направлению в этом ответе нет ни в каком поле, —
+    а в подписке профиля стоят `outgoing_message_phone` и `outgoing_message_api`
+    (`webhook_types`, проверено на всех трёх живых профилях). Менеджер дописал в диалог —
+    счётчик вырос, клиентских входящих нет, и сторож обвинил наш вебхук по живому каналу
+    (getvisa, тишина 21 ч, через три минуты после тревоги прошло клиентское входящее).
+
+    `service_event_moved` — доказательство обратного, и прямое: после последнего
+    клиентского входящего до нашего `/webhook/wappi` дошло служебное событие по этому же
+    профилю (статус доставки, эхо ответа менеджера). Труба жива, адрес верен — значит
+    повод тот же, что у `no_traffic`: клиентов нет.
+
+    `incoming_subscribed` закрывает дыру, которую доказательство открывает: если из
+    подписки профиля пропал сам тип `incoming_message`, Wappi клиентские сообщения нам и
+    не пошлёт — это настоящая поломка, и статусы доставки её маскировать не имеют права.
     """
     if our_inbound_moved:
         return ""                       # до нас доходит — диагностировать нечего
     if counter_now is None or counter_prev is None:
         return ""                       # нет данных — молчим о причине, а не выдумываем
-    return "webhook" if counter_now > counter_prev else "no_traffic"
+    if counter_now <= counter_prev:
+        return "no_traffic"
+    if service_event_moved and incoming_subscribed:
+        return "no_traffic"
+    return "webhook"
+
+
+def incoming_subscribed(status) -> bool:
+    """Подписан ли профиль на клиентские входящие — по `webhook_types` из ответа Wappi.
+
+    Поле живое: 26.09 у всех трёх профилей в нём лежит
+    `[delivery_status, incoming_message, authorization_status, outgoing_message_phone,
+    outgoing_message_api]`.
+
+    Нет поля или Wappi не ответил → **False**, то есть fail-closed. Это не «профиль
+    отписан», это «подтвердить не смогли», и такой ответ не должен работать пропуском для
+    глушилки: цена ошибки здесь несимметрична. Лишнее уведомление по живому каналу читают
+    и морщатся, а промолчавший сторож стоил нам 12 часов 03.08 и шести дней 17-22.09.
+    """
+    if not isinstance(status, dict):
+        return False
+    types = status.get("webhook_types")
+    if not isinstance(types, (list, tuple)) or not types:
+        return False
+    return "incoming_message" in {str(item) for item in types}
 
 
 def _logout_text(bot_id: str, status: dict, *, reminder: bool = False) -> str:
@@ -231,9 +273,15 @@ async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool]]:
     out: dict[str, str] = {}
     health: dict[str, bool] = {}
     try:
-        from app.core.bots import registry
-        from app.core.channel_heartbeat import _load_last_seen
-        last_seen = await _load_last_seen()
+        from app.core import bots, channel_heartbeat
+        registry = bots.registry
+        last_seen = await channel_heartbeat._load_last_seen()
+        # Доказательство живости вебхука. Пока флаг OFF, вердикт остаётся прежним, но
+        # расхождение пишется в лог: так видно на настоящем трафике, сколько ложных
+        # «webhook» снимет тумблер, — не подменяя поведение до решения.
+        proof_on = await flags.get_flag("silence_webhook_proof_enabled",
+                                        settings.silence_webhook_proof_enabled)
+        service_seen = await channel_heartbeat.last_service_events()
         for bot in registry.all():
             if not bot.wappi_profile_id:
                 continue
@@ -252,7 +300,23 @@ async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool]]:
             if moved or base_counter is None:
                 await _remember_counter(bot.id, counter, our_seen)
 
+            # Точка отсчёта для доказательства — та же, что и у счётчика: последнее
+            # клиентское входящее. Служебное событие ПОСЛЕ него и есть свидетельство,
+            # что от Wappi до нас всё доезжает.
+            reference = our_seen or base_seen
+            service_at = service_seen.get(bot.id)
+            service_moved = bool(service_at and reference and service_at > reference)
+
             verdict = classify_gap(counter, base_counter, moved)
+            honest = classify_gap(counter, base_counter, moved,
+                                  service_event_moved=service_moved,
+                                  incoming_subscribed=incoming_subscribed(status))
+            if honest != verdict:
+                log.warning("диагноз %s: %s → %s (служебное событие дошло, вебхук жив); "
+                            "тумблер silence_webhook_proof_enabled=%s",
+                            bot.id, verdict or "неизвестен", honest or "неизвестен", proof_on)
+            if proof_on:
+                verdict = honest
             if verdict:
                 out[bot.id] = verdict
     except Exception:  # noqa: BLE001 — без диагноза алерт уйдёт с нейтральным текстом
