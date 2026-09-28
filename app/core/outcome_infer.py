@@ -24,6 +24,11 @@ _VALID = {"won", "lost", "ghosted", "active"}
 _MANUAL_FINAL = {"won", "lost"}          # ручной финал — не переклассифицируем
 _TERMINAL_INFERRED = {"won", "lost", "ghosted"}  # ИИ-финал заморожен; "active" — переоцениваем позже
 
+# На какое последнее сообщение мы уже судили этот диалог: user_id → ts(last_message_at).
+# In-memory (как `_checked` в manager_sync): сброс при рестарте безвреден — будет один
+# лишний круг. Отдельного поля в БД нет, а миграция ради экономии не стоит своего риска.
+_judged_on: dict[str, float] = {}
+
 _SYSTEM = (
     "Ты классифицируешь ИСХОД диалога турагентства/визового центра по переписке.\n"
     "Ответь СТРОГО одним словом на первой строке из списка:\n"
@@ -44,14 +49,40 @@ def _ghost_hours(conv, now: datetime) -> float:
     return max(0.0, (now - dt).total_seconds() / 3600)
 
 
-def _candidates(convs: list, now: datetime, stale_hours: int, limit: int) -> list:
-    """Застойные диалоги без ручного финала и без свежего инференса — старые первыми."""
+def _message_stamp(conv) -> float:
+    """Время последнего сообщения как число. 0.0 — неизвестно (тогда не экономим).
+
+    Допущение: клиентское сообщение ВСЕГДА двигает `last_message_at`. Единственное место,
+    где в проекте бывает иначе — `add_message(..., counts_as_reply=False)` для аварийной
+    отписки (`app/integrations/panel/store.py`), и оно только для реплик бота. Если этот
+    флаг когда-нибудь распространят на клиентские сообщения, экономия ниже станет врать.
+    """
+    dt = getattr(conv, "last_message_at", None)
+    if dt is None:
+        return 0.0
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.timestamp()
+
+
+def _candidates(convs: list, now: datetime, stale_hours: int, limit: int,
+                judged: dict[str, float] | None = None) -> list:
+    """Застойные диалоги без ручного финала и без свежего инференса — старые первыми.
+
+    `judged` (user_id → ts последнего сообщения, на который уже судили) включает экономию:
+    «active» без новых сообщений не пересуживается — по той же переписке модель скажет то же.
+    None — прежнее поведение (пересуживаем всё), это состояние флага OFF.
+    """
     out = []
     for c in convs:
         if (getattr(c, "outcome", "") or "") in _MANUAL_FINAL:
             continue                                   # менеджер уже отметил — не трогаем
         if (getattr(c, "outcome_inferred", "") or "") in _TERMINAL_INFERRED:
             continue                                   # терминальный ИИ-исход заморожен ("active" — нет)
+        if judged is not None and (getattr(c, "outcome_inferred", "") or "") == "active":
+            stamp = _message_stamp(c)
+            if stamp and judged.get(getattr(c, "user_id", "") or "") == stamp:
+                continue                               # с прошлого суда сообщений не было
         if _ghost_hours(c, now) < stale_hours:
             continue                                   # ещё живой/свежий
         if not getattr(c, "messages", None):
@@ -118,8 +149,11 @@ async def run() -> None:
     store = get_conversation_store()
     convs = await store.all_conversations()
     now = datetime.now(timezone.utc)
+    skip_unchanged = await flags.get_flag("outcome_infer_skip_unchanged_enabled",
+                                          settings.outcome_infer_skip_unchanged_enabled)
     cands = _candidates(convs, now, settings.outcome_infer_stale_hours,
-                        settings.outcome_infer_max_per_run)
+                        settings.outcome_infer_max_per_run,
+                        judged=_judged_on if skip_unchanged else None)
     done = 0
     for c in cands:
         if await budget.hard_capped():
@@ -134,6 +168,8 @@ async def run() -> None:
             continue
         label, reason = result
         await store.update_meta(c.user_id, outcome_inferred=label, outcome_inferred_reason=reason)
+        # Отметку ставим независимо от флага: тогда включение экономит сразу, а не через круг.
+        _judged_on[c.user_id] = _message_stamp(c)
         done += 1
     if done:
         log.info("outcome_infer: классифицировано %d диалогов", done)

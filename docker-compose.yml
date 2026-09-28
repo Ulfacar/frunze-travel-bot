@@ -101,7 +101,14 @@ services:
       WAPPI_HEALTH_CONFIRM_TICKS: ${WAPPI_HEALTH_CONFIRM_TICKS:-3}
       WAPPI_HEALTH_TIMEOUT_SECONDS: ${WAPPI_HEALTH_TIMEOUT_SECONDS:-15}
       WAPPI_PAYMENT_WARN_DAYS: ${WAPPI_PAYMENT_WARN_DAYS:-5}
+      # Грация на переподключение: `connecting`/`close` при живой авторизации — не разлогин
+      # (27.09.2026 такая серия шла 64 мин и дала три ложных «сканируйте QR»). Default OFF.
+      WAPPI_CONNECTING_GRACE_ENABLED: ${WAPPI_CONNECTING_GRACE_ENABLED:-false}
+      WAPPI_CONNECTING_GRACE_MINUTES: ${WAPPI_CONNECTING_GRACE_MINUTES:-90}
       CHANNEL_ALERT_COOLDOWN_MINUTES: ${CHANNEL_ALERT_COOLDOWN_MINUTES:-1440}
+      # Не пересуживать «active» без новых сообщений: 2837 диалогов крутились по кругу
+      # и давали ~480 вызовов LLM в сутки впустую. Default OFF.
+      OUTCOME_INFER_SKIP_UNCHANGED_ENABLED: ${OUTCOME_INFER_SKIP_UNCHANGED_ENABLED:-false}
       # Напоминание владельцу о ждущем клиенте. Default OFF — щёлкается в админке.
       AWAITING_TELEGRAM_ENABLED: ${AWAITING_TELEGRAM_ENABLED:-false}
       AWAITING_MAX_AGE_HOURS: ${AWAITING_MAX_AGE_HOURS:-24}
