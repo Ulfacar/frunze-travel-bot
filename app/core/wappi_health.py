@@ -196,6 +196,11 @@ def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> li
     # профилей меняется по нескольку раз в сутки, то есть короткие провалы — штатное
     # поведение Wappi. Настоящий разлогин держится часами (03.08 — двенадцать).
     confirm = max(1, int(getattr(cfg, "wappi_health_confirm_ticks", 1)))
+    # Грация на переподключение. Wappi отвечает `authorized=true`, но `app_status` моргает
+    # `connecting`/`close` — это состояние СОЕДИНЕНИЯ приложения, а не потеря авторизации,
+    # и QR в этом случае советовать нельзя. Флаг OFF → поведение прежнее.
+    grace_on = bool(getattr(cfg, "wappi_connecting_grace_enabled", False))
+    grace = float(getattr(cfg, "wappi_connecting_grace_minutes", 0)) * 60
     alerts: list[tuple[str, str]] = []
 
     for bot_id, status in sorted(statuses.items()):
@@ -204,14 +209,35 @@ def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> li
 
         reasons: dict[str, str] = {}
         streak_key = f"streak:{bot_id}"
+        since_key = f"since:{bot_id}"
+        ok_key = f"ok:{bot_id}"
         if not status.get("authorized") or str(status.get("app_status") or "") != "open":
             streak = state.get(streak_key, 0) + 1
             state[streak_key] = streak
-            if streak >= confirm:
+            state.pop(ok_key, None)         # серия здоровых проб прервалась
+            since = float(state.setdefault(since_key, now))
+            # Авторизация жива → это переподключение: ждём грацию, прежде чем будить людей.
+            # Слетевшая авторизация (`authorized=false`) грации не получает: вот это и есть
+            # разлогин, ради которого сторож существует.
+            reconnecting = (grace_on and bool(status.get("authorized"))
+                            and now - since < grace)
+            if streak >= confirm and not reconnecting:
                 reasons["logout"] = _logout_text(
                     bot_id, status, reminder=state.get(f"logout:{bot_id}") is not None)
         else:
             state.pop(streak_key, None)     # одна здоровая проба обнуляет счётчик
+            # А вот окно грации одна проба НЕ снимает, и это не симметрия ради симметрии.
+            # 27.09 в середине 64-минутной серии у frunze_tours одна проба вышла здоровой
+            # (12:47), а в 12:55 канал упал снова. Снимай окно по одной пробе — и канал,
+            # моргающий чаще раза в грацию, не дождётся тревоги НИКОГДА: отсчёт каждый раз
+            # начинался бы заново. Поэтому «вернулся» = `confirm` здоровых проб подряд,
+            # той же мерой, какой мы признаём аварию.
+            if since_key in state:          # счётчик ведём только внутри инцидента
+                healthy_streak = int(state.get(ok_key, 0)) + 1
+                state[ok_key] = healthy_streak
+                if healthy_streak >= confirm:
+                    state.pop(since_key, None)
+                    state.pop(ok_key, None)
         expires_at = parse_wappi_time(status.get("payment_expired_at"))
         if expires_at is not None and expires_at - now <= warn_ahead:
             reasons["payment"] = _payment_text(bot_id, expires_at, now)
