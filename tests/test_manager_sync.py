@@ -6,8 +6,11 @@
 """
 from datetime import datetime, timezone
 
+import httpx
+
 from app.channels.wappi import is_manager_reply, message_time
-from app.core.manager_sync import select_missing_replies
+from app.core.manager_sync import (looks_like_access_failure, permanent_rejection_code,
+                                   select_missing_replies)
 
 AFTER = datetime(2026, 7, 31, 12, 0, tzinfo=timezone.utc)
 TS = int(AFTER.timestamp())
@@ -64,3 +67,39 @@ def test_message_time_survives_garbage():
     assert message_time({"time": "не число"}) == 0
     assert message_time({}) == 0
     assert message_time({"timestamp": 123}) == 123
+
+
+def _http_error(code: int) -> httpx.HTTPStatusError:
+    request = httpx.Request("GET", "https://wappi.pro/api/sync/messages/get")
+    response = httpx.Response(code, request=request)
+    return httpx.HTTPStatusError("boom", request=request, response=response)
+
+
+def test_permanent_rejection_catches_client_refusal():
+    """400/404 по чату — ответ по данным: повтор даст то же, диалог идёт в карантин.
+
+    28.09.2026 один такой диалог дал 96 стеков за 48 часов.
+    """
+    assert permanent_rejection_code(_http_error(400)) == 400
+    assert permanent_rejection_code(_http_error(404)) == 404
+
+
+def test_permanent_rejection_ignores_try_later_and_our_own_bugs():
+    """«Приходи позже» и наши падения в карантин не идут — иначе мы замолчим по живому чату."""
+    assert permanent_rejection_code(_http_error(429)) is None
+    assert permanent_rejection_code(_http_error(500)) is None
+    assert permanent_rejection_code(httpx.ConnectTimeout("нет сети")) is None
+    assert permanent_rejection_code(KeyError("наш баг")) is None
+
+
+def test_one_broken_chat_is_not_an_access_failure():
+    """Один битый чат (диалог 3671) — рабочая ситуация, тревожить некого."""
+    assert not looks_like_access_failure(0)
+    assert not looks_like_access_failure(1)
+
+
+def test_mass_rejection_looks_like_access_failure():
+    """Находка ревью класса C: если Wappi отказывает ВСЕМ, молчаливый карантин на сутки
+    спрячет от нас то, что ответы менеджеров перестали доезжать до панели вообще."""
+    assert looks_like_access_failure(3)
+    assert looks_like_access_failure(25)

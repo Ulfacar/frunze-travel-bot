@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta, timezone
 
+import httpx
 from sqlalchemy import select
 
 from app.channels.wappi import WappiAdapter, is_manager_reply, message_time
@@ -47,7 +48,37 @@ BATCH = 25
 RECHECK_MINUTES = 30
 _checked: dict[int, datetime] = {}
 
+# Устойчивый отказ Wappi по конкретному чату держим в карантине.
+# 28.09.2026: один диалог (3671, номер 996552255755) стабильно отдавал `400 Bad Request`
+# на `/api/sync/messages/get` и давал 96 полных стеков за 48 часов — по одному каждые
+# `RECHECK_MINUTES`. Повтор бессмысленен: это ответ ПО ДАННЫМ (чата нет, номер не в
+# WhatsApp), а не сбой связи, зато он жжёт суточную квоту Wappi и топит лог, в котором
+# потом не видно настоящих аварий.
+REJECT_HOURS = 24
+# 429 и 5xx сюда намеренно не входят: это «приходи позже», а не «никогда».
+_REJECT_CODES = (400, 404)
+_rejected: dict[int, datetime] = {}
+# Сколько карантинов за один прогон считаем не «битым чатом», а поломкой на стороне Wappi
+# (сменился токен, поехали параметры, инцидент у провайдера). Один битый чат — это 1 в
+# прогон; если разом отказали несколько, то молчаливый карантин на сутки спрячет от нас
+# то, что ответы менеджеров перестали доезжать до панели ВООБЩЕ.
+QUARANTINE_ALARM = 3
+
 FLAG = "manager_sync_enabled"
+
+
+def permanent_rejection_code(exc: BaseException) -> int | None:
+    """Код устойчивого отказа по этому чату, иначе None. Чистая, чтобы её можно было тестировать."""
+    if isinstance(exc, httpx.HTTPStatusError) and exc.response is not None:
+        code = int(exc.response.status_code)
+        if code in _REJECT_CODES:
+            return code
+    return None
+
+
+def looks_like_access_failure(quarantined: int) -> bool:
+    """Похоже ли это на поломку доступа, а не на битые чаты. Чистая — тестируется без БД."""
+    return quarantined >= QUARANTINE_ALARM
 
 
 def _adapters() -> dict[str, WappiAdapter]:
@@ -137,7 +168,7 @@ async def run(*, sessionmaker=None, limit: int = BATCH, force: bool = False) -> 
 
     sm = sessionmaker or get_sessionmaker()
     since = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
-    checked = fixed = added = 0
+    checked = fixed = added = quarantined = 0
     async with sm() as session:
         convs = (await session.execute(
             select(Conversation)
@@ -151,17 +182,28 @@ async def run(*, sessionmaker=None, limit: int = BATCH, force: bool = False) -> 
         convs = [c for c in convs if c.intercepted or (c.stage or "") in _HANDOFF_STAGES]
 
         now = datetime.now(timezone.utc)
+        never = datetime.min.replace(tzinfo=timezone.utc)
         cooldown = timedelta(minutes=RECHECK_MINUTES)
+        quarantine = timedelta(hours=REJECT_HOURS)
         for conv in convs:
-            if not force and now - _checked.get(conv.id, datetime.min.replace(
-                    tzinfo=timezone.utc)) < cooldown:
+            if not force and now - _checked.get(conv.id, never) < cooldown:
                 continue                   # недавно смотрели, менеджер ещё не ответил
+            if not force and now - _rejected.get(conv.id, never) < quarantine:
+                continue                   # Wappi по этому чату уже сказал «нет»
             _checked[conv.id] = now
             checked += 1
             try:
                 n = await sync_conversation(session, conv, adapters[conv.bot_id])
-            except Exception:  # noqa: BLE001 — один битый диалог не должен ронять прогон
-                log.warning("manager_sync: диалог %s не разобран", conv.id, exc_info=True)
+            except Exception as exc:  # noqa: BLE001 — один битый диалог не должен ронять прогон
+                code = permanent_rejection_code(exc)
+                if code is not None:
+                    _rejected[conv.id] = now
+                    quarantined += 1
+                    # Без стека: стек тут ничего не добавляет, а повторяется он сутками.
+                    log.warning("manager_sync: Wappi отказал по диалогу %s (HTTP %s) — "
+                                "молчим по нему %s ч", conv.id, code, REJECT_HOURS)
+                else:
+                    log.warning("manager_sync: диалог %s не разобран", conv.id, exc_info=True)
                 continue
             if n:
                 fixed += 1
@@ -171,4 +213,9 @@ async def run(*, sessionmaker=None, limit: int = BATCH, force: bool = False) -> 
     if fixed:
         log.info("manager_sync: подтянуто %s ответов в %s диалогов (проверено %s)",
                  added, fixed, checked)
-    return {"checked": checked, "fixed": fixed, "added": added}
+    if looks_like_access_failure(quarantined):
+        # ERROR, а не WARNING: это уже не битый чат, а похоже на поломку у Wappi, и тогда
+        # ответы менеджеров сутки не доезжают до панели по ВСЕЙ выборке — молча.
+        log.error("manager_sync: Wappi отказал по %s диалогам за прогон (из %s проверенных) "
+                  "— похоже на поломку доступа, а не на битые чаты", quarantined, checked)
+    return {"checked": checked, "fixed": fixed, "added": added, "quarantined": quarantined}
