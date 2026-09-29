@@ -100,6 +100,9 @@ services:
       WAPPI_HEALTH_COOLDOWN_MINUTES: ${WAPPI_HEALTH_COOLDOWN_MINUTES:-1440}
       WAPPI_HEALTH_CONFIRM_TICKS: ${WAPPI_HEALTH_CONFIRM_TICKS:-3}
       WAPPI_HEALTH_TIMEOUT_SECONDS: ${WAPPI_HEALTH_TIMEOUT_SECONDS:-15}
+      # Чтение истории чата: планировщик последователен, длинное ожидание крадёт время
+      # у сторожей, стоящих в очереди за manager_sync (29.09 — 39 таймаутов за 12 часов).
+      WAPPI_MESSAGES_TIMEOUT_SECONDS: ${WAPPI_MESSAGES_TIMEOUT_SECONDS:-12}
       WAPPI_PAYMENT_WARN_DAYS: ${WAPPI_PAYMENT_WARN_DAYS:-5}
       # Грация на переподключение: `connecting`/`close` при живой авторизации — не разлогин
       # (27.09.2026 такая серия шла 64 мин и дала три ложных «сканируйте QR»). Default OFF.

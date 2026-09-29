@@ -89,7 +89,7 @@ ai-protocol/
 | Architect / Auditor (§2.5) | **Claude Code** (Opus 5) | класс риска, план, ТЗ, разбор данных, отчёт |
 | Principal engineer (§2.3) | **Codex**, `gpt-6-astra` | `codex exec -m gpt-6-astra -s workspace-write -C "<каталог>" -`, ТЗ через stdin |
 | Independent reviewer #1 (§11) | агент **`codex-reviewer`** (Opus, read-only) | Agent tool; файлы не правит |
-| Independent reviewer #2 (§12) | **Codex review**, GPT | `codex review --base <ветка>` или `codex review --uncommitted`, инструкции через stdin |
+| Independent reviewer #2 (§12) | **Codex review**, GPT | `codex review --uncommitted` (рабочее дерево) или `codex review --base <ветка>`. Свой промпт — `codex review -`, но он НЕ сочетается с `--uncommitted`/`--base`: проверено 29.09, CLI отвечает «cannot be used with [PROMPT]» |
 | Referee в спорах (§28) | **Codex** на другой модели (`gpt-5.5`) | `codex exec -m gpt-5.5 …` — только когда ревьюеры расходятся |
 | Automated validators (§2.6) | `pytest`, `prod_traps_check`, `alert_replay`, `watchdog_replay`, `run_scenarios` | команды в `docs/protocol.md` |
 | Director / Requirements (§2.1) | **Алан + Claude Code** | требования ставит Алан, в контракт задачи оформляет Claude Code |
@@ -101,6 +101,16 @@ ai-protocol/
   дифф, а не отчёт исполнителя (§11).
 - **B / IMPORTANT** — один независимый ревьюер, любой из двух.
 - **S, M** — по необходимости; на однострочной правке ревью ради ревью обесценивает процесс.
+
+Что даёт роль №2 на практике: 29.09 первый же прогон `codex review --uncommitted` нашёл в
+моём диффе голодание очереди — бюджет прогона при фиксированном порядке оставлял хвост
+выборки неопрошенным. Ревьюер смоделировал 12 часов и показал, что последний чат не
+проверяется ни разу. Дефект исправлен до коммита.
+
+Одна оговорка про его прогон тестов: `codex review` запускает `pytest` по-своему и получает
+на Windows около 160 `PermissionError` на временных каталогах. Это известный артефакт
+(гонять надо `pytest tests`, а не из корня — см. `CLAUDE.md`), а не регрессия. Верить нашему
+прогону, а его тестовый вывод читать с этой поправкой.
 
 Правило §1.2 держится в любом составе: кто написал код, не выносит по нему финальный вердикт
 в классе C. Автором кода может быть и Codex, и Claude Code — ревьюер в этом случае берётся

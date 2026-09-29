@@ -457,7 +457,8 @@ class WappiAdapter:
         if not self._token or not self._profile_id or not phone:
             return []
         owns = self._client is None
-        client = self._client or httpx.AsyncClient(timeout=25)
+        client = self._client or httpx.AsyncClient(
+            timeout=settings.wappi_messages_timeout_seconds)
         try:
             resp = await client.get(
                 f"{self._base}/api/sync/messages/get",

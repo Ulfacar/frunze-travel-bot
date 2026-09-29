@@ -4,13 +4,15 @@
 физически не могло попасть в «ответы менеджера»: берём только исходящие новее последнего
 сообщения диалога, и только те, чьих id у нас ещё нет.
 """
-from datetime import datetime, timezone
+import asyncio
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
 from app.channels.wappi import is_manager_reply, message_time
-from app.core.manager_sync import (looks_like_access_failure, permanent_rejection_code,
-                                   select_missing_replies)
+from app.core import manager_sync
+from app.core.manager_sync import (looks_like_access_failure, is_timeout as looks_like_timeout,
+                                   permanent_rejection_code, select_missing_replies)
 
 AFTER = datetime(2026, 7, 31, 12, 0, tzinfo=timezone.utc)
 TS = int(AFTER.timestamp())
@@ -103,3 +105,70 @@ def test_mass_rejection_looks_like_access_failure():
     спрячет от нас то, что ответы менеджеров перестали доезжать до панели вообще."""
     assert looks_like_access_failure(3)
     assert looks_like_access_failure(25)
+
+
+def test_timeout_is_recognised_as_try_later():
+    """29.09.2026: 39 стеков ReadTimeout за 12 часов. Таймаут — «занято», не «никогда»."""
+    request = httpx.Request("GET", "https://wappi.pro/api/sync/messages/get")
+    assert looks_like_timeout(httpx.ReadTimeout("slow", request=request))
+    assert looks_like_timeout(httpx.ConnectTimeout("slow", request=request))
+    assert looks_like_timeout(asyncio.TimeoutError())
+
+
+def test_timeout_detector_ignores_other_failures():
+    """Отказ по данным и наши баги в отсрочку по таймауту не попадают — у них свои ветки."""
+    assert not looks_like_timeout(_http_error(400))
+    assert not looks_like_timeout(_http_error(500))
+    assert not looks_like_timeout(httpx.ConnectError("нет сети"))
+    assert not looks_like_timeout(KeyError("наш баг"))
+
+
+def test_run_budget_is_shorter_than_scheduler_tick():
+    """Бюджет прогона обязан быть меньше тика планировщика: джобы идут последовательно,
+    и manager_sync не имеет права занять весь тик, за ним в очереди стоят сторожа."""
+    from app.core.scheduler import TICK_SECONDS
+
+    assert manager_sync.RUN_BUDGET_SECONDS < TICK_SECONDS
+
+
+def test_timeout_backoff_is_shorter_than_permanent_quarantine():
+    """Отсрочка по таймауту мягче карантина по 400: повтор осмыслен, значит ждём меньше."""
+    assert manager_sync.TIMEOUT_BACKOFF_MINUTES / 60 < manager_sync.REJECT_HOURS
+    assert manager_sync.TIMEOUT_BACKOFF_MINUTES > manager_sync.RECHECK_MINUTES
+
+
+class _Conv:
+    def __init__(self, cid):
+        self.id = cid
+
+
+def test_never_checked_dialogs_go_first():
+    """Новый диалог не должен ждать: его нет в `_checked`, значит он в начале очереди."""
+    never = datetime.min.replace(tzinfo=timezone.utc)
+    convs = [_Conv(1), _Conv(2), _Conv(3)]
+    checked = {1: datetime(2026, 9, 29, 12, tzinfo=timezone.utc),
+               3: datetime(2026, 9, 29, 11, tzinfo=timezone.utc)}
+
+    order = [c.id for c in manager_sync.order_by_staleness(convs, checked, never)]
+
+    assert order == [2, 3, 1]          # 2 не опрашивали вовсе, 3 давнее, 1 свежее всех
+
+
+def test_budget_cannot_starve_the_tail_of_the_queue():
+    """Находка независимого ревью 29.09: при бюджете прогона фиксированный порядок
+    оставлял хвост выборки неопрошенным НИКОГДА. Справедливая очередь это исключает.
+
+    Модель: 25 диалогов, за прогон успеваем 4. Каждый опрошенный получает отметку.
+    За шесть прогонов каждый диалог должен быть опрошен хотя бы раз.
+    """
+    never = datetime.min.replace(tzinfo=timezone.utc)
+    convs = [_Conv(i) for i in range(1, 26)]
+    checked: dict[int, datetime] = {}
+    moment = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
+
+    for tick in range(7):
+        batch = manager_sync.order_by_staleness(convs, checked, never)[:4]
+        for conv in batch:
+            checked[conv.id] = moment + timedelta(minutes=5 * tick)
+
+    assert len(checked) == 25, f"неопрошенными остались: {25 - len(checked)}"

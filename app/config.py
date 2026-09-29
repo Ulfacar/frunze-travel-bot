@@ -178,6 +178,11 @@ class Settings(BaseSettings):
     # Настоящий разлогин (03.08 — 12 часов) это переживает с запасом.
     wappi_health_confirm_ticks: int = 3
     wappi_health_timeout_seconds: float = 15.0   # джоба планировщика не имеет права висеть
+    # Чтение истории чата у Wappi. Было 25 с хардкодом, и 29.09.2026 это дало 39 таймаутов
+    # за 12 часов: планировщик выполняет джобы последовательно, поэтому каждое ожидание
+    # отнималось у сторожей, стоящих в очереди за manager_sync. Не ответил за 12 с —
+    # вернёмся следующим тиком, он через пять минут.
+    wappi_messages_timeout_seconds: float = 12.0
     wappi_payment_warn_days: int = 5             # подписка кончается → предупредить заранее
     stt_media_host_allowlist: list[str] = []
     stt_cost_per_minute_usd: float = 0.003

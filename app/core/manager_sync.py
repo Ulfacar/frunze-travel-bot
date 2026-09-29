@@ -24,7 +24,9 @@
 """
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -64,6 +66,22 @@ _rejected: dict[int, datetime] = {}
 # то, что ответы менеджеров перестали доезжать до панели ВООБЩЕ.
 QUARANTINE_ALARM = 3
 
+# Бюджет времени на один прогон. Планировщик выполняет джобы ПОСЛЕДОВАТЕЛЬНО
+# (`scheduler.run_once`), поэтому каждая секунда, которую мы ждём Wappi, отнимается у всех,
+# кто стоит за нами в очереди: у сторожа каналов, дожима, брифингов, конвейера Битрикса.
+# 29.09.2026 это было видно на проде — пробы `wappi_health` шли не каждые 300 секунд, а
+# каждые 320–416. Бюджет вышел — доберём в следующем тике, он через пять минут.
+RUN_BUDGET_SECONDS = 45
+
+# Таймаут по чату — это «занято», а не «никогда»: в отличие от 400/404 повтор осмыслен,
+# поэтому отсрочка короткая. Но повторять его каждые `RECHECK_MINUTES` тоже глупо — за
+# 12 часов 29.09 набежало 39 таймаутов по одним и тем же чатам. Размер чата ни при чём:
+# таймаутили и диалог на 1192 сообщения, и на 18. Медленный сам эндпоинт Wappi.
+TIMEOUT_STREAK_LIMIT = 3
+TIMEOUT_BACKOFF_MINUTES = 60
+_timeout_streak: dict[int, int] = {}
+_timeout_until: dict[int, datetime] = {}
+
 FLAG = "manager_sync_enabled"
 
 
@@ -74,6 +92,31 @@ def permanent_rejection_code(exc: BaseException) -> int | None:
         if code in _REJECT_CODES:
             return code
     return None
+
+
+def order_by_staleness(convs: list, checked: dict, never: datetime) -> list:
+    """Сначала те, кого дольше всех не опрашивали. Чистая — тестируется без сети.
+
+    Без этого бюджет прогона (`RUN_BUDGET_SECONDS`) обрекает хвост выборки на голодание:
+    независимое ревью 29.09.2026 смоделировало 12 часов и показало, что при 25 кандидатах
+    и ~11.5 с на запрос до последнего чата очередь не доходит НИКОГДА — порядок был
+    фиксированный (свежие первыми), а первые чаты успевали выйти из `RECHECK_MINUTES`
+    раньше, чем мы добирались до конца списка. Диалог так и висел бы «ждёт ответа» —
+    ровно та жалоба, из-за которой джоба и появилась.
+
+    Ни разу не опрошенный диалог получает `never` и идёт в начало, поэтому свежие
+    диалоги по-прежнему обслуживаются первыми.
+    """
+    return sorted(convs, key=lambda c: checked.get(c.id, never))
+
+
+def is_timeout(exc: BaseException) -> bool:
+    """Wappi не ответил вовремя. Чистая — тестируется без сети.
+
+    Сюда входят и таймаут чтения, и таймаут соединения, и общий `TimeoutException`:
+    для нас разницы нет, вывод один — вернуться позже.
+    """
+    return isinstance(exc, (httpx.TimeoutException, asyncio.TimeoutError))
 
 
 def looks_like_access_failure(quarantined: int) -> bool:
@@ -168,7 +211,9 @@ async def run(*, sessionmaker=None, limit: int = BATCH, force: bool = False) -> 
 
     sm = sessionmaker or get_sessionmaker()
     since = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
-    checked = fixed = added = quarantined = 0
+    checked = fixed = added = quarantined = timed_out = 0
+    out_of_budget = 0
+    started = time.monotonic()
     async with sm() as session:
         convs = (await session.execute(
             select(Conversation)
@@ -183,13 +228,22 @@ async def run(*, sessionmaker=None, limit: int = BATCH, force: bool = False) -> 
 
         now = datetime.now(timezone.utc)
         never = datetime.min.replace(tzinfo=timezone.utc)
+        # Справедливая очередь: бюджет прогона режет список, поэтому порядок решает, кого
+        # мы вообще когда-нибудь опросим.
+        convs = order_by_staleness(convs, _checked, never)
         cooldown = timedelta(minutes=RECHECK_MINUTES)
         quarantine = timedelta(hours=REJECT_HOURS)
         for conv in convs:
+            # Бюджет проверяем ПЕРЕД запросом: за нами в очереди планировщика стоят сторожа.
+            if not force and time.monotonic() - started > RUN_BUDGET_SECONDS:
+                out_of_budget += 1
+                continue
             if not force and now - _checked.get(conv.id, never) < cooldown:
                 continue                   # недавно смотрели, менеджер ещё не ответил
             if not force and now - _rejected.get(conv.id, never) < quarantine:
                 continue                   # Wappi по этому чату уже сказал «нет»
+            if not force and now < _timeout_until.get(conv.id, never):
+                continue                   # чат отложен после серии таймаутов
             _checked[conv.id] = now
             checked += 1
             try:
@@ -202,9 +256,25 @@ async def run(*, sessionmaker=None, limit: int = BATCH, force: bool = False) -> 
                     # Без стека: стек тут ничего не добавляет, а повторяется он сутками.
                     log.warning("manager_sync: Wappi отказал по диалогу %s (HTTP %s) — "
                                 "молчим по нему %s ч", conv.id, code, REJECT_HOURS)
+                elif is_timeout(exc):
+                    timed_out += 1
+                    streak = _timeout_streak.get(conv.id, 0) + 1
+                    _timeout_streak[conv.id] = streak
+                    # Стека нет намеренно: он не объясняет таймаут, зато топит лог.
+                    if streak >= TIMEOUT_STREAK_LIMIT:
+                        _timeout_until[conv.id] = now + timedelta(minutes=TIMEOUT_BACKOFF_MINUTES)
+                        _timeout_streak.pop(conv.id, None)
+                        log.warning("manager_sync: Wappi не отвечает по диалогу %s "
+                                    "(%s раза подряд) — откладываем на %s мин",
+                                    conv.id, streak, TIMEOUT_BACKOFF_MINUTES)
+                    else:
+                        log.warning("manager_sync: Wappi не ответил вовремя по диалогу %s "
+                                    "(подряд %s)", conv.id, streak)
                 else:
                     log.warning("manager_sync: диалог %s не разобран", conv.id, exc_info=True)
                 continue
+            _timeout_streak.pop(conv.id, None)      # ответил — серия таймаутов прервана
+            _timeout_until.pop(conv.id, None)
             if n:
                 fixed += 1
                 added += n
@@ -218,4 +288,8 @@ async def run(*, sessionmaker=None, limit: int = BATCH, force: bool = False) -> 
         # ответы менеджеров сутки не доезжают до панели по ВСЕЙ выборке — молча.
         log.error("manager_sync: Wappi отказал по %s диалогам за прогон (из %s проверенных) "
                   "— похоже на поломку доступа, а не на битые чаты", quarantined, checked)
-    return {"checked": checked, "fixed": fixed, "added": added, "quarantined": quarantined}
+    if out_of_budget:
+        log.info("manager_sync: бюджет прогона %s с исчерпан, отложено диалогов: %s "
+                 "(доберём следующим тиком)", RUN_BUDGET_SECONDS, out_of_budget)
+    return {"checked": checked, "fixed": fixed, "added": added, "quarantined": quarantined,
+            "timed_out": timed_out, "out_of_budget": out_of_budget}
