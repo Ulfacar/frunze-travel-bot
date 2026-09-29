@@ -1,0 +1,25 @@
+{
+  "version": "4.0.0",
+  "files": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "ai/README.md",
+    "ai/ROLES.md",
+    "ai/PROMPTS.md",
+    "ai/projects/_TEMPLATE.md",
+    "ai/templates/TASK.md",
+    "ai/templates/REVIEW.md",
+    "ai/templates/HANDOFF.md",
+    "ai/templates/STATE.md",
+    "ai/templates/DECISION.md",
+    "ai/templates/RELEASE.md",
+    "ai/playbooks/universal.md",
+    "ai/playbooks/website.md",
+    "ai/playbooks/webapp.md",
+    "ai/playbooks/api.md",
+    "ai/playbooks/bot.md",
+    "ai/playbooks/automation.md",
+    "ai/protocol-manifest.json",
+    "tools/ai_protocol.py"
+  ]
+}
