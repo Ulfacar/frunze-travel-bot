@@ -281,12 +281,40 @@ def profile_health(status) -> bool | None:
     return bool(status.get("authorized")) and str(status.get("app_status") or "") == "open"
 
 
+RECONNECTING = "reconnecting"
+
+
+def profile_condition(status) -> str | None:
+    """Состояние профиля словом: `ok` / `reconnecting` / `logged_out`, либо None.
+
+    Отличается от `profile_health` тем, что различает ДВЕ разные беды вместо одной.
+    27.09.2026 серия `app_status=connecting` держалась 64 минуты при `authorized=true`, и
+    канал `frunze_tours_sezim` в эти же минуты принимал от клиентов голосовые и документы —
+    то есть переподключение приложения и потеря авторизации выглядят одинаково «нездорово»,
+    а лечатся по-разному: QR нужен только во втором случае.
+    """
+    if not isinstance(status, dict):
+        return None
+    authorized = status.get("authorized")
+    if not isinstance(authorized, bool):
+        # Строка "false" истинна в Python, и на ней разлогин превратился бы в
+        # «переподключается», а совет — в «QR не нужен» (находка финального аудита 29.09).
+        # Чужой формат — повод молчать, а не делать вывод о чужом канале.
+        return None
+    if not authorized:
+        return "logged_out"
+    app_status = str(status.get("app_status") or "")
+    if not app_status:
+        return None          # поля нет — это мусорный ответ, а не «переподключается»
+    return "ok" if app_status == "open" else RECONNECTING
+
+
 async def diagnoses() -> dict[str, str]:
     """Почему по каждому каналу тихо — для текста алерта сторожа тишины."""
     return (await diagnoses_and_health())[0]
 
 
-async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool]]:
+async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool | str]]:
     """Диагноз тишины и здоровье профиля — из ОДНОГО ответа Wappi, за один проход.
 
     Снимок счётчика Wappi храним между тиками и сравниваем заодно с нашей отметкой
@@ -307,6 +335,8 @@ async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool]]:
         # «webhook» снимет тумблер, — не подменяя поведение до решения.
         proof_on = await flags.get_flag("silence_webhook_proof_enabled",
                                         settings.silence_webhook_proof_enabled)
+        advice_on = await flags.get_flag("wappi_reconnecting_advice_enabled",
+                                         settings.wappi_reconnecting_advice_enabled)
         service_seen = await channel_heartbeat.last_service_events()
         for bot in registry.all():
             if not bot.wappi_profile_id:
@@ -315,6 +345,10 @@ async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool]]:
             verdict_health = profile_health(status)
             if verdict_health is not None:
                 health[bot.id] = verdict_health
+                # «Переподключается» — это не «разлогинен»: советовать QR тут не за что.
+                # Отдаём третьим значением, а не False, чтобы совет мог сказать правду.
+                if advice_on and profile_condition(status) == RECONNECTING:
+                    health[bot.id] = RECONNECTING
             counter = status.get("message_count") if isinstance(status, dict) else None
             base_counter, base_seen = await _counter_snapshot(bot.id)
             our_seen = last_seen.get(bot.id)

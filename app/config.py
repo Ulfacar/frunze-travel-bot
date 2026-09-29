@@ -412,6 +412,10 @@ class Settings(BaseSettings):
     # frunze_tours_sezim в эти же минуты принимал голосовые и документы от клиентов.
     # Порог 90 мин взят от замера (64 мин + запас), настоящий разлогин 03.08 держался 12 часов.
     wappi_connecting_grace_enabled: bool = False
+    # Та же правда — во второй двери: сторож ТИШИНЫ советует сканировать QR, когда
+    # `profile_health` видит не-`open`. При живой авторизации это переподключение, и
+    # совет уводит владельца чинить работающее (так уже было 01.09.2026).
+    wappi_reconnecting_advice_enabled: bool = False
     wappi_connecting_grace_minutes: int = 90
     followup_enabled: bool = False
     # Гейт блока дожима и ценовой вилки в системном промпте.

@@ -108,6 +108,8 @@ services:
       # (27.09.2026 такая серия шла 64 мин и дала три ложных «сканируйте QR»). Default OFF.
       WAPPI_CONNECTING_GRACE_ENABLED: ${WAPPI_CONNECTING_GRACE_ENABLED:-false}
       WAPPI_CONNECTING_GRACE_MINUTES: ${WAPPI_CONNECTING_GRACE_MINUTES:-90}
+      # Совет сторожа тишины: «переподключается» вместо «сканируй QR». Default OFF.
+      WAPPI_RECONNECTING_ADVICE_ENABLED: ${WAPPI_RECONNECTING_ADVICE_ENABLED:-false}
       CHANNEL_ALERT_COOLDOWN_MINUTES: ${CHANNEL_ALERT_COOLDOWN_MINUTES:-1440}
       # Не пересуживать «active» без новых сообщений: 2837 диалогов крутились по кругу
       # и давали ~480 вызовов LLM в сутки впустую. Default OFF.

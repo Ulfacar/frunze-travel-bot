@@ -80,7 +80,7 @@ def _human(minutes: float) -> str:
 def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
            *, bishkek_hour: int, reported=frozenset(),
            diagnoses: dict[str, str] | None = None,
-           healthy: dict[str, bool] | None = None) -> list[tuple[str, str]]:
+           healthy: dict[str, bool | str] | None = None) -> list[tuple[str, str]]:
     """Чистое решение: по каким каналам пора бить тревогу. Мутирует state.
 
     Возвращает список `(bot_id, текст)`. Пустой список — всё в порядке.
@@ -141,7 +141,7 @@ def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
     return alerts
 
 
-def _advice(diagnosis: str, healthy: bool | None = None) -> str:
+def _advice(diagnosis: str, healthy: bool | str | None = None) -> str:
     """Совет по факту, а не один на все случаи.
 
     08.08 по каналу Айсины ушло «проверь профиль в Wappi: авторизация (QR) и адрес
@@ -160,6 +160,16 @@ def _advice(diagnosis: str, healthy: bool | None = None) -> str:
     if diagnosis == "no_traffic":
         return ("В Wappi по этому номеру тоже тихо — значит дело не в технике. "
                 "Проверь, куда ведёт реклама, и не ограничен ли сам номер в WhatsApp.")
+    if healthy == "reconnecting":
+        # Авторизация жива, Wappi сообщает, что приложение переподключается — QR не при чём.
+        # 27.09 такая серия шла 64 минуты, и канал в это время принимал голосовые и документы.
+        # Формулировка намеренно осторожная: `authorized=true` держится по семантике сессии
+        # даже при выключенном телефоне, поэтому мы не обещаем, что всё в порядке, и говорим,
+        # когда перестать ждать.
+        return ("Wappi сообщает, что профиль авторизован, а приложение переподключается — "
+                "QR сканировать не нужно. Сначала смотри адрес вебхука у этого профиля. "
+                "Если это держится дольше полутора часов, считай канал потерянным: "
+                "проверь телефон и авторизацию в кабинете.")
     if healthy is True:
         return ("Профиль в Wappi авторизован и на связи — QR сканировать не нужно. "
                 "Почему тихо, определить не вышло: смотри адрес вебхука у этого профиля.")
@@ -169,19 +179,22 @@ def _advice(diagnosis: str, healthy: bool | None = None) -> str:
 
 
 def down_log_line(bot_id: str, silent_minutes: float, *, diagnosis: str = "",
-                  healthy: bool | None = None) -> str:
+                  healthy: bool | str | None = None) -> str:
     """Строка в лог рядом с тревогой: почему она поднята.
 
     01.09 в логе стояло только «CHANNEL DOWN: getvisa», и разбирать ложное уведомление
     пришлось по скриншоту из Telegram. Повод обязан лежать рядом с фактом.
     """
-    health = {True: "здоров", False: "нездоров", None: "неизвестен"}[healthy]
+    # .get, а не [] — иначе новое состояние роняет джобу ПОСЛЕ записи защёлки, и канал
+    # остаётся без алерта на весь cooldown (нашли оба независимых ревьюера 29.09).
+    health = {True: "здоров", False: "нездоров", None: "неизвестен",
+              "reconnecting": "переподключается"}.get(healthy, "неизвестен")
     return (f"CHANNEL DOWN: {bot_id} (тишина {silent_minutes:.0f} мин, "
             f"диагноз={diagnosis or 'неизвестен'}, профиль={health})")
 
 
 def _text(bot_id: str, silent_minutes: float, *, reminder: bool = False,
-          diagnosis: str = "", healthy: bool | None = None) -> str:
+          diagnosis: str = "", healthy: bool | str | None = None) -> str:
     name = ""
     try:
         from app.core.bots import registry
