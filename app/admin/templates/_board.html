@@ -10,7 +10,7 @@
       <div class="n">{{ metrics.noise }}</div><div class="l">Скрыть рекламу/без диалога</div></div>
     <div class="stat intercepted"><div class="n">{{ metrics.intercepted }}</div><div class="l">Перехвачено</div></div>
     <div class="stat mine-filter" title="Показать только лиды, закреплённые за вами"
-         style="cursor:pointer{% if mine %};outline:2px solid var(--accent,#00767d){% endif %}"
+         style="cursor:pointer{% if mine %};outline:2px solid var(--accent){% endif %}"
          hx-get="/admin/board/{{ funnel }}?mine={{ 0 if mine else 1 }}"
          hx-target="closest [data-board]" hx-swap="outerHTML">
       <div class="n">👤</div><div class="l">{{ 'Все лиды' if mine else 'Мои лиды' }}</div></div>

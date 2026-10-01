@@ -1,73 +1,10 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Frunze — диалоги</title>
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    /* Светлая профессиональная тема (UI UX Pro Max): синий #2563EB + сделочный зелёный #059669,
-       Fira Sans (интерфейс) + Fira Code (числа/ID). Чистый минимализм, мягкие тени. */
-    :root {
-      --bg: #F1F5F9; --surface: #FFFFFF; --surface-2: #F1F5F9; --col: #F8FAFC;
-      --elev: #FFFFFF; --elev-hover: #F8FAFC;
-      --border: #E2E8F0; --border-2: #CBD5E1;
-      --text: #0F172A; --muted: #64748B; --faint: #94A3B8;
-      --accent: #2563EB; --accent-2: #1D4ED8; --accent-soft: rgba(37,99,235,.10);
-      --warm: #D97706; --warm-soft: rgba(217,119,6,.12);
-      --hot: #DC2626; --hot-soft: rgba(220,38,38,.10);
-      --green: #059669; --green-soft: rgba(5,150,105,.10); --manager: #059669;
-      --mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
-      --r-sm: 8px; --r: 11px; --r-lg: 15px;
-      --shadow: 0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.07);
-      --t: 180ms cubic-bezier(.4,0,.2,1);
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { margin: 0; background: var(--bg); color: var(--text);
-           font-family: 'Fira Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-           font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
-    ::selection { background: var(--accent-soft); }
-    ::-webkit-scrollbar { height: 10px; width: 10px; }
-    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 8px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
-    ::-webkit-scrollbar-track { background: transparent; }
-
-    /* ---------- Top bar ---------- */
-    .topbar { display: flex; align-items: center; gap: 18px; padding: 0 20px; height: 58px;
-              background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20; }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
-    .brand .logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#2563EB,#059669);
-                   display: grid; place-items: center; color: #fff; font-weight: 800; box-shadow: 0 2px 8px rgba(37,99,235,.25); }
-    .brand small { color: var(--muted); font-weight: 500; font-size: 11.5px; display: block; margin-top: -2px; }
-    .tabs { display: flex; gap: 4px; margin-left: 6px; }
-    .tab { background: transparent; color: var(--muted); border: 1px solid transparent; padding: 7px 14px;
-           border-radius: 9px; cursor: pointer; font: inherit; font-weight: 600; font-size: 13px;
-           transition: background var(--t), color var(--t); }
-    .tab:hover { background: var(--surface-2); color: var(--text); }
-    .tab.active { background: var(--accent-soft); color: var(--accent); }
-    .tab-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px;
-                 margin-left: 4px; border-radius: 9px; background: var(--hot); color: #fff;
-                 font-family: var(--mono); font-size: 10.5px; font-weight: 700; vertical-align: middle; }
-    .spacer { flex: 1; }
-
-    /* ---------- Search ---------- */
-    .search { position: relative; display: flex; align-items: center; }
-    .search svg { position: absolute; left: 11px; width: 15px; height: 15px; color: var(--faint); pointer-events: none; }
-    .search input { width: 230px; padding: 8px 12px 8px 34px; background: var(--surface-2); color: var(--text);
-                    border: 1px solid var(--border-2); border-radius: 9px; font: inherit; font-size: 13px;
-                    transition: border-color var(--t), box-shadow var(--t), width var(--t); }
-    .search input::placeholder { color: var(--faint); }
-    .search input:focus { outline: none; width: 280px; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-    .me { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px; font-weight: 500; }
-    .me .av { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-2);
-              border: 1px solid var(--border-2); display: grid; place-items: center; color: var(--muted); }
-
-    /* ---------- Layout ---------- */
+{% extends "base.html" %}
+{% block title %}Frunze — диалоги{% endblock %}
+{% block brand_sub %}{{ direction_label }}{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+/* ---------- Layout ---------- */
     .layout { display: grid; grid-template-columns: 1fr 410px; gap: 16px; padding: 16px; align-items: start; }
     #board { min-width: 0; }
     #chat { position: sticky; top: 74px; max-height: calc(100vh - 90px); }
@@ -154,7 +91,7 @@
     .badge.silent { background: var(--warm-soft); color: var(--warm); }
     .badge.hot-lead { background: var(--hot-soft); color: var(--hot); }
     .badge.intercepted { background: var(--hot-soft); color: var(--hot); }
-    .badge.ad-source { background: var(--brand-soft, #e7f0ff); color: var(--brand, #2563eb); }
+    .badge.ad-source { background: var(--brand-soft); color: var(--brand); }
     .push { margin-left: auto; }
 
     /* ---------- Chat panel ---------- */
@@ -226,49 +163,34 @@
 
     *:focus-visible { outline-offset: 2px; }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .card:hover { transform: none; } }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="logo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></span>
-      <span>Frunze<small>диалоги</small></span>
-    </div>
-    <nav class="tabs">
+</style>
+{% endblock %}
+
+{% block topbar_center %}
+<nav class="tabs">
       <button class="tab active" data-tab="inbox"
               hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML" onclick="setTab(this)">
         📥 Инбокс <span class="tab-badge" id="inbox-badge" hidden>0</span>
       </button>
-      {% for key, label in funnels %}
-      <button class="tab" data-funnel="{{ key }}"
-              hx-get="/admin/board/{{ key }}" hx-target="#board" hx-swap="innerHTML" onclick="setTab(this)">
-        {{ label }}
+      {# Доска — только текущего направления. Три воронки в одном экране и были тем,
+         что «невозможно читать» (требование 01.10). #}
+      <button class="tab" data-funnel="{{ direction }}"
+              hx-get="/admin/board/{{ direction }}" hx-target="#board" hx-swap="innerHTML"
+              onclick="setTab(this)">
+        Канбан
       </button>
-      {% endfor %}
     </nav>
-    <span class="spacer"></span>
-    <div class="search">
+<div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
       <input type="search" name="q" placeholder="Поиск по имени или номеру…" autocomplete="off"
              aria-label="Поиск диалогов"
              hx-get="/admin/search" hx-trigger="keyup changed delay:300ms, search"
              hx-target="#board" hx-swap="innerHTML">
     </div>
-    <a href="/admin/buyers" class="btn btn-ghost" style="margin:0 4px 0 12px;text-decoration:none;padding:7px 12px">🎯 Покупатели</a>
-    <a href="/admin/calendar" class="btn btn-ghost" style="margin:0 4px;text-decoration:none;padding:7px 12px">📅 Календарь</a>
-    {% if is_admin %}<a href="/admin/analytics" class="btn btn-ghost" style="margin:0 4px;text-decoration:none;padding:7px 12px">📊 Аналитика</a>{% endif %}
-    <a href="/admin/faq" class="btn btn-ghost" style="margin-right:4px;text-decoration:none;padding:7px 12px" title="FAQ-правила">FAQ</a>
-    {% if is_admin %}<a href="/admin/system" class="btn btn-ghost" style="margin-right:4px;text-decoration:none;padding:7px 12px" title="Статус системы">⚙️</a>
-    <a href="/admin/audit" class="btn btn-ghost" style="margin-right:8px;text-decoration:none;padding:7px 12px" title="Аудит-лог">📋</a>{% endif %}
-    <div class="me"><span>{{ manager.name if manager else 'Менеджер' }}</span>
-      <span class="av"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-      <form method="post" action="/admin/logout" style="margin-left:10px">
-        <button class="btn btn-ghost" type="submit" title="Выйти" style="padding:6px 10px">Выйти</button>
-      </form>
-    </div>
-  </header>
+{% endblock %}
 
-  <main class="layout">
+{% block content %}
+<main class="layout">
     <section id="board" hx-get="/admin/inbox" hx-trigger="load" hx-swap="innerHTML"></section>
     <aside id="chat">
       <div class="panel">
@@ -279,8 +201,10 @@
       </div>
     </aside>
   </main>
+{% endblock %}
 
-  <script>
+{% block scripts %}
+<script>
     // Дип-линк: /admin?open=<user_id> открывает диалог в панели #chat (напр. из «Горячего листа»).
     (function () {
       var uid = new URLSearchParams(location.search).get('open');
@@ -605,7 +529,7 @@
     document.body.addEventListener('htmx:afterSettle', function () { _applyNoiseFilter(); updateInboxSelection(); if (!_dragging && !window.__boardDragging) initBoardDnD(); });
     initBoardDnD();
   </script>
-  <style>
+<style>
     [data-board].only-needs .card[data-needs="0"] { display: none; }
     [data-board].hide-noise .card[data-noise="1"], [data-attention].hide-noise .card[data-noise="1"] { display: none; }
     .stat.needs-reply.active-filter { outline: 2px solid var(--warm); border-radius: 8px; }
@@ -629,5 +553,4 @@
     .inbox-list .card:has(.bulk-checkbox:checked) { outline: 2px solid var(--accent); outline-offset: 0; }
     .bulk-archive:disabled, .bulk-noise:disabled { opacity: .45; cursor: default; }
   </style>
-</body>
-</html>
+{% endblock %}

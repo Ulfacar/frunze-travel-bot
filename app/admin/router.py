@@ -32,10 +32,39 @@ from app.integrations.panel.store import get_conversation_store
 log = logging.getLogger("admin")
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+def _chrome(request: Request) -> dict:
+    """Общий контекст шапки для КАЖДОГО шаблона: кто вошёл, админ ли, направление.
+
+    Через context_processor, а не десятью правками в обработчиках: именно расхождение
+    шапки от страницы к странице и дало десять самостоятельных документов, пять
+    вариантов плитки-числа и шесть вариантов кнопки.
+    """
+    manager = current_manager(request)
+    is_admin = manager is not None and _manager_bot_scope(manager) is None
+    direction = current_direction(request, manager) if manager else DEFAULT_DIRECTION
+    return {"manager": manager, "is_admin": is_admin, "direction": direction,
+            "direction_label": dict(DIRECTIONS).get(direction, direction),
+            # Переключатель — только полному админу: у менеджера направление одно.
+            "directions": DIRECTIONS if is_admin else []}
+
+
+# Лямбда, а не ссылка: `_chrome` и его зависимости объявлены ниже в файле, а
+# процессор вызывается на каждый ответ, то есть уже после загрузки модуля.
+templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"),
+                            context_processors=[lambda r: _chrome(r)])
 
 # Доски (вкладки) — по воронкам. Визы и Туры основные, Билеты — третья.
 FUNNELS = [("visa", "Визы"), ("tours", "Туры"), ("tickets", "Билеты")]
+
+# Направление = рабочее пространство бренда. Требование Алана 01.10.2026: «лучше
+# разделить туры и визы, невозможно читать» — держать два потока в одном списке
+# нельзя. Менеджер направление НЕ выбирает: оно выводится из его бота
+# (`manager_scope.BOT_SCOPE_BY_MANAGER`). Полный админ переключает явно, выбор живёт
+# в сессии. Новых правил доступа это не вводит — фильтрация по-прежнему на скоупе.
+DIRECTIONS = [("visa", "GetVisa · визы"), ("tours", "Frunze Travel · туры"),
+              ("tickets", "Билеты")]
+DIRECTION_KEYS = {key for key, _ in DIRECTIONS}
+DEFAULT_DIRECTION = "visa"
 # Короткие ярлыки воронок для бейджа в инбоксе/поиске (где смешаны все воронки).
 FUNNEL_LABELS = {"visa": "Визы", "tours": "Туры", "tickets": "Билеты"}
 FAQ_TABS = FUNNELS + [("common", "Общие")]
@@ -211,6 +240,44 @@ def _filter_conversations(convs: list, manager: dict | None) -> list:
     return [c for c in convs if _can_view_conversation(c, manager)]
 
 
+def _direction_from_scope(scope: set[str] | None) -> str | None:
+    """Направление менеджера по его ботам. None — полный админ, выбирает сам."""
+    if scope is None:
+        return None
+    if any(bot.startswith("getvisa") for bot in scope):
+        return "visa"
+    if any(bot.startswith("frunze_tours") for bot in scope):
+        return "tours"
+    # Логина нет в карте скоупов: он и так не видит ни одного диалога
+    # (`_can_view_conversation` на пустом скоупе отдаёт False). Отдаём дефолт,
+    # чтобы страница отрисовалась пустой, а не упала.
+    return DEFAULT_DIRECTION
+
+
+def current_direction(request: Request, manager: dict | None = None) -> str:
+    """Текущее рабочее пространство: своё у менеджера, выбранное у полного админа."""
+    manager = manager if manager is not None else current_manager(request)
+    own = _direction_from_scope(_manager_bot_scope(manager))
+    if own:
+        return own
+    chosen = str(request.session.get("direction") or "").strip().lower()
+    return chosen if chosen in DIRECTION_KEYS else DEFAULT_DIRECTION
+
+
+def _model_direction(model: dict) -> str:
+    """Направление карточки. Воронка главнее, но у нового лида её ещё нет —
+    тогда берём бота, иначе неклассифицированный лид исчез бы из инбокса."""
+    funnel = (model.get("funnel") or "").strip()
+    if funnel in DIRECTION_KEYS:
+        return funnel
+    bot_id = (model.get("bot_id") or "").strip()
+    if bot_id.startswith("getvisa"):
+        return "visa"
+    if bot_id.startswith("frunze_tours"):
+        return "tours"
+    return DEFAULT_DIRECTION
+
+
 def _demo_profiles() -> list[dict]:
     """Virtual demo logins for per-manager views, even if MANAGERS lacks the account."""
     return [
@@ -339,10 +406,27 @@ async def index(request: Request):
         # этого менеджер после входа оказывался на общей доске, теряя нужный диалог.
         target = request.url.path + (f"?{request.url.query}" if request.url.query else "")
         return RedirectResponse(f"/admin/login?next={quote(target, safe='')}", status_code=303)
-    return templates.TemplateResponse(request, "boards.html",
-                                      {"funnels": FUNNELS, "manager": manager,
-                                       "is_admin": _manager_bot_scope(manager) is None},
+    # manager / is_admin / direction / directions приходят из `_chrome` (context_processor)
+    # и одинаковы на всех страницах — здесь их дублировать не нужно.
+    return templates.TemplateResponse(request, "boards.html", {"funnels": FUNNELS},
                                       headers={"Cache-Control": "no-store"})
+
+
+@router.post("/direction")
+async def set_direction(request: Request, direction: str = Form(""),
+                        manager: dict = Depends(require_full_admin)):
+    """Переключить рабочее пространство (визы / туры / билеты). Только полный админ.
+
+    Менеджеру со скоупом здесь 403 (зависимость): его направление выведено из бота,
+    и права выбирать чужой поток переключатель не даёт — фильтрация всё равно идёт
+    по скоупу, а не по этому значению.
+    """
+    value = (direction or "").strip().lower()
+    if value not in DIRECTION_KEYS:
+        raise HTTPException(status_code=400, detail="unknown direction")
+    request.session["direction"] = value
+    await get_conversation_store().add_audit(manager["login"], "direction", value)
+    return RedirectResponse("/admin", status_code=303)
 
 
 @router.get("/analytics", response_class=HTMLResponse)
@@ -1277,7 +1361,12 @@ def _waiting_sorted(models: list[dict]) -> list[dict]:
 
 
 async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query: str = ""):
-    models = await _all_models(_now(), current_manager(request))
+    manager = current_manager(request)
+    direction = current_direction(request, manager)
+    # Инбокс и поиск живут в пределах одного направления: смешанный список и был
+    # тем, что «невозможно читать». Скоуп менеджера применён до этого, в _all_models.
+    models = [m for m in await _all_models(_now(), manager)
+              if _model_direction(m) == direction]
     query = query.strip()
     if mode == "search" and query:
         ql = query.lower()

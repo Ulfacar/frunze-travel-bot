@@ -1,21 +1,8 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Frunze — статус системы</title>
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root { --bg:#F1F5F9; --surface:#FFFFFF; --elev:#F1F5F9; --border:#E2E8F0; --text:#0F172A;
-            --muted:#64748B; --accent:#2563EB; --warm:#D97706; --hot:#DC2626; --green:#059669;
-            --mono:'Fira Code', ui-monospace, monospace; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:'Fira Sans',system-ui,sans-serif; font-size:14px; }
-    .topbar { display:flex; align-items:center; gap:16px; padding:0 20px; height:58px;
-              background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; }
-    .topbar a { color:var(--accent); text-decoration:none; font-weight:600; }
-    .wrap { padding:22px; max-width:900px; margin:0 auto; }
+{% extends "base.html" %}
+{% block title %}Frunze — статус системы{% endblock %}
+{% block head %}
+<style>
+.wrap { padding:22px; max-width:900px; margin:0 auto; }
     h1 { font-size:20px; margin:0 0 18px; }
     .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
     .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:15px 17px; }
@@ -46,16 +33,9 @@
     .switch input:checked + .slider { background:var(--green); }
     .switch input:checked + .slider:before { transform:translateX(22px); }
     .switch input:focus-visible + .slider { box-shadow:0 0 0 3px rgba(37,99,235,.25); }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <a href="/admin">← Доски</a>
-    <b>Статус системы</b>
-    <a href="/admin/audit" style="margin-left:8px">Аудит-лог →</a>
-    <span style="flex:1"></span>
-    <span class="muted">{{ manager.name }}</span>
-  </header>
+</style>
+{% endblock %}
+{% block content %}
   <div class="wrap">
     <h1>Состояние сервиса</h1>
     <div class="grid">
@@ -130,5 +110,4 @@
     </div>
 
   </div>
-</body>
-</html>
+{% endblock %}

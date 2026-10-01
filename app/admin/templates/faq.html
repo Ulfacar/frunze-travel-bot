@@ -1,21 +1,8 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Frunze — FAQ</title>
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root { --bg:#F1F5F9; --surface:#FFFFFF; --border:#E2E8F0; --text:#0F172A;
-            --muted:#64748B; --accent:#2563EB; --green:#059669; --hot:#DC2626;
-            --mono:'Fira Code', ui-monospace, monospace; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:'Fira Sans',system-ui,sans-serif; font-size:14px; }
-    .topbar { display:flex; align-items:center; gap:14px; padding:0 20px; height:58px;
-              background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:2; }
-    .topbar a { color:var(--accent); text-decoration:none; font-weight:600; }
-    .wrap { padding:22px; max-width:1160px; margin:0 auto; }
+{% extends "base.html" %}
+{% block title %}Frunze — FAQ{% endblock %}
+{% block head %}
+<style>
+.wrap { padding:22px; max-width:1160px; margin:0 auto; }
     h1 { font-size:20px; margin:0 0 16px; }
     .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
     .tab { padding:8px 13px; border:1px solid var(--border); border-radius:8px; background:var(--surface);
@@ -48,16 +35,9 @@
     .muted { color:var(--muted); }
     .empty { padding:28px; text-align:center; color:var(--muted); border:1px dashed var(--border); border-radius:10px; }
     .result { margin-top:12px; padding:11px; border-radius:8px; background:#F8FAFC; border:1px solid var(--border); }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <a href="/admin">← Доски</a>
-    <b>FAQ-правила</b>
-    <a href="/admin/audit">Аудит →</a>
-    <span style="flex:1"></span>
-    <span class="muted">{{ manager.name }}</span>
-  </header>
+</style>
+{% endblock %}
+{% block content %}
   <div class="wrap">
     <h1>Детерминированные ответы без LLM</h1>
     <nav class="tabs">
@@ -143,5 +123,4 @@
       </aside>
     </div>
   </div>
-</body>
-</html>
+{% endblock %}

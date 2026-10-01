@@ -1,23 +1,9 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Frunze — календарь</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Fira+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root { --bg:#F1F5F9; --surface:#FFFFFF; --border:#E2E8F0; --text:#0F172A; --muted:#64748B;
-            --accent:#2563EB; --green:#059669; --amber:#D97706; --red:#DC2626;
-            --mono:'Fira Code', ui-monospace, monospace; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:'Fira Sans',system-ui,sans-serif; }
-    a { color:var(--accent); }
-    .muted { color:var(--muted); }
+{% extends "base.html" %}
+{% block title %}Frunze — календарь{% endblock %}
+{% block head %}
+<style>
+.muted { color:var(--muted); }
     .spacer { flex:1; }
-    .topbar { display:flex; align-items:center; gap:14px; padding:0 18px; height:56px; background:var(--surface);
-              border-bottom:1px solid var(--border); position:sticky; top:0; z-index:20; }
-    .topbar a { text-decoration:none; font-weight:600; }
-    .topbar b { font-size:15px; }
     .wrap { max-width:900px; margin:0 auto; padding:16px 16px 60px; }
     .wrap.wide { max-width:1240px; }
 
@@ -139,17 +125,9 @@
       .btn { padding:9px 12px; }         /* пальцем — не мышкой */
       .grid { grid-template-columns:1fr; }
     }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <a href="/admin">← Диалоги</a>
-    <b>Календарь</b>
-    <span class="muted" style="font-size:13px">{% if view == 'day' %}мой день{% else %}неделя{% endif %}</span>
-    <span class="spacer"></span>
-    <span class="muted">{{ manager.name if manager else '' }}{% if is_admin %} · все менеджеры{% endif %}</span>
-  </header>
-
+</style>
+{% endblock %}
+{% block content %}
   <div class="wrap {{ 'wide' if view == 'week' else '' }}">
 
     <div class="bar">
@@ -336,5 +314,4 @@
       <span>· задачи ставятся здесь или в карточке клиента</span>
     </div>
   </div>
-</body>
-</html>
+{% endblock %}
