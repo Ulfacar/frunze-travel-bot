@@ -69,6 +69,12 @@ def _managers(monkeypatch):
     ], raising=False)
 
 
+def _split_on(monkeypatch):
+    """Разделение направлений — за тумблером, дефолт OFF (решение ревью 01.10)."""
+    monkeypatch.setattr(app.config.settings, "admin_direction_split_enabled", True,
+                        raising=False)
+
+
 def _login(login, password):
     client = TestClient(main.app, base_url="https://testserver")
     assert client.post("/admin/login", data={"login": login, "password": password}).status_code == 200
@@ -219,14 +225,13 @@ def test_tour_manager_does_not_see_visa_leads(monkeypatch):
 
 def test_counters_are_scoped_to_the_direction(monkeypatch):
     """/admin/stats кормит бейдж и звук — он тоже обязан считать только своё."""
-    _clear(); _managers(monkeypatch); _seed_both()
+    _clear(); _managers(monkeypatch); _seed_both(); _split_on(monkeypatch)
     mine = _login("medina", "pw").get("/admin/stats").json()
-    everything = _login("admin", "frunze").get("/admin/stats").json()
-    assert mine != everything, "счётчики менеджера совпали с общими — скоуп не применён"
+    assert mine["total"] == 1, "менеджер должен считать только свой лид, а не оба: %s" % mine
 
 
 def test_manager_has_no_direction_switcher(monkeypatch):
-    _clear(); _managers(monkeypatch); _seed_both()
+    _clear(); _managers(monkeypatch); _seed_both(); _split_on(monkeypatch)
     client = _login("medina", "pw")
     assert 'action="/admin/direction"' not in client.get("/admin").text
     assert client.post("/admin/direction", data={"direction": "tours"}).status_code == 403
@@ -235,7 +240,7 @@ def test_manager_has_no_direction_switcher(monkeypatch):
 def test_full_admin_switches_direction_and_it_is_remembered(monkeypatch):
     """Содержимое смотрим в `/admin/inbox` — это то, что htmx грузит в доску по загрузке.
     Выбор обязан переживать отдельный запрос, то есть лежать в сессии, а не в URL."""
-    _clear(); _managers(monkeypatch); _seed_both()
+    _clear(); _managers(monkeypatch); _seed_both(); _split_on(monkeypatch)
     client = _login("admin", "frunze")
 
     assert client.post("/admin/direction", data={"direction": "tours"},
@@ -276,3 +281,79 @@ def test_silent_column_is_still_refused(monkeypatch):
     client = _login("admin", "frunze")
     assert client.post("/admin/conversation/%s/stage" % VISA_USER,
                        data={"stage": "silent"}).status_code == 400
+
+
+# --- E. Находки независимого ревью 01.10 -------------------------------------
+
+def test_split_is_behind_a_flag_and_the_flag_defaults_off():
+    """Меняем рабочую реальность менеджеров — значит тумблером, а не деплоем."""
+    assert app.config.settings.admin_direction_split_enabled is False
+
+
+def test_flag_is_registered_in_the_admin_panel():
+    specs = admin_router.FEATURE_FLAGS
+    assert "admin_direction_split_enabled" in specs, "тумблера нет в панели — откат только деплоем"
+    spec = specs["admin_direction_split_enabled"]
+    assert spec["title"] and spec["desc"]
+    assert spec["default"]() is False
+
+
+def test_flag_off_keeps_the_mixed_list(monkeypatch):
+    """OFF — поведение дословно прежнее: оба направления в одном списке."""
+    _clear(); _managers(monkeypatch); _seed_both()
+    monkeypatch.setattr(app.config.settings, "admin_direction_split_enabled", False,
+                        raising=False)
+    body = _login("admin", "frunze").get("/admin/inbox").text
+    assert VISA_TEXT in body and TOUR_TEXT in body, "при выключенном тумблере список не смешанный"
+
+
+def test_scoped_manager_keeps_a_lead_whose_funnel_differs_from_its_bot(monkeypatch):
+    """ГЛАВНАЯ находка ревью: лид не должен ИСЧЕЗАТЬ.
+
+    Клиент спросил про визу на туровом номере — воронка `visa`, бот `frunze_tours`.
+    Если направление считать по воронке, такой лид уходит из инбокса, из поиска и с
+    доски разом: найти его менеджеру нечем. Скоуп по ботам разделение уже обеспечил,
+    поэтому второй раз фильтровать менеджера по направлению нельзя.
+    """
+    _clear(); _managers(monkeypatch); _split_on(monkeypatch)
+    store = get_conversation_store()
+    odd = "frunze_tours:996700333333"
+
+    async def _s():
+        await store.add_message(odd, "client", "а визу сделаете?", channel="whatsapp",
+                                bot_id="frunze_tours", phone="996700333333")
+        await store.update_meta(odd, funnel="visa")       # воронка разошлась с ботом
+    asyncio.run(_s())
+
+    client = _login("ademi", "pw")                        # менеджер туров
+    assert "996700333333" in client.get("/admin/inbox").text, "лид пропал из инбокса"
+    assert "996700333333" in client.get("/admin/search", params={"q": "996700333333"}).text, \
+        "лид не находится поиском"
+    assert client.get("/admin/stats").json()["total"] == 1, "лид не попал даже в счётчик"
+
+
+def test_counters_match_what_the_inbox_shows(monkeypatch):
+    """Вторая находка: бейдж и звук не должны считать то, чего в списке нет."""
+    _clear(); _managers(monkeypatch); _seed_both(); _split_on(monkeypatch)
+    client = _login("admin", "frunze")
+    body = client.get("/admin/inbox").text
+    assert VISA_TEXT in body and TOUR_TEXT not in body
+    assert client.get("/admin/stats").json()["total"] == 1, "счётчик считает оба направления"
+
+    client.post("/admin/direction", data={"direction": "tours"}, follow_redirects=False)
+    body = client.get("/admin/inbox").text
+    assert TOUR_TEXT in body and VISA_TEXT not in body
+    assert client.get("/admin/stats").json()["total"] == 1
+
+
+def test_manager_outside_the_scope_map_sees_nothing_and_does_not_crash(monkeypatch):
+    """Логина нет в карте скоупов: пустой список, но не пятисотка."""
+    _clear(); _seed_both(); _split_on(monkeypatch)
+    monkeypatch.setattr(app.config.settings, "managers", [
+        ManagerConfig(login="newbie", name="Новичок", password="pw"),
+    ], raising=False)
+    client = _login("newbie", "pw")
+    body = client.get("/admin/inbox")
+    assert body.status_code == 200
+    assert VISA_TEXT not in body.text and TOUR_TEXT not in body.text
+    assert client.get("/admin/stats").json()["total"] == 0

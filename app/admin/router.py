@@ -42,10 +42,10 @@ def _chrome(request: Request) -> dict:
     manager = current_manager(request)
     is_admin = manager is not None and _manager_bot_scope(manager) is None
     direction = current_direction(request, manager) if manager else DEFAULT_DIRECTION
+    # `directions` (переключатель) здесь НЕ отдаём: он зависит от рантайм-флага, а
+    # context_processor синхронный и `await` не умеет. Его передаёт `index()`.
     return {"manager": manager, "is_admin": is_admin, "direction": direction,
-            "direction_label": dict(DIRECTIONS).get(direction, direction),
-            # Переключатель — только полному админу: у менеджера направление одно.
-            "directions": DIRECTIONS if is_admin else []}
+            "direction_label": dict(DIRECTIONS).get(direction, direction)}
 
 
 # Лямбда, а не ссылка: `_chrome` и его зависимости объявлены ниже в файле, а
@@ -264,6 +264,33 @@ def current_direction(request: Request, manager: dict | None = None) -> str:
     return chosen if chosen in DIRECTION_KEYS else DEFAULT_DIRECTION
 
 
+async def _split_on() -> bool:
+    from app.core import flags as _flags           # локально, как и остальные обращения
+    return await _flags.get_flag("admin_direction_split_enabled",
+                                 settings.admin_direction_split_enabled)
+
+
+async def _visible_models(request: Request, manager: dict | None) -> list[dict]:
+    """Карточки для этого человека: скоуп всегда, направление — только полному админу.
+
+    Менеджеру со скоупом по направлению НЕ фильтруем. Его боты уже дают разделение, а
+    фильтр по воронке прятал бы лид, у которого воронка разошлась с ботом: находка
+    независимого ревью 01.10 — такой лид исчезал сразу из инбокса, поиска и доски, то
+    есть найти его было нельзя вообще. На проде сейчас расхождений нет (1909 визовых на
+    визовом боте, 1048 туровых на туровом), но в M3 появятся продукты и билетная воронка.
+
+    Один источник правды для инбокса, поиска и счётчиков: иначе бейдж считает одно, а
+    список показывает другое (вторая находка того же ревью).
+    """
+    models = await _all_models(_now(), manager)
+    if _manager_bot_scope(manager) is not None:
+        return models
+    if not await _split_on():
+        return models
+    direction = current_direction(request, manager)
+    return [m for m in models if _model_direction(m) == direction]
+
+
 def _model_direction(model: dict) -> str:
     """Направление карточки. Воронка главнее, но у нового лида её ещё нет —
     тогда берём бота, иначе неклассифицированный лид исчез бы из инбокса."""
@@ -406,10 +433,16 @@ async def index(request: Request):
         # этого менеджер после входа оказывался на общей доске, теряя нужный диалог.
         target = request.url.path + (f"?{request.url.query}" if request.url.query else "")
         return RedirectResponse(f"/admin/login?next={quote(target, safe='')}", status_code=303)
-    # manager / is_admin / direction / directions приходят из `_chrome` (context_processor)
-    # и одинаковы на всех страницах — здесь их дублировать не нужно.
-    return templates.TemplateResponse(request, "boards.html", {"funnels": FUNNELS},
-                                      headers={"Cache-Control": "no-store"})
+    # manager / is_admin / direction приходят из `_chrome` (context_processor) и одинаковы
+    # на всех страницах. Переключатель зависит от рантайм-флага, поэтому только здесь:
+    # он нужен там, где работают с лидами, и появляется лишь когда разделение включено.
+    split_on = await _split_on()
+    is_admin = _manager_bot_scope(manager) is None
+    return templates.TemplateResponse(
+        request, "boards.html",
+        {"funnels": FUNNELS, "split_on": split_on,
+         "directions": DIRECTIONS if (is_admin and split_on) else []},
+        headers={"Cache-Control": "no-store"})
 
 
 @router.post("/direction")
@@ -1026,6 +1059,17 @@ FEATURE_FLAGS = {
         "default": lambda: settings.night_mode_enabled,
         "note": lambda: "",
     },
+    "admin_direction_split_enabled": {
+        "title": "Разделить туры и визы (рабочие пространства)",
+        "desc": ("Инбокс, поиск и счётчики показывают одно направление, а не смешанный "
+                 "список: туры и визы перестают наезжать друг на друга. Полный админ "
+                 "переключает направление в шапке, выбор запоминается. У менеджера "
+                 "направление одно — его бота, переключателя нет и видимость не растёт: "
+                 "разделение только сужает показ, права по-прежнему на скоупе. "
+                 "Выключено — как раньше: все воронки в одном списке."),
+        "default": lambda: settings.admin_direction_split_enabled,
+        "note": lambda: "",
+    },
     "authz_enforce_enabled": {
         "title": "Жёсткое владение лидами (без перехвата)",
         "desc": ("Менеджер может писать только своим или ничьим клиентам (ничей лид "
@@ -1362,11 +1406,9 @@ def _waiting_sorted(models: list[dict]) -> list[dict]:
 
 async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query: str = ""):
     manager = current_manager(request)
-    direction = current_direction(request, manager)
-    # Инбокс и поиск живут в пределах одного направления: смешанный список и был
-    # тем, что «невозможно читать». Скоуп менеджера применён до этого, в _all_models.
-    models = [m for m in await _all_models(_now(), manager)
-              if _model_direction(m) == direction]
+    # Инбокс и поиск живут в пределах направления, когда тумблер включён: смешанный
+    # список и был тем, что «невозможно читать».
+    models = await _visible_models(request, manager)
     query = query.strip()
     if mode == "search" and query:
         ql = query.lower()
@@ -1400,9 +1442,13 @@ async def search(request: Request, q: str = "", _: dict = Depends(require_admin)
 
 
 @router.get("/stats", response_class=JSONResponse)
-async def stats(manager: dict = Depends(require_admin)):
-    """Лёгкий счётчик для звуковых уведомлений и бейджа в заголовке вкладки."""
-    models = await _all_models(_now(), manager)
+async def stats(request: Request, manager: dict = Depends(require_admin)):
+    """Лёгкий счётчик для звуковых уведомлений и бейджа в заголовке вкладки.
+
+    Считает РОВНО то, что показывает инбокс: иначе бейдж и звук срабатывают на лид,
+    которого в списке нет (находка независимого ревью 01.10).
+    """
+    models = await _visible_models(request, manager)
     return JSONResponse({
         "waiting": sum(1 for m in models if m["wait_level"] != "none"),
         "needs_reply": sum(1 for m in models if m["needs_reply"]),

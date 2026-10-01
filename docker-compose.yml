@@ -168,6 +168,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       MANAGERS: ${MANAGERS:-[]}
       SESSION_SECRET: ${SESSION_SECRET:-change-me-frunze-session-secret}
+      ADMIN_DIRECTION_SPLIT_ENABLED: ${ADMIN_DIRECTION_SPLIT_ENABLED:-false}
       DEMO_LOGIN: ${DEMO_LOGIN:-false}
       # Утренний бриф менеджеру: без этого токена джоба «отправляет» в пустоту (контейнер
       # видит ТОЛЬКО перечисленные здесь переменные — в prod.env их держать мало).

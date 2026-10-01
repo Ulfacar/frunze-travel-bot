@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Frunze — диалоги{% endblock %}
-{% block brand_sub %}{{ direction_label }}{% endblock %}
+{% block brand_sub %}{% if split_on %}{{ direction_label }}{% else %}диалоги{% endif %}{% endblock %}
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
@@ -172,6 +172,7 @@
               hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML" onclick="setTab(this)">
         📥 Инбокс <span class="tab-badge" id="inbox-badge" hidden>0</span>
       </button>
+      {% if split_on %}
       {# Доска — только текущего направления. Три воронки в одном экране и были тем,
          что «невозможно читать» (требование 01.10). #}
       <button class="tab" data-funnel="{{ direction }}"
@@ -179,6 +180,16 @@
               onclick="setTab(this)">
         Канбан
       </button>
+      {% else %}
+      {# Тумблер выключен — поведение дословно прежнее: вкладка на каждую воронку. #}
+      {% for key, label in funnels %}
+      <button class="tab" data-funnel="{{ key }}"
+              hx-get="/admin/board/{{ key }}" hx-target="#board" hx-swap="innerHTML"
+              onclick="setTab(this)">
+        {{ label }}
+      </button>
+      {% endfor %}
+      {% endif %}
     </nav>
 <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>

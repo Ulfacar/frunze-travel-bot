@@ -671,8 +671,22 @@ def test_inbox_is_scoped_to_the_current_direction():
     списке. Алан дословно: «лучше разделить туры и визы, невозможно читать» — смешанный
     инбокс и был той нечитаемостью. Старое поведение доступно переключателем направления,
     а не одновременным показом обоих потоков.
+
+    Разделение живёт за тумблером `admin_direction_split_enabled` (дефолт OFF — требование
+    независимого ревью 01.10: меняется рабочая реальность менеджеров, откат должен быть
+    мгновенным, без деплоя). Поэтому тест включает его явно и возвращает как было.
     """
+    from app.config import settings as _s
     _clear_memory()
+    was = _s.admin_direction_split_enabled
+    _s.admin_direction_split_enabled = True
+    try:
+        _run_inbox_direction_checks()
+    finally:
+        _s.admin_direction_split_enabled = was
+
+
+def _run_inbox_direction_checks():
     store = panel_store.get_conversation_store()
     asyncio.run(store.add_message("getvisa:996700111", "client", "нужна виза", channel="whatsapp"))
     asyncio.run(store.update_meta("getvisa:996700111", funnel="visa", stage="qualification"))
