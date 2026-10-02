@@ -2,18 +2,16 @@
 
 - Updated: 2026-10-02
 - Project/repository: Frunze Travel Bot
-- Active task: рейсы в карточке тура (просьба Гриши 02.10)
-- Branch / revision: `fix/tours-search-quality` / `596ae70`; прод на `c80fa32`
+- Active task: инбокс панели страницей вместо всей базы
+- Branch / revision: `fix/tours-search-quality` / `8a8de2f`; прод на `c80fa32`
 - Relevant handoff: ai/handoffs/2026-10-02-2130-tour-flights-and-tvcard.md
-- Status: PARTIALLY_READY — рейсы сделаны за флагом OFF, 1820 тестов, замер на живых
-  данных 15.2 с; ревью и деплоя не было. Ссылка `tourcart` — BLOCKED на ответе TourVisor
-- Next action: **Оплатить Wappi по туровым каналам и пополнить OpenRouter** (остаток $3.99
-  при `LLM_DAILY_BUDGET_USD=10`, трафик удвоился). Отправить запрос в поддержку TourVisor —
-  готовый текст в `docs/task-tour-flights-and-tvcard-0210.md`. Из кода: ревью и деплой по слову.
-- Blockers / decisions: деплой и включение флагов требуют прямого слова Алана.
-  BLOCKED: короткая ссылка `tourcart.ru/?tvcard=…` — функция кабинета TourVisor, в XML-шлюзе
-  методов нет (11 кандидатов → 404, `cart.php` → «Client Zero» на любые параметры), новый
-  REST за заглушкой и без токена. NEEDS_HUMAN_DECISION: отказ от Bitrix в ноябре (ТЗ 01.10).
+- Status: PARTIALLY_READY — три вещи готовы и ждут деплоя (M2 телефон `dc9cb06`, рейсы
+  `596ae70`, лимит инбокса `8a8de2f`), все за флагами OFF. Ревью и деплоя не было
+- Next action: **Деплой трёх накопленных коммитов по слову Алана**, затем включение флагов
+  по одному с замером. Wappi продлён только до 06.10 — продлить на срок. OpenRouter $3.94,
+  расход ~$0.2/сутки (не $0.64, как считалось) — хватит около трёх недель.
+- Blockers / decisions: BLOCKED — короткая ссылка `tourcart`: запрос в поддержку TourVisor
+  отправлен 02.10, ждём ответа. NEEDS_HUMAN_DECISION: отказ от Bitrix в ноябре (ТЗ 01.10).
 
 For parallel workstreams, add one row per scope rather than overwriting another task's state.
 Always verify the branch and revision before trusting a handoff.
@@ -27,7 +25,7 @@ Always verify the branch and revision before trusting a handoff.
 | Туры и подача | Рейсы в карточке, как у операторов (флаг `tour_flights_enabled` OFF) | `596ae70` | 2026-10-02-2130-tour-flights-and-tvcard.md | Ревью по диффу `c80fa32..596ae70`, деплой по слову, затем включить флаг и показать живую подборку из `messages` |
 | Туры и подача | Короткая ссылка `tourcart` | — | то же | BLOCKED: отправить запрос в поддержку TourVisor, текст готов в ТЗ |
 | Туры и подача | Долг: страница `/t/` не показывает рейсы, хотя данные уже есть | — | то же | Взять после ответа TourVisor |
-| Админка как CRM | Долг M3: `/admin/inbox` отдаёт 2 МБ HTML и 6042 карточки одним ответом | — | — | Главный тормоз панели на телефоне; в M2 не брал |
+| Админка как CRM | Инбокс страницей (флаг `admin_inbox_limit_enabled` OFF) | `8a8de2f` | — | Замер на боевых данных: 1.95 МБ → 0.11 МБ, счётчики и поиск по всей базе. Деплой по слову |
 | Сторожа и наблюдаемость | 402 Wappi неотличим от сетевого сбоя: сторож слеп, пока канал мёртв | — | — | ТЗ готово (черновик в плане), ждёт двух решений Алана |
 | Протокол и документы | Подключение v4, профиль проекта | `8feec27` | 2026-09-29-1930-protocol-v4-onboarding.md | Закрыто 30.09: скилл `/protocol` переписан под v4 (соответствие S/M/B/C → LIGHT/STANDARD/CRITICAL, solo-ревью, статусы, handoff). Файл вне git — `.claude/skills/protocol/SKILL.md` |
 | Расход LLM | Экономия `outcome_infer` (флаг ON с 28.09) | прод `5b04cc5` | — | Контрольный замер ~03.10, когда круг 2418 диалогов закроется |
