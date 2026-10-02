@@ -1,20 +1,35 @@
 {# Единый список «ждут ответа» (инбокс) и результаты поиска — по всем воронкам.
    mode: 'inbox' (авто-обновление 10с) | 'search'. cards — обогащённые карточки. #}
-<div data-attention {% if mode == 'inbox' %}hx-get="/admin/inbox" hx-trigger="every 10s [document.visibilityState==='visible' && !window.hasInboxSelection()]" hx-swap="outerHTML" hx-target="this"{% endif %}>
+<div data-attention {% if mode == 'inbox' %}hx-get="/admin/inbox{% if show_all %}?all=1{% endif %}" hx-trigger="every 10s [document.visibilityState==='visible' && !window.hasInboxSelection()]" hx-swap="outerHTML" hx-target="this"{% endif %}>
   <div class="inbox-head">
     {% if mode == 'search' %}
       <div class="inbox-title">Поиск: «{{ query }}» — {{ cards|length }}</div>
       <button class="tab" hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML"
               onclick="clearSearch()">✕ Сбросить</button>
     {% else %}
-      <div class="inbox-title">Ждут ответа — {{ cards|length }}</div>
+      {# Число — по всей базе, а не по странице: бейдж, считающий одно, когда список
+         показывает другое, уже был находкой ревью 01.10. #}
+      <div class="inbox-title">Ждут ответа — {{ total if total is not none else cards|length }}</div>
+      {% if truncated %}
+      {# Молча обрезанный список — вранье: менеджер должен видеть, что перед ним часть. #}
+      <span class="inbox-sub">Показаны первые {{ cards|length }} · кто дольше ждёт — выше</span>
+      <button class="tab" hx-get="/admin/inbox?all=1" hx-target="#board" hx-swap="innerHTML">
+        Показать все ({{ total }})
+      </button>
+      {% else %}
       <span class="inbox-sub">Все воронки · кто дольше ждёт — выше</span>
+      {% if show_all and page_size %}
+      <button class="tab" hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML">
+        Свернуть до {{ page_size }}
+      </button>
+      {% endif %}
+      {% endif %}
     {% endif %}
     <button type="button" class="tab noise-filter" onclick="toggleNoise(this)">
       Скрыть рекламу/без диалога · {{ noise_count or 0 }}
     </button>
     <button type="button" class="tab" onclick="selectVisibleInboxCards(this)">
-      Выбрать все
+      {% if truncated %}Выбрать показанные{% else %}Выбрать все{% endif %}
     </button>
     <button type="button" class="tab" onclick="clearInboxSelection(this)">
       Снять выбор

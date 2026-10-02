@@ -962,6 +962,17 @@ FEATURE_FLAGS = {
         "note": lambda: ("" if settings.public_base_url
                          else "не задан PUBLIC_BASE_URL — карточки уйдут без ссылки на подборку"),
     },
+    "admin_inbox_limit_enabled": {
+        "title": "Инбокс страницей, а не всей базой",
+        "desc": ("Сейчас список «Ждут ответа» отдаётся целиком — на проде это 1.95 МБ и 1012 "
+                 "карточек в одном ответе, и он перезагружает себя каждые 10 секунд, то есть "
+                 "около 12 МБ в минуту на телефон менеджера. Замер: с тумблером тот же список "
+                 "весит 0.11 МБ. Показываются первые "
+                 "60, остальные — по кнопке «Показать все»; счётчики, поиск и массовый архив "
+                 "по-прежнему работают по всей базе."),
+        "default": lambda: settings.admin_inbox_limit_enabled,
+        "note": lambda: f"на странице {settings.admin_inbox_page_size} карточек",
+    },
     "tour_flights_enabled": {
         "title": "Рейсы в карточке тура",
         "desc": ("В каждую карточку добавляются две строки перелёта — дата, время вылета и "
@@ -1414,7 +1425,8 @@ def _waiting_sorted(models: list[dict]) -> list[dict]:
     return cards
 
 
-async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query: str = ""):
+async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query: str = "",
+                                show_all: bool = False):
     manager = current_manager(request)
     # Инбокс и поиск живут в пределах направления, когда тумблер включён: смешанный
     # список и был тем, что «невозможно читать».
@@ -1422,6 +1434,8 @@ async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query:
     query = query.strip()
     if mode == "search" and query:
         ql = query.lower()
+        # Поиск идёт по ВСЕМ моделям и не ограничивается страницей инбокса: лид,
+        # написавший месяц назад, обязан находиться по номеру, иначе он ненаходим вообще.
         cards = [m for m in models
                  if ql in (m["name"] or "").lower() or ql in (m["phone"] or "").lower()
                  or ql in (m["last_text"] or "").lower()]
@@ -1430,15 +1444,36 @@ async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query:
         cards = _waiting_sorted(models)
         mode = "inbox"
         query = ""
+
+    # Числа считаем по ПОЛНОМУ списку и только потом режем. Счётчик рекламы уходит в
+    # `data-noise-count`, откуда его берёт подтверждение массового архива, а чистит тот
+    # архив на сервере — посчитай его по странице, и диалог спросит про двенадцать,
+    # а снесёт двести.
+    total = len(cards)
+    noise_count = sum(1 for c in cards if c["is_noise"])
+    from app.core import flags as _flags           # локально, как и остальные обращения
+    page_size = max(1, int(settings.admin_inbox_page_size or 1))
+    limit_on = await _flags.get_flag("admin_inbox_limit_enabled",
+                                     settings.admin_inbox_limit_enabled)
+    truncated = bool(limit_on) and not show_all and total > page_size
+    if truncated:
+        cards = cards[:page_size]
     return templates.TemplateResponse(request, "_attention.html",
                                       {"mode": mode, "cards": cards, "query": query,
-                                       "noise_count": sum(1 for c in cards if c["is_noise"])})
+                                       "noise_count": noise_count, "total": total,
+                                       "truncated": truncated, "show_all": show_all,
+                                       "page_size": page_size})
 
 
 @router.get("/inbox", response_class=HTMLResponse)
-async def inbox(request: Request, _: dict = Depends(require_admin)):
-    """Единый инбокс: все ждущие ответа диалоги по всем воронкам в одном списке."""
-    return await _render_inbox_partial(request)
+async def inbox(request: Request, all: str = "", _: dict = Depends(require_admin)):
+    """Единый инбокс: ждущие ответа диалоги по всем воронкам.
+
+    `all=1` — отдать весь список вместо страницы. Этот же параметр уходит в `hx-get`
+    развёрнутого списка: без него автообновление через десять секунд свернуло бы его
+    обратно, и менеджер решил бы, что панель живёт своей жизнью.
+    """
+    return await _render_inbox_partial(request, show_all=all in ("1", "true", "yes"))
 
 
 @router.get("/search", response_class=HTMLResponse)

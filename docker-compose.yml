@@ -161,6 +161,9 @@ services:
       TOURS_CARDS_ENABLED: ${TOURS_CARDS_ENABLED:-false}
       # Рейсы в карточке тура (actdetail.php). Default OFF: +18–22 с к ответу.
       TOUR_FLIGHTS_ENABLED: ${TOUR_FLIGHTS_ENABLED:-false}
+      # Инбокс страницей вместо всей базы (1.95 МБ каждые 10 с → 0.11 МБ). Default OFF.
+      ADMIN_INBOX_LIMIT_ENABLED: ${ADMIN_INBOX_LIMIT_ENABLED:-false}
+      ADMIN_INBOX_PAGE_SIZE: ${ADMIN_INBOX_PAGE_SIZE:-60}
       TOUR_FACTS_ENABLED: ${TOUR_FACTS_ENABLED:-false}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
       STATE_BACKEND: ${STATE_BACKEND:-redis}
