@@ -13,6 +13,10 @@
         {% if c.source %}<span class="tag">📣 {{ 'реклама' if c.source == 'ad' else 'пост' }}{% if c.source_headline %}: {{ c.source_headline }}{% endif %}</span>{% endif %}
       </div>
     </div>
+    {# Закрыть лист переписки. Видна только там, где чат открывается поверх списка
+       (телефон, ≤760px): на десктопе он стоит рядом, и закрывать нечего. #}
+    <button type="button" class="sheet-close" onclick="closeChatSheet()"
+            title="Закрыть переписку" aria-label="Закрыть переписку">✕</button>
   </div>
 
   {% if notice %}

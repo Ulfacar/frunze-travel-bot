@@ -161,6 +161,39 @@
     .composer input:focus, .composer textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
     .hint { padding: 0 16px 13px; color: var(--faint); font-size: 11px; }
 
+    /* Крестик листа: на десктопе его нет — там чат стоит рядом и закрывать нечего. */
+    .sheet-close { display: none; margin-left: auto; flex-shrink: 0; align-items: center;
+                   justify-content: center; width: 32px; height: 32px; padding: 0; font-size: 17px;
+                   line-height: 1; border: 1px solid var(--border); border-radius: 9px;
+                   background: var(--surface-2); color: var(--muted); cursor: pointer; }
+
+    /* ---------- Телефон (M2, 02.10.2026) ----------
+       Идёт ПОСЛЕ правила 1180px намеренно: то уводит чат под доску, здесь он
+       поднимается обратно листом. Менеджеры работают с телефона, а до 02.10 канбан
+       жил в горизонтальном скролле (половина стадий всегда за экраном), и чтобы
+       дойти до переписки, надо было проскроллить всю доску. */
+    @media (max-width: 760px) {
+      .layout { padding: 12px; gap: 12px; }
+      /* Колонки лентой вниз вместо горизонтального скролла. */
+      .board { flex-direction: column; overflow-x: visible; }
+      .col, .col.empty { flex: 1 1 auto; width: auto; }
+      .col.empty { opacity: 1; }
+      /* Плитки-числа остаются одной строкой: их шесть, вниз они съедят весь экран. */
+      .metrics { overflow-x: auto; padding-bottom: 4px; }
+      .stat { flex: 0 0 auto; min-width: 104px; }
+      .inbox-list { grid-template-columns: 1fr; }
+      /* Чат — лист поверх списка, а не блок под ним. */
+      #chat { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 40;
+              max-height: 88vh; transform: translateY(102%); transition: transform var(--t);
+              box-shadow: 0 -12px 32px rgba(15,23,42,.22); }
+      #chat .panel { max-height: 88vh; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+      body.chat-open #chat { transform: none; }
+      body.chat-open::before { content: ""; position: fixed; inset: 0; z-index: 39;
+                               background: rgba(15,23,42,.38); }
+      body.chat-open { overflow: hidden; }
+      .sheet-close { display: inline-flex; }
+      @media (prefers-reduced-motion: reduce) { #chat { transition: none; } }
+    }
     *:focus-visible { outline-offset: 2px; }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .card:hover { transform: none; } }
 </style>
@@ -507,6 +540,10 @@
         col._sortable = Sortable.create(col, {
           group: 'board', draggable: '.card', filter: '.card-archive', preventOnFilter: true, animation: 220, easing: 'cubic-bezier(0.2, 0, 0, 1)',
           fallbackTolerance: 6,
+          // Тач (M2, 02.10.2026): без задержки палец, ведущий страницу, утаскивал
+          // карточку — канбан нельзя было просто прокрутить. Мышь не трогаем,
+          // отсюда delayOnTouchOnly. Своих жестов не пишем: это штатные опции Sortable.
+          delay: 220, delayOnTouchOnly: true, touchStartThreshold: 6,
           ghostClass: 'card-ghost', fallbackClass: 'card-fallback', forceFallback: true,
           onStart: function () { _dragging = true; window.__boardDragging = true; },
           onEnd: onCardMoved,
@@ -539,6 +576,38 @@
     // (Пере)инициализируем DnD после каждой подгрузки доски; не дёргаем во время перетаскивания.
     document.body.addEventListener('htmx:afterSettle', function () { _applyNoiseFilter(); updateInboxSelection(); if (!_dragging && !window.__boardDragging) initBoardDnD(); });
     initBoardDnD();
+
+    // ---- Телефон: переписка открывается листом поверх списка (M2, 02.10.2026) ----
+    // Класс на body — единственный переключатель; на десктопе он ничего не значит,
+    // потому что весь вид листа живёт внутри @media (max-width: 760px).
+    // Закрытый лист обязан остаться закрытым: открытая переписка сама обновляется
+    // каждые 4 секунды, и без этой памяти лист всплывал бы обратно через секунды
+    // после крестика. Память снимается выбором следующей карточки.
+    var _chatSheetDismissed = false;
+    function closeChatSheet() {
+      _chatSheetDismissed = true;
+      document.body.classList.remove('chat-open');
+    }
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('.card') && !e.target.closest('.card-archive, .card-select, .bulk-checkbox')) {
+        _chatSheetDismissed = false;
+      }
+    }, true);
+    document.body.addEventListener('htmx:afterSettle', function (e) {
+      var chat = document.getElementById('chat');
+      if (!chat || !e.target || !(e.target === chat || chat.contains(e.target))) return;
+      if (_chatSheetDismissed) return;
+      // Пустое состояние = диалог не выбран: лист не поднимаем.
+      document.body.classList.toggle('chat-open', !chat.querySelector('.panel-empty'));
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeChatSheet(); });
+    // Тап по затемнению (это body за пределами листа) закрывает переписку.
+    // Клик по карточке исключаем: он как раз открывает следующий диалог.
+    document.addEventListener('click', function (e) {
+      if (!document.body.classList.contains('chat-open')) return;
+      if (e.target.closest('#chat') || e.target.closest('.card')) return;
+      closeChatSheet();
+    });
   </script>
 <style>
     [data-board].only-needs .card[data-needs="0"] { display: none; }
@@ -561,6 +630,12 @@
     .card:hover .card-select, .card:focus-within .card-select, .card:has(.bulk-checkbox:checked) .card-select { opacity: 1; }
     .card-select:hover { border-color: rgba(37,99,235,.28); background: rgba(239,246,255,.96); }
     .card-select input { width: 14px; height: 14px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+    /* Где наведения нет (телефон, планшет), архив и выбор обязаны быть видны всегда:
+       иначе это кнопки, до которых нельзя дотянуться вообще (M2, 02.10.2026).
+       Критерий — умеет ли устройство наводить, а не ширина окна. */
+    @media (hover: none) {
+      .card-archive, .card-select { opacity: 1; }
+    }
     .inbox-list .card:has(.bulk-checkbox:checked) { outline: 2px solid var(--accent); outline-offset: 0; }
     .bulk-archive:disabled, .bulk-noise:disabled { opacity: .45; cursor: default; }
   </style>
