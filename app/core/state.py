@@ -38,6 +38,10 @@ class DialogState:
     # успевает сохраниться; очистка на входе хода страхует от упавшего предыдущего.
     pending_tour_cards: list[str] = field(default_factory=list)
     pending_offer_url: str = ""
+    # Перелёты по турам подборки: {tourid: {forward, backward}}. Живут тот же один ход.
+    # Берутся отдельным походом в `actdetail.php` (02.10.2026) и стоят 13 с на подборку,
+    # поэтому спрашиваются один раз и только по тем турам, что попадут в карточки.
+    pending_tour_flights: dict = field(default_factory=dict)
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False)

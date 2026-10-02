@@ -278,13 +278,40 @@ async def _record_llm_usage(model: str, resp: object, state: DialogState) -> Non
 
 # ---------------- Туры ----------------
 def _render_cards_for_state(found, state: DialogState) -> list[str]:
-    """Карточки подборки из сырых отелей. Любой сбой рендера гасим: ход важнее формата."""
+    """Карточки подборки из сырых отелей. Любой сбой рендера гасим: ход важнее формата.
+
+    Рейсы берём из `state.pending_tour_flights`, а не параметром: сигнатура этой функции
+    — контракт для подмены в тестах, и расширять его ради необязательных данных значит
+    ломать все существующие моки.
+    """
     try:
         from app.integrations.tourvisor.cards import render_cards
-        return render_cards(found.hotels, departure=found.departure)
+        return render_cards(found.hotels, departure=found.departure,
+                            flights=state.pending_tour_flights)
     except Exception:  # noqa: BLE001
         logger.warning("tour cards render failed (key=%s)", state.user_id, exc_info=True)
         return []
+
+
+async def _flights_for_state(found, state: DialogState) -> dict[str, dict]:
+    """Перелёты по турам подборки — только при включённом тумблере.
+
+    Стоит дорого: замер на проде 02.10.2026 — пять туров 18–22 с против 4 с на весь
+    нынешний подбор. Владелец выбрал полную карточку, зная цену ожидания. Сбой или
+    таймаут не авария: карточки уйдут без рейсов.
+    """
+    try:
+        if not await flags.get_flag("tour_flights_enabled", settings.tour_flights_enabled):
+            return {}
+        from app.integrations.tourvisor.cards import picked_tour_ids
+        from app.integrations.tourvisor.client import TourVisorClient
+        tour_ids = picked_tour_ids(found.hotels)
+        if not tour_ids:
+            return {}
+        return await TourVisorClient().flights_for(tour_ids)
+    except Exception:  # noqa: BLE001
+        logger.warning("tour flights failed (key=%s)", state.user_id, exc_info=True)
+        return {}
 
 
 def _cards_places_for(found) -> list[str]:
@@ -318,6 +345,7 @@ def _attach_tour_cards(state: DialogState, text: str) -> str:
     """
     cards, url = state.pending_tour_cards, state.pending_offer_url
     state.pending_tour_cards, state.pending_offer_url = [], ""
+    state.pending_tour_flights = {}
     if not cards:
         return text
     from app.integrations.tourvisor.cards import render_block
@@ -474,6 +502,8 @@ async def _tours_exec_tool(name: str, args: dict, state: DialogState, crm) -> st
         # в одном месте: тогда текст для модели и текст для клиента не могут разъехаться.
         cards_on = await flags.get_flag("tours_cards_enabled", settings.tours_cards_enabled)
         if cards_on:
+            # Рейсы спрашиваем ДО рендера и только по тем турам, что попадут в карточки.
+            state.pending_tour_flights = await _flights_for_state(found, state)
             cards = _render_cards_for_state(found, state)
             # Повторный поиск в том же ходу перетирает прежние карточки — клиенту уходит
             # подборка по последнему запросу, а не склейка двух.
@@ -567,6 +597,7 @@ async def run_tours_turn(state: DialogState, user_text: str) -> str | None:
     # Ход мог упасть после поиска — тогда карточки остались в сохранённом состоянии. Без
     # этой чистки они приклеились бы к следующей, совсем другой реплике.
     state.pending_tour_cards, state.pending_offer_url = [], ""
+    state.pending_tour_flights = {}
     await _absorb_client_facts(state, user_text)
     spec = TOURS_SPEC
     if state.manager_name:
