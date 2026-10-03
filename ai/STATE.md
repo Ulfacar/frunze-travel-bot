@@ -1,20 +1,20 @@
 # Current work
 
-- Updated: 2026-10-02
+- Updated: 2026-10-03
 - Project/repository: Frunze Travel Bot
-- Active task: включение флагов по одному после деплоя 02.10
-- Branch / revision: `fix/tours-search-quality` / `41c8e12`; **прод на `41c8e12`**
-- Relevant handoff: ai/handoffs/2026-10-02-2200-deploy-three-flags-off.md
-- Status: PARTIALLY_READY — три изменения на проде и функционально проверены (флаги OFF,
-  инбокс отдаёт прежние 1016 карточек, правила телефона доехали, приём живой). Поведение с
-  включёнными флагами не наблюдалось
-- Next action: **Включать флаги по одному с замером между ними**, по возрастанию риска:
-  `admin_inbox_limit_enabled` → `admin_direction_split_enabled` → `tour_flights_enabled`
-  (последний виден клиенту и добавляет 18–22 с к ответу). Вне кода: Wappi продлён только
-  до 06.10 — взять на срок.
-- Blockers / decisions: включение каждого флага — отдельное слово Алана. BLOCKED: ссылка
-  `tourcart` (запрос в поддержку TourVisor отправлен 02.10). NEEDS_HUMAN_DECISION: отказ
-  от Bitrix в ноябре (ТЗ 01.10).
+- Active task: изучение базы знаний «Визы в Кыргызстан» (новое направление) — только чтение
+- Branch / revision: `fix/tours-search-quality`; прод на `41c8e12`
+- Relevant handoff: docs/context-handover-2026-10-03.md (передача контекста другому ИИ)
+- Status: изучение закончено. Обе версии базы (v1 — 72 стр., v1.1 — 94 стр.) прочитаны
+  целиком; разбор сведён в `docs/context-handover-2026-10-03.md`. Кода по направлению не
+  писали — его нет вообще (`grep evisa|единое разрешение|въездн` по `app/` пуст)
+- Next action: получить **markdown-версию** базы (`kyrgyzstan-visa-knowledge-base-v1.md`) —
+  документ прямо требует грузить в бота её, а не PDF. Затем решения приложения Г.2
+  (19 позиций, прежде всего сетка тарифов). Вне кода: **Wappi по турам оплачен до 06.10**.
+- Blockers / decisions: 52 позиции базы помечены `[ПРОВЕРИТЬ]` — бот не имеет права называть
+  их как факт; 19 решений руководства не приняты; правовая база меняется (ВП-312 до
+  31.12.2026, переход функций к Минтруду к концу ноября, льгота швейной отрасли до 01.11).
+  Без этого направление включать нельзя. NEEDS_HUMAN_DECISION: отказ от Bitrix (ТЗ 01.10).
 
 For parallel workstreams, add one row per scope rather than overwriting another task's state.
 Always verify the branch and revision before trusting a handoff.
@@ -28,6 +28,7 @@ Always verify the branch and revision before trusting a handoff.
 | Туры и подача | Рейсы в карточке (`tour_flights_enabled` OFF) | прод `41c8e12` | 2026-10-02-2200-deploy-three-flags-off.md | Выкачено; включать последним — видит клиент, +18–22 с к ответу. После включения показать живую подборку из `messages` и `quota.status()` |
 | Туры и подача | Короткая ссылка `tourcart` | — | то же | BLOCKED: отправить запрос в поддержку TourVisor, текст готов в ТЗ |
 | Туры и подача | Долг: страница `/t/` не показывает рейсы, хотя данные уже есть | — | то же | Взять после ответа TourVisor |
+| Визы в Кыргызстан (новое) | Изучены обе версии базы знаний; разбор для передачи | — | docs/context-handover-2026-10-03.md | Запросить markdown-версию базы; решения Г.2; кода не начинали |
 | Админка как CRM | Инбокс страницей (`admin_inbox_limit_enabled` OFF) | прод `41c8e12` | 2026-10-02-2200-deploy-three-flags-off.md | Выкачено; при OFF прод отдаёт прежние 1016 карточек, числа сошлись со `stats`. Включать первым |
 | Сторожа и наблюдаемость | 402 Wappi неотличим от сетевого сбоя: сторож слеп, пока канал мёртв | — | — | ТЗ готово (черновик в плане), ждёт двух решений Алана |
 | Протокол и документы | Подключение v4, профиль проекта | `8feec27` | 2026-09-29-1930-protocol-v4-onboarding.md | Закрыто 30.09: скилл `/protocol` переписан под v4 (соответствие S/M/B/C → LIGHT/STANDARD/CRITICAL, solo-ревью, статусы, handoff). Файл вне git — `.claude/skills/protocol/SKILL.md` |
