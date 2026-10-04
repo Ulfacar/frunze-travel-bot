@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from app.domain.models import (
     Contact, DomainError, ServiceEvent, ServicePayment,
 )
-from app.domain.service_authz import Actor, PermissionDenied
+from app.domain.service_authz import Actor, PermissionDenied, can_correct_money
 from app.domain.service_cases import seed_products, sign_contract
 from app.domain.service_money import (
     CORRECTION, REFUND_PAID, Balance, _effective_kind, balance_of,
@@ -938,3 +938,56 @@ def test_refunding_more_than_was_paid_raises_the_attention_flag():
             assert balance.refunded > balance.paid
             assert balance.needs_attention
     run_with_db(scenario)
+
+def test_a_chief_of_one_business_cannot_touch_the_money_of_the_other():
+    """Админ GetVisa не исправляет деньги Frunze Travel, и наоборот.
+
+    В одной системе живут два РАЗНЫХ бизнеса с разными владельцами. Без проверки
+    направления администратор одного мог провести возврат и переписать сумму
+    договора в другом. Финансовый аудит нашёл это как открытый риск.
+    """
+    visa_chief = Actor(manager_id="visa_chief", allowed_directions=("visa",),
+                       is_full_admin=True)
+
+    async def scenario(sm):
+        async with sm() as session:
+            case = await contract(session)          # туровый договор
+            row = await record_payment(session, case.id, amount=Decimal("100.00"),
+                                       currency="KGS", by=OWNER, idempotency_key="p")
+            await session.commit()
+            for call in (
+                lambda: record_refund_due(session, case.id, amount=Decimal("50.00"),
+                                          currency="KGS", by=visa_chief,
+                                          idempotency_key="rd", reason="отказ"),
+                lambda: record_refund_paid(session, case.id, amount=Decimal("50.00"),
+                                           currency="KGS", by=visa_chief,
+                                           idempotency_key="rp", reason="перевод"),
+                lambda: void_entry(session, case.id, voids_id=row.id, by=visa_chief,
+                                   idempotency_key="v", reason="ошибка"),
+                lambda: correct_contract_amount(session, case.id,
+                                                amount=Decimal("1.00"), currency="KGS",
+                                                by=visa_chief, reason="правка"),
+            ):
+                with pytest.raises(PermissionDenied):
+                    await call()
+            await session.commit()
+            # Ни одной новой строки и прежняя цена договора.
+            assert len(await rows(session)) == 1
+            await session.refresh(case)
+            assert case.agreed_amount == Decimal("100000.00")
+    run_with_db(scenario)
+
+
+def test_the_system_owner_without_a_direction_list_is_not_limited():
+    """Админ без списка направлений — владелец системы: переносы и служебные операции."""
+    owner_of_all = Actor(manager_id="root", allowed_directions=(), is_full_admin=True)
+    assert can_correct_money(owner_of_all, direction="tours")
+    assert can_correct_money(owner_of_all, direction="visa")
+    # А руководитель направления ограничен своим.
+    chief_of_tours = Actor(manager_id="t", allowed_directions=("tours",),
+                           is_full_admin=True)
+    assert can_correct_money(chief_of_tours, direction="tours")
+    assert not can_correct_money(chief_of_tours, direction="visa")
+    # Не админ не может ничего, даже в своём направлении.
+    assert not can_correct_money(Actor(manager_id="m", allowed_directions=("tours",)),
+                                 direction="tours")

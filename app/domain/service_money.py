@@ -171,7 +171,8 @@ async def _case_for_write(session: AsyncSession, case_id: int, by: Actor, *,
         raise DomainError(f"unknown service case {case_id}")
     product = await session.get(Product, case.product_id)
     if financial:
-        require(can_correct_money(by), "correct money")
+        require(can_correct_money(by, direction=product.direction if product else None),
+                "correct money")
     else:
         require(can_advance_case(by, direction=product.direction if product else None,
                                  owner_login=case.owner_login), "record money")
