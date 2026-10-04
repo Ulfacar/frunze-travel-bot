@@ -73,6 +73,7 @@
     <div class="panel">
       <h2>Воронка — куда бот довёл карточки</h2>
       {% if rows %}
+      <div class="table-wrap">
       <table>
         <tr><th>Стадия</th><th style="width:90px">Карточек</th><th>Доля</th></tr>
         {% for r in rows %}
@@ -84,6 +85,7 @@
         </tr>
         {% endfor %}
       </table>
+      </div>
       <p class="muted" style="margin:12px 0 0">
         Диалогов за окно: {{ totals.dialogs }} · с карточкой: {{ totals.with_lead }} ·
         с клиентом начали работать: {{ totals.work_started }}
@@ -96,6 +98,7 @@
     <div class="panel">
       <h2>Требуют человека — расхождения</h2>
       {% if conflicts %}
+      <div class="table-wrap">
       <table>
         <tr><th>Что</th><th>Диалог</th><th>Подробности</th></tr>
         {% for c in conflicts %}
@@ -106,6 +109,7 @@
         </tr>
         {% endfor %}
       </table>
+      </div>
       <p class="muted" style="margin:12px 0 0">Такое бот не чинит сам: воронка назад не ходит,
         значит карточку вернули руками или подменили лид.</p>
       {% else %}
@@ -116,6 +120,7 @@
     <div class="panel">
       <h2>Очередь — карточки, ждущие движения</h2>
       {% if stuck %}
+      <div class="table-wrap">
       <table>
         <tr><th>Диалог</th><th>Лид</th><th>Куда поедет</th><th></th></tr>
         {% for s in stuck %}
@@ -127,6 +132,7 @@
         </tr>
         {% endfor %}
       </table>
+      </div>
       <p class="muted" style="margin:12px 0 0">Показаны первые 30. Разбираются порциями
         по {{ 25 }} каждые десять минут.</p>
       {% else %}

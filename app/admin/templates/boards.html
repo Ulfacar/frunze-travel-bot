@@ -197,6 +197,214 @@
     *:focus-visible { outline-offset: 2px; }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .card:hover { transform: none; } }
 </style>
+{% if chat_redesign %}
+<style>
+  /* Локальные токены «Пальмы» не зависят от вида оболочки и не перекрашивают старый чат. */
+  .chat-palma {
+    --wa-bg:#ECE5DD; --wa-in:#FFFFFF; --wa-out:#DCF8C6; --wa-txt:#111B21;
+    --wa-dim:#5B6A73; --wa-tick:#34B7F1;
+    --s-surface:#FFFFFF; --s-surface-2:#EDF1F0; --s-line:#DBE3E1;
+    --s-ink:#13201F; --s-ink-2:#4B5B58; --s-ink-3:#5F6F6C;
+    --s-brand:#0E5C57; --s-on-brand:#FFFFFF; --s-brand-soft:#DBEAE8;
+    --s-accent:#DB7526; --s-accent-ink:#7A3C0D; --s-accent-soft:#F9E7D5;
+    --s-hd-bg:#0C1B1A; --s-hd-sub:#9FB1AE; --s-ava-bg:#1E3A37;
+    --b-meta:#3E5451; --b-label:#0E5C57; --m-meta:#4A5D52; --m-label:#2F6B2A;
+    --s-danger:#B4312B; --s-danger-soft:#F9E0DE; --s-danger-on-bub:#B4312B; --s-on-danger:#FFFFFF;
+    --s-chip-ink:#0E5C57; --s-chip-line:#C9DAD7; --s-good:#1C875A;
+    --s-head:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    --muted:var(--s-ink-2); --accent:var(--s-brand); --border:var(--s-line);
+    color-scheme:light;
+  }
+  {% macro chat_dark_tokens() %}
+    --wa-bg:#0B141A; --wa-in:#202C33; --wa-out:#005C4B; --wa-txt:#E9EDEF;
+    --wa-dim:#A7B4BC; --wa-tick:#53BDEB;
+    --s-surface:#111D1B; --s-surface-2:#172524; --s-line:#243230;
+    --s-ink:#E7EEEC; --s-ink-2:#9FB1AE; --s-ink-3:#9FB1AE;
+    --s-brand:#39B7AD; --s-on-brand:#06211F; --s-brand-soft:#12302D;
+    --s-accent:#EE9450; --s-accent-ink:#F2B98C; --s-accent-soft:#3A2413;
+    --s-hd-bg:#050D0C; --s-hd-sub:#9FB1AE; --s-ava-bg:#12302D;
+    --b-meta:#9FC2BD; --b-label:#6FD1C6; --m-meta:#B9DCD3; --m-label:#B9DCD3;
+    --s-danger:#F08A82; --s-danger-soft:#3B1F1D; --s-danger-on-bub:#FFC9C4; --s-on-danger:#2B0F0D;
+    --s-chip-ink:#6FD1C6; --s-chip-line:#2C4542; --s-good:#4BBE85;
+    color-scheme:dark;
+  {% endmacro %}
+  html[data-theme="dark"] .chat-palma { {{ chat_dark_tokens() }} }
+  @media (prefers-color-scheme:dark) {
+    html:not([data-theme="light"]) .chat-palma { {{ chat_dark_tokens() }} }
+  }
+
+  #chat .panel.chat-palma {
+    height:min(680px, calc(100dvh - 90px)); max-height:none; min-width:0;
+    border-radius:16px; border-color:var(--s-line); position:relative;
+    background:var(--s-surface); color:var(--s-ink);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    font-size:14.5px; line-height:1.45; isolation:isolate; container-type:inline-size;
+  }
+  .chat-palma *, .chat-palma *::before, .chat-palma *::after { box-sizing:border-box; }
+  .chat-palma svg { width:1em; height:1em; flex:none; vertical-align:middle; }
+  .chat-palma button, .chat-palma select, .chat-palma input { font:inherit; }
+  .chat-palma button, .chat-palma summary { cursor:pointer; }
+  .chat-palma :is(button,summary,textarea,input,select,[tabindex]):focus-visible {
+    outline:2px solid var(--s-accent); outline-offset:2px; box-shadow:none;
+  }
+  .chat-palma summary { list-style:none; }
+  .chat-palma summary::-webkit-details-marker { display:none; }
+  .chat-head { display:flex; align-items:center; gap:10px; padding:9px 10px 9px 6px;
+    background:var(--s-hd-bg); color:#FFFFFF; min-height:54px; flex:none; }
+  .chat-palma .chat-icon-button { border:0; background:transparent; color:inherit; width:36px; height:36px;
+    display:grid; place-items:center; border-radius:50%; flex:none; font-size:20px; padding:0; }
+  .chat-avatar { width:36px; height:36px; display:grid; place-items:center; border-radius:50%; flex:none;
+    background:var(--s-ava-bg); color:#F2B98C; font:600 16px var(--s-head); }
+  .chat-heading { flex:1; min-width:0; }
+  .chat-name { font:600 17px/1.2 var(--s-head); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .chat-state { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--s-hd-sub); margin-top:3px; }
+  .chat-state > span:last-child { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .chat-state-dot { width:7px; height:7px; border-radius:50%; background:var(--s-good); flex:none; }
+  /* Диалог закреплён за другим менеджером: точка меняет цвет, чтобы предупреждение
+     читалось до нажатия «Отправить», а не после. */
+  .chat-state-dot.chat-state-busy { background:var(--s-accent); }
+  /* Бот молчит, диалог ведёт человек: не зелёный, иначе цвет врёт о состоянии. */
+  .chat-state-dot.chat-state-paused { background:var(--s-hd-sub); }
+  /* Без этого `inline-flex` перебивает атрибут `hidden`, и до первого тика
+     JS в шапке висит пустая пилюля с одной иконкой часов. */
+  .chat-wait[hidden] { display:none; }
+  /* ---- Строка контекста (04.10): что за клиент, видно без единого клика ---- */
+  .chat-ctx { display:flex; align-items:center; gap:7px; margin-top:2px; min-width:0;
+              font-size:12px; line-height:1.25; color:var(--s-hd-sub); }
+  /* Продукт и этап — единственное, чему разрешено обрезаться: остальное короткое
+     и важнее (сколько ждёт клиент и кто ведёт диалог). */
+  /* Продукт и этап ужимаются, но не до нуля: без min-width на 360 px их съедали
+     таймер и имя менеджера, и строка переставала отвечать «что это за клиент». */
+  .chat-ctx-pr { flex:1 1 auto; min-width:72px; overflow:hidden; white-space:nowrap;
+                 text-overflow:ellipsis; }
+  .chat-ctx-pr b { color:#FFFFFF; font-weight:600; }
+  .chat-wait { display:inline-flex; align-items:center; gap:3px; flex:none;
+               padding:1px 6px; border-radius:999px; white-space:nowrap;
+               font-variant-numeric:tabular-nums; }
+  .chat-wait svg { width:12px; height:12px; }
+  /* Пороги подтверждены Аланом 04.10: оранжевый с 15 минут, красный с часа. Смысл —
+     «ты уже опаздываешь», а не «клиент давно ушёл»: медиана ответа менеджера была 3 часа. */
+  .chat-wait[data-tier="ok"]   { color:var(--s-hd-sub); }
+  .chat-wait[data-tier="warm"] { background:var(--s-accent-soft); color:var(--s-accent-ink); }
+  .chat-wait[data-tier="hot"]  { background:var(--s-danger-soft); color:var(--s-danger); }
+  /* Замер на 360 px: при длинном логине менеджера и «ждёт 59 мин» этот блок уезжал
+     правым краем на 375 px при ширине шапки 303 — наезжал на кнопку «⋮» и уходил за
+     экран. Логин режется первым: продукт, этап и срок важнее полного написания имени. */
+  .chat-lead { display:inline-flex; align-items:center; gap:4px; margin-left:auto;
+               min-width:46px; max-width:42%; overflow:hidden; white-space:nowrap;
+               text-overflow:ellipsis; }
+  /* Шапка держится при прокрутке: проскроллив переписку вверх, менеджер всё равно
+     видит, с кем говорит и сколько клиент ждёт. */
+  .chat-palma .chat-head { position:sticky; top:0; z-index:3; }
+  .chat-menu { flex:none; }
+  .chat-menu-body { position:absolute; z-index:6; top:56px; right:8px; width:300px; max-width:calc(100% - 16px);
+    max-height:calc(100% - 66px); overflow-y:auto; overscroll-behavior:contain; padding:10px;
+    background:var(--s-surface); color:var(--s-ink); border:1px solid var(--s-line); border-radius:12px;
+    box-shadow:0 12px 34px -12px rgba(0,0,0,.45); font-size:13px; }
+  .chat-phone { display:flex; align-items:center; gap:8px; }
+  .chat-phone > span { overflow-wrap:anywhere; min-width:0; flex:1; }
+  .chat-tags, .chat-outcomes { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+  .chat-palma .tag { background:var(--s-surface-2); color:var(--s-ink-2); border-color:var(--s-line); border-radius:20px; }
+  .chat-palma .chat-temperature { background:var(--s-accent-soft); color:var(--s-accent-ink); }
+  .chat-palma hr { border:0; border-top:1px solid var(--s-line); margin:8px 0; }
+  .chat-palma .chat-menu-action { display:flex; align-items:center; gap:8px; width:100%; border:0; padding:9px 2px;
+    background:transparent; color:var(--s-ink); text-align:left; font-size:13.5px; }
+  .chat-menu-note { margin:8px 0; color:var(--s-ink-2); }
+  .chat-reassign form { display:flex; flex-wrap:wrap; gap:6px; }
+  .chat-palma :is(input,select) { min-width:0; max-width:100%; padding:6px; border:1px solid var(--s-line);
+    border-radius:7px; background:var(--s-surface-2); color:var(--s-ink); }
+  .chat-palma .msgs.chat-log { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain;
+    gap:5px; margin:0; padding:10px 10px 8px; background:var(--wa-bg); }
+  .chat-palma .msg { max-width:88%; min-width:0; flex:none; }
+  .chat-palma .msg .bubble { border:0; padding:7px 10px 5px; border-radius:12px; font-size:13.5px;
+    line-height:1.4; white-space:normal; overflow-wrap:anywhere; box-shadow:0 1px 1px rgba(0,0,0,.08); }
+  .chat-palma .msg.client .bubble { background:var(--wa-in); color:var(--wa-txt); border-top-left-radius:3px; }
+  .chat-palma .msg.bot .bubble { background:var(--s-brand-soft); color:var(--s-ink); border-top-right-radius:3px; }
+  .chat-palma .msg.manager .bubble { background:var(--wa-out); color:var(--wa-txt); border-top-right-radius:3px; }
+  .chat-palma .msg .who { margin:0 0 2px; color:var(--wa-dim); text-align:left;
+    font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; line-height:1.3; }
+  .chat-palma .msg.bot .who { color:var(--b-label); }
+  .chat-palma .msg.manager .who { color:var(--m-label); }
+  .chat-message-text { white-space:pre-wrap; }
+  .chat-message-meta { display:flex; align-items:center; justify-content:flex-end; gap:5px; flex-wrap:wrap;
+    margin-top:2px; font-size:10.5px; line-height:1.3; color:var(--wa-dim); }
+  .chat-palma .msg.bot .chat-message-meta { color:var(--b-meta); }
+  .chat-palma .msg.manager .chat-message-meta { color:var(--m-meta); }
+  .chat-delivery, .chat-failed { display:inline-flex; align-items:center; gap:4px; }
+  .chat-ticks { color:var(--wa-tick); }
+  .chat-failed { color:var(--s-danger-on-bub); font-weight:700; }
+  .chat-palma .chat-retry { border:0; border-radius:20px; padding:3px 10px; background:var(--s-danger);
+    color:var(--s-on-danger); font-size:11px; font-weight:700; }
+  .chat-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:24px; gap:8px; color:var(--wa-dim); background:var(--wa-in); border-radius:12px; }
+  .chat-empty > svg { font-size:42px; }
+  .chat-empty b { font:600 15px var(--s-head); color:var(--wa-txt); }
+  .chat-empty p { margin:0; max-width:30ch; font-size:13px; }
+  /* При раскрытом досье и длинном черновике на низком экране отправка остаётся видимой. */
+  .chat-dossier { flex:0 1 auto; min-height:34px; overflow-y:auto;
+    border-top:1px solid var(--s-line); background:var(--s-surface); }
+  .chat-dossier > summary { display:flex; align-items:center; gap:6px; padding:6px 12px; min-height:34px;
+    color:var(--s-ink-2); font-size:12.5px; }
+  .chat-dossier > summary strong { color:var(--s-ink); flex:none; }
+  .chat-dossier > summary span { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-width:0; }
+  .chat-dossier[open] > summary svg { transform:rotate(180deg); }
+  .chat-dossier-body { max-height:240px; max-height:min(240px, 36dvh); overflow-y:auto; padding:2px 12px 12px;
+    display:grid; gap:10px; font-size:13px; overflow-wrap:anywhere; }
+  .chat-section-title { margin:6px 0 3px; font-size:10.5px; font-weight:800; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--s-brand); }
+  .chat-section-title small { font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--s-ink-2); }
+  .chat-section p { margin:0; }
+  .chat-palma a { color:var(--s-brand); overflow-wrap:anywhere; }
+  .chat-section dl { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); margin:0; gap:4px 10px; }
+  .chat-section dt { color:var(--s-ink-2); }
+  .chat-section dd { margin:0; text-align:right; }
+  .chat-palma .chat-task { display:flex; gap:6px; padding:8px 0; min-width:0; }
+  .chat-palma .btn { width:auto; max-width:100%; background:var(--s-surface-2); color:var(--s-ink);
+    border-color:var(--s-line); }
+  .chat-palma .btn-brand { background:var(--s-brand); color:var(--s-on-brand); }
+  .chat-palma .btn-danger { background:var(--s-danger-soft); color:var(--s-danger); }
+  .chat-palma .composer.chat-composer { display:block; padding:0; border-top:1px solid var(--s-line);
+    background:var(--s-surface); margin:0; }
+  .chat-quick-replies { display:flex; flex-wrap:nowrap; gap:6px; padding:6px 10px 0; overflow-x:auto;
+    overscroll-behavior-x:contain; scrollbar-width:thin; }
+  .chat-palma .chat-chip { flex:none; border:1px solid var(--s-chip-line); background:var(--s-surface);
+    color:var(--s-chip-ink); border-radius:20px; padding:5px 11px; font-size:12.5px; font-weight:600; }
+  .chat-quick-replies .chat-chip { white-space:nowrap; }
+  .chat-palma .chat-chip.selected { background:var(--s-brand); border-color:var(--s-brand); color:var(--s-on-brand); }
+  .chat-compose-row { display:flex; align-items:flex-end; gap:6px; padding:6px 10px 3px; }
+  .chat-palma .chat-suggest { display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    height:40px; min-width:40px; padding:0 10px; flex:none; border:1px solid var(--s-line); border-radius:20px;
+    background:transparent; color:var(--s-accent-ink); font-size:12.5px; }
+  .chat-suggest svg { font-size:17px; }
+  .chat-suggest span { display:none; }
+  @container (min-width:480px) { .chat-suggest span { display:inline; } }
+  .chat-palma .chat-composer textarea { min-width:0; width:0; flex:1; min-height:40px; max-height:120px;
+    padding:10px 14px; border:1px solid var(--s-line); border-radius:20px; background:var(--s-surface-2);
+    color:var(--s-ink); font-size:14px; line-height:1.35; }
+  .chat-palma .chat-composer textarea::placeholder { color:var(--s-ink-3); }
+  .chat-palma .chat-send { display:grid; place-items:center; width:40px; height:40px; border:0; border-radius:50%;
+    flex:none; padding:0; background:var(--s-brand); color:var(--s-on-brand); font-size:18px; }
+  .chat-hint { flex:none; padding:0 12px 6px; color:var(--s-ink-3); font-size:11px; line-height:1.3; }
+  .chat-error { display:flex; align-items:center; gap:7px; padding:5px 12px; font-size:12px; line-height:1.3;
+    background:var(--s-danger-soft); color:var(--s-danger); flex:none; overflow-wrap:anywhere; }
+  .chat-error[hidden] { display:none; }
+  .chat-loading-overlay { position:absolute; inset:0; z-index:8; }
+  #chat:has(.chat-loading-overlay) { min-height:min(680px, calc(100dvh - 90px)); }
+  .chat-loading { flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; padding:12px 10px;
+    background:var(--wa-bg); color:var(--s-ink-2); }
+  .chat-loading p { align-self:center; padding:4px 10px; border-radius:8px; background:var(--s-surface); font-size:12.5px; }
+  .chat-skeleton { height:46px; width:62%; flex:none; background:var(--wa-in); border-radius:12px; position:relative; overflow:hidden; }
+  .chat-skeleton:nth-child(even) { width:70%; align-self:flex-end; background:var(--s-brand-soft); }
+  .chat-skeleton::after { content:""; position:absolute; inset:0; transform:translateX(-100%);
+    background:linear-gradient(90deg,transparent,rgba(127,127,127,.14),transparent); animation:chat-shimmer 1.3s infinite; }
+  @keyframes chat-shimmer { to { transform:translateX(100%); } }
+  @media (prefers-reduced-motion:reduce) { .chat-palma *::after { animation:none; } }
+  @media (max-width:760px) {
+    #chat .panel.chat-palma { height:88dvh; max-height:88dvh; border-radius:16px 16px 0 0; }
+    #chat:has(.chat-loading-overlay) { min-height:88dvh; }
+  }
+</style>
+{% endif %}
 {% endblock %}
 
 {% block topbar_center %}
@@ -248,6 +456,158 @@
 {% endblock %}
 
 {% block scripts %}
+{% if chat_redesign %}
+<template id="chat-loading-template">
+  <div class="panel chat-palma chat-loading-overlay" role="status" aria-label="Загружаем переписку" aria-busy="true">
+    <div class="chat-loading">
+      <div class="chat-skeleton"></div><div class="chat-skeleton"></div>
+      <div class="chat-skeleton"></div><div class="chat-skeleton"></div>
+      <p>Загружаем переписку…</p>
+    </div>
+  </div>
+</template>
+<script>
+  function chatError(message) {
+    var error = document.querySelector('#chat .chat-error');
+    if (!error) {
+      error = document.createElement('div');
+      error.className = 'chat-palma chat-error';
+      error.setAttribute('role', 'alert');
+      error.appendChild(document.createElement('span'));
+      document.getElementById('chat').appendChild(error);
+    }
+    error.querySelector('span').textContent = message;
+    error.hidden = false;
+  }
+  async function copyChatPhone(button) {
+    try {
+      await navigator.clipboard.writeText(button.dataset.phone);
+      button.textContent = 'скопировано';
+    } catch (_) {
+      chatError('Не удалось скопировать номер. Выделите его в меню и скопируйте вручную.');
+    }
+  }
+  async function suggestChatReply(userId, button) {
+    var input = _composerInput();
+    if (!input) return;
+    var draft = input.value;
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    try {
+      var response = await fetch('/admin/conversation/' + encodeURIComponent(userId) + '/suggest', {method:'POST'});
+      if (!response.ok) throw new Error('request failed');
+      var text = (await response.text()).trim();
+      // Ответ ИИ может прийти после перехода к другому клиенту или ручной правки черновика.
+      if (_composerInput() === input && input.value === draft) {
+        input.value = text;
+        input.dispatchEvent(new Event('input', {bubbles:true}));
+        _focusComposerEnd(input);
+      }
+    } catch (_) {
+      if (_composerInput() === input) chatError('Не удалось предложить ответ. Попробуйте ещё раз.');
+    } finally {
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+    }
+  }
+
+  // Живой таймер ожидания в шапке. Сервер отдаёт момент последней реплики клиента,
+  // число считает браузер: при обновлении раз в 4 секунды серверное «1 ч» застывало бы
+  // между запросами, а здесь оно тикает само. Пороги — решение Алана 04.10.
+  function chatWaitTick() {
+    var nodes = document.querySelectorAll('.chat-wait[data-wait-since]');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i], since = Date.parse(el.dataset.waitSince);
+      if (!since) { el.hidden = true; continue; }
+      var mins = Math.max(0, Math.floor((Date.now() - since) / 60000));
+      var label = mins < 60 ? (mins + ' мин')
+                : mins < 1440 ? (Math.floor(mins / 60) + ' ч')
+                : (Math.floor(mins / 1440) + ' дн');
+      var out = el.querySelector('.chat-wait-t');
+      // Без слова «ждёт»: иконка часов говорит то же самое, а на 360 px эти
+      // 35 пикселей — разница между «видно имя менеджера» и «видно одну точку».
+      if (out) out.textContent = label;
+      el.dataset.tier = mins >= 60 ? 'hot' : mins >= 15 ? 'warm' : 'ok';
+      el.hidden = false;
+    }
+  }
+  // Первый вызов — после разбора документа: скрипт подключён раньше карточки, и при
+  // прямой загрузке страницы (а не htmx-подгрузке) элемента ещё нет в DOM. Проверено
+  // на отрендеренной странице: без этого таймер молча оставался скрытым.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', chatWaitTick);
+  } else {
+    chatWaitTick();
+  }
+  setInterval(chatWaitTick, 30000);
+  document.body.addEventListener('htmx:afterSwap', chatWaitTick);
+
+  var chatDetailsState = null;
+  document.body.addEventListener('htmx:beforeSwap', function (event) {
+    var target = event.detail.target, chat = document.getElementById('chat');
+    if (!target || !chat || !(target === chat || chat.contains(target))) return;
+    var panel = chat.querySelector('.chat-palma[data-chat-id]');
+    chatDetailsState = panel ? {
+      id:panel.dataset.chatId,
+      open:Array.from(panel.querySelectorAll('details[id][open]')).map(function (el) { return el.id; }),
+      dossierTop:panel.querySelector('.chat-dossier-body').scrollTop,
+      menuTop:panel.querySelector('.chat-menu-body').scrollTop
+    } : null;
+  });
+  document.body.addEventListener('htmx:afterSwap', function (event) {
+    // При outerHTML detail.target уже удалён; событие приходит от новой карточки.
+    var chat = document.getElementById('chat'), target = event.target;
+    if (!chat || !target || !(target === chat || chat.contains(target))) return;
+    var panel = chat.querySelector('.chat-palma[data-chat-id]');
+    if (!panel || !chatDetailsState || panel.dataset.chatId !== chatDetailsState.id) return;
+    chatDetailsState.open.forEach(function (id) {
+      var details = document.getElementById(id);
+      if (details && panel.contains(details)) details.open = true;
+    });
+    panel.querySelector('.chat-dossier-body').scrollTop = chatDetailsState.dossierTop;
+    panel.querySelector('.chat-menu-body').scrollTop = chatDetailsState.menuTop;
+    chatDetailsState = null;
+  });
+
+  // Скелетон нужен при открытии клиента; фоновый опрос не должен мигать каждые четыре секунды.
+  document.body.addEventListener('htmx:beforeRequest', function (event) {
+    var detail = event.detail, config = detail.requestConfig;
+    if (!config || config.verb.toLowerCase() !== 'get' ||
+        !/^\/admin\/conversation\/[^/]+$/.test(config.path.split('?')[0]) ||
+        detail.target.id !== 'chat') return;
+    var chat = document.getElementById('chat'), template = document.getElementById('chat-loading-template');
+    if (chat.querySelector('.chat-loading-overlay')) return;
+    chat.appendChild(template.content.cloneNode(true));
+    if (window.matchMedia('(max-width:760px)').matches) document.body.classList.add('chat-open');
+  });
+  document.body.addEventListener('htmx:afterRequest', function (event) {
+    var detail = event.detail, target = detail.target, chat = document.getElementById('chat');
+    if (!target || !chat || !(target === chat || chat.contains(target) || target.matches('.chat-palma'))) return;
+    chat.querySelectorAll('.chat-loading-overlay').forEach(function (el) { el.remove(); });
+    if (detail.failed) {
+      var status = detail.xhr.status;
+      chatError(status === 404 ? 'Диалог недоступен. Обновите список диалогов.' :
+        status === 403 ? 'Недостаточно прав для этого действия.' :
+        status === 0 ? 'Ошибка сети. Проверьте соединение и повторите действие.' :
+        'Не удалось выполнить действие (HTTP ' + status + '). Попробуйте ещё раз.');
+    }
+  });
+  document.addEventListener('click', function (event) {
+    document.querySelectorAll('#chat .chat-menu[open]').forEach(function (menu) {
+      if (!menu.contains(event.target)) menu.open = false;
+    });
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    var menu = document.querySelector('#chat .chat-menu[open]');
+    if (menu) {
+      // Первый Escape закрывает меню; общий обработчик листа получит следующий.
+      event.preventDefault(); event.stopImmediatePropagation();
+      menu.open = false; menu.querySelector('summary').focus();
+    }
+  });
+</script>
+{% endif %}
 <script>
     // Дип-линк: /admin?open=<user_id> открывает диалог в панели #chat (напр. из «Горячего листа»).
     (function () {

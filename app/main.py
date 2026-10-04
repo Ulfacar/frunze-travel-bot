@@ -114,7 +114,8 @@ app = FastAPI(title="Frunze Travel Bot", lifespan=lifespan)
 # https_only=True ставит Secure-флаг (TLS терминирует nginx, ходим по https);
 # same_site=lax — базовая защита от CSRF.
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret,
-                   max_age=14 * 24 * 3600, https_only=True, same_site="lax")
+                   max_age=14 * 24 * 3600, https_only=settings.session_https_only,
+                   same_site="lax")
 # WP0: correlation id per request (X-Request-ID). Added last → outermost middleware,
 # so it binds the id before everything and echoes the header on the way out.
 app.add_middleware(observ.RequestIdMiddleware)

@@ -21,6 +21,7 @@
     <h1>Журнал действий менеджеров</h1>
     <p class="sub">Последние {{ rows|length }} записей (новые сверху).</p>
     <div class="panel">
+      <div class="table-wrap">
       <table>
         <tr><th>Время</th><th>Менеджер</th><th>Действие</th><th>Диалог</th><th>Детали</th></tr>
         {% for r in rows %}
@@ -35,6 +36,7 @@
         <tr><td colspan="5" class="muted" style="padding:20px;text-align:center">Пока нет записей</td></tr>
         {% endfor %}
       </table>
+      </div>
     </div>
   </div>
 {% endblock %}

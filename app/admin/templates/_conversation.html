@@ -1,3 +1,250 @@
+{% if chat_redesign -%}
+{# Старый вид остаётся целиком в else: флаг чата можно откатить независимо от панели. #}
+{% macro chat_icon(name) -%}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+{% if name == 'back' %}<path d="M15 18l-6-6 6-6"/>
+{% elif name == 'more' %}<circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/>
+{% elif name == 'send' %}<path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+{% elif name == 'spark' %}<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>
+{% elif name == 'pause' %}<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>
+{% elif name == 'return' %}<path d="M9 14l-4-4 4-4M5 10h11a4 4 0 0 1 4 4v2"/>
+{% elif name == 'transfer' %}<path d="M4 7h13l-3-3M20 17H7l3 3"/>
+{% elif name == 'archive' %}<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8M10 12h4"/>
+{% elif name == 'chat' %}<path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/>
+{% elif name == 'chevron' %}<path d="M6 9l6 6 6-6"/>
+{% elif name == 'clock' %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+{% elif name == 'check' %}<path d="M5 12l4 4L19 6"/>
+{% elif name == 'checks' %}<path d="M2 12l4 4L16 6M12 16L22 6"/>
+{% elif name == 'plus' %}<path d="M12 5v14M5 12h14"/>
+{% else %}<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>
+{% endif %}</svg>
+{%- endmacro %}
+{% macro chat_outcomes() -%}
+<div class="chat-outcomes">
+{% for key, label in outcomes %}
+<button type="button" class="chat-chip{% if c.outcome == key %} selected{% endif %}"
+        aria-pressed="{{ 'true' if c.outcome == key else 'false' }}"
+        hx-post="/admin/conversation/{{ c.user_id }}/outcome" hx-vals='{"outcome":"{{ key }}"}'
+        hx-target="#chat" hx-swap="innerHTML">{{ {'won':'Оплатил','office':'Дошёл в офис','lost':'Слился'}.get(key, label) }}</button>
+{% endfor %}
+</div>
+{%- endmacro %}
+{% set inferred = {'won':'похоже оплатил','lost':'похоже отказ','ghosted':'пропал','active':'в работе'}.get(c.outcome_inferred, c.outcome_inferred or 'не определён') %}
+<div class="panel chat-palma" data-chat-id="{{ c.user_id }}"
+     hx-get="/admin/conversation/{{ c.user_id }}" hx-trigger="every 4s [document.visibilityState==='visible' && !(document.activeElement && document.activeElement.closest('.composer'))]"
+     hx-swap="outerHTML" hx-target="this">
+  <header class="chat-head">
+    <button type="button" class="chat-icon-button" onclick="closeChatSheet()" title="К списку диалогов" aria-label="К списку диалогов">{{ chat_icon('back') }}</button>
+    <span class="chat-avatar" aria-hidden="true">{{ initials }}</span>
+    <div class="chat-heading">
+      <div class="chat-name" title="{{ c.qualification.get('name') or c.phone }}">{{ c.qualification.get('name') or c.phone }}</div>
+      {#- Строка контекста. Алан 04.10: «уже лучше, но потеряться легко» — убрав чипы
+          в меню, мы вместе с ними убрали и ответ на вопрос «что это за клиент».
+          Здесь четыре вещи, которые видно без единого клика: продукт и этап, сколько
+          ждёт клиент, кто ведёт диалог. -#}
+      <div class="chat-ctx">
+        <span class="chat-ctx-pr"><b>{{ funnel_label }}</b>{% if stage_label %} · {{ stage_label }}{% endif %}</span>
+        {% if wait_since %}
+        <span class="chat-wait" data-wait-since="{{ wait_since }}" hidden>
+          {{ chat_icon('clock') }}<span class="chat-wait-t"></span>
+        </span>
+        {% endif %}
+        <span class="chat-lead">
+          {#- Цвет точки — единственный носитель состояния бота после того, как строка
+              состояния свёрнута в контекст. Поэтому различаем три случая, а не два:
+              зелёная — бот отвечает, серая — бот на паузе (диалог перехвачен),
+              оранжевая — закреплён за другим менеджером. `title` для тех, кто
+              различает цвета плохо. -#}
+          <span class="chat-state-dot{% if c.intercepted %} chat-state-paused{% elif busy_by %} chat-state-busy{% endif %}"
+                title="{% if c.intercepted %}бот на паузе{% elif busy_by %}закреплён за другим менеджером{% else %}бот отвечает{% endif %}"></span>
+          {#- Коротко: на 360 px «eliza · бот ведёт» съедало продукт и этап целиком.
+              Кто ведёт — слово, состояние бота — цвет точки: зелёная «бот отвечает»,
+              оранжевая «за диалогом закреплён человек». -#}
+          {%- if c.intercepted %}{% if c.assigned_to == manager.login %}вы{% elif c.assigned_to %}{{ c.assigned_to }}{% else %}менеджер{% endif %}
+          {%- elif busy_by %}{{ busy_by }}
+          {%- else %}бот{% endif %}
+        </span>
+      </div>
+    </div>
+    <details class="chat-menu" id="chat-menu-{{ c.user_id }}">
+      <summary class="chat-icon-button" title="Ещё действия" aria-label="Ещё действия">{{ chat_icon('more') }}</summary>
+      <div class="chat-menu-body">
+        <div class="chat-phone"><span>{{ c.phone }}</span><button type="button" class="chat-chip" data-phone="{{ c.phone }}" onclick="copyChatPhone(this)">копировать</button></div>
+        <div class="chat-tags">
+          <span class="tag">{{ c.channel or '—' }}</span>
+          <span class="tag">{{ c.funnel or '—' }} · {{ c.stage }}</span>
+          <span class="tag chat-temperature">{{ {'new':'новый','warm':'тёплый','hot':'горячий'}.get(c.lead_temperature, c.lead_temperature) }}</span>
+        </div>
+        {% if busy_by %}<p class="chat-menu-note">Диалог уже ведёт менеджер {{ busy_by }}</p>{% endif %}
+        <hr>
+        {% if c.intercepted %}
+        <button type="button" class="chat-menu-action" hx-post="/admin/conversation/{{ c.user_id }}/release" hx-target="#chat" hx-swap="innerHTML">{{ chat_icon('return') }}Вернуть боту</button>
+        {% else %}
+        <button type="button" class="chat-menu-action" hx-post="/admin/conversation/{{ c.user_id }}/takeover" hx-target="#chat" hx-swap="innerHTML">{{ chat_icon('pause') }}Перехватить — бот замолчит</button>
+        {% endif %}
+        {% if is_full_admin and reassign_targets %}
+        <details class="chat-reassign" id="chat-reassign-{{ c.user_id }}">
+          <summary class="chat-menu-action">{{ chat_icon('transfer') }}Передать менеджеру…</summary>
+          <form hx-post="/admin/conversation/{{ c.user_id }}/reassign" hx-target="#chat" hx-swap="innerHTML">
+            <select name="target" aria-label="Кому передать лид">
+              {% for t in reassign_targets %}<option value="{{ t }}"{% if t == c.assigned_to %} selected{% endif %}>{{ t }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="chat-chip" hx-confirm="Передать лид выбранному менеджеру?">Передать</button>
+          </form>
+        </details>
+        {% endif %}
+        <div class="chat-section-title">Исход диалога</div>
+        {{ chat_outcomes() }}
+        <hr>
+        <button type="button" class="chat-menu-action" data-user-id="{{ c.user_id }}" onclick="archiveConversation(this.dataset.userId, event)">{{ chat_icon('archive') }}Архивировать</button>
+      </div>
+    </details>
+  </header>
+
+  <div class="msgs panel-scroll chat-log" id="msgs-{{ c.user_id }}" role="log" aria-label="Переписка">
+    {% for m in c.messages %}
+    <div class="msg {{ m.sender }}" data-message-id="{{ m.id }}">
+      <div class="bubble">
+        <div class="who">{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(m.sender, m.sender) }}</div>
+        <div class="chat-message-text">{{ m.text }}</div>
+        <div class="chat-message-meta">
+          {% if m.created_at %}<span class="chat-time">{{ m.created_at.strftime('%H:%M') }}</span>{% endif %}
+          {% if m.status == 'pending' %}<span class="chat-delivery">{{ chat_icon('clock') }}отправляется</span>
+          {% elif m.status == 'sent' %}<span class="chat-delivery" aria-label="отправлено" title="отправлено">{{ chat_icon('check') }}</span>
+          {% elif m.status == 'delivered' %}<span class="chat-delivery chat-ticks" aria-label="доставлено" title="доставлено">{{ chat_icon('checks') }}</span>
+          {% elif m.status == 'failed' %}<span class="chat-failed">{{ chat_icon('info') }}не доставлено</span>
+            <button type="button" class="chat-retry" hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-target="#chat" hx-swap="innerHTML">Повторить</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="chat-empty">
+      {{ chat_icon('chat') }}
+      <b>Переписка пустая</b>
+      <p>Клиент ещё ничего не написал. Первое сообщение от вас перехватит диалог — бот не вмешается.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <details class="chat-dossier" id="chat-dossier-{{ c.user_id }}">
+    <summary>{{ chat_icon('chevron') }}<strong>Досье</strong><span title="ИИ: {{ inferred }} · шаг: {{ c.manager_next_step or 'не указан' }}">· ИИ: {{ inferred }} · шаг: {{ c.manager_next_step or 'не указан' }}</span></summary>
+    <div class="chat-dossier-body">
+      <section class="chat-section">
+        <h3 class="chat-section-title">ИИ-исход <small>оценка ИИ, поправьте кнопкой</small></h3>
+        <p>{{ inferred }}{% if c.outcome_inferred_reason %} — {{ c.outcome_inferred_reason }}{% endif %}</p>
+        {{ chat_outcomes() }}
+      </section>
+      <section class="chat-section"><h3 class="chat-section-title">Контекст</h3><p>{{ c.ai_summary or 'Контекст пока не собран' }}</p></section>
+      <section class="chat-section"><h3 class="chat-section-title">Следующий шаг</h3><p>{{ c.manager_next_step or 'Не указан' }}</p></section>
+      {% if c.escalation_reason %}<section class="chat-section"><h3 class="chat-section-title">Почему важно</h3><p>{{ c.escalation_reason }}</p></section>{% endif %}
+      <section class="chat-section">
+        <h3 class="chat-section-title">Что узнал бот</h3>
+        <dl>{% for k, v in c.qualification.items() %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% else %}<dt>Пока нет данных</dt>{% endfor %}</dl>
+      </section>
+      <section class="chat-section">
+        <h3 class="chat-section-title">Источник</h3>
+        <p>{{ 'Реклама (Click-to-WhatsApp)' if c.source == 'ad' else 'Пост' if c.source else 'Не указан' }}</p>
+        {% if c.source_headline %}<p>{{ c.source_headline }}</p>{% endif %}
+        {% if c.source_url and c.source_url.startswith('http') %}<a href="{{ c.source_url }}" target="_blank" rel="noopener">{{ c.source_url }}</a>{% endif %}
+        {% if c.source_id %}<p>ID: {{ c.source_id }}</p>{% endif %}
+      </section>
+  <div class="chat-section">
+    <div class="chat-section-title">Задачи</div>
+    {% for t in active_tasks %}
+    <div class="chat-task" style="flex-direction:column;align-items:stretch;gap:6px;border-bottom:1px solid var(--border);padding-bottom:8px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <b>{{ t.time or 'без времени' }}</b>
+        <span class="tag">{{ t.kind_label | replace('📞 ', '') | replace('🤝 ', '') | replace('🏢 ', '') | replace('🔁 ', '') | replace('📋 ', '') }}</span>
+        {% if t.priority == 'high' %}<span class="tag" style="background:var(--s-danger-soft);color:var(--s-danger)">важно</span>{% endif %}
+        {% if t.status == 'rescheduled' %}<span class="tag">перенесена</span>{% endif %}
+        {% if t.overdue %}<span class="tag" style="background:var(--s-danger-soft);color:var(--s-danger)">просрочено</span>{% endif %}
+        <span class="muted" style="font-size:12px">{{ t.date_iso }}</span>
+      </div>
+      {% if t.comment %}<div style="font-size:13px">{{ t.comment }}</div>{% endif %}
+      {% if t.context %}<div class="muted" style="font-size:12px">{{ chat_icon('info') }} {{ t.context }}</div>{% endif %}
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-brand" style="padding:4px 10px;font-size:12px"
+                hx-post="/admin/conversation/{{ c.user_id }}/task/{{ t.id }}/complete"
+                hx-target="#chat" hx-swap="innerHTML">Выполнить</button>
+        <button class="btn btn-danger" style="padding:4px 10px;font-size:12px"
+                hx-post="/admin/conversation/{{ c.user_id }}/task/{{ t.id }}/cancel"
+                hx-target="#chat" hx-swap="innerHTML">Отменить</button>
+        <details style="display:inline-block" id="chat-task-move-{{ t.id }}">
+          <summary class="btn btn-ghost" style="padding:4px 10px;font-size:12px;list-style:none">Перенести</summary>
+          <form hx-post="/admin/conversation/{{ c.user_id }}/task/{{ t.id }}/reschedule"
+                hx-target="#chat" hx-swap="innerHTML"
+                style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+            <input type="date" name="scheduled_date" value="{{ t.date_iso }}" required>
+            <input type="time" name="scheduled_time" value="{{ t.time }}">
+            <button class="btn btn-brand" style="padding:4px 10px;font-size:12px" type="submit">ОК</button>
+          </form>
+        </details>
+      </div>
+    </div>
+    {% else %}
+    <div class="muted" style="font-size:13px">Активных задач нет</div>
+    {% endfor %}
+
+    <details style="margin-top:8px" id="chat-task-new-{{ c.user_id }}">
+      <summary style="cursor:pointer;color:var(--accent);font-size:13px;font-weight:600">{{ chat_icon('plus') }} Новая задача</summary>
+      <form hx-post="/admin/conversation/{{ c.user_id }}/task/create"
+            hx-target="#chat" hx-swap="innerHTML"
+            style="display:grid;gap:6px;margin-top:8px">
+        <select name="kind" aria-label="Тип">
+          {% for key, label in task_kinds %}<option value="{{ key }}">{{ label | replace('📞 ', '') | replace('🤝 ', '') | replace('🏢 ', '') | replace('🔁 ', '') | replace('📋 ', '') }}</option>{% endfor %}
+        </select>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <input type="date" name="scheduled_date" value="{{ today_iso }}" required aria-label="Дата">
+          <input type="time" name="scheduled_time" aria-label="Время (необязательно)">
+        </div>
+        <select name="priority" aria-label="Приоритет">
+          {% for key, label in task_priorities %}<option value="{{ key }}"{% if key == 'normal' %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <input name="comment" placeholder="Комментарий" autocomplete="off" aria-label="Комментарий">
+        <button class="btn btn-brand" type="submit" style="justify-self:start;padding:6px 14px">Создать задачу</button>
+      </form>
+    </details>
+
+    {% set terminal = tasks | rejectattr('active') | list %}
+    {% if terminal %}
+    <details style="margin-top:6px" id="chat-task-history-{{ c.user_id }}">
+      <summary style="cursor:pointer;color:var(--muted);font-size:12px">История задач ({{ terminal|length }})</summary>
+      {% for t in terminal %}
+      <div class="chat-task" style="font-size:12px;color:var(--muted)">
+        <span>{{ t.date_iso }} · {{ t.kind_label | replace('📞 ', '') | replace('🤝 ', '') | replace('🏢 ', '') | replace('🔁 ', '') | replace('📋 ', '') }}</span>
+        <span>{{ 'выполнено' if t.status == 'completed' else 'отменено' }}</span>
+      </div>
+      {% endfor %}
+    </details>
+    {% endif %}
+  </div>
+
+
+    </div>
+  </details>
+
+  <form class="composer chat-composer" id="composer-{{ c.user_id }}" hx-preserve="true"
+        hx-post="/admin/conversation/{{ c.user_id }}/send" hx-target="#chat" hx-swap="innerHTML"
+        hx-on::after-request="if(event.detail.successful && ['sent','failed'].includes(event.detail.xhr.getResponseHeader('X-Action-Outcome'))) this.reset()">
+    <div class="chat-quick-replies" aria-label="Быстрые ответы" tabindex="0">
+      {% for label, text in quick_replies.items() %}
+      <button type="button" class="chat-chip" onclick="fillReply(this.dataset.t)" data-t="{{ text|e }}">{{ label }}</button>
+      {% endfor %}
+    </div>
+    <div class="chat-compose-row">
+      <button type="button" class="chat-suggest" data-user-id="{{ c.user_id }}" onclick="suggestChatReply(this.dataset.userId, this)" title="Предложить ответ — черновик ИИ, проверьте перед отправкой" aria-label="Предложить ответ">{{ chat_icon('spark') }}<span>Предложить ответ</span></button>
+      <textarea name="text" rows="1" placeholder="Ответить клиенту…" autocomplete="off" aria-label="Ответить клиенту"></textarea>
+      <button type="submit" class="chat-send" aria-label="Отправить" title="Отправить">{{ chat_icon('send') }}</button>
+    </div>
+  </form>
+  <div class="chat-hint">Отправка перехватывает диалог — бот замолкает</div>
+  {% set failed = c.messages | selectattr('status', 'equalto', 'failed') | list %}
+  <div class="chat-error" role="alert"{% if not notice and not failed %} hidden{% endif %}>
+    {{ chat_icon('info') }}<span>{{ notice or ('Не доставлено · Ошибка отправки в канал. Повторите отправку у сообщения.' if failed else '') }}</span>
+  </div>
+</div>
+{% else -%}
 {# Чат: статус бота + бриф + полный контекст + перехват + ответ. Авто-обновление 4с
    (поле ввода сохраняется через hx-preserve — текст и фокус не слетают при опросе). #}
 <div class="panel" hx-get="/admin/conversation/{{ c.user_id }}" hx-trigger="every 4s [document.visibilityState==='visible' && !(document.activeElement && document.activeElement.closest('.composer'))]" hx-swap="outerHTML" hx-target="this">
@@ -241,3 +488,4 @@
   </form>
   <div class="hint">Отправка ответа перехватывает диалог — бот замолкает.</div>
 </div>
+{%- endif %}

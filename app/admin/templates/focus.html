@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+{% block title %}Frunze — фокус{% endblock %}
+{% block brand_sub %}фокус{% endblock %}
+{#
+  «Фокус» — один вопрос: кому ответить сейчас. Раньше на него отвечали три экрана с тремя
+  разными порядками (доска, «Покупатели сегодня», «Горячий лист»), и менеджер сам выбирал,
+  какому верить.
+
+  Действий своих здесь нет: отправка, перехват и архив — существующие эндпоинты карточки
+  (`/conversation/{id}/send|takeover|archive|suggest`). Новый путь к сообщению клиенту
+  означал бы второй набор проверок доступа.
+
+  Движение: решение Алана 03.10 — «максимум эффектов». Поэтому стекло, свечение и пружины,
+  но с тремя ограничениями, иначе «максимум» станет тормозами на телефоне менеджера:
+  `prefers-reduced-motion` гасит всё; размытие и свечение не включаются под 760px;
+  анимируются только `transform` и `opacity`.
+#}
+{% block head %}
+<style>
+    /* По умолчанию — одна колонка (телефон и ноутбук). Двухколоночная раскладка
+       включается только на широком экране: до этого «Фокус» был колонкой 760px по
+       центру, и на большом мониторе половина экрана пустовала. */
+    .focus-wrap { max-width: 820px; margin: 0 auto; padding: 18px 16px 40px; }
+    .focus-aside { display: none; }
+
+    @media (min-width: 1100px) {
+      .focus-wrap { max-width: 1340px; display: grid; gap: 20px; align-items: start;
+                    grid-template-columns: minmax(0, 1fr) minmax(0, 380px); }
+      .focus-main { min-width: 0; }
+      .focus-aside { display: block; min-width: 0; position: sticky; top: 76px;
+                     max-height: calc(100vh - 96px); overflow-y: auto; }
+      /* Сбоку колонка узкая: имя и срок остаются в одной строке, реплика уходит под них.
+         Порядок важен — иначе срок выдавливается за край и строка молчит о главном. */
+      .focus-aside .qrow { flex-wrap: wrap; padding: 9px 12px; }
+      .focus-aside .qrow .nm { flex: 1 1 auto; min-width: 0; }
+      .focus-aside .qrow .w { order: 3; margin-left: auto; }
+      .focus-aside .qrow .tx { order: 4; flex: 1 1 100%; margin: 2px 0 0 39px; font-size: 12px;
+                               white-space: normal; display: -webkit-box; -webkit-line-clamp: 1;
+                               -webkit-box-orient: vertical; }
+    }
+
+    /* ---------- Пульт ---------- */
+    .pulse-bar { display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+                 padding: 13px 18px; margin-bottom: 18px; border-radius: var(--r-lg);
+                 border: 1px solid var(--border); background: var(--surface);
+                 box-shadow: var(--shadow); backdrop-filter: saturate(140%) blur(8px); }
+    .pulse { display: flex; align-items: baseline; gap: 7px; font-size: 13.5px; color: var(--muted); }
+    .pulse b { font-family: var(--mono); font-size: 21px; font-weight: 600; color: var(--text);
+               font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+    .pulse.hot b { color: var(--hot); }
+    .pulse.warm b { color: var(--warm); }
+    .pulse-sp { flex: 1 1 auto; }
+
+    /* ---------- Карточка «следующий» ---------- */
+    .next-label { display: flex; align-items: center; gap: 8px; margin: 0 0 9px 2px;
+                  font-size: 11.5px; font-weight: 600; letter-spacing: .09em;
+                  text-transform: uppercase; color: var(--faint); }
+    .next-label::before { content: ""; width: 0; height: 0; border-left: 6px solid var(--accent);
+                          border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+
+    .lead { position: relative; overflow: hidden; border-radius: var(--r-lg);
+            border: 1px solid var(--border); background: var(--surface);
+            box-shadow: var(--shadow); backdrop-filter: saturate(130%) blur(6px);
+            animation: lead-in 380ms cubic-bezier(.16,1,.3,1) both; }
+    .lead[data-wait="hot"] { border-color: color-mix(in srgb, var(--hot) 45%, var(--border));
+                             box-shadow: var(--shadow), 0 0 0 4px var(--hot-soft); }
+    .lead[data-wait="warm"] { border-color: color-mix(in srgb, var(--warm) 38%, var(--border)); }
+    .lead.leaving { animation: lead-out 300ms cubic-bezier(.4,0,1,1) both; }
+    @keyframes lead-in { from { opacity: 0; transform: translateY(14px) scale(.985); }
+                           to { opacity: 1; transform: none; } }
+    @keyframes lead-out { to { opacity: 0; transform: translateX(-32px) scale(.97); } }
+
+    /* Полоска срочности: ширину не анимируем (это реflow) — тянем через scaleX. */
+    .sla { height: 3px; background: var(--surface-2); }
+    .sla i { display: block; height: 100%; width: 100%; transform-origin: left center;
+             background: linear-gradient(90deg, var(--good), var(--warm) 55%, var(--hot));
+             transition: transform 600ms cubic-bezier(.4,0,.2,1); }
+
+    .lead-body { padding: 18px; display: grid; gap: 14px; }
+    .lead-top { display: flex; align-items: flex-start; gap: 13px; }
+    .lead-av { width: 46px; height: 46px; flex-shrink: 0; border-radius: 13px; display: grid;
+               place-items: center; font-weight: 700; font-size: 15px; color: #fff; }
+    .lead-id { min-width: 0; flex: 1 1 auto; }
+    .lead-name { font-size: 20px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
+    .lead-phone { font-family: var(--mono); font-size: 12.5px; color: var(--faint);
+                  font-variant-numeric: tabular-nums; }
+    .lead-wait { text-align: right; flex-shrink: 0; }
+    .lead-wait .t { font-family: var(--mono); font-size: 21px; font-weight: 600;
+                    letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1;
+                    white-space: nowrap; }
+    .lead[data-wait="hot"] .lead-wait .t { color: var(--hot); }
+    .lead[data-wait="warm"] .lead-wait .t { color: var(--warm); }
+    .lead-wait .l { font-size: 11px; color: var(--faint); margin-top: 3px; }
+
+    .lead-tags { display: flex; gap: 7px; flex-wrap: wrap; }
+    .lead-quote { font-size: 15.5px; line-height: 1.5; padding: 13px 15px; border-radius: var(--r);
+                  background: var(--surface-2); border-left: 3px solid var(--border-2); }
+    .lead-quote b { color: var(--muted); font-weight: 600; font-size: 12.5px;
+                    display: block; margin-bottom: 3px; }
+
+    .ai-brief { display: grid; gap: 5px; padding: 12px 15px; border-radius: var(--r);
+                border: 1px dashed var(--border-2); font-size: 13.5px; color: var(--muted); }
+    .ai-brief .k { font-size: 11px; font-weight: 600; letter-spacing: .07em;
+                   text-transform: uppercase; color: var(--accent); }
+
+    .answer { display: grid; gap: 9px; }
+    .answer-row { display: flex; gap: 9px; align-items: flex-end; }
+    .answer textarea { flex: 1 1 auto; min-height: 46px; max-height: 190px; resize: none;
+                       padding: 12px 14px; font: inherit; font-size: 14.5px; line-height: 1.45;
+                       color: var(--text); background: var(--surface-2);
+                       border: 1px solid var(--border-2); border-radius: var(--r); }
+    .answer textarea:focus { outline: none; border-color: var(--accent);
+                             box-shadow: 0 0 0 3px var(--accent-soft); }
+    .act-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .act { display: inline-flex; align-items: center; gap: 7px; padding: 10px 15px; cursor: pointer;
+           font: inherit; font-size: 13.5px; font-weight: 600; border-radius: var(--r);
+           border: 1px solid var(--border-2); background: var(--surface); color: var(--text);
+           transition: transform var(--t), background var(--t), border-color var(--t); }
+    .act:hover { background: var(--surface-2); transform: translateY(-1px); }
+    .act:active { transform: translateY(0) scale(.98); }
+    .act-send { background: var(--accent); border-color: transparent; color: var(--on-accent, #fff); }
+    .act-send:hover { background: var(--accent-2); }
+    .act kbd { font-family: var(--mono); font-size: 10.5px; padding: 1px 5px; border-radius: 4px;
+               background: rgba(127,127,127,.16); color: inherit; font-weight: 600; }
+
+    /* ---------- Очередь ---------- */
+    .queue { margin-top: 22px; }
+    .queue-h { display: flex; align-items: baseline; gap: 9px; margin: 0 2px 10px;
+               font-size: 11.5px; font-weight: 600; letter-spacing: .09em;
+               text-transform: uppercase; color: var(--faint); }
+    .queue-list { display: grid; gap: 7px; }
+    .qrow { display: flex; align-items: center; gap: 11px; padding: 10px 13px; cursor: pointer;
+            border: 1px solid var(--border); border-radius: var(--r); background: var(--surface);
+            transition: transform var(--t), border-color var(--t);
+            /* Это ссылка, но строка списка: подчёркивание и синий цвет здесь выглядят
+               как недоделанная вёрстка. */
+            text-decoration: none; color: inherit; }
+    .qrow:any-link { color: inherit; }
+    .qrow:hover { transform: translateX(3px); border-color: var(--border-2); }
+    .qrow .av { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; display: grid;
+                place-items: center; font-size: 11px; font-weight: 700; color: #fff; }
+    .qrow .nm { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden;
+                text-overflow: ellipsis; }
+    .qrow .tx { color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden;
+                text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; }
+    .thread { margin-top: 18px; }
+    .qrow .w { margin-left: auto; flex-shrink: 0; font-family: var(--mono); font-size: 12.5px;
+               font-weight: 600; color: var(--faint); font-variant-numeric: tabular-nums; }
+    .qrow[data-wait="hot"] .w { color: var(--hot); }
+    .qrow[data-wait="warm"] .w { color: var(--warm); }
+    .qrow.is-noise { opacity: .62; }
+
+    /* ---------- Пусто и скелетон ---------- */
+    .all-clear { display: grid; gap: 10px; justify-items: center; text-align: center;
+                 padding: 64px 24px; border: 1px dashed var(--border-2); border-radius: var(--r-lg);
+                 color: var(--muted); }
+    .all-clear .big { font-size: 20px; font-weight: 600; color: var(--text); }
+    .all-clear svg { width: 42px; height: 42px; color: var(--good); }
+    .skeleton { border-radius: var(--r); background: linear-gradient(90deg,
+                var(--surface-2) 25%, var(--elev-hover) 50%, var(--surface-2) 75%);
+                background-size: 300% 100%; animation: sk 1.3s linear infinite; }
+    @keyframes sk { to { background-position: -150% 0; } }
+
+    .server-say:not(:empty) { padding: 10px 13px; border-radius: var(--r); font-size: 13.5px;
+                              background: var(--hot-soft); color: var(--hot); }
+    /* Хвост переписки рядом: отвечая, видно, о чём уже говорили. */
+    .thread { border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface);
+              box-shadow: var(--shadow); overflow: hidden; }
+    .thread-h { display: flex; align-items: center; gap: 9px; padding: 12px 15px;
+                border-bottom: 1px solid var(--border); font-size: 11.5px; font-weight: 600;
+                letter-spacing: .09em; text-transform: uppercase; color: var(--faint); }
+    .thread-h a { margin-left: auto; font-size: 12px; font-weight: 600; letter-spacing: 0;
+                  text-transform: none; color: var(--accent); text-decoration: none; }
+    .thread-h a:hover { text-decoration: underline; }
+    .thread-body { display: flex; flex-direction: column; gap: 9px; padding: 15px;
+                   max-height: 58vh; overflow-y: auto; }
+    .msg-row { max-width: 86%; display: grid; gap: 3px; }
+    .msg-row .who { font-size: 10.5px; font-weight: 600; color: var(--faint); }
+    .msg-row .say { padding: 9px 12px; border-radius: 13px; font-size: 13.5px; line-height: 1.45;
+                    white-space: pre-wrap; word-wrap: break-word; }
+    .msg-row.client { align-self: flex-start; }
+    .msg-row.client .say { background: var(--surface-2); border: 1px solid var(--border);
+                           border-bottom-left-radius: 4px; }
+    .msg-row.bot, .msg-row.manager { align-self: flex-end; text-align: right; }
+    .msg-row.bot .say { background: var(--accent-soft); color: var(--accent);
+                        border-bottom-right-radius: 4px; }
+    .msg-row.manager .say { background: var(--green-soft); color: var(--green);
+                            border-bottom-right-radius: 4px; }
+    .thread-empty { padding: 30px 16px; text-align: center; color: var(--faint); font-size: 13px; }
+
+    .hint { margin-top: 20px; font-size: 12.5px; color: var(--faint); text-align: center; }
+    .hint kbd { font-family: var(--mono); font-size: 11px; padding: 1px 5px; border-radius: 4px;
+                background: var(--surface-2); border: 1px solid var(--border); }
+
+    /* Телефон: размытие и свечение дороги, а менеджеры работают с телефонов. */
+    @media (max-width: 760px) {
+      .pulse-bar, .lead { backdrop-filter: none; }
+      .lead[data-wait="hot"] { box-shadow: var(--shadow); }
+      .focus-wrap { padding: 12px 12px 32px; }
+      .lead-body { padding: 14px; }
+      .lead-name { font-size: 18px; }
+      .pulse b { font-size: 18px; }
+    }
+    /* Узкий телефон (360–430px). Здесь страницу распирали кнопки: «Отправить Ctrl+Enter»
+       и «Предложить ответ» вместе дают около 370px и не помещаются в 360. Подсказки
+       клавиш на телефоне всё равно бесполезны — клавиатуры нет. */
+    @media (max-width: 480px) {
+      .act kbd, .hint kbd { display: none; }
+      .act { padding: 10px 12px; font-size: 13px; flex: 1 1 auto; justify-content: center; }
+      .act-send { flex: 1 1 100%; }
+      .lead-name { font-size: 17px; }
+      .lead-wait .t { font-size: 18px; }
+      .lead-av { width: 40px; height: 40px; border-radius: 11px; font-size: 13.5px; }
+      .pulse b { font-size: 17px; }
+      .pulse-bar { gap: 12px; padding: 11px 14px; }
+      .hint { font-size: 11.5px; }
+      .msg-row { max-width: 94%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lead, .lead.leaving, .skeleton { animation: none; }
+      .sla i, .act, .qrow { transition: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="focus-wrap">
+ <div class="focus-main">
+
+  <div class="pulse-bar">
+    <span class="pulse hot"><b data-pulse="needs_reply">{{ pulse.needs_reply }}</b> ваш ход</span>
+    <span class="pulse warm"><b data-pulse="waiting">{{ pulse.waiting }}</b> ждут</span>
+    <span class="pulse"><b data-pulse="total">{{ pulse.total }}</b> всего</span>
+    <span class="pulse-sp"></span>
+    <span class="pulse" style="font-size:12.5px">{{ direction_label }}</span>
+  </div>
+
+  {% if current %}
+  <div class="next-label">Следующий</div>
+  <article class="lead" id="lead" data-wait="{{ current.wait_level }}"
+           data-uid="{{ current.user_id }}"
+           {% if brief.wait_since %}data-wait-since="{{ brief.wait_since }}"{% endif %}>
+    <div class="sla"><i id="sla-bar"></i></div>
+    <div class="lead-body">
+
+      <div class="lead-top">
+        <span class="lead-av" style="background: {{ current.avatar }}">{{ current.initials }}</span>
+        <span class="lead-id">
+          <div class="lead-name">{{ current.name }}</div>
+          <div class="lead-phone">{{ current.phone }}</div>
+        </span>
+        <span class="lead-wait">
+          <div class="t" id="wait-timer">{{ current.wait_label or '—' }}</div>
+          <div class="l">ждёт</div>
+        </span>
+      </div>
+
+      <div class="lead-tags">
+        <span class="tag">{{ current.funnel_label }}</span>
+        {% if current.source %}<span class="tag">{{ 'реклама' if current.source == 'ad' else 'пост' }}</span>{% endif %}
+        {% if current.lead_temperature == 'hot' %}<span class="tag">горячий</span>{% endif %}
+        {% if current.assigned_to %}<span class="tag">ведёт {{ current.assigned_to }}</span>{% endif %}
+        {% if current.is_noise %}<span class="tag">похоже на рекламу</span>{% endif %}
+      </div>
+
+      {% if current.last_text %}
+      <div class="lead-quote">
+        <b>{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(current.last_sender, '') }}</b>
+        {{ current.last_text }}
+      </div>
+      {% endif %}
+
+      {% if brief.ai_summary or brief.manager_next_step %}
+      <div class="ai-brief">
+        <span class="k">Контекст</span>
+        {% if brief.ai_summary %}<div>{{ brief.ai_summary }}</div>{% endif %}
+        {% if brief.manager_next_step %}<div><b>Дальше:</b> {{ brief.manager_next_step }}</div>{% endif %}
+      </div>
+      {% endif %}
+
+      {# Отправка — существующий эндпоинт карточки, своего пути к клиенту не завозим. #}
+      {# Отправка ждёт ответа сервера: Wappi отвечает не мгновенно, а отказ (диалог
+         закреплён за другим менеджером, канал вернул ошибку) обязан быть виден. Поэтому
+         улетаем из `htmx:afterRequest` только при подтверждённом исходе `sent`. #}
+      <form class="answer" id="answer-form"
+            hx-post="/admin/conversation/{{ current.user_id }}/send"
+            hx-swap="none">
+        <div class="answer-row">
+          <textarea name="text" id="answer-text" placeholder="Ответить клиенту…"
+                    oninput="growAnswer(this)"></textarea>
+        </div>
+        <div class="act-row">
+          <button class="act act-send" type="submit">Отправить <kbd>Ctrl+Enter</kbd></button>
+          <button class="act" type="button" onclick="suggestReply()">Предложить ответ</button>
+          <button class="act" type="button"
+                  hx-post="/admin/conversation/{{ current.user_id }}/takeover"
+                  hx-swap="none">Взять <kbd>T</kbd></button>
+          <button class="act" type="button" onclick="skipLead()">Позже <kbd>J</kbd></button>
+          <button class="act" id="act-archive" type="button"
+                  hx-post="/admin/conversation/{{ current.user_id }}/archive"
+                  hx-swap="none"
+                  hx-confirm="Убрать {{ current.name }} из работы?">В архив <kbd>A</kbd></button>
+        </div>
+      </form>
+      {# Причину отказа пишет JS: полная карточка или JSON в этой плашке ломают экран. #}
+      <div id="after-send" class="server-say"></div>
+
+    </div>
+  </article>
+  {% else %}
+  <div class="all-clear">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    <div class="big">Все ответили</div>
+    <div>Никто не ждёт ответа. Как появится новый клиент — он покажется здесь.</div>
+  </div>
+  {% endif %}
+
+  {% if current %}
+  <section class="thread">
+    <div class="thread-h">
+      Переписка
+      <a href="/admin?open={{ current.user_id | urlencode }}">Открыть целиком</a>
+    </div>
+    {% if history %}
+    <div class="thread-body" id="thread-body">
+      {% for m in history %}
+      <div class="msg-row {{ m.sender }}">
+        <span class="who">{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(m.sender, m.sender) }}</span>
+        <span class="say">{{ m.text }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="thread-empty">Сообщений пока нет</div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <p class="hint">
+    <kbd>J</kbd> следующий · <kbd>T</kbd> взять · <kbd>A</kbd> в архив ·
+    <kbd>Ctrl+Enter</kbd> отправить · <kbd>/</kbd> поиск
+  </p>
+ </div>
+
+ {% if queue %}
+ {# Очередь — сбоку на широком экране, под работой на узком: она вспомогательная. #}
+ <aside class="focus-aside">
+   <section class="queue">
+     <div class="queue-h">За ним <span style="color:var(--muted)">{{ queue|length }}</span></div>
+     <div class="queue-list">
+       {% for c in queue %}
+       <a class="qrow{% if c.is_noise %} is-noise{% endif %}" data-wait="{{ c.wait_level }}"
+          href="/admin/focus?lead={{ c.user_id | urlencode }}">
+         <span class="av" style="background: {{ c.avatar }}">{{ c.initials }}</span>
+         <span class="nm">{{ c.name }}</span>
+         <span class="tx">{{ c.last_text }}</span>
+         <span class="w">{{ c.wait_label }}</span>
+       </a>
+       {% endfor %}
+     </div>
+   </section>
+ </aside>
+ {% endif %}
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ---- Живой таймер ожидания -------------------------------------------------
+  // Сервер отдаёт момент последней реплики, браузер тикает сам: иначе время «застывает»
+  // между обновлениями страницы, и менеджер не видит, что клиент ждёт уже дольше.
+  var SLA_FULL_MIN = 180;        // три часа — та граница, где ожидание становится потерей
+  // «48:00» читается как 48 минут, хотя это двое суток. Единицы называем словом.
+  function humanWait(mins) {
+    if (mins < 60) return Math.floor(mins) + ' мин';
+    if (mins < 24 * 60) return Math.floor(mins / 60) + ' ч';
+    var d = Math.floor(mins / 1440);
+    return d + (d === 1 ? ' день' : (d < 5 ? ' дня' : ' дней'));
+  }
+  function tick() {
+    var lead = document.getElementById('lead');
+    if (!lead) return;
+    var since = lead.getAttribute('data-wait-since');
+    if (!since) return;
+    var mins = Math.max(0, (Date.now() - new Date(since).getTime()) / 60000);
+    var el = document.getElementById('wait-timer');
+    if (el) el.textContent = humanWait(mins);
+    var bar = document.getElementById('sla-bar');
+    if (bar) bar.style.transform = 'scaleX(' + Math.min(1, mins / SLA_FULL_MIN).toFixed(3) + ')';
+  }
+  setInterval(tick, 1000); tick();
+
+  // ---- Живые числа в пульте --------------------------------------------------
+  // Цифра не подменяется рывком, а перекатывается: видно, что счётчик изменился.
+  function rollTo(el, value) {
+    var from = parseInt(el.textContent, 10); if (isNaN(from)) from = 0;
+    if (from === value) return;
+    var start = performance.now(), dur = 420;
+    (function step(now) {
+      var k = Math.min(1, (now - start) / dur);
+      el.textContent = Math.round(from + (value - from) * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(step);
+    })(start);
+  }
+  async function pullStats() {
+    try {
+      var s = await (await fetch('/admin/stats', { headers: { 'HX-Request': 'true' } })).json();
+      document.querySelectorAll('[data-pulse]').forEach(function (el) {
+        var key = el.getAttribute('data-pulse');
+        if (s[key] !== undefined) rollTo(el, s[key]);
+      });
+    } catch (_) { /* сеть моргнула — следующий тик подтянет */ }
+  }
+  setInterval(pullStats, 10000); pullStats();
+
+  // Лента открывается на последней реплике — читают её снизу вверх.
+  (function () {
+    var t = document.getElementById('thread-body');
+    if (t) t.scrollTop = t.scrollHeight;
+  })();
+
+  // ---- Действия --------------------------------------------------------------
+  function growAnswer(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+
+  // HTTP 200 приходит и при отказе владения, и при сбое канала. После отправки улетаем
+  // только при X-Action-Outcome: sent — иначе менеджер решит, что ответил, а клиент ждёт.
+  // Архив возвращает JSON без заголовка: для него достаточно успешного HTTP-ответа.
+  function flyAway() {
+    var lead = document.getElementById('lead');
+    if (lead) lead.classList.add('leaving');
+    setTimeout(function () { location.href = '/admin/focus'; }, 320);
+  }
+
+  document.body.addEventListener('htmx:afterRequest', function (e) {
+    var path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
+    var action = path.match(/\/(send|takeover|archive)$/);
+    if (!action) return;
+    var say = document.getElementById('after-send');
+    if (say) say.textContent = '';
+    var message = 'Не отправилось — попробуйте ещё раз';
+    if (e.detail.successful && e.detail.xhr && e.detail.xhr.status < 400) {
+      if (action[1] === 'archive') { flyAway(); return; }
+      var outcome = e.detail.xhr.getResponseHeader('X-Action-Outcome');
+      if (action[1] === 'send' && outcome === 'sent') { flyAway(); return; }
+      if (action[1] === 'takeover' && outcome === 'claimed') { location.reload(); return; }
+      if (outcome === 'denied') {
+        message = 'Диалог закреплён за другим менеджером — нажмите «Взять», чтобы ответить';
+      } else if (outcome === 'failed') {
+        // Не «попробуйте ещё раз»: повторная отправка отсюда создаёт ВТОРОЕ сообщение.
+        // Канал мог принять первое и не ответить в срок — тогда клиент получит дубль.
+        // В карточке для этого есть `/resend/{message_id}`: он досылает то же самое.
+        message = 'Сообщение не ушло. Откройте карточку и нажмите «Повторить» — иначе уйдёт дубль';
+      } else if (action[1] === 'send' && outcome === 'empty') {
+        message = '';
+      }
+    }
+    // Каждый ответ заменяет прежнюю ошибку: после повтора она могла уже измениться.
+    if (say) say.textContent = message;
+  });
+
+  // Пустой ответ на сервер не уходит: иначе экран перелистывался, ничего не отправив.
+  document.body.addEventListener('htmx:confirm', function (e) {
+    if (e.detail.elt && e.detail.elt.id === 'answer-form') {
+      var box = document.getElementById('answer-text');
+      if (!box || !box.value.trim()) {
+        e.preventDefault();
+        box && box.focus();
+      }
+    }
+  });
+
+  function skipLead() {
+    // «Позже» — следующий по очереди. Выбор считает сервер: прятать клиента насовсем мы
+    // не вправе, он вернётся и будет ждать ещё дольше.
+    var next = document.querySelector('.qrow');
+    if (next && next.getAttribute('href')) location.href = next.getAttribute('href');
+  }
+
+  async function suggestReply() {
+    var lead = document.getElementById('lead'), box = document.getElementById('answer-text');
+    if (!lead || !box) return;
+    box.placeholder = 'ИИ думает…';
+    box.classList.add('skeleton');
+    try {
+      var r = await fetch('/admin/conversation/' + encodeURIComponent(lead.dataset.uid) + '/suggest',
+                          { method: 'POST', headers: { 'HX-Request': 'true' } });
+      box.value = (await r.text()).trim();
+      growAnswer(box);
+    } catch (_) {
+      box.placeholder = 'Не получилось — напишите сами';
+    } finally {
+      box.classList.remove('skeleton');
+      box.placeholder = 'Ответить клиенту…';
+      box.focus();
+    }
+  }
+
+  // ---- Горячие клавиши: ради них экран и стоит делать -------------------------
+  document.addEventListener('keydown', function (e) {
+    // Сочетания с модификаторами — не наши: Ctrl+A (выделить всё) раньше превращался
+    // в «в архив» и уносил клиента одной случайной комбинацией.
+    if (e.altKey || (e.ctrlKey || e.metaKey) && e.key !== 'Enter') return;
+    var inField = e.target.matches('input, textarea, select, [contenteditable]');
+    if (inField && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      document.getElementById('answer-form').requestSubmit(); return;
+    }
+    if (inField || e.ctrlKey || e.metaKey) return;
+    // Кнопки обрабатывают Enter и пробел сами — не мешаем.
+    if (e.target.matches('button, a') && (e.key === 'Enter' || e.key === ' ')) return;
+    var map = {
+      'j': skipLead,
+      't': function () { document.querySelector('[hx-post$="/takeover"]')?.click(); },
+      'a': function () { document.getElementById('act-archive')?.click(); },
+      '/': function () { document.querySelector('.search input')?.focus(); },
+      'enter': function () { document.getElementById('answer-text')?.focus(); },
+    };
+    var fn = map[e.key.toLowerCase()];
+    if (fn) { e.preventDefault(); fn(); }
+  });
+</script>
+{% endblock %}

@@ -99,6 +99,7 @@
 
     <div class="panel">
       <h2>Конфигурация</h2>
+      <div class="table-wrap">
       <table>
         <tr><td>Хранилище состояния</td><td class="mono">{{ s.state_backend }}</td></tr>
         <tr><td>Хранилище панели</td><td class="mono">{{ s.panel_backend }}</td></tr>
@@ -107,6 +108,7 @@
         <tr><td>Watchdog-алерты</td><td>{{ '✅ настроены' if s.alerts_configured else '— не настроены' }}</td></tr>
         <tr><td>Автодожим</td><td>{{ '✅ включён' if s.followup_enabled else '— выключен' }}</td></tr>
       </table>
+      </div>
     </div>
 
   </div>

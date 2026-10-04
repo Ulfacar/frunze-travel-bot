@@ -168,6 +168,7 @@
         <span class="meta">win <b>{{ st.won_rate }}%</b> · {{ st.share }}% нагрузки · ответ {{ st.median_response_min if st.median_response_min is not none else '—' }}{% if st.median_response_min is not none %}м{% endif %}</span>
       </div>
       {% endfor %}
+      <div class="table-wrap">
       <table style="margin-top:14px">
         <tr><th>Сотрудник</th><th>Вёл диалогов</th><th>✅ Оплат</th><th>🏢 Офис</th><th>❌ Слив</th><th>Win-rate</th></tr>
         {% for mgr, st in a.by_manager.items() %}
@@ -176,6 +177,7 @@
             <td>{{ st.won_rate }}%</td></tr>
         {% endfor %}
       </table>
+      </div>
       {% else %}
       <div class="muted">Пока никто из менеджеров не вёл диалоги в этом периоде</div>
       {% endif %}
@@ -198,11 +200,13 @@
     <div class="panel">
       <h2>Почему подключают менеджера (топ причин)</h2>
       {% if a.handoff_reasons %}
+      <div class="table-wrap">
       <table>
         {% for reason, n in a.handoff_reasons %}
         <tr><td>{{ reason }}</td><td>{{ n }}</td></tr>
         {% endfor %}
       </table>
+      </div>
       {% else %}
       <div class="muted">Пока нет эскалаций</div>
       {% endif %}

@@ -31,7 +31,54 @@ from app.integrations.panel.store import get_conversation_store
 
 log = logging.getLogger("admin")
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+# Кэш тумблеров вида. Без него каждый запрос панели — включая `/stats` каждые 10 секунд
+# с каждой открытой вкладки и каждый htmx-партиал — открывал в PG отдельные сессии. Вид меняется
+# раз в месяц, пять секунд задержки на переключение тумблера никто не заметит.
+# В ключ кэша входят дефолты из настроек: поменялись они — кэш недействителен. Иначе
+# переключение тумблера в env (и подмена настроек в тестах) пять секунд не замечалось бы.
+_LOOK_TTL = 5.0
+_look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
+                                "focus_on": None, "chat_redesign": None}
+
+
+async def _load_new_look(request: Request) -> None:
+    """Прочитать тумблер вида и положить в `request.state`.
+
+    Зависимость роутера, а не десять правок в обработчиках: `_chrome` синхронный и
+    `await` не умеет, а флаг живёт в базе и обязан переключаться без выкатки. Висит на
+    уровне APIRouter — выполняется для каждой страницы панели ровно один раз.
+    """
+    import time
+
+    from app.core import flags as _flags
+    now = time.monotonic()
+    key = (bool(settings.admin_new_look_enabled), bool(settings.admin_focus_enabled),
+           bool(settings.admin_chat_redesign_enabled))
+    if (_look_cache["key"] == key and _look_cache["new_look"] is not None
+            and now - float(_look_cache["at"]) < _LOOK_TTL):
+        request.state.new_look = bool(_look_cache["new_look"])
+        request.state.focus_on = bool(_look_cache["focus_on"])
+        request.state.chat_redesign = bool(_look_cache["chat_redesign"])
+        return
+    try:
+        new_look = await _flags.get_flag("admin_new_look_enabled",
+                                        settings.admin_new_look_enabled)
+        focus_on = await _flags.get_flag("admin_focus_enabled", settings.admin_focus_enabled)
+        chat_redesign = await _flags.get_flag("admin_chat_redesign_enabled",
+                                            settings.admin_chat_redesign_enabled)
+        _look_cache.update({"at": now, "key": key, "new_look": new_look,
+                            "focus_on": focus_on, "chat_redesign": chat_redesign})
+    except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
+        new_look, focus_on = (bool(settings.admin_new_look_enabled),
+                              bool(settings.admin_focus_enabled))
+        chat_redesign = bool(settings.admin_chat_redesign_enabled)
+    request.state.new_look = bool(new_look)
+    request.state.focus_on = bool(focus_on)
+    request.state.chat_redesign = bool(chat_redesign)
+
+
+router = APIRouter(prefix="/admin", tags=["admin"],
+                   dependencies=[Depends(_load_new_look)])
 def _chrome(request: Request) -> dict:
     """Общий контекст шапки для КАЖДОГО шаблона: кто вошёл, админ ли, направление.
 
@@ -45,7 +92,14 @@ def _chrome(request: Request) -> dict:
     # `directions` (переключатель) здесь НЕ отдаём: он зависит от рантайм-флага, а
     # context_processor синхронный и `await` не умеет. Его передаёт `index()`.
     return {"manager": manager, "is_admin": is_admin, "direction": direction,
-            "direction_label": dict(DIRECTIONS).get(direction, direction)}
+            "direction_label": dict(DIRECTIONS).get(direction, direction),
+            # Тумблеры кладёт сюда `_load_new_look` (зависимость роутера).
+            "new_look": bool(getattr(request.state, "new_look",
+                                     settings.admin_new_look_enabled)),
+            "focus_on": bool(getattr(request.state, "focus_on",
+                                     settings.admin_focus_enabled)),
+            "chat_redesign": bool(getattr(request.state, "chat_redesign",
+                                          settings.admin_chat_redesign_enabled))}
 
 
 # Лямбда, а не ссылка: `_chrome` и его зависимости объявлены ниже в файле, а
@@ -67,6 +121,13 @@ DIRECTION_KEYS = {key for key, _ in DIRECTIONS}
 DEFAULT_DIRECTION = "visa"
 # Короткие ярлыки воронок для бейджа в инбоксе/поиске (где смешаны все воронки).
 FUNNEL_LABELS = {"visa": "Визы", "tours": "Туры", "tickets": "Билеты"}
+# Человеческие названия этапов для строки контекста в шапке чата. Менеджер должен
+# понимать, где клиент, не открывая меню: «Визы · квалификация» читается, а
+# «visa · qualification» — нет.
+STAGE_LABELS = {"greeting": "первый контакт", "qualification": "квалификация",
+                "progress": "подбор", "office": "визит в офис",
+                "manager": "у менеджера", "follow_up": "дожим",
+                "new": "новый", "done": "завершён"}
 FAQ_TABS = FUNNELS + [("common", "Общие")]
 
 # Колонки канбана и маппинг внутренних стадий диалога в колонку.
@@ -962,6 +1023,37 @@ FEATURE_FLAGS = {
         "note": lambda: ("" if settings.public_base_url
                          else "не задан PUBLIC_BASE_URL — карточки уйдут без ссылки на подборку"),
     },
+    "admin_focus_enabled": {
+        "title": "Экран «Фокус» — кому ответить сейчас",
+        "desc": ("Один экран вместо трёх. Сейчас на вопрос «с кем работать прямо сейчас» "
+                 "отвечают доска, «Покупатели сегодня» и «Горячий лист» — менеджер сам "
+                 "решает, какому верить. «Фокус» показывает следующего клиента крупно: что "
+                 "спросил, сколько ждёт, бриф от ИИ и поле ответа. Рекламный мусор в начало "
+                 "очереди не ставится. Действия те же, что на доске."),
+        "default": lambda: settings.admin_focus_enabled,
+        "note": lambda: "",
+    },
+    "admin_new_look_enabled": {
+        "title": "Новый вид панели",
+        "desc": ("Новый визуальный язык: бирюзовая палитра вместо синей, шрифт Onest, "
+                 "спокойная шапка и полноценная тёмная тема с кнопкой переключения — "
+                 "панель открывают и ночью. Разметка, кнопки и действия те же самые: "
+                 "выключили тумблер — вернулся прежний вид, без выкатки."),
+        "default": lambda: settings.admin_new_look_enabled,
+        "note": lambda: "меняется только внешний вид, функционал не трогается",
+    },
+    "admin_chat_redesign_enabled": {
+        "title": "Новый вид переписки",
+        "desc": ("Экран диалога «Пальма»: читаемые пузыри вместо прежних — в тёмной теме "
+                 "старые давали контраст 1.52:1 при норме 4.5, то есть переписку бота и "
+                 "менеджера было физически не прочитать. Шапка в одну строку с контекстом "
+                 "«продукт · этап · сколько ждёт клиент · кто ведёт», телефон и остальное — "
+                 "в меню, быстрые ответы лентой вместо семи кнопок столбиком, досье "
+                 "свёрнуто под перепиской. Действия и эндпоинты те же: выключили тумблер — "
+                 "вернулся прежний экран, без выкатки."),
+        "default": lambda: settings.admin_chat_redesign_enabled,
+        "note": lambda: "меняется только вид переписки, отправка и перехват не трогаются",
+    },
     "admin_inbox_limit_enabled": {
         "title": "Инбокс страницей, а не всей базой",
         "desc": ("Сейчас список «Ждут ответа» отдаётся целиком — на проде это 1.95 МБ и 1012 "
@@ -1465,6 +1557,87 @@ async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query:
                                        "page_size": page_size})
 
 
+FOCUS_QUEUE_LIMIT = 8      # один в фокусе + семь в очереди: больше за раз не удержать
+FOCUS_HISTORY_LIMIT = 10   # хвост переписки рядом с лидом: последний разговор, не весь диалог
+
+
+def _as_utc_iso(dt: datetime | None) -> str:
+    """ISO-строка со смещением. Naive-время (SQLite в тестах) считаем UTC: без пояса
+    браузер примет его за местное, и живой таймер уедет на часовой пояс Бишкека."""
+    if dt is None:
+        return ""
+    return (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).isoformat()
+
+
+def _focus_sorted(models: list[dict]) -> list[dict]:
+    """Очередь «кому ответить сейчас»: дольше ждёт — выше, но мусор не возглавляет.
+
+    Простая сортировка по времени ожидания ставит первым рекламный лид со ссылкой из
+    инстаграма: он «ждёт» десять часов, потому что ему никто и не собирался отвечать.
+    Менеджер открывает экран и первым делом видит «Можно узнать об этом подробнее?».
+    Поэтому шум уходит в конец, а внутри каждой группы порядок прежний — по ожиданию.
+    """
+    waiting = [m for m in models if m["wait_level"] != "none"]
+    # «Спасибо, подумаем и напишем» — это не вопрос, а прощание: такой клиент ждёт дольше
+    # всех именно потому, что отвечать ему нечего. Пропускаем его вперёд только когда
+    # живых вопросов не осталось. Замер на демо-данных: иначе первым в фокусе оказывался
+    # именно он, а человек с вопросом про визу стоял четвёртым.
+    waiting.sort(key=lambda m: (m["is_noise"], m["is_silent"], -m["sort_key"]))
+    return waiting
+
+
+@router.get("/focus", response_class=HTMLResponse)
+async def focus(request: Request, lead: str = "", manager: dict = Depends(require_admin)):
+    """Экран «Фокус»: следующий клиент крупно, очередь за ним, ответ не открывая чат.
+
+    Зачем отдельный экран. На вопрос «с кем работать сейчас» сегодня отвечают доска,
+    «Покупатели сегодня» и «Горячий лист» — три места с тремя разными порядками. Здесь
+    ответ один, и он тот же, что у инбокса: `_visible_models` + ожидание клиента.
+
+    Действий своих не завозим: отправка, перехват и архив — существующие эндпоинты
+    карточки. Новый путь к сообщению клиенту означал бы второй набор проверок доступа.
+    """
+    if not bool(getattr(request.state, "focus_on", settings.admin_focus_enabled)):
+        raise HTTPException(status_code=404, detail="not found")
+    models = await _visible_models(request, manager)
+    ranked = _focus_sorted(models)
+    # `lead` — «Позже» и клик по очереди: менеджер выбирает, с кем говорить сейчас.
+    # Ищем ТОЛЬКО среди видимых ему: чужой или устаревший id молча падает в начало
+    # очереди, а не показывает лид за границей скоупа.
+    picked = next((i for i, m in enumerate(ranked) if m["user_id"] == lead), 0) if lead else 0
+    # Ротация сохраняет следующего по ранжиру: иначе «Позже» зацикливается на первых двух.
+    rotated = ranked[picked:] + ranked[:picked]
+    queue = rotated[:FOCUS_QUEUE_LIMIT]
+    store = get_conversation_store()
+    current = queue[0] if queue else None
+    brief, history = {}, []
+    if current is not None:
+        conv = await store.get(current["user_id"])
+        if conv is not None:
+            # Хвост переписки: отвечая, менеджер должен видеть, о чём уже говорили. Весь
+            # диалог тащить незачем — он бывает на сотни реплик, а на экран всё равно
+            # помещается последний разговор.
+            history = [{"sender": m.sender, "text": m.text, "at": _as_utc_iso(m.created_at)}
+                       for m in conv.messages[-FOCUS_HISTORY_LIMIT:] if m.text]
+            brief = {"ai_summary": conv.ai_summary or "",
+                     "manager_next_step": conv.manager_next_step or "",
+                     # Точка отсчёта для живого таймера на клиенте: сервер отдаёт момент,
+                     # браузер сам тикает — иначе время «застывает» между обновлениями.
+                     # Обязательно с часовым поясом: naive-строку браузер разберёт как
+                     # местное время, и в Бишкеке таймер соврёт на шесть часов.
+                     "wait_since": _as_utc_iso(conv.last_message_at)}
+
+    return templates.TemplateResponse(request, "focus.html",
+                                      {"current": current, "brief": brief,
+                                       "queue": queue[1:], "history": history,
+                                       # Числа считаем на сервере: до первого ответа `/stats`
+                                       # экран показывал «0 ваш ход» при восьми ждущих и
+                                       # выглядел сломанным.
+                                       "pulse": {"needs_reply": sum(1 for m in models if m["needs_reply"]),
+                                                 "waiting": len(ranked),
+                                                 "total": len(models)}})
+
+
 @router.get("/inbox", response_class=HTMLResponse)
 async def inbox(request: Request, all: str = "", _: dict = Depends(require_admin)):
     """Единый инбокс: ждущие ответа диалоги по всем воронкам.
@@ -1531,6 +1704,15 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
         "reassign_targets": reassign_targets,
         "outcomes": OUTCOMES,
         "quick_replies": quick_replies_for(conv.funnel),
+        "funnel_label": FUNNEL_LABELS.get(conv.funnel or "", conv.funnel or "—"),
+        # Неизвестный этап лучше не показывать вовсе, чем показывать сырой
+        # английский ключ: «silent» в шапке менеджеру ничего не говорит.
+        "stage_label": STAGE_LABELS.get(conv.stage or "", ""),
+        # Время ожидания считает браузер: сервер отдаёт момент, а не число минут.
+        # Иначе между обновлениями раз в 4 секунды «ждёт 1 ч» застывает и врёт.
+        # Обязательно со смещением: naive-строку браузер примет за местное время,
+        # и в Бишкеке (UTC+6) таймер уедет на шесть часов.
+        "wait_since": _as_utc_iso(conv.last_message_at) if conv.last_sender == "client" else "",
         "tasks": tasks,
         "active_tasks": active_tasks,
         "task_kinds": TASK_KIND_LABELS,
@@ -1710,11 +1892,15 @@ async def takeover(user_id: str, request: Request, manager: dict = Depends(requi
     conv = await _require_visible_conversation(user_id, manager)
     allowed, deny_notice = await _ownership_guard(conv, manager, "claim")
     if not allowed:
-        return await _render_conversation(user_id, request, manager, notice=deny_notice)
+        resp = await _render_conversation(user_id, request, manager, notice=deny_notice)
+        resp.headers["X-Action-Outcome"] = "denied"
+        return resp
     await _set_intercept(user_id, True)
     await get_conversation_store().update_meta(user_id, assigned_to=manager["login"])
     await get_conversation_store().add_audit(manager["login"], "takeover", user_id)
-    return await _render_conversation(user_id, request, manager)
+    resp = await _render_conversation(user_id, request, manager)
+    resp.headers["X-Action-Outcome"] = "claimed"
+    return resp
 
 
 @router.post("/conversation/{user_id}/release", response_class=HTMLResponse)
@@ -1776,10 +1962,13 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
     conv = await panel.get(user_id)
     if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
+    outcome = "empty"
     if text:
         allowed, deny_notice = await _ownership_guard(conv, manager, "send")
         if not allowed:
-            return await _render_conversation(user_id, request, manager, notice=deny_notice)
+            resp = await _render_conversation(user_id, request, manager, notice=deny_notice)
+            resp.headers["X-Action-Outcome"] = "denied"
+            return resp
         await _set_intercept(user_id, True)  # отвечает человек → бот молчит
         await panel.update_meta(user_id, assigned_to=manager["login"])
         msg_id = await panel.add_message(user_id, "manager", text, status="pending")
@@ -1789,11 +1978,16 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
             mark_own(provider)
             await panel.mark_message_status(message_id=msg_id, status="sent",
                                             set_provider_msg_id=(provider or None))
+            outcome = "sent"
         except Exception:  # noqa: BLE001 — не теряем сообщение в логе при сбое канала
             await panel.mark_message_status(message_id=msg_id, status="failed")
+            outcome = "failed"
             log.warning("manager send failed (channel=%s)", conv.channel, exc_info=True)
         await panel.add_audit(manager["login"], "send", user_id, text[:120])
-    return await _render_conversation(user_id, request, manager)
+    # HTTP 200 нужен обычной карточке даже при отказе; «Фокус» сверяет именно исход действия.
+    resp = await _render_conversation(user_id, request, manager)
+    resp.headers["X-Action-Outcome"] = outcome
+    return resp
 
 
 @router.post("/conversation/{user_id}/resend/{message_id}", response_class=HTMLResponse)

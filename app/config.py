@@ -351,6 +351,22 @@ class Settings(BaseSettings):
     # отдавал 1.95 МБ HTML и 1012 карточек одним ответом, и этот же список перезагружает себя
     # каждые 10 секунд — порядка 12 МБ в минуту на телефон менеджера. Дефолт OFF: список
     # диалогов — рабочая реальность менеджеров, откат должен быть тумблером.
+    # Новый визуальный язык панели (требование Алана 02.10.2026: «всё менять, но чтобы
+    # функционал тот же»). Дефолт OFF — вид это рабочая реальность менеджеров, и откат
+    # обязан быть тумблером, а не выкаткой. ON → бирюзовая палитра, Onest вместо Fira,
+    # полноценная тёмная тема. Разметка и классы в обоих режимах одни и те же.
+    admin_new_look_enabled: bool = False
+    # Чат включается отдельно от оболочки панели, чтобы их можно было откатывать
+    # независимо. ON включает «Пальму»: читаемые пузыри, компактную шапку и досье.
+    admin_chat_redesign_enabled: bool = False
+    # Экран «Фокус»: один следующий клиент вместо трёх экранов, отвечающих на один и тот
+    # же вопрос «с кем работать сейчас» (доска, «Покупатели сегодня», «Горячий лист»).
+    # Дефолт OFF: выключили — маршрута нет, меню прежнее.
+    admin_focus_enabled: bool = False
+    # Secure-флаг на cookie сессии. На проде ОБЯЗАТЕЛЕН (TLS терминирует nginx) и потому
+    # True по умолчанию. Выключается только для локального просмотра панели по http —
+    # иначе браузер не сохранит cookie и войти в панель на localhost нельзя.
+    session_https_only: bool = True
     admin_inbox_limit_enabled: bool = False
     # Сколько карточек на странице. 60 — это около десяти экранов телефона; живых диалогов
     # за неделю на проде 213 из 3757, так что страница покрывает работу целиком.
@@ -534,6 +550,8 @@ class Settings(BaseSettings):
     # Default OFF; can be flipped at runtime via app_flags key `domain_shadow_enabled`.
     # Shadow writes NEVER change bot answers, webhooks, outbound, or the source of truth.
     domain_shadow_enabled: bool = False
+    # Реестр услуг подключается отдельно: создание схемы не включает новый рабочий процесс.
+    service_cases_enabled: bool = False
     # Visa round-robin ELIGIBILITY: explicit roster of visa-team manager logins (each
     # has its own Bitrix account). Temporary AVAILABILITY is a SEPARATE axis, toggled
     # per manager via app_flags key `manager_off:<login>`. The team is defined here —
