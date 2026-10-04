@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<!--
+  Frunze Travel / GetVisa — карточка услуги (UI-03) · интерактивный макет · 05.10.2026 · задача E0-04
+  Один файл, без зависимостей (шрифт IBM Plex Mono — Google Fonts ссылкой, иконки — инлайновый SVG-спрайт).
+  Это макет, не внедрение: ни одного файла приложения он не трогает, бэкенда не знает, данные вымышлены.
+
+  ЗАЧЕМ
+  Экрана «после договора» в панели нет совсем: панель умеет только переписку. ТЗ (UI-03, FLOW-01..05,
+  7.1, 7.4, 8, 10, 11) и техприложение (раздел 4) задают каркас; этот файл — проверка каркаса на трёх
+  случаях, которые ТЗ прямо требует для согласования E0-04: тур, виза США, группа заявителей,
+  плюс пустая карточка, загрузка, ошибка сохранения и отсутствие прав.
+
+  ВИЗУАЛЬНЫЙ ЯЗЫК — направление A «Пальма» из docs/chat-mockup.html, без изменений в токенах:
+  тил #0E5C57, оранжевый акцент #DB7526, серифные заголовки (Iowan Old Style / Palatino), ночная
+  шапка #0C1B1A, радиус 16. Блоки /* tokens:light */ и /* tokens:dark */ ниже — единственный
+  источник цветов; скрипт контраста парсит именно их, так что цифры в отчёте привязаны к коду.
+
+  КАРКАС (ТЗ UI-03 + техприложение §4; порядок не обсуждается)
+  1. Шапка (ночная): имя человека/компании · продукт · ответственный · этап (n из N) · ближайший срок ·
+     следующее действие с причиной. Ряд с именем прилипает; остальное прокручивается.
+  2. «Кто кого ждёт» (FLOW-05): сторона (клиент / менеджер / туроператор / партнёр / ведомство),
+     с какого момента, когда следующая проверка. Подпись «контроль выполнен» — чтобы задержка
+     ведомства не читалась как бездействие менеджера.
+  3. Раздельные состояния (FLOW-04): четыре чипа — Продажа · Оплата · Документы · Исход. Это четыре
+     поля, а не один «статус»: подтверждённая продажа и отказ в визе могут быть правдой одновременно.
+  4. Действия: одна главная кнопка следующего шага (FLOW-03: кнопка, а не перетаскивание; переход
+     запрашивает факты — номер, дату, основание) и вторичная (откат/отклонение с причиной).
+  5. Полоса пути: N равных сегментов (7 у тура, 9 у США и группы) — число, не подпись, поэтому
+     полоса переживает 360 px без горизонтального скролла; подпись текущего этапа под полосой,
+     тап по сегменту показывает его имя. Для группы на сегментах — счётчики заявителей, а подпись
+     называет блокирующий этап (SRC-12), а не «самый отстающий код».
+  6. Для группы — список заявителей с отдельной готовностью каждого (KG-03): «готово 3 из 5»,
+     ближайший срок, причина задержки.
+  7. Вкладки: Путь · Документы · Оплаты · Задачи · Чат. Путь — лента событий (автор, время,
+     основание; откат — отдельное событие, ничего не стирается). Документы — запрошен / получен /
+     на проверке / принят / отклонён с причиной (получен ≠ принят). Оплаты — сумма договора,
+     внесено, возвращено, остаток ИЛИ переплата (отдельно, не обрезается до нуля), валюта;
+     платёж в другой валюте без курса — незачтён. Задачи — срок, ответственный, «почему создано».
+     Чат — хвост диалога и переход в переписку.
+  8. Состояния: пустая (услуга создана, событий нет), загрузка (скелеты), ошибка сохранения
+     (введённое сохранено + «Повторить»), нет прав (просмотр, действия закрыты с причиной).
+
+  ССЫЛКИ НА СОСТОЯНИЯ: ?case=tour|usa|group&state=main|empty|loading|error|noaccess&theme=light|dark&w=360|720
+
+  КОНТРАСТ и ЗАМЕР 360 — см. карточки справа от экрана (числа вставлены после прогона скриптов;
+  как считалось — в заголовке каждой карточки).
+-->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Карточка услуги — макет</title>
+<script>
+  (function(){
+    var p = new URLSearchParams(location.search), t = p.get('theme');
+    if (t !== 'dark' && t !== 'light') { try { t = localStorage.getItem('frunze-card-mock-theme'); } catch(e) {} }
+    if (t !== 'dark' && t !== 'light') t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* tokens:light */
+  :root{
+    --bg:#F4F6F5; --surface:#FFFFFF; --surface-2:#EDF1F0; --line:#DBE3E1;
+    --ink:#13201F; --ink-2:#4B5B58; --ink-3:#5F6F6C;
+    --brand:#0E5C57; --on-brand:#FFFFFF; --brand-soft:#DBEAE8; --brand-ink:#0B4C48;
+    --accent:#DB7526; --accent-ink:#7A3C0D; --accent-soft:#F9E7D5;
+    --hd-bg:#0C1B1A; --hd-ink:#FFFFFF; --hd-sub:#9FB1AE; --hd-chip:#1E3A37; --hd-chip-ink:#E7EEEC; --hd-accent:#F2B98C; --hd-good:#4BBE85;
+    --danger:#B4312B; --danger-soft:#F9E0DE; --on-danger:#FFFFFF;
+    --good:#1C875A; --good-ink:#175E41; --good-soft:#DCF1E6;
+    --night:#0C1B1A; --night-ink:#E7EEEC; --night-soft:#9FB1AE;
+    --skel:#D5DEDC;
+    --radius:16px; --radius-s:10px;
+    --shadow:0 1px 2px rgba(16,40,38,.06),0 12px 34px -20px rgba(16,40,38,.4);
+    --shadow-lift:0 2px 6px rgba(16,40,38,.08),0 18px 40px -18px rgba(16,40,38,.45);
+    --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    --mono:"IBM Plex Mono","SFMono-Regular",ui-monospace,Consolas,monospace;
+  }
+  /* tokens:dark */
+  :root[data-theme="dark"]{
+    --bg:#0B1312; --surface:#111D1B; --surface-2:#172524; --line:#243230;
+    --ink:#E7EEEC; --ink-2:#9FB1AE; --ink-3:#9FB1AE;
+    --brand:#39B7AD; --on-brand:#06211F; --brand-soft:#12302D; --brand-ink:#6FD1C6;
+    --accent:#EE9450; --accent-ink:#F2B98C; --accent-soft:#3A2413;
+    --hd-bg:#050D0C; --hd-ink:#FFFFFF; --hd-sub:#9FB1AE; --hd-chip:#12302D; --hd-chip-ink:#E7EEEC; --hd-accent:#F2B98C; --hd-good:#4BBE85;
+    --danger:#F08A82; --danger-soft:#3B1F1D; --on-danger:#2B0F0D;
+    --good:#4BBE85; --good-ink:#7FD8A8; --good-soft:#12302A;
+    --night:#050D0C; --night-ink:#E7EEEC; --night-soft:#9FB1AE;
+    --skel:#243230;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 38px -22px rgba(0,0,0,.85);
+    --shadow-lift:0 2px 6px rgba(0,0,0,.5),0 18px 44px -20px rgba(0,0,0,.9);
+  }
+  *{box-sizing:border-box}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  html,body{overflow-x:clip}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;font-size:15px}
+  button{font:inherit;color:inherit}
+  :is(button,summary,input,[tabindex]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg.ic{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.15em}
+
+  /* ============================================================ оболочка макета */
+  .top{background:var(--night);color:var(--night-ink);padding:13px 22px;display:flex;align-items:center;gap:14px}
+  .top .logo{font-family:var(--serif);font-weight:600;font-size:18px;color:#fff;white-space:nowrap}
+  .top .logo b{color:var(--accent);font-weight:600}
+  .top .logo .sep{color:var(--night-soft);font-family:var(--sans);font-size:14px;font-weight:400;margin:0 4px}
+  .top .env{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--night-soft);border:1px solid rgba(159,177,174,.35);border-radius:20px;padding:3.5px 11px;white-space:nowrap}
+  .top .spacer{flex:1}
+  .mode{appearance:none;border:1px solid rgba(159,177,174,.35);background:transparent;color:var(--night-soft);width:34px;height:34px;border-radius:50%;cursor:pointer;display:grid;place-items:center;flex:none}
+  .mode:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+  .mode svg{width:17px;height:17px}
+  .mode .moon{display:none}
+  :root[data-theme="dark"] .mode .moon{display:block}
+  :root[data-theme="dark"] .mode .sun{display:none}
+  @media(max-width:640px){.top{padding:11px 16px;gap:10px}.top .env,.top .logo .sep,.top .logo .sub{display:none}}
+
+  .canvas{max-width:1180px;margin:0 auto;padding:26px 16px 60px}
+  h1.vt{font-family:var(--serif);font-weight:600;font-size:clamp(22px,3vw,28px);line-height:1.15;margin:0 0 6px;text-wrap:balance}
+  .caption{color:var(--ink-2);font-size:13.5px;margin:0 0 18px;max-width:78ch;position:relative;padding-left:20px}
+  .caption::before{content:"";position:absolute;left:0;top:7px;width:10px;height:10px;border-radius:50%;background:var(--brand)}
+  .caption b{color:var(--ink)}
+  .ctl{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:0 0 18px}
+  .ctl .grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .ctl .lbl{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+  .seg{display:flex;flex-wrap:wrap;gap:4px}
+  .seg button{appearance:none;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+  .seg button:hover{color:var(--brand);border-color:var(--brand)}
+  .seg button.on{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+
+  .stage{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:26px;align-items:start}
+  @media(max-width:860px){.stage{grid-template-columns:1fr}}
+  .frame{width:360px;max-width:100%;transition:width .25s}
+  .frame.wide{width:720px}
+  .frame-note{font-size:11.5px;color:var(--ink-3);margin-top:10px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 10px;font-family:var(--mono)}
+  @media(max-width:420px){
+    .stage{margin:0 -16px}
+    .side,.frame-note{padding:0 16px}
+    .screen{border-radius:0;border-left:none;border-right:none}
+  }
+  .side{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow)}
+  .card.top-b{border-top:4px solid var(--brand)}.card.top-a{border-top:4px solid var(--accent)}
+  .card .lbl{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--brand-ink);margin:0 0 9px;display:flex;gap:9px;align-items:center}
+  .card.top-a .lbl{color:var(--accent-ink)}
+  .card .lbl::before{content:"";width:18px;height:2px;background:currentColor;border-radius:2px}
+  .card h3{font-family:var(--serif);font-weight:600;font-size:20px;margin:0 0 6px;letter-spacing:-.01em}
+  .card p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.55}
+  .card p + p{margin-top:8px}
+  .card p b,.card li b{color:var(--ink)}
+  .card ul,.card ol{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2);line-height:1.55}
+  .card li + li{margin-top:4px}
+  table.cr{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:4px}
+  table.cr th,table.cr td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--mono);white-space:nowrap}
+  table.cr th{font-family:var(--sans);font-weight:700;color:var(--ink-2);font-size:11.5px}
+  table.cr td:first-child,table.cr th:first-child{text-align:left;font-family:var(--sans);white-space:normal}
+  .cr-wrap{overflow-x:auto}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);opacity:0;transition:.25s;background:var(--night);color:var(--night-ink);padding:11px 18px;border-radius:12px;font-size:13.5px;pointer-events:none;z-index:50;box-shadow:var(--shadow-lift);max-width:min(90vw,480px);text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%)}
+  .foot{max-width:1180px;margin:0 auto;padding:0 16px 50px;color:var(--ink-3);font-size:12.5px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+  /* ============================================================ ЭКРАН КАРТОЧКИ */
+  .screen{display:flex;flex-direction:column;height:var(--screen-h,680px);background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.4;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow-lift);position:relative;isolation:isolate}
+  .scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
+
+  /* --- шапка: ночная; ряд с именем прилипает --- */
+  .hd{background:var(--hd-bg);color:var(--hd-ink)}
+  .hd-top{position:sticky;top:0;z-index:4;background:var(--hd-bg);display:grid;grid-template-columns:36px minmax(0,1fr) 36px;column-gap:8px;align-items:center;padding:6px 8px 4px 6px}
+  .hd .ib{appearance:none;border:none;background:transparent;color:inherit;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:20px;flex:none}
+  .hd .ib:hover{background:rgba(127,127,127,.2)}
+  .hd .nm{font-family:var(--serif);font-weight:600;font-size:17px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hd .sub{font-size:12px;line-height:1.25;color:var(--hd-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hd .sub b{color:var(--hd-ink);font-weight:600}
+  .hd-body{padding:6px 14px 12px}
+  .hd .who{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--hd-sub);margin-bottom:8px}
+  .hd .who b{color:var(--hd-ink);font-weight:600}
+  .hd .who span{display:inline-flex;align-items:center;gap:5px}
+  .facts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .frame.wide .facts{grid-template-columns:1fr 1fr 1.4fr}
+  .fact{background:var(--hd-chip);border-radius:10px;padding:7px 10px;min-width:0}
+  .fact .k{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--hd-sub);display:flex;align-items:center;gap:5px;margin-bottom:2px}
+  .fact .v{font-size:13.5px;font-weight:600;line-height:1.25;color:var(--hd-chip-ink)}
+  .fact .v .n{font-family:var(--mono);color:var(--hd-accent);font-weight:600;margin-right:4px}
+  .fact .s{font-size:11.5px;color:var(--hd-sub);line-height:1.3;margin-top:1px}
+  .fact.due .v{color:var(--hd-accent)}
+  .fact.next{grid-column:1 / -1;border-left:3px solid var(--accent)}
+  .frame.wide .fact.next{grid-column:auto}
+  .fact.next .v{font-size:14px}
+  .fact.none .v{color:var(--hd-sub);font-weight:500}
+  /* кто кого ждёт */
+  .wait{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+  .wait .w{display:grid;grid-template-columns:18px minmax(0,1fr);gap:7px;align-items:start;font-size:12.5px;line-height:1.3;color:var(--hd-sub)}
+  .wait .w svg{font-size:16px;color:var(--hd-accent);margin-top:1px}
+  .wait .w b{color:var(--hd-ink);font-weight:600}
+  .wait .w .ok{color:var(--hd-good);font-weight:600}
+  .wait .w .late{color:var(--hd-accent);font-weight:600}
+  /* раздельные состояния */
+  .states{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  .st{display:inline-flex;align-items:center;gap:5px;background:var(--hd-chip);color:var(--hd-chip-ink);border-radius:20px;padding:2px 9px 2px 7px;font-size:11.5px;line-height:1.4;white-space:nowrap;max-width:100%}
+  .st .k{color:var(--hd-sub);font-weight:600}
+  .st .d{width:7px;height:7px;border-radius:50%;background:var(--hd-sub);flex:none}
+  .st[data-tone="good"] .d{background:var(--hd-good)}
+  .st[data-tone="warn"] .d{background:var(--accent)}
+  .st[data-tone="bad"] .d{background:var(--danger)}
+  .st[data-tone="none"] .d{background:transparent;border:1.5px solid var(--hd-sub)}
+
+  /* --- действия --- */
+  .act{display:flex;gap:8px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--brand-ink);border-radius:var(--radius-s);padding:8px 12px;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;white-space:nowrap}
+  .btn.p{background:var(--brand);color:var(--on-brand);border-color:var(--brand);flex:1 1 auto;min-width:0}
+  .btn.p span{overflow:hidden;text-overflow:ellipsis}
+  .btn.s{color:var(--ink-2)}
+  .btn.danger{background:var(--danger);color:var(--on-danger);border-color:var(--danger)}
+  .btn.sm{min-height:30px;padding:4px 10px;font-size:12.5px;border-radius:8px}
+  .btn[disabled]{opacity:.55;cursor:not-allowed}
+  .btn:not([disabled]):hover{filter:brightness(1.06)}
+
+  /* --- баннеры (нет прав / ошибка) --- */
+  .ban{display:grid;grid-template-columns:20px minmax(0,1fr);gap:9px;padding:9px 14px;font-size:12.5px;line-height:1.35;border-bottom:1px solid var(--line)}
+  .ban svg{font-size:18px;margin-top:1px}
+  .ban.lock{background:var(--accent-soft);color:var(--accent-ink)}
+  .ban.lock b{color:inherit}
+  .ban.err{background:var(--danger-soft);color:var(--danger)}
+  .ban .bb{display:flex;gap:8px;margin-top:7px;flex-wrap:wrap}
+
+  /* --- полоса пути --- */
+  .path{background:var(--surface);padding:10px 14px 9px;border-bottom:1px solid var(--line)}
+  .path .bars{display:flex;gap:4px}
+  .path .bar{flex:1 1 0;min-width:0;appearance:none;border:none;background:transparent;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:stretch;gap:3px;position:relative}
+  .path .bar i{display:block;height:6px;border-radius:3px;background:var(--line)}
+  .path .bar.done i{background:var(--brand)}
+  .path .bar.cur i{background:var(--accent)}
+  .path .bar .n{font-family:var(--mono);font-size:10.5px;line-height:1;color:var(--ink-3);text-align:center}
+  .path .bar.cur .n{color:var(--accent-ink);font-weight:600}
+  .path .bar.done .n{color:var(--brand-ink)}
+  .path .bar .c{position:absolute;top:-9px;right:0;min-width:15px;height:15px;border-radius:8px;background:var(--brand-soft);color:var(--brand-ink);font-family:var(--mono);font-size:9.5px;font-weight:600;line-height:15px;text-align:center;padding:0 4px;border:1px solid var(--surface)}
+  .path .bar.cur .c{background:var(--accent-soft);color:var(--accent-ink)}
+  .path.counts .bars{padding-top:10px}
+  .path .bar .lb{display:none;font-size:10.5px;line-height:1.2;color:var(--ink-3);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .frame.wide .path .bar .lb{display:block}
+  .frame.wide .path .bar.cur .lb{color:var(--accent-ink);font-weight:600}
+  .path .cap{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:12.5px;color:var(--ink-2);min-width:0}
+  .path .cap b{color:var(--ink);font-weight:600}
+  .path .cap .l{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .path .cap .r{flex:none;color:var(--ink-3);white-space:nowrap}
+  .path .cap .r.block{color:var(--accent-ink);font-weight:600}
+  .frame.wide .path .cap{display:none}
+
+  /* --- заявители (группа) --- */
+  .apps{background:var(--surface);border-bottom:1px solid var(--line)}
+  .apps summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;font-weight:600;color:var(--ink)}
+  .apps summary::-webkit-details-marker{display:none}
+  .apps summary .chev{margin-left:auto;transition:transform .2s;color:var(--ink-3)}
+  .apps[open] summary .chev{transform:rotate(180deg)}
+  .apps summary .sub{font-weight:500;color:var(--ink-2)}
+  .apps .ap{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:6px 8px;align-items:center;padding:5px 14px;border-top:1px solid var(--line);font-size:12.5px}
+  .apps .more{border-top:1px solid var(--line)}
+  .apps .more summary{padding:6px 14px;font-size:12px;color:var(--brand-ink)}
+  .apps .more .ap{padding:3px 14px 3px 48px;border-top:none;grid-template-columns:minmax(0,1fr) auto}
+  .apps .more .ap .av{display:none}
+  .apps .ap .av{width:26px;height:26px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;font-weight:700;font-size:11.5px;font-family:var(--serif)}
+  .apps .ap .nm{font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .apps .ap .nm small{font-weight:400;color:var(--ink-3);font-size:11px;margin-left:4px}
+  .apps .ap .ds{font-size:11.5px;color:var(--ink-2);line-height:1.3}
+  .apps .ap .ds .bad{color:var(--danger);font-weight:600}
+  .apps .ap .ds .late{color:var(--accent-ink);font-weight:600}
+  .pill{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:600;white-space:nowrap;line-height:1.5}
+  .pill.good{background:var(--good-soft);color:var(--good-ink)}
+  .pill.warn{background:var(--accent-soft);color:var(--accent-ink)}
+  .pill.bad{background:var(--danger-soft);color:var(--danger)}
+  .pill.info{background:var(--brand-soft);color:var(--brand-ink)}
+  .pill.none{background:var(--surface-2);color:var(--ink-3)}
+
+  /* --- вкладки --- */
+  .tabs{position:sticky;top:46px;z-index:3;display:flex;background:var(--surface);border-bottom:1px solid var(--line)}
+  .tabs button{appearance:none;border:none;background:transparent;flex:1 1 0;min-width:0;padding:6px 2px 5px;font-size:10.5px;font-weight:600;color:var(--ink-2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2}
+  .tabs button .iw{position:relative;display:inline-grid;place-items:center;width:22px;height:20px}
+  .tabs button .iw svg{font-size:18px}
+  .tabs button .b{position:absolute;top:-5px;left:14px;min-width:15px;padding:0 3px;border-radius:8px;background:var(--surface-2);color:var(--ink-2);font-family:var(--mono);font-size:9.5px;line-height:15px;font-weight:600;border:1px solid var(--surface)}
+  .frame.wide .tabs button{flex-direction:row;gap:6px;font-size:12.5px;padding:9px 2px 8px}
+  .frame.wide .tabs button .iw{width:auto;height:auto}
+  .frame.wide .tabs button .b{position:static;margin-left:2px;font-size:10px;line-height:16px;border:none}
+  .tabs button.on{color:var(--brand-ink);border-bottom-color:var(--brand)}
+  .tabs button.on .b{background:var(--brand-soft);color:var(--brand-ink)}
+  .panel{padding:12px 14px 20px;display:flex;flex-direction:column;gap:10px}
+  .panel h4{margin:4px 0 0;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+
+  /* --- общая карточка-строка --- */
+  .row{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:13px;line-height:1.35}
+  .row .t{font-weight:600;color:var(--ink);display:flex;align-items:flex-start;gap:7px}
+  .row .t svg{font-size:16px;margin-top:2px;color:var(--ink-3);flex:none}
+  .row .m{color:var(--ink-2);font-size:12px;margin-top:3px}
+  .row .m b{color:var(--ink);font-weight:600}
+  .row .why{margin-top:5px;padding-top:5px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink-3);line-height:1.35}
+  .row .why b{color:var(--ink-2);font-weight:600}
+  .row .rb{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+  .row.hi{border-left:3px solid var(--accent)}
+  .row.bad{border-left:3px solid var(--danger)}
+  .row.muted{opacity:.75}
+
+  /* --- лента событий --- */
+  .ev{display:grid;grid-template-columns:58px minmax(0,1fr);gap:0 10px;position:relative;padding:0 0 12px}
+  .ev::before{content:"";position:absolute;left:66px;top:18px;bottom:-2px;width:2px;background:var(--line)}
+  .ev:last-child::before{display:none}
+  .ev .tm{font-family:var(--mono);font-size:11px;line-height:1.3;color:var(--ink-3);padding-top:2px;text-align:right}
+  .ev .tm b{display:block;color:var(--ink-2);font-weight:600}
+  .ev .dot{position:absolute;left:61px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--brand);z-index:1}
+  .ev[data-kind="sys"] .dot{border-color:var(--ink-3)}
+  .ev[data-kind="bot"] .dot{border-color:var(--brand);background:var(--brand-soft)}
+  .ev[data-kind="client"] .dot{border-color:var(--accent)}
+  .ev[data-kind="warn"] .dot{border-color:var(--danger);background:var(--danger-soft)}
+  .ev .bd{padding-left:12px;min-width:0}
+  .ev .au{font-size:11.5px;color:var(--ink-3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .ev .au b{color:var(--ink-2);font-weight:600}
+  .ev .ti{font-size:13px;font-weight:600;color:var(--ink);line-height:1.3;margin-top:1px}
+  .ev .ds{font-size:12px;color:var(--ink-2);margin-top:2px;line-height:1.35}
+  .ev .bs{font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.3}
+  .ev .bs b{font-weight:600;color:var(--ink-3)}
+
+  /* --- документы --- */
+  .doc{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 11px;font-size:13px}
+  .doc svg{font-size:17px;color:var(--ink-3);margin-top:2px}
+  .doc .nm{font-weight:600;color:var(--ink);line-height:1.3}
+  .doc .nm small{font-weight:400;color:var(--ink-3);font-size:11px}
+  .doc .ms{font-size:11.5px;color:var(--ink-2);margin-top:2px;line-height:1.35}
+  .doc .ms .r{color:var(--danger);font-weight:600}
+  .doc .pill{margin-top:1px}
+
+  /* --- оплаты --- */
+  .money{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 11px;min-width:0}
+  .mt .k{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+  .mt .v{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--ink);line-height:1.2;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mt .v small{font-size:11px;font-weight:500;color:var(--ink-2);font-family:var(--sans);margin-left:3px}
+  .mt .s{font-size:11px;color:var(--ink-3);margin-top:2px;line-height:1.3}
+  .mt.over{border-color:var(--accent);background:var(--accent-soft)}
+  .mt.over .k,.mt.over .s{color:var(--accent-ink)}
+  .mt.over .v{color:var(--accent-ink)}
+  .mt.unk .v{font-family:var(--sans);font-size:13px;color:var(--ink-2);white-space:normal}
+  .op{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 11px;font-size:12.5px}
+  .op .a{font-family:var(--mono);font-weight:600;font-size:13.5px;color:var(--ink);white-space:nowrap;text-align:right}
+  .op .t{font-weight:600;color:var(--ink)}
+  .op .m{grid-column:1 / -1;font-size:11.5px;color:var(--ink-2);line-height:1.35}
+  .op .m b{color:var(--ink);font-weight:600}
+  .op.unc{border-left:3px solid var(--accent)}
+  .op.unc .a{color:var(--accent-ink)}
+  .op .rb{grid-column:1 / -1;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+
+  /* --- задачи --- */
+  .task{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 11px;font-size:13px}
+  .task .cb{width:18px;height:18px;border-radius:5px;border:2px solid var(--ink-3);margin-top:1px}
+  .task.done .cb{background:var(--good);border-color:var(--good)}
+  .task.blocked .cb{border-style:dashed}
+  .task .t{font-weight:600;color:var(--ink);line-height:1.3}
+  .task .m{font-size:11.5px;color:var(--ink-2);margin-top:2px;display:flex;flex-wrap:wrap;gap:2px 10px}
+  .task .m .due{font-family:var(--mono);font-weight:600;color:var(--ink)}
+  .task .m .due.today{color:var(--accent-ink)}
+  .task .m .due.over{color:var(--danger)}
+  .task .why{margin-top:5px;padding-top:5px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink-3);line-height:1.35}
+  .task .why b{color:var(--ink-2);font-weight:600}
+  .task .rb{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+  .task.hi{border-left:3px solid var(--accent)}
+
+  /* --- чат-хвост --- */
+  .chat{background:#ECE5DD;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
+  :root[data-theme="dark"] .chat{background:#0B141A}
+  .bub{max-width:88%;border-radius:10px;padding:6px 9px;font-size:13px;line-height:1.35;background:#FFFFFF;color:#111B21;align-self:flex-start;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+  .bub .w{font-size:10.5px;font-weight:700;color:#0E5C57;display:block;margin-bottom:1px}
+  .bub .tm{display:block;font-size:10.5px;color:#5B6A73;text-align:right;margin-top:2px;font-family:var(--mono)}
+  .bub.m{background:#DCF8C6;align-self:flex-end}
+  .bub.m .w{color:#2F6B2A}.bub.m .tm{color:#4A5D52}
+  .bub.b{background:#DBEAE8;align-self:flex-end}
+  .bub.b .tm{color:#3E5451}
+  :root[data-theme="dark"] .bub{background:#202C33;color:#E9EDEF}
+  :root[data-theme="dark"] .bub .w{color:#6FD1C6}
+  :root[data-theme="dark"] .bub .tm{color:#A7B4BC}
+  :root[data-theme="dark"] .bub.m{background:#005C4B}
+  :root[data-theme="dark"] .bub.m .w{color:#B9DCD3}
+  :root[data-theme="dark"] .bub.m .tm{color:#B9DCD3}
+  :root[data-theme="dark"] .bub.b{background:#12302D}
+  :root[data-theme="dark"] .bub.b .tm{color:#9FC2BD}
+  .lead{font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+  .lead .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+
+  /* --- пустые состояния / скелеты --- */
+  .empty{text-align:center;padding:18px 10px 8px;color:var(--ink-2);font-size:13px;line-height:1.45}
+  .empty svg{font-size:30px;color:var(--ink-3);display:block;margin:0 auto 6px}
+  .empty b{display:block;font-family:var(--serif);font-size:16px;color:var(--ink);margin-bottom:3px}
+  .empty .btn{margin-top:10px}
+  .sk{display:block;height:10px;border-radius:5px;background:var(--skel)}
+  .hd .sk{background:#2A3F3C}
+
+  /* --- лист перехода (FLOW-03) --- */
+  .scrim{position:absolute;inset:0;background:rgba(5,13,12,.45);z-index:8;display:none}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:9;background:var(--surface);border-radius:16px 16px 0 0;box-shadow:var(--shadow-lift);padding:12px 14px 14px;display:none;max-height:92%;overflow:auto}
+  .screen[data-sheet="open"] .scrim,.screen[data-sheet="open"] .sheet{display:block}
+  .sheet h5{margin:0 0 2px;font-family:var(--serif);font-size:17px;font-weight:600}
+  .sheet .hint{font-size:12px;color:var(--ink-2);margin:0 0 10px;line-height:1.35}
+  .fld{display:block;margin-bottom:9px}
+  .fld span{display:block;font-size:11.5px;font-weight:600;color:var(--ink-2);margin-bottom:3px}
+  .fld input{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:9px;padding:8px 10px;font:inherit;font-size:14px;min-height:38px}
+  .fld input:focus{border-color:var(--brand)}
+  .fld .req{color:var(--danger)}
+  .sheet .bb{display:flex;gap:8px;margin-top:4px}
+  .sheet .ban{border-radius:10px;border:none;margin:0 0 10px;padding:9px 11px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-hour" viewBox="0 0 24 24"><path d="M7 3h10M7 21h10M8 3c0 5 4 6 4 9s-4 4-4 9M16 3c0 5-4 6-4 9s4 4 4 9"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5M16 4.5a3.5 3.5 0 010 7M18 14.5c2.2.6 3.5 2.3 3.5 5"/></symbol>
+  <symbol id="i-build" viewBox="0 0 24 24"><path d="M4 21V5l8-2v18M12 9l8 2v10M4 21h16M8 8h1M8 12h1M8 16h1M15 14h1M15 18h1"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5L2.5 20h19L12 3.5zM12 10v4.5M12 17.5v.5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 01-14 5.3M4 12a8 8 0 0114-5.3M18 3v4h-4M6 21v-4h4"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M10.5 13.5L3 11l1.5-1.5 6.5 1 5-5.5a2 2 0 013 3l-5.5 5 1 6.5L13 21l-2.5-7.5z"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h13l-3 4.5 3 4.5H5"/></symbol>
+  <symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h9a7 7 0 010 14H8"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3.5 13h5l1.5 2.5h4L15.5 13h5M3.5 13V6.5a2 2 0 012-2h13a2 2 0 012 2V13M3.5 13v4.5a2 2 0 002 2h13a2 2 0 002-2V13"/></symbol>
+  <symbol id="i-gov" viewBox="0 0 24 24"><path d="M3 9.5l9-5.5 9 5.5M5 9.5v9M9.5 9.5v9M14.5 9.5v9M19 9.5v9M3 20.5h18"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 013 0V11M11 11V4a1.5 1.5 0 013 0v7M14 11V5.5a1.5 1.5 0 013 0V13M17 13V9a1.5 1.5 0 013 0v6a6 6 0 01-6 6h-2a6 6 0 01-5.2-3L4 13.5a1.6 1.6 0 012.6-1.9L8 13"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/></symbol>
+</defs></svg>
+
+<header class="top">
+  <div class="logo">Frunze <b>Travel</b><span class="sep">/</span><span class="sub">карточка услуги</span></div>
+  <span class="env">макет · E0-04</span>
+  <span class="spacer"></span>
+  <button class="mode" id="modeBtn" type="button" aria-label="Переключить тему"><svg class="ic sun"><use href="#i-sun"/></svg><svg class="ic moon"><use href="#i-moon"/></svg></button>
+</header>
+
+<main class="canvas">
+  <h1 class="vt">Карточка услуги: экран менеджера после договора</h1>
+  <p class="caption"><b>Три случая, которые ТЗ требует для согласования E0-04</b>: тур в ожидании брони, виза США с просроченным опросником, семья из пяти заявителей с одной доработкой. Четыре обязательных состояния: пустая карточка, загрузка, ошибка сохранения, нет прав. Язык — направление A «Пальма», как в переписке. Все данные вымышлены.</p>
+
+  <div class="ctl">
+    <div class="grp"><span class="lbl">Случай</span><div class="seg" id="caseSeg">
+      <button type="button" data-case="tour">Тур</button>
+      <button type="button" data-case="usa">Виза США</button>
+      <button type="button" data-case="group">Группа · 5 чел.</button>
+    </div></div>
+    <div class="grp"><span class="lbl">Состояние</span><div class="seg" id="stateSeg">
+      <button type="button" data-state="main">Основное</button>
+      <button type="button" data-state="empty">Пустая</button>
+      <button type="button" data-state="loading">Загрузка</button>
+      <button type="button" data-state="error">Ошибка сохранения</button>
+      <button type="button" data-state="noaccess">Нет прав</button>
+    </div></div>
+    <div class="grp"><span class="lbl">Ширина</span><div class="seg" id="wSeg">
+      <button type="button" data-w="360">360</button>
+      <button type="button" data-w="720">720</button>
+    </div></div>
+  </div>
+
+  <div class="stage">
+    <div>
+      <div class="frame" id="frame">
+        <section class="screen" id="screen" data-sheet="closed" aria-label="Карточка услуги">
+          <div class="scroll" id="scroll"></div>
+          <div class="scrim" id="scrim"></div>
+          <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+        </section>
+      </div>
+      <div class="frame-note"><span id="noteL">—</span><span id="noteR">360 × 680</span></div>
+    </div>
+
+    <aside class="side">
+      <div class="card top-a">
+        <div class="lbl">Что показывает этот случай</div>
+        <h3 id="caseTitle">—</h3>
+        <div id="caseNotes"></div>
+      </div>
+
+      <div class="card top-b">
+        <div class="lbl">Каркас по ТЗ</div>
+        <ul>
+          <li><b>Шапка</b> — человек/компания, продукт, ответственный, этап, срок, следующее действие. Ряд с именем прилипает, остальное уезжает вверх.</li>
+          <li><b>Кто кого ждёт</b> (FLOW-05) — сторона, с какого момента, следующая проверка; «контроль выполнен» отличает задержку ведомства от бездействия менеджера.</li>
+          <li><b>Четыре состояния раздельно</b> (FLOW-04) — Продажа · Оплата · Документы · Исход. Ни одно не выводится из другого.</li>
+          <li><b>Полоса пути</b> — равные сегменты с номерами, подпись текущего этапа; 7 и 9 этапов укладываются в 360 px без прокрутки. На 720 px появляются подписи сегментов.</li>
+          <li><b>Переход этапа кнопкой</b> (FLOW-03) — лист запрашивает факты (номер, дату, основание); откат — вторичная кнопка с причиной, событие не стирается.</li>
+          <li><b>Вкладки</b> — Путь (лента событий с основанием) · Документы (получен ≠ принят) · Оплаты (остаток или переплата отдельно; валюты не складываются) · Задачи («почему создано») · Чат (хвост и переход).</li>
+        </ul>
+      </div>
+
+      <div class="card top-b">
+        <div class="lbl">Контраст (WCAG 2.x, относительная яркость; скрипт парсит блоки tokens:* из этого файла)</div>
+        <div class="cr-wrap"><table class="cr" id="crTable">
+          <tr><th>Пара «текст / фон»</th><th>Светлая</th><th>Тёмная</th></tr>
+          <tr><td>имя, факты шапки / ночная шапка</td><td>17.69</td><td>19.64</td></tr>
+          <tr><td>подписи шапки (--hd-sub) / шапка</td><td>7.90</td><td>8.77</td></tr>
+          <tr><td>значение факта / плашка факта (--hd-chip)</td><td>10.40</td><td>12.00</td></tr>
+          <tr><td>подпись факта / плашка факта</td><td>5.46</td><td>6.31</td></tr>
+          <tr><td>срок, номер этапа (--hd-accent) / плашка</td><td>7.05</td><td>8.14</td></tr>
+          <tr><td>зелёный «контроль выполнен» (--hd-good) / шапка</td><td>7.58</td><td>8.42</td></tr>
+          <tr><td>основной текст / поверхность</td><td>16.75</td><td>14.68</td></tr>
+          <tr><td>вторичный текст (--ink-2) / поверхность</td><td>7.15</td><td>7.71</td></tr>
+          <tr><td>третичный текст (--ink-3) / фон экрана</td><td>4.86</td><td>8.40</td></tr>
+          <tr><td>третичный текст / поверхность-2 (пилюля none)</td><td>4.64</td><td>7.07</td></tr>
+          <tr><td>подпись вкладки, бейдж (--ink-2) / поверхность-2</td><td>6.28</td><td>7.07</td></tr>
+          <tr><td>кнопка: текст / тил</td><td>7.81</td><td>6.87</td></tr>
+          <tr><td>тил-текст (--brand-ink) / поверхность</td><td>9.81</td><td>9.55</td></tr>
+          <tr><td>тил-текст / тил-плашка (пилюля info)</td><td>7.91</td><td>7.81</td></tr>
+          <tr><td>оранжевый текст / оранжевая плашка (warn, нет прав)</td><td>7.02</td><td>8.39</td></tr>
+          <tr><td>оранжевый текст (--accent-ink) / поверхность</td><td>8.47</td><td>9.95</td></tr>
+          <tr><td>красный текст / красная плашка (bad, ошибка)</td><td>4.90</td><td>6.19</td></tr>
+          <tr><td>красный текст / поверхность</td><td>6.15</td><td>7.13</td></tr>
+          <tr><td>кнопка «Повторить»: текст / красный</td><td>6.15</td><td>7.36</td></tr>
+          <tr><td>зелёный текст / зелёная плашка (good)</td><td>6.55</td><td>8.29</td></tr>
+          <tr><td>текст поля ввода / фон экрана</td><td>15.43</td><td>15.98</td></tr>
+          <tr><td>чат: текст / пузыри (клиент · менеджер · бот)</td><td>17.46 · 15.21 · 13.51</td><td>12.13 · 6.77 · 11.99</td></tr>
+          <tr><td>чат: время / пузыри (клиент · менеджер · бот)</td><td>5.59 · 6.14 · 6.54</td><td>6.74 · 5.41 · 7.35</td></tr>
+          <tr><td>чат: подпись автора (клиент · менеджер)</td><td>7.81 · 5.61</td><td>7.90 · 5.41</td></tr>
+          <tr><td><b>минимум по 29 парам</b></td><td><b>4.64</b></td><td><b>5.41</b></td></tr>
+        </table></div>
+        <p style="margin-top:8px">Провалов ниже 4.5:1 нет. Слабейшие пары: светлая — третичный текст на пилюле «запрошен / ожидает этапа» (4.64) и красный на красной плашке (4.90); тёмная — время и подпись менеджера на зелёном пузыре чата (5.41, токены WhatsApp из переписки). Первый прогон поймал провал: зелёный --good на ночной шапке давал 3.93 — для шапки введён свой --hd-good (7.58).</p>
+      </div>
+
+      <div class="card top-b">
+        <div class="lbl">Замер 360 px (Playwright/Chromium, viewport 360×800, после document.fonts.ready)</div>
+        <ul id="measureList">
+          <li><b>Горизонтального переполнения нет</b> ни в одном из 60 снимков (3 случая × 5 состояний × 2 темы × 2 ширины): scrollWidth документа = ширине окна, ни один элемент экрана не выходит за его правый край. Высоты в тёмной теме совпадают со светлой до пикселя.</li>
+          <li><b>Шапка на 360×680 читается целиком без раскрытия</b>: все 11 сущностей (имя, продукт, менеджер, этап, срок, следующее действие, кто ждёт, Продажа, Оплата, Документы, Исход) видны у тура и США; у группы — 12 (две ожидающие стороны). Низ ночной шапки: тур 353 px, США 370, группа 445; кнопки действий до 412 / 475 / 550.</li>
+          <li><b>Вкладки на первом экране</b>: тур с 475 px, США с 538 — лента видна без прокрутки. У группы вкладки с 822: между шапкой и вкладками стоит список заявителей (2 не готовых раскрыты, 3 одобренных свёрнуты). Это осознанно — для группы первый экран отвечает «кто не готов и почему», вкладки — вторым свайпом.</li>
+          <li><b>Полоса пути</b>: 7 сегментов по 43.7 px, 9 по 33.1 px при 332 px контента; номера читаются, подписи сегментов на 360 по тапу, на 720 (95 / 73 px) — под сегментами.</li>
+          <li><b>Вкладки</b>: пять кнопок по 72 px; подпись «Документы» в строчном варианте обрезалась (первый прогон) — переведены в «иконка над подписью» с бейджем у иконки, обрезки нет. На 720 — снова в строку.</li>
+          <li><b>Состояния</b>: пустая — шапка 337, вкладки 459; загрузка — скелеты, вкладки 290; ошибка — лист с заполненными полями поверх экрана; нет прав — баннер 86 px, кнопки с замком.</li>
+        </ul>
+        <p>Числа ниже обновляет сам макет при переключении (рамка под экраном): низ шапки и число видимых сущностей считаются по getBoundingClientRect.</p>
+      </div>
+
+      <div class="card top-a">
+        <div class="lbl">Вопросы к ТЗ, возникшие по дороге</div>
+        <ol>
+          <li><b>Документы, которых ещё не может быть.</b> У тура ваучер, билет и страховка появляются только после подтверждения брони; пяти статусов ТЗ (запрошен … отклонён) для них не хватает — нужен «ожидает этапа / не запрошен», иначе менеджер видит «запрошен» на то, что запросить рано.</li>
+          <li><b>Начало отсчёта «трёх дней» по опроснику США.</b> ТЗ само помечает: от отправки, от доставки или от открытия ссылки? В макете — от отправки (2 окт 12:10 → задача 5 окт 09:00). Разница в сутки меняет, кто «просрочил».</li>
+          <li><b>Этап группы на полосе пути.</b> SRC-12 запрещает «самый отстающий код», но не говорит, что рисовать в поле «этап» у группы. В макете — блокирующий этап со счётчиками заявителей на сегментах; подтвердить.</li>
+          <li><b>Платёж в чужой валюте.</b> MONEY-04: незачтён до курса. Кто фиксирует курс и откуда он берётся (НБКР на дату, договорный, ручной)? В макете — кнопка «Зачесть по курсу…» у менеджера; право на это не задано.</li>
+          <li><b>Переплата.</b> Показана отдельно (MONEY-03), но что с ней делать — возврат (MONEY-05) или зачёт в следующую услугу? Права и причины — DEC-02/DEC-11; в макете кнопка «Оформить возврат…» заблокирована «до решения».</li>
+          <li><b>Второй срок у тура.</b> У выкупа свой срок (7.1), у контроля оператора — свой. В шапке одно поле «ближайший срок»; второй ушёл в подпись. Достаточно ли, или шапке нужен список сроков?</li>
+          <li><b>Исход при частичном результате группы.</b> «Одобрено 3 из 5» — это исход услуги или ещё нет? ТЗ не задаёт правило закрытия исхода группы (все решены / договор исполнен / по заявлению).</li>
+          <li><b>«Сумма уточняется» и остаток.</b> Карточка честно не считает остаток (США). Нужна ли задача «установить сумму договора» с дедлайном, чтобы «уточняется» не жило вечно?</li>
+          <li><b>Нет прав: что видно.</b> Раздел 4 закрывает «чужие файлы». В макете чужой менеджер видит ленту и оплаты, но не открывает документы. Это предположение — список закрытых полей для «просмотр без ведения» нужен в ТЗ.</li>
+        </ol>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<footer class="foot"><span>docs/service-card-mockup.html · E0-04 · 05.10.2026</span><span>направление A «Пальма» · данные вымышлены</span></footer>
+
+<script>
+/* ============================================================ ДАННЫЕ (вымышленные) */
+const TODAY = '5 окт';
+const PARTY_ICON = {client:'i-user', manager:'i-hand', operator:'i-plane', partner:'i-users', gov:'i-gov', none:'i-hour'};
+const PARTY_NAME = {client:'клиента', manager:'менеджера', operator:'туроператора', partner:'партнёра', gov:'ведомство', none:'—'};
+
+const CASES = {
+tour: {
+  title:'Тур: предоплата внесена, бронь у оператора',
+  notes:`<p><b>Этап 2 из 7 «Бронь отправлена»</b> (TOUR-02): заявка у оператора с 3 окт, контроль ответа 6 окт 12:00. Это и есть ближайший срок; срок выкупа 10 окт — второй, в подписи.</p>
+  <p><b>Оплата пришла раньше брони</b>: 1 000 USD подтверждены 2 окт, на этапе «Договор». В ленте событие оплаты стоит до «Бронь отправлена» — порядок колонок не заставил ждать подтверждения. Чип «Оплата 1 000 / 2 400» живёт отдельно от этапа.</p>
+  <p><b>Ждём туроператора</b> с 3 окт 15:40; «контроль выполнен 4 окт» — задержка оператора не бездействие Адеми.</p>
+  <p><b>Незачтённый платёж</b>: клиент прислал чек на 30 000 KGS — это предложение проверить (MONEY-02), а не деньги; без курса не зачтён (MONEY-04), остаток не менялся.</p>
+  <p><b>Главная кнопка</b> «Бронь подтверждена…» открывает лист с номером и датой (FLOW-03); «Отклонена…» — вторичная, с причиной.</p>`,
+  name:'Айгерим Токтосунова', kind:'person', phone:'+996 55• ••• •09 · WhatsApp',
+  product:'Пакетный тур · Анталья, 7 ночей, 2 взр.', direction:'Туры', manager:'Адеми', contract:'FT-2026-0412',
+  stages:['Договор','Бронь отправлена','Бронь подтверждена','Выкуп и расчёт','Документы переданы','Поездка','Отзыв и завершение'],
+  cur:1,
+  deadline:{v:'6 окт, 12:00', s:'контроль ответа оператора · выкуп до 10 окт'},
+  next:{v:'Дождаться подтверждения брони', s:'заявка № 88-1734 у оператора с 3 окт 15:40'},
+  primary:{label:'Бронь подтверждена…', sheet:'confirm'}, secondary:{label:'Отклонена…'},
+  waiting:[{party:'operator', who:'', since:'3 окт 15:40', check:'6 окт 12:00', ctrl:'контроль выполнен 4 окт'}],
+  states:[
+    {k:'Продажа', v:'договор 2 окт', tone:'good'},
+    {k:'Оплата', v:'1 000 / 2 400 USD', tone:'warn'},
+    {k:'Документы', v:'принят 1 из 2', tone:'warn'},
+    {k:'Исход', v:'не определён', tone:'none'}],
+  events:[
+    {d:TODAY, t:'09:30', who:'бот', kind:'bot', ti:'Клиент прислал фото квитанции на 30 000 KGS', ds:'Создано предложение проверить оплату. Деньги не зачтены: оплату подтверждает сотрудник.', bs:'сообщение в WhatsApp · MONEY-02'},
+    {d:'4 окт', t:'10:00', who:'Адеми', kind:'mgr', ti:'Контроль: оператор не ответил, ожидание продлено', ds:'Следующая проверка 6 окт 12:00. Сторона ожидания — туроператор.', bs:'переписка с оператором'},
+    {d:'3 окт', t:'15:40', who:'Адеми', kind:'mgr', ti:'Бронь отправлена → этап «Бронь отправлена»', ds:'Оператор «Пример-Тур», заявка № 88-1734, ожидаемый срок ответа 6 окт 12:00.', bs:'подтверждение из кабинета оператора'},
+    {d:'2 окт', t:'11:21', who:'система', kind:'sys', ti:'Созданы задачи: контроль ответа оператора; напоминание о доплате', ds:'', bs:'правило TOUR-02 · правило «срок доплаты/выкупа» · ключ защиты от дубля'},
+    {d:'2 окт', t:'11:20', who:'Адеми', kind:'mgr', ti:'Оплата подтверждена: 1 000 USD, наличные', ds:'Предоплата на этапе «Договор» — до отправки брони. Остаток 1 400 USD.', bs:'приходный ордер № 17 (пример)'},
+    {d:'2 окт', t:'11:05', who:'Адеми', kind:'mgr', ti:'Договор № FT-2026-0412 подписан → этап «Договор»', ds:'Сумма 2 400 USD (пример), плательщик — клиент, 2 заявителя. Создано исполнение услуги.', bs:'скан договора, подписан в офисе'},
+    {d:'1 окт', t:'17:48', who:'бот → Адеми', kind:'bot', ti:'Передача тёплого лида', ds:'Клиент выбрал предложение «Анталья, 5 звёзд, 12–19 окт» из подборки.', bs:'диалог · readiness tier A'}],
+  docs:[
+    {nm:'Паспорт — Айгерим Т.', st:'accepted', ms:'проверила Адеми 2 окт · v1'},
+    {nm:'Паспорт — Бакыт Т.', st:'rejected', ms:'<span class="r">отклонён:</span> скан нечитаем, нужна новая фотография · v1 · запрошен v2 3 окт'},
+    {nm:'Ваучер, билет, страховка', st:'later', ms:'появятся после подтверждения брони (TOUR-05) — статус вне пяти из ТЗ, см. вопрос 1'}],
+  money:{contract:{v:'2 400', c:'USD', s:'пример · договор 2 окт'}, paid:{v:'1 000', c:'USD', s:'1 операция'}, refund:{v:'0', c:'USD', s:'возвратов нет'}, rest:{v:'1 400', c:'USD', s:'срок выкупа 10 окт', over:false},
+    ops:[
+      {t:'Предоплата · наличные', a:'+1 000 USD', m:'2 окт 11:20 · подтвердила <b>Адеми</b> · основание: приходный ордер № 17', unc:false},
+      {t:'Платёж клиента в KGS · перевод', a:'30 000 KGS', m:'<b>Не зачтён</b>: валюта договора USD, курс не зафиксирован; подтверждения сотрудника нет (фото чека — предложение проверить).', unc:true, rb:['Зачесть по курсу…','Отклонить…']}],
+    note:'USD и KGS не складываются без зафиксированного курса (MONEY-04). Остаток считается только по зачтённым подтверждённым операциям.'},
+  tasks:[
+    {t:'Проверить ответ оператора по брони № 88-1734', due:'6 окт 12:00', dueTone:'', who:'Адеми', why:'правило «туроператор не ответил к контрольной дате»; бронь отправлена 3 окт 15:40; контроль 4 окт уже выполнен, срок перенесён', hi:true},
+    {t:'Проверить квитанцию клиента на 30 000 KGS', due:'сегодня', dueTone:'today', who:'Адеми', why:'клиент прислал фото квитанции 5 окт 09:30 — оплата не подтверждена до проверки сотрудником (MONEY-02)'},
+    {t:'Напомнить о доплате 1 400 USD', due:'8 окт', dueTone:'', who:'Адеми', why:'срок выкупа 10 окт из брони; напоминание за 2 дня (настройка продукта, пример); факт оплаты проверяется отдельно'}],
+  chat:{lead:'ведёт Адеми · бот молчит (перехват)', msgs:[
+    {w:'c', n:'Айгерим', x:'Перевела 30 тысяч на карту, вот чек', tm:'09:28'},
+    {w:'b', n:'бот', x:'Спасибо! Передала Адеми — она сверит и подтвердит оплату.', tm:'09:30'},
+    {w:'m', n:'Адеми', x:'Айгерим, чек вижу, сверю с бухгалтерией и отпишусь до обеда.', tm:'09:41'}]},
+  sheet:{title:'Бронь подтверждена', hint:'Переход 2 → 3. Сервер проверит права и обязательные факты; запишет автора, время и основание (FLOW-03).',
+    fields:[{l:'Номер подтверждения оператора', v:'ТО-55123', req:true},{l:'Дата и время подтверждения', v:'05.10.2026 10:12', req:true},{l:'Основание', v:'письмо оператора в кабинете', req:false}]},
+  empty:{next:'Зафиксировать договор', nextS:'номер, дата, сумма или причина «уточняется»', primary:'Договор подписан…'}
+},
+
+usa: {
+  title:'Виза США: опросник не заполнен три дня',
+  notes:`<p><b>Этап 2 из 9 «Опросник отправлен»</b> (7.4): отправлен 2 окт 12:10, клиент открыл и заполнил 4 из 12 разделов 3 окт, не отправил. Сегодня — третий день.</p>
+  <p><b>Правило из таблицы 11</b> «опросник не завершён через три дня» создало задачу Элизе на сегодня 18:00; в задаче видно «почему создано» и от какого момента отсчёт (вопрос 2). Она же — ближайший срок и следующее действие в шапке.</p>
+  <p><b>Ждём клиента</b> с 2 окт 12:10 — сторона ожидания видна в шапке, не спрятана в задачах.</p>
+  <p><b>Сумма договора уточняется</b> (тариф не утверждён — цен в макете нет, по ТЗ): карточка не считает остаток и не показывает «0». Неизвестная сумма ≠ ноль.</p>
+  <p><b>Кнопка «Опросник заполнен…» заблокирована</b>: этот факт приходит от защищённой формы клиента, а не нажатием менеджера. Главное действие сейчас — «Написать клиенту».</p>
+  <p><b>Депозит после визы</b> — задача без суммы и срока («уточнить условия», DEC-09): ничего не начислено.</p>`,
+  name:'Нурлан Жумабеков', kind:'person', phone:'+996 70• ••• •31 · WhatsApp',
+  product:'Виза США · B1/B2 · 1 заявитель', direction:'Визы', manager:'Элиза', contract:'GV-2026-0917',
+  stages:['Договор','Опросник отправлен','Опросник заполнен','DS-160 подготовлена','Клиент подтвердил','Запись на собеседование','Подготовка','Собеседование','Результат'],
+  cur:1,
+  deadline:{v:'сегодня, 18:00', s:'связаться: опросник не заполнен 3 дня', late:true},
+  next:{v:'Связаться с клиентом — опросник не заполнен', s:'отправлен 2 окт 12:10, заполнено 4 из 12 разделов'},
+  primary:{label:'Написать клиенту', sheet:null, toast:'Переход в переписку — в макете заглушка'}, secondary:{label:'Опросник заполнен…', disabled:true, title:'факт приходит от формы клиента'},
+  waiting:[{party:'client', who:'', since:'2 окт 12:10', check:'сегодня 18:00', late:'3 дня без ответа'}],
+  states:[
+    {k:'Продажа', v:'договор 2 окт', tone:'good'},
+    {k:'Оплата', v:'сумма уточняется', tone:'none'},
+    {k:'Документы', v:'получен 1 из 3', tone:'warn'},
+    {k:'Исход', v:'не определён', tone:'none'}],
+  events:[
+    {d:TODAY, t:'09:00', who:'система', kind:'sys', ti:'Задача: связаться с клиентом — опросник не заполнен 3 дня', ds:'Адресат — Элиза, срок сегодня 18:00.', bs:'правило «опросник не завершён через три дня»; отсчёт от отправки 2 окт 12:10'},
+    {d:'3 окт', t:'14:22', who:'клиент', kind:'client', ti:'Открыл опросник: заполнено 4 из 12 разделов, не отправлен', ds:'Черновик сохранён, можно продолжить по той же ссылке.', bs:'защищённая ссылка опросника · SEC-04'},
+    {d:'2 окт', t:'12:10', who:'Элиза', kind:'mgr', ti:'Опросник отправлен → этап «Опросник отправлен»', ds:'Шаблон «Опросник США v3», отправлен в WhatsApp. Ожидание — клиент.', bs:'черновик системы, отправлен менеджером (MSG-01)'},
+    {d:'2 окт', t:'12:08', who:'система', kind:'sys', ti:'Подготовлен черновик отправки опросника', ds:'Автоотправка по продукту не включена — черновик менеджеру.', bs:'правило «подписан договор США»'},
+    {d:'2 окт', t:'12:02', who:'Элиза', kind:'mgr', ti:'Паспорт получен, отправлен на проверку', ds:'Получение файла не означает принятие (KG-04).', bs:'фото в WhatsApp'},
+    {d:'2 окт', t:'11:55', who:'Элиза', kind:'mgr', ti:'Договор № GV-2026-0917 подписан → этап «Договор»', ds:'Сумма: уточняется. Причина — тариф направления не утверждён.', bs:'подписан в офисе · FLOW-02'}],
+  docs:[
+    {nm:'Паспорт', st:'review', ms:'получен 2 окт · проверяет Элиза · v1'},
+    {nm:'Фото 5×5 см', st:'requested', ms:'запрошен 2 окт · шаблон списка документов продукта'},
+    {nm:'Справка с места работы', st:'requested', ms:'запрошен 2 окт'}],
+  money:{contract:{v:'уточняется', c:'', s:'причина: тариф не утверждён', unk:true}, paid:{v:'нет данных', c:'', s:'операций нет — не «0»', unk:true}, refund:{v:'—', c:'', s:'возвратов нет', unk:true}, rest:{v:'не рассчитан', c:'', s:'сумма договора не установлена', unk:true, over:false},
+    ops:[], note:'Остаток считается только при установленной сумме и валюте договора (MONEY-03). «Уточняется» не превращается в 0 и не создаёт долг.', rb:['Указать сумму договора…']},
+  tasks:[
+    {t:'Связаться с клиентом: опросник не заполнен', due:'сегодня 18:00', dueTone:'today', who:'Элиза', why:'правило «опросник не завершён через три дня» (TASK-01); отсчёт от отправки 2 окт 12:10 — начало отсчёта требует определения в настройке', hi:true},
+    {t:'Проверить DS-160 после заполнения опросника', due:'ожидает события', dueTone:'', who:'специалист по DS-160', why:'следующий этап процесса 7.4; заблокирована: опросник не заполнен', blocked:true},
+    {t:'Уточнить условия депозита после визы', due:'без срока', dueTone:'', who:'Элиза', why:'решение владельца DEC-09; без начисления и без суммы клиенту'}],
+  chat:{lead:'ведёт Элиза · бот молчит (перехват)', msgs:[
+    {w:'c', n:'Нурлан', x:'Начал заполнять, там много вопросов про работу, допишу на выходных', tm:'3 окт 14:30'},
+    {w:'m', n:'Элиза', x:'Хорошо, Нурлан! Если что-то непонятно — пишите, подскажу по каждому разделу.', tm:'3 окт 14:35'}]},
+  sheet:{title:'Опросник заполнен', hint:'Переход 2 → 3 фиксируется по событию формы клиента; вручную — только с основанием.',
+    fields:[{l:'Основание', v:'клиент прислал анкету файлом', req:true},{l:'Дата получения', v:'05.10.2026', req:true}]},
+  empty:{next:'Зафиксировать договор', nextS:'номер, дата, сумма или причина «уточняется»', primary:'Договор подписан…'}
+},
+
+group: {
+  title:'Группа: семья из пяти, у одного доработка',
+  notes:`<p><b>Готово 3 из 5</b> (KG-03): Рустам, Дилноза и Самир одобрены 4 окт; Фаррух — доработка от ведомства (нужен перевод свидетельства о рождении, срок исправления 8 окт); Малика — на рассмотрении с 2 окт, ожидаемый результат 9 окт.</p>
+  <p><b>Полоса пути</b> не усредняет: на сегментах — счётчики заявителей (2 на «Рассмотрении», 3 на «Результате»), подпись называет блокирующий этап (SRC-12), а не «самый отстающий код».</p>
+  <p><b>Две стороны ожидания одновременно</b>: клиент (перевод по Фарруху, с 5 окт) и ведомство (Малика, с 2 окт, контроль выполнен). Шапка показывает обе.</p>
+  <p><b>Ближайший срок</b> — 8 окт, срок исправления по Фарруху; следующее действие названо по человеку.</p>
+  <p><b>Деньги</b>: единственная подтверждённая ТЗ цена — сервисный сбор TS $50 × 5 = 250 USD; внесено 300 → <b>переплата 50 USD отдельным полем</b>, остаток 0 не «съел» её. Госпошлина — отдельная строка без суммы: не доход компании, статус проверяется независимо.</p>
+  <p><b>Исход</b> — «одобрено 3 из 5»: отказ или доработка одному не меняет результат других.</p>`,
+  name:'Семья Ахмедовых', kind:'group', phone:'плательщик — Рустам Ахмедов · WhatsApp',
+  product:'Въезд в КР · e-Visa туристическая (TS) · 5 заявителей', direction:'Въездные', manager:'Медина', contract:'GV-2026-0921',
+  stages:['Договор','Оплата','Документы','Подача','Рассмотрение','Результат','Проверка','Выдача','Сопровождение'],
+  cur:4, counts:{4:2, 5:3}, blockLabel:'блокирует: доработка (Фаррух)',
+  ready:{done:3, total:5},
+  deadline:{v:'8 окт', s:'срок исправления по Фарруху (доработка ведомства)'},
+  next:{v:'Получить перевод свидетельства (Фаррух) и подать повторно', s:'доработка от 5 окт · повторная отправка создаст новую попытку'},
+  primary:{label:'Документ получен…', sheet:'docgot'}, secondary:{label:'Отменить заявку…'},
+  waiting:[
+    {party:'client', who:'Фаррух', since:'5 окт 09:10', check:'7 окт', late:''},
+    {party:'gov', who:'Малика', since:'2 окт 16:00', check:'9 окт', ctrl:'контроль выполнен 5 окт'}],
+  states:[
+    {k:'Продажа', v:'договор 30 сен', tone:'good'},
+    {k:'Оплата', v:'300 / 250 USD, +50', tone:'warn'},
+    {k:'Документы', v:'14 из 15', tone:'warn'},
+    {k:'Исход', v:'3 из 5 одобрено', tone:'good'}],
+  applicants:[
+    {n:'Рустам Ахмедов', y:'1984', st:'Результат', pill:'good', pt:'одобрено', ds:'e-Visa получена 4 окт · проверка выдачи 6 окт'},
+    {n:'Дилноза Ахмедова', y:'1987', st:'Результат', pill:'good', pt:'одобрено', ds:'e-Visa получена 4 окт · проверка выдачи 6 окт'},
+    {n:'Самир Ахмедов', y:'2014', st:'Результат', pill:'good', pt:'одобрено', ds:'e-Visa получена 4 окт · проверка выдачи 6 окт'},
+    {n:'Фаррух Ахмедов', y:'2019', st:'Рассмотрение', pill:'bad', pt:'доработка', ds:'<span class="bad">нужен перевод свидетельства о рождении</span> · срок <span class="late">8 окт</span> · ждём клиента с 5 окт'},
+    {n:'Малика Ахмедова', y:'1958', st:'Рассмотрение', pill:'info', pt:'на рассмотрении', ds:'подано 2 окт · ожидаемый результат 9 окт · ждём ведомство'}],
+  events:[
+    {d:TODAY, t:'09:10', who:'Медина', kind:'warn', ti:'Доработка по Фарруху: ведомство запросило перевод свидетельства о рождении', ds:'Срок исправления 8 окт. Попытка подачи № 1 остаётся в истории; повторная отправка создаст попытку № 2 и новый расчёт ожидаемой даты (KG-06).', bs:'письмо портала, введено вручную (DEC-03)'},
+    {d:'4 окт', t:'11:30', who:'Медина', kind:'mgr', ti:'Результат: одобрено — Рустам, Дилноза, Самир', ds:'Решение по трём заявителям не меняет статус Фарруха и Малики. Создана проверка выдачи (KG-07).', bs:'уведомления портала, сверены с заявителями'},
+    {d:'2 окт', t:'16:00', who:'Медина', kind:'mgr', ti:'Подача: Малика — попытка № 1', ds:'Канал — портал, номер подачи KG-…-5, ожидаемый результат 9 окт. Ожидание — ведомство.', bs:'номер подачи и квитанция портала (KG-05)'},
+    {d:'2 окт', t:'15:40', who:'Медина', kind:'mgr', ti:'Подача: Рустам, Дилноза, Самир, Фаррух — попытка № 1', ds:'Четыре заявления, канал — портал. Ожидаемый результат 9 окт.', bs:'номера подач и квитанции портала'},
+    {d:'1 окт', t:'10:15', who:'Медина', kind:'mgr', ti:'Документы приняты: 14 из 15', ds:'Свидетельство Фарруха принято v1 без перевода — позже отклонено ведомством (см. 5 окт).', bs:'проверка по матрице документов (KG-04)'},
+    {d:'30 сен', t:'12:00', who:'Медина', kind:'mgr', ti:'Оплата подтверждена: 300 USD, перевод', ds:'По договору 250 USD → переплата 50 USD в отдельном поле, остаток 0.', bs:'выписка по карте'},
+    {d:'30 сен', t:'11:40', who:'Медина', kind:'mgr', ti:'Договор № GV-2026-0921 подписан → этап «Договор»', ds:'5 заявителей, плательщик — Рустам. Сервисный сбор TS $50 × 5 = 250 USD (подтверждённая ставка ТЗ). Госпошлина — отдельно.', bs:'скан договора'}],
+  docs:[
+    {nm:'Паспорта <small>5 заявителей</small>', st:'accepted', ms:'приняты 1 окт · проверила Медина'},
+    {nm:'Фото <small>5 заявителей</small>', st:'accepted', ms:'приняты 1 окт'},
+    {nm:'Свидетельство о рождении — Самир', st:'accepted', ms:'принято 1 окт · v1'},
+    {nm:'Свидетельство о рождении — Фаррух', st:'rejected', ms:'<span class="r">отклонено ведомством 5 окт:</span> нужен нотариальный перевод · v1 был принят 1 окт · запрошен v2, срок 8 окт'},
+    {nm:'Бронь жилья <small>общая</small>', st:'accepted', ms:'принята 1 окт'}],
+  money:{contract:{v:'250', c:'USD', s:'TS $50 × 5 — ставка подтверждена ТЗ'}, paid:{v:'300', c:'USD', s:'1 операция'}, refund:{v:'0', c:'USD', s:'возвратов нет'}, rest:{v:'50', c:'USD', s:'остаток 0 · переплата показана отдельно', over:true},
+    ops:[
+      {t:'Оплата · перевод на карту', a:'+300 USD', m:'30 сен 12:00 · подтвердила <b>Медина</b> · основание: выписка по карте', unc:false},
+      {t:'Госпошлина e-Visa · портал', a:'отдельно', m:'оплачена клиентом на портале · <b>не доход компании</b>, сумма и статус проверяются независимо (CALC-04, MONEY-07)', unc:false}],
+    note:'Переплата не обрезается до нуля (MONEY-03). Возврат — отдельный процесс: запрошен → решение → обязанность → факт (MONEY-05); права — решение владельца.', rb:['Оформить возврат переплаты…'], rbDisabled:true},
+  tasks:[
+    {t:'Получить перевод свидетельства о рождении (Фаррух)', due:'7 окт', dueTone:'', who:'Медина', why:'доработка ведомства 5 окт, срок исправления 8 окт; напоминание за день (правило процесса)', hi:true},
+    {t:'Сверить выданные e-Visa с заявителями (3)', due:'6 окт', dueTone:'', who:'Медина', why:'правило «выдан документ → проверка выдачи» (KG-07); выдача не считается подтверждённой до сверки'},
+    {t:'Проверить статус подачи — Малика', due:'9 окт', dueTone:'', who:'Медина', why:'ожидаемая дата результата по подаче 2 окт; наступление даты не подтверждает результат (TASK-02)'},
+    {t:'Решить по переплате 50 USD', due:'без срока', dueTone:'', who:'руководитель', why:'переплата по договору; возврат или зачёт — права и причины по DEC-02/DEC-11', blocked:true}],
+  chat:{lead:'ведёт Медина · бот молчит (перехват)', msgs:[
+    {w:'c', n:'Рустам', x:'Перевод свидетельства сделаем завтра, у нотариуса очередь', tm:'09:05'},
+    {w:'m', n:'Медина', x:'Хорошо. До 8 октября нужно успеть — иначе срок исправления истечёт и подачу придётся повторять.', tm:'09:12'}]},
+  sheet:{title:'Документ получен', hint:'Файл → версия v2 → проверка. «Получен» ещё не «принят» (KG-04).',
+    fields:[{l:'Документ', v:'Свидетельство о рождении — Фаррух, v2', req:true},{l:'Дата получения', v:'05.10.2026', req:true},{l:'Признаки', v:'нотариальный перевод', req:false}]},
+  empty:{next:'Зафиксировать договор', nextS:'заявители, плательщик, сумма или причина «уточняется»', primary:'Договор подписан…'}
+}};
+
+const DOC_ST = {requested:['none','запрошен'], received:['info','получен'], review:['warn','на проверке'], accepted:['good','принят'], rejected:['bad','отклонён'], later:['none','ожидает этапа']};
+
+/* ============================================================ СОСТОЯНИЕ МАКЕТА */
+const S = {case:'tour', state:'main', tab:'path', w:'360'};
+(function(){
+  const p = new URLSearchParams(location.search);
+  if (CASES[p.get('case')]) S.case = p.get('case');
+  if (['main','empty','loading','error','noaccess'].includes(p.get('state'))) S.state = p.get('state');
+  if (p.get('w') === '720') S.w = '720';
+  if (['path','docs','money','tasks','chat'].includes(p.get('tab'))) S.tab = p.get('tab');
+})();
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ic = id => `<svg class="ic"><use href="#${id}"/></svg>`;
+
+function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2200); }
+
+/* ============================================================ РЕНДЕР */
+function render(){
+  const c = CASES[S.case], st = S.state;
+  const noacc = st === 'noaccess', empty = st === 'empty', loading = st === 'loading';
+  const parts = [];
+  parts.push(renderHeader(c, st));
+  if (noacc) parts.push(`<div class="ban lock">${ic('i-lock')}<div><b>Услугу ведёт ${esc(c.manager)}.</b> Вы смотрите карточку без права вести: переход этапа, подтверждение оплаты и документы закрыты. Переназначение — через руководителя.</div></div>`);
+  if (!loading) parts.push(renderActions(c, st));
+  if (!loading) parts.push(renderPath(c, st)); else parts.push(`<div class="path"><div class="bars">${'<div class="bar"><i></i><span class="n">&nbsp;</span></div>'.repeat(c.stages.length)}</div><div class="cap"><span class="sk" style="width:60%"></span></div></div>`);
+  if (c.applicants && !empty && !loading) parts.push(renderApplicants(c));
+  parts.push(renderTabs(c, st));
+  parts.push(`<div class="panel" id="panel">${loading ? renderSkeleton() : renderPanel(c, st)}</div>`);
+  $('#scroll').innerHTML = parts.join('');
+  $('#sheet').innerHTML = renderSheet(c, st);
+  $('#screen').dataset.sheet = (st === 'error') ? 'open' : 'closed';
+  bind();
+  renderSide(c);
+  requestAnimationFrame(measure);
+}
+
+function renderHeader(c, st){
+  const empty = st==='empty', loading = st==='loading';
+  const kindIc = c.kind === 'group' ? 'i-users' : 'i-user';
+  let body;
+  if (loading){
+    body = `<div class="who"><span class="sk" style="width:120px"></span></div>
+      <div class="facts">
+        <div class="fact"><div class="k">${ic('i-flag')} Этап</div><span class="sk" style="width:80%;margin-top:6px"></span></div>
+        <div class="fact"><div class="k">${ic('i-cal')} Срок</div><span class="sk" style="width:60%;margin-top:6px"></span></div>
+        <div class="fact next"><div class="k">${ic('i-arrow')} Следующее действие</div><span class="sk" style="width:70%;margin-top:6px"></span></div>
+      </div>
+      <div class="wait"><div class="w">${ic('i-hour')}<span class="sk" style="width:50%;margin-top:4px"></span></div></div>
+      <div class="states"><span class="sk" style="width:90px;height:20px;border-radius:10px"></span><span class="sk" style="width:110px;height:20px;border-radius:10px"></span><span class="sk" style="width:100px;height:20px;border-radius:10px"></span></div>`;
+  } else if (empty){
+    body = `<div class="who" data-fact="manager"><span>${ic('i-hand')} ведёт <b>${esc(c.manager)}</b></span><span>${esc(c.direction)}</span><span>договор не зафиксирован</span></div>
+      <div class="facts">
+        <div class="fact none" data-fact="stage"><div class="k">${ic('i-flag')} Этап</div><div class="v"><span class="n">1/${c.stages.length}</span>${esc(c.stages[0])} — не начат</div><div class="s">услуга создана ${TODAY}, событий нет</div></div>
+        <div class="fact none" data-fact="deadline"><div class="k">${ic('i-cal')} Срок</div><div class="v">не задан</div><div class="s">появится с договором</div></div>
+        <div class="fact next" data-fact="next"><div class="k">${ic('i-arrow')} Следующее действие</div><div class="v">${esc(c.empty.next)}</div><div class="s">${esc(c.empty.nextS)}</div></div>
+      </div>
+      <div class="wait"><div class="w" data-fact="wait">${ic('i-hour')}<span>Ожидание не задано — <b>ход за менеджером</b></span></div></div>
+      <div class="states">
+        <span class="st" data-tone="none" data-fact="st-sale"><i class="d"></i><span class="k">Продажа</span>нет договора</span>
+        <span class="st" data-tone="none" data-fact="st-pay"><i class="d"></i><span class="k">Оплата</span>нет данных</span>
+        <span class="st" data-tone="none" data-fact="st-docs"><i class="d"></i><span class="k">Документы</span>не запрошены</span>
+        <span class="st" data-tone="none" data-fact="st-out"><i class="d"></i><span class="k">Исход</span>—</span>
+      </div>`;
+  } else {
+    const ready = c.ready ? `<span>${ic('i-check')} готово <b>${c.ready.done} из ${c.ready.total}</b></span>` : '';
+    body = `<div class="who" data-fact="manager"><span>${ic('i-hand')} ведёт <b>${esc(c.manager)}</b></span><span>${esc(c.direction)}</span>${ready}</div>
+      <div class="facts">
+        <div class="fact" data-fact="stage"><div class="k">${ic('i-flag')} Этап</div><div class="v"><span class="n">${c.cur+1}/${c.stages.length}</span>${esc(c.stages[c.cur])}</div>${c.cur+1 < c.stages.length ? `<div class="s">далее: ${esc(c.stages[c.cur+1])}</div>` : ''}</div>
+        <div class="fact due" data-fact="deadline"><div class="k">${ic('i-cal')} Срок</div><div class="v">${esc(c.deadline.v)}</div><div class="s">${esc(c.deadline.s)}</div></div>
+        <div class="fact next" data-fact="next"><div class="k">${ic('i-arrow')} Следующее действие</div><div class="v">${esc(c.next.v)}</div><div class="s">${esc(c.next.s)}</div></div>
+      </div>
+      <div class="wait">${c.waiting.map((w,i)=>`<div class="w" data-fact="wait${i}">${ic(PARTY_ICON[w.party])}<span>Ждём <b>${esc(PARTY_NAME[w.party])}${w.who ? ' (' + esc(w.who) + ')' : ''}</b> с ${esc(w.since)} · проверка ${esc(w.check)}${w.ctrl ? ' · <span class="ok">' + esc(w.ctrl) + '</span>' : ''}${w.late ? ' · <span class="late">' + esc(w.late) + '</span>' : ''}</span></div>`).join('')}</div>
+      <div class="states">${c.states.map((s,i)=>`<span class="st" data-tone="${s.tone}" data-fact="st${i}"><i class="d"></i><span class="k">${esc(s.k)}</span>${esc(s.v)}</span>`).join('')}</div>`;
+  }
+  return `<header class="hd">
+    <div class="hd-top">
+      <button class="ib" type="button" aria-label="Назад" data-toast="Назад к списку услуг">${ic('i-back')}</button>
+      <div style="min-width:0">
+        <div class="nm" data-fact="name">${loading ? '<span class="sk" style="width:160px;height:14px"></span>' : esc(c.name)}</div>
+        <div class="sub" data-fact="product">${loading ? '<span class="sk" style="width:200px"></span>' : `${ic(kindIc)} <b>${esc(c.product.split(' · ')[0])}</b> · ${esc(c.product.split(' · ').slice(1).join(' · '))}`}</div>
+      </div>
+      <button class="ib" type="button" aria-label="Ещё" data-toast="Меню: переназначить · история версий · открыть диалог · архивировать">${ic('i-more')}</button>
+    </div>
+    <div class="hd-body">${body}</div>
+  </header>`;
+}
+
+function renderActions(c, st){
+  const noacc = st==='noaccess', empty = st==='empty';
+  if (empty) return `<div class="act"><button class="btn p" type="button" data-sheet="contract">${ic('i-check')}<span>${esc(c.empty.primary)}</span></button><button class="btn s" type="button" data-toast="Архивировать: услуга без договора — с причиной">${ic('i-x')}</button></div>`;
+  const p = c.primary, s = c.secondary;
+  const dis = noacc ? ' disabled title="нет права вести услугу"' : (p.sheet ? '' : '');
+  const pBtn = `<button class="btn p" type="button"${dis}${p.sheet ? ` data-sheet="${p.sheet}"` : ` data-toast="${esc(p.toast||'')}"`}>${ic(noacc ? 'i-lock' : 'i-check')}<span>${esc(p.label)}</span></button>`;
+  const sDis = (noacc || s.disabled) ? ` disabled title="${esc(noacc ? 'нет права вести услугу' : (s.title||''))}"` : '';
+  const sBtn = `<button class="btn s" type="button"${sDis} data-toast="Откат/отклонение — отдельное событие с причиной; история не стирается (FLOW-03)">${ic(s.disabled ? 'i-lock' : 'i-undo')}<span>${esc(s.label)}</span></button>`;
+  return `<div class="act">${pBtn}${sBtn}</div>`;
+}
+
+function renderPath(c, st){
+  const empty = st==='empty';
+  const cur = empty ? 0 : c.cur;
+  const counts = (!empty && c.counts) ? c.counts : null;
+  const bars = c.stages.map((name,i)=>{
+    const cls = empty ? (i===0 ? 'cur' : '') : (i<cur ? 'done' : i===cur ? 'cur' : '');
+    const cnt = counts && counts[i] ? `<span class="c">${counts[i]}</span>` : '';
+    return `<button class="bar ${cls}" type="button" data-stage="${i}" title="${esc(name)}" aria-label="Этап ${i+1}: ${esc(name)}">${cnt}<i></i><span class="n">${i+1}</span><span class="lb">${esc(name)}</span></button>`;
+  }).join('');
+  let capL, capR;
+  if (empty){ capL = `<b>1 из ${c.stages.length}</b> · ${esc(c.stages[0])} — не начат`; capR = `пройдено 0`; }
+  else if (c.blockLabel){ capL = `<b>готово ${c.ready.done} из ${c.ready.total}</b>`; capR = `<span class="block">${esc(c.blockLabel)}</span>`; }
+  else { capL = `<b>${cur+1} из ${c.stages.length}</b> · ${esc(c.stages[cur])}`; capR = cur+1 < c.stages.length ? `далее: ${esc(c.stages[cur+1])}` : 'последний этап'; }
+  return `<div class="path${counts ? ' counts' : ''}" id="path" data-cur="${cur}"><div class="bars">${bars}</div><div class="cap"><span class="l" id="capL">${capL}</span><span class="r${c.blockLabel && !empty ? ' block' : ''}" id="capR">${capR}</span></div></div>`;
+}
+
+function renderApplicants(c){
+  const row = a => `<div class="ap" role="button" tabindex="0" data-toast="Открыть заявку: ${esc(a.n)}">
+    <span class="av">${esc(a.n[0])}</span>
+    <div style="min-width:0"><div class="nm">${esc(a.n)}<small>${esc(a.y)}</small></div><div class="ds">${a.ds}</div></div>
+    <span class="pill ${a.pill}">${esc(a.pt)}</span></div>`;
+  const open = c.applicants.filter(a=>a.pill!=='good'), done = c.applicants.filter(a=>a.pill==='good');
+  const more = done.length ? `<details class="more"><summary>${ic('i-chev')} ещё ${done.length} — одобрены, проверка выдачи 6 окт</summary>${done.map(row).join('')}</details>` : '';
+  return `<details class="apps" open><summary>${ic('i-users')} Заявители <span class="sub">· готово ${c.ready.done} из ${c.ready.total} · не готовы ${open.length}</span>${ic('i-chev')}</summary>${open.map(row).join('')}${more}</details>`;
+}
+
+function renderTabs(c, st){
+  const empty = st==='empty', loading = st==='loading';
+  const n = (empty || loading) ? {} : {docs:c.docs.length, money:c.money.ops.length, tasks:c.tasks.length, chat:c.chat.msgs.length, path:c.events.length};
+  const T = [['path','Путь','i-flag'],['docs','Документы','i-file'],['money','Оплаты','i-coin'],['tasks','Задачи','i-check'],['chat','Чат','i-chat']];
+  return `<nav class="tabs" role="tablist">${T.map(([k,l,i])=>`<button type="button" role="tab" data-tab="${k}" class="${S.tab===k?'on':''}" aria-selected="${S.tab===k}"><span class="iw">${ic(i)}${n[k]!=null ? `<span class="b">${n[k]}</span>` : ''}</span><span>${l}</span></button>`).join('')}</nav>`;
+}
+
+function renderSkeleton(){
+  return `<div class="row"><span class="sk" style="width:55%"></span><span class="sk" style="width:85%;margin-top:8px"></span><span class="sk" style="width:40%;margin-top:8px"></span></div>
+  <div class="row"><span class="sk" style="width:65%"></span><span class="sk" style="width:80%;margin-top:8px"></span></div>
+  <div class="row"><span class="sk" style="width:50%"></span><span class="sk" style="width:70%;margin-top:8px"></span></div>
+  <p class="empty" style="padding-top:6px">Загружаем карточку…</p>`;
+}
+
+function renderPanel(c, st){
+  const empty = st==='empty', noacc = st==='noaccess';
+  const t = S.tab;
+  if (t === 'path'){
+    if (empty) return `<div class="empty">${ic('i-inbox')}<b>Событий пока нет</b>Первое событие появится, когда вы зафиксируете договор: номер, дату, продукт, плательщика, заявителей и сумму или причину «уточняется».<br><button class="btn p" type="button" data-sheet="contract">${ic('i-check')}<span>Договор подписан…</span></button></div>`;
+    return `<h4>Лента событий · новые сверху</h4><div>${c.events.map(e=>`<div class="ev" data-kind="${e.kind}"><div class="tm"><b>${esc(e.d)}</b>${esc(e.t)}</div><span class="dot"></span><div class="bd"><div class="au">${ic(e.kind==='bot'?'i-bot':e.kind==='sys'?'i-refresh':e.kind==='client'?'i-user':e.kind==='warn'?'i-alert':'i-hand')}<b>${esc(e.who)}</b></div><div class="ti">${esc(e.ti)}</div>${e.ds?`<div class="ds">${esc(e.ds)}</div>`:''}<div class="bs"><b>основание:</b> ${esc(e.bs)}</div></div></div>`).join('')}</div>`;
+  }
+  if (t === 'docs'){
+    if (empty) return `<div class="empty">${ic('i-file')}<b>Документы ещё не запрошены</b>Список по шаблону продукта появится после договора; статус каждого — запрошен → получен → на проверке → принят / отклонён с причиной.<br><button class="btn s" type="button" disabled title="до договора">${ic('i-lock')}<span>Запросить по шаблону</span></button></div>`;
+    const lockNote = noacc ? `<div class="ban lock" style="border-radius:10px;border:none">${ic('i-lock')}<div>Файлы чужой услуги не открываются: видны только статусы (раздел 4 ТЗ, предположение — см. вопрос 9).</div></div>` : '';
+    return `${lockNote}<h4>Получен ≠ принят · у каждого файла своя версия и проверка</h4>${c.docs.map(d=>{const [tone,label]=DOC_ST[d.st];return `<div class="doc">${ic('i-file')}<div style="min-width:0"><div class="nm">${d.nm}</div><div class="ms">${d.ms}</div></div><span class="pill ${tone}">${label}</span></div>`;}).join('')}
+    ${noacc ? '' : `<div class="rb" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" type="button" data-toast="Запросить документ — сообщение клиенту по шаблону, черновик менеджеру (MSG-01)">${ic('i-chat')}Запросить…</button><button class="btn sm" type="button" data-toast="Загрузить файл — новая версия, требует новой проверки">${ic('i-file')}Загрузить файл…</button></div>`}`;
+  }
+  if (t === 'money'){
+    const m = c.money;
+    if (empty) return `<div class="money"><div class="mt unk"><div class="k">Сумма договора</div><div class="v">не установлена</div><div class="s">договора нет</div></div><div class="mt unk"><div class="k">Внесено</div><div class="v">нет данных</div><div class="s">не «0»: операций нет</div></div><div class="mt unk"><div class="k">Возвращено</div><div class="v">—</div></div><div class="mt unk"><div class="k">Остаток</div><div class="v">не рассчитан</div><div class="s">нет суммы договора</div></div></div><div class="empty">${ic('i-coin')}<b>Операций нет</b>Оплата появится как подтверждённая сотрудником операция с датой, суммой, валютой, способом и основанием. Сообщение клиента «оплатил» создаст только предложение проверить.</div>`;
+    const tile = (k,x,cls='') => `<div class="mt ${x.unk?'unk':''} ${cls}"><div class="k">${k}</div><div class="v">${esc(x.v)}${x.c?`<small>${x.c}</small>`:''}</div>${x.s?`<div class="s">${esc(x.s)}</div>`:''}</div>`;
+    const rest = m.rest.over ? tile('Переплата', m.rest, 'over') : tile('Остаток', m.rest);
+    const ops = m.ops.length ? m.ops.map(o=>`<div class="op${o.unc?' unc':''}"><span class="t">${esc(o.t)}</span><span class="a">${esc(o.a)}</span><div class="m">${o.m}</div>${o.rb && !noacc ? `<div class="rb">${o.rb.map(b=>`<button class="btn sm" type="button" data-toast="${esc(b)} — в макете заглушка; курс, дата и источник курса сохраняются в операции (MONEY-04)">${esc(b)}</button>`).join('')}</div>`:''}</div>`).join('') : `<div class="empty" style="padding-top:4px">Подтверждённых операций нет.</div>`;
+    const btns = noacc ? `<div class="ban lock" style="border-radius:10px;border:none">${ic('i-lock')}<div>Подтверждение оплаты и исправления сумм закрыты: услугу ведёт ${esc(c.manager)}.</div></div>` :
+      `<div class="rb" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" type="button" data-toast="Добавить оплату — отдельная операция (MONEY-01)">${ic('i-coin')}Добавить оплату…</button><button class="btn sm" type="button" data-toast="Исправить «внесено всего» — корректировка с прежним значением и автором (MONEY-01); второй режим, не суммируется с первым">${ic('i-refresh')}Исправить «внесено всего»…</button>${(m.rb||[]).map(b=>`<button class="btn sm" type="button"${m.rbDisabled?' disabled title="права на возврат — решение владельца (DEC-02/DEC-11)"':''} data-toast="${esc(b)}">${m.rbDisabled?ic('i-lock'):''}${esc(b)}</button>`).join('')}</div>`;
+    return `<div class="money">${tile('Сумма договора', m.contract)}${tile('Внесено', m.paid)}${tile('Возвращено', m.refund)}${rest}</div><p style="margin:0;font-size:11.5px;color:var(--ink-3);line-height:1.35">${esc(m.note)}</p><h4>Операции · подтверждает сотрудник, не банк</h4>${ops}${btns}`;
+  }
+  if (t === 'tasks'){
+    if (empty) return `<div class="empty">${ic('i-check')}<b>Задач нет</b>Задачи создаются правилами при подписании договора и переходах этапов. Каждая объясняет, почему создана.</div>`;
+    return `${c.tasks.map(k=>`<div class="task${k.hi?' hi':''}${k.blocked?' blocked':''}"><span class="cb"></span><div style="min-width:0"><div class="t">${esc(k.t)}</div><div class="m"><span class="due ${k.dueTone}">${ic('i-cal')} ${esc(k.due)}</span><span>${ic('i-hand')} ${esc(k.who)}</span></div><div class="why"><b>почему создано:</b> ${esc(k.why)}</div>${noacc?'':`<div class="rb"><button class="btn sm" type="button" data-toast="Выполнить — задача закрывается с автором и временем">${ic('i-check')}Выполнить</button><button class="btn sm" type="button" data-toast="Перенести — требует новой даты и причины; юридический срок не сдвигается (UI-01)">${ic('i-cal')}Перенести…</button></div>`}</div></div>`).join('')}`;
+  }
+  if (t === 'chat'){
+    const lead = empty ? 'ведёт бот · перехвата не было' : c.chat.lead;
+    const msgs = empty ? [{w:'c', n:c.name, x:'Здравствуйте, хотела уточнить по оформлению', tm:'вчера 21:14'},{w:'b', n:'бот', x:'Здравствуйте! Подскажите, пожалуйста, какая услуга интересует — подберу и передам менеджеру.', tm:'вчера 21:14'}] : c.chat.msgs;
+    return `<div class="lead"><span class="dot"></span>${esc(lead)}</div><div class="chat">${msgs.map(b=>`<div class="bub ${b.w}"><span class="w">${esc(b.n)}</span>${esc(b.x)}<span class="tm">${esc(b.tm)}</span></div>`).join('')}</div><button class="btn p" type="button" data-toast="Переход в экран переписки (docs/chat-mockup.html, направление A)">${ic('i-chat')}<span>Открыть переписку</span></button>`;
+  }
+  return '';
+}
+
+function renderSheet(c, st){
+  const err = st === 'error';
+  const sh = S.sheetKind === 'contract' ? {title:'Договор подписан', hint:'Создаёт исполнение, начальный чек-лист и задачи ровно один раз (FLOW-02). Отправленный договор ≠ подписанный.', fields:[{l:'Номер договора', v:'', req:true},{l:'Дата подписания', v:'', req:true},{l:'Сумма и валюта', v:'', req:false},{l:'Причина, если сумма уточняется', v:'', req:false}]}
+    : (c.sheet || {title:'Действие', hint:'', fields:[]});
+  const ban = err ? `<div class="ban err">${ic('i-alert')}<div><b>Не удалось сохранить.</b> Сервер не ответил (таймаут). Введённое сохранено. Повтор с тем же ключом операции не создаст второй переход.<div class="bb"><button class="btn sm danger" type="button" data-retry>${ic('i-refresh')}Повторить</button><button class="btn sm" type="button" data-close>Отмена</button></div></div></div>` : '';
+  return `<h5>${esc(sh.title)}</h5><p class="hint">${esc(sh.hint)}</p>${ban}
+    ${sh.fields.map((f,i)=>`<label class="fld"><span>${esc(f.l)}${f.req?' <i class="req">*</i>':''}</span><input type="text" value="${esc(f.v)}" ${i===0?'autofocus':''}></label>`).join('')}
+    <div class="bb"><button class="btn p" type="button" data-save>${ic('i-check')}<span>Сохранить</span></button><button class="btn s" type="button" data-close>Отмена</button></div>`;
+}
+
+function renderSide(c){
+  $('#caseTitle').textContent = c.title;
+  $('#caseNotes').innerHTML = c.notes;
+}
+
+/* ============================================================ ПОВЕДЕНИЕ */
+function bind(){
+  document.querySelectorAll('#scroll [data-toast], #sheet [data-toast]').forEach(b=>b.addEventListener('click', e=>{ if (b.disabled) return; toast(b.dataset.toast || 'В макете это заглушка'); }));
+  document.querySelectorAll('#scroll [data-sheet]').forEach(b=>b.addEventListener('click', ()=>{ if (b.disabled) return; S.sheetKind = b.dataset.sheet; $('#sheet').innerHTML = renderSheet(CASES[S.case], S.state==='error'?'error':'main'); $('#screen').dataset.sheet='open'; bindSheet(); }));
+  document.querySelectorAll('.tabs [data-tab]').forEach(b=>b.addEventListener('click', ()=>{ S.tab = b.dataset.tab; syncUrl(); render(); }));
+  document.querySelectorAll('.path .bar').forEach(b=>b.addEventListener('click', ()=>{
+    const c = CASES[S.case], i = +b.dataset.stage, cur = +$('#path').dataset.cur;
+    const state = i<cur ? 'пройден' : i===cur ? 'текущий' : 'впереди';
+    $('#capL').innerHTML = `<b>${i+1} из ${c.stages.length}</b> · ${esc(c.stages[i])} · ${state}`;
+  }));
+  document.querySelectorAll('.apps .ap').forEach(a=>a.addEventListener('keydown', e=>{ if (e.key==='Enter'||e.key===' ') { e.preventDefault(); toast(a.dataset.toast); } }));
+  $('#scrim').onclick = closeSheet;
+  bindSheet();
+}
+function bindSheet(){
+  document.querySelectorAll('#sheet [data-close]').forEach(b=>b.onclick = closeSheet);
+  document.querySelectorAll('#sheet [data-save], #sheet [data-retry]').forEach(b=>b.onclick = ()=>{ toast('Сохранение — в макете заглушка. В продукте: проверка прав, версии карточки и обязательных полей на сервере.'); if (S.state!=='error') closeSheet(); });
+}
+function closeSheet(){ $('#screen').dataset.sheet = 'closed'; if (S.state==='error'){ S.state='main'; syncUrl(); render(); } }
+
+function syncUrl(){
+  const p = new URLSearchParams();
+  p.set('case', S.case); p.set('state', S.state); if (S.tab!=='path') p.set('tab', S.tab); if (S.w==='720') p.set('w','720');
+  p.set('theme', document.documentElement.dataset.theme);
+  history.replaceState(null, '', '?' + p.toString());
+  document.querySelectorAll('#caseSeg button').forEach(b=>b.classList.toggle('on', b.dataset.case===S.case));
+  document.querySelectorAll('#stateSeg button').forEach(b=>b.classList.toggle('on', b.dataset.state===S.state));
+  document.querySelectorAll('#wSeg button').forEach(b=>b.classList.toggle('on', b.dataset.w===S.w));
+  $('#frame').classList.toggle('wide', S.w==='720');
+  $('#noteR').textContent = `${S.w} × 680 · ${document.documentElement.dataset.theme==='dark'?'тёмная':'светлая'}`;
+}
+
+/* Замер: низ шапки (до полосы пути) и число сущностей шапки, целиком видимых на 680 px. */
+function measure(){
+  const scr = $('#screen'), sr = scr.getBoundingClientRect();
+  const hd = scr.querySelector('.hd'), act = scr.querySelector('.act'), tabs = scr.querySelector('.tabs');
+  const hdB = hd ? Math.round(hd.getBoundingClientRect().bottom - sr.top) : 0;
+  const actB = act ? Math.round(act.getBoundingClientRect().bottom - sr.top) : hdB;
+  const tabsT = tabs ? Math.round(tabs.getBoundingClientRect().top - sr.top) : 0;
+  let vis = 0, all = 0;
+  scr.querySelectorAll('[data-fact]').forEach(el=>{ all++; const r = el.getBoundingClientRect(); if (r.bottom - sr.top <= 680 && r.right - sr.left <= sr.width + .5) vis++; });
+  let over = 0;
+  scr.querySelectorAll('.scroll *').forEach(el=>{ const r = el.getBoundingClientRect(); if (r.width && r.right > sr.right + .5) over++; });
+  $('#noteL').textContent = `шапка до ${hdB} px · действия до ${actB} · вкладки с ${tabsT} · сущностей видно ${vis}/${all} · за край: ${over}`;
+  window.__measure = {hdB, actB, tabsT, vis, all, over};
+}
+
+document.querySelectorAll('#caseSeg button').forEach(b=>b.addEventListener('click', ()=>{ S.case=b.dataset.case; syncUrl(); render(); }));
+document.querySelectorAll('#stateSeg button').forEach(b=>b.addEventListener('click', ()=>{ S.state=b.dataset.state; syncUrl(); render(); }));
+document.querySelectorAll('#wSeg button').forEach(b=>b.addEventListener('click', ()=>{ S.w=b.dataset.w; syncUrl(); render(); }));
+$('#modeBtn').addEventListener('click', ()=>{ const r=document.documentElement; r.dataset.theme = r.dataset.theme==='dark'?'light':'dark'; try{localStorage.setItem('frunze-card-mock-theme', r.dataset.theme);}catch(e){} syncUrl(); requestAnimationFrame(measure); });
+window.addEventListener('resize', ()=>requestAnimationFrame(measure));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>requestAnimationFrame(measure));
+
+syncUrl();
+render();
+</script>
+</body>
+</html>
