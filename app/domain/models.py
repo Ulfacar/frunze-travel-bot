@@ -20,11 +20,15 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone
+from decimal import Decimal
 
-from sqlalchemy import (Boolean, Date, DateTime, ForeignKey, Index, Integer, String,
-                        Text, UniqueConstraint, func, select, text)
+from sqlalchemy import (JSON, Boolean, CheckConstraint, Date, DateTime, ForeignKey,
+                        ForeignKeyConstraint, Index, Integer, String, Text,
+                        Numeric, UniqueConstraint, event, func, inspect, select, text, true,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship, validates
+from sqlalchemy.types import TypeDecorator
 
 
 class DomainBase(DeclarativeBase):
@@ -445,3 +449,395 @@ async def link_external(session: AsyncSession, provider: str, external_type: str
     session.add(reference)
     await session.flush()
     return reference
+
+
+class _ServiceJSONList(list):
+    # Вложенное изменение JSON иначе проходит мимо ORM и защиты опубликованной версии.
+    def _immutable(self, *args, **kwargs):
+        raise DomainError("service JSON is immutable; replace the draft value instead")
+
+    __setitem__ = __delitem__ = __iadd__ = __imul__ = _immutable
+    append = extend = insert = pop = remove = clear = reverse = sort = _immutable
+
+
+class _ServiceJSONDict(dict):
+    def _immutable(self, *args, **kwargs):
+        raise DomainError("service JSON is immutable; replace the draft value instead")
+
+    __setitem__ = __delitem__ = __ior__ = _immutable
+    clear = pop = popitem = setdefault = update = _immutable
+
+
+class _ServiceJSON(TypeDecorator):
+    """Копия без изменяемых вложенных ссылок защищает также JSON после загрузки из БД."""
+
+    impl = JSON
+    cache_ok = True
+
+    @classmethod
+    def freeze(cls, value):
+        if isinstance(value, dict):
+            return _ServiceJSONDict({key: cls.freeze(item) for key, item in value.items()})
+        if isinstance(value, list):
+            return _ServiceJSONList(cls.freeze(item) for item in value)
+        return value
+
+    def process_result_value(self, value, dialect):
+        return self.freeze(value)
+
+
+class Product(DomainBase):
+    __tablename__ = "products"
+    __table_args__ = (
+        CheckConstraint("direction IN (" + ", ".join(repr(d) for d in DIRECTIONS) + ")",
+                        name="ck_products_direction"),
+        ForeignKeyConstraint(
+            ["current_version_id", "id"], ["workflow_versions.id", "workflow_versions.product_id"],
+            name="fk_products_current_version"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(64), unique=True)
+    name: Mapped[str] = mapped_column(String(255))
+    direction: Mapped[str] = mapped_column(String(16))
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
+    current_version_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+    @validates("code", "direction")
+    def _stable_identity(self, key, value):
+        if inspect(self).has_identity and value != getattr(self, key):
+            raise DomainError("product code and direction are immutable")
+        if key == "direction" and value not in DIRECTIONS:
+            raise DomainError(f"unknown direction {value!r}")
+        return value
+
+    @classmethod
+    def __declare_last__(cls):
+        def reject_delete(mapper, connection, target):
+            raise DomainError("archive the product instead of deleting it")
+
+        event.listen(cls, "before_delete", reject_delete)
+
+
+class WorkflowVersion(DomainBase):
+    __tablename__ = "workflow_versions"
+    __table_args__ = (
+        UniqueConstraint("product_id", "version", name="uq_workflow_product_version"),
+        # Составные FK не позволяют назначить продукту или услуге процесс другого продукта.
+        UniqueConstraint("id", "product_id", name="uq_workflow_id_product"),
+        CheckConstraint("version >= 1", name="ck_workflow_version_positive"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Физического FK на products здесь намеренно нет: products уже ссылается на
+    # версию через current_version_id, и встречный FK заставил бы создавать таблицы
+    # с ALTER, чего эта ревизия избегает. Цена: сырой INSERT мимо ORM может завести
+    # версию с несуществующим product_id — целостность держит хук before_insert.
+    # Связь проверяется ниже при записи, удаление продукта запрещено доменным слоем.
+    product_id: Mapped[int] = mapped_column(Integer)
+    version: Mapped[int] = mapped_column(Integer)
+    stages: Mapped[list[dict]] = mapped_column(_ServiceJSON)
+    transitions: Mapped[dict[str, list[str]]] = mapped_column(_ServiceJSON)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    published_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("id", "product_id", "version", "stages", "transitions",
+               "published_at", "published_by", "created_at")
+    def _immutable_after_publication(self, key, value):
+        if self.__dict__.get("published_at") is not None:
+            raise DomainError("published workflow version is immutable")
+        return _ServiceJSON.freeze(value) if key in ("stages", "transitions") else value
+
+    @classmethod
+    def __declare_last__(cls):
+        def validate_product(mapper, connection, target):
+            if connection.scalar(select(Product.id).where(Product.id == target.product_id)) is None:
+                raise DomainError(f"unknown product {target.product_id}")
+
+        def protect_published(mapper, connection, target):
+            # Читаем сохранённый признак, чтобы expire/merge не обходили неизменяемость.
+            published = connection.scalar(select(cls.published_at).where(
+                cls.id == inspect(target).identity[0]))
+            if published is not None:
+                raise DomainError("published workflow version is immutable")
+
+        event.listen(cls, "before_insert", validate_product)
+        event.listen(cls, "before_update", protect_published)
+        event.listen(cls, "before_update", validate_product)
+        event.listen(cls, "before_delete", protect_published)
+
+
+class ServiceCase(DomainBase):
+    __tablename__ = "service_cases"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workflow_version_id", "product_id"],
+            ["workflow_versions.id", "workflow_versions.product_id"],
+            name="fk_service_cases_workflow_product"),
+        CheckConstraint("revision >= 1", name="ck_service_case_revision_positive"),
+        # AC-01: повтор запроса с тем же ключом не заводит вторую услугу. Уникальность
+        # держит БД: две параллельные отправки формы прошли бы проверку «а нет ли уже»
+        # обе — между SELECT и INSERT успевает вклиниться вторая транзакция.
+        # Частичный индекс: ключ не обязателен, а NULL в уникальном индексе PostgreSQL
+        # не конфликтует сам с собой, но в SQLite ведёт себя иначе — отсюда WHERE.
+        Index("uq_service_case_idempotency", "idempotency_key", unique=True,
+              sqlite_where=text("idempotency_key IS NOT NULL"),
+              postgresql_where=text("idempotency_key IS NOT NULL")),
+        CheckConstraint(
+            "(agreed_amount IS NULL) OR (currency IS NOT NULL AND length(trim(currency)) = 3)",
+            name="ck_service_case_amount_needs_currency"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    contact_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"))
+    request_id: Mapped[int | None] = mapped_column(ForeignKey("requests.id"), nullable=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    workflow_version_id: Mapped[int] = mapped_column(Integer)
+    owner_login: Mapped[str] = mapped_column(String(64))
+    stage: Mapped[str] = mapped_column(String(64))
+    outcome: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # --- E1-03: договор. Техприложение ТЗ разрешает держать его полями услуги, пока
+    # не понадобится несколько договоров на одну услугу. Отдельная таблица без такой
+    # потребности — лишняя связь, которую потом тащить в каждый запрос.
+    contract_reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    # Отправленный договор НЕ равен подписанному (FLOW-02): пока сотрудник не
+    # подтвердил подпись, здесь пусто, и продажа не считается состоявшейся.
+    signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    signed_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Сумма договора. Decimal, не float: на деньгах разница в копейку превращается
+    # в расхождение отчётов. Операции с платежами — отдельная задача E2-03, здесь
+    # только согласованная цена из договора.
+    agreed_amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    # «Сумма уточняется» — законное состояние по FLOW-02, но с причиной: неизвестная
+    # сумма не равна нулю и не должна молча превращаться в него в отчётах.
+    amount_unknown_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Ключ операции для AC-01: повтор запроса с тем же ключом обязан вернуть ту же
+    # услугу, а не завести вторую. Уникальность держит БД, а не проверка в коде:
+    # две параллельные отправки формы проверку бы прошли обе.
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    waiting_party: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    waiting_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_check_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+    # Проверка ревизии входит в сам UPDATE, поэтому два менеджера не затрут друг друга.
+    __mapper_args__ = {"version_id_col": revision}
+
+    @validates("contact_id", "product_id", "workflow_version_id", "revision")
+    def _fixed_process(self, key, value):
+        if inspect(self).has_identity and value != getattr(self, key):
+            raise DomainError(f"service case {key} cannot be reassigned")
+        return value
+
+    @validates("agreed_amount", "currency")
+    def _contract_money_only_via_operation(self, key, value):
+        """Цену договора меняет только операция, с правом, причиной и событием.
+
+        Аудит нашёл главную дыру денежного модуля: журнал платежей закрыт от
+        правок, а сама сумма договора менялась из любой сессии бесследно — и это
+        ретроактивно переписывало все остатки. Отчёт за прошлый месяц, пересчитанный
+        сегодня, показывал бы другие числа, и сверить его было бы нечем.
+        """
+        if inspect(self).has_identity and value != getattr(self, key):
+            if not getattr(self, "_money_correction_in_progress", False):
+                raise DomainError(
+                    "contract amount and currency change only via correct_contract_amount")
+        return value
+
+    @validates("stage")
+    def _stage_only_via_operation(self, key, value):
+        """Этап меняет только `service_cases.advance`, и только с событием.
+
+        Аудит показал: прямое `case.stage = "TOUR-05"` проходило мимо проверки
+        допустимости перехода и обязательных фактов. Ревизия при этом росла, а
+        события не возникало — и восстановить прежний этап из истории было
+        нельзя, то есть такая запись неотличима от правильной. Закрыто тем же
+        приёмом, что и владелец: операция снимает защиту на один вызов.
+        """
+        if inspect(self).has_identity and value != getattr(self, key):
+            if not getattr(self, "_advance_in_progress", False):
+                raise DomainError("service case stage changes only via advance")
+        return value
+
+    @validates("owner_login")
+    def _owner_only_via_operation(self, key, value):
+        """Владельца меняет только `service_cases.reassign_case`, и только с событием.
+
+        Аудит нашёл тупик: прямое присваивание `case.owner_login = "..."` двигало
+        ревизию, но не оставляло следа в истории — то есть услуга меняла хозяина
+        бесследно, вопреки обещанию в докстрингах. Теперь поле закрыто, а операция
+        снимает защиту явно и на один вызов.
+        """
+        if inspect(self).has_identity and value != getattr(self, key):
+            if not getattr(self, "_reassign_in_progress", False):
+                raise DomainError("service case owner changes only via reassign_case")
+        return value
+
+    @classmethod
+    def __declare_last__(cls):
+        def validate_stage(mapper, connection, target):
+            workflow = connection.execute(select(
+                WorkflowVersion.product_id, WorkflowVersion.stages,
+                WorkflowVersion.published_at,
+            ).where(WorkflowVersion.id == target.workflow_version_id)).first()
+            if (workflow is None or workflow.product_id != target.product_id
+                    or workflow.published_at is None):
+                raise DomainError("service case requires a published workflow of its product")
+            if target.stage not in {stage["code"] for stage in workflow.stages}:
+                raise DomainError(f"unknown stage {target.stage!r}")
+
+        event.listen(cls, "before_insert", validate_stage)
+        event.listen(cls, "before_update", validate_stage)
+
+
+class ServicePayment(DomainBase):
+    """Денежное движение по услуге: оплата, обязательство возврата или факт возврата.
+
+    Это **журнал фактов**, а не счёт. Строки не меняются и не удаляются: исправление
+    добавляет новую строку с типом `correction` и ссылкой на исправляемую. Остаток
+    всегда считается заново по журналу — хранимого «итого» нет, чтобы не было двух
+    источников правды, которые разойдутся.
+
+    Почему обязательство возврата и факт возврата — разные типы (AC-04): клиент
+    решил вернуть деньги, а перевод ещё не сделан. Если пометить это как возврат,
+    отчёт покажет деньги вернувшимися, хотя они у компании. Обязательство видно
+    отдельно и не трогает «возвращено».
+
+    Валюта платежа может отличаться от валюты договора. Тогда без курса зачесть
+    платёж в остаток нельзя (AC-06): сумма висит в своей валюте и не создаёт
+    ложного остатка. Зачёт нигде не хранится — он считается при расчёте остатка,
+    иначе платёж, внесённый до появления суммы в договоре, выпадал бы навсегда.
+
+    Защита уровня ORM: построчные и массовые UPDATE/DELETE запрещены. Core-соединение
+    и сырой SQL её обходят — это принятый предел, настоящая защита потребовала бы
+    триггера или REVOKE на стороne PostgreSQL (решение не принято).
+    """
+
+    __tablename__ = "service_payments"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_service_payment_idempotency"),
+        # Одну строку исправляет РОВНО одна: иначе два менеджера (или двойной клик
+        # с разными ключами) исправляют одно и то же, и обе поправки суммируются.
+        Index("uq_service_payment_corrects", "corrects_id", unique=True,
+              sqlite_where=text("corrects_id IS NOT NULL"),
+              postgresql_where=text("corrects_id IS NOT NULL")),
+        CheckConstraint("amount > 0", name="ck_service_payment_amount_positive"),
+        CheckConstraint("length(trim(currency)) = 3", name="ck_service_payment_currency"),
+        CheckConstraint("fx_rate IS NULL OR fx_rate > 0",
+                        name="ck_service_payment_rate_positive"),
+        # Курс и валюта, к которой он дан, существуют только вместе.
+        CheckConstraint("(fx_rate IS NULL) = (fx_to IS NULL)",
+                        name="ck_service_payment_rate_needs_target"),
+        # Строка не исправляет сама себя: иначе она исключает себя из расчёта и
+        # деньги исчезают из остатка молча.
+        CheckConstraint("corrects_id IS NULL OR corrects_id <> id",
+                        name="ck_service_payment_no_self_correction"),
+        CheckConstraint(
+            "kind IN ('payment', 'refund_due', 'refund_paid', 'correction', 'void')",
+            name="ck_service_payment_kind"),
+        CheckConstraint("settles_id IS NULL OR settles_id <> id",
+                        name="ck_service_payment_no_self_settlement"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("service_cases.id"), index=True)
+    # payment | refund_due | refund_paid | correction
+    kind: Mapped[str] = mapped_column(String(16))
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    currency: Mapped[str] = mapped_column(String(3))
+    # Курс к валюте договора на момент записи. Зачтённая сумма НЕ хранится: она
+    # вычисляется при расчёте остатка. Хранимый зачёт был ошибкой — он фиксировался
+    # в момент платежа, и предоплата, внесённая до появления суммы в договоре,
+    # навсегда выпадала из остатка.
+    fx_rate: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+    # Валюта, К КОТОРОЙ дан курс. Без неё курс бессмысленен: он задавался к валюте
+    # договора на момент записи, а если валюта договора потом сменится, тот же курс
+    # применился бы к другой валюте и дал ложный зачёт.
+    fx_to: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    corrects_id: Mapped[int | None] = mapped_column(
+        ForeignKey("service_payments.id"), nullable=True)
+    # Обязательство, которое закрывает этот фактический возврат. Без ссылки
+    # обязательство жило в отчёте вечно: услуга показывала и «вернули», и
+    # «обязаны вернуть», а сигнал «нужен человек» становился шумом.
+    settles_id: Mapped[int | None] = mapped_column(
+        ForeignKey("service_payments.id"), nullable=True)
+    reason: Mapped[str] = mapped_column(Text, default="", server_default="")
+    recorded_by: Mapped[str] = mapped_column(String(64))
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now,
+                                                  server_default=func.now())
+
+    @classmethod
+    def __declare_last__(cls):
+        def reject_write(mapper, connection, target):
+            # Строка журнала не меняется и не удаляется: исправление — новая строка.
+            # Валидатор полей ловит только присваивание через ORM, а этот хук
+            # закрывает и удаление объекта целиком.
+            raise DomainError("service payments are append-only")
+
+        event.listen(cls, "before_update", reject_write)
+        event.listen(cls, "before_delete", reject_write)
+
+    @validates("kind", "amount", "currency", "fx_rate", "fx_to", "case_id",
+               "idempotency_key", "corrects_id", "settles_id", "reason",
+               "recorded_by", "recorded_at")
+    def _append_only(self, key, value):
+        """Журнал денег не правится на месте: исправление — отдельная строка.
+
+        Иначе сумма могла измениться бесследно, и сверить отчёт с историей было бы
+        нечем. Ровно та же причина, по которой закрыты `stage` и `owner_login`
+        у услуги.
+        """
+        if inspect(self).has_identity and value != getattr(self, key):
+            raise DomainError(f"service payment {key} is append-only; record a correction")
+        return value
+
+
+class ServiceEvent(DomainBase):
+    __tablename__ = "service_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("service_cases.id"))
+    event_type: Mapped[str] = mapped_column(String(64))
+    actor: Mapped[str] = mapped_column(String(64))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    from_stage: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    to_stage: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payload: Mapped[dict] = mapped_column(_ServiceJSON, default=lambda: _ServiceJSON.freeze({}))
+
+    @validates("id", "case_id", "event_type", "actor", "occurred_at", "recorded_at",
+               "from_stage", "to_stage", "reason", "payload")
+    def _append_only(self, key, value):
+        if inspect(self).has_identity:
+            raise DomainError("service events are append-only")
+        return _ServiceJSON.freeze(value) if key == "payload" else value
+
+    @classmethod
+    def __declare_last__(cls):
+        def reject_write(mapper, connection, target):
+            raise DomainError("service events are append-only")
+
+        def reject_bulk_write(state):
+            # Массовый DML обходит mapper-события, историю и проверку revision.
+            if state.is_update or state.is_delete:
+                table = getattr(state.statement, "table", None)
+                if table is not None and table.name in {
+                    "products", "workflow_versions", "service_cases", "service_events",
+                    # Журнал денег тоже: массовый UPDATE стирал суммы бесследно, а
+                    # DELETE удалял оплаты целиком — валидатор поля этого не ловит,
+                    # потому что bulk-DML обходит mapper-события.
+                    "service_payments",
+                }:
+                    raise DomainError("bulk writes bypass service invariants; use domain operations")
+
+        event.listen(cls, "before_update", reject_write)
+        event.listen(cls, "before_delete", reject_write)
+        event.listen(Session, "do_orm_execute", reject_bulk_write)

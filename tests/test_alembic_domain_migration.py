@@ -40,6 +40,13 @@ DOMAIN_TABLES = {
     "canonical_messages", "inbox_events", "outbox_jobs",
     # Sprint 1 calendar tasks.
     "calendar_tasks", "calendar_task_events",
+    # E1-01 из ТЗ CRM: продукты, версии процессов, услуга и её история.
+    # Услуга висит на contacts, а не на requests: замер прода 04.10 показал
+    # requests = 0 строк при 2662 контактах.
+    "products", "workflow_versions", "service_cases", "service_events",
+    # E2-03: журнал денег по услуге. Остаток в нём НЕ хранится — считается по
+    # строкам, поэтому колонки «итого» здесь нет и быть не должно.
+    "service_payments",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",
