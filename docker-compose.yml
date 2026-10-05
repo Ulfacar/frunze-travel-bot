@@ -169,6 +169,7 @@ services:
       ADMIN_CHAT_REDESIGN_ENABLED: ${ADMIN_CHAT_REDESIGN_ENABLED:-false}
       # Экран «Фокус» — кому ответить сейчас. Default OFF.
       ADMIN_FOCUS_ENABLED: ${ADMIN_FOCUS_ENABLED:-false}
+      ADMIN_WORKDAY_ENABLED: ${ADMIN_WORKDAY_ENABLED:-false}
       # Secure-флаг cookie сессии. На проде только true (TLS на nginx).
       SESSION_HTTPS_ONLY: ${SESSION_HTTPS_ONLY:-true}
       ADMIN_INBOX_PAGE_SIZE: ${ADMIN_INBOX_PAGE_SIZE:-60}

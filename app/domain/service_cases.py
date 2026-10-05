@@ -804,6 +804,67 @@ async def reassign_case(session: AsyncSession, case_id: int, *, target_login: st
     return case
 
 
+def stage_plan(version: WorkflowVersion, stage_code: str) -> dict:
+    """Положение этапа в процессе и что с него доступно. Чистая функция.
+
+    Нужна и для полосы пути в карточке, и для вывода следующего шага: без неё
+    интерфейс пересказывал бы содержимое `version.stages` своими словами и
+    однажды разошёлся бы с процессом. Процесс версионирован — читаем его, а не
+    хардкодим этапы.
+    """
+    stages = list(version.stages or [])
+    codes = [str(s.get("code") or "") for s in stages]
+    index = codes.index(stage_code) if stage_code in codes else -1
+    current = stages[index] if index >= 0 else {}
+    allowed = [str(c) for c in (version.transitions or {}).get(stage_code, [])]
+    by_code = {str(s.get("code") or ""): s for s in stages}
+    return {
+        "index": index,
+        "total": len(stages),
+        "name": str(current.get("name") or stage_code),
+        "next": allowed,
+        # Обязательные факты КАЖДОГО доступного перехода: интерфейс спрашивает ровно
+        # их, а имена полей берёт отсюда, а не из захардкоженного списка.
+        "requires": {code: [str(f) for f in (by_code.get(code, {}).get("requires") or [])]
+                     for code in allowed},
+        "next_names": {code: str(by_code.get(code, {}).get("name") or code)
+                       for code in allowed},
+    }
+
+
+async def cases_for_owner(session: AsyncSession, *, by: Actor,
+                          owner_login: str | None = None,
+                          direction: str | None = None,
+                          limit: int = 200) -> list[ServiceCase]:
+    """Услуги, которые менеджер вправе видеть. Только чтение.
+
+    Фильтр по направлению и владению идёт в SQL, но результат ДОПОЛНИТЕЛЬНО
+    прогоняется через `can_view_case`: запрос — оптимизация, право — правило.
+    Так же сделано в `task_rules.case_tasks`.
+    """
+    query = select(ServiceCase).join(Product, Product.id == ServiceCase.product_id)
+    if owner_login:
+        query = query.where(ServiceCase.owner_login == str(owner_login).strip().lower())
+    if direction:
+        query = query.where(Product.direction == direction)
+    elif not by.is_full_admin and by.allowed_directions:
+        query = query.where(Product.direction.in_(tuple(by.allowed_directions)))
+    # Берём кандидатов ШИРОКО: порядок по срочности считается выше, и обрезать до
+    # него по id нельзя — услуга с просроченным вылетом, заведённая раньше
+    # последних пятидесяти, иначе не попадёт на экран вовсе. Потолок всё же есть,
+    # чтобы запрос не стал неограниченным.
+    rows = list(await session.scalars(
+        query.order_by(ServiceCase.id.desc()).limit(max(1, int(limit)))))
+
+    visible: list[ServiceCase] = []
+    for case in rows:
+        product = await session.get(Product, case.product_id)
+        if can_view_case(by, direction=product.direction if product else None,
+                         owner_login=case.owner_login):
+            visible.append(case)
+    return visible
+
+
 async def cases_for_contact(session: AsyncSession, contact_id: int) -> list[ServiceCase]:
     return list((await session.scalars(select(ServiceCase).where(
         ServiceCase.contact_id == contact_id).order_by(ServiceCase.id))).all())

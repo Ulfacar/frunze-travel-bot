@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Frunze — рабочий день{% endblock %}
+{% block brand_sub %}рабочий день{% endblock %}
+{#
+  «Рабочий день» (E2-06) — экран строится по УСЛУГАМ, а не по задачам: задачи дня живут
+  в /admin/calendar, второй список тех же задач по третьему порядку нам не нужен.
+
+  Порядок задаёт service_day.rank(), шаблон его не пересчитывает. Таблица «как считается
+  порядок» рисуется из service_day.RULES, чтобы не разойтись с кодом.
+
+  Подвисшие захваты выше списка: только они — состояние, где система не знает, дошло ли
+  сообщение клиенту.
+#}
+{% block head %}
+<style>
+    .wk-wrap { max-width: 900px; margin: 0 auto; padding: 18px 16px 48px; display: grid; gap: 16px; min-width: 0; }
+    .wk-wrap > * { min-width: 0; }
+    .wk-head h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+    .wk-head p { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+    /* ---------- Счётчики ---------- */
+    .wk-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+    .wk-stat { display: flex; align-items: baseline; gap: 7px; padding: 7px 12px; min-width: 0;
+               border: 1px solid var(--border); border-radius: var(--r); background: var(--surface);
+               font-size: 13px; color: var(--muted); }
+    .wk-stat b { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--text);
+                 font-variant-numeric: tabular-nums; }
+    .wk-stat.hot b { color: var(--hot); }
+    .wk-stat.warm b { color: var(--warm); }
+
+    /* ---------- Вкладки ---------- */
+    .wk-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 14px; }
+    .wk-tab { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 8px 14px;
+              font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+              color: var(--text); background: var(--surface); border: 1px solid var(--border-2);
+              border-radius: var(--r); transition: background var(--t), border-color var(--t); }
+    .wk-tab:hover { background: var(--surface-2); }
+    .wk-tab:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+    .wk-tab[aria-selected="true"] { background: var(--accent); border-color: transparent;
+                                    color: var(--on-accent, #fff); }
+    .wk-tab-n { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; opacity: .85; }
+    .wk-tab-mine { margin-left: auto; color: var(--muted); }
+    .wk-tab-mine[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+    /* ---------- Подвисшие захваты ---------- */
+    .wk-claims { display: grid; gap: 12px; padding: 16px; border-radius: var(--r-lg);
+                 border: 1px solid color-mix(in srgb, var(--hot) 45%, var(--border));
+                 background: var(--hot-soft); }
+    .wk-claims-h { margin: 0; display: flex; align-items: center; gap: 9px; font-size: 15px;
+                   font-weight: 700; color: var(--hot); }
+    .wk-n { font-family: var(--mono); font-size: 12px; padding: 1px 8px; border-radius: 99px;
+            background: var(--hot); color: var(--on-hot, #fff); }
+    .wk-claims-lead { margin: 0; font-size: 13.5px; color: var(--text); }
+    .wk-claim { display: grid; gap: 10px; padding: 14px; border-radius: var(--r);
+                border: 1px solid var(--border); background: var(--surface); min-width: 0; }
+    .wk-claim-top { display: flex; align-items: flex-start; gap: 10px; justify-content: space-between; min-width: 0; }
+    .wk-claim-who { min-width: 0; }
+    .wk-claim-client { font-weight: 600; font-size: 16px; overflow-wrap: anywhere; }
+    .wk-claim-phone { font-family: var(--mono); font-size: 12.5px; color: var(--faint);
+                      overflow-wrap: anywhere; }
+    .wk-claim-facts { display: grid; gap: 4px; margin: 0; font-size: 13.5px; }
+    .wk-claim-facts > div { display: flex; gap: 8px; min-width: 0; }
+    .wk-claim-facts dt { flex: 0 0 92px; color: var(--faint); }
+    .wk-claim-facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+    .wk-claim-q { margin: 0; padding: 10px 12px; font-size: 13.5px; border-radius: var(--r);
+                  background: var(--surface-2); border-left: 3px solid var(--hot); }
+    .wk-claim-acts { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .wk-claim-form { display: grid; gap: 6px; align-content: start; min-width: 0; }
+    .wk-lbl { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .wk-input { width: 100%; min-height: 44px; padding: 9px 12px; font: inherit; font-size: 14px;
+                color: var(--text); background: var(--surface-2); border: 1px solid var(--border-2);
+                border-radius: var(--r); }
+    .wk-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .wk-btn { min-height: 44px; width: auto; text-decoration: none; text-align: center; }
+    .wk-claim-form .wk-btn { width: 100%; white-space: normal; }
+    .wk-btn[disabled], .btn[disabled] { opacity: .5; cursor: not-allowed; }
+    .wk-say:not(:empty) { padding: 8px 11px; border-radius: var(--r); font-size: 13px;
+                          background: var(--hot-soft); color: var(--hot); }
+    .wk-off { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
+
+    /* ---------- Список услуг ---------- */
+    .wk-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .wk-row { display: grid; gap: 10px; padding: 14px 16px; min-width: 0;
+              border: 1px solid var(--border); border-radius: var(--r-lg);
+              background: var(--surface); box-shadow: var(--shadow); }
+    .wk-row[data-stuck="1"] { border-color: color-mix(in srgb, var(--hot) 45%, var(--border)); }
+    .wk-row-id { min-width: 0; }
+    .wk-title { font-size: 16px; font-weight: 600; color: var(--text); text-decoration: none;
+                overflow-wrap: anywhere; }
+    .wk-title:hover { text-decoration: underline; }
+    .wk-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+    .wk-why { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; min-width: 0; }
+    .wk-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 3px 11px;
+               font-size: 12.5px; font-weight: 700; text-decoration: none; border-radius: 99px;
+               color: var(--accent); background: var(--accent-soft); }
+    .wk-chip:hover { background: var(--accent); color: var(--on-accent, #fff); }
+    .wk-chip[data-reason="claim_stuck"], .wk-chip[data-reason="hard_deadline"],
+    .wk-chip[data-reason="task_overdue"] { color: var(--hot); background: var(--hot-soft); }
+    .wk-chip[data-reason="money_attention"], .wk-chip[data-reason="booking_silent"],
+    .wk-chip[data-reason="due_today"] { color: var(--warm); background: var(--warm-soft); }
+    .wk-detail { font-size: 13.5px; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+    .wk-more summary { cursor: pointer; font-size: 12.5px; color: var(--muted); min-height: 24px; }
+    .wk-more ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 7px; font-size: 13px; }
+    .wk-more a { color: var(--text); }
+    .wk-why-text { font-size: 12px; color: var(--faint); }
+    .wk-next { display: flex; gap: 4px 9px; flex-wrap: wrap; align-items: baseline; font-size: 13.5px;
+               padding: 9px 12px; border-radius: var(--r); background: var(--surface-2); min-width: 0; }
+    .wk-k { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+            color: var(--accent); }
+    .wk-next-label { font-weight: 600; overflow-wrap: anywhere; }
+    .wk-next-sub { flex: 1 1 100%; font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+    .wk-ready { display: flex; align-items: center; gap: 10px; }
+    .wk-pbar { flex: 1 1 auto; height: 7px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+    .wk-pbar i { display: block; height: 100%; background: var(--green); border-radius: 99px; }
+    .wk-ready-n { font-size: 12px; color: var(--faint); white-space: nowrap; }
+    .wk-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ---------- Пустота и сбой — три разных состояния ---------- */
+    .all-clear { display: grid; gap: 10px; justify-items: center; text-align: center;
+                 padding: 48px 24px; border: 1px dashed var(--border-2); border-radius: var(--r-lg);
+                 color: var(--muted); }
+    .all-clear .big { font-size: 20px; font-weight: 600; color: var(--text); }
+    .all-clear svg { width: 42px; height: 42px; color: var(--good); }
+    .wk-failed { display: grid; gap: 8px; padding: 22px; border-radius: var(--r-lg);
+                 border: 1px solid var(--hot); background: var(--hot-soft); color: var(--text); }
+    .wk-failed .big { font-size: 18px; font-weight: 700; color: var(--hot); }
+
+    /* ---------- Как считается порядок ---------- */
+    .wk-rules { border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); }
+    .wk-rules > summary { cursor: pointer; padding: 12px 16px; min-height: 44px; font-weight: 600;
+                          font-size: 14px; display: flex; align-items: center; }
+    .wk-rules table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .wk-rules th, .wk-rules td { padding: 8px 12px; text-align: left; vertical-align: top;
+                                 border-top: 1px solid var(--border); }
+    .wk-rules th { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); }
+    .wk-rules td.w { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; }
+    .wk-rules-note { margin: 0; padding: 0 16px 12px; font-size: 12.5px; color: var(--muted); }
+
+    @media (max-width: 760px) {
+      .wk-wrap { padding: 12px 12px 36px; }
+      .wk-claim-acts { grid-template-columns: minmax(0, 1fr); }
+      .wk-tab-mine { margin-left: 0; }
+    }
+    @media (max-width: 480px) {
+      .wk-head h1 { font-size: 19px; }
+      .wk-claims { padding: 12px; }
+      .wk-row { padding: 12px; }
+      .wk-tab { padding: 8px 11px; font-size: 13px; }
+      .wk-acts .wk-btn { flex: 1 1 100%; }
+      .wk-claim-facts dt { flex-basis: 78px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .wk-tab { transition: none; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="wk-wrap">
+  <header class="wk-head">
+    <h1>Рабочий день</h1>
+    <p>Услуги в порядке срочности. У каждой — причина, почему она на этом месте.
+      Задачи дня — в <a href="/admin/calendar">календаре</a>.</p>
+  </header>
+
+  {# Захваты — выше списка: пока они не разобраны, порядок ниже менее достоверен. #}
+  {% include "_work_claims.html" %}
+
+  {% include "_work_list.html" %}
+
+  <details class="wk-rules" id="work-rules">
+    <summary>Как считается порядок</summary>
+    <p class="wk-rules-note">Берётся самая тяжёлая причина услуги; при равенстве — ближайший срок, затем номер.
+      Таблица рисуется из того же списка правил, что и расчёт.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Вес</th><th scope="col">Причина</th><th scope="col">Почему так</th></tr></thead>
+        <tbody>
+          {% for r in rules %}
+          <tr data-rule="{{ r.code }}"><td class="w">{{ r.weight }}</td><td>{{ r.label }}</td><td>{{ r.why }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // HTTP 200 приходит и при отказе. Успех — только статус < 400 и исход не из списка отказов:
+  // иначе менеджер решит, что захват разобран, а он остался висеть.
+  document.body.addEventListener('htmx:afterRequest', function (e) {
+    var path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
+    var m = path.match(/\/work\/claim\/\d+\/(release|confirm)$/);
+    if (!m) return;
+    var form = e.detail.elt && e.detail.elt.closest ? e.detail.elt.closest('form') : null;
+    var say = form ? form.querySelector('.wk-say') : null;
+    if (say) say.textContent = '';
+    var xhr = e.detail.xhr;
+    var outcome = xhr ? xhr.getResponseHeader('X-Action-Outcome') : null;
+    /* Успехом считаем только ЯВНО успешные исходы, а не «всё, кроме списка
+       плохих». Прежний список не знал про `invalid` и `off`: при пустой причине
+       страница перезагружалась молча, и менеджер думал, что захват разобран,
+       а он висел. Перечислять успех безопаснее: новый исход по умолчанию
+       попадёт в «показать причину», а не в «притвориться, что получилось». */
+    var good = ['released', 'finished', 'recorded', 'advanced'];
+    if (e.detail.successful && xhr && xhr.status < 400
+        && good.indexOf(outcome) >= 0) {
+      location.reload();
+      return;
+    }
+    var reasons = {
+      denied: 'Нет прав на это действие',
+      invalid: 'Основание обязательно — напишите, что именно проверили',
+      off: 'Запись в реестр услуг выключена',
+      failed: 'Не сохранилось: реестр недоступен. Захват остался висеть'
+    };
+    var message = reasons[outcome]
+      || 'Не сохранилось — захват остался висеть. Проверьте причину и повторите';
+    if (outcome === 'denied') message = 'Это не ваша задача — разобрать её может владелец или руководитель';
+    if (outcome === 'stale') message = 'Задачу уже разобрали — обновите страницу';
+    if (say) say.textContent = message;
+  });
+</script>
+{% endblock %}

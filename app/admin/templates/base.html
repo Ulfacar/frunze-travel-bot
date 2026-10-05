@@ -292,6 +292,7 @@
        экране выглядит собранной наспех. Ежедневные — на виду, редкие — за «Ещё».
        Ни один раздел не пропал, они все здесь. #}
     {% if focus_on %}<a href="/admin/focus" class="nav-link">Фокус</a>{% endif %}
+    {% if workday_on %}<a href="/admin/work" class="nav-link">Рабочий день</a>{% endif %}
     <a href="/admin" class="nav-link">Диалоги</a>
     <a href="/admin/buyers" class="nav-link">Покупатели</a>
     <a href="/admin/calendar" class="nav-link">Календарь</a>
@@ -310,6 +311,7 @@
     </details>
     {% else %}
     {% if focus_on %}<a href="/admin/focus" class="nav-link">🎯 Фокус</a>{% endif %}
+    {% if workday_on %}<a href="/admin/work" class="nav-link">🗂 Рабочий день</a>{% endif %}
     <a href="/admin" class="nav-link">💬 Диалоги</a>
     <a href="/admin/buyers" class="nav-link">🎯 Покупатели</a>
     <a href="/admin/morning" class="nav-link">🔥 Горячий лист</a>

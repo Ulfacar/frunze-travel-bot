@@ -38,7 +38,8 @@ log = logging.getLogger("admin")
 # переключение тумблера в env (и подмена настроек в тестах) пять секунд не замечалось бы.
 _LOOK_TTL = 5.0
 _look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
-                                "focus_on": None, "chat_redesign": None}
+                                  "focus_on": None, "chat_redesign": None,
+                                  "workday_on": None, "cases_write_on": None}
 
 
 async def _load_new_look(request: Request) -> None:
@@ -53,12 +54,16 @@ async def _load_new_look(request: Request) -> None:
     from app.core import flags as _flags
     now = time.monotonic()
     key = (bool(settings.admin_new_look_enabled), bool(settings.admin_focus_enabled),
-           bool(settings.admin_chat_redesign_enabled))
+           bool(settings.admin_chat_redesign_enabled),
+           # Четвёртым — иначе подмена флага в тестах не видна весь TTL, и гейт флапает.
+           bool(settings.admin_workday_enabled), bool(settings.service_cases_enabled))
     if (_look_cache["key"] == key and _look_cache["new_look"] is not None
             and now - float(_look_cache["at"]) < _LOOK_TTL):
         request.state.new_look = bool(_look_cache["new_look"])
         request.state.focus_on = bool(_look_cache["focus_on"])
         request.state.chat_redesign = bool(_look_cache["chat_redesign"])
+        request.state.workday_on = bool(_look_cache["workday_on"])
+        request.state.cases_write_on = bool(_look_cache["cases_write_on"])
         return
     try:
         new_look = await _flags.get_flag("admin_new_look_enabled",
@@ -66,15 +71,25 @@ async def _load_new_look(request: Request) -> None:
         focus_on = await _flags.get_flag("admin_focus_enabled", settings.admin_focus_enabled)
         chat_redesign = await _flags.get_flag("admin_chat_redesign_enabled",
                                             settings.admin_chat_redesign_enabled)
+        workday_on = await _flags.get_flag("admin_workday_enabled",
+                                           settings.admin_workday_enabled)
+        cases_write_on = await _flags.get_flag("service_cases_enabled",
+                                               settings.service_cases_enabled)
         _look_cache.update({"at": now, "key": key, "new_look": new_look,
-                            "focus_on": focus_on, "chat_redesign": chat_redesign})
+                            "focus_on": focus_on, "chat_redesign": chat_redesign,
+                            "workday_on": workday_on,
+                            "cases_write_on": cases_write_on})
     except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
         new_look, focus_on = (bool(settings.admin_new_look_enabled),
                               bool(settings.admin_focus_enabled))
         chat_redesign = bool(settings.admin_chat_redesign_enabled)
+        workday_on = bool(settings.admin_workday_enabled)
+        cases_write_on = bool(settings.service_cases_enabled)
     request.state.new_look = bool(new_look)
     request.state.focus_on = bool(focus_on)
     request.state.chat_redesign = bool(chat_redesign)
+    request.state.workday_on = bool(workday_on)
+    request.state.cases_write_on = bool(cases_write_on)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"],
@@ -99,7 +114,13 @@ def _chrome(request: Request) -> dict:
             "focus_on": bool(getattr(request.state, "focus_on",
                                      settings.admin_focus_enabled)),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
-                                          settings.admin_chat_redesign_enabled))}
+                                          settings.admin_chat_redesign_enabled)),
+            "workday_on": bool(getattr(request.state, "workday_on",
+                                       settings.admin_workday_enabled)),
+            # Гейт ЗАПИСИ, отдельный от показа экрана: можно включить просмотр на
+            # реальных данных, не открывая операции над услугами и деньгами.
+            "cases_write_on": bool(getattr(request.state, "cases_write_on",
+                                           settings.service_cases_enabled))}
 
 
 # Лямбда, а не ссылка: `_chrome` и его зависимости объявлены ниже в файле, а
@@ -729,6 +750,19 @@ def _sale_check_note() -> str:
 
 
 # Тумблеры фич для менеджера: ключ → заголовок, описание, дефолт (из env), примечание.
+def _workday_note() -> str:
+    """Сказать правду о предпосылке: включать экран рано, если запись выключена.
+
+    «Рабочий день» может оказаться пуст не потому, что работы нет, а потому что
+    запись в реестр выключена или у продуктов нет опубликованного процесса — тогда
+    `sign_contract` отказывает и услуг не появится. Тумблер обязан это сказать,
+    иначе экран выглядит сломанным.
+    """
+    if not settings.service_cases_enabled:
+        return "Запись в реестр услуг выключена отдельным тумблером — действия недоступны."
+    return ""
+
+
 FEATURE_FLAGS = {
     "bitrix_pipeline_enabled": {
         "title": "Конвейер лидов Bitrix",
@@ -1022,6 +1056,27 @@ FEATURE_FLAGS = {
         "default": lambda: settings.tours_cards_enabled,
         "note": lambda: ("" if settings.public_base_url
                          else "не задан PUBLIC_BASE_URL — карточки уйдут без ссылки на подборку"),
+    },
+    "admin_workday_enabled": {
+        "title": "«Рабочий день» и карточка услуги",
+        "desc": ("Экран, где видно договоры, остаток денег, брони, билеты и задачи — всё, "
+                 "что система уже знает об услуге. Услуги выстроены по срочности, и рядом "
+                 "с каждой написано, ПОЧЕМУ она выше: просроченная задача, неоплаченный "
+                 "остаток, бронь без подтверждения. Отдельно сверху — задачи, взятые в "
+                 "работу и не завершённые: по ним неизвестно, ушло ли сообщение клиенту. "
+                 "OFF: маршрутов нет, ссылки в меню нет, панель прежняя."),
+        "default": lambda: settings.admin_workday_enabled,
+        "note": lambda: _workday_note(),
+    },
+    "service_cases_enabled": {
+        "title": "Запись в реестр услуг",
+        "desc": ("Разрешает ДЕЙСТВИЯ над услугами: двигать этапы, вносить оплаты, "
+                 "фиксировать возвраты, закрывать задачи. Отдельно от показа — можно "
+                 "включить «Рабочий день» и посмотреть на реальных данных, ничего не "
+                 "меняя. OFF: экран виден, кнопки действий заблокированы, и любая "
+                 "попытка записи честно отвечает «запись выключена»."),
+        "default": lambda: settings.service_cases_enabled,
+        "note": lambda: "",
     },
     "admin_focus_enabled": {
         "title": "Экран «Фокус» — кому ответить сейчас",
@@ -2570,3 +2625,9 @@ async def calendar_task_quick_create(manager: dict = Depends(require_admin),
 
 async def _set_intercept(user_id: str, value: bool) -> None:
     await set_intercept(user_id, value)
+
+# Маршруты «Рабочего дня» и карточки услуги (E2-06) живут в своём модуле, но
+# регистрируются на ЭТОМ роутере — так им достаются зависимость `_load_new_look`
+# и context_processor `_chrome`. Импорт внизу файла: модуль обращается к
+# помощникам отсюда, и раньше этой строки они ещё не объявлены.
+from app.admin import workday  # noqa: E402,F401 — side-effect: регистрация маршрутов

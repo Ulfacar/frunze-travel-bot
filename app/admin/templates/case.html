@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block title %}Frunze — {{ d.title }}{% endblock %}
+{% block brand_sub %}карточка услуги{% endblock %}
+{#
+  Карточка услуги (E2-06, UI-03). Порт согласованного макета docs/service-card-mockup.html
+  (E0-04) на живые данные: шапка · следующий шаг · готовность · полоса пути · вкладки.
+
+  Разметка самой карточки лежит в партиале `_case_panel.html` — это цель htmx-свопа
+  (`#case-panel`), и полная страница включает тот же файл, чтобы первый рендер и
+  пере-рендер после действия не разошлись.
+
+  Цвета — только токены base.html; мокап рисовал ночную шапку своими --hd-* токенами,
+  здесь их нет, поэтому шапка на --surface с акцентной полосой. Тёмная тема получается
+  сама, из тех же токенов. На 360 px страница не прокручивается по горизонтали:
+  у каждого flex-контейнера min-width:0, у номеров договора и брони overflow-wrap:anywhere,
+  прокрутка допустима только у полосы вкладок.
+
+  Состояния: загрузка — скелет, который htmx показывает классом `htmx-request` на панели
+  (hx-indicator); ошибка сохранения — баннер вне панели (своп при 4xx/5xx не происходит,
+  форма с введённым и тем же idempotency_key остаётся на месте); нет прав —
+  `write_on`/`may_pay`/`may_correct` рисуют заблокированные кнопки и строку-объяснение.
+#}
+{% block head %}
+<style>
+  .case-wrap { max-width: 920px; margin: 0 auto; padding: 16px; min-width: 0; }
+  @media (max-width: 480px) { .case-wrap { padding: 10px; } }
+
+  /* ---------- Панель-обёртка ---------- */
+  .cs { min-width: 0; position: relative; border: 1px solid var(--border); border-radius: var(--r-lg);
+        background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
+  .cs .btn { width: auto; }
+  .cs .btn[disabled] { opacity: .55; cursor: not-allowed; }
+  .cs .btn-brand { background: var(--accent); color: var(--on-accent, #fff); border-color: var(--accent); }
+  .cs .btn-soft { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
+  .cs .btn-sm { padding: 5px 10px; font-size: 12.5px; border-radius: var(--r-sm); }
+  .cs summary.btn { list-style: none; cursor: pointer; }
+  .cs summary.btn::-webkit-details-marker { display: none; }
+  .cs :is(button, summary, a, input, select, textarea):focus-visible { outline: 2px solid var(--warm); outline-offset: 2px; }
+
+  /* ---------- Шапка ---------- */
+  .cs-hd { padding: 12px 14px 12px; border-bottom: 1px solid var(--border); border-top: 4px solid var(--accent);
+           background: var(--surface); }
+  .cs-hd-top { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+  .cs-back { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%;
+             color: var(--muted); text-decoration: none; border: 1px solid transparent; }
+  .cs-back:hover { background: var(--surface-2); color: var(--text); }
+  .cs-back svg { width: 18px; height: 18px; }
+  .cs-id { flex: 1 1 auto; min-width: 0; }
+  .cs-title { margin: 0; font-size: 18px; line-height: 1.2; font-weight: 700; letter-spacing: -.01em;
+              overflow-wrap: anywhere; }
+  .cs-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+  .cs-sub b { color: var(--text); font-weight: 600; }
+  .cs-sub .ref { font-family: var(--mono); overflow-wrap: anywhere; }
+
+  .cs-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; min-width: 0; }
+  .cs-fact { background: var(--surface-2); border-radius: var(--r); padding: 7px 10px; min-width: 0; }
+  .cs-fact .k { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .cs-fact .v { font-size: 13.5px; font-weight: 600; line-height: 1.25; color: var(--text); overflow-wrap: anywhere; }
+  .cs-fact .v .n { font-family: var(--mono); color: var(--warm); margin-right: 5px; font-variant-numeric: tabular-nums; }
+  .cs-fact .v.none { color: var(--muted); font-weight: 500; }
+  .cs-fact .s { font-size: 11.5px; color: var(--muted); line-height: 1.3; margin-top: 1px; overflow-wrap: anywhere; }
+  .cs-fact.due .v { color: var(--warm); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .cs-fact.next { grid-column: 1 / -1; border-left: 3px solid var(--warm); }
+  .cs-fact.next .v { font-size: 14px; }
+  @media (min-width: 760px) {
+    .cs-facts { grid-template-columns: 1fr 1fr 1.4fr; }
+    .cs-fact.next { grid-column: auto; }
+  }
+
+  /* причина приоритета */
+  .cs-why { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0;
+            font-size: 12.5px; color: var(--muted); }
+  .cs-why.quiet { color: var(--faint); }
+  .cs-chip { appearance: none; border: 1px solid transparent; cursor: pointer; font: inherit;
+             display: inline-flex; align-items: center; gap: 6px; border-radius: 20px; padding: 3px 10px 3px 8px;
+             font-size: 12px; font-weight: 600; background: var(--warm-soft); color: var(--warm); max-width: 100%; }
+  .cs-chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+  .cs-chip[data-reason="claim_stuck"], .cs-chip[data-reason="hard_deadline"], .cs-chip[data-reason="task_overdue"] {
+    background: var(--hot-soft); color: var(--hot); }
+  .cs-chip[data-reason="waiting"], .cs-chip[data-reason="soon"], .cs-chip[data-reason="due_today"] {
+    background: var(--accent-soft); color: var(--accent); }
+  .cs-chip:hover { border-color: currentColor; }
+  .cs-why .detail { color: var(--text); overflow-wrap: anywhere; }
+  .cs-why .rule { flex: 1 1 100%; font-size: 11.5px; color: var(--faint); line-height: 1.35; }
+  .cs-why .rule b { color: var(--muted); font-weight: 600; }
+  .cs-more { flex: 1 1 100%; }
+  .cs-more > summary { cursor: pointer; font-size: 12px; color: var(--accent); font-weight: 600; list-style: none; }
+  .cs-more > summary::-webkit-details-marker { display: none; }
+  .cs-more > summary::before { content: "+ "; }
+  .cs-more[open] > summary::before { content: "− "; }
+  .cs-more ul { margin: 6px 0 0; padding-left: 16px; display: grid; gap: 6px; }
+  .cs-more li { font-size: 12.5px; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
+  .cs-more li b { color: var(--text); font-weight: 600; }
+
+  /* готовность */
+  .cs-ready { margin-top: 10px; font-size: 12.5px; }
+  .cs-ready-h { color: var(--muted); cursor: pointer; list-style: none; display: inline-block; }
+  .cs-ready-h::-webkit-details-marker { display: none; }
+  .cs-ready-h::before { content: "+ "; color: var(--accent); font-weight: 600; }
+  .cs-ready[open] .cs-ready-h::before { content: "− "; }
+  .cs-ready-h b { color: var(--text); font-weight: 600; }
+  .cs-checks { list-style: none; margin: 5px 0 0; padding: 0; display: grid; gap: 3px; }
+  .cs-check { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 7px; min-width: 0; line-height: 1.35; }
+  .cs-check .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; align-self: center; border: 1.5px solid var(--faint); background: transparent; }
+  .cs-check[data-state="ok"] .dot { background: var(--good); border-color: var(--good); }
+  .cs-check[data-state="missing"] .dot { background: var(--hot); border-color: var(--hot); }
+  .cs-check .l { color: var(--text); font-weight: 600; }
+  .cs-check .st { color: var(--muted); }
+  .cs-check[data-state="ok"] .st { color: var(--good); }
+  .cs-check[data-state="missing"] .st { color: var(--hot); }
+  .cs-check .dt { color: var(--faint); overflow-wrap: anywhere; }
+
+  /* ---------- Главное действие ---------- */
+  .cs-act { padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface); display: grid; gap: 8px; min-width: 0; }
+  .cs-act form { display: grid; gap: 8px; min-width: 0; }
+  .cs-note { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.4; overflow-wrap: anywhere; }
+  .cs-note.lock { color: var(--warm); }
+  .cs-note.warn { color: var(--warm); }
+  .cs-note b { color: var(--text); font-weight: 600; }
+  .cs-sheet { min-width: 0; }
+  .cs-sheet > form, .cs-sheet > .cs-sheet-body { margin-top: 8px; padding: 10px 12px 12px; border: 1px solid var(--border); border-radius: var(--r); background: var(--bg); }
+  .cs-hint { margin: 0 0 8px; font-size: 12px; color: var(--muted); line-height: 1.35; }
+  .cs-fld { display: block; min-width: 0; }
+  .cs-fld > span { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); margin-bottom: 3px; }
+  .cs-fld .req { color: var(--hot); font-style: normal; }
+  .cs-fld input, .cs-fld select, .cs-fld textarea { width: 100%; min-height: 38px; border: 1px solid var(--border-2); background: var(--surface);
+    color: var(--text); border-radius: var(--r-sm); padding: 8px 10px; font: inherit; font-size: 14px; }
+  .cs-fld input:focus, .cs-fld select:focus, .cs-fld textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .cs-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 0; }
+  .cs-bb { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+
+  /* ---------- Полоса пути ---------- */
+  .cs-path { padding: 10px 14px 9px; border-bottom: 1px solid var(--border); background: var(--surface); min-width: 0; }
+  .cs-bars { display: flex; gap: 4px; min-width: 0; margin: 0; padding: 0; list-style: none; }
+  .cs-bar { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .cs-bar i { display: block; height: 6px; border-radius: 3px; background: var(--border); }
+  .cs-bar.done i { background: var(--accent); }
+  .cs-bar.cur i { background: var(--warm); }
+  .cs-bar .n { font-family: var(--mono); font-size: 10.5px; line-height: 1; color: var(--faint); text-align: center; }
+  .cs-bar.done .n { color: var(--accent); }
+  .cs-bar.cur .n { color: var(--warm); font-weight: 600; }
+  .cs-bar .lb { display: none; font-size: 10.5px; line-height: 1.2; color: var(--warm); font-weight: 600; text-align: center;
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cs-cap { display: flex; justify-content: space-between; gap: 10px; margin-top: 6px; font-size: 12.5px; color: var(--muted); min-width: 0; }
+  .cs-cap b { color: var(--text); font-weight: 600; }
+  .cs-cap .l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cs-cap .r { flex: none; color: var(--faint); white-space: nowrap; max-width: 55%; overflow: hidden; text-overflow: ellipsis; }
+  @media (min-width: 720px) {
+    .cs-bar .lb { display: block; }
+    .cs-cap .l { white-space: normal; }
+  }
+
+  /* ---------- Вкладки ---------- */
+  .cs-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border);
+             overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; min-width: 0; }
+  .cs-tabs::-webkit-scrollbar { display: none; }
+  .cs-tab { appearance: none; border: none; background: transparent; flex: 1 0 auto; min-width: 72px; padding: 9px 10px 8px;
+            font: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer;
+            border-bottom: 2px solid transparent; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .cs-tab .b { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--surface-2); color: var(--muted);
+               font-family: var(--mono); font-size: 10px; line-height: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cs-tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+  .cs-tab.on .b { background: var(--accent-soft); color: var(--accent); }
+  .cs-pane { padding: 12px 14px 20px; display: grid; gap: 10px; min-width: 0; background: var(--bg); }
+  .cs-pane[hidden] { display: none; }
+  .cs-pane h4 { margin: 4px 0 0; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); }
+
+  /* ---------- Строки ---------- */
+  .cs-row { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 9px 11px; font-size: 13px; line-height: 1.35; min-width: 0; }
+  .cs-row .t { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+  .cs-row .m { color: var(--muted); font-size: 12px; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 2px 10px; min-width: 0; }
+  .cs-row .m b { color: var(--text); font-weight: 600; }
+  .cs-row .m .due { font-family: var(--mono); font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .cs-row .m .due.over { color: var(--hot); }
+  .cs-row .why { margin-top: 5px; padding-top: 5px; border-top: 1px dashed var(--border); font-size: 11.5px; color: var(--faint); line-height: 1.35; overflow-wrap: anywhere; }
+  .cs-row .why b { color: var(--muted); font-weight: 600; }
+  .cs-row .rb { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+  .cs-row.hi { border-left: 3px solid var(--warm); }
+  .cs-row.bad { border-left: 3px solid var(--hot); }
+  .cs-row.muted { opacity: .7; }
+  .cs-ref { font-family: var(--mono); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .cs-pill { display: inline-flex; align-items: center; border-radius: 20px; padding: 1px 8px; font-size: 11px; font-weight: 600; white-space: nowrap; line-height: 1.5; }
+  .cs-pill.good { background: var(--green-soft); color: var(--good); }
+  .cs-pill.warn { background: var(--warm-soft); color: var(--warm); }
+  .cs-pill.bad { background: var(--hot-soft); color: var(--hot); }
+  .cs-pill.info { background: var(--accent-soft); color: var(--accent); }
+  .cs-pill.none { background: var(--surface-2); color: var(--muted); }
+
+  /* ---------- Лента событий ---------- */
+  .cs-ev { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 0 10px; position: relative; padding: 0 0 12px; min-width: 0; }
+  .cs-ev::before { content: ""; position: absolute; left: 66px; top: 18px; bottom: -2px; width: 2px; background: var(--border); }
+  .cs-ev:last-child::before { display: none; }
+  .cs-ev .tm { font-family: var(--mono); font-size: 11px; line-height: 1.3; color: var(--faint); padding-top: 2px; text-align: right; font-variant-numeric: tabular-nums; }
+  .cs-ev .tm b { display: block; color: var(--muted); font-weight: 600; }
+  .cs-ev .dot { position: absolute; left: 61px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); z-index: 1; }
+  .cs-ev[data-kind="sys"] .dot { border-color: var(--faint); }
+  .cs-ev[data-kind="money"] .dot { border-color: var(--good); background: var(--green-soft); }
+  .cs-ev[data-kind="warn"] .dot { border-color: var(--hot); background: var(--hot-soft); }
+  .cs-ev .bd { padding-left: 12px; min-width: 0; }
+  .cs-ev .au { font-size: 11.5px; color: var(--faint); }
+  .cs-ev .au b { color: var(--muted); font-weight: 600; }
+  .cs-ev .ti { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; margin-top: 1px; overflow-wrap: anywhere; }
+  .cs-ev .ds { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.35; overflow-wrap: anywhere; }
+  .cs-ev .bs { font-size: 11.5px; color: var(--faint); margin-top: 2px; line-height: 1.3; overflow-wrap: anywhere; }
+  .cs-ev .bs b { font-weight: 600; }
+
+  /* ---------- Деньги ---------- */
+  .cs-money { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 0; }
+  @media (min-width: 760px) { .cs-money { grid-template-columns: repeat(4, 1fr); } }
+  .cs-mt { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 11px; min-width: 0; }
+  .cs-mt .k { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+  .cs-mt .v { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--text); line-height: 1.2; margin-top: 2px;
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+  .cs-mt .v small { font-size: 11px; font-weight: 500; color: var(--muted); font-family: inherit; margin-left: 3px; }
+  .cs-mt .s { font-size: 11px; color: var(--faint); margin-top: 2px; line-height: 1.3; overflow-wrap: anywhere; }
+  .cs-mt.over { border-color: var(--warm); background: var(--warm-soft); }
+  .cs-mt.over .k, .cs-mt.over .s, .cs-mt.over .v { color: var(--warm); }
+  .cs-mt.unk .v { font-family: inherit; font-size: 13px; color: var(--muted); white-space: normal; }
+  .cs-attn { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 12.5px; }
+  .cs-attn li { display: flex; gap: 8px; align-items: baseline; color: var(--warm); min-width: 0; overflow-wrap: anywhere; }
+  .cs-attn li::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; align-self: center; }
+  .cs-attn .amt { font-family: var(--mono); font-weight: 600; }
+  .cs-ops { display: grid; gap: 8px; }
+  .cs-op { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; background: var(--surface); border: 1px solid var(--border);
+           border-radius: var(--r); padding: 8px 11px; font-size: 12.5px; min-width: 0; }
+  .cs-op .t { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+  .cs-op .a { font-family: var(--mono); font-weight: 600; font-size: 13.5px; color: var(--text); white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+  .cs-op .m { grid-column: 1 / -1; font-size: 11.5px; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
+  .cs-op .m b { color: var(--text); font-weight: 600; }
+  .cs-op[data-kind="money_void"] .a, .cs-op[data-kind="money_refund_paid"] .a { color: var(--muted); text-decoration: none; }
+  .cs-op[data-kind="money_refund_due"] { border-left: 3px solid var(--warm); }
+  .cs-forms { display: grid; gap: 8px; }
+  .cs-forms .cs-sheet > summary { width: 100%; justify-content: flex-start; }
+  .cs-fine { margin: 0; font-size: 11.5px; color: var(--faint); line-height: 1.35; }
+
+  /* ---------- Маршрут ---------- */
+  .cs-seg { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 4px 8px; align-items: start; background: var(--surface);
+            border: 1px solid var(--border); border-radius: var(--r); padding: 8px 11px; font-size: 12.5px; min-width: 0; }
+  .cs-seg .pos { font-family: var(--mono); font-weight: 600; color: var(--faint); }
+  .cs-seg .t { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+  .cs-seg .m { grid-column: 2 / -1; font-size: 11.5px; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
+  .cs-seg .m b { color: var(--text); font-weight: 600; }
+  .cs-seg.muted { opacity: .65; }
+
+  /* ---------- Пустые состояния / скелет ---------- */
+  .cs-empty { text-align: center; padding: 18px 10px 8px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+  .cs-empty b { display: block; font-size: 15px; color: var(--text); margin-bottom: 3px; }
+  .cs-sk { display: block; height: 10px; border-radius: 5px; background: var(--surface-2); }
+  .cs-skel { display: none; padding: 12px 14px; gap: 10px; }
+  .cs-skel .cs-row { display: grid; gap: 8px; }
+  .cs.htmx-request .cs-skel { display: grid; }
+  .cs.htmx-request .cs-body { opacity: .45; pointer-events: none; }
+  .cs-busy { font-size: 12.5px; color: var(--muted); text-align: center; }
+
+  /* ---------- Баннеры ---------- */
+  .cs-ban { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 9px; padding: 10px 14px; font-size: 12.5px; line-height: 1.35;
+            border-bottom: 1px solid var(--border); min-width: 0; }
+  .cs-ban svg { width: 18px; height: 18px; margin-top: 1px; }
+  .cs-ban.lock { background: var(--warm-soft); color: var(--warm); }
+  .cs-ban.err { background: var(--hot-soft); color: var(--hot); }
+  .cs-ban b { color: inherit; }
+  .cs-ban .bb { display: flex; gap: 8px; margin-top: 7px; flex-wrap: wrap; }
+  #case-error { margin-bottom: 10px; border: 1px solid var(--border); border-radius: var(--r); }
+  #case-error .btn { width: auto; }
+  #case-error[hidden] { display: none; }
+
+  @media (prefers-reduced-motion: reduce) { .cs * { transition: none !important; animation: none !important; } }
+    .cs-toperr{margin:10px 14px 0;padding:10px 12px;border-radius:var(--r-sm);
+      background:var(--hot-soft);border:1px solid var(--hot);color:var(--text);
+      font-size:13px;line-height:1.45}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="case-wrap">
+  {# Ошибка сохранения живёт ВНЕ панели: при 4xx/5xx htmx своп не делает, форма со
+     введённым и тем же idempotency_key остаётся на месте — повтор той же кнопкой
+     не создаст вторую оплату. Баннер включает скрипт ниже. #}
+  <div id="case-error" class="cs-ban err" role="alert" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5L2.5 20h19L12 3.5zM12 10v4.5M12 17.5v.5"/></svg>
+    <div><b>Не удалось сохранить.</b> <span id="case-error-text">Сервер не ответил.</span>
+      Введённое сохранено, ключ операции тот же — нажмите ту же кнопку ещё раз, второй записи не будет.
+      <div class="bb"><button type="button" class="btn btn-soft btn-sm" id="case-error-close">Скрыть</button></div></div>
+  </div>
+  {% include "_case_panel.html" %}
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Вкладки и ошибка сети. Делегирование на document — панель пере-рендеривается
+  // свопом, а обработчики должны пережить замену.
+  (function () {
+    function panel() { return document.getElementById('case-panel'); }
+    function showTab(key, focus) {
+      var p = panel(); if (!p) return;
+      var tabs = p.querySelectorAll('[role="tab"]'), found = false;
+      tabs.forEach(function (t) { if (t.dataset.tab === key) found = true; });
+      if (!found) return;
+      tabs.forEach(function (t) {
+        var on = t.dataset.tab === key;
+        t.classList.toggle('on', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        if (on && focus) t.focus();
+      });
+      p.querySelectorAll('[role="tabpanel"]').forEach(function (pane) { pane.hidden = pane.dataset.tab !== key; });
+      p.dataset.tab = key;
+      try {
+        var u = new URL(location.href); u.searchParams.set('tab', key);
+        history.replaceState(null, '', u.toString());
+      } catch (e) { /* ok */ }
+    }
+    document.addEventListener('click', function (e) {
+      var t = e.target.closest('[role="tab"][data-tab], [data-goto-tab]');
+      if (!t || !t.closest('#case-panel')) return;
+      showTab(t.dataset.tab || t.dataset.gotoTab, !!t.dataset.gotoTab);
+    });
+    document.addEventListener('keydown', function (e) {
+      var t = e.target.closest('[role="tab"][data-tab]');
+      if (!t || !t.closest('#case-panel')) return;
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return;
+      var tabs = Array.prototype.slice.call(panel().querySelectorAll('[role="tab"]'));
+      var i = tabs.indexOf(t), n = tabs.length;
+      if (e.key === 'ArrowLeft') i = (i - 1 + n) % n;
+      else if (e.key === 'ArrowRight') i = (i + 1) % n;
+      else if (e.key === 'Home') i = 0; else i = n - 1;
+      e.preventDefault(); showTab(tabs[i].dataset.tab, true);
+    });
+    var err = document.getElementById('case-error'), errText = document.getElementById('case-error-text');
+    function fail(msg) { if (!err) return; errText.textContent = msg; err.hidden = false; err.scrollIntoView({ block: 'nearest' }); }
+    document.addEventListener('htmx:responseError', function (e) {
+      var x = e.detail && e.detail.xhr; var body = x && x.responseText ? x.responseText.replace(/<[^>]+>/g, ' ').trim().slice(0, 200) : '';
+      fail('Сервер ответил ' + (x ? x.status : '') + (body ? ': ' + body : '.'));
+    });
+    document.addEventListener('htmx:sendError', function () { fail('Нет связи с сервером.'); });
+    document.addEventListener('htmx:timeout', function () { fail('Сервер не ответил (таймаут).'); });
+    document.addEventListener('htmx:beforeRequest', function () { if (err) err.hidden = true; });
+    if (err) document.getElementById('case-error-close').addEventListener('click', function () { err.hidden = true; });
+  })();
+</script>
+{% endblock %}

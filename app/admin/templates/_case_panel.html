@@ -1,0 +1,589 @@
+{#
+  Партиал карточки услуги — цель htmx-свопа (`hx-target="#case-panel"`, outerHTML).
+  Одна корневая обёртка. Включается из case.html; тот же файл роутер отдаёт после
+  действия (переход, оплата, задача), поэтому страница и своп не расходятся.
+
+  Контракт: case (ServiceCase), d (CaseDigest), tasks (dict из _task_ui), events
+  (ServiceEvent), segments (TicketSegment, билеты), attempts (BookingAttempt, туры),
+  may_pay, may_correct, write_on, tab, facts_labels, idem_key.
+
+  Порядок в DOM — требование ТЗ: шапка → следующий шаг → путь → вкладки. Главное
+  действие стоит ВЫШЕ вкладок: это первое, что видит менеджер.
+
+  Три пустоты не смешиваем: «оплат нет» ≠ «0», «сумма не установлена» ≠ 0,
+  «не проверено» ≠ «нет». Времена показаны как хранятся (UTC): перевод в Бишкек —
+  задача роутера, в шаблоне часовых зон нет; подпись «UTC» стоит у каждого времени.
+#}
+{% set tab = tab|default('path') or 'path' %}
+{% set tasks = tasks or [] %}
+{% set events = events or [] %}
+{% set segments = segments or [] %}
+{% set attempts = attempts or [] %}
+{% set facts_labels = facts_labels or {} %}
+{% set ns = d.next_step %}
+{% set b = d.balance %}
+{% set top = d.top_reason %}
+{% set rev = case.revision %}
+{% set post = '/admin/case/' ~ d.case_id %}
+{% set dir_label = {'tours': 'Туры', 'visa': 'Визы', 'tickets': 'Билеты'}.get(d.direction, d.direction) %}
+{% set ev_titles = {
+  'case_opened': 'Услуга создана', 'contract_signed': 'Договор зафиксирован',
+  'stage_changed': 'Переход этапа', 'owner_changed': 'Смена ведущего',
+  'tasks_transferred': 'Задачи переданы новому ведущему',
+  'money_payment': 'Оплата зачтена', 'money_refund_due': 'Обязательство вернуть',
+  'money_refund_paid': 'Возврат выполнен', 'money_correction': 'Исправление записи',
+  'money_void': 'Запись аннулирована', 'contract_amount_corrected': 'Сумма договора исправлена',
+  'booking_requested': 'Бронь отправлена оператору', 'booking_confirmed': 'Бронь подтверждена',
+  'booking_declined': 'Оператор отказал', 'booking_cancelled': 'Бронь отменена',
+  'review_request_planned': 'Запланирована просьба об отзыве',
+  'review_request_stopped': 'Просьба об отзыве остановлена',
+  'review_request_stopped_complaint': 'Жалоба: просьба об отзыве остановлена',
+  'segment_added': 'Сегмент добавлен', 'segment_rescheduled': 'Рейс перенесён',
+  'segment_cancelled': 'Рейс отменён', 'ticket_transferred': 'Билет переоформлен'
+} %}
+{% set warn_events = ['booking_declined', 'booking_cancelled', 'segment_cancelled',
+                      'review_request_stopped_complaint', 'money_void'] %}
+{% set task_why = {
+  'checkin': 'правило билета: окно регистрации перевозчика по этому сегменту',
+  'departure': 'правило билета: напоминание до вылета по этому сегменту',
+  'review_request': 'правило тура: просьба об отзыве после поездки',
+  'complaint': 'жалоба клиента: просьбы об отзыве остановлены, разбор — менеджеру',
+  'followup': 'повторное касание клиента'
+} %}
+{% set stage_no = d.stage_index + 1 %}
+{% set n_more = d.reasons|length - 1 %}
+{% set unknown_checks = d.checks|selectattr('state', 'equalto', 'unknown')|list|length %}
+{% set money_events = events|selectattr('event_type', 'in', ['money_payment', 'money_refund_due', 'money_refund_paid', 'money_correction', 'money_void', 'contract_amount_corrected'])|list %}
+
+<section id="case-panel" class="cs" data-tab="{{ tab }}" data-case="{{ d.case_id }}" aria-label="Карточка услуги">
+
+  {# ===================== Шапка ===================== #}
+  <header class="cs-hd">
+    <div class="cs-hd-top">
+      <a class="cs-back" href="{% if workday_on %}/admin/work{% else %}/admin{% endif %}" aria-label="К списку услуг">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </a>
+      <div class="cs-id">
+        <h1 class="cs-title">{{ d.title }}</h1>
+        <div class="cs-sub">{{ dir_label }}{% if d.product_code %} · <span class="ref">{{ d.product_code }}</span>{% endif %}
+          · ведёт <b>{{ d.owner_login }}</b> · услуга <span class="ref">№{{ d.case_id }}</span>
+          {# номер договора уже в d.title — второй раз не повторяем #}
+          {% if not case.signed_at %} · <b>договор не зафиксирован</b>{% endif %}</div>
+      </div>
+    </div>
+
+    <div class="cs-facts">
+      <div class="cs-fact">
+        <div class="k">Этап</div>
+        {% if d.stage_total > 0 and d.stage_index >= 0 %}
+        <div class="v"><span class="n">{{ stage_no }}/{{ d.stage_total }}</span>{{ d.stage_name }}</div>
+        {% if ns and ns.kind == 'advance' %}<div class="s">далее: {{ ns.label }}</div>
+        {% elif ns and ns.kind == 'choice' %}<div class="s">далее — развилка, {{ ns.choices|length }} варианта</div>
+        {% elif ns and ns.kind == 'final' %}<div class="s">последний этап</div>{% endif %}
+        {% else %}
+        <div class="v none">{{ d.stage_name or d.stage_code }}</div>
+        <div class="s">этап не найден в опубликованном процессе</div>
+        {% endif %}
+      </div>
+      <div class="cs-fact{% if d.due_at %} due{% endif %}">
+        <div class="k">Срок</div>
+        {% if d.due_at %}
+        <div class="v">{{ d.due_at.strftime('%d.%m %H:%M') }}</div>
+        <div class="s">ближайшая задача · UTC</div>
+        {% else %}
+        <div class="v none">не задан</div>
+        <div class="s">активных задач со сроком нет</div>
+        {% endif %}
+      </div>
+      <div class="cs-fact next">
+        <div class="k">Следующее действие</div>
+        <div class="v">{{ ns.label if ns else 'не определено' }}</div>
+        {% if ns and ns.blocked_by %}<div class="s">{{ ns.blocked_by }}</div>{% endif %}
+      </div>
+    </div>
+
+    {# Причина места в списке: чип + конкретика + правило; остальные — свёрнуты. #}
+    {% if top %}
+    <div class="cs-why">
+      <button type="button" class="cs-chip" data-reason="{{ top.code }}" data-goto-tab="{{ top.anchor }}"
+              title="Показать вкладку-основание">{{ top.label }}</button>
+      {% if top.detail %}<span class="detail">{{ top.detail }}</span>{% endif %}
+      {% if top.why %}<div class="rule"><b>правило:</b> {{ top.why }}</div>{% endif %}
+      {% if n_more > 0 %}
+      <details class="cs-more">
+        <summary>ещё {{ n_more }} {% if n_more % 10 == 1 and n_more % 100 != 11 %}причина{% elif n_more % 10 in [2, 3, 4] and n_more % 100 not in [12, 13, 14] %}причины{% else %}причин{% endif %}</summary>
+        <ul>
+          {% for r in d.reasons[1:] %}
+          <li><b>{{ r.label }}</b>{% if r.detail %} — {{ r.detail }}{% endif %}
+            {% if r.why %}<div class="rule">{{ r.why }}</div>{% endif %}</li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="cs-why quiet">Срочных причин нет — услуга идёт по плану.</div>
+    {% endif %}
+
+    {# Готовность: только `ok` считается готовым; `unknown` — «не проверено», не «нет». #}
+    {# Как в макете: в шапке одна строка «готово N из M», список — по раскрытию.
+       Развёрнутый список на 360 px уводил главную кнопку за первый экран. #}
+    {% if d.checks %}
+    <details class="cs-ready">
+      <summary class="cs-ready-h">готово <b>{{ d.ready_done }} из {{ d.ready_total }}</b>{% if unknown_checks %} · не проверено {{ unknown_checks }}{% endif %}{% if d.ready_total - d.ready_done - unknown_checks > 0 %} · нет {{ d.ready_total - d.ready_done - unknown_checks }}{% endif %}</summary>
+      <ul class="cs-checks">
+        {% for c in d.checks %}
+        <li class="cs-check" data-state="{{ c.state }}">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="l">{{ c.label }}</span>
+          <span class="st">{{ {'ok': 'готово', 'missing': 'нет', 'unknown': 'не проверено'}.get(c.state, c.state) }}</span>
+          {% if c.detail %}<span class="dt">{{ c.detail }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+  </header>
+
+  {% if not write_on %}
+  <div class="cs-ban lock" role="status">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/></svg>
+    <div><b>Запись в реестр услуг выключена.</b> Карточка только для просмотра: переходы, оплаты и задачи не сохраняются, пока тумблер выключен.</div>
+  </div>
+  {% endif %}
+
+  {% if errors.message or outcome in ("failed", "off", "denied", "stale") %}
+  <div class="cs-toperr" role="alert" data-outcome="{{ outcome or 'invalid' }}">
+    {% if outcome == "off" %}
+      Запись в реестр услуг выключена отдельным тумблером — действие не сохранено.
+    {% elif outcome == "denied" %}
+      Нет прав на это действие.
+    {% elif outcome == "failed" %}
+      Не сохранилось: реестр недоступен. Введённое ниже сохранено — повторите отправку.
+    {% elif outcome == "stale" %}
+      Услуга уже изменилась. Ниже её нынешнее состояние — проверьте и повторите.
+    {% else %}
+      Не сохранилось: {{ errors.message }}. Введённое сохранено — проверьте и отправьте снова.
+    {% endif %}
+  </div>
+  {% endif %}
+  <div class="cs-body">
+
+  {# ===================== Главное действие (выше вкладок, раньше в DOM) ===================== #}
+  <div class="cs-act" id="case-next" data-next-step="{{ d.next_step.kind }}">
+    {% if not ns %}
+    <p class="cs-note">Следующий шаг не определён.</p>
+
+    {% elif not write_on %}
+    <button class="btn btn-brand" type="button" disabled>{{ ns.label }}</button>
+    <p class="cs-note lock">Запись в реестр услуг выключена</p>
+
+    {% elif ns.kind == 'task' %}
+    <form method="post" action="{{ post }}/task/{{ ns.task_id }}/finish"
+          hx-post="{{ post }}/task/{{ ns.task_id }}/finish" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <button class="btn btn-brand" type="submit">{{ ns.label }}</button>
+      <p class="cs-note">Задача закроется с автором и временем. Срок задачи — сегодня или уже прошёл.</p>
+    </form>
+
+    {% elif ns.kind == 'advance' and ns.requires %}
+    {# Обязательные факты перехода — в details, не в JS-модалке: фокус и Esc умеет сам браузер. #}
+    <details class="cs-sheet"{% if errors.message %} open{% endif %}>
+      <summary class="btn btn-brand">{{ ns.label }}…</summary>
+      <form method="post" action="{{ post }}/advance"
+            hx-post="{{ post }}/advance" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+        <p class="cs-hint">Переход {{ stage_no }} → «{{ ns.label }}». Сервер проверит права и обязательные факты; запишет автора, время и основание.</p>
+        <input type="hidden" name="to_stage" value="{{ ns.to_stage }}">
+        <input type="hidden" name="expected_revision" value="{{ rev }}">
+        <input type="hidden" name="tab" value="{{ tab }}">
+        {% for f in ns.requires %}
+        <label class="cs-fld" for="adv-{{ f }}"><span>{{ facts_labels.get(f, f) }} <i class="req" aria-hidden="true">*</i></span>
+          <input id="adv-{{ f }}" name="{{ f }}" required
+                 value="{{ echo.get(f, '') }}"{% if loop.first %} autofocus{% endif %}></label>
+        {% endfor %}
+        <label class="cs-fld" for="adv-reason"><span>Основание</span><input id="adv-reason" name="reason" placeholder="письмо оператора, скан, подтверждение клиента…" value="{{ echo.reason or '' }}"></label>
+        <div class="cs-bb"><button class="btn btn-brand" type="submit">Сохранить</button></div>
+      </form>
+    </details>
+
+    {% elif ns.kind == 'advance' %}
+    <form method="post" action="{{ post }}/advance"
+          hx-post="{{ post }}/advance" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+      <input type="hidden" name="to_stage" value="{{ ns.to_stage }}">
+      <input type="hidden" name="expected_revision" value="{{ rev }}">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <button class="btn btn-brand" type="submit">{{ ns.label }}</button>
+    </form>
+
+    {% elif ns.kind == 'choice' %}
+    <details class="cs-sheet"{% if errors.message %} open{% endif %}>
+      <summary class="btn btn-brand">Выбрать следующий этап…</summary>
+      <form method="post" action="{{ post }}/advance"
+            hx-post="{{ post }}/advance" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+        <p class="cs-hint">С этапа «{{ d.stage_name }}» доступно несколько переходов. Обязательные факты выбранного этапа проверит сервер.</p>
+        <input type="hidden" name="expected_revision" value="{{ rev }}">
+        <input type="hidden" name="tab" value="{{ tab }}">
+        <label class="cs-fld" for="adv-stage"><span>Этап</span>
+          <select id="adv-stage" name="to_stage">
+            {% for code, name in ns.choices %}<option value="{{ code }}">{{ name }}</option>{% endfor %}
+          </select></label>
+        <label class="cs-fld" for="adv-reason"><span>Основание</span><input id="adv-reason" name="reason" value="{{ echo.reason or '' }}"></label>
+        <div class="cs-bb"><button class="btn btn-brand" type="submit">Перейти</button></div>
+      </form>
+    </details>
+
+    {% elif ns.kind == 'contract' %}
+    <p class="cs-note"><b>{{ ns.label }}.</b> Без подписанного договора продажа не состоялась, остаток не считается и задачи не ставятся. Форма фиксации договора в этой карточке ещё не подключена.</p>
+
+    {% elif ns.kind == 'final' %}
+    <p class="cs-note">{{ ns.label }}.</p>
+    {% endif %}
+
+    {% if ns and ns.blocked_by and write_on %}
+    <p class="cs-note warn">{{ ns.blocked_by }} — пояснение, не запрет: допустимость перехода решает сервер по обязательным фактам этапа.</p>
+    {% endif %}
+  </div>
+
+  {# ===================== Полоса пути ===================== #}
+  <div class="cs-path" aria-label="Путь услуги: этап {{ stage_no }} из {{ d.stage_total }}">
+    {% if d.stage_total > 0 %}
+    <ol class="cs-bars">
+      {% for i in range(d.stage_total) %}
+      <li class="cs-bar{% if i < d.stage_index %} done{% elif i == d.stage_index %} cur{% endif %}"
+          title="{% if i == d.stage_index %}{{ d.stage_name }}{% elif i < d.stage_index %}этап {{ i + 1 }} — пройден{% else %}этап {{ i + 1 }} — впереди{% endif %}">
+        <i aria-hidden="true"></i><span class="n">{{ i + 1 }}</span>
+        {% if i == d.stage_index %}<span class="lb">{{ d.stage_name }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+    <div class="cs-cap">
+      <span class="l"><b>{{ stage_no }} из {{ d.stage_total }}</b> · {{ d.stage_name }}</span>
+      <span class="r">{% if ns and ns.kind == 'advance' %}далее: {{ ns.label }}{% elif ns and ns.kind == 'final' %}последний этап{% elif ns and ns.kind == 'choice' %}развилка{% endif %}</span>
+    </div>
+    {% else %}
+    <div class="cs-cap"><span class="l">Процесс этой услуги не найден — полосу пути построить не из чего.</span></div>
+    {% endif %}
+  </div>
+
+  {# ===================== Вкладки ===================== #}
+  {% set tabs = [('path', 'Путь', events|length + attempts|length), ('money', 'Деньги', money_events|length), ('tasks', 'Задачи', tasks|length)]
+                + ([('route', 'Маршрут', segments|length)] if d.direction == 'tickets' else []) %}
+  <nav class="cs-tabs" role="tablist" aria-label="Разделы карточки">
+    {% for key, label, count in tabs %}
+    <button type="button" role="tab" id="tab-{{ key }}" aria-controls="pane-{{ key }}" data-tab="{{ key }}"
+            class="cs-tab{% if tab == key %} on{% endif %}" aria-selected="{{ 'true' if tab == key else 'false' }}"
+            tabindex="{{ 0 if tab == key else -1 }}">{{ label }}{% if count %}<span class="b">{{ count }}</span>{% endif %}</button>
+    {% endfor %}
+  </nav>
+
+  {# ---------- Путь: лента событий + попытки брони ---------- #}
+  <div role="tabpanel" id="pane-path" aria-labelledby="tab-path" data-tab="path" class="cs-pane"{% if tab != 'path' %} hidden{% endif %}>
+    {% if attempts %}
+    <h4>Брони у оператора · каждая попытка остаётся в истории</h4>
+    {% for a in attempts %}
+    <div class="cs-row{% if a.status == 'requested' %} hi{% elif a.status == 'declined' %} bad{% elif a.status == 'cancelled' %} muted{% endif %}">
+      <div class="t">Попытка №{{ a.attempt }} · {{ a.operator }} · {{ a.hotel }}
+        <span class="cs-pill {{ {'requested': 'warn', 'confirmed': 'good', 'declined': 'bad', 'cancelled': 'none'}.get(a.status, 'none') }}">{{ {'requested': 'ждём ответа', 'confirmed': 'подтверждена', 'declined': 'отказ', 'cancelled': 'отменена'}.get(a.status, a.status) }}</span></div>
+      <div class="m"><span>{{ a.country }}</span><span>{{ a.check_in.strftime('%d.%m') }} – {{ a.check_out.strftime('%d.%m.%Y') }}</span><span>{{ a.tourists }} чел.</span>
+        {% if a.price is not none %}<span class="cs-ref">{{ a.price }} {{ a.currency }}</span>{% else %}<span>цена попытки не указана</span>{% endif %}</div>
+      <div class="m">{% if a.reference %}<span>номер <b class="cs-ref">{{ a.reference }}</b></span>{% endif %}
+        {% if a.confirmed_at %}<span>подтверждена {{ a.confirmed_at.strftime('%d.%m %H:%M') }} UTC</span>{% endif %}
+        {% if a.decline_reason %}<span><b>причина:</b> {{ a.decline_reason }}</span>{% endif %}
+        <span>отправил {{ a.requested_by }} · {{ a.created_at.strftime('%d.%m %H:%M') if a.created_at else '' }} UTC</span></div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if events %}
+    <h4>Лента событий · основание у каждого</h4>
+    <div>
+      {% for e in events %}
+      {% set kind = 'warn' if e.event_type in warn_events else ('money' if e.event_type.startswith('money_') or e.event_type == 'contract_amount_corrected' else ('sys' if e.actor == 'system' else 'mgr')) %}
+      {% set p = e.payload or {} %}
+      <div class="cs-ev" data-kind="{{ kind }}">
+        <div class="tm">{% if e.occurred_at %}<b>{{ e.occurred_at.strftime('%d.%m') }}</b>{{ e.occurred_at.strftime('%H:%M') }}{% endif %}</div>
+        <span class="dot" aria-hidden="true"></span>
+        <div class="bd">
+          <div class="au"><b>{{ e.actor }}</b></div>
+          <div class="ti">{{ ev_titles.get(e.event_type, e.event_type) }}{% if e.from_stage and e.to_stage and e.from_stage != e.to_stage %} · {{ e.from_stage }} → {{ e.to_stage }}{% endif %}</div>
+          {% set bits = [] %}
+          {% if p.get('amount') %}{% set _ = bits.append(p.get('amount') ~ ' ' ~ (p.get('currency') or '')) %}{% endif %}
+          {% if p.get('previous_amount') %}{% set _ = bits.append('было ' ~ p.get('previous_amount') ~ ' ' ~ (p.get('previous_currency') or '')) %}{% endif %}
+          {% if p.get('reference') %}{% set _ = bits.append('№ ' ~ p.get('reference')) %}{% endif %}
+          {% if p.get('attempt') %}{% set _ = bits.append('попытка ' ~ p.get('attempt')) %}{% endif %}
+          {% if p.get('fx_rate') %}{% set _ = bits.append('курс ' ~ p.get('fx_rate')) %}{% endif %}
+          {% if p.get('from') and p.get('to') %}{% set _ = bits.append(p.get('from') ~ ' → ' ~ p.get('to')) %}{% endif %}
+          {% if bits %}<div class="ds cs-ref">{{ bits|join(' · ') }}</div>{% endif %}
+          <div class="bs"><b>основание:</b> {% if e.reason %}{{ e.reason }}{% else %}<span>не указано</span>{% endif %}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% elif not attempts %}
+    <div class="cs-empty"><b>Событий пока нет</b>
+      {% if case.signed_at %}Переходы, оплаты и брони появятся здесь с автором, временем и основанием.{% else %}Первое событие появится, когда будет зафиксирован договор: номер, дата, сумма или причина «уточняется».{% endif %}</div>
+    {% endif %}
+  </div>
+
+  {# ---------- Деньги ---------- #}
+  <div role="tabpanel" id="pane-money" aria-labelledby="tab-money" data-tab="money" class="cs-pane"{% if tab != 'money' %} hidden{% endif %}>
+    {% if b is none %}
+    <div class="cs-money">
+      <div class="cs-mt unk"><div class="k">Сумма договора</div><div class="v">не установлена</div><div class="s">договор не зафиксирован</div></div>
+      <div class="cs-mt unk"><div class="k">Внесено</div><div class="v">оплат нет</div><div class="s">не «0»: операций не было</div></div>
+      <div class="cs-mt unk"><div class="k">Возвращено</div><div class="v">возвратов нет</div></div>
+      <div class="cs-mt unk"><div class="k">Остаток</div><div class="v">не рассчитан</div><div class="s">нет суммы договора</div></div>
+    </div>
+    <div class="cs-empty"><b>Деньги считаются после договора</b>Оплата появится как подтверждённая сотрудником запись с суммой, валютой и основанием.</div>
+    {% else %}
+    {% set cur = b.currency or case.currency or '' %}
+    <div class="cs-money">
+      {% if b.agreed is none %}
+      <div class="cs-mt unk"><div class="k">Сумма договора</div><div class="v">не установлена</div><div class="s">{{ case.amount_unknown_reason or 'причина не указана' }}</div></div>
+      {% else %}
+      <div class="cs-mt"><div class="k">Сумма договора</div><div class="v">{{ b.agreed }}<small>{{ cur }}</small></div></div>
+      {% endif %}
+      {% if b.paid == 0 %}
+      <div class="cs-mt unk"><div class="k">Внесено</div><div class="v">оплат нет</div><div class="s">не «0»: зачтённых операций не было</div></div>
+      {% else %}
+      <div class="cs-mt"><div class="k">Внесено</div><div class="v">{{ b.paid }}<small>{{ cur }}</small></div><div class="s">зачтено в валюте договора</div></div>
+      {% endif %}
+      {% if b.refunded == 0 %}
+      <div class="cs-mt unk"><div class="k">Возвращено</div><div class="v">возвратов нет</div>{% if b.refund_due > 0 %}<div class="s">обязательство есть, перевода не было</div>{% endif %}</div>
+      {% else %}
+      <div class="cs-mt"><div class="k">Возвращено</div><div class="v">{{ b.refunded }}<small>{{ cur }}</small></div></div>
+      {% endif %}
+      {% if b.outstanding is none %}
+      <div class="cs-mt unk"><div class="k">Остаток</div><div class="v">не рассчитан</div><div class="s">сумма договора не установлена</div></div>
+      {% elif b.outstanding < 0 %}
+      <div class="cs-mt over"><div class="k">Переплата</div><div class="v">{{ b.outstanding|abs }}<small>{{ cur }}</small></div><div class="s">остаток 0 · переплата показана отдельно, не обрезана до нуля</div></div>
+      {% elif b.outstanding == 0 %}
+      <div class="cs-mt"><div class="k">Остаток</div><div class="v">0<small>{{ cur }}</small></div><div class="s">оплачено полностью</div></div>
+      {% else %}
+      <div class="cs-mt"><div class="k">Остаток</div><div class="v">{{ b.outstanding }}<small>{{ cur }}</small></div><div class="s">к доплате</div></div>
+      {% endif %}
+    </div>
+
+    {% if b.needs_attention %}
+    <h4>Требует человека</h4>
+    <ul class="cs-attn">
+      {% for c, amount in b.unconverted|dictsort %}<li><span>платёж <span class="amt">{{ amount }} {{ c }}</span> без курса — не зачтён</span></li>{% endfor %}
+      {% if b.refund_due > 0 %}<li><span>обязательство вернуть <span class="amt">{{ b.refund_due }} {{ cur }}</span> — перевода ещё не было</span></li>{% endif %}
+      {% for c, amount in b.foreign_refund_due|dictsort %}<li><span>обязательство вернуть <span class="amt">{{ amount }} {{ c }}</span> вне валюты договора</span></li>{% endfor %}
+      {% for c, amount in b.foreign_refunded|dictsort %}<li><span>возврат <span class="amt">{{ amount }} {{ c }}</span> вне валюты договора</span></li>{% endfor %}
+      {% if b.agreed is not none and (b.paid - b.refunded) > b.agreed %}<li><span>переплата <span class="amt">{{ (b.paid - b.refunded - b.agreed) }} {{ cur }}</span> — возврат или зачёт решает человек</span></li>{% endif %}
+      {% if b.refunded > b.paid %}<li><span>возвращено больше, чем получено</span></li>{% endif %}
+      {% if b.broken_entries %}<li><span>{{ b.broken_entries|length }} записей журнала не удалось истолковать (id {{ b.broken_entries|join(', ') }})</span></li>{% endif %}
+    </ul>
+    {% endif %}
+    <p class="cs-fine">Валюты не складываются без зафиксированного курса. Остаток считается только по зачтённым операциям; обязательства вернуть в него не входят.</p>
+
+    <h4>Операции · подтверждает сотрудник, не банк</h4>
+    {% if money_events %}
+    <div class="cs-ops">
+      {% for e in money_events %}
+      {% set p = e.payload or {} %}
+      <div class="cs-op" data-kind="{{ e.event_type }}">
+        <span class="t">{{ ev_titles.get(e.event_type, e.event_type) }}</span>
+        <span class="a">{% if p.get('amount') %}{{ p.get('amount') }} {{ p.get('currency') or '' }}{% else %}—{% endif %}</span>
+        <div class="m">{% if e.occurred_at %}{{ e.occurred_at.strftime('%d.%m %H:%M') }} UTC · {% endif %}записал <b>{{ e.actor }}</b>
+          {% if p.get('fx_rate') %} · курс {{ p.get('fx_rate') }}{% endif %}
+          {% if p.get('previous_amount') %} · было {{ p.get('previous_amount') }} {{ p.get('previous_currency') or '' }}{% endif %}
+          {% if p.get('corrects_id') %} · исправляет запись №{{ p.get('corrects_id') }}{% endif %}
+          {% if p.get('payment_id') %} · запись №{{ p.get('payment_id') }}{% endif %}
+          · <b>основание:</b> {{ e.reason or 'не указано' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="cs-empty" style="padding-top:4px"><b>Операций нет</b>Сообщение клиента «оплатил» деньгами не считается: оплату подтверждает сотрудник записью с основанием.</div>
+    {% endif %}
+
+    {# --- формы денег: права показываем, а не прячем --- #}
+    <div class="cs-forms">
+      {% if not write_on %}
+      <button class="btn btn-soft" type="button" disabled>Добавить оплату…</button>
+      <p class="cs-note lock">Запись в реестр услуг выключена</p>
+      {% elif may_pay %}
+      <details class="cs-sheet"{% if errors.message %} open{% endif %}>
+        <summary class="btn btn-brand">Добавить оплату…</summary>
+        <form method="post" action="{{ post }}/money/payment"
+              hx-post="{{ post }}/money/payment" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+          <p class="cs-hint">Отдельная запись журнала. Валюта не договора — укажите курс, иначе платёж повиснет незачтённым.</p>
+          {# Ключ идемпотентности рендерит сервер и ОБЯЗАН повторить тот же после ошибки: иначе повтор создаст вторую оплату. #}
+          <input type="hidden" name="idempotency_key" value="{{ idem_key }}">
+          <input type="hidden" name="expected_revision" value="{{ rev }}">
+          <input type="hidden" name="tab" value="money">
+          <div class="cs-grid2">
+            <label class="cs-fld" for="pay-amount"><span>Сумма <i class="req" aria-hidden="true">*</i></span><input id="pay-amount" name="amount" inputmode="decimal" required
+                     value="{{ echo.amount or '' }}" placeholder="1000.00"></label>
+            <label class="cs-fld" for="pay-currency"><span>Валюта <i class="req" aria-hidden="true">*</i></span><input id="pay-currency" name="currency" maxlength="3" required value="{{ cur }}" placeholder="USD"></label>
+          </div>
+          <label class="cs-fld" for="pay-fx"><span>Курс к валюте договора (если валюта другая)</span><input id="pay-fx" name="fx_rate" inputmode="decimal"
+                 value="{{ echo.fx_rate or '' }}" placeholder="например 0.0115"></label>
+          <label class="cs-fld" for="pay-reason"><span>Основание</span><input id="pay-reason" name="reason" value="{{ echo.reason or '' }}"
+                 placeholder="приходный ордер, выписка, чек…"></label>
+          {% if errors.message %}
+          <p class="cs-err" role="alert">Не сохранилось: {{ errors.message }}.
+            Введённое сохранено — проверьте и отправьте снова.</p>
+          {% endif %}
+          <div class="cs-bb"><button class="btn btn-brand" type="submit">Записать оплату</button></div>
+        </form>
+      </details>
+      {% else %}
+      <p class="cs-note lock">Подтверждение оплаты — у ведущего менеджера этой услуги.</p>
+      {% endif %}
+
+      {% if write_on and may_correct %}
+      <details class="cs-sheet"{% if errors.message %} open{% endif %}>
+        <summary class="btn btn-soft">Обязательство вернуть…</summary>
+        <form method="post" action="{{ post }}/money/refund-due"
+              hx-post="{{ post }}/money/refund-due" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+          <p class="cs-hint">Решение вернуть принято, перевода ещё не было. «Возвращено» не трогает.</p>
+          <input type="hidden" name="idempotency_key" value="{{ idem_key }}">
+          <input type="hidden" name="expected_revision" value="{{ rev }}">
+          <input type="hidden" name="tab" value="money">
+          <div class="cs-grid2">
+            <label class="cs-fld" for="rd-amount"><span>Сумма <i class="req" aria-hidden="true">*</i></span><input id="rd-amount" name="amount" inputmode="decimal" required value="{{ echo.amount or '' }}"></label>
+            <label class="cs-fld" for="rd-currency"><span>Валюта <i class="req" aria-hidden="true">*</i></span><input id="rd-currency" name="currency" maxlength="3" required value="{{ cur }}"></label>
+          </div>
+          <label class="cs-fld" for="rd-reason"><span>Причина <i class="req" aria-hidden="true">*</i></span><input id="rd-reason" name="reason" required value="{{ echo.reason or '' }}"></label>
+          <div class="cs-bb"><button class="btn btn-brand" type="submit">Зафиксировать обязательство</button></div>
+        </form>
+      </details>
+      <details class="cs-sheet"{% if errors.message %} open{% endif %}>
+        <summary class="btn btn-soft">Возврат выполнен…</summary>
+        <form method="post" action="{{ post }}/money/refund-paid"
+              hx-post="{{ post }}/money/refund-paid" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+          <p class="cs-hint">Деньги фактически ушли клиенту. Укажите номер обязательства, которое закрывает этот перевод, — иначе оно останется висеть.</p>
+          <input type="hidden" name="idempotency_key" value="{{ idem_key }}">
+          <input type="hidden" name="expected_revision" value="{{ rev }}">
+          <input type="hidden" name="tab" value="money">
+          <div class="cs-grid2">
+            <label class="cs-fld" for="rp-amount"><span>Сумма <i class="req" aria-hidden="true">*</i></span><input id="rp-amount" name="amount" inputmode="decimal" required value="{{ echo.amount or '' }}"></label>
+            <label class="cs-fld" for="rp-currency"><span>Валюта <i class="req" aria-hidden="true">*</i></span><input id="rp-currency" name="currency" maxlength="3" required value="{{ cur }}"></label>
+          </div>
+          <div class="cs-grid2">
+            <label class="cs-fld" for="rp-settles"><span>Закрывает обязательство №</span><input id="rp-settles" name="settles_id" inputmode="numeric"></label>
+            <label class="cs-fld" for="rp-fx"><span>Курс (если валюта другая)</span><input id="rp-fx" name="fx_rate" inputmode="decimal" value="{{ echo.fx_rate or '' }}"></label>
+          </div>
+          <label class="cs-fld" for="rp-reason"><span>Основание</span><input id="rp-reason" name="reason" value="{{ echo.reason or '' }}"></label>
+          <div class="cs-bb"><button class="btn btn-brand" type="submit">Записать возврат</button></div>
+        </form>
+      </details>
+      <details class="cs-sheet"{% if errors.message %} open{% endif %}>
+        <summary class="btn btn-soft">Аннулировать запись…</summary>
+        <form method="post" action="{{ post }}/money/void"
+              hx-post="{{ post }}/money/void" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+          <p class="cs-hint">Записи не было: ошибочная строка исключается из расчёта и остаётся в журнале с причиной. Это не возврат.</p>
+          <input type="hidden" name="idempotency_key" value="{{ idem_key }}">
+          <input type="hidden" name="tab" value="money">
+          <label class="cs-fld" for="vd-id"><span>Номер записи <i class="req" aria-hidden="true">*</i></span><input id="vd-id" name="voids_id" inputmode="numeric" required></label>
+          <label class="cs-fld" for="vd-reason"><span>Причина <i class="req" aria-hidden="true">*</i></span><input id="vd-reason" name="reason" required value="{{ echo.reason or '' }}"></label>
+          <div class="cs-bb"><button class="btn btn-brand" type="submit">Аннулировать</button></div>
+        </form>
+      </details>
+      <details class="cs-sheet"{% if errors.message %} open{% endif %}>
+        <summary class="btn btn-soft">Исправить запись…</summary>
+        <form method="post" action="{{ post }}/money/correct-entry"
+              hx-post="{{ post }}/money/correct-entry" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+          <p class="cs-hint">Новая строка с верной суммой вместо прежней. Прежняя не стирается; причина обязательна.</p>
+          <input type="hidden" name="idempotency_key" value="{{ idem_key }}">
+          <input type="hidden" name="tab" value="money">
+          <label class="cs-fld" for="ce-id"><span>Исправляет запись № <i class="req" aria-hidden="true">*</i></span><input id="ce-id" name="corrects_id" inputmode="numeric" required></label>
+          <div class="cs-grid2">
+            <label class="cs-fld" for="ce-amount"><span>Верная сумма <i class="req" aria-hidden="true">*</i></span><input id="ce-amount" name="amount" inputmode="decimal" required value="{{ echo.amount or '' }}"></label>
+            <label class="cs-fld" for="ce-currency"><span>Валюта <i class="req" aria-hidden="true">*</i></span><input id="ce-currency" name="currency" maxlength="3" required value="{{ cur }}"></label>
+          </div>
+          <label class="cs-fld" for="ce-fx"><span>Курс (если валюта другая)</span><input id="ce-fx" name="fx_rate" inputmode="decimal" value="{{ echo.fx_rate or '' }}"></label>
+          <label class="cs-fld" for="ce-reason"><span>Причина <i class="req" aria-hidden="true">*</i></span><input id="ce-reason" name="reason" required value="{{ echo.reason or '' }}"></label>
+          <div class="cs-bb"><button class="btn btn-brand" type="submit">Записать исправление</button></div>
+        </form>
+      </details>
+      <details class="cs-sheet"{% if errors.message %} open{% endif %}>
+        <summary class="btn btn-soft">Сумма договора…</summary>
+        <form method="post" action="{{ post }}/money/contract-amount"
+              hx-post="{{ post }}/money/contract-amount" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+          <p class="cs-hint">Меняет сумму, от которой считается остаток, — с причиной и событием. Валюту нельзя сменить, пока есть зачтённые платежи.</p>
+          <input type="hidden" name="expected_revision" value="{{ rev }}">
+          <input type="hidden" name="tab" value="money">
+          <div class="cs-grid2">
+            <label class="cs-fld" for="ca-amount"><span>Сумма <i class="req" aria-hidden="true">*</i></span><input id="ca-amount" name="amount" inputmode="decimal" required value="{{ b.agreed if b.agreed is not none else '' }}"></label>
+            <label class="cs-fld" for="ca-currency"><span>Валюта <i class="req" aria-hidden="true">*</i></span><input id="ca-currency" name="currency" maxlength="3" required value="{{ cur }}"></label>
+          </div>
+          <label class="cs-fld" for="ca-reason"><span>Причина <i class="req" aria-hidden="true">*</i></span><input id="ca-reason" name="reason" required value="{{ echo.reason or '' }}"></label>
+          <div class="cs-bb"><button class="btn btn-brand" type="submit">Исправить сумму</button></div>
+        </form>
+      </details>
+      {% elif write_on %}
+      <p class="cs-note lock">Возврат, аннулирование и исправление сумм — у руководителя.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  {# ---------- Задачи ---------- #}
+  <div role="tabpanel" id="pane-tasks" aria-labelledby="tab-tasks" data-tab="tasks" class="cs-pane"{% if tab != 'tasks' %} hidden{% endif %}>
+    {% if tasks %}
+    {% for t in tasks %}
+    <div class="cs-row{% if t.active and t.overdue %} bad{% elif t.active and t.priority == 'high' %} hi{% elif not t.active %} muted{% endif %}">
+      <div class="t">{{ t.kind_label }}{% if t.comment %} · {{ t.comment }}{% endif %}
+        {% if t.done %}<span class="cs-pill good">выполнена</span>{% elif t.cancelled %}<span class="cs-pill none">отменена</span>{% elif t.overdue %}<span class="cs-pill bad">просрочена</span>{% elif t.status == 'rescheduled' %}<span class="cs-pill info">перенесена</span>{% endif %}</div>
+      <div class="m">
+        <span class="due{% if t.active and t.overdue %} over{% endif %}">{{ t.date_label }}{% if t.has_time %} {{ t.time }}{% endif %}</span>
+        <span>ведёт <b>{{ t.manager_id }}</b></span>
+        {% if t.name %}<span>{{ t.name }}</span>{% elif t.phone_display %}<span class="cs-ref">{{ t.phone_display }}</span>{% endif %}
+      </div>
+      <div class="why"><b>почему создано:</b> {{ task_why.get(t.kind) or t.context or 'первым шагом процесса при договоре или вручную менеджером' }}</div>
+      {% if t.active %}
+      <div class="rb">
+        {% if write_on %}
+        <form method="post" action="{{ post }}/task/{{ t.id }}/finish"
+              hx-post="{{ post }}/task/{{ t.id }}/finish" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
+          <input type="hidden" name="tab" value="tasks">
+          <button class="btn btn-soft btn-sm" type="submit">Выполнить</button>
+        </form>
+        {% else %}
+        <button class="btn btn-soft btn-sm" type="button" disabled title="Запись в реестр услуг выключена">Выполнить</button>
+        <span class="cs-note lock">Запись в реестр услуг выключена</span>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="cs-empty"><b>Задач нет</b>Задачи создаются правилами при договоре, переходах этапов и операциях по брони и билетам. Каждая объясняет, почему создана.</div>
+    {% endif %}
+  </div>
+
+  {# ---------- Маршрут (только билеты) ---------- #}
+  {% if d.direction == 'tickets' %}
+  <div role="tabpanel" id="pane-route" aria-labelledby="tab-route" data-tab="route" class="cs-pane"{% if tab != 'route' %} hidden{% endif %}>
+    {% if segments %}
+    <h4>Сегменты · перенос создаёт новый, прежний остаётся</h4>
+    {% for s in segments %}
+    <div class="cs-seg{% if s.superseded or s.status == 'cancelled' %} muted{% endif %}">
+      <span class="pos">{{ s.position }}</span>
+      <span class="t">{{ s.carrier }} <span class="cs-ref">{{ s.flight_number }}</span> · {{ s.departure_airport }} → {{ s.arrival_airport }}</span>
+      <span class="cs-pill {{ 'none' if s.superseded else {'planned': 'info', 'confirmed': 'good', 'cancelled': 'bad'}.get(s.status, 'none') }}">{{ 'заменён' if s.superseded else {'planned': 'план', 'confirmed': 'подтверждён', 'cancelled': 'отменён'}.get(s.status, s.status) }}</span>
+      <div class="m">вылет <b>{{ s.departure_at.strftime('%d.%m %H:%M') }} UTC</b> ({{ s.departure_tz }}) · прилёт {{ s.arrival_at.strftime('%d.%m %H:%M') }} UTC ({{ s.arrival_tz }})
+        {% if s.checkin_opens_hours_before is not none %} · регистрация за {{ s.checkin_opens_hours_before }} ч{% else %} · <b>окно регистрации не известно</b> — задача не ставится{% endif %}</div>
+      <div class="m">{% if s.booking_reference %}бронь <b class="cs-ref">{{ s.booking_reference }}</b>{% else %}номер брони не указан{% endif %}
+        {% if s.passenger_name %} · пассажир {{ s.passenger_name }}{% endif %}</div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="cs-empty"><b>Сегментов нет</b>Маршрут появится, когда будут добавлены перелёты: по каждому сегменту ставятся задачи регистрации и вылета.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  </div>{# /.cs-body #}
+
+  {# Скелет загрузки: виден, пока htmx держит на панели класс htmx-request. #}
+  <div class="cs-skel" aria-hidden="true">
+    <div class="cs-row"><span class="cs-sk" style="width:55%"></span><span class="cs-sk" style="width:85%"></span><span class="cs-sk" style="width:40%"></span></div>
+    <div class="cs-row"><span class="cs-sk" style="width:65%"></span><span class="cs-sk" style="width:80%"></span></div>
+    <p class="cs-busy">Сохраняем…</p>
+  </div>
+</section>

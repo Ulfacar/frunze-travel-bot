@@ -1,0 +1,123 @@
+{# Счётчики + список услуг. Цель htmx-свопа: одна корневая обёртка #work-list. #}
+<section id="work-list" aria-label="Услуги в работе">
+  {% set tabs = [("", "Все", counts.total, ""), ("now", "Сейчас", counts.now, "hot"),
+                 ("today", "Сегодня", counts.today, "warm"), ("soon", "Скоро", counts.soon, ""),
+                 ("waiting", "Ждём", counts.waiting, ""), ("stuck", "Зависли", counts.stuck, "hot")] %}
+  {% set mine_q = "" if mine else "&mine=0" %}
+
+  <div class="wk-stats">
+    {% for key, label, n, tone in tabs[1:] %}
+    <div class="wk-stat {{ tone }}"><b data-count="{{ key }}">{{ n }}</b> <span>{{ label|lower }}</span></div>
+    {% endfor %}
+    <div class="wk-stat"><b data-count="total">{{ counts.total }}</b> <span>всего</span></div>
+  </div>
+
+  <div class="wk-tabs" role="tablist" aria-label="Фильтр услуг">
+    {% for key, label, n, tone in tabs %}
+    <button type="button" role="tab" class="wk-tab" aria-selected="{{ "true" if (tab or "") == key else "false" }}"
+            hx-get="/admin/work?{% if key %}tab={{ key }}{% endif %}{{ mine_q }}"
+            hx-target="#work-list" hx-select="#work-list" hx-swap="outerHTML" hx-push-url="true">
+      {{ label }} <span class="wk-tab-n">{{ n }}</span>
+    </button>
+    {% endfor %}
+    {% if is_admin %}
+    <button type="button" class="wk-tab wk-tab-mine" aria-pressed="{{ "true" if mine else "false" }}"
+            hx-get="/admin/work?{% if tab %}tab={{ tab }}&{% endif %}mine={{ 0 if mine else 1 }}"
+            hx-target="#work-list" hx-select="#work-list" hx-swap="outerHTML" hx-push-url="true">
+      {{ "Только мои" if mine else "Все менеджеры" }}
+    </button>
+    {% endif %}
+  </div>
+
+  {% if failed %}
+  <div class="wk-failed" role="alert">
+    <div class="big">Реестр услуг недоступен</div>
+    <div>Это сбой загрузки, а не отсутствие работы. Задачи не потеряны. Обновите страницу
+      через минуту; если не помогло — сообщите Алану.</div>
+  </div>
+  {% elif not digests %}
+  <div class="all-clear">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+    {# Различать «пусто в фильтре» и «услуг нет вообще» надо по ЧИСЛУ услуг, а не
+       по наличию вкладки: вкладка выбрана всегда (по умолчанию «сейчас»), и
+       условие `if tab` прятало честное «услуг нет» за «посмотрите другой фильтр». #}
+    {% if counts.total %}
+    <div class="big">В этом фильтре пусто</div>
+    <div>Откройте вкладку «Все» — остальные услуги могут быть в других фильтрах.</div>
+    {% else %}
+    <div class="big">Открытых услуг за вами нет</div>
+    <div>Новая услуга появится после подписания договора. Задачи на день смотрите в
+      <a href="/admin/calendar">календаре</a>{% if is_admin and mine %}, а услуги других менеджеров — кнопкой «Все менеджеры»{% endif %}.</div>
+    {% endif %}
+  </div>
+  {% else %}
+  <ol class="wk-rows">
+    {% for d in digests %}
+    {% set top = d.top_reason %}
+    <li class="wk-row" data-case-id="{{ d.case_id }}"{% if d.stuck %} data-stuck="1"{% endif %}>
+      <div class="wk-row-id">
+        <a class="wk-title" href="/admin/case/{{ d.case_id }}">{{ d.title }}</a>
+        <div class="wk-meta">
+          <span class="tag">{{ d.stage_name }}{% if d.stage_total %} · {{ d.stage_index + 1 }}/{{ d.stage_total }}{% endif %}</span>
+          {% if is_admin and not mine %}<span class="tag">{{ d.owner_login }}</span>{% endif %}
+        </div>
+      </div>
+
+      {% if top %}
+      <div class="wk-why">
+        {# `data-case-id` только на строке: дубль на чипе ломал проверку порядка. #}
+        <a class="wk-chip" data-reason="{{ top.code }}"
+           href="/admin/case/{{ d.case_id }}?tab={{ top.anchor }}">{{ top.label }}</a>
+        <span class="wk-detail">{{ top.detail }}</span>
+      </div>
+      {% if d.reasons|length > 1 %}
+      {% set more = d.reasons|length - 1 %}
+      <details class="wk-more">
+        <summary>ещё {{ more }} {{ "причина" if more % 10 == 1 and more % 100 != 11 else ("причины" if more % 10 in (2, 3, 4) and more % 100 not in (12, 13, 14) else "причин") }}</summary>
+        <ul>
+          {% for r in d.reasons[1:] %}
+          <li><a href="/admin/case/{{ d.case_id }}?tab={{ r.anchor }}"><b>{{ r.label }}</b></a>{% if r.detail %} — {{ r.detail }}{% endif %}
+            <div class="wk-why-text">{{ r.why }}</div></li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+      {% else %}
+      <div class="wk-why"><span class="wk-detail">Срочного нет — услуга идёт по плану.</span></div>
+      {% endif %}
+
+      {% if d.next_step %}
+      <div class="wk-next">
+        <span class="wk-k">Дальше</span>
+        <span class="wk-next-label">{{ d.next_step.label }}</span>
+        {% if d.next_step.choices %}
+        <span class="wk-next-sub">{% for code, name in d.next_step.choices %}{{ name }}{% if not loop.last %} / {% endif %}{% endfor %}</span>
+        {% endif %}
+        {% if d.next_step.requires %}<span class="wk-next-sub">нужно: {{ d.next_step.requires|join(", ") }}</span>{% endif %}
+        {% if d.next_step.blocked_by %}<span class="wk-next-sub">{{ d.next_step.blocked_by }}</span>{% endif %}
+      </div>
+      {% endif %}
+
+      <div class="wk-ready">
+        {% if d.ready_total %}
+        <div class="wk-pbar" role="img" aria-label="Готово {{ d.ready_done }} из {{ d.ready_total }}"><i style="width: {{ (d.ready_done * 100 / d.ready_total)|round|int }}%"></i></div>
+        <span class="wk-ready-n">готово {{ d.ready_done }} из {{ d.ready_total }}</span>
+        {% else %}<span class="wk-ready-n">пунктов готовности нет</span>{% endif %}
+      </div>
+
+      <div class="wk-acts">
+        <a class="btn btn-ghost wk-btn" href="/admin/case/{{ d.case_id }}">Открыть услугу</a>
+        {% if d.next_step and d.next_step.kind in ("task", "advance") %}
+          {% if write_on %}
+          <a class="btn btn-brand wk-btn" href="/admin/case/{{ d.case_id }}?tab={{ "tasks" if d.next_step.kind == "task" else "path" }}">{{ "К задаче" if d.next_step.kind == "task" else "Перейти дальше" }}</a>
+          {% else %}
+          <button class="btn btn-brand wk-btn" type="button" disabled title="Запись в реестр услуг выключена">{{ "К задаче" if d.next_step.kind == "task" else "Перейти дальше" }}</button>
+          {% endif %}
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% if not write_on %}<p class="wk-off">Запись в реестр услуг выключена</p>{% endif %}
+  {% endif %}
+</section>
