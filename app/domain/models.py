@@ -338,6 +338,12 @@ class CalendarTask(DomainBase):
         ForeignKey("service_cases.id"), nullable=True, index=True)
     ticket_segment_id: Mapped[int | None] = mapped_column(
         ForeignKey("ticket_segments.id"), nullable=True, index=True)
+    # Захват задачи в обработку (E2-04, AC-28). Исполнитель помечает, что взял
+    # задачу; если процесс упал между захватом и результатом, незавершённый захват
+    # ВИДЕН — и перед повтором его сверяют, а не отправляют слепо второй раз.
+    claimed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True)
+    claimed_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

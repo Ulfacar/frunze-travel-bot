@@ -199,8 +199,8 @@ async def _create_initial_tasks(session: AsyncSession, case: ServiceCase,
     зашито в код: у виз и билетов первый шаг другой, и переписывать функцию ради
     каждого продукта нельзя.
 
-    Долг: у `CalendarTask` нет ссылки на услугу — она появится в E2-04 вместе с
-    правилами задач. Пока связь идёт через контакт и текст задачи.
+    Задача привязана к услуге (`service_case_id`): иначе она не переедет к новому
+    владельцу при переназначении и не попадёт в карточку услуги.
     """
     stage = next((s for s in version.stages if s["code"] == case.stage), {})
     spec = stage.get("first_task")
@@ -220,7 +220,11 @@ async def _create_initial_tasks(session: AsyncSession, case: ServiceCase,
         kind=str(spec.get("kind") or "call"),
         comment=str(spec.get("comment") or "")[:500],
         scheduled_date=due_local.date(), scheduled_at=due,
-        created_by=by.manager_id))
+        created_by=by.manager_id,
+        # Ссылка на услугу обязательна: без неё задача не переезжает к новому
+        # владельцу при переназначении (AC-29) и не попадает в карточку услуги.
+        # Поле появилось в E2-02, и этот вызов его не использовал — долг закрыт.
+        service_case_id=case.id))
     return 1
 
 
@@ -760,6 +764,13 @@ async def reassign_case(session: AsyncSession, case_id: int, *, target_login: st
         raise DomainError("revision conflict: service case changed concurrently")
     previous = case.owner_login
     if previous.strip().lower() == target_login:
+        # Владелец уже этот — но задачи могли появиться позже или не доехать с
+        # прошлого раза. Перенос идемпотентен, поэтому дотягиваем их и выходим:
+        # иначе повторный вызов не мог исправить расхождение.
+        from app.domain.task_rules import transfer_open_tasks
+        await transfer_open_tasks(session, case.id, new_owner=target_login,
+                                  actor=by.manager_id)
+        await session.flush()
         return case                      # повтор не плодит событие и не двигает ревизию
     object.__setattr__(case, "_reassign_in_progress", True)
     try:
@@ -773,6 +784,22 @@ async def reassign_case(session: AsyncSession, case_id: int, *, target_login: st
     await _follow_assignment(session, contact_id=case.contact_id, direction=direction,
                              manager_login=target_login, by=by,
                              reason=reason or "передача услуги")
+    # Открытые задачи услуги переходят новому владельцу (AC-29). Импорт локальный:
+    # `task_rules` читает `service_cases`, и на уровне модуля вышел бы цикл.
+    from app.domain.task_rules import transfer_open_tasks
+    moved = await transfer_open_tasks(session, case.id, new_owner=target_login,
+                                      actor=by.manager_id)
+    from app.domain.task_rules import orphan_tasks
+    orphans = await orphan_tasks(session, contact_id=case.contact_id,
+                                 direction=direction or "")
+    if moved or orphans:
+        session.add(ServiceEvent(
+            case_id=case.id, event_type="tasks_transferred",
+            actor=_audit_actor(by, None), reason=reason,
+            payload={"task_ids": list(moved), "to": target_login,
+                     # Задачи без ссылки на услугу остались у прежнего владельца:
+                     # привязать их автоматически нельзя, но молчать о них тоже.
+                     "orphan_task_ids": list(orphans)}))
     await session.flush()
     return case
 
