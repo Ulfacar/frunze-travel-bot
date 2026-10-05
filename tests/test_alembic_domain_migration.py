@@ -47,6 +47,10 @@ DOMAIN_TABLES = {
     # E2-03: журнал денег по услуге. Остаток в нём НЕ хранится — считается по
     # строкам, поэтому колонки «итого» здесь нет и быть не должно.
     "service_payments",
+    # E2-02: сегменты билета.
+    "ticket_segments",
+    # E2-01: попытки бронирования тура.
+    "booking_attempts",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",

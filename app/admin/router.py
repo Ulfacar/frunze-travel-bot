@@ -2085,6 +2085,10 @@ async def set_outcome(user_id: str, request: Request, manager: dict = Depends(re
 
 TASK_KIND_LABELS = [("call", "📞 Звонок"), ("meeting", "🤝 Встреча"),
                     ("office_visit", "🏢 Визит в офис"), ("followup", "🔁 Повторное касание"),
+                    # Заводятся операциями по билетам и турам (E2-01, E2-02).
+                    # Без подписи в календаре отображался сырой код вида.
+                    ("checkin", "🛂 Регистрация на рейс"), ("departure", "✈️ Вылет"),
+                    ("review_request", "⭐ Попросить отзыв"), ("complaint", "🔴 Жалоба"),
                     ("other", "📋 Другое")]
 TASK_PRIORITY_LABELS = [("low", "Низкий"), ("normal", "Обычный"), ("high", "Высокий")]
 _KIND_LABEL_MAP = dict(TASK_KIND_LABELS)

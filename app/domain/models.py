@@ -295,7 +295,12 @@ class OutboxJob(DomainBase):
 # is an exact UTC instant, NULL = "без точного времени". Only ai_summary may be
 # AI-written; client/date/time/owner come solely from the DB.
 
-TASK_KINDS: tuple[str, ...] = ("call", "meeting", "office_visit", "followup", "other")
+# Виды задач. `checkin`, `departure`, `review_request` и `complaint` заводят
+# операции по билетам и турам (E2-01, E2-02): без них задача попадала в
+# календарь без подписи, сырым кодом, и менеджер не понимал, что это.
+TASK_KINDS: tuple[str, ...] = ("call", "meeting", "office_visit", "followup",
+                              "checkin", "departure", "review_request",
+                              "complaint", "other")
 TASK_STATUSES: tuple[str, ...] = ("planned", "rescheduled", "completed", "cancelled")
 ACTIVE_TASK_STATUSES: tuple[str, ...] = ("planned", "rescheduled")
 TASK_PRIORITIES: tuple[str, ...] = ("low", "normal", "high")
@@ -326,6 +331,13 @@ class CalendarTask(DomainBase):
     scheduled_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True)                     # exact instant; NULL = no time
     created_by: Mapped[str] = mapped_column(String(64), default="")
+    # Услуга и сегмент, к которым относится задача. Без них нельзя пересчитать
+    # напоминание при переносе рейса: непонятно, какую именно задачу отменять
+    # (AC-08). Это же закрывает долг E1-03 — раньше связь шла только через контакт.
+    service_case_id: Mapped[int | None] = mapped_column(
+        ForeignKey("service_cases.id"), nullable=True, index=True)
+    ticket_segment_id: Mapped[int | None] = mapped_column(
+        ForeignKey("ticket_segments.id"), nullable=True, index=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -694,6 +706,158 @@ class ServiceCase(DomainBase):
 
         event.listen(cls, "before_insert", validate_stage)
         event.listen(cls, "before_update", validate_stage)
+
+
+class BookingAttempt(DomainBase):
+    """Попытка забронировать тур у оператора: заявка, подтверждение или отказ.
+
+    Зачем отдельная сущность, а не поля в услуге: оператор отказывает регулярно —
+    нет мест, цена изменилась, отель снят с продажи. Клиент выбирает альтернативу,
+    и это НОВАЯ попытка со своей ценой, своим отелем и своими датами. Прежняя
+    попытка обязана сохраниться: без неё нельзя ответить, что именно просили
+    сначала и почему не вышло (AC-03).
+
+    Отказ оператора НЕ закрывает услугу и не трогает деньги. Клиент уже внёс
+    предоплату, она относится к договору, а не к конкретной брони: деньги живут
+    отдельными событиями в журнале (E2-03).
+
+    Цена попытки — не цена договора. Договор меняется отдельной операцией с
+    причиной (`correct_contract_amount`), и видно, какая попытка стала основанием.
+    """
+
+    __tablename__ = "booking_attempts"
+    __table_args__ = (
+        # Номер попытки уникален внутри услуги: «вторая попытка» одна.
+        UniqueConstraint("case_id", "attempt", name="uq_booking_attempt_number"),
+        CheckConstraint("attempt >= 1", name="ck_booking_attempt_number"),
+        CheckConstraint("check_out > check_in", name="ck_booking_attempt_dates"),
+        CheckConstraint("price IS NULL OR price > 0", name="ck_booking_attempt_price"),
+        CheckConstraint("(price IS NULL) = (currency IS NULL)",
+                        name="ck_booking_attempt_price_currency"),
+        CheckConstraint(
+            "status IN ('requested', 'confirmed', 'declined', 'cancelled')",
+            name="ck_booking_attempt_status"),
+        # Подтверждённая бронь обязана иметь номер и дату подтверждения: это тот
+        # самый «обязательный факт» перехода из FLOW-03.
+        CheckConstraint(
+            "status <> 'confirmed'"
+            " OR (reference IS NOT NULL AND confirmed_at IS NOT NULL)",
+            name="ck_booking_attempt_confirmed_facts"),
+        CheckConstraint(
+            "status <> 'declined' OR decline_reason IS NOT NULL",
+            name="ck_booking_attempt_decline_reason"),
+        CheckConstraint("supersedes_id IS NULL OR supersedes_id <> id",
+                        name="ck_booking_attempt_no_self_supersede"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("service_cases.id"), index=True)
+    attempt: Mapped[int] = mapped_column(Integer)
+    operator: Mapped[str] = mapped_column(String(128))
+    country: Mapped[str] = mapped_column(String(64))
+    hotel: Mapped[str] = mapped_column(String(255))
+    check_in: Mapped[date] = mapped_column(Date)
+    check_out: Mapped[date] = mapped_column(Date)
+    tourists: Mapped[int] = mapped_column(Integer, default=1)
+    # Цена ЭТОЙ попытки, а не договора. У альтернативы она своя.
+    price: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="requested")
+    reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True)
+    decline_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Попытка, которую эта заменила после отказа. Прежняя остаётся в истории.
+    supersedes_id: Mapped[int | None] = mapped_column(
+        ForeignKey("booking_attempts.id"), nullable=True)
+    requested_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now,
+                                                 server_default=func.now())
+
+    @validates("case_id", "attempt", "supersedes_id")
+    def _identity_is_fixed(self, key, value):
+        if inspect(self).has_identity and value != getattr(self, key):
+            raise DomainError(f"booking attempt {key} cannot be reassigned")
+        return value
+
+
+class TicketSegment(DomainBase):
+    """Один полётный сегмент билета: откуда, куда, когда и в какой зоне.
+
+    Зачем отдельная сущность, а не поля в услуге: билет со стыковкой — это два
+    и больше перелётов, у каждого своё время, свой аэропорт и своя часовая зона.
+    Задачи («напомнить о регистрации», «подтвердить вылет») относятся к КОНКРЕТНОМУ
+    сегменту, иначе напоминание придёт не к тому рейсу (AC-09).
+
+    Время хранится в UTC, а зона — рядом, строкой IANA (`Asia/Bishkek`). Без зоны
+    нельзя показать клиенту местное время вылета, а показывать UTC бессмысленно:
+    человек смотрит на табло в аэропорту, а не на UTC.
+
+    `checkin_opens_hours_before` — окно регистрации ИМЕННО этой авиакомпании.
+    NULL означает «не знаем», и тогда задача на регистрацию не ставится вовсе.
+    Это требование ТЗ: универсального предположения о 24 часах быть не должно —
+    у разных перевозчиков окно от 23 до 72 часов, и выдуманный срок хуже
+    отсутствующего, потому что клиент на него полагается.
+
+    Перенос рейса не правит сегмент, а создаёт новый со ссылкой `supersedes_id`:
+    прежнее расписание остаётся в истории, иначе нельзя ответить на вопрос
+    «а когда рейс был изначально» (AC-08).
+    """
+
+    __tablename__ = "ticket_segments"
+    __table_args__ = (
+        # Уникальна позиция только среди ДЕЙСТВУЮЩИХ сегментов. Полная уникальность
+        # по (case, position, superseded) ломала второй перенос того же рейса:
+        # заменённый сегмент занимал ключ навсегда, а авиакомпании двигают рейс
+        # по нескольку раз. Частичный индекс работает и на SQLite, и на PostgreSQL.
+        # Позиция уникальна среди ДЕЙСТВУЮЩИХ сегментов: заменённые и отменённые
+        # её не занимают. Иначе после отмены рейса нельзя поставить на его место
+        # новый — а именно это и делают, когда перевозчик снял рейс.
+        Index("uq_ticket_segment_active_position", "case_id", "position", unique=True,
+              sqlite_where=text("superseded = 0 AND status <> 'cancelled'"),
+              postgresql_where=text("superseded = false AND status <> 'cancelled'")),
+        CheckConstraint("position >= 1", name="ck_ticket_segment_position"),
+        CheckConstraint("arrival_at > departure_at", name="ck_ticket_segment_order"),
+        CheckConstraint(
+            "checkin_opens_hours_before IS NULL"
+            " OR (checkin_opens_hours_before > 0 AND checkin_opens_hours_before <= 336)",
+            name="ck_ticket_segment_checkin_window"),
+        CheckConstraint("status IN ('planned', 'confirmed', 'cancelled')",
+                        name="ck_ticket_segment_status"),
+        CheckConstraint("supersedes_id IS NULL OR supersedes_id <> id",
+                        name="ck_ticket_segment_no_self_supersede"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("service_cases.id"), index=True)
+    position: Mapped[int] = mapped_column(Integer)          # 1, 2, 3 — порядок в билете
+    carrier: Mapped[str] = mapped_column(String(64))
+    flight_number: Mapped[str] = mapped_column(String(16))
+    departure_airport: Mapped[str] = mapped_column(String(8))
+    arrival_airport: Mapped[str] = mapped_column(String(8))
+    departure_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    arrival_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    departure_tz: Mapped[str] = mapped_column(String(64))   # IANA, напр. Asia/Bishkek
+    arrival_tz: Mapped[str] = mapped_column(String(64))
+    # Окно регистрации этого перевозчика в часах. NULL = не знаем, задачу не ставим.
+    checkin_opens_hours_before: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="planned")
+    # Сегмент, который этот заменил при переносе. Прежний остаётся в истории.
+    supersedes_id: Mapped[int | None] = mapped_column(
+        ForeignKey("ticket_segments.id"), nullable=True)
+    # Заменён другим сегментом. В уникальности участвует, чтобы позиция была
+    # свободна для нового сегмента, а старый никуда не исчезал.
+    superseded: Mapped[bool] = mapped_column(Boolean, default=False)
+    booking_reference: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    passenger_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now,
+                                                 server_default=func.now())
+
+    @validates("case_id", "position", "supersedes_id")
+    def _identity_is_fixed(self, key, value):
+        if inspect(self).has_identity and value != getattr(self, key):
+            raise DomainError(f"ticket segment {key} cannot be reassigned")
+        return value
 
 
 class ServicePayment(DomainBase):

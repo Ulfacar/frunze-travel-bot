@@ -520,7 +520,8 @@ def test_migration_is_additive_empty_and_reversible(tmp_path, monkeypatch):
     cfg.set_main_option("sqlalchemy.url", url)
     # Накат идёт до head, поэтому список включает и журнал денег из E2-03.
     new_tables = {"products", "workflow_versions", "service_cases", "service_events",
-                  "service_payments"}
+                  "service_payments", "ticket_segments",
+                  "booking_attempts"}
     engine = create_engine(url)
     try:
         command.upgrade(cfg, "bitrix_dossier_0006")
