@@ -1,0 +1,35 @@
+{
+  "task": "E5-02C-REVIEW",
+  "base": "653a20a",
+  "target": "UNCOMMITTED; commit recorded in final handoff/STATE",
+  "files": {
+    "app/knowledge/review.py": {
+      "sha256_raw": "ee51f97635b050ebc73207e85453618cf968409d768fa127e8c7253e1fc8fad9",
+      "sha256_lf": "ee51f97635b050ebc73207e85453618cf968409d768fa127e8c7253e1fc8fad9"
+    },
+    "app/domain/knowledge_review.py": {
+      "sha256_raw": "1d74f157c77039049600b1dc8b603536edb1f639351e858a17a67bde1b1f3267",
+      "sha256_lf": "1d74f157c77039049600b1dc8b603536edb1f639351e858a17a67bde1b1f3267"
+    },
+    "scripts/review_kg_entry_local.py": {
+      "sha256_raw": "f212239fe8d0e1f0825ed9890d6f2703a975cefebc650806aac2e3ddec7190e3",
+      "sha256_lf": "f212239fe8d0e1f0825ed9890d6f2703a975cefebc650806aac2e3ddec7190e3"
+    },
+    "tests/test_knowledge_review.py": {
+      "sha256_raw": "e7780345f1669d55552129134b2f91d5f82e999347c8532128d0f13d4ee3eecb",
+      "sha256_lf": "e7780345f1669d55552129134b2f91d5f82e999347c8532128d0f13d4ee3eecb"
+    },
+    "docs/e5-02c-review.md": {
+      "sha256_raw": "5d490c6148c6fa341ce61d0b51b2d80c0431f3c016f2b096d4fa16e0d5392ef7",
+      "sha256_lf": "5d490c6148c6fa341ce61d0b51b2d80c0431f3c016f2b096d4fa16e0d5392ef7"
+    },
+    "docs/e5-02-slots-schema.md": {
+      "sha256_raw": "232c520c10548384bdf344a661369aff8a6a85ec9c303e0a459f634176967dc8",
+      "sha256_lf": "0c3fdf61520e27e4915f196c7b07e55f0633e2d05e72759201ac0259ad79096b"
+    },
+    "docs/crm-delivery/backlog.md": {
+      "sha256_raw": "c7fbc41b0b1807bcbe3709ade7e8fd320b9db7f65cdb12e684d22e1ed8cd2c1d",
+      "sha256_lf": "fd9770cab6b6ed9f67196742c25d3843558feed3a1a25a7286241feacf1fe936"
+    }
+  }
+}
