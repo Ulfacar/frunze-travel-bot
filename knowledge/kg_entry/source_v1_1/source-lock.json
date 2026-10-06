@@ -1,0 +1,14 @@
+{
+  "files": {
+    "aliases.json": "eb90745733128425ae311a70e32f216b2c9e203ca0a8e1edb07cc260e9bf696d",
+    "capture.json": "c4b08c7c577aeec1cf6d182d18e294b41ebcbdc458abbc2fef4ef50bca04bf89",
+    "iso3166.json": "f56f08c44c47636682f2512de72d41b1f2d2542dadce0fc54dbbd9a197e8a6ba"
+  },
+  "format": "kg-entry-source-lock/1",
+  "prepared_at": "2026-10-06T18:33:58+00:00",
+  "prepared_by": "Codex",
+  "tools": {
+    "PyMuPDF": "1.27.2.3",
+    "pycountry": "24.6.1"
+  }
+}
