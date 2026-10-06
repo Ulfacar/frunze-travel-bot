@@ -1,0 +1,25 @@
+{
+  "task": "E5-02A-20261006",
+  "branch": "fix/tours-search-quality",
+  "base": "4a22ecb8823585387f90bbdc6321506743989132",
+  "revision": "UNCOMMITTED",
+  "files": {
+    "app/knowledge/__init__.py": "9981ead3a463a6675af03228ccac8e6f19d97509a29e94fe2c578be3daecfc49",
+    "app/knowledge/bundle.py": "300406b3a7f7030f8158878ec944b42b061262513d08a399d42b9ef82aa4bd94",
+    "app/knowledge/bundle_schema.py": "34edf00d2a544642c7e1e6f6769bcc34af00b5d2f91814814d77662028e167fd",
+    "app/knowledge/schemas/kg-entry-slots-v1.json": "e1c6e36a27a5d8655f4b41da58c9fb07ba6f5453b432ce4d439583994f23bbd5",
+    "app/knowledge/slots.py": "41d384d9b305fb831125018159e80f108067e23ede7e91ef3cbfd8460e6e8c5f",
+    "app/knowledge/validation.py": "441705b151e8e3b8e6887a6aa853580cf97adb2e45899eecb901ab89888289ee",
+    "docs/crm-delivery/backlog.md": "ab98a24e499acd9937c92c9f1cf4a30c6c7db8080a802fd8ae7089bf2ee56d8e",
+    "docs/e5-02-slots-schema.md": "04e344015d7b8b8cb49a873b55905bc8586521a9eeea8aae30d4694132431c3f",
+    "docs/e5-02a-validation.md": "5a8db288cc571ad315695fdbe9c780e60ac9b90e0c24d8501f408d253c8bbfe6",
+    "requirements.txt": "4b1bcd8c8ac172757fbe5c9c346cac90fb47a01b55bd5b0ae2b5585f13395cba",
+    "scripts/validate_kg_entry.py": "44615b775788eef6ad13202147380a161841cfd8b214c7b0033553f1803e6b04",
+    "tests/fixtures/kg_entry/synthetic_bundle/countries.yaml": "745b48b05946177820af2473b28b803ae550222992ff50b93867fc6a242cc993",
+    "tests/fixtures/kg_entry/synthetic_bundle/meta.yaml": "8ef1362cb4a216200e837ae724315b0f61d901ec7a2d824e8a04e45857d6d88c",
+    "tests/fixtures/kg_entry/synthetic_bundle/units.yaml": "fa43736a76cb3ed86b594bdafce2e30178b710f97652253ebdfb00a3223d7a8b",
+    "tests/fixtures/kg_entry/synthetic_slots.json": "b19e3bde11a04477bc21d47c5bed8ab6640d4a40955e2ca07775b321fd587842",
+    "tests/fixtures/kg_entry/synthetic_source.txt": "74b87809586b946532a014a95db872737b2396eb80bd9eb20d98826a6a7097fd",
+    "tests/test_kg_entry_validation.py": "eaf28bafc2f5ac94dd4d7c35e7663e1f2898fab567538a2b752b39c8ef747089"
+  }
+}

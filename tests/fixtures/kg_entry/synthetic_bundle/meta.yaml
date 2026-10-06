@@ -1,0 +1,7 @@
+schema_version: kg-entry-bundle/1
+set_code: kg_entry
+version_label: test-only
+source_document: synthetic_source.txt
+source_hash: 74b87809586b946532a014a95db872737b2396eb80bd9eb20d98826a6a7097fd
+prepared_by: test-author
+prepared_at: '2026-10-06T12:00:00+06:00'
