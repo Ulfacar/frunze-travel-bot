@@ -51,6 +51,8 @@ DOMAIN_TABLES = {
     "ticket_segments",
     # E2-01: попытки бронирования тура.
     "booking_attempts",
+    # E5-02B: draft storage only; calculators/publication are separate work.
+    "knowledge_sets", "knowledge_versions", "knowledge_units", "knowledge_imports",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",

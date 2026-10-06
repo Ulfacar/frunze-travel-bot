@@ -1,0 +1,52 @@
+{
+  "task": "E5-02B-IMPORT",
+  "base": "4a22ecb8823585387f90bbdc6321506743989132",
+  "target": "UNCOMMITTED",
+  "created_at": "2026-10-07T01:12:31.273646+06:00",
+  "files": {
+    "app/domain/models.py": {
+      "sha256": "11af2c78fc0f9f621471f93ce4541a4e3e2a194959863f66456c596e18c33390",
+      "bytes": 73154
+    },
+    "app/domain/knowledge_import.py": {
+      "sha256": "e90df6f9451512080a07bef5793a8a4c71e25856ce779c5b4c1f56f24a474f10",
+      "bytes": 10211
+    },
+    "alembic/versions/e5_knowledge_0013.py": {
+      "sha256": "ce94d4eb34ff36b4924cdf9e7d4ab085ef14743aab598261a12f5e15d63dea0f",
+      "bytes": 8286
+    },
+    "scripts/import_kg_entry_local.py": {
+      "sha256": "e89574deba7bf81c24537f5d85ac3841ccb56deb518a71fc047e5ee6aa1d283a",
+      "bytes": 3578
+    },
+    "tests/test_knowledge_import.py": {
+      "sha256": "03ac4abd5f6f722d4ea41a16a20f4df037cd4cd96e421132281a22062ca5414a",
+      "bytes": 17710
+    },
+    "tests/test_knowledge_migration.py": {
+      "sha256": "11c9d8f15a7e0e295e1e3ca48a33d68bb729d47271499259ab890079a093b858",
+      "bytes": 5830
+    },
+    "tests/test_alembic_domain_migration.py": {
+      "sha256": "4765319eba6a2e0c82428f68525ae4835b78490c5e488a03c6037d0c330b0be6",
+      "bytes": 17169
+    },
+    "docs/e5-02b-import.md": {
+      "sha256": "4f991a50d35706f77c381bd056c839b78b3c96741ab9cc2a8dac2c1be1385d13",
+      "bytes": 12247
+    },
+    "docs/e5-02-slots-schema.md": {
+      "sha256": "b98ea794d7d70106a862214d730d6d6598968c26f11e460dd3c3bd7f7bb76f25",
+      "bytes": 75406
+    },
+    "docs/crm-delivery/backlog.md": {
+      "sha256": "2dc5cbafdf5a8be90ce5a3acf97f2901f6b0ca6c75f60b5a9b6cd499625c697e",
+      "bytes": 41290
+    },
+    "tests/test_service_cases.py": {
+      "sha256": "397955c850fab5c1399a6f8ee14927a348d09f6b8faf4760e934882ebd3e8cb3",
+      "bytes": 29598
+    }
+  }
+}

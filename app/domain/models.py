@@ -504,6 +504,183 @@ class _ServiceJSON(TypeDecorator):
         return self.freeze(value)
 
 
+class KnowledgeSet(DomainBase):
+    """E5: набор правил; импорт никогда не меняет active_version_id."""
+
+    __tablename__ = "knowledge_sets"
+    __table_args__ = (
+        ForeignKeyConstraint(["active_version_id", "id"],
+                             ["knowledge_versions.id", "knowledge_versions.set_id"],
+                             name="fk_knowledge_active_version"),
+        CheckConstraint("review_period_days IS NULL OR review_period_days > 0",
+                        name="ck_knowledge_review_period"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(64), unique=True)
+    jurisdiction: Mapped[str] = mapped_column(String(2))
+    domain: Mapped[str] = mapped_column(String(32))
+    name: Mapped[str] = mapped_column(Text)
+    # DEC-07 не решён: неизвестный срок нельзя подменить предложенными 30 днями.
+    review_period_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    active_version_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
+class KnowledgeVersion(DomainBase):
+    __tablename__ = "knowledge_versions"
+    __table_args__ = (
+        UniqueConstraint("set_id", "version", name="uq_knowledge_version_number"),
+        UniqueConstraint("set_id", "bundle_hash", name="uq_knowledge_version_bundle"),
+        UniqueConstraint("id", "set_id", name="uq_knowledge_version_set"),
+        CheckConstraint("version >= 1", name="ck_knowledge_version_positive"),
+        CheckConstraint("status IN ('draft','review','approved','active','retired','rejected')",
+                        name="ck_knowledge_version_status"),
+        CheckConstraint("length(source_hash) = 64 AND length(bundle_hash) = 64",
+                        name="ck_knowledge_version_hashes"),
+        Index("uq_knowledge_active", "set_id", unique=True,
+              sqlite_where=text("status = 'active'"), postgresql_where=text("status = 'active'")),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Встречный FK, как WorkflowVersion.product_id: ORM проверяет существование набора.
+    set_id: Mapped[int] = mapped_column(Integer)
+    version: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16), default="draft")
+    source_document: Mapped[str] = mapped_column(Text)
+    source_hash: Mapped[str] = mapped_column(String(64))  # SHA-256 исходного PDF
+    bundle_hash: Mapped[str] = mapped_column(String(64))  # SHA-256 normalized bundle
+    source_prepared_by: Mapped[str] = mapped_column(Text)
+    effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    # Полный мета-контракт и алиасы нужны для воспроизводимости хеша; это не права стран.
+    bundle_meta: Mapped[dict] = mapped_column(_ServiceJSON)
+    country_aliases: Mapped[dict] = mapped_column(_ServiceJSON)
+    import_report: Mapped[dict] = mapped_column(_ServiceJSON)
+
+    @validates("bundle_meta", "country_aliases", "import_report")
+    def _freeze_json(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+class KnowledgeUnit(DomainBase):
+    __tablename__ = "knowledge_units"
+    __table_args__ = (
+        UniqueConstraint("version_id", "unit_id", name="uq_knowledge_unit"),
+        CheckConstraint("kind IN ('visa_free_regime','registration_exemption','registration_default',"
+                        "'registration_term','special_regime','visa_required_regime','rule_param',"
+                        "'deadline','processing_time','tariff','template','escalation_trigger')",
+                        name="ck_knowledge_unit_kind"),
+        CheckConstraint("label IN ('none','verify','practice','decision')", name="ck_knowledge_unit_label"),
+        CheckConstraint("confirmation_status IN ('confirmed','needs_verification','blocked','decision_pending')",
+                        name="ck_knowledge_unit_confirmation"),
+        CheckConstraint("confirmation_status NOT IN ('blocked','decision_pending') OR "
+                        "(value IS NULL AND blocked_value IS NOT NULL)", name="ck_knowledge_unit_pending"),
+        CheckConstraint("confirmation_status != 'blocked' OR conflict_ref IS NOT NULL",
+                        name="ck_knowledge_unit_conflict"),
+        CheckConstraint("effective_to IS NULL OR effective_from IS NULL OR effective_to >= effective_from",
+                        name="ck_knowledge_unit_dates"),
+        CheckConstraint("(verified_at IS NULL AND verified_by IS NULL) OR "
+                        "(verified_at IS NOT NULL AND verified_by IS NOT NULL)", name="ck_knowledge_unit_verifier"),
+        CheckConstraint("value_schema_version = 1", name="ck_knowledge_unit_schema"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    version_id: Mapped[int] = mapped_column(ForeignKey("knowledge_versions.id"))
+    unit_id: Mapped[str] = mapped_column(Text)
+    kind: Mapped[str] = mapped_column(String(32))
+    title: Mapped[str] = mapped_column(Text)
+    section: Mapped[str] = mapped_column(Text)
+    page: Mapped[str] = mapped_column(Text)
+    source_ref: Mapped[str] = mapped_column(Text)
+    source_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    label: Mapped[str] = mapped_column(String(16))
+    confirmation_status: Mapped[str] = mapped_column(String(32))
+    # none_as_null обязателен: JSON null не удовлетворяет SQL CHECK value IS NULL.
+    value: Mapped[dict | None] = mapped_column(_ServiceJSON(none_as_null=True), nullable=True)
+    value_schema_version: Mapped[int] = mapped_column(Integer)
+    blocked_value: Mapped[dict | None] = mapped_column(_ServiceJSON(none_as_null=True), nullable=True)
+    conflict_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+    effective_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    verified_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    review_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    owner: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    # Исходная оболочка сохраняет отсутствие необязательных полей vs явный null.
+    source_record: Mapped[dict] = mapped_column(_ServiceJSON)
+
+    @validates("value", "blocked_value", "source_record")
+    def _freeze_json(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+class KnowledgeImport(DomainBase):
+    __tablename__ = "knowledge_imports"
+    __table_args__ = (
+        ForeignKeyConstraint(["version_id", "set_id"],
+                             ["knowledge_versions.id", "knowledge_versions.set_id"],
+                             name="fk_knowledge_import_version"),
+        CheckConstraint("(result = 'accepted' AND version_id IS NOT NULL AND error_stage IS NULL) OR "
+                        "(result = 'rejected' AND version_id IS NULL AND error_stage IS NOT NULL)",
+                        name="ck_knowledge_import_result"),
+        CheckConstraint("error_stage IS NULL OR error_stage IN ('syntax','schema','semantic','db')",
+                        name="ck_knowledge_import_stage"),
+        CheckConstraint("finished_at >= started_at", name="ck_knowledge_import_dates"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    set_id: Mapped[int] = mapped_column(ForeignKey("knowledge_sets.id"))
+    bundle_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    filename: Mapped[str] = mapped_column(Text)
+    started_by: Mapped[str] = mapped_column(String(64))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    result: Mapped[str] = mapped_column(String(16))
+    version_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error_stage: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    error_location: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    report: Mapped[dict] = mapped_column(_ServiceJSON)
+
+    @validates("report")
+    def _freeze_json(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+def _knowledge_immutable(mapper, connection, target):
+    raise DomainError("knowledge snapshots and import journal are immutable; import a new bundle")
+
+
+for _knowledge_cls in (KnowledgeVersion, KnowledgeUnit, KnowledgeImport):
+    event.listen(_knowledge_cls, "before_update", _knowledge_immutable)
+    event.listen(_knowledge_cls, "before_delete", _knowledge_immutable)
+event.listen(KnowledgeSet, "before_delete", _knowledge_immutable)
+event.listen(KnowledgeSet, "before_update", _knowledge_immutable)
+
+
+@event.listens_for(KnowledgeVersion, "before_insert")
+def _knowledge_version_insert(mapper, connection, target):
+    if target.status not in (None, "draft"):
+        raise DomainError("only draft import is implemented")
+    if connection.scalar(select(KnowledgeSet.id).where(KnowledgeSet.id == target.set_id)) is None:
+        raise DomainError("unknown knowledge set")
+
+
+@event.listens_for(KnowledgeUnit, "before_insert")
+def _knowledge_unit_insert(mapper, connection, target):
+    status = connection.scalar(select(KnowledgeVersion.status).where(KnowledgeVersion.id == target.version_id))
+    if status != "draft":
+        raise DomainError("units may only be inserted into a draft")
+    sealed = connection.scalar(select(KnowledgeImport.id).where(
+        KnowledgeImport.version_id == target.version_id, KnowledgeImport.result == "accepted").limit(1))
+    if sealed is not None:
+        raise DomainError("an imported snapshot is sealed; import a new bundle")
+
+
 class Product(DomainBase):
     __tablename__ = "products"
     __table_args__ = (
