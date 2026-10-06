@@ -2631,3 +2631,4 @@ async def _set_intercept(user_id: str, value: bool) -> None:
 # и context_processor `_chrome`. Импорт внизу файла: модуль обращается к
 # помощникам отсюда, и раньше этой строки они ещё не объявлены.
 from app.admin import workday  # noqa: E402,F401 — side-effect: регистрация маршрутов
+from app.admin import contracts  # noqa: E402,F401 — договор из переписки, за флагами E2-06

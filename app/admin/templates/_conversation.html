@@ -77,7 +77,9 @@
         </div>
         {% if busy_by %}<p class="chat-menu-note">Диалог уже ведёт менеджер {{ busy_by }}</p>{% endif %}
         <hr>
-        {% if c.intercepted %}
+        {% if workday_on and cases_write_on %}
+        <a class="chat-menu-action" href="/admin/conversation/{{ c.user_id|urlencode }}/contract">Договор подписан → создать услугу</a>
+        {% endif %}{% if c.intercepted %}
         <button type="button" class="chat-menu-action" hx-post="/admin/conversation/{{ c.user_id }}/release" hx-target="#chat" hx-swap="innerHTML">{{ chat_icon('return') }}Вернуть боту</button>
         {% else %}
         <button type="button" class="chat-menu-action" hx-post="/admin/conversation/{{ c.user_id }}/takeover" hx-target="#chat" hx-swap="innerHTML">{{ chat_icon('pause') }}Перехватить — бот замолчит</button>
@@ -291,7 +293,9 @@
   </form>
   {% endif %}
 
-  <div class="ph-actions">
+  <div class="ph-actions">{% if workday_on and cases_write_on %}
+    <a class="btn btn-brand" href="/admin/conversation/{{ c.user_id|urlencode }}/contract">Договор подписан → создать услугу</a>
+    {% endif %}
     {% if c.intercepted %}
       <div class="status paused">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
