@@ -28,10 +28,11 @@
 | C3 access/scope/read-only | PASS | non-admin/system/bot/dict, invalid IDs before engine; foreign candidate/baseline; SELECT/PRAGMA only; CLI mode=ro |
 | C4 actual draft | PASS | 208 added, 0 confirmed, 82 missing value, 6 conflict_ref; DB SHA unchanged before/after CLI |
 | C5 Git portability | PASS | checkout-index with core.autocrlf=true, builder --check, unchanged normalized bundle hash |
-| C6 commits | PASS for prior 4; final continuation in handoff | Explicit path staging, diff --cached --check; no unrelated artifacts |
+| C6 commits | PASS | Prior 4 + feature e99e067; explicit path staging, diff --cached --check; no unrelated artifacts |
 | Initial module tests | PASS | 25 passed, 6.97 s |
 | Broad regression | PASS | `python -m pytest tests -q`: **2735 passed / 8 skipped / 1 warning**, 278.16 s, before final date-exception hardening |
 | Final module tests | PASS | `python -m pytest tests/test_knowledge_review.py -q`: **28 passed**, 6.58 s, after hardening |
+| Fresh committed copy | PASS | e99e067 via checkout-index/autocrlf=true: **185 passed / 1 skipped**, 7.78 s (original PDF absent); builder --check and 7 normalized hashes PASS; its CLI reads real DB, 208 added, DB unchanged |
 | prod_traps | FAIL baseline | `--diff-base 4a22ecb --limit 1`: 1 ERROR / 57 WARN, missing ANTHROPIC_API_KEY compose forwarding |
 
 ## Limits / verdict

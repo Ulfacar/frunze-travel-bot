@@ -44,3 +44,16 @@ source-lock/byte-check после checkout. Проверить builder на из
 Новая задача их не закрывает. Не добавлять owner/approval policy до DEC-07, не вычислять права
 стран из неизвестных значений. Публикация/CAS, country index, календарь/квалификация и калькулятор
 остаются последующими E5-этапами. prod_traps baseline: 1 ERROR / 57 WARN.
+
+## Completion
+
+**DONE для STANDARD/local scope**, SELF_REVIEW; весь E5 остаётся PARTIALLY_READY.
+C1–C6 PASS: код/данные сравниваются без записи, foreign/invalid/corrupt отказ безопасен,
+коммиты ebf4ee5 / c8228e5 / 41064f7 / 653a20a / e99e067 разделены по задачам.
+Финальная docs-only передача отдельным commit, без push/deploy.
+
+Полный прогон до финальной узкой обработки повреждённых дат: 2735 passed / 8 skipped,
+278.16 s; финальный новый модуль: 28 passed. В fresh Git copy: 185 passed / 1 skipped
+(нет исходного PDF), плюс отдельное чтение реальной БД её CLI: 208 added / DB hash unchanged.
+Builder --check и 7 LF-normalized SHA-256 manifest в копии PASS.
+Handoff: `ai/handoffs/2026-10-07-0137-e5-02c-review-commits.md`.

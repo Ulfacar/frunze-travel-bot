@@ -1,5 +1,33 @@
 # Current work
 
+- Updated: 2026-10-07. Алан попросил продолжить работу и сделать коммиты.
+- Active completed task: **E5-02C-REVIEW**, STANDARD / solo, **DONE для local scope**. Весь E5-02 **PARTIALLY_READY**.
+- Branch / code revision: `fix/tours-search-quality` / **e99e067a8e99ae63bb5b0e3cd262a68d354a55ef**; следующий docs-only commit содержит эту передачу.
+- Task: `ai/tasks/2026-10-07-e5-02c-review-diff.md`; contract: `docs/e5-02c-review.md`.
+- Relevant handoff: `ai/handoffs/2026-10-07-0137-e5-02c-review-commits.md`.
+- New result: read-only diff версий одного набора, added/removed/changed fields, metadata/aliases, status/finding counts; проверка hashes/schema/typed projections и active-pointer consistency. Full-admin trusted Actor; CLI SQLite mode=ro, без .env/миграций/записей/активации.
+- Реальная локальная БД: `runs/e5-02b-import-20261007.sqlite3`, draft v1, **208 units / 0 confirmed / 82 SQL NULL / NULL active pointer**. Review даёт 208 added и 6 conflict_ref; DB SHA до/после совпал. Отчёт: ignored `runs/e5-02c-real-review.json`.
+- Local commits: **ebf4ee5** CONTRACT-UI; **c8228e5** E5-02A; **41064f7** E5-02B-SOURCE; **653a20a** E5-02B-IMPORT; **e99e067** E5-02C comparison. Финальные результаты — отдельный docs-only commit. Старые UNCOMMITTED handoff — исторические snapshots, текущий код уже в Git.
+- Tests: full regression **2735 passed / 8 skipped / 1 warning, 278.16 s** до финальной узкой date-error обработки; после неё final module **28 passed**. Fresh Git copy e99e067: **185 passed / 1 skipped**, 7.78 s (нет PDF в репо), плюс её CLI прочитал реальную БД без записи. Не заявляем несуществующий полный прогон 2738.
+- Git portability: .gitattributes фиксирует LF byte-locked knowledge и synthetic_source; builder --check из Git copy PASS. Manifest `ai/reviews/2026-10-07-e5-02c-review-snapshot.json`: 7/7 normalized hashes совпали. Остальные code/docs могут иметь CRLF после checkout.
+- Review: `ai/reviews/2026-10-07-e5-02c-review-self-review.md` — STANDARD SELF_REVIEW. **IMPORT/CONTRACT independent critical reviews, final audit и PG16 runtime всё ещё UNKNOWN**.
+- Next action: independent review IMPORT по `ai/reviews/2026-10-07-e5-02b-import-packet.md`, отдельный PG16 стенд; далее country index/условные schemas, publication/DEC-07/CAS/rollback, календарь/квалификация, E5-03 калькулятор и E5-04 диалог.
+- Release: только local commits; **push/deploy/production DB не выполнялись**. Коммиты не разрешают выкатку. Бизнес-правила/тарифы не утверждались; review_period/owner остаются неизвестными.
+- Baseline gate: `prod_traps_check --diff-base 4a22ecb --limit 1` **FAIL 1 ERROR / 57 WARN**, ANTHROPIC_API_KEY не передаётся compose. Без изменений.
+- Unrelated пользовательские аудио/экспорты/temp сохранены untracked, не включены в коммиты.
+
+## Сохраняющаяся задача — форма договора
+
+**CONTRACT-UI-20261006 — PARTIALLY_READY (CRITICAL).** Форма реализована локально, прежние
+6 хешей кода совпадают; новый полный прогон включает её HTTP-тесты. Контекст:
+`ai/handoffs/2026-10-06-2020-contract-form.md`, `ai/tasks/2026-10-06-contract-form.md`,
+`ai/reviews/2026-10-06-contract-form-packet.md`. Независимые ревью №1/№2, финальный аудит
+и PostgreSQL-конкурентность всё ещё **UNKNOWN**. E5-02A их не закрывает.
+
+## Исторические записи до этой передачи
+
+Ниже сохранён прежний контекст. В нём есть устаревшие ревизии, «не закоммичено» и противоречащие друг другу записи о проде. Текущая точка продолжения — шапка выше и новый handoff; исторические PASS не заменяют повторную проверку.
+
 - Updated: 2026-10-05
 - Project/repository: Frunze Travel Bot
 - Active task: ТЗ CRM — **E2-06** «Рабочий день и карточка услуги» сделана, гейт 35 тестов зелёный, идёт полный прогон. Дальше: ревью Codex, аудит Fable, коммит. Деплой — ТОЛЬКО по слову Алана.
