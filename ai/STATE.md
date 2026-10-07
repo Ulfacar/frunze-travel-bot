@@ -2,19 +2,19 @@
 
 - Updated: 2026-10-07. Алан: «дальше»; прежнее разрешение на local commits сохраняется.
 - Active task: **E5-02F PROJECTION**, CRITICAL / solo, **PARTIALLY_READY** до independent review/final audit и PG16 runtime.
-- Branch/base: `fix/tours-search-quality` / **bd1a84e**; текущий target UNCOMMITTED, 19-file manifest в review. Commit/Git-copy verification pending.
+- Branch/code revision: `fix/tours-search-quality` / **cf7fb0dbdf12144c3483e54c3d1ac3478bf0f582**; 19-file manifest verified. Финальный STATE/handoff/evidence — следующий docs-only commit.
 - Task: `ai/tasks/2026-10-07-e5-02f-projection.md`; contract: `docs/e5-02f-projection.md`.
 - Relevant handoff: `ai/handoffs/2026-10-07-1040-e5-02f-projection.md` (выбран по scope/ветке, не сортировке дат).
 - Result: additive e5_projection_0014, три новые таблицы; country projection + condition catalog/links атомарно сохраняются с draft/units/journal. Повтор сверяет snapshot и projection, другой каталог отклоняется; sealed historical versions не дополняются.
 - Verified real-PDF DB: `runs/e5-02f-projection-verified-20261007.sqlite3`, 208 units / 201 country links / 6 conditions / 82 SQL NULL / 0 confirmed / NULL active. Повтор: один draft, два accepted journals. Reader mode=ro: integrity PASS, файл DB без изменений.
-- Evidence: **full suite 2917 passed / 8 skipped / 1 warning, 414.81s**, final manifest code. Прежний import/review/migrations 74 passed; новые projection/migration + domain migration/service cases 111 passed / 2 skipped. Проверка committed copy pending.
+- Evidence: **full suite 2917 passed / 8 skipped / 1 warning, 414.81s**, final manifest code. Git-copy cf7fb0d: **126 passed / 2 skipped, 49.07s**; оба skips — PDF вне Git. Отдельно real PDF import/retry и DB review PASS, 19/19 manifest hashes совпадают, DB SHA без изменений. Прежние targeted: 74 passed; 111 passed / 2 PG skips.
 - Review: `ai/reviews/2026-10-07-e5-02f-projection-self-review.md`; independent packet рядом; reviewer/auditor UNKNOWN. SELF_REVIEW не даёт production GO.
 - Boundaries: review only; no quote/publication/eligibility. Каталог явно optional и immutable в версии; смена каталога того же bundle и old-version backfill требуют отдельного workflow. Local CLI не мигрирует существующую 0013.
 - Prior E5-02E: ca387a0 / bd1a84e, 6 draft condition profiles, source/catalog binding и met/not_met/unknown. Handoff `ai/handoffs/2026-10-07-1114-e5-02e-conditions.md`.
 - Prior E5-02D: dba3847 / e410078, 249 codes / 114 units / 201 links / 5 unmapped; E5-01B: 74 search fragments, no retrieval. Source bundle: 208 draft units, unchanged hash.
 - Remaining critical gates: IMPORT/CONTRACT/PROJECTION independent review/final audit, PG16 runtime UNKNOWN; нормы/DEC-07 не утверждены.
 - PDF progress: `docs/e5-pdf-progress.md`, ориентировочно 70–80% осталось (около 75%), не измеренная оценка.
-- Next action: local commits + committed-copy verification, затем independent review/PG16; следующий отдельный инженерный этап — история поездок/календарь E5-03, unified selection/calculation.
+- Next action: independent review/PG16 по packet; следующий отдельный инженерный этап — история поездок/календарь E5-03, unified selection/calculation. Локальная реализация/проверки завершены, CRITICAL completion gates остаются UNKNOWN.
 - Release: local only, push/deploy/production DB/отправок не было.
 - Baseline: prod_traps --diff-base bd1a84e --limit 1 FAIL 1 ERROR / 57 WARN, ANTHROPIC_API_KEY compose forwarding; без изменений.
 - Unrelated аудио/экспорты/temp сохранены untracked, в commits не включать.

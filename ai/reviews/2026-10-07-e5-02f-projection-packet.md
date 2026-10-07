@@ -5,8 +5,9 @@
 
 - Task: `ai/tasks/2026-10-07-e5-02f-projection.md`, AC1–AC7.
 - Protocol: AGENTS.md / ai/protocol.json (solo) / ai/ROLES.md.
-- Base: `fix/tours-search-quality` @ bd1a84e; target UNCOMMITTED snapshot manifest
-  `ai/reviews/2026-10-07-e5-02f-projection-snapshot.json` (после commit — точная ревизия в STATE).
+- Base: `fix/tours-search-quality` @ bd1a84e;
+  target **cf7fb0dbdf12144c3483e54c3d1ac3478bf0f582**, snapshot manifest
+  `ai/reviews/2026-10-07-e5-02f-projection-snapshot.json`.
 - Reviewer / final auditor: UNKNOWN. Builder review не независим.
 - Scope: локальный draft import + materialization + review; release не входит.
 - Разрешено: read-only анализ, изолированные локальные тесты. Не обращаться к production

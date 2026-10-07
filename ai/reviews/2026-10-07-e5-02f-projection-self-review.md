@@ -1,9 +1,9 @@
 # SELF_REVIEW — E5-02F, 07.10.2026
 
 - Reviewer: Codex, тот же builder; **не независимый review/audit**.
-- Scope: task AC1–AC7, bd1a84e → UNCOMMITTED snapshot из manifest рядом.
+- Scope: task AC1–AC7, bd1a84e → **cf7fb0dbdf12144c3483e54c3d1ac3478bf0f582**, manifest рядом.
 - Verdict: APPROVE SELF_REVIEW для локальной реализации; общий статус PARTIALLY_READY.
-  Полный прогон PASS; проверка committed copy pending. Это не независимое одобрение.
+  Полный прогон и committed copy PASS. Это не независимое одобрение.
 
 ## Отдельный проход по фактическому коду
 
@@ -35,6 +35,9 @@ tests и задача; проверены rollback/reuse/sealing и границ
 
 - Final full suite: `python -m pytest tests -q` — **2917 passed, 8 skipped, 1 warning,
   414.81s**. Warning: existing Starlette/httpx deprecation. Revision: manifest snapshot.
+- Committed copy cf7fb0d: пять knowledge storage/review/migration modules — **126 passed,
+  2 skipped, 49.07s** (PDF вне Git). Отдельно real PDF import/retry + read-only CLI PASS,
+  208 units/201 country links/6 conditions, SHA БД неизменён; manifest **19/19** matches.
 - Import/review/старые migrations: **74 passed / 31.70s** до расширения новых тестов.
 - Projection + новые migrations + domain migrations + service cases:
   **111 passed / 2 skipped / 40.87s**; затем добавлены три негативных сценария к полному прогону.
