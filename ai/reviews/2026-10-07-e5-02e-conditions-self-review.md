@@ -27,7 +27,7 @@
 | E5 group | PASS | Inclusive boundaries, organized/membership/petition independent requirements |
 | E6 duration semantics | PASS | Source month/year assertions retained, no invented days or remaining-duration interpretation |
 | E7 local CLI | PASS | All 3 outcomes, input/output isolation, unchanged file hashes+mtime, invalid source/private field, no runtime imports |
-| E8 continuity | PASS local / commit pending | Documentation, handoff and STATE; commit/Git-copy evidence follows in final handoff |
+| E8 continuity | PASS | ca387a0; Git copy 218 passed / 2 skipped; real PDF через оба CLI PASS, JSON stdout корректен; 13/13 normalized hashes; final handoff/STATE |
 
 ## Checks actually performed
 

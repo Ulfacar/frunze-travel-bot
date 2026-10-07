@@ -1,20 +1,20 @@
 # Current work
 
 - Updated: 2026-10-07. Алан: «дальше»; прежнее разрешение на local commits сохраняется.
-- Active task: **E5-02E CONDITIONS**, STANDARD / solo; implementation/tests готовы, PARTIALLY_READY до commit/Git-copy check.
-- Branch/revision: `fix/tours-search-quality` / `e410078` + UNCOMMITTED; manifest в reviews.
+- Active completed task: **E5-02E CONDITIONS**, STANDARD / solo, **DONE для local scope**. Весь E5-02 PARTIALLY_READY.
+- Branch/code revision: `fix/tours-search-quality` / **ca387a0851b2afbb3788158b888565d6112876ad**; финальные handoff/STATE/review — следующий docs-only commit.
 - Task: `ai/tasks/2026-10-07-e5-02e-conditions.md`; contract: `docs/e5-02e-conditions.md`.
 - Relevant handoff: `ai/handoffs/2026-10-07-1114-e5-02e-conditions.md`.
 - Result: **6 draft condition profiles** с source/bundle binding и проверкой met/not_met/unknown. HK/Macao по постоянному проживанию; UN по документу; CHN/IND по одной визе; группа CHN 5–25 с ходатайством; GCC citizens отдельно от GCC/Brunei residents TS. Документы не смешиваются, months/years не превращаются в дни.
 - Builder --check --pdf original PASS; catalog file SHA **3e499dd29aa7c0dba1d338d48b7d0ca64c4ca98277509c2506f706d32a9b890c**, 5729 bytes. Строгая схема facts без контактов/номеров паспортов; CLI read-only без DB/config/network.
-- Evidence: **357 passed, 55.29s**, 8 связанных модулей, включая 58 новых тестов. Full suite не повторялся: runtime/import/models/old source files не менялись. Git-copy check следует после commit.
+- Evidence: **357 passed, 55.29s**, 8 связанных модулей, включая 58 новых тестов. Git copy ca387a0: **218 passed / 2 skipped, 15.41s**, conditions/index/validation; PDF вне repo, отдельно builder --check --pdf и review CLI --source PASS, 13/13 normalized hashes PASS. Full suite не повторялся: runtime/import/models/old source files не менялись.
 - Review: `ai/reviews/2026-10-07-e5-02e-conditions-self-review.md`, APPROVE SELF_REVIEW; 13-file snapshot рядом. Весь E5-02 PARTIALLY_READY.
 - Boundaries: только profile match, не entry eligibility. Всегда no quote/no publication/selected_regime=NULL. Source_outcome не исполняется как расчёт сроков/повторного въезда. Duration assertions требуют отдельной проверки человеком; DEC-07 не придуман.
 - Prior E5-02D: code dba3847 / handoff e410078; review-index 249 codes, 114 units, 201 links, 5 unmapped. Эти исходные units остаются NULL; новый каталог не меняет исторические snapshots/DB index. Handoff `ai/handoffs/2026-10-07-1031-e5-02d-country-index.md`.
 - Prior E5-01B: 74 search fragments / 40 tables, draft, retrieval не подключён; commits 5cf53d8/a6b2f3c. Prior foundation: 208 draft units / 0 confirmed / 82 SQL NULL / NULL active pointer; validator/import/diff commits c8228e5,41064f7,653a20a,e99e067,ad41b2e.
 - Remaining critical gates: IMPORT/CONTRACT независимые reviews/final audit и PG16 runtime **UNKNOWN**. Этот STANDARD этап их не закрывает.
 - PDF progress: `docs/e5-pdf-progress.md` — примерно 70–80% остаётся, ориентир 75%; грубая оценка полного въездного PDF, не измеренный процент.
-- Next action: commit/Git-copy check, затем DB country projection + conditional links через импорт как отдельная CRITICAL задача; календарь/история поездок и полный selection/calculation. Прежний импорт независимо проверять по `ai/reviews/2026-10-07-e5-02b-import-packet.md` и на PG16.
+- Next action: DB country projection + conditional links через импорт как отдельная CRITICAL задача; календарь/история поездок и полный selection/calculation. Прежний импорт независимо проверять по `ai/reviews/2026-10-07-e5-02b-import-packet.md` и на PG16. Локальный E5-02E завершён.
 - Release: local only, push/deploy/production DB/отправок не было. Правила не утверждены.
 - Baseline: `prod_traps_check --diff-base e410078 --limit 1` FAIL 1 ERROR / 57 WARN, ANTHROPIC_API_KEY compose forwarding; без изменений.
 - Unrelated аудио/экспорты/temp сохранены untracked, в commits не включать.
