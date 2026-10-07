@@ -2,11 +2,11 @@
 
 - Updated: 2026-10-07. Алан «дальше», local commits ранее разрешены.
 - Active task: **E5-03B DEADLINES**, CRITICAL / solo, **PARTIALLY_READY**: local implementation готова, independent review/final audit, official calendar и owner-approved policies UNKNOWN.
-- Branch/code revision: `fix/tours-search-quality` / UNCOMMITTED final snapshot against **2f71d8e**; code commit/copy evidence pending.
+- Branch/code revision: `fix/tours-search-quality` / **7722d378cd4cc086ca5c93eaa3f0cefb26f609d7**; 12-file manifest verified in committed copy. Финальные STATE/handoff/evidence — docs-only commit после кода.
 - Task: `ai/tasks/2026-10-07-e5-03b-deadlines.md`; contract: `docs/e5-03b-deadlines.md`.
 - Relevant handoff: `ai/handoffs/2026-10-07-1317-e5-03b-deadlines.md`.
 - Result: pure CALC-03 yearly calendar versions, holiday/transferred-workday overrides, coverage guards, working/calendar days, elapsed hours, calendar months; explicit proposed policy, trace/hashes, read-only CLI. No DB/runtime edits.
-- Evidence: **399 passed / 20.39s**, five knowledge modules; **99 новых tests** + 120 seeded workday-set oracle cases. CLI original PDF returns rule_value_missing/NULL scenario; synthetic CLI Oct08, exact deadline NULL. SHA+mtime inputs unchanged. Copy evidence pending; full suite N/A for pure additions.
+- Evidence: **399 passed / 20.39s**, five knowledge modules; **99 новых tests** + 120 seeded workday-set oracle cases. CLI original PDF returns rule_value_missing/NULL scenario; synthetic CLI Oct08, exact deadline NULL. SHA+mtime inputs unchanged. Git copy 7722d37: **397 passed / 2 skipped, 15.40s** (PDF вне Git), 12/12 hashes. CLI original PDF и synthetic fixture идентичны рабочей копии; full suite N/A for pure additions.
 - Review: `ai/reviews/2026-10-07-e5-03b-deadlines-self-review.md`, APPROVE SELF_REVIEW; independent packet/manifest рядом. Independent review/final audit UNKNOWN.
 - Boundaries: all calendars draft; fixtures synthetic, no official holidays. 22 real deadline values and 10 processing-time values stay NULL. exact_deadline=NULL, may_quote/publication false. Source boundary flag не утверждает proposed anchor inclusion; owner policies нужны.
 - Next action: independent review/owner examples; следующая отдельная implementation task — StayInterval/WorkCalendar/Calculation persistence и trusted DB adapter, без реальных данных. Затем unified selection/processing-time mapping/runtime. Проверить actual migration head e5_projection_0014.

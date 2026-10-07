@@ -5,7 +5,7 @@
 
 - Task: `ai/tasks/2026-10-07-e5-03b-deadlines.md`, AC1–AC7.
 - CRITICAL / solo; completion target local implementation + authorized commits.
-- Base: `fix/tours-search-quality` @ 2f71d8e; target UNCOMMITTED snapshot до code commit.
+- Base: `fix/tours-search-quality` @ 2f71d8e; target **7722d378cd4cc086ca5c93eaa3f0cefb26f609d7**.
 - Manifest: `ai/reviews/2026-10-07-e5-03b-deadlines-snapshot.json`.
 - Independent reviewer / final auditor: UNKNOWN.
 - Read-only review + isolated local tests; без production/публикации/отправки private

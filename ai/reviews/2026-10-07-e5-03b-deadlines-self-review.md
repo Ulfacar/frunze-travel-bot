@@ -1,7 +1,7 @@
 # SELF_REVIEW — E5-03B
 
 - Reviewer: Codex builder, **SELF_REVIEW**, не независимый reviewer/auditor.
-- Base 2f71d8e; scope final uncommitted snapshot в manifest, включая новые файлы.
+- Base 2f71d8e; code target **7722d378cd4cc086ca5c93eaa3f0cefb26f609d7**, 12-file manifest verified.
 - Verdict: **APPROVE SELF_REVIEW** для локального этапа; общий PARTIALLY_READY.
 - Independent review/final audit/owner-approved rules/calendars: UNKNOWN.
 
@@ -37,7 +37,8 @@ optional FormatChecker; глобальное изменение соседних
 | Adjacent regressions | five knowledge modules, Windows/Python3.12 | PASS 399 / 20.39s |
 | prod_traps | --diff-base 2f71d8e --limit 1 | FAIL baseline 1 ERROR / 57 WARN |
 | Full suite | pure additions only, no shared runtime/DB edits | N/A for bounded diff |
-| Committed copy | pending code commit | UNKNOWN until checkpoint verification |
+| Committed copy | пять модулей, 7722d37 | PASS 397 / 2 skipped, 15.40s (PDF вне Git) |
+| Copy manifest / actual PDF / synthetic CLI | 12 hashes; оба отчёта целиком идентичны; SHA+mtime unchanged | PASS; source PDF задан явно |
 
 prod_traps прежний ANTHROPIC_API_KEY forwarding; env/compose не менялись. Проверка
 не открывает значения секретов. Real PDF unchanged; bundle hash прежний
