@@ -26,7 +26,7 @@
 | D5 document | PASS | diplomatic/service/UN/stateless/unknown: review required, selected_regime=NULL, may_quote=false |
 | D6 snapshot | PASS | Перестановка входов сохраняет результат/hash; изменения входа/ответа/summary не влияют на следующие запросы |
 | D7 local CLI | PASS | synthetic/real source, повтор с теми же bytes+mtime, неверный источник; нет runtime/DB/network imports |
-| D8 continuity | PASS local / commit pending | Task/contract/review/STATE/handoff подготовлены; actual commit и Git-copy result дописываются в handoff |
+| D8 continuity | PASS | Feature commit dba3847; fresh Git copy: 161 passed / 1 skipped, 9/9 hashes, real CLI --source PASS; handoff/STATE обновлены |
 
 ## Checks actually performed
 
