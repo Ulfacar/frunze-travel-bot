@@ -1,0 +1,67 @@
+{
+  "base": "2f71d8e",
+  "revision": "UNCOMMITTED final snapshot; verify after code commit",
+  "normalization": "UTF-8 bytes, CRLF to LF only",
+  "files": [
+    {
+      "path": "app/knowledge/deadline_schema.py",
+      "sha256_lf": "8d728587f2f1ce8895fe245fcb4111bbbe1bc68a76a25dc0e87e625ffeda58d8",
+      "bytes_lf": 1929
+    },
+    {
+      "path": "app/knowledge/work_calendar.py",
+      "sha256_lf": "4216c9702155699435100a80e58bd4ea79dab4f7269e26cf86b7e83c9134102d",
+      "bytes_lf": 3761
+    },
+    {
+      "path": "app/knowledge/deadlines.py",
+      "sha256_lf": "d44f568a602889dce985c86680e826997980dcf0f3d6d1cad962ddaa6c06e869",
+      "bytes_lf": 9353
+    },
+    {
+      "path": "scripts/review_kg_deadline.py",
+      "sha256_lf": "8b1379fb9b35a9549392f4c49b1fa5a349063cc7bb3535453621948d1bab1aa9",
+      "bytes_lf": 1567
+    },
+    {
+      "path": "tests/test_kg_deadlines.py",
+      "sha256_lf": "f85083eecf14edc7ae2d04103896314b1aaf5869e756aa14c0fe4eb238bea2b0",
+      "bytes_lf": 21960
+    },
+    {
+      "path": "tests/fixtures/kg_entry/synthetic_work_calendars.json",
+      "sha256_lf": "e7a72620f0fd5912a2206710912ed401a933716161db9aaf81c2fdd2794fa881",
+      "bytes_lf": 1625
+    },
+    {
+      "path": "tests/fixtures/kg_entry/synthetic_deadline_review.json",
+      "sha256_lf": "b4cd2b7ca51ede291fa6eabf1c9bbdc4ffe44ee842b3be0f3b31fd0d2a86a42a",
+      "bytes_lf": 257
+    },
+    {
+      "path": "docs/e5-03b-deadlines.md",
+      "sha256_lf": "f7f0a273c9051e376bd1f50f12060b5c24d057c922e3cb823a9be11135c865b0",
+      "bytes_lf": 11401
+    },
+    {
+      "path": "docs/e5-02-slots-schema.md",
+      "sha256_lf": "9eb1164c01beee858ab1e7b2279f643b4d81b8cc684309e1a10491f57cbdd777",
+      "bytes_lf": 77642
+    },
+    {
+      "path": "docs/e5-pdf-progress.md",
+      "sha256_lf": "7dc1f5e122b3d97c2e53788a6d9468ebb4377a8b0d1fe650912a4da43466858a",
+      "bytes_lf": 8631
+    },
+    {
+      "path": "docs/crm-delivery/backlog.md",
+      "sha256_lf": "6ff323423ae9fa02e1fbaf1143f6520abd56e58d370ebae81f1bf7cb410c7783",
+      "bytes_lf": 44715
+    },
+    {
+      "path": "ai/tasks/2026-10-07-e5-03b-deadlines.md",
+      "sha256_lf": "618e28da03839563943fd81a03c3b44cc5ad74edd20ce1e473d684d9c456f09c",
+      "bytes_lf": 5152
+    }
+  ]
+}

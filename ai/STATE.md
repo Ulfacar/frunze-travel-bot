@@ -1,21 +1,22 @@
 # Current work
 
 - Updated: 2026-10-07. Алан «дальше», local commits ранее разрешены.
-- Active task: **E5-03A STAY-DAYS**, CRITICAL / solo, **PARTIALLY_READY**: local implementation готова, independent review/final audit и owner-approved policies/examples UNKNOWN.
-- Branch/code revision: `fix/tours-search-quality` / **abad74f69430f6a54ba6fd514df54ef7b54167e7**; 11-file manifest verified in committed copy. Финальный handoff/STATE/evidence — следующий docs-only commit.
-- Task: `ai/tasks/2026-10-07-e5-03a-stay-days.md`; contract: `docs/e5-03a-stay-days.md`.
-- Relevant handoff: `ai/handoffs/2026-10-07-1127-e5-03a-stay-days.md`.
-- Result: pure CALC-02 review scenarios, union of history intervals, every-day rolling window, explicit proposed boundary policy; open continuation/cutoff, passport/basis/incomplete flags. 10 proposed examples для владельца знаний. No DB/runtime edits.
-- Evidence: **300 passed / 25.01s**, четыре knowledge modules, включая **80 новых tests** и 200 seeded day-set oracle cases. Git copy abad74f: **298 passed / 2 skipped, 20.31s** (PDF вне Git), 11/11 hashes; отдельно CLI с original PDF PASS, тот же calculation hash и [31,31,31,31], SHA+mtime inputs сохранены. Full suite не повторялась: pure additions/docs.
-- Review: `ai/reviews/2026-10-07-e5-03a-stay-days-self-review.md`, APPROVE SELF_REVIEW; independent packet/manifest рядом. Independent review/final audit UNKNOWN.
-- Boundaries: exact_remaining_days=NULL, may_quote/publication false всегда. COUNT_ENTRY_DAY/COUNT_EXIT_DAY/WINDOW_ANCHOR decision_pending/NULL. Scenario headroom не разрешённый срок. Правила/их актуальность и примеры не утверждены.
-- Next action: independent review/owner examples. Следующая отдельная implementation task: CALC-03 versioned working calendar/deadline arithmetic с synthetic fixtures и fail-closed missing coverage; потом StayInterval/Calculation persistence, trusted DB adapter, unified selection. Локальные implementation/checks завершены, CRITICAL gates UNKNOWN.
+- Active task: **E5-03B DEADLINES**, CRITICAL / solo, **PARTIALLY_READY**: local implementation готова, independent review/final audit, official calendar и owner-approved policies UNKNOWN.
+- Branch/code revision: `fix/tours-search-quality` / UNCOMMITTED final snapshot against **2f71d8e**; code commit/copy evidence pending.
+- Task: `ai/tasks/2026-10-07-e5-03b-deadlines.md`; contract: `docs/e5-03b-deadlines.md`.
+- Relevant handoff: `ai/handoffs/2026-10-07-1317-e5-03b-deadlines.md`.
+- Result: pure CALC-03 yearly calendar versions, holiday/transferred-workday overrides, coverage guards, working/calendar days, elapsed hours, calendar months; explicit proposed policy, trace/hashes, read-only CLI. No DB/runtime edits.
+- Evidence: **399 passed / 20.39s**, five knowledge modules; **99 новых tests** + 120 seeded workday-set oracle cases. CLI original PDF returns rule_value_missing/NULL scenario; synthetic CLI Oct08, exact deadline NULL. SHA+mtime inputs unchanged. Copy evidence pending; full suite N/A for pure additions.
+- Review: `ai/reviews/2026-10-07-e5-03b-deadlines-self-review.md`, APPROVE SELF_REVIEW; independent packet/manifest рядом. Independent review/final audit UNKNOWN.
+- Boundaries: all calendars draft; fixtures synthetic, no official holidays. 22 real deadline values and 10 processing-time values stay NULL. exact_deadline=NULL, may_quote/publication false. Source boundary flag не утверждает proposed anchor inclusion; owner policies нужны.
+- Next action: independent review/owner examples; следующая отдельная implementation task — StayInterval/WorkCalendar/Calculation persistence и trusted DB adapter, без реальных данных. Затем unified selection/processing-time mapping/runtime. Проверить actual migration head e5_projection_0014.
+- Prior E5-03A: **abad74f / 2f71d8e**, CALC-02 stay-day scenarios, 300 passed; committed copy 298 passed / 2 skipped, original PDF CLI PASS. Handoff `ai/handoffs/2026-10-07-1127-e5-03a-stay-days.md`.
 - Prior E5-02F: **cf7fb0d / 1980b1a**, atomic projection 208 units / 201 country links / 6 conditions, 82 SQL NULL / 0 confirmed / NULL active. Full suite того этапа 2917 passed / 8 skipped / 1 warning, 414.81s. Handoff `ai/handoffs/2026-10-07-1040-e5-02f-projection.md`.
 - Prior E5-02E ca387a0/bd1a84e: 6 draft condition profiles; E5-02D dba3847/e410078: country index; E5-01B 74 search fragments, no retrieval. Source bundle hash прежний.
-- Remaining gates: IMPORT/CONTRACT/PROJECTION/STAY-DAYS independent review/audit, прежний PG16 runtime UNKNOWN; нормы/DEC-06/07/подпись эталонов не утверждены.
+- Remaining gates: IMPORT/CONTRACT/PROJECTION/STAY-DAYS/DEADLINES independent review/audit, прежний PG16 runtime UNKNOWN; нормы/DEC-06/07/подпись эталонов не утверждены.
 - PDF progress: `docs/e5-pdf-progress.md`, ориентировочно 70–80% осталось (около 75%), не измеренный процент.
 - Release: local only; push/deploy/production DB/отправок не было.
-- Baseline: prod_traps --diff-base 1980b1a --limit 1 FAIL 1 ERROR / 57 WARN, ANTHROPIC_API_KEY compose forwarding, не менялся.
+- Baseline: prod_traps --diff-base 2f71d8e --limit 1 FAIL 1 ERROR / 57 WARN, ANTHROPIC_API_KEY compose forwarding, не менялся.
 - Unrelated аудио/экспорты/temp сохранены untracked, в commits не включать.
 
 ## Сохраняющаяся задача — форма договора

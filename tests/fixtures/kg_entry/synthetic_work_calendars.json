@@ -1,0 +1,25 @@
+{
+  "format": "kg-work-calendars/1",
+  "calendars": [
+    {
+      "format": "kg-work-calendar/1", "jurisdiction": "KG", "timezone": "Asia/Bishkek", "schedule_kind": "government",
+      "year": 2026, "version": 1, "status": "draft", "completeness": "complete", "provisional_note": null,
+      "source_ref": "synthetic:test-only, NOT official holidays", "week_rest_days": [6, 7],
+      "days": [
+        {"date":"2026-10-09","is_working":false,"kind":"public_holiday","title":"Synthetic holiday","source_ref":"synthetic:test-only"},
+        {"date":"2026-10-10","is_working":true,"kind":"transfer_working","title":"Synthetic working Saturday","source_ref":"synthetic:test-only"},
+        {"date":"2026-10-12","is_working":false,"kind":"transfer_rest","title":"Synthetic rest transfer","source_ref":"synthetic:test-only"},
+        {"date":"2026-10-13","is_working":false,"kind":"floating_holiday","title":"Synthetic floating holiday","source_ref":"synthetic:test-only"}
+      ]
+    },
+    {
+      "format": "kg-work-calendar/1", "jurisdiction": "KG", "timezone": "Asia/Bishkek", "schedule_kind": "government",
+      "year": 2027, "version": 1, "status": "draft", "completeness": "complete", "provisional_note": null,
+      "source_ref": "synthetic:test-only, NOT official holidays", "week_rest_days": [6, 7],
+      "days": [
+        {"date":"2027-01-01","is_working":false,"kind":"public_holiday","title":"Synthetic holiday","source_ref":"synthetic:test-only"},
+        {"date":"2027-01-02","is_working":true,"kind":"transfer_working","title":"Synthetic working Saturday","source_ref":"synthetic:test-only"}
+      ]
+    }
+  ]
+}
