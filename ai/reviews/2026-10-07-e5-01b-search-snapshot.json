@@ -1,0 +1,47 @@
+{
+  "task": "E5-01B-SEARCH",
+  "base": "ad41b2e",
+  "target": "UNCOMMITTED; commit recorded in final handoff/STATE",
+  "files": {
+    "app/knowledge/corpus.py": {
+      "sha256_raw": "1f8e70893ae24a3929983b54796efaf8e487495b0def9c4d03b54754066231fb",
+      "sha256_lf": "1f8e70893ae24a3929983b54796efaf8e487495b0def9c4d03b54754066231fb"
+    },
+    "scripts/build_kg_search_corpus.py": {
+      "sha256_raw": "d95cbcba9d983db98ca8314c28bbc621b039060dd92fa9eb8aca31e2d07d09bf",
+      "sha256_lf": "d95cbcba9d983db98ca8314c28bbc621b039060dd92fa9eb8aca31e2d07d09bf"
+    },
+    "tests/test_kg_search_corpus.py": {
+      "sha256_raw": "2ded8640f8f5e6756759d332b87a441fcfa3a3e41261cd4bce1eda5fd779b2ad",
+      "sha256_lf": "2ded8640f8f5e6756759d332b87a441fcfa3a3e41261cd4bce1eda5fd779b2ad"
+    },
+    "knowledge/kg_entry/search_v1_1/source-lock.json": {
+      "sha256_raw": "72f134c5ab2e1869dc6ba2244cee6cdf391c01666178a510aac743ee63a04084",
+      "sha256_lf": "72f134c5ab2e1869dc6ba2244cee6cdf391c01666178a510aac743ee63a04084"
+    },
+    "knowledge/kg_entry/search_v1_1/corpus.json": {
+      "sha256_raw": "a8788336f2b755d39f470826c03879184e4cd696b481f7e63a2e90dcc8191952",
+      "sha256_lf": "a8788336f2b755d39f470826c03879184e4cd696b481f7e63a2e90dcc8191952"
+    },
+    "docs/e5-01b-search-corpus.md": {
+      "sha256_raw": "eb9114bf32d5981cb7e4ba3182cf957a1b6bffc573e262d231e65bc9ede6e16a",
+      "sha256_lf": "eb9114bf32d5981cb7e4ba3182cf957a1b6bffc573e262d231e65bc9ede6e16a"
+    },
+    "docs/e5-pdf-progress.md": {
+      "sha256_raw": "367dd3e486b5d07ebeb507f46c215a7692ffb4c14e3058ca8a88075bd18838c6",
+      "sha256_lf": "367dd3e486b5d07ebeb507f46c215a7692ffb4c14e3058ca8a88075bd18838c6"
+    },
+    "docs/crm-delivery/backlog.md": {
+      "sha256_raw": "4857394b18f454c05b369d5f1e645a0383f72a67e2ca7bfa9312b58a28767c94",
+      "sha256_lf": "79991cc0ffea8ce00553fa821a7c811e31053af16e8d2e5fd6930c02356f61c6"
+    },
+    "docs/crm-delivery/backlog.json": {
+      "sha256_raw": "173d9f7ce975102235c7b3f9b8b0253b875fc48886cd2d79903398ecc3a688f1",
+      "sha256_lf": "3c7d33d32ddafbdc795891ae3eaaa413894e67ca5bef1f36b1aee953f4b59598"
+    },
+    "ai/tasks/2026-10-07-e5-01b-search-corpus.md": {
+      "sha256_raw": "6cea2f9522260290b649fb9ee074bc018adf2d104b6e90b07f0b2e87b51977b4",
+      "sha256_lf": "6cea2f9522260290b649fb9ee074bc018adf2d104b6e90b07f0b2e87b51977b4"
+    }
+  }
+}
