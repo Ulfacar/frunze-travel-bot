@@ -1,0 +1,31 @@
+{
+  "schema_version": "kg-stay-review-input/1",
+  "rule_unit_id": "KG.VF.ANNEX1_30_60",
+  "as_of": "2026-03-31",
+  "history_complete": true,
+  "history": [
+    {
+      "id": "synthetic-march-visit",
+      "entry_date": "2026-03-01",
+      "exit_date": "2026-03-30",
+      "basis": "visa_free",
+      "passport_country": "USA",
+      "passport_continuity": "same",
+      "confirmed": false
+    }
+  ],
+  "trip": {
+    "mode": "new_entry",
+    "start_date": "2026-04-29",
+    "end_date": "2026-05-02",
+    "passport_country": "USA",
+    "basis": "visa_free"
+  },
+  "policy": {
+    "status": "proposed",
+    "count_entry_day": true,
+    "count_exit_day": true,
+    "window_anchor": "each_day_backward_inclusive",
+    "timezone": "Asia/Bishkek"
+  }
+}

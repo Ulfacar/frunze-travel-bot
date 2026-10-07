@@ -1,22 +1,21 @@
 # Current work
 
-- Updated: 2026-10-07. Алан: «дальше»; прежнее разрешение на local commits сохраняется.
-- Active task: **E5-02F PROJECTION**, CRITICAL / solo, **PARTIALLY_READY** до independent review/final audit и PG16 runtime.
-- Branch/code revision: `fix/tours-search-quality` / **cf7fb0dbdf12144c3483e54c3d1ac3478bf0f582**; 19-file manifest verified. Финальный STATE/handoff/evidence — следующий docs-only commit.
-- Task: `ai/tasks/2026-10-07-e5-02f-projection.md`; contract: `docs/e5-02f-projection.md`.
-- Relevant handoff: `ai/handoffs/2026-10-07-1040-e5-02f-projection.md` (выбран по scope/ветке, не сортировке дат).
-- Result: additive e5_projection_0014, три новые таблицы; country projection + condition catalog/links атомарно сохраняются с draft/units/journal. Повтор сверяет snapshot и projection, другой каталог отклоняется; sealed historical versions не дополняются.
-- Verified real-PDF DB: `runs/e5-02f-projection-verified-20261007.sqlite3`, 208 units / 201 country links / 6 conditions / 82 SQL NULL / 0 confirmed / NULL active. Повтор: один draft, два accepted journals. Reader mode=ro: integrity PASS, файл DB без изменений.
-- Evidence: **full suite 2917 passed / 8 skipped / 1 warning, 414.81s**, final manifest code. Git-copy cf7fb0d: **126 passed / 2 skipped, 49.07s**; оба skips — PDF вне Git. Отдельно real PDF import/retry и DB review PASS, 19/19 manifest hashes совпадают, DB SHA без изменений. Прежние targeted: 74 passed; 111 passed / 2 PG skips.
-- Review: `ai/reviews/2026-10-07-e5-02f-projection-self-review.md`; independent packet рядом; reviewer/auditor UNKNOWN. SELF_REVIEW не даёт production GO.
-- Boundaries: review only; no quote/publication/eligibility. Каталог явно optional и immutable в версии; смена каталога того же bundle и old-version backfill требуют отдельного workflow. Local CLI не мигрирует существующую 0013.
-- Prior E5-02E: ca387a0 / bd1a84e, 6 draft condition profiles, source/catalog binding и met/not_met/unknown. Handoff `ai/handoffs/2026-10-07-1114-e5-02e-conditions.md`.
-- Prior E5-02D: dba3847 / e410078, 249 codes / 114 units / 201 links / 5 unmapped; E5-01B: 74 search fragments, no retrieval. Source bundle: 208 draft units, unchanged hash.
-- Remaining critical gates: IMPORT/CONTRACT/PROJECTION independent review/final audit, PG16 runtime UNKNOWN; нормы/DEC-07 не утверждены.
-- PDF progress: `docs/e5-pdf-progress.md`, ориентировочно 70–80% осталось (около 75%), не измеренная оценка.
-- Next action: independent review/PG16 по packet; следующий отдельный инженерный этап — история поездок/календарь E5-03, unified selection/calculation. Локальная реализация/проверки завершены, CRITICAL completion gates остаются UNKNOWN.
-- Release: local only, push/deploy/production DB/отправок не было.
-- Baseline: prod_traps --diff-base bd1a84e --limit 1 FAIL 1 ERROR / 57 WARN, ANTHROPIC_API_KEY compose forwarding; без изменений.
+- Updated: 2026-10-07. Алан «дальше», local commits ранее разрешены.
+- Active task: **E5-03A STAY-DAYS**, CRITICAL / solo, **PARTIALLY_READY**: local implementation готова, independent review/final audit и owner-approved policies/examples UNKNOWN.
+- Branch/base: `fix/tours-search-quality` / **1980b1a**; target UNCOMMITTED manifest, commit/copy verification pending.
+- Task: `ai/tasks/2026-10-07-e5-03a-stay-days.md`; contract: `docs/e5-03a-stay-days.md`.
+- Relevant handoff: `ai/handoffs/2026-10-07-1127-e5-03a-stay-days.md`.
+- Result: pure CALC-02 review scenarios, union of history intervals, every-day rolling window, explicit proposed boundary policy; open continuation/cutoff, passport/basis/incomplete flags. 10 proposed examples для владельца знаний. No DB/runtime edits.
+- Evidence: **300 passed / 25.01s**, четыре knowledge modules, включая **80 новых tests** и 200 seeded day-set oracle cases. Real PDF CLI PASS, [31,31,31,31], SHA+mtime source bundle/catalog/request сохранены. Full suite не повторялась: pure additions/docs.
+- Review: `ai/reviews/2026-10-07-e5-03a-stay-days-self-review.md`, APPROVE SELF_REVIEW; independent packet/manifest рядом. Independent review/final audit UNKNOWN.
+- Boundaries: exact_remaining_days=NULL, may_quote/publication false всегда. COUNT_ENTRY_DAY/COUNT_EXIT_DAY/WINDOW_ANCHOR decision_pending/NULL. Scenario headroom не разрешённый срок. Правила/их актуальность и примеры не утверждены.
+- Next action: завершить commits/copy check; затем independent review/owner examples. Следующая отдельная implementation task: CALC-03 versioned working calendar/deadline arithmetic с synthetic fixtures и fail-closed missing coverage; потом StayInterval/Calculation persistence, trusted DB adapter, unified selection.
+- Prior E5-02F: **cf7fb0d / 1980b1a**, atomic projection 208 units / 201 country links / 6 conditions, 82 SQL NULL / 0 confirmed / NULL active. Full suite того этапа 2917 passed / 8 skipped / 1 warning, 414.81s. Handoff `ai/handoffs/2026-10-07-1040-e5-02f-projection.md`.
+- Prior E5-02E ca387a0/bd1a84e: 6 draft condition profiles; E5-02D dba3847/e410078: country index; E5-01B 74 search fragments, no retrieval. Source bundle hash прежний.
+- Remaining gates: IMPORT/CONTRACT/PROJECTION/STAY-DAYS independent review/audit, прежний PG16 runtime UNKNOWN; нормы/DEC-06/07/подпись эталонов не утверждены.
+- PDF progress: `docs/e5-pdf-progress.md`, ориентировочно 70–80% осталось (около 75%), не измеренный процент.
+- Release: local only; push/deploy/production DB/отправок не было.
+- Baseline: prod_traps --diff-base 1980b1a --limit 1 FAIL 1 ERROR / 57 WARN, ANTHROPIC_API_KEY compose forwarding, не менялся.
 - Unrelated аудио/экспорты/temp сохранены untracked, в commits не включать.
 
 ## Сохраняющаяся задача — форма договора

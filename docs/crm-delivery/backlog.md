@@ -383,7 +383,14 @@ CRITICAL PARTIALLY_READY до независимого review/audit и PG16 runt
 
 ### E5-03 — Калькуляторы и календарь
 
-**Выпуск:** R3; **класс:** CRITICAL; **статус:** НЕ НАЧАТО; **исполнитель:** не назначен.
+**Выпуск:** R3; **класс:** CRITICAL; **статус:** ЧАСТИЧНО — локальные проверочные сценарии CALC-02; **исполнитель E5-03A:** Codex, 07.10.2026.
+
+[E5-03A — дни пребывания](../e5-03a-stay-days.md): pure review calculator по всем
+интервалам, объединение дубликатов/пересечений, each-day rolling window, открытые поездки,
+явная proposed policy, hashes и 10 предложенных примеров. Точный клиентский остаток NULL,
+rule selection/eligibility не реализованы. COUNT_* / WINDOW_ANCHOR остаются decision_pending.
+CRITICAL PARTIALLY_READY: независимые review/audit и подпись эталонов UNKNOWN.
+StayInterval persistence, производственный календарь, deadlines/стоимость и runtime впереди.
 
 **Результат:** Полная история поездок, правила включения дней/окон, календарь праздников/переносов, цены из утверждённых данных и объяснение расчёта.
 

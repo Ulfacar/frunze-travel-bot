@@ -1,0 +1,19 @@
+{
+  "format": "kg-stay-review-examples/1",
+  "status": "proposed_not_approved",
+  "source_hash": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
+  "bundle_hash": "bf9faa537ae600c433a064ab21b8d5969aa63ba99fc39ead224dc6fa5256dea5",
+  "description": "Synthetic dated examples for arithmetic review; all border days included explicitly. Not approved legal cases.",
+  "examples": [
+    {"id":"USA_30_DAYS","rule":"KG.VF.ANNEX1_30_60","country":"USA","as_of":"2026-02-28","history":[],"start":"2026-03-01","end":"2026-03-30","expected":{"first":1,"last":30,"max":30,"at_limit":"2026-03-30","exceeded":null}},
+    {"id":"USA_RETURN_APR29","rule":"KG.VF.ANNEX1_30_60","country":"USA","as_of":"2026-03-31","history":[["2026-03-01","2026-03-30"]],"start":"2026-04-29","end":"2026-05-02","expected":{"first":31,"last":31,"max":31,"at_limit":null,"exceeded":"2026-04-29"}},
+    {"id":"USA_RETURN_APR30","rule":"KG.VF.ANNEX1_30_60","country":"USA","as_of":"2026-03-31","history":[["2026-03-01","2026-03-30"]],"start":"2026-04-30","end":"2026-05-03","expected":{"first":30,"last":30,"max":30,"at_limit":"2026-04-30","exceeded":null}},
+    {"id":"RUS_60_PLUS_30","rule":"KG.VF.EAEU","country":"RUS","as_of":"2026-03-02","history":[["2026-01-01","2026-03-01"]],"start":"2026-03-10","end":"2026-04-08","expected":{"first":61,"last":90,"max":90,"at_limit":"2026-04-08","exceeded":null}},
+    {"id":"RUS_60_PLUS_31","rule":"KG.VF.EAEU","country":"RUS","as_of":"2026-03-02","history":[["2026-01-01","2026-03-01"]],"start":"2026-03-10","end":"2026-04-09","expected":{"first":61,"last":91,"max":91,"at_limit":"2026-04-08","exceeded":"2026-04-09"}},
+    {"id":"RUS_DUPLICATE","rule":"KG.VF.EAEU","country":"RUS","as_of":"2026-02-28","history":[["2026-01-01","2026-01-30"],["2026-01-01","2026-01-30"]],"start":"2026-03-01","end":"2026-03-02","expected":{"first":31,"last":32,"max":32,"at_limit":null,"exceeded":null}},
+    {"id":"RUS_OVERLAP","rule":"KG.VF.EAEU","country":"RUS","as_of":"2026-02-28","history":[["2026-01-01","2026-01-20"],["2026-01-10","2026-01-30"]],"start":"2026-03-01","end":"2026-03-02","expected":{"first":31,"last":32,"max":32,"at_limit":null,"exceeded":null}},
+    {"id":"RUS_OPEN_CONTINUATION","rule":"KG.VF.EAEU","country":"RUS","as_of":"2026-03-01","history":[["2026-02-25",null]],"mode":"continue_open","start":"2026-03-01","end":"2026-03-03","expected":{"first":5,"last":7,"max":7,"at_limit":null,"exceeded":null}},
+    {"id":"RUS_LEAP_DAY","rule":"KG.VF.EAEU","country":"RUS","as_of":"2024-02-27","history":[],"start":"2024-02-28","end":"2024-03-01","expected":{"first":1,"last":3,"max":3,"at_limit":null,"exceeded":null}},
+    {"id":"RUS_YEAR_BOUNDARY","rule":"KG.VF.EAEU","country":"RUS","as_of":"2026-12-30","history":[],"start":"2026-12-31","end":"2027-01-02","expected":{"first":1,"last":3,"max":3,"at_limit":null,"exceeded":null}}
+  ]
+}

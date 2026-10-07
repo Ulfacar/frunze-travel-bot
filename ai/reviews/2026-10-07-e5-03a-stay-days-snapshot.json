@@ -1,0 +1,62 @@
+{
+  "base": "1980b1a",
+  "revision": "UNCOMMITTED; code commit in STATE/handoff",
+  "normalization": "UTF-8 bytes, CRLF to LF only",
+  "files": [
+    {
+      "path": "app/knowledge/stay_days.py",
+      "sha256_lf": "a02a3cdf7fc41c60bbf2173bf183f063de4e681147b5f80d3d12b866faf2c057",
+      "bytes_lf": 9432
+    },
+    {
+      "path": "app/knowledge/stay_schema.py",
+      "sha256_lf": "54b3edbd9975140c11ba24523846221d7da115299dfb78e482216b0828dec827",
+      "bytes_lf": 1247
+    },
+    {
+      "path": "scripts/review_kg_stay_days.py",
+      "sha256_lf": "84c6f24037751b76607c2c4a3eab9e3df163d5c9aa20c711d630b37173c8baa8",
+      "bytes_lf": 1458
+    },
+    {
+      "path": "tests/test_kg_stay_days.py",
+      "sha256_lf": "67b7364fac4d7d925890cbedd3105dadb2bb999040dd2ccf7ed192c4df2d74a9",
+      "bytes_lf": 18469
+    },
+    {
+      "path": "tests/fixtures/kg_entry/synthetic_stay_review.json",
+      "sha256_lf": "9b9d72ee58599bb5f1efdd630cd650ca3d9f763bf8d927af60375e48d11e98d3",
+      "bytes_lf": 746
+    },
+    {
+      "path": "tests/fixtures/kg_entry/stay_review_examples.json",
+      "sha256_lf": "e7a7420bf2448658d66ec9291084a18644747b5ff42eef7534c07321b6d8c25f",
+      "bytes_lf": 2869
+    },
+    {
+      "path": "docs/e5-03a-stay-days.md",
+      "sha256_lf": "a8427c376073a02f0181bf947ea97a8db56ffdd716b90cc28505b4c07115d2e0",
+      "bytes_lf": 11716
+    },
+    {
+      "path": "docs/e5-02-slots-schema.md",
+      "sha256_lf": "c7bc03568e1b74fc72a11c2205b8f1b7fb5baaa0f31172d23dab4a2d78d302f0",
+      "bytes_lf": 77105
+    },
+    {
+      "path": "docs/e5-pdf-progress.md",
+      "sha256_lf": "a254038be630c7ec999c736af10085f2e68acc2d53f8a497573d30671a880130",
+      "bytes_lf": 7837
+    },
+    {
+      "path": "docs/crm-delivery/backlog.md",
+      "sha256_lf": "aea034aefc93b11d37f746e0793e5d34c61b90bf1cdc662a34afe98e8dc31f4a",
+      "bytes_lf": 44260
+    },
+    {
+      "path": "ai/tasks/2026-10-07-e5-03a-stay-days.md",
+      "sha256_lf": "c79b7e7dc71e9945aa7cad9d1a206820648e8573afd1677898e18017fef06fb2",
+      "bytes_lf": 5636
+    }
+  ]
+}

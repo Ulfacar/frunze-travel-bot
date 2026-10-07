@@ -38,6 +38,11 @@ review_period_days nullable до DEC-07, снимки immutable уже в draft,
 на кандидатов, уточняющие проект `entry_country_rules`; выбранного режима нет. Старые
 sealed версии автоматически не дополняются. CRITICAL: independent review/audit и PG16 UNKNOWN.
 
+07.10: [E5-03A — проверочные дни пребывания](e5-03a-stay-days.md) реализует чистую
+арифметику по отдельному review snapshot, объединяет интервалы и проверяет каждый день.
+Proposed policy не утверждает COUNT_*; точный клиентский остаток всегда NULL.
+`stay_intervals`/`work_calendars` из проекта ниже по-прежнему не созданы этим этапом.
+
 ---
 
 ## 0. Коротко: что проектируется и какие решения приняты
