@@ -1,6 +1,6 @@
 """Локальная SQLite-репетиция E5; не принимает DSN и не читает .env.
 
-Новая БД мигрируется до e5_knowledge_0013; существующая должна быть на этой ревизии.
+Новая БД мигрируется до e5_projection_0014; существующая должна быть на этой ревизии.
 CLI доверяет локальному оператору, имеющему доступ к файлу, а не HTTP-параметрам.
 """
 from __future__ import annotations
@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from app.domain.knowledge_import import create_kg_entry_set, import_bundle
 from app.domain.permissions import Actor
 
-REVISION = "e5_knowledge_0013"
+REVISION = "e5_projection_0014"
 
 
 def prepare_database(path: Path):
@@ -52,7 +52,7 @@ def prepare_database(path: Path):
     return URL.create("sqlite+aiosqlite", database=path.as_posix())
 
 
-async def run(url, bundle, source):
+async def run(url, bundle, source, catalog=None):
     engine = create_async_engine(url)
 
     @event.listens_for(engine.sync_engine, "connect")
@@ -62,7 +62,7 @@ async def run(url, bundle, source):
     actor = Actor("local-operator", is_full_admin=True)
     try:
         set_id = await create_kg_entry_set(engine, actor=actor)
-        return await import_bundle(engine, actor=actor, set_id=set_id, directory=bundle, source=source)
+        return await import_bundle(engine, actor=actor, set_id=set_id, directory=bundle, source=source, catalog=catalog)
     finally:
         await engine.dispose()
 
@@ -72,9 +72,10 @@ def main(argv=None):
     parser.add_argument("--db", type=Path, required=True, help="Explicit disposable local SQLite file")
     parser.add_argument("--bundle", type=Path, required=True)
     parser.add_argument("--source", type=Path, required=True)
+    parser.add_argument("--catalog", type=Path, help="Optional explicit draft conditions; repeat with the same catalog")
     args = parser.parse_args(argv)
     try:
-        result = asyncio.run(run(prepare_database(args.db), args.bundle, args.source))
+        result = asyncio.run(run(prepare_database(args.db), args.bundle, args.source, args.catalog))
     except Exception:
         # SQL exceptions include bound payloads/DSNs; diagnostics stay deliberately bounded.
         print(json.dumps({"ok": False, "code": "local_import_unavailable",

@@ -20,9 +20,13 @@ from app.domain.models import (
     DomainError, KnowledgeImport, KnowledgeSet, KnowledgeUnit, KnowledgeVersion, _now,
 )
 from app.domain.permissions import Actor
+from app.domain.knowledge_projection import ProjectionInvalid, save_projection, verify_projection
 from app.domain.service_authz import PermissionDenied
 from app.knowledge.bundle import BundleReport, preflight_bundle
-from app.knowledge.validation import Issue
+from app.knowledge.conditions import ConditionError
+from app.knowledge.country_index import CountryIndexError
+from app.knowledge.projection import build_projection
+from app.knowledge.validation import InvalidDocument, Issue, load_document
 
 
 class ImportUnavailable(DomainError):
@@ -74,12 +78,15 @@ async def create_kg_entry_set(engine: AsyncEngine, *, actor: Actor) -> int:
     raise ImportUnavailable("knowledge set registration unavailable") from None
 
 
-def _summary(report: BundleReport, *, reused=False) -> dict:
+def _summary(report: BundleReport, *, reused=False, projection=None) -> dict:
+    built = report.ok and projection is not None
     return {**report.summary(), "mode": "draft_import", "imported": report.ok, "reused": reused,
-            "activated": False, "country_index_built": False}
+            "activated": False, "country_index_built": built,
+            "projection_hash": projection["projection_hash"] if built else None,
+            "catalog_hash": projection["catalog_hash"] if built else None}
 
 
-def _journal(session, *, set_id, actor, started, report, version_id=None, reused=False):
+def _journal(session, *, set_id, actor, started, report, version_id=None, reused=False, projection=None):
     first = report.errors[0] if report.errors else None
     row = KnowledgeImport(
         set_id=set_id, bundle_hash=report.bundle_hash, filename="kg-entry-bundle/1",
@@ -87,7 +94,7 @@ def _journal(session, *, set_id, actor, started, report, version_id=None, reused
         result="rejected" if first else "accepted", version_id=version_id,
         error_stage=first.code.split(".", 1)[0] if first else None,
         error_location=first.location if first else None, error_message=first.message if first else None,
-        report=_summary(report, reused=reused),
+        report=_summary(report, reused=reused, projection=projection),
     )
     session.add(row)
     return row
@@ -105,7 +112,7 @@ def _unit(record, version_id):
 
 
 async def import_bundle(engine: AsyncEngine, *, actor: Actor, set_id: int,
-                        directory: Path, source: Path) -> ImportResult:
+                        directory: Path, source: Path, catalog: Path | None = None) -> ImportResult:
     """После return журнал закоммичен. ImportUnavailable = не обещаем наличие записи.
 
     Повтор возвращает только существующий draft с тем же normalized hash. Версия
@@ -119,6 +126,18 @@ async def import_bundle(engine: AsyncEngine, *, actor: Actor, set_id: int,
     started = _now()
     # Возвращённый наружу BundleReport не принимается: проверяем файлы сами.
     report = preflight_bundle(Path(directory), Path(source))
+    projection = None
+    if report.ok:
+        try:
+            catalog_data = load_document(Path(catalog)) if catalog is not None else None
+            # Explicit JSON null is not equivalent to an omitted catalog.
+            if catalog is not None and catalog_data is None:
+                raise ConditionError("invalid_catalog")
+            projection = build_projection(report.normalized_bundle, catalog_data)
+        except InvalidDocument:
+            report.errors.append(Issue("syntax.catalog", "catalog", "Condition catalog cannot be parsed."))
+        except (ConditionError, CountryIndexError):
+            report.errors.append(Issue("semantic.projection", "projection", "Review projection or catalog is invalid."))
     try:
         async with sessions() as session:
             target = await session.get(KnowledgeSet, set_id)
@@ -143,6 +162,15 @@ async def import_bundle(engine: AsyncEngine, *, actor: Actor, set_id: int,
                                                    "This bundle already belongs to a non-draft version."))
                         break
                     reused = existing is not None
+                    if reused:
+                        from app.domain.knowledge_review import _snapshot, SnapshotInvalid
+                        try:
+                            await _snapshot(session, set_id=set_id, version_id=existing.id)
+                            await verify_projection(session, existing.id, projection)
+                        except (ProjectionInvalid, SnapshotInvalid):
+                            report.errors.append(Issue("semantic.existing_projection", "projection",
+                                                       "Stored snapshot is missing, inconsistent or uses another catalog."))
+                            break
                     if existing is None:
                         bundle = report.normalized_bundle
                         meta = bundle["meta"]
@@ -154,17 +182,18 @@ async def import_bundle(engine: AsyncEngine, *, actor: Actor, set_id: int,
                             bundle_hash=report.bundle_hash, source_prepared_by=meta["prepared_by"],
                             effective_from=date.fromisoformat(meta["effective_from"]) if meta.get("effective_from") else None,
                             created_by=actor.manager_id, bundle_meta=meta, country_aliases=bundle["countries"],
-                            import_report=_summary(report),
+                            import_report=_summary(report, projection=projection),
                         )
                         session.add(existing)
                         await session.flush()
                         session.add_all(_unit(record, existing.id) for record in bundle["units"])
                         await session.flush()
+                        await save_projection(session, existing.id, projection)
                     journal = _journal(session, set_id=set_id, actor=actor, started=started,
-                                       report=report, version_id=existing.id, reused=reused)
+                                       report=report, version_id=existing.id, reused=reused, projection=projection)
                     await session.flush()
                     result = ImportResult(True, journal.id, existing.id, report.bundle_hash, reused,
-                                          _summary(report, reused=reused))
+                                          _summary(report, reused=reused, projection=projection))
                     committing = True
                 return result  # только после успешного COMMIT
             except (IntegrityError, OperationalError):

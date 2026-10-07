@@ -522,7 +522,8 @@ def test_migration_is_additive_empty_and_reversible(tmp_path, monkeypatch):
     new_tables = {"products", "workflow_versions", "service_cases", "service_events",
                   "service_payments", "ticket_segments",
                   "booking_attempts", "knowledge_sets", "knowledge_versions",
-                  "knowledge_units", "knowledge_imports"}
+                  "knowledge_units", "knowledge_imports", "knowledge_projections",
+                  "knowledge_country_links", "knowledge_condition_links"}
     engine = create_engine(url)
     try:
         command.upgrade(cfg, "bitrix_dossier_0006")

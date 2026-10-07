@@ -1,0 +1,102 @@
+{
+  "base": "bd1a84e",
+  "revision": "UNCOMMITTED; resolve target code commit from STATE/handoff",
+  "normalization": "UTF-8 bytes, CRLF to LF only",
+  "files": [
+    {
+      "path": "app/domain/models.py",
+      "sha256_lf": "7c767dcc107ca437018dd420287ef331ae24c3b4af15104779395c922a32e817",
+      "bytes_lf": 76074
+    },
+    {
+      "path": "app/domain/knowledge_import.py",
+      "sha256_lf": "ae40304cc25daeb6572d510ea76667e5e30aa57eda031cacf227d1fa042a9e76",
+      "bytes_lf": 12331
+    },
+    {
+      "path": "app/domain/knowledge_projection.py",
+      "sha256_lf": "b667b3b19db164fcc7a0564e1c962011c0ef7717e6992bc96976e2be9a3da880",
+      "bytes_lf": 5282
+    },
+    {
+      "path": "app/knowledge/country_index.py",
+      "sha256_lf": "53e63893ddbe4dead7d4d8c713c248db59514aacb9d452e9220005e77473ba90",
+      "bytes_lf": 9391
+    },
+    {
+      "path": "app/knowledge/projection.py",
+      "sha256_lf": "c9902bb2209d3523a6b4431b7c4e18d542540066017b782b82162bbcc245c81f",
+      "bytes_lf": 969
+    },
+    {
+      "path": "alembic/versions/e5_projection_0014.py",
+      "sha256_lf": "3deab17d976bacc852af4ff10217b8ef9713b2b96d3738790a21b67a8751e59d",
+      "bytes_lf": 3131
+    },
+    {
+      "path": "scripts/import_kg_entry_local.py",
+      "sha256_lf": "b96c5d5e9a381a3e6b5a62bde92b6d121cba201305491f1791957d1160d8d913",
+      "bytes_lf": 3746
+    },
+    {
+      "path": "scripts/review_kg_projection_local.py",
+      "sha256_lf": "f05aeb9fdbc89e606771e998f57dcff871efa69a15930a2624d137d2f8deaa37",
+      "bytes_lf": 2358
+    },
+    {
+      "path": "tests/test_knowledge_projection.py",
+      "sha256_lf": "8b6b50efddc0405200c3d7a10f7e942dae57528034525023e19d9f13769c3182",
+      "bytes_lf": 16702
+    },
+    {
+      "path": "tests/test_knowledge_projection_migration.py",
+      "sha256_lf": "031fb8756cf2a28d422953a5d3253d12f7f81adef6c69767e900317d2dd1651a",
+      "bytes_lf": 4679
+    },
+    {
+      "path": "tests/test_knowledge_import.py",
+      "sha256_lf": "2ec4ebf230b9defe78aeb014a303d31b51167597ff6a1e30c10bc42104c50e92",
+      "bytes_lf": 17915
+    },
+    {
+      "path": "tests/test_alembic_domain_migration.py",
+      "sha256_lf": "1db15638b883017f7500a1c216a39b6b09825c038ec5a2a29905c824e5b8b725",
+      "bytes_lf": 17254
+    },
+    {
+      "path": "tests/test_service_cases.py",
+      "sha256_lf": "3831cb1a8930c8e43574284815911ccb954df9ed218004e37908b07f661a3c84",
+      "bytes_lf": 29697
+    },
+    {
+      "path": "docs/e5-02f-projection.md",
+      "sha256_lf": "25629a657318019006a5f4d5e091f5720529fa94a08e88f5a2be72f290cdbe90",
+      "bytes_lf": 8753
+    },
+    {
+      "path": "docs/e5-02b-import.md",
+      "sha256_lf": "41d414604224471ccce06b40d8fa790c053daa54dbf3f804b733f17e412aa7f3",
+      "bytes_lf": 12770
+    },
+    {
+      "path": "docs/e5-02-slots-schema.md",
+      "sha256_lf": "046a20cd98addde0d455ee509e9221f0f6b20d627fa2982bda2a72827d711d8e",
+      "bytes_lf": 76584
+    },
+    {
+      "path": "docs/e5-pdf-progress.md",
+      "sha256_lf": "c716c37bb7909d1d67fa219ce7c053d8d973e768a9c789aac14643aedbc29713",
+      "bytes_lf": 7481
+    },
+    {
+      "path": "docs/crm-delivery/backlog.md",
+      "sha256_lf": "75e6ab5bb62b3674d90ead7d56f8909fa1cef65e34d31fef8ca0e8896a8a71dc",
+      "bytes_lf": 43440
+    },
+    {
+      "path": "ai/tasks/2026-10-07-e5-02f-projection.md",
+      "sha256_lf": "b1ab868f3988fe8a0db1d4f373274ad46c602c2d8548da7a3d6df1d8dee41b71",
+      "bytes_lf": 4668
+    }
+  ]
+}

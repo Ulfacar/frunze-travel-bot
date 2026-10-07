@@ -14,7 +14,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.domain.knowledge_import import ImportUnavailable, create_kg_entry_set, import_bundle
 from app.domain.models import (DomainBase, DomainError, KnowledgeImport, KnowledgeSet,
-                               KnowledgeUnit, KnowledgeVersion)
+                               KnowledgeUnit, KnowledgeVersion, KnowledgeProjection,
+                               KnowledgeCountryLink, KnowledgeConditionLink)
 from app.domain.permissions import Actor
 from app.domain.service_authz import PermissionDenied, SYSTEM_ACTOR
 from app.knowledge.bundle import preflight_bundle
@@ -23,7 +24,8 @@ from app.knowledge.validation import load_document
 ROOT = Path(__file__).resolve().parents[1]
 FIX = ROOT / "tests/fixtures/kg_entry"
 ADMIN = Actor("test-admin", is_full_admin=True)
-TABLES = [KnowledgeVersion.__table__, KnowledgeSet.__table__, KnowledgeUnit.__table__, KnowledgeImport.__table__]
+TABLES = [KnowledgeVersion.__table__, KnowledgeSet.__table__, KnowledgeUnit.__table__, KnowledgeImport.__table__,
+          KnowledgeProjection.__table__, KnowledgeCountryLink.__table__, KnowledgeConditionLink.__table__]
 
 
 @pytest.fixture

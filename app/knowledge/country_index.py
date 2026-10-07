@@ -155,6 +155,12 @@ class CountryRuleIndex:
         result["findings"] = findings
         return result
 
+    def projection(self) -> dict:
+        """Owned deterministic persistence payload; format /1 must stay reproducible."""
+        return {"format": "kg-country-projection/1", "summary": self.summary(),
+                "links": [{"country_iso3": code, "unit_id": uid, "association": basis}
+                          for code, rows in sorted(self._links.items()) for uid, basis in rows]}
+
     def summary(self) -> dict:
         return {**self._header(), "countries": len(self._links), "aliases": len(self._aliases),
                 "country_units": len(self._units), "other_units": self._ignored_count,

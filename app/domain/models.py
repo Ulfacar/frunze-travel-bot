@@ -651,11 +651,61 @@ class KnowledgeImport(DomainBase):
         return _ServiceJSON.freeze(value)
 
 
+class KnowledgeProjection(DomainBase):
+    """Sealed review materialization; no customer facts or eligibility decisions."""
+
+    __tablename__ = "knowledge_projections"
+    __table_args__ = (
+        CheckConstraint("format_version = 1", name="ck_knowledge_projection_format"),
+        CheckConstraint("length(projection_hash) = 64 AND (catalog_hash IS NULL OR length(catalog_hash) = 64)",
+                        name="ck_knowledge_projection_hash"),
+        CheckConstraint("(catalog_hash IS NULL AND condition_catalog IS NULL) OR "
+                        "(catalog_hash IS NOT NULL AND condition_catalog IS NOT NULL)",
+                        name="ck_knowledge_projection_catalog"),
+    )
+    version_id: Mapped[int] = mapped_column(ForeignKey("knowledge_versions.id"), primary_key=True)
+    format_version: Mapped[int] = mapped_column(Integer)
+    projection_hash: Mapped[str] = mapped_column(String(64))
+    catalog_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    country_summary: Mapped[dict] = mapped_column(_ServiceJSON)
+    condition_catalog: Mapped[dict | None] = mapped_column(_ServiceJSON(none_as_null=True), nullable=True)
+
+    @validates("country_summary", "condition_catalog")
+    def _freeze_json(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+class KnowledgeCountryLink(DomainBase):
+    __tablename__ = "knowledge_country_links"
+    __table_args__ = (
+        ForeignKeyConstraint(["version_id", "unit_id"], ["knowledge_units.version_id", "knowledge_units.unit_id"],
+                             name="fk_knowledge_country_unit"),
+        CheckConstraint("length(country_iso3) = 3", name="ck_knowledge_country_iso3"),
+        CheckConstraint("association IN ('value_country','unit_id_country','evidence_country','explicit_not_in_list')",
+                        name="ck_knowledge_country_association"),
+    )
+    version_id: Mapped[int] = mapped_column(ForeignKey("knowledge_projections.version_id"), primary_key=True)
+    country_iso3: Mapped[str] = mapped_column(String(3), primary_key=True)
+    unit_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    association: Mapped[str] = mapped_column(String(32))
+
+
+class KnowledgeConditionLink(DomainBase):
+    __tablename__ = "knowledge_condition_links"
+    __table_args__ = (
+        ForeignKeyConstraint(["version_id", "unit_id"], ["knowledge_units.version_id", "knowledge_units.unit_id"],
+                             name="fk_knowledge_condition_unit"),
+    )
+    version_id: Mapped[int] = mapped_column(ForeignKey("knowledge_projections.version_id"), primary_key=True)
+    unit_id: Mapped[str] = mapped_column(Text, primary_key=True)
+
+
 def _knowledge_immutable(mapper, connection, target):
     raise DomainError("knowledge snapshots and import journal are immutable; import a new bundle")
 
 
-for _knowledge_cls in (KnowledgeVersion, KnowledgeUnit, KnowledgeImport):
+for _knowledge_cls in (KnowledgeVersion, KnowledgeUnit, KnowledgeImport,
+                       KnowledgeProjection, KnowledgeCountryLink, KnowledgeConditionLink):
     event.listen(_knowledge_cls, "before_update", _knowledge_immutable)
     event.listen(_knowledge_cls, "before_delete", _knowledge_immutable)
 event.listen(KnowledgeSet, "before_delete", _knowledge_immutable)
@@ -671,6 +721,9 @@ def _knowledge_version_insert(mapper, connection, target):
 
 
 @event.listens_for(KnowledgeUnit, "before_insert")
+@event.listens_for(KnowledgeProjection, "before_insert")
+@event.listens_for(KnowledgeCountryLink, "before_insert")
+@event.listens_for(KnowledgeConditionLink, "before_insert")
 def _knowledge_unit_insert(mapper, connection, target):
     status = connection.scalar(select(KnowledgeVersion.status).where(KnowledgeVersion.id == target.version_id))
     if status != "draft":
