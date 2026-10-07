@@ -5,8 +5,9 @@
 
 - Task: `ai/tasks/2026-10-07-e5-03a-stay-days.md`, AC1–AC7.
 - Protocol: AGENTS.md / ai/protocol.json / ai/ROLES.md; CRITICAL / solo.
-- Base: `fix/tours-search-quality` @ 1980b1a; target UNCOMMITTED manifest
-  `ai/reviews/2026-10-07-e5-03a-stay-days-snapshot.json` (после commit revision в STATE).
+- Base: `fix/tours-search-quality` @ 1980b1a;
+  target **abad74f69430f6a54ba6fd514df54ef7b54167e7**, manifest
+  `ai/reviews/2026-10-07-e5-03a-stay-days-snapshot.json`.
 - Independent reviewer / final auditor: UNKNOWN.
 - Scope: local pure review arithmetic, без release/DB/runtime. Только read-only анализ
   и isolated tests; без production, внешней отправки кода, изменения исходных норм/approval.

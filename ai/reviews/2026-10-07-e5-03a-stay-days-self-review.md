@@ -1,7 +1,7 @@
 # SELF_REVIEW — E5-03A, 07.10.2026
 
 - Reviewer: Codex, тот же builder; не independent review/audit.
-- Base 1980b1a → UNCOMMITTED manifest рядом; completion local change.
+- Base 1980b1a → **abad74f69430f6a54ba6fd514df54ef7b54167e7**, manifest рядом; completion local change.
 - Verdict: APPROVE SELF_REVIEW; **PARTIALLY_READY**, independent review/audit UNKNOWN.
 
 ## Отдельный проход
@@ -39,7 +39,9 @@ integral JSON numbers 30.0; date ordinal требует Python int. Добавл
   ANTHROPIC_API_KEY compose forwarding; значений секретов в отчёте нет.
 - Full suite не повторялась: только новые pure modules/CLI/fixtures и документы, без
   edits runtime/DB/import/старых knowledge modules. Предыдущие 2917 tests — evidence E5-02F, не этот прогон.
-- Committed-copy verification pending; записать фактическую revision/результат после commit.
+- Committed copy abad74f: **298 passed / 2 skipped / 20.31s**, те же четыре modules;
+  skips — прежние тесты с PDF вне Git. Отдельный new CLI с original PDF PASS: тот же
+  calculation_hash, no quote/no exact remainder, исходные SHA+mtime unchanged; **11/11 hashes** совпадают.
 
 ## Gates / limits
 

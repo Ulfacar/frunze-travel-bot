@@ -2,14 +2,14 @@
 
 - Updated: 2026-10-07. Алан «дальше», local commits ранее разрешены.
 - Active task: **E5-03A STAY-DAYS**, CRITICAL / solo, **PARTIALLY_READY**: local implementation готова, independent review/final audit и owner-approved policies/examples UNKNOWN.
-- Branch/base: `fix/tours-search-quality` / **1980b1a**; target UNCOMMITTED manifest, commit/copy verification pending.
+- Branch/code revision: `fix/tours-search-quality` / **abad74f69430f6a54ba6fd514df54ef7b54167e7**; 11-file manifest verified in committed copy. Финальный handoff/STATE/evidence — следующий docs-only commit.
 - Task: `ai/tasks/2026-10-07-e5-03a-stay-days.md`; contract: `docs/e5-03a-stay-days.md`.
 - Relevant handoff: `ai/handoffs/2026-10-07-1127-e5-03a-stay-days.md`.
 - Result: pure CALC-02 review scenarios, union of history intervals, every-day rolling window, explicit proposed boundary policy; open continuation/cutoff, passport/basis/incomplete flags. 10 proposed examples для владельца знаний. No DB/runtime edits.
-- Evidence: **300 passed / 25.01s**, четыре knowledge modules, включая **80 новых tests** и 200 seeded day-set oracle cases. Real PDF CLI PASS, [31,31,31,31], SHA+mtime source bundle/catalog/request сохранены. Full suite не повторялась: pure additions/docs.
+- Evidence: **300 passed / 25.01s**, четыре knowledge modules, включая **80 новых tests** и 200 seeded day-set oracle cases. Git copy abad74f: **298 passed / 2 skipped, 20.31s** (PDF вне Git), 11/11 hashes; отдельно CLI с original PDF PASS, тот же calculation hash и [31,31,31,31], SHA+mtime inputs сохранены. Full suite не повторялась: pure additions/docs.
 - Review: `ai/reviews/2026-10-07-e5-03a-stay-days-self-review.md`, APPROVE SELF_REVIEW; independent packet/manifest рядом. Independent review/final audit UNKNOWN.
 - Boundaries: exact_remaining_days=NULL, may_quote/publication false всегда. COUNT_ENTRY_DAY/COUNT_EXIT_DAY/WINDOW_ANCHOR decision_pending/NULL. Scenario headroom не разрешённый срок. Правила/их актуальность и примеры не утверждены.
-- Next action: завершить commits/copy check; затем independent review/owner examples. Следующая отдельная implementation task: CALC-03 versioned working calendar/deadline arithmetic с synthetic fixtures и fail-closed missing coverage; потом StayInterval/Calculation persistence, trusted DB adapter, unified selection.
+- Next action: independent review/owner examples. Следующая отдельная implementation task: CALC-03 versioned working calendar/deadline arithmetic с synthetic fixtures и fail-closed missing coverage; потом StayInterval/Calculation persistence, trusted DB adapter, unified selection. Локальные implementation/checks завершены, CRITICAL gates UNKNOWN.
 - Prior E5-02F: **cf7fb0d / 1980b1a**, atomic projection 208 units / 201 country links / 6 conditions, 82 SQL NULL / 0 confirmed / NULL active. Full suite того этапа 2917 passed / 8 skipped / 1 warning, 414.81s. Handoff `ai/handoffs/2026-10-07-1040-e5-02f-projection.md`.
 - Prior E5-02E ca387a0/bd1a84e: 6 draft condition profiles; E5-02D dba3847/e410078: country index; E5-01B 74 search fragments, no retrieval. Source bundle hash прежний.
 - Remaining gates: IMPORT/CONTRACT/PROJECTION/STAY-DAYS independent review/audit, прежний PG16 runtime UNKNOWN; нормы/DEC-06/07/подпись эталонов не утверждены.
