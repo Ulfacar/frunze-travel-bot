@@ -24,7 +24,7 @@
 | S2 structure | PASS | 40 таблиц, 1 fence; негативные случаи структуры; oversized table и H3 parent conditions; каждая выбранная строка ровно один раз |
 | S3 metadata | PASS | Version/date/hash/section, метки в context+raw, invalid dates; все 74 draft / may_quote=false |
 | S4 refusal | PASS | Bad structure/source/PDF hash/changed output отклоняются; пользовательский файл не перезаписан |
-| S5 reproducibility | PASS local | Реальный `--check --pdf`, повтор CLI без изменения mtime, CRLF equivalence; Git checkout проверяется после коммита в handoff |
+| S5 reproducibility | PASS | Реальный `--check --pdf`, повтор CLI без изменения mtime, CRLF equivalence; fresh Git copy 5cf53d8: 182 passed / 1 skipped, 10/10 normalized hashes, --check --pdf PASS |
 | S6 estimate | PASS | `docs/e5-pdf-progress.md`: 9 строк IT-инструкции, фактический код, диапазон 70–80% остатка; не выдаётся за измерение/approval |
 
 ## Checks actually performed

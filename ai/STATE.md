@@ -1,18 +1,18 @@
 # Current work
 
 - Updated: 2026-10-07. Алан попросил продолжить и оценить остаток по PDF; прежнее разрешение на local commits сохраняется.
-- Active task: **E5-01B-SEARCH**, STANDARD / solo. Реализация готова; до проверки Git-копии **PARTIALLY_READY**.
-- Branch / revision: `fix/tours-search-quality` / `ad41b2e` + UNCOMMITTED; exact target в snapshot manifest.
+- Active completed task: **E5-01B-SEARCH**, STANDARD / solo, **DONE для local scope**. Весь E5-01/E5-02 PARTIALLY_READY.
+- Branch / code revision: `fix/tours-search-quality` / **5cf53d83970b9381813d602f947771796a00f301**; окончательные handoff/STATE/review — следующий docs-only commit.
 - Task: `ai/tasks/2026-10-07-e5-01b-search-corpus.md`; contract: `docs/e5-01b-search-corpus.md`.
 - Relevant handoff: `ai/handoffs/2026-10-07-0952-e5-01b-search-corpus.md`.
 - Result: корпус по IT-инструкции PDF — **74 фрагмента / 14 блоков / 40 целых таблиц / 1 fence**. 5 oversized сохранены; H3 получает контекст; метки/строки/hash в JSON. Все draft, may_quote=false, publication_approved=false; retrieval не подключён.
 - PDF progress: `docs/e5-pdf-progress.md` — **примерно 70–80% остаётся (ориентир 75%)**, оценка инженерного объёма полного въездного PDF, не измеренный процент/вся CRM/production acceptance. Основной остаток: калькуляторы, диалог, въездные процессы, документы, утверждение/приёмка.
-- Evidence: **257 passed, 31.77s**, corpus/source_bundle/validation/review/import/migration; original PDF hash + corpus --check PASS. Полный suite в этом изолированном этапе не повторялся. Git-копия проверяется после commit.
+- Evidence: **257 passed, 31.77s**, corpus/source_bundle/validation/review/import/migration; original PDF hash + corpus --check PASS. Fresh Git copy 5cf53d8: **182 passed / 1 skipped, 6.18s**, corpus/source_bundle/validation; PDF отдельно проверен через --pdf, 10/10 normalized hashes PASS. Полный suite в этом изолированном этапе не повторялся.
 - Review: `ai/reviews/2026-10-07-e5-01b-search-self-review.md`, APPROVE **SELF_REVIEW**; manifest из 10 файлов рядом. Весь E5-01/E5-02 PARTIALLY_READY.
 - Prior implementation: 208 draft rule units, **0 confirmed / 82 SQL NULL / NULL active pointer** в ignored `runs/e5-02b-import-20261007.sqlite3`. Реализованы validator/source bundle/draft import/read-only diff. Их поведение в этом этапе не менялось.
 - Prior local commits: ebf4ee5 CONTRACT-UI; c8228e5 validation; 41064f7 source bundle; 653a20a import; e99e067 review; ad41b2e handoff. Предыдущая передача: `ai/handoffs/2026-10-07-0137-e5-02c-review-commits.md`.
 - Remaining critical gates: IMPORT/CONTRACT независимые reviews, final audit и PG16 runtime **UNKNOWN**. STANDARD corpus их не закрывает. DEC-07/owner/review dates не придуманы.
-- Next action: commit + Git-copy check для E5-01B; далее country index/условные schemas, история поездок/календарь, E5-03 расчёты, E5-04 RU/EN flow. Review импорта по `ai/reviews/2026-10-07-e5-02b-import-packet.md` на отдельном PG16 стенде.
+- Next action: country index/условные schemas, история поездок/календарь, E5-03 расчёты, E5-04 RU/EN flow. Review импорта по `ai/reviews/2026-10-07-e5-02b-import-packet.md` на отдельном PG16 стенде. Текущий E5-01B завершён; корпус ещё не подключён к боту.
 - Release: local only; push/deploy/production DB не выполнялись. Бизнес-правила/тарифы не утверждались.
 - Baseline gate: `prod_traps_check --diff-base ad41b2e --limit 1` **FAIL 1 ERROR / 57 WARN**, ANTHROPIC_API_KEY не передаётся compose; без изменений.
 - Unrelated пользовательские аудио/экспорты/temp сохранены untracked, в commits не включать.
