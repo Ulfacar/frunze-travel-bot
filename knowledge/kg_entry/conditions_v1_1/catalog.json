@@ -1,0 +1,256 @@
+{
+  "bundle_hash": "bf9faa537ae600c433a064ab21b8d5969aa63ba99fc39ead224dc6fa5256dea5",
+  "date_basis": "source_claim",
+  "format": "kg-entry-conditions/1",
+  "publication_approved": false,
+  "rules": [
+    {
+      "all": [
+        {
+          "countries": [
+            "CHN",
+            "IND"
+          ],
+          "type": "passport_country_in"
+        },
+        {
+          "issuers": [
+            "USA",
+            "GBR",
+            "SCHENGEN"
+          ],
+          "type": "foreign_visa",
+          "validity_years_gt": 3
+        }
+      ],
+      "source_locations": [
+        {
+          "page": 23,
+          "section": "2.5"
+        },
+        {
+          "page": 89,
+          "section": "Б.5/special"
+        }
+      ],
+      "source_outcome": {
+        "reentry_after_days": 21,
+        "stay_days": 7
+      },
+      "unit_id": "KG.SP.CHN_IND_LONGTERM_VISA",
+      "unresolved": [
+        "legal_source_unapproved",
+        "effective_dates_not_verified",
+        "document_validity_not_verified",
+        "three_year_duration_basis_needs_review",
+        "stay_and_reentry_not_calculated"
+      ]
+    },
+    {
+      "all": [
+        {
+          "countries": [
+            "CHN"
+          ],
+          "type": "passport_country_in"
+        },
+        {
+          "country": "CHN",
+          "maximum": 25,
+          "minimum": 5,
+          "petition_required": true,
+          "type": "organized_tour_group"
+        }
+      ],
+      "source_locations": [
+        {
+          "page": 23,
+          "section": "2.5"
+        },
+        {
+          "page": 89,
+          "section": "Б.5/special"
+        }
+      ],
+      "source_outcome": {
+        "reentry_after_days": 21,
+        "stay_days": 21,
+        "visa_inside_exception": "force_majeure",
+        "visa_inside_kg": false
+      },
+      "unit_id": "KG.SP.CHN_TOUR_GROUP",
+      "unresolved": [
+        "legal_source_unapproved",
+        "effective_dates_not_verified",
+        "document_validity_not_verified",
+        "stay_and_reentry_not_calculated"
+      ]
+    },
+    {
+      "all": [
+        {
+          "countries": [
+            "HKG",
+            "MAC"
+          ],
+          "type": "permanent_residence_in"
+        }
+      ],
+      "source_locations": [
+        {
+          "page": 23,
+          "section": "2.5"
+        },
+        {
+          "page": 89,
+          "section": "Б.5/special"
+        }
+      ],
+      "source_outcome": {
+        "reentry_after_days": 30,
+        "stay_days": 30,
+        "visa_inside_exception": "force_majeure",
+        "visa_inside_kg": false
+      },
+      "unit_id": "KG.SP.HK_MACAO",
+      "unresolved": [
+        "legal_source_unapproved",
+        "effective_dates_not_verified",
+        "document_validity_not_verified",
+        "stay_and_reentry_not_calculated"
+      ]
+    },
+    {
+      "all": [
+        {
+          "type": "document_type_is",
+          "value": "un_lp"
+        }
+      ],
+      "source_locations": [
+        {
+          "page": 23,
+          "section": "2.5"
+        },
+        {
+          "page": 89,
+          "section": "Б.5/special"
+        }
+      ],
+      "source_outcome": {
+        "stay_days": 60
+      },
+      "unit_id": "KG.SP.UN_LP",
+      "unresolved": [
+        "legal_source_unapproved",
+        "effective_dates_not_verified",
+        "document_validity_not_verified"
+      ]
+    },
+    {
+      "all": [
+        {
+          "countries": [
+            "ARE",
+            "BHR",
+            "KWT",
+            "OMN",
+            "QAT",
+            "SAU"
+          ],
+          "type": "passport_country_in"
+        }
+      ],
+      "source_locations": [
+        {
+          "page": 21,
+          "section": "2.2"
+        },
+        {
+          "page": 88,
+          "section": "Б.5/visa_free/gcc"
+        }
+      ],
+      "source_outcome": {
+        "stay_days": 180,
+        "window_days": 360,
+        "work_permit_requirement": "unknown"
+      },
+      "unit_id": "KG.VF.GCC",
+      "unresolved": [
+        "legal_source_unapproved",
+        "effective_dates_not_verified",
+        "document_validity_not_verified",
+        "work_permit_requirement_unknown",
+        "rolling_window_not_calculated"
+      ]
+    },
+    {
+      "all": [
+        {
+          "countries": [
+            "BGD",
+            "DZA",
+            "EGY",
+            "IND",
+            "JOR",
+            "LBN",
+            "LKA",
+            "MAR",
+            "NPL",
+            "PAK",
+            "TUN",
+            "YEM"
+          ],
+          "type": "passport_country_in"
+        },
+        {
+          "type": "visa_type_is",
+          "value": "TS"
+        },
+        {
+          "maximum": 1,
+          "type": "stay_within_months"
+        },
+        {
+          "countries": [
+            "ARE",
+            "BHR",
+            "BRN",
+            "KWT",
+            "OMN",
+            "QAT",
+            "SAU"
+          ],
+          "type": "residence_permit_in"
+        }
+      ],
+      "source_locations": [
+        {
+          "page": 22,
+          "section": "2.4"
+        },
+        {
+          "page": 89,
+          "section": "Б.5/visa_required"
+        }
+      ],
+      "source_outcome": {
+        "gknb_approval": false,
+        "max_stay_months": 1,
+        "visa_type": "TS"
+      },
+      "unit_id": "KG.VR.SIMPLIFIED_GCC_RESIDENT_TS",
+      "unresolved": [
+        "legal_source_unapproved",
+        "effective_dates_not_verified",
+        "document_validity_not_verified",
+        "one_month_boundary_needs_review"
+      ]
+    }
+  ],
+  "source_capture_sha256": "c4b08c7c577aeec1cf6d182d18e294b41ebcbdc458abbc2fef4ef50bca04bf89",
+  "source_date": "2026-10-02",
+  "source_hash": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
+  "status": "draft"
+}
