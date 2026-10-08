@@ -1,6 +1,7 @@
 # Current work
 
-- Updated: 2026-10-07. Алан «дальше», local commits ранее разрешены.
+- Updated: 2026-10-08. Алан разрешил «пушни все свежее на гитхаб»; актуальная работа опубликована в origin/fix/tours-search-quality.
+- GitHub sync: 27 commits af8e440..f6cb74c отправлены, GitHub API подтвердил f6cb74c7707b82f89e321f9e465c4585ca8afa13. Следующий docs commit обновляет памятку Эрмека и эту запись; operational handoff `ai/handoffs/2026-10-08-1611-github-sync.md`.
 - Active task: **E5-03B DEADLINES**, CRITICAL / solo, **PARTIALLY_READY**: local implementation готова, independent review/final audit, official calendar и owner-approved policies UNKNOWN.
 - Branch/code revision: `fix/tours-search-quality` / **7722d378cd4cc086ca5c93eaa3f0cefb26f609d7**; 12-file manifest verified in committed copy. Финальные STATE/handoff/evidence — docs-only commit после кода.
 - Task: `ai/tasks/2026-10-07-e5-03b-deadlines.md`; contract: `docs/e5-03b-deadlines.md`.
@@ -15,7 +16,7 @@
 - Prior E5-02E ca387a0/bd1a84e: 6 draft condition profiles; E5-02D dba3847/e410078: country index; E5-01B 74 search fragments, no retrieval. Source bundle hash прежний.
 - Remaining gates: IMPORT/CONTRACT/PROJECTION/STAY-DAYS/DEADLINES independent review/audit, прежний PG16 runtime UNKNOWN; нормы/DEC-06/07/подпись эталонов не утверждены.
 - PDF progress: `docs/e5-pdf-progress.md`, ориентировочно 70–80% осталось (около 75%), не измеренный процент.
-- Release: local only; push/deploy/production DB/отправок не было.
+- Delivery: код опубликован на GitHub 08.10 по прямому поручению Алана. Production deploy/DB/клиентских отправок не было; CRITICAL review/audit gates выше сохраняются.
 - Baseline: prod_traps --diff-base 2f71d8e --limit 1 FAIL 1 ERROR / 57 WARN, ANTHROPIC_API_KEY compose forwarding, не менялся.
 - Unrelated аудио/экспорты/temp сохранены untracked, в commits не включать.
 
