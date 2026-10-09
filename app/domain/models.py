@@ -1631,7 +1631,47 @@ class EntryApplicantProfile(DomainBase):
         return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile)
+class EntryDeadlineRevision(DomainBase):
+    """One source rule's deadline history within a particular application."""
+    __tablename__ = "entry_deadline_revisions"
+    __table_args__ = (
+        UniqueConstraint("id", "application_id", "case_id", "rule_unit_id", name="uq_entry_deadline_scope"),
+        UniqueConstraint("application_id", "rule_unit_id", "revision", name="uq_entry_deadline_revision"),
+        UniqueConstraint("application_id", "rule_unit_id", "request_key", name="uq_entry_deadline_request"),
+        ForeignKeyConstraint(["application_id", "case_id"], ["entry_applications.id", "entry_applications.case_id"], name="fk_entry_deadline_application"),
+        ForeignKeyConstraint(["previous_id", "application_id", "case_id", "rule_unit_id"],
+            ["entry_deadline_revisions.id", "entry_deadline_revisions.application_id", "entry_deadline_revisions.case_id", "entry_deadline_revisions.rule_unit_id"], name="fk_entry_deadline_previous"),
+        ForeignKeyConstraint(["anchor_event_id", "application_id"], ["entry_application_events.id", "entry_application_events.application_id"], name="fk_entry_deadline_event"),
+        ForeignKeyConstraint(["anchor_issued_id", "application_id", "case_id"],
+            ["entry_issued_revisions.id", "entry_issued_revisions.application_id", "entry_issued_revisions.case_id"], name="fk_entry_deadline_travel"),
+        CheckConstraint("revision BETWEEN 1 AND 250", name="ck_entry_deadline_revision"),
+        CheckConstraint("anchor_event_id IS NULL OR anchor_issued_id IS NULL", name="ck_entry_deadline_anchor"),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL) OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id)", name="ck_entry_deadline_previous"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_deadline_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer)
+    application_id: Mapped[int] = mapped_column(Integer)
+    rule_unit_id: Mapped[str] = mapped_column(String(80))
+    knowledge_version_id: Mapped[int] = mapped_column(ForeignKey("knowledge_versions.id"))
+    anchor_event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    anchor_issued_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("command", "snapshot")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision)
 
 
 def _entry_immutable(mapper, connection, target):

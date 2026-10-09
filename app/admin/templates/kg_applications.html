@@ -61,6 +61,7 @@
     <p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/documents">Документы этой заявки</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/issued">После выдачи</a></p>
     <p>Заявитель №{{ selected.applicant_id }} · {{ processes[selected.process] }} · {{ procedures[selected.procedure][1] }}</p>
     <p><a href="/admin/case/{{ case.id }}/kg-entry/applicants/{{ selected.applicant_id }}/qualification">Анкета заявителя №{{ selected.applicant_id }}</a></p>
+    <p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/deadlines">Сроки заявки</a></p>
     <p id="kg-application-status"><strong>{{ statuses[selected.current.status] }}</strong> · запись {{ selected.current.revision }}</p>
     {% if selected.current.reference %}<p id="kg-application-reference">Reference портала: <strong>{{ selected.current.reference }}</strong></p>{% endif %}
     <div class="actions">{% if selected.previous_id %}<a href="{{ form_url }}?application_id={{ selected.previous_id }}">Предыдущая попытка №{{ selected.previous_id }}</a>{% endif %}
