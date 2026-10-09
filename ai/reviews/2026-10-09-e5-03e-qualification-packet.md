@@ -2,7 +2,7 @@
 
 - CRITICAL / solo; completion target local implementation, no release.
 - Base `6d24227b2e206308bb8921dc8efc5130c5174c7a`, branch `fix/tours-search-quality`.
-- Target: current uncommitted snapshot; manifest `2026-10-09-e5-03e-qualification-snapshot.json`.
+- Target: **2ebe7f4531e514f1cee06632efc37de8556f4c13**; manifest `2026-10-09-e5-03e-qualification-snapshot.json`.
 - Reviewer / final auditor **UNKNOWN**. Read builder SELF_REVIEW/handoff only after own assessment.
 
 Requirement: task `ai/tasks/2026-10-09-e5-03e-qualification-storage.md` A1–7;

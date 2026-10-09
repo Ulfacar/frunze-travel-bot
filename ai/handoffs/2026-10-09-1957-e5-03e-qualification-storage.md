@@ -2,7 +2,7 @@
 
 - STATUS **PARTIALLY_READY**, CRITICAL / solo; target local implementation + review packet.
 - Branch `fix/tours-search-quality`; base `6d24227b2e206308bb8921dc8efc5130c5174c7a`.
-- Revision: current uncommitted snapshot, LF hashes in `ai/reviews/2026-10-09-e5-03e-qualification-snapshot.json`.
+- Code revision: **2ebe7f4531e514f1cee06632efc37de8556f4c13**, LF hashes in `ai/reviews/2026-10-09-e5-03e-qualification-snapshot.json`.
 - Task `ai/tasks/2026-10-09-e5-03e-qualification-storage.md`; contract `docs/e5-03e-qualification-storage.md`.
 - Builder Codex; SELF_REVIEW recorded, independent reviewer/final auditor **UNKNOWN**.
 
@@ -34,7 +34,8 @@ not a measured percentage. 208 units: 183 needs_verification,22 decision_pending
 | Input preservation | PDF +3 YAML+catalog+synthetic request | **PASS**, 6/6 SHA256 and mtime unchanged |
 | DDL / model parity, empty/populated/offline downgrade | SQLite + PostgreSQL offline | **PASS**; real PG runtime still UNKNOWN |
 | Compile and diff whitespace | Local worktree | **PASS**; LF/CRLF warnings only |
-| PDF layout | PyMuPDF + Arial, two rendered pages | **PASS** draft layout, Russian text extracts without replacement glyphs; final test counts/revision pending |
+| PDF layout | PyMuPDF + Arial, two rendered pages | **PASS** final layout and normalized text, 2 pages; code revision and final tests included |
+| Committed copy new modules | 2ebe7f4, isolated without .env/prod.env | **63 passed / 33.39s**, 11/11 Git/copy/manifest hashes match |
 | Independent review/final audit/PG16 | Unavailable in this scope | **UNKNOWN**, SELF_REVIEW does not satisfy gate |
 | CI/deploy/production acceptance | Local completion target | **N/A**, no release requested or executed |
 
@@ -59,3 +60,11 @@ Prior full-suite baseline: date-dependent `test_facts_live_errors::test_still_re
 failed on isolated ef77321 on Oct9; test belongs to quality gate and was not weakened.
 No settings/env changes: previous prod_traps 1 ERROR/57 WARN is historical, not a new run.
 Unrelated audio, zip, reports, temp directories were preserved and excluded from commits.
+
+## Delivery artifacts
+
+- Code committed as **2ebe7f4531e514f1cee06632efc37de8556f4c13**. Follow-up docs-only commit records verified copy and final PDF.
+- PDF SHA256: `943928eed7c7ae544961617af5e251419fd2cec119207bca811759cbf0edd5c2`; 2 pages, final render inspected, no replacement glyphs.
+- Final checks: staged diff whitespace PASS; credential-shaped literal scan 0 findings.
+- PDF source builder is local `runs/e5-03e-build-report.py` with data JSON, PyMuPDF/Arial.
+  Report is manually curated from repo evidence, not a new application dependency.

@@ -1,13 +1,14 @@
 # Current work
 
 - Updated **2026-10-09**. Active task **E5-03E QUALIFICATION STORAGE**, CRITICAL / solo, **PARTIALLY_READY**.
-- Branch `fix/tours-search-quality`; base `6d24227b2e206308bb8921dc8efc5130c5174c7a`; current uncommitted snapshot, code commit pending.
+- Branch `fix/tours-search-quality`; base `6d24227b2e206308bb8921dc8efc5130c5174c7a`; code **2ebe7f4531e514f1cee06632efc37de8556f4c13**, follow-up docs-only commit records final evidence/PDF.
 - Task `ai/tasks/2026-10-09-e5-03e-qualification-storage.md`; contract `docs/e5-03e-qualification-storage.md`.
 - Handoff `ai/handoffs/2026-10-09-1957-e5-03e-qualification-storage.md`; packet/SELF_REVIEW/manifest `ai/reviews/2026-10-09-e5-03e-qualification-*`.
 - Result: immutable partial questionnaire + report revisions, resume latest/id, CAS/idempotency, pinned KB/history/projection, verified replay. Migration **e5_qualification_0016**, одна additive таблица. Прежний named full-admin; HTTP/LLM и handoff lifecycle ещё не подключены.
 - Tests: **233 passed / 2 skipped / 115.29s** related; full final code **3276 passed / 1 failed / 8 skipped / 1 warning / 490.61s**, включая 8 дополнительных негативных сценариев. Единственный failure — прежний `test_facts_live_errors::test_still_reads_a_plain_request` (даты тура); parser/test не изменены. Не выдавать suite за полностью зелёный.
+- Git-copy check: **63 passed / 33.39s**, 11/11 manifest/Git hashes, без .env/prod.env.
 - Manual: original PDF + real draft/catalog, synthetic contact, 3 revisions, restart/resume/replay PASS; source_conflict preserved; 6/6 source SHA+mtime unchanged. SQLite + PG offline DDL PASS; PostgreSQL runtime **UNKNOWN**.
-- PDF: `docs/reports/frunze-pdf-progress-2026-10-09.pdf`, отдельный 2-page отчёт о разработке, не новая юридическая база. Layout/text extraction проверены; final revision/tests update pending.
+- PDF: `docs/reports/frunze-pdf-progress-2026-10-09.pdf`, отдельный 2-page отчёт о разработке, не новая юридическая база. Final layout/text проверены, указаны code revision и итог полного прогона.
 - Review: SELF_REVIEW; независимые reviewer/final auditor **UNKNOWN**. 208 source units, 0 confirmed, 82 NULL; источники, календарь/эталоны и политика публикации ещё требуют утверждения.
 - Scope: локальная реализация + commits/push рабочей ветки разрешены ранее. Production/main/real data не входят в этот этап. Repo public; unrelated audio/zip/reports/temp сохраняются untracked.
 - Next action: independent packet review; затем RU/EN flow с сохранённой анкетой и server-side scoped handoff. Полные слоты, публикация, client eligibility, автоматические CALC-02/03 и менеджерский UI остаются отдельными этапами.

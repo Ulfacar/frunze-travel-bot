@@ -54,3 +54,6 @@ CI/deploy/production acceptance N/A for local completion target; no release clai
   six source inputs SHA/mtime unchanged. New two-page progress report prepared.
 - Separate SELF_REVIEW + packet prepared; independent review/audit and PG16 UNKNOWN.
 - Status **PARTIALLY_READY**. Full suite is not reported as green.
+
+- Code commit **2ebe7f4531e514f1cee06632efc37de8556f4c13**; isolated Git copy **63 passed / 33.39s**, 11/11 hashes.
+- Final PDF: `docs/reports/frunze-pdf-progress-2026-10-09.pdf` (2 pages), rendered and text-checked.

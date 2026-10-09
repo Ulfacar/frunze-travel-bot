@@ -1,7 +1,7 @@
 # SELF_REVIEW — E5-03E
 
 - Codex, same builder/context; not independent review or final audit.
-- Base 6d24227; current uncommitted snapshot; CRITICAL / solo, **PARTIALLY_READY**.
+- Base 6d24227; target **2ebe7f4531e514f1cee06632efc37de8556f4c13**; CRITICAL / solo, **PARTIALLY_READY**.
 - Separate pass: task A1–7, complete new files, shared diff, prior transaction/source helpers.
 
 ## Findings and decisions
@@ -36,7 +36,9 @@ The only failure is the known date-dependent test_still_reads_a_plain_request; s
 parser and test were not changed. New storage/migration tests (including the eight
 additional cases) passed. Real source rehearsal also passed: three revisions, restart,
 replay, preserved source conflict, all six input SHA/mtime unchanged.
-Committed-copy evidence will be recorded in handoff. Independent reviewer,
+Committed Git copy: **63 passed / 33.39s**, no .env/prod.env; 11/11 manifest hashes
+match both Git blobs and the copy. Staged whitespace and credential-pattern checks PASS.
+Final two-page PDF layout inspected; text checked after Unicode whitespace normalization. Independent reviewer,
 auditor and PostgreSQL runtime remain UNKNOWN. No release certification; scoped manager
 API/HTTP, full slots, handoff, retention and approved legal knowledge remain separate work.
 PDF report is a project progress report, not a replacement for the source visa knowledge base.
