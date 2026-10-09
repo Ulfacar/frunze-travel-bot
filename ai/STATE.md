@@ -1,5 +1,19 @@
 # Current work
 
+- Updated **2026-10-10**. Active **E6-01A APPLICATION REGISTER**, CRITICAL / solo **PARTIALLY_READY**. Entire PDF remains incomplete.
+- Branch `fix/tours-search-quality`; code `91a43fa0202fbacfe62ee337c188bb156276a4df`, base `208a04d95a54ca0da9535bdeab5a81fdfcc7b15f`; final evidence/report in following docs commit.
+- Task `ai/tasks/2026-10-09-e6-01a-applications.md`; contract `docs/e6-01a-applications.md`; handoff `ai/handoffs/2026-10-10-0005-e6-01a-applications.md`.
+- Result: case-scoped numbered applicants, separate document/procedure attempts, immutable actual-date/source journal, corrections on same attempt, linked retry after refusal/closure, unique reference, native CRM forms/pagination/print. Common manual facts grouped into four families, NOT four full published workflows.
+- Four new tables / additive `e6_applications_0017`, no backfill; empty-only downgrade with locking. Local SQLite operations and actual FK enforcement checked; PG16 DDL inspected, PG runtime UNKNOWN. Existing full-admin/OFF/workday/write gates preserved, no automatic case/financial/portal/client effects.
+- Evidence: initial domain/migration37; HTTP28; combined70 pass before final refinements. Later foundation/FK run52 pass/2 PG skips/1 print failure; corrected final browser2 PASS/35.06s. Committed-copy full suite: 3562 passed / 2 failed / 13 skipped / 869.40s. One new failure was the legacy exact-table list, fixed in `478598a819c63d317451a932dc6ee68da1c528e1`; one tour-date baseline reproduced on the previous isolated version. Final committed-copy domain/HTTP/service/migration/browser rerun: **131 passed / 2 PG skips / 3 warnings / 135.77s**. No application-code changes after full suite. Synthetic two-page print inspected.
+- Code checkpoint21/21 changed files match Git blobs/workspace/isolated copy with env files absent; follow-up migration test also verified against `478598a`, prior21 files unchanged; manifest `ai/reviews/2026-10-10-e6-01a-applications-snapshot.json`. Cold imports kg_applications/kg_entry/main PASS; compilation/staged whitespace/token-shaped scan PASS.
+- SELF_REVIEW packet `ai/reviews/2026-10-10-e6-01a-applications-packet.md`. Independent reviewer/final auditor/PG16 remain UNKNOWN. Prior full-suite tour-date failure/traps baseline not silently promoted to green. No deployment/image build claimed.
+- Full map `docs/e5-pdf-section-coverage.md`; E6 backlog MD/JSON updated; five-page report `docs/reports/frunze-pdf-progress-2026-10-10-applications.pdf`. Numbered placeholders are not complete personal profiles; four operational workflows, documents/privacy, individual intake/history, publication/calendars/prices/client handoff still remain. No new measured percentage.
+- Next: independent review + PG verification; DEC-06/08/11 and manager-scope decisions before real-data/expanded roles. Continue synthetic procedural guards/E6-02 preparation within agreed boundaries. General redesign later.
+- Working-branch commit/push authorized. No production/env change/live migration/real-data use/messages. Preserve unrelated untracked artifacts; never stage `.env`/`prod.env`.
+
+## Previous checkpoint — E5-04D
+
 - Updated **2026-10-09**. Active **E5-04D HISTORY CRM**, CRITICAL / solo **PARTIALLY_READY**. Whole PDF is **not complete**.
 - Branch `fix/tours-search-quality`; code `f851f635688ad92d202034a4a3eb605452e21421`, base `54a6e9d94c8fde5a8b602b49646702dc91633f83`. Final evidence/report in following docs commit.
 - Task `ai/tasks/2026-10-09-e5-04d-history-crm.md`; contract `docs/e5-04d-history-crm.md`; handoff `ai/handoffs/2026-10-09-2318-e5-04d-history-crm.md`.

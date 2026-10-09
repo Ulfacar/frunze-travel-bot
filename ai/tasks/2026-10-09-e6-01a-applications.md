@@ -45,3 +45,10 @@ Domain, migration/parity, native HTTP, malicious/foreign input, stale forms, dup
 concurrent revisions, lost acknowledgement, corrupted history and browser flows.
 Separate SELF_REVIEW packet; independent CRITICAL review/audit/PG runtime UNKNOWN
 means PARTIALLY_READY. Formal manager/access/privacy decisions remain pending.
+
+## Outcome
+
+Code `91a43fa0202fbacfe62ee337c188bb156276a4df`; local feature implemented,
+**PARTIALLY_READY** pending independent review/audit and PG runtime. Initial related
+checks70 passed, final browser2 passed after print correction. Full copy: 3562 passed /2 failed /13 skipped. Migration-test list corrected in `478598a819c63d317451a932dc6ee68da1c528e1`; final focused copy **131 passed /2 PG skips /135.77s**. Tour-date failure reproduced on prior code. Exact full regression and report recorded in `ai/handoffs/2026-10-10-0005-e6-01a-applications.md`.
+Existing pilot gates retained; no production migration, real data or outgoing messages.

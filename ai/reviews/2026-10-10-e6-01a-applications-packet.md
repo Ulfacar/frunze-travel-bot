@@ -51,7 +51,7 @@ or external services are needed. Do not infer a published workflow from shared s
 | Concurrent duplicate first submission could read old events and then a newly committed reference | Explicit SQLite BEGIN before reads; PostgreSQL shared/exclusive parent locks. Duplicate/conflicting writes and concurrent read/write tests pass |
 | Previous test fixture did not enable SQLite FK enforcement | New domain tests enable foreign_keys on connections; migration test runs real operations with FK ON; raw negative FK/unique tests include two cases sharing one contact |
 | Empty downgrade count check alone could race with an insertion | Hold PostgreSQL table locks / SQLite write reservation across check and drops. Local empty/populated tests pass; PG runtime remains UNKNOWN |
-| Legacy exact schema list did not include the four new tables | Added their exact names, retaining equality and all previous table checks; new migration parity/constraint tests independently cover them |
+| Legacy exact schema lists did not include the four new tables | Foundation list updated in91a43fa; full suite found the separate service-case list still stale, corrected in478598a. Exact equality and all previous checks retained; new migration parity/constraint tests independently cover them |
 | Approval label implied possession of the issued document | Changed to «Одобрено»; interface explicitly leaves document review/delivery unconfirmed |
 | Printing hid forms but left empty section headings | Hide whole action sections in print |
 | Closed details contents remained hidden by Chromium in print despite CSS | Dedicated print-only applicant list, screen-reader-safe display:none in screen CSS; browser verifies both people in print |
@@ -70,5 +70,6 @@ full source exception reasons, aggregate case status or all procedural guards.
 Common manual facts do not implement four complete workflows. Independent critical
 review/final audit, PG16 concurrency and explicit production release remain open.
 Working-branch commit/push is authorized; production migrations/env/real data/messages
-are not performed. Existing full-suite date failure/traps baseline is historical until
-the final run is recorded; never label unknown verification as passed.
+are not performed. Full run on91a43fa: 3562 passed / 2 failed / 13 skipped. Exact-table test corrected in478598a, application code unchanged. Tour-date failure independently reproduced on previous isolated code (same author, not an independent reviewer). Final focused results are in handoff. Traps baseline remains historical; never label unknown verification as passed.
+
+Final focused committed-copy run after migration-test correction: **131 passed / 2 PG skips / 3 warnings / 135.77s**. No runtime application changes after the full run. Structure check PASS. No independent review is implied by these results.
