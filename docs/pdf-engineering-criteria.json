@@ -354,8 +354,17 @@
       "weight": 2,
       "pdf": "16",
       "acceptance": "Verified issue/correction/delivery/receipt/actual entry or exit events",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "6c4b58727349c79166a3eb833bdb93cf2d620b5d",
+          "command": "Exact-commit related suite, 193 passed /2 PG skipped; full command in artifact",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Verified issue/correction/delivery/receipt/actual entry or exit events",
+          "artifact": "ai/handoffs/2026-10-10-0700-e6-02c-issued-documents.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {
