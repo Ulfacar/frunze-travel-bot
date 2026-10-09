@@ -246,8 +246,17 @@
       "weight": 2,
       "pdf": "Г/Д",
       "acceptance": "Recorded knowledge decisions and confirmation/rejection evidence",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "29c27ab3a26be9eb075e53645050e5308678d785",
+          "command": "Exact-commit related suite:229 passed/4 skipped; original PDF supplement2 passed; full commands in artifact",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files; original PDF read-only for import checks",
+          "scope": "Recorded knowledge decisions and confirmation/rejection evidence",
+          "artifact": "ai/handoffs/2026-10-10-0557-e6-07a-knowledge-decisions.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {
