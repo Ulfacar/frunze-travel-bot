@@ -72,7 +72,10 @@ def _login():
 
 # За тумблером — штатный 404, пока флаг выключен (экран «Фокус», 03.10).
 FLAGGED_PATHS = {"/admin/focus", "/admin/work", "/admin/work/list",
-                 "/admin/work/claims", "/admin/kg-entry/knowledge"}
+                 "/admin/work/claims", "/admin/kg-entry/knowledge",
+                 "/admin/kg-entry/processes", "/admin/kg-entry/documents",
+                 "/admin/kg-entry/templates"}
+# E6 previews: explicit OFF/ON coverage in test_admin_kg_preview_gates.py.
 # E5-01C: новая страница поиска тоже OFF по умолчанию. Её включённый экран,
 # 404 до чтения источника и ограничения ролей проверяет test_admin_kg_knowledge.py.
 # Исключение из «все страницы отвечают 200» не должно прятать регрессию:

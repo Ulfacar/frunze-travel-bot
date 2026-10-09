@@ -85,7 +85,10 @@ def _login(login, password):
 # требование «каждая страница отвечает 200» к ним не применимо. Коллизия требований,
 # а не регрессия: экран «Фокус» (03.10) обязан быть недоступен, пока тумблер OFF.
 FLAGGED_PATHS = {"/admin/focus", "/admin/work", "/admin/work/list",
-                 "/admin/work/claims", "/admin/kg-entry/knowledge"}
+                 "/admin/work/claims", "/admin/kg-entry/knowledge",
+                 "/admin/kg-entry/processes", "/admin/kg-entry/documents",
+                 "/admin/kg-entry/templates"}
+# E6 previews: explicit OFF/ON coverage in test_admin_kg_preview_gates.py.
 # E5-01C: OFF/ON и прямой доступ к новому поиску проверяются в
 # test_admin_kg_knowledge.py; старые страницы остаются под прежним гейтом.
 # Исключение из «все страницы отвечают 200» не должно прятать регрессию:
