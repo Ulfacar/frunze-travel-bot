@@ -23,6 +23,7 @@ def test_mobile_desktop_save_reload_and_historical_view(env,monkeypatch):
     local.add_middleware(SessionMiddleware,secret_key='synthetic-kg-browser-session',https_only=False)
     local.include_router(ar.router)
     screenshots=Path('runs/e5-04a-crm-browser');screenshots.mkdir(parents=True,exist_ok=True)
+    review_shots=Path('runs/e5-04b-crm-browser');review_shots.mkdir(parents=True,exist_ok=True)
     listener=socket.socket();listener.bind(('127.0.0.1',0));port=listener.getsockname()[1]
     server=uvicorn.Server(uvicorn.Config(local,log_level='error',lifespan='off'))
     thread=threading.Thread(target=server.run,kwargs={'sockets':[listener]},daemon=True);thread.start()
@@ -63,6 +64,24 @@ def test_mobile_desktop_save_reload_and_historical_view(env,monkeypatch):
                 assert page.locator('#kg-language').input_value()==language
                 assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
                 page.screenshot(path=str(screenshots/f'saved-{width}.png'),full_page=True)
+                saved_url=page.url
+                page.get_by_role('link',name='Карточка для проверки',exact=True).click()
+                page.wait_for_url('**/kg-entry/review/*')
+                assert page.get_by_role('heading',name='Карточка проверки въезда в Кыргызстан',exact=True).count()==1
+                assert page.locator('#kg-card-revision').inner_text().startswith('Анкета №')
+                assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+                assert page.locator('#kg-print').is_visible()==js
+                page.get_by_role('link',name='← К этой версии анкеты').focus()
+                assert page.get_by_role('link',name='← К этой версии анкеты').evaluate('(e)=>document.activeElement===e')
+                page.screenshot(path=str(review_shots/f'review-{width}.png'),full_page=True)
+                page.emulate_media(media='print')
+                assert page.locator('.topbar').is_hidden() and page.locator('.kg-no-print').first.is_hidden()
+                assert page.locator('#kg-card-checks').is_visible()
+                if width==1365:
+                    page.pdf(path=str(review_shots/'review-demo.pdf'),prefer_css_page_size=True)
+                page.emulate_media(media='screen')
+                page.get_by_role('link',name='← К этой версии анкеты').click()
+                page.wait_for_url(saved_url)
                 if width==1365:
                     page.get_by_role('link',name='Предыдущая версия',exact=True).click()
                     assert page.locator('#kg-entry-form button[type=submit]').count()==0
@@ -74,4 +93,4 @@ def test_mobile_desktop_save_reload_and_historical_view(env,monkeypatch):
     finally:
         server.should_exit=True;thread.join(timeout=10);listener.close()
     assert count(env)==2 and saved(env)['revision']==2
-    print('Browser PASS: mobile/desktop, native save with/without JS, reload, history, labels/focus, no horizontal overflow')
+    print('Browser PASS: mobile/desktop, native save with/without JS, reload, history, review card/print/PDF, labels/focus, no horizontal overflow')

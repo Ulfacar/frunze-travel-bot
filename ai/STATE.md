@@ -1,5 +1,19 @@
 # Current work
 
+- Updated **2026-10-09**. Active **E5-04B REVIEW CARD**, CRITICAL / solo, **PARTIALLY_READY**.
+- User: продолжать требования PDF + CRM; общий редизайн позже. Current branch `fix/tours-search-quality`, base `ccc6e038b75448750f23681261e2b3a6d015881b`; E5-04B uncommitted snapshot, code revision pending.
+- Task `ai/tasks/2026-10-09-e5-04b-review-card.md`; contract `docs/e5-04b-review-card.md`; packet + SELF_REVIEW `ai/reviews/2026-10-09-e5-04b-card-packet.md`.
+- Handoff `ai/handoffs/2026-10-09-2058-e5-04b-review-card.md`.
+- Result: saved interview → read-only review card with pinned answers, specialist facts, gaps from §3.4/Б.4, sources, old-version notice and print/save PDF. Current case owner labelled current. No new task/handoff/Applicant/Application records.
+- Checks: related **170 passed / 151.45s** before final specialist-facts display; final new HTTP/domain **30 passed / 36.80s**; final browser **1 passed / 20.95s** (mobile390 JS/desktop1365 no JS, native flow/print/focus/no overflow). Synthetic PDF **2 pages**, both inspected, ignored `runs/e5-04b-crm-browser/review-demo.pdf`.
+- Existing full-admin + default-OFF pilot/workday gates preserved; no new flag/migration/settings. GET checked for zero SQL writes. No-store/no-referrer, foreign/corrupt source denial.
+- Decision pending: async question whether assigned visa manager may access the interview, or admin-only. No answer received; dependent permission expansion and handoff assignment not implemented.
+- Independent review/final auditor/PG runtime UNKNOWN; SELF_REVIEW only. Full suite/traps not rerun for this read-only slice; earlier date failure and 1 ERROR / 57 WARN remain historical baselines, not current green gates.
+- Next: independent review; owner access decision → durable handoff/task and Applicant/Application scope. Legal publication/calendar decisions still open. Redesign later. Existing E5/CONTRACT-UI release gates unchanged.
+- Commits/push working branch already authorized; public repo, no secrets/real client data added. No production deployment, env change, migrations or messages. Preserve unrelated untracked artifacts.
+
+## Previous checkpoint — E5-04A
+
 - Updated **2026-10-09**. Active **E5-04A CRM QUALIFICATION**, CRITICAL / solo, **PARTIALLY_READY**.
 - User: требования исходного PDF и CRM двигать вместе; общий редизайн позже.
 - Branch `fix/tours-search-quality`, base `46284fbaf05d4596b39d889961b01771ee661cfc`; code `56f84e0db3ba5817f6fa4dad6030e891eaf2b0e4`, followed by an evidence-only docs commit.

@@ -40,6 +40,7 @@
     {% for note in report.history_notes %}<p class="kg-muted">{{ note }}</p>{% endfor %}
     {% if report.conditions_missing %}<p class="kg-muted">Потребуются дополнительные сведения для проверки специальных условий.</p>{% endif %}
     <div class="kg-history">
+      <a href="{{ form_url }}/review/{{ saved.qualification_id }}">Карточка для проверки</a> ·
       {% if saved.previous_id %}<a href="{{ form_url }}?qualification_id={{ saved.previous_id }}">Предыдущая версия</a> · {% endif %}
       <a href="{{ form_url }}">Последняя анкета</a>
     </div>

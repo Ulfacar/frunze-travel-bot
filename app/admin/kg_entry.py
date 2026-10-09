@@ -7,19 +7,21 @@ import re
 import secrets
 from urllib.parse import parse_qsl
 
-from fastapi import Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Path, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 
 import app.admin.router as ar
 from app.admin.kg_entry_form import (FIELDS, FORM_FIELDS, FormInvalid, country_options,
                                     report_view, request_from_values, values_from_request)
+from app.admin.kg_review_card import card_view
 from app.admin.workday import _case_or_404, _require_workday, _write_on
 from app.core.live_authz import actor_for
 from app.domain.entry_qualification import _qualification_sources
 from app.domain.entry_storage import EntryStorageConflict, EntryStorageInvalid, EntryStorageUnavailable, _authorize
 from app.domain.models import DomainError, KnowledgeImport, KnowledgeSet, KnowledgeVersion, StayHistory
 from app.domain.qualification_storage import read_qualification, save_qualification
+from app.domain.qualification_card import read_qualification_card
 from app.domain.service_authz import PermissionDenied
 
 log = logging.getLogger("admin.kg_entry")
@@ -233,3 +235,28 @@ async def qualification_submit(case_id: int, request: Request, manager: dict = D
                              error="Сохранение не подтверждено. Попробуйте повторить отправку этой формы.")
     return RedirectResponse(f"/admin/case/{case_id}/kg-entry?qualification_id={saved['qualification_id']}", status_code=303,
                             headers={"Cache-Control": "no-store", "X-Action-Outcome": "qualification_saved"})
+
+
+@ar.router.get("/case/{case_id}/kg-entry/review/{qualification_id}", response_class=HTMLResponse)
+async def qualification_review_card(request: Request, case_id: int = Path(ge=1, le=2147483647),
+                                    qualification_id: int = Path(ge=1, le=2147483647),
+                                    manager: dict = Depends(ar.require_full_admin)):
+    actor = _gate(request, manager)
+    headers = {"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"}
+    try:
+        card = await read_qualification_card(_engine(), actor=actor, case_id=case_id,
+                                              qualification_id=qualification_id)
+        view = card_view(card)
+        return ar.templates.TemplateResponse(request, "kg_review_card.html", {
+            **card, **view, "manager": manager, "form_url": f"/admin/case/{case_id}/kg-entry",
+        }, headers=headers)
+    except PermissionDenied:
+        raise HTTPException(403) from None
+    except EntryStorageInvalid as exc:
+        if str(exc) in ("qualification_card_unavailable", "qualification_unavailable"):
+            return HTMLResponse("Карточка не найдена.", status_code=404, headers=headers)
+    except Exception:
+        pass
+    log.warning("KG review card: registry, snapshot or source unavailable")
+    return HTMLResponse("Карточка проверки временно недоступна. Попробуйте открыть её позже.",
+                        status_code=503, headers=headers)

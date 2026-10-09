@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Frunze — Карточка проверки въезда{% endblock %}
+{% block brand_sub %}визовая услуга{% endblock %}
+{% block head %}
+<style>
+.kg-review{max-width:960px;margin:auto;padding:24px 16px;overflow-wrap:anywhere;line-height:1.5}
+.kg-review h1{font-size:clamp(24px,4vw,32px);line-height:1.2;margin:16px 0}.kg-review h2{font-size:20px;margin:0 0 12px}
+.kg-review h3{font-size:17px}.kg-review a{color:var(--accent,#2563eb)}.kg-review a:focus,.kg-review button:focus{outline:2px solid var(--accent);outline-offset:3px}
+.kg-review section{padding:20px;margin:18px 0;border:1px solid var(--border,#ddd);border-radius:12px;background:var(--surface,#fff)}
+.kg-review .kg-notice{border-left:4px solid #b7791f}.kg-review .kg-muted{color:var(--muted,#64748b)}
+.kg-review dl{margin:0}.kg-review .kg-answer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;padding:9px 0;border-bottom:1px solid var(--border,#ddd);break-inside:avoid}
+.kg-review dt{font-weight:600}.kg-review dd{margin:0}.kg-review li{margin:7px 0}.kg-review ul,.kg-review ol{padding-left:24px}
+.kg-review .kg-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.kg-review button{font:inherit;padding:10px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);cursor:pointer}
+.kg-review .kg-source{padding:10px 0;border-bottom:1px solid var(--border);break-inside:avoid}.kg-review .kg-source p{margin:4px 0}
+@media(max-width:600px){.kg-review{padding:14px 10px}.kg-review section{padding:15px}.kg-review .kg-answer{grid-template-columns:1fr;gap:3px}}
+@media print{
+  @page{size:A4;margin:14mm}
+  html,body{height:auto!important;background:#fff!important;color:#000!important}
+  .topbar,.kg-no-print{display:none!important}
+  .kg-review{max-width:none;padding:0;font-size:10pt;line-height:1.35;color:#000}
+  .kg-review section{background:#fff;border-color:#aaa;padding:8px;margin:8px 0;border-radius:0}
+  .kg-review p{margin:6px 0}.kg-review li{margin:4px 0}.kg-review h3{margin:10px 0 6px}
+  .kg-review .kg-muted{color:#333}.kg-review h1{font-size:20pt}.kg-review h2{font-size:14pt;break-after:avoid}.kg-review h3{break-after:avoid}
+  .kg-review .kg-answer{grid-template-columns:1fr 1fr;padding:5px 0}.kg-review a{color:#000;text-decoration:none}
+}
+</style>
+{% endblock %}
+{% block content %}
+<main class="kg-review">
+  <nav class="kg-actions kg-no-print" aria-label="Карточка проверки">
+    <a href="{{ form_url }}?qualification_id={{ saved.qualification_id }}">← К этой версии анкеты</a>
+    <a href="/admin/case/{{ case.id }}">К услуге №{{ case.id }}</a>
+    <button type="button" id="kg-print" hidden>Печать / сохранить PDF</button>
+  </nav>
+  <h1>Карточка проверки въезда в Кыргызстан</h1>
+  <p>Услуга №{{ case.id }} · {{ case.title }}<br>Контакт №{{ case.contact_id }} · Ответственный за услугу сейчас: {{ case.owner_login or 'не назначен' }}</p>
+  <p class="kg-muted">Анкета общая для визовых услуг этого контакта. Карточка открыта в контексте указанной услуги; её назначение и этап не изменены.</p>
+  <section aria-labelledby="kg-card-status" class="kg-notice">
+    <h2 id="kg-card-status">{{ report.status }}</h2>
+    <p id="kg-card-revision">Анкета №{{ saved.qualification_id }}, версия {{ saved.revision }} · Проверка на дату {{ saved.input.as_of }}<br>Сохранено {{ saved.created_at[:19]|replace('T',' ') }} UTC</p>
+    <p><strong>Материалы для проверки специалистом. Передача в работу ещё не выполнена.</strong></p>
+    {% if not is_latest %}<p id="kg-card-outdated"><strong>Есть более новая версия анкеты.</strong> Здесь сохранены прежние ответы. <a class="kg-no-print" href="{{ form_url }}/review/{{ latest_id }}">Открыть актуальную карточку</a></p>{% endif %}
+    {% if report.stops %}<h3>Причины обращения к специалисту</h3><ul id="kg-card-stops">{% for reason in report.stops %}<li>{{ reason }}</li>{% endfor %}</ul>{% endif %}
+    {% if report.questions %}<h3>Следующие вопросы клиенту · {{ 'English' if saved.input.language == 'en' else 'Русский' }}</h3><ol id="kg-card-questions">{% for question in report.questions %}<li>{{ question.text }}</li>{% endfor %}</ol>{% endif %}
+  </section>
+  {% for group in groups %}
+  <section aria-labelledby="kg-card-group-{{ loop.index }}">
+    <h2 id="kg-card-group-{{ loop.index }}">{{ group.title }}</h2>
+    <dl>{% for row in group.rows %}<div class="kg-answer"><dt>{{ row.label }}</dt><dd>{{ row.value }}</dd></div>{% endfor %}</dl>
+  </section>
+  {% endfor %}
+  {% if condition_groups %}
+  <section aria-labelledby="kg-card-conditions">
+    <h2 id="kg-card-conditions">Дополнительные сведения для специальных условий</h2>
+    <p class="kg-muted">Ответы из этой версии анкеты. Их наличие само по себе не подтверждает применимость правила.</p>
+    {% for group in condition_groups %}<h3>{{ group.title }}</h3><dl>{% for row in group.rows %}<div class="kg-answer"><dt>{{ row.label }}</dt><dd>{{ row.value }}</dd></div>{% endfor %}</dl>{% endfor %}
+  </section>
+  {% endif %}
+  <section aria-labelledby="kg-card-gaps">
+    <h2 id="kg-card-gaps">Что ещё нужно для полной карточки передачи</h2>
+    {% if report.missing %}<h3>Неуточнённые ответы анкеты</h3><ul>{% for item in report.missing %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+    <h3>Дополнительные сведения по PDF, раздел 3.4</h3><ul>{% for item in gaps %}<li>{{ item }}</li>{% endfor %}</ul>
+    <p class="kg-muted">Имя и контактные данные сверяются в CRM. Полная карточка передачи также потребует деталей цели, кратности въезда, группы и приглашения; автоматическая оценка стоимости и уверенности не сформирована.</p>
+    {% if specialist_count %}<p>Для проверки специальных условий не хватает сведений: {{ specialist_count }}. Специалист должен уточнить их по соответствующим правилам ниже.</p>{% endif %}
+  </section>
+  <section aria-labelledby="kg-card-checks">
+    <h2 id="kg-card-checks">Проверки правил и сроков</h2>
+    <ul>{% for item in blockers %}<li>{{ item }}</li>{% endfor %}</ul>
+    <p><strong>Режим въезда, тип визы, стоимость и точный срок этой карточкой не утверждены.</strong></p>
+  </section>
+  <section aria-labelledby="kg-card-sources">
+    <h2 id="kg-card-sources">Источники для сверки</h2>
+    <p>База: {{ saved.result.source.version_label }}. Ссылки из сохранённой проверки; применимость правил ещё нужно подтвердить.</p>
+    {% for source in sources %}<div class="kg-source"><p><strong>{{ source.kind }}</strong> · {{ source.id }}</p><p>Страница {{ source.page }} · {{ source.section }} · {{ source.source_ref }}</p>{% if source.notes %}<p class="kg-muted">{{ source.notes|join('; ') }}.</p>{% endif %}</div>{% else %}<p>Конкретные правила не определены. Требуется проверка базы знаний.</p>{% endfor %}
+  </section>
+  <p class="kg-muted">Карточка показывает сохранённые сведения клиента и незавершённые проверки. Она не подтверждает право въезда и не заменяет решение специалиста.</p>
+</main>
+{% endblock %}
+{% block scripts %}<script>
+(function(){const button=document.getElementById('kg-print');button.hidden=false;button.addEventListener('click',function(){window.print();});})();
+</script>{% endblock %}
