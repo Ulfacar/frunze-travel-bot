@@ -1434,9 +1434,104 @@ class EntryQualification(DomainBase):
         return _ServiceJSON.freeze(value)
 
 
+class EntryApplicant(DomainBase):
+    """Numbered, case-scoped person placeholder; never inferred from the payer."""
+    __tablename__ = "entry_applicants"
+    __table_args__ = (
+        UniqueConstraint("id", "case_id", name="uq_entry_applicant_case"),
+        UniqueConstraint("case_id", "ordinal", name="uq_entry_applicant_ordinal"),
+        UniqueConstraint("case_id", "request_key", name="uq_entry_applicant_request"),
+        CheckConstraint("ordinal BETWEEN 1 AND 1000", name="ck_entry_applicant_ordinal"),
+        CheckConstraint("role IN ('unknown','primary','spouse','child','parent','employee','other')", name="ck_entry_applicant_role"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_applicant_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("service_cases.id"))
+    ordinal: Mapped[int] = mapped_column(Integer)
+    role: Mapped[str] = mapped_column(String(16))
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class EntryApplication(DomainBase):
+    """One procedure/document attempt; identity is immutable, facts are revisions."""
+    __tablename__ = "entry_applications"
+    __table_args__ = (
+        UniqueConstraint("id", "case_id", name="uq_entry_application_case"),
+        UniqueConstraint("id", "case_id", "applicant_id", "procedure", name="uq_entry_application_subject"),
+        UniqueConstraint("case_id", "request_key", name="uq_entry_application_request"),
+        UniqueConstraint("previous_id", name="uq_entry_application_successor"),
+        ForeignKeyConstraint(["applicant_id", "case_id"], ["entry_applicants.id", "entry_applicants.case_id"], name="fk_entry_application_applicant"),
+        ForeignKeyConstraint(["previous_id", "case_id", "applicant_id", "procedure"],
+                             ["entry_applications.id", "entry_applications.case_id", "entry_applications.applicant_id", "entry_applications.procedure"], name="fk_entry_application_previous"),
+        CheckConstraint("procedure IN ('visa','unified_permit','resident_card','registration','violation_protocol','exit_visa')", name="ck_entry_application_procedure"),
+        CheckConstraint("attempt BETWEEN 1 AND 100", name="ck_entry_application_attempt"),
+        CheckConstraint("(attempt = 1 AND previous_id IS NULL) OR (attempt > 1 AND previous_id IS NOT NULL AND previous_id < id)", name="ck_entry_application_previous"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_application_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("service_cases.id"))
+    applicant_id: Mapped[int] = mapped_column(Integer)
+    procedure: Mapped[str] = mapped_column(String(32))
+    attempt: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class EntryApplicationEvent(DomainBase):
+    __tablename__ = "entry_application_events"
+    __table_args__ = (
+        UniqueConstraint("id", "application_id", name="uq_entry_application_event_parent"),
+        UniqueConstraint("application_id", "revision", name="uq_entry_application_event_revision"),
+        UniqueConstraint("application_id", "request_key", name="uq_entry_application_event_request"),
+        ForeignKeyConstraint(["application_id", "case_id"], ["entry_applications.id", "entry_applications.case_id"], name="fk_entry_application_event_case"),
+        ForeignKeyConstraint(["previous_id", "application_id"], ["entry_application_events.id", "entry_application_events.application_id"], name="fk_entry_application_event_previous"),
+        CheckConstraint("revision BETWEEN 1 AND 500", name="ck_entry_application_event_revision"),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL AND status = 'draft') OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id AND status <> 'draft')", name="ck_entry_application_event_previous"),
+        CheckConstraint("status IN ('draft','submitted','revision_requested','approved','refused','closed')", name="ck_entry_application_event_status"),
+        CheckConstraint("source IN ('crm','portal','official_document','client_request')", name="ck_entry_application_event_source"),
+        CheckConstraint("reference IS NULL OR length(reference) = 8", name="ck_entry_application_event_reference"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_application_event_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer)
+    application_id: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(String(24))
+    occurred_on: Mapped[date] = mapped_column(Date)
+    source: Mapped[str] = mapped_column(String(24))
+    reference: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class EntryApplicationReference(DomainBase):
+    """A portal identifier belongs to exactly one attempt, including across cases."""
+    __tablename__ = "entry_application_references"
+    __table_args__ = (
+        ForeignKeyConstraint(["application_id", "case_id"], ["entry_applications.id", "entry_applications.case_id"], name="fk_entry_application_reference_case"),
+        CheckConstraint("length(reference) = 8", name="ck_entry_application_reference_length"),
+    )
+    application_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer)
+    reference: Mapped[str] = mapped_column(String(8), unique=True)
+
+
+ENTRY_APPLICATION_MODELS = (EntryApplicant, EntryApplication, EntryApplicationEvent, EntryApplicationReference)
 ENTRY_STORAGE_MODELS = (StayHistory, StayInterval, WorkCalendar, WorkCalendarDay, EntryCalculation,
                         EntryCalculationInterval, EntryCalculationCalendar)
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification)
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS)
 
 
 def _entry_immutable(mapper, connection, target):

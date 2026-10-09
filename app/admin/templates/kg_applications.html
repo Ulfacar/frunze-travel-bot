@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Frunze — Заявители и подачи в Кыргызстан{% endblock %}
+{% block brand_sub %}визовая услуга{% endblock %}
+{% block head %}<style>
+.kg-apps{max-width:1000px;margin:auto;padding:24px 16px;line-height:1.5;overflow-wrap:anywhere}
+.kg-apps h1{font-size:clamp(24px,4vw,32px);line-height:1.2}.kg-apps h2{font-size:21px}.kg-apps h3{font-size:17px}
+.kg-apps a{color:var(--accent)}.kg-apps :focus{outline:2px solid var(--accent);outline-offset:3px}
+.kg-apps .box{margin:18px 0;padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.kg-apps .notice{border-left:4px solid #b7791f}.kg-apps .error{border-left:4px solid #c0392b}.kg-apps .muted{color:var(--muted)}
+.kg-apps .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.kg-apps .actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.kg-apps label{display:block;font-weight:600;margin-bottom:5px}.kg-apps input:not([type=checkbox]),.kg-apps select{font:inherit;width:100%;box-sizing:border-box;padding:9px;min-height:42px;border:1px solid var(--border);border-radius:7px;color:var(--text);background:var(--surface)}
+.kg-apps fieldset{border:0;padding:0;margin:0;min-width:0}.kg-apps button{font:inherit;border:1px solid var(--border);border-radius:8px;padding:11px 16px;background:#2563eb;color:white;cursor:pointer;margin-top:14px}
+.kg-apps button:disabled{opacity:.5;cursor:not-allowed}.kg-apps .check{font-weight:400;margin-top:16px}.kg-apps .field{min-width:0}
+.kg-apps summary{cursor:pointer;font-weight:600;padding:8px 0}.kg-apps .items{list-style:none;padding:0}.kg-apps .items>li{padding:12px 0;border-bottom:1px solid var(--border)}
+.kg-apps .event{border-left:3px solid var(--border);padding:8px 12px;margin:12px 0}.kg-apps .event p{margin:5px 0}
+.kg-apps .print-only{display:none}
+@media(max-width:600px){.kg-apps{padding:14px 10px}.kg-apps .grid{grid-template-columns:1fr}.kg-apps .box{padding:12px}}
+@page{size:A4;margin:12mm}
+@media print{.topbar,.kg-apps nav,.kg-apps form,.kg-apps .no-print{display:none!important}.kg-apps .print-only{display:block!important}.kg-apps{max-width:none;padding:0;color:black}.kg-apps .box{background:white;border:1px solid #aaa}.kg-apps .event{break-inside:avoid}}
+</style>{% endblock %}
+{% macro security(values) %}{% for key in meta %}<input type="hidden" name="{{ key }}" value="{{ values.get(key,'') }}">{% endfor %}{% endmacro %}
+{% block content %}
+<main class="kg-apps">
+  <nav class="actions"><a href="/admin/case/{{ case.id }}/kg-entry">← Анкета въезда</a><a href="/admin/case/{{ case.id }}">К услуге №{{ case.id }}</a></nav>
+  <h1>Заявители и подачи в Кыргызстан</h1>
+  <p class="muted">{{ case.title }} · услуга №{{ case.id }} · контакт №{{ case.contact_id }}</p>
+  <p class="box notice">Каждый человек и каждый документ учитываются отдельно. Здесь фиксируются проверенные факты подачи;
+    событие одной заявки не завершает остальные заявки или всю услугу. Общая анкета контакта не копируется на членов семьи автоматически.</p>
+  {% if error %}<section class="box error" role="alert"><h2>Сохранение требует внимания</h2><p>{{ error }}</p><a href="{{ form_url }}{% if selected %}?application_id={{ selected.id }}{% endif %}">Открыть актуальные сведения</a></section>{% endif %}
+  {% if not write_on %}<p class="box notice">Сохранение отключено администратором. Доступен просмотр.</p>{% endif %}
+
+  <section class="box" aria-labelledby="kg-people-title"><h2 id="kg-people-title">Заявители</h2>
+    <p class="muted">Пока используются номера и роли. ФИО, паспортные данные и сканы на этом этапе не вносятся.</p>
+    {% if register.applicants %}<details class="no-print"><summary>Все заявители: {{ register.applicants|length }}</summary><ul class="items" id="kg-applicants">{% for person in register.applicants %}<li>Заявитель №{{ person.id }} · {{ roles[person.role] }}</li>{% endfor %}</ul></details>
+    <ul class="items print-only" id="kg-applicants-print">{% for person in register.applicants %}<li>Заявитель №{{ person.id }} · {{ roles[person.role] }}</li>{% endfor %}</ul>
+    {% else %}<p id="kg-applicants-empty">Заявители ещё не добавлены. Контакт услуги может быть плательщиком или представителем.</p>{% endif %}
+    {% if forms.applicant %}{% set values = forms.applicant %}<form method="post" action="{{ form_url }}" id="kg-applicant-form">
+      {{ security(values) }}<fieldset {% if not write_on %}disabled{% endif %}>
+        <label for="kg-applicant-role">Роль нового заявителя</label><select id="kg-applicant-role" name="role">{% for value,label in roles.items() %}<option value="{{ value }}" {% if values.get('role') == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <button type="submit">Добавить заявителя</button>
+      </fieldset></form>{% endif %}
+  </section>
+
+  {% if forms.application %}{% set values = forms.application %}
+  <section class="box no-print"><h2>Новая отдельная процедура</h2>
+    <form method="post" action="{{ form_url }}" id="kg-application-form">{{ security(values) }}
+      <fieldset {% if not write_on or not register.applicants and not values.get('applicant_id') %}disabled{% endif %}>
+        <div class="grid"><div class="field"><label for="kg-application-applicant">Заявитель</label><select id="kg-application-applicant" name="applicant_id" required>
+          <option value="">Выберите человека</option>
+          {% if values.get('applicant_id') and values.get('applicant_id')|int not in register.applicants|map(attribute='id')|list %}<option value="{{ values.applicant_id }}" selected>Выбранный заявитель №{{ values.applicant_id }}</option>{% endif %}
+          {% for person in register.applicants %}<option value="{{ person.id }}" {% if values.get('applicant_id') == person.id|string %}selected{% endif %}>Заявитель №{{ person.id }} · {{ roles[person.role] }}</option>{% endfor %}
+        </select></div>
+        <div class="field"><label for="kg-application-procedure">Документ / процедура</label><select id="kg-application-procedure" name="procedure">{% for value,label in procedures.items() %}<option value="{{ value }}" {% if values.get('procedure') == value %}selected{% endif %}>{{ processes[label[0]] }} · {{ label[1] }}</option>{% endfor %}</select></div></div>
+        <p class="muted">После отказа используйте связанную повторную попытку в карточке прежней заявки. Доработка уже поданной заявки остаётся в той же попытке.</p>
+        <button type="submit">Создать черновик заявки</button>
+      </fieldset></form>
+  </section>{% endif %}
+
+  {% if selected %}<section class="box" aria-labelledby="kg-application-title">
+    <h2 id="kg-application-title">Заявка №{{ selected.id }} · попытка {{ selected.attempt }}</h2>
+    <p>Заявитель №{{ selected.applicant_id }} · {{ processes[selected.process] }} · {{ procedures[selected.procedure][1] }}</p>
+    <p id="kg-application-status"><strong>{{ statuses[selected.current.status] }}</strong> · запись {{ selected.current.revision }}</p>
+    {% if selected.current.reference %}<p id="kg-application-reference">Reference портала: <strong>{{ selected.current.reference }}</strong></p>{% endif %}
+    <div class="actions">{% if selected.previous_id %}<a href="{{ form_url }}?application_id={{ selected.previous_id }}">Предыдущая попытка №{{ selected.previous_id }}</a>{% endif %}
+      {% if selected.successor_id %}<a href="{{ form_url }}?application_id={{ selected.successor_id }}">Следующая попытка №{{ selected.successor_id }}</a>{% endif %}</div>
+    {% if selected.current.status == 'approved' %}<p class="notice">Результат записан. Проверка выданного документа, его передача и сопровождение ещё не подтверждены.</p>{% endif %}
+    {% if selected.current.status == 'closed' %}<p class="notice">Закрыта запись в CRM. Это не подтверждение отмены на портале или возврата денег.</p>{% endif %}
+    <h3>История фактов</h3><div id="kg-application-events">{% for item in selected.events %}<article class="event">
+      <p><strong>{{ statuses[item.status] }}</strong> · {{ item.occurred_on }}</p>
+      <p>Источник: {{ sources[item.source] }}{% if item.reference %} · reference {{ item.reference }}{% endif %}</p>
+      <p class="muted">Записал {{ item.created_by }} · {{ item.created_at }} · запись {{ item.revision }}</p>
+    </article>{% endfor %}</div>
+  </section>{% endif %}
+
+  {% if forms.event %}{% set values = forms.event %}
+  <section class="box no-print"><h2>Записать факт по заявке №{{ values._ea_target }}</h2>
+    <form method="post" action="{{ form_url }}" id="kg-event-form">{{ security(values) }}
+      <fieldset {% if not write_on %}disabled{% endif %}><div class="grid">
+        <div class="field"><label for="kg-event-status">Что произошло</label><select id="kg-event-status" name="status" required><option value="">Выберите событие</option>
+          {% for value,label in statuses.items() %}{% if value != 'draft' and (not selected or value in transitions[selected.current.status] or value == values.get('status')) %}<option value="{{ value }}" {% if values.get('status') == value %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}
+        </select></div>
+        <div class="field"><label for="kg-event-date">Фактическая дата события</label><input id="kg-event-date" name="occurred_on" type="date" value="{{ values.get('occurred_on','') }}" max="{{ today }}" required></div>
+        <div class="field"><label for="kg-event-source">Источник подтверждения</label><select id="kg-event-source" name="source" required><option value="">Выберите источник</option>{% for value,label in sources.items() %}<option value="{{ value }}" {% if values.get('source') == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="kg-event-reference">Reference number портала, если применимо</label><input id="kg-event-reference" name="reference" value="{{ values.get('reference','') }}" minlength="8" maxlength="8" pattern="[A-Z0-9]{8}" aria-describedby="kg-reference-help"><small id="kg-reference-help">Восемь заглавных латинских букв или цифр. Для бумажной подачи оставьте пустым. Номер закрепляется за одной попыткой.</small></div>
+      </div>
+      <label class="check" for="kg-event-confirmed"><input id="kg-event-confirmed" type="checkbox" name="confirmed" value="yes" {% if values.get('confirmed') == 'yes' %}checked{% endif %} required> Я проверил событие и дату по выбранному источнику.</label>
+      <button type="submit">Сохранить факт</button></fieldset>
+    </form>
+  </section>{% endif %}
+
+  {% if forms.retry %}<section class="box no-print"><h2>Повторная попытка</h2><p>Создаётся новая связанная заявка для того же человека и документа. Прежний результат и reference сохраняются в истории.</p>
+    <form method="post" action="{{ form_url }}" id="kg-retry-form">{{ security(forms.retry) }}<fieldset {% if not write_on %}disabled{% endif %}><button type="submit">Создать связанную повторную попытку</button></fieldset></form>
+  </section>{% endif %}
+
+  <section class="box" aria-labelledby="kg-register-title"><h2 id="kg-register-title">Все заявки услуги · {{ register.total }}</h2>
+    <ul class="items" id="kg-applications">{% for item in register.applications %}<li>
+      <a href="{{ form_url }}?application_id={{ item.id }}">Заявка №{{ item.id }} · {{ procedures[item.procedure][1] }}</a><br>
+      Заявитель №{{ item.applicant_id }} · {{ processes[item.process] }} · попытка {{ item.attempt }}<br>{{ statuses[item.current.status] }}
+    </li>{% else %}<li>На этой странице заявок нет.</li>{% endfor %}</ul>
+    <nav class="actions">{% if register.page > 1 %}<a href="{{ form_url }}?page={{ register.page - 1 }}">Предыдущая страница</a>{% endif %}{% if register.has_next %}<a href="{{ form_url }}?page={{ register.page + 1 }}">Следующая страница</a>{% endif %}</nav>
+  </section>
+</main>
+{% endblock %}

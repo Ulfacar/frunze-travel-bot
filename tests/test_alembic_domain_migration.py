@@ -57,6 +57,8 @@ DOMAIN_TABLES = {
     "stay_histories", "stay_intervals", "work_calendars", "work_calendar_days",
     "entry_calculations", "entry_calculation_intervals", "entry_calculation_calendars",
     "entry_qualifications",
+    # E6-01A: separate people, attempts, processing facts and unique portal refs.
+    "entry_applicants", "entry_applications", "entry_application_events", "entry_application_references",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",
