@@ -1,0 +1,133 @@
+{
+  "revision": "71ba91e5578687e3a16b625830beb739c4d26384",
+  "environment": "isolated Git archive, no env files",
+  "normalization": "CRLF to LF only",
+  "files": [
+    {
+      "path": "ai/reviews/2026-10-10-e6-04-applicant-profiles-packet.md",
+      "normalized_sha256": "dd223ed464db3e27b87c3a073de4ccbf0de1532adaafe672719a6497a025ce02",
+      "raw_sha256": {
+        "git": "dd223ed464db3e27b87c3a073de4ccbf0de1532adaafe672719a6497a025ce02",
+        "workspace": "dd223ed464db3e27b87c3a073de4ccbf0de1532adaafe672719a6497a025ce02",
+        "archive": "a8efa6a325ec5c8ad7ec8ef96be6226fd4fda43965656b02b98431d6b77bdc13"
+      }
+    },
+    {
+      "path": "alembic/versions/e6_profiles_0020.py",
+      "normalized_sha256": "6d17d801444bd8c154418a642914b8fe04d0907b7cfc498b146bb386bf249658",
+      "raw_sha256": {
+        "git": "6d17d801444bd8c154418a642914b8fe04d0907b7cfc498b146bb386bf249658",
+        "workspace": "6d17d801444bd8c154418a642914b8fe04d0907b7cfc498b146bb386bf249658",
+        "archive": "687499124d0e7777997337bd0448c2aa950fec8e1bcc8b11ec0045b38b6a88cb"
+      }
+    },
+    {
+      "path": "app/admin/kg_applicant_profiles.py",
+      "normalized_sha256": "c003bc3dfe7d69c30b7e65434136682ea38eebab255713b0b833c62d5bed9749",
+      "raw_sha256": {
+        "git": "c003bc3dfe7d69c30b7e65434136682ea38eebab255713b0b833c62d5bed9749",
+        "workspace": "c003bc3dfe7d69c30b7e65434136682ea38eebab255713b0b833c62d5bed9749",
+        "archive": "3114b0222ef77a408f7c3f8519f5dd64f2ee8268f6fccdc5affcc04a96f6e1f6"
+      }
+    },
+    {
+      "path": "app/admin/router.py",
+      "normalized_sha256": "69526a32e14aa600be0ef77b4763fde28f620f81ec5df6487a3ae317d50211e1",
+      "raw_sha256": {
+        "git": "69526a32e14aa600be0ef77b4763fde28f620f81ec5df6487a3ae317d50211e1",
+        "workspace": "75ca94e15b49353aaedf6512d0cc8ad895cfb06642b398e28b76895b583cb397",
+        "archive": "75ca94e15b49353aaedf6512d0cc8ad895cfb06642b398e28b76895b583cb397"
+      }
+    },
+    {
+      "path": "app/admin/templates/kg_applications.html",
+      "normalized_sha256": "29404383a4ef744fa21abd0d18d1a1e9a117fdbd112f126c9ef8766c395eff24",
+      "raw_sha256": {
+        "git": "29404383a4ef744fa21abd0d18d1a1e9a117fdbd112f126c9ef8766c395eff24",
+        "workspace": "179eb177f0a00fde63e7900679be4af77872763fc2a4fa4b08248e042b4a5a98",
+        "archive": "179eb177f0a00fde63e7900679be4af77872763fc2a4fa4b08248e042b4a5a98"
+      }
+    },
+    {
+      "path": "app/admin/templates/kg_entry.html",
+      "normalized_sha256": "57b959899104736a026ec9eea68f5034c71cc4038a14600a8addc4ff28e0946f",
+      "raw_sha256": {
+        "git": "57b959899104736a026ec9eea68f5034c71cc4038a14600a8addc4ff28e0946f",
+        "workspace": "6c42003f6191195a4e869d45abc3b7a23b3dab9dddd47e3370b69de2f23cefc6",
+        "archive": "6c42003f6191195a4e869d45abc3b7a23b3dab9dddd47e3370b69de2f23cefc6"
+      }
+    },
+    {
+      "path": "app/domain/applicant_profiles.py",
+      "normalized_sha256": "02cada1889d839534af1982ed079f17d268217bf35fc6d74170715bee33114ae",
+      "raw_sha256": {
+        "git": "02cada1889d839534af1982ed079f17d268217bf35fc6d74170715bee33114ae",
+        "workspace": "02cada1889d839534af1982ed079f17d268217bf35fc6d74170715bee33114ae",
+        "archive": "99b9f01c7ab61ee49bf0986ebc1f109e178df3a42edd399d29817ef16298714a"
+      }
+    },
+    {
+      "path": "app/domain/models.py",
+      "normalized_sha256": "02965b68e76f7056cb3fe752294d026930ff1fe515ba0c19e3111d584920017d",
+      "raw_sha256": {
+        "git": "02965b68e76f7056cb3fe752294d026930ff1fe515ba0c19e3111d584920017d",
+        "workspace": "f6b247cf59bd05b7655380db2ae420c7d7c16d02587d11cca450e65a0c88c573",
+        "archive": "f6b247cf59bd05b7655380db2ae420c7d7c16d02587d11cca450e65a0c88c573"
+      }
+    },
+    {
+      "path": "tests/browser_kg_applicant_profiles.py",
+      "normalized_sha256": "a35fe0542fdcc08c473c73279374d1ad947bf4e8726d55fc9df8adb877b4a7e1",
+      "raw_sha256": {
+        "git": "a35fe0542fdcc08c473c73279374d1ad947bf4e8726d55fc9df8adb877b4a7e1",
+        "workspace": "a35fe0542fdcc08c473c73279374d1ad947bf4e8726d55fc9df8adb877b4a7e1",
+        "archive": "2d8681ae0024e901b61873d8e314a4aa21b682ea671bb52b1ea0d09f6a1875ca"
+      }
+    },
+    {
+      "path": "tests/test_admin_kg_applicant_profiles.py",
+      "normalized_sha256": "7f697a6f97689afd5696e12fc24b9cf98cb646180c08489d49092237fc1d1241",
+      "raw_sha256": {
+        "git": "7f697a6f97689afd5696e12fc24b9cf98cb646180c08489d49092237fc1d1241",
+        "workspace": "7f697a6f97689afd5696e12fc24b9cf98cb646180c08489d49092237fc1d1241",
+        "archive": "2d4cac698fa8e3e46e35c872caee045c21cb194073c512db8009a230d988d229"
+      }
+    },
+    {
+      "path": "tests/test_alembic_domain_migration.py",
+      "normalized_sha256": "73d94d975ec8c37119e3f5fa5d0a78a2c5b5adc66f295557302200db71969c67",
+      "raw_sha256": {
+        "git": "73d94d975ec8c37119e3f5fa5d0a78a2c5b5adc66f295557302200db71969c67",
+        "workspace": "11e30114f3560b32de6214c3367d036934704fd86dce4489760bdd7e7833d70a",
+        "archive": "11e30114f3560b32de6214c3367d036934704fd86dce4489760bdd7e7833d70a"
+      }
+    },
+    {
+      "path": "tests/test_applicant_profiles.py",
+      "normalized_sha256": "0d914435eb2d5aaaa82a138119e9293df20fa01344084ec23172e3ace881565d",
+      "raw_sha256": {
+        "git": "0d914435eb2d5aaaa82a138119e9293df20fa01344084ec23172e3ace881565d",
+        "workspace": "0d914435eb2d5aaaa82a138119e9293df20fa01344084ec23172e3ace881565d",
+        "archive": "027707d6ed6442379ea63b57b2649721abb60e92b30d92c0ebef18086f5513a1"
+      }
+    },
+    {
+      "path": "tests/test_applicant_profiles_migration.py",
+      "normalized_sha256": "6032d78e6a51cf37fac7dde3647f1b8160dc23dbf3fd6a84ddddcbf69c8ec99d",
+      "raw_sha256": {
+        "git": "6032d78e6a51cf37fac7dde3647f1b8160dc23dbf3fd6a84ddddcbf69c8ec99d",
+        "workspace": "6032d78e6a51cf37fac7dde3647f1b8160dc23dbf3fd6a84ddddcbf69c8ec99d",
+        "archive": "99663a1d1a6cbd422f3363e2bdb421abbc41bed63a1175122f927c753ce9e639"
+      }
+    },
+    {
+      "path": "tests/test_service_cases.py",
+      "normalized_sha256": "38c1a6892a069b50acc0c1eb75d4499dbfc9c07e817e4d182b6f881238580783",
+      "raw_sha256": {
+        "git": "38c1a6892a069b50acc0c1eb75d4499dbfc9c07e817e4d182b6f881238580783",
+        "workspace": "51edb3abb821995ed708909b6bd7652e3c00a0232f57cc17c081ae0632cd18d1",
+        "archive": "51edb3abb821995ed708909b6bd7652e3c00a0232f57cc17c081ae0632cd18d1"
+      }
+    }
+  ]
+}

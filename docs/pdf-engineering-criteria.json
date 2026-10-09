@@ -102,8 +102,17 @@
       "weight": 3,
       "pdf": "3/18",
       "acceptance": "Individual applicant qualification linkage; payer and family identities separated",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "71ba91e5578687e3a16b625830beb739c4d26384",
+          "command": "Exact-commit related suite275 PASS /2 PG SKIP; full command in artifact",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Individual applicant qualification linkage; payer and family identities separated",
+          "artifact": "ai/handoffs/2026-10-10-0730-e6-04-applicant-profiles.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {
