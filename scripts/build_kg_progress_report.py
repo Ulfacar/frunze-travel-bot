@@ -32,7 +32,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -67,6 +67,19 @@ def main(argv=None):
         или превышении размера сводка не выдаёт частичный итог за полный.</li>
         <li>Одобрение не подтверждает передачу документа, готовность к поездке
         или завершение услуги. Полнота необходимых процедур ещё не определяется.</li></ul>"""
+    if args.checkpoint == "process-preview":
+        title = "E6-01C · проверка черновых процессов"
+        intro = "Добавлены версионированный черновик четырёх процессов и проверка условных переходов в CRM."
+        result = """<ul><li>Все 87 кодов этапов, исключений и флагов из §§14.2–14.6:
+        исходный текст, раздел и страница. Флаги отделены от последовательных этапов.</li>
+        <li>71 вариант черновых переходов: выполненные, неизвестные и противоречащие условия.
+        Предложенные связи отмечены отдельно; формализация фактов ещё не утверждена.</li>
+        <li>Проверяются согласие, актуальность принятого комплекта, подтверждения подачи,
+        выдачи, передачи и фактического въезда на условных значениях.</li>
+        <li>Доработка сохраняет попытку; отказ требует новой связанной заявки.
+        Регистрация не превращается в визу L; резидент-карта — отдельная процедура.</li>
+        <li>Экран без JavaScript, печать, версия/хеши и защита устаревших форм.
+        Ни один результат не разрешает исполнение и не меняет реальные заявки.</li></ul>"""
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
     <p>{args.report_date:%d.%m.%Y} · {title}</p>
     <p class="note"><b>Весь PDF ещё не выполнен.</b> {intro} Пилот выключен по умолчанию;

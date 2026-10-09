@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Frunze — Проверка черновых процессов{% endblock %}
+{% block brand_sub %}въезд в Кыргызстан{% endblock %}
+{% block head %}<style>
+.kg-process{max-width:1050px;margin:auto;padding:24px 16px;line-height:1.5;overflow-wrap:anywhere}
+.kg-process h1{font-size:clamp(24px,4vw,32px)}.kg-process h2{font-size:21px}.kg-process h3{font-size:18px}
+.kg-process a{color:var(--accent)}.kg-process :focus{outline:2px solid var(--accent);outline-offset:3px}
+.kg-process .box{padding:18px;margin:18px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.kg-process .notice{border-left:4px solid #b7791f}.kg-process .muted{color:var(--muted)}
+.kg-process label{display:block;font-weight:600;margin:12px 0 5px}.kg-process select{width:100%;max-width:100%;box-sizing:border-box}
+.kg-process select,.kg-process button{font:inherit;padding:10px;border:1px solid var(--border);border-radius:7px;min-height:44px;color:var(--text);background:var(--surface)}
+.kg-process button{margin-top:14px}.kg-process .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.kg-process .grid>div{min-width:0}
+.kg-process .checks{list-style:none;padding:0}.kg-process .checks li{padding:10px 0;border-bottom:1px solid var(--border)}
+.kg-process .source{white-space:pre-wrap;font-size:14px}.kg-process summary{cursor:pointer;padding:8px 0}
+@media(max-width:600px){.kg-process{padding:14px 10px}.kg-process .grid{grid-template-columns:1fr}.kg-process .box{padding:12px}}
+@page{size:A4;margin:12mm}
+@media print{.topbar,.kg-process nav,.kg-process form,.kg-process .no-print{display:none!important}.kg-process{max-width:none;padding:0;font-size:10pt;line-height:1.35;color:black}.kg-process h1{font-size:22pt;margin:0 0 10px}.kg-process h2{font-size:15pt;margin:8px 0}.kg-process h3{font-size:12pt;margin:8px 0}.kg-process p{margin:8px 0}.kg-process .box{padding:10px;margin:10px 0;background:white;border-color:#aaa}.kg-process .checks{margin:8px 0}.kg-process .checks li{padding:7px 0;break-inside:avoid}.kg-process h2,.kg-process h3{break-after:avoid}}
+</style>{% endblock %}
+{% macro value_label(key,value) %}{% if value is none %}Неизвестно{% elif value is sameas true %}Да{% elif value is sameas false %}Нет{% else %}{{ data.facts[key]['values'][value] }}{% endif %}{% endmacro %}
+{% block content %}
+<main class="kg-process">
+  <nav><a href="/admin/kg-entry/knowledge">Поиск по исходной базе</a></nav>
+  <h1>Проверка черновых процессов</h1>
+  <p class="box notice" id="kg-process-boundary">Это проверка условного сценария по неутверждённому черновику.
+    Факты вводятся вручную только для проверки и не берутся из карточек клиентов.
+    Заявки, документы, деньги и задачи не изменяются. Клиентам ничего не отправляется.</p>
+  {% if error %}<section class="box notice" role="alert"><h2>Проверка недоступна</h2><p>{{ error }}</p><a href="/admin/kg-entry/processes">Открыть свежий черновик</a></section>{% endif %}
+  {% if data %}
+  <p class="muted" id="kg-process-version">Версия {{ data.version }} · SHA-256 {{ catalog_digest }} · не опубликовано</p>
+  <section class="box no-print"><h2>Выбор процесса и этапа</h2>
+    <form method="get" action="/admin/kg-entry/processes" id="kg-process-select"><label for="kg-process-name">Процесс</label>
+      <select id="kg-process-name" name="process">{% for key,label in data.processes.items() %}<option value="{{ key }}" {% if key == process %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button type="submit">Открыть процесс</button>
+    </form>
+    <form method="get" action="/admin/kg-entry/processes" id="kg-stage-select"><input type="hidden" name="process" value="{{ process }}"><label for="kg-process-stage">Код из PDF</label>
+      <select id="kg-process-stage" name="stage">{% for item in stages %}<option value="{{ item.code }}" {% if item.code == current.code %}selected{% endif %}>{{ item.code }} · {{ item.name }}{% if item.kind == 'flag' %} (параллельный флаг){% endif %}</option>{% endfor %}</select><button type="submit">Открыть этап</button>
+    </form>
+  </section>
+  <section class="box" id="kg-process-source"><h2>{{ data.processes[process] }} · {{ current.code }} · {{ current.name }}</h2>
+    <p>Источник: §{{ current.section }}, физическая страница {{ current.page }} PDF v1.1.</p>
+    <p class="source">{{ current.source_text }}</p>
+    <p class="muted">Числа и сроки выше — текст источника для сверки. В этой проверке они не рассчитываются и не считаются утверждёнными.</p>
+    {% if data.notices.get(current.code) %}<p class="notice" id="kg-process-notice">{{ data.notices[current.code] }}</p>{% endif %}
+  </section>
+  {% if targets %}<section class="box no-print"><h2>Условный переход</h2>
+    <p>Задайте только условные ответы. «Неизвестно» не считается подтверждением. Поля могут относиться к разным вариантам выхода с этого этапа.</p>
+    <form method="post" action="/admin/kg-entry/processes" id="kg-process-check">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="catalog_digest" value="{{ catalog_digest }}">
+      <input type="hidden" name="process" value="{{ process }}"><input type="hidden" name="current" value="{{ current.code }}">
+      <label for="kg-process-target">Проверить переход на этап</label><select id="kg-process-target" name="target">{% for item in targets %}<option value="{{ item.code }}" {% if values.get('target') == item.code %}selected{% endif %}>{{ item.code }} · {{ item.name }}</option>{% endfor %}</select>
+      <div class="grid">{% for key in fact_keys %}{% set fact=data.facts[key] %}<div><label for="kg-fact-{{ key }}">{{ fact.label }}</label>
+        <select id="kg-fact-{{ key }}" name="fact_{{ key }}"><option value="">Неизвестно</option>
+          {% if fact.type == 'boolean' %}<option value="true" {% if values.get('fact_'+key) == 'true' %}selected{% endif %}>Да</option><option value="false" {% if values.get('fact_'+key) == 'false' %}selected{% endif %}>Нет</option>
+          {% else %}{% for option,label in fact['values'].items() %}<option value="{{ option }}" {% if values.get('fact_'+key) == option %}selected{% endif %}>{{ label }}</option>{% endfor %}{% endif %}
+        </select></div>{% endfor %}</div>
+      <button type="submit">Проверить сценарий</button>
+    </form>
+  </section>{% else %}<p class="box notice" id="kg-process-no-edge">Выходы из этого кода ещё не описаны для проверки. Это может быть флаг, исключение или завершение. Автоматический переход не разрешён.</p>{% endif %}
+  {% if result %}<section class="box" id="kg-process-result" aria-live="polite"><h2>{{ results[result.status] }}</h2>
+    <p>Сценарий {{ result.current }} → {{ result.target }}. Текущий этап остаётся {{ result.current_stage_unchanged }}.</p>
+    <p class="notice"><strong>Выполнение не разрешено.</strong> Даже выполненные условия относятся только к условному сценарию; процесс не опубликован.</p>
+    {% for variant in result.alternatives %}<article><h3>Вариант {{ loop.index }} · {{ effects[variant.proposed_effect] }}</h3>
+      <p>{% if variant.basis == 'draft_proposal' %}Связь этапов — предложение реализации для подтверждения владельцем процесса.{% else %}Последовательность взята из источника; формализация обязательных фактов остаётся черновиком.{% endif %}</p>
+      <ul class="checks">{% for check in variant.checks %}<li data-check="{{ check.fact }}" data-state="{{ check.state }}"><strong>{{ check.label }}</strong><br>
+        Нужно: {{ value_label(check.fact,check.expected) }}. В сценарии: {{ value_label(check.fact,check.actual) }}.<br>
+        {% if check.state == 'met' %}Выполнено в сценарии{% elif check.state == 'unknown' %}Нет сведений{% else %}Условие не выполнено{% endif %}
+      </li>{% endfor %}</ul>
+    </article>{% endfor %}
+    <p class="muted">Версия {{ result.version }} · SHA-256 сценария {{ result.input_sha256 }}</p>
+  </section>{% endif %}
+  <section class="box no-print"><h2>Коды этого процесса в исходнике · {{ stages|length }}</h2>
+    <details><summary>Этапы, исключения и параллельные флаги</summary><ul>{% for item in stages %}<li><a href="/admin/kg-entry/processes?process={{ process }}&amp;stage={{ item.code }}">{{ item.code }} · {{ item.name }}</a>{% if item.kind == 'flag' %} · флаг{% elif item.kind == 'exception' %} · исключение{% endif %}</li>{% endfor %}</ul></details>
+    <p class="muted">Полные правила исключений, сроки, документы и публикация ещё требуют работы и подтверждения владельцами процессов.</p>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

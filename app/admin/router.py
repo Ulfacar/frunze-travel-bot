@@ -2636,3 +2636,4 @@ from app.admin import kg_entry  # noqa: E402,F401 — пилот анкеты в
 from app.admin import kg_knowledge  # noqa: E402,F401 — поиск источника за тем же пилотным флагом
 from app.admin import kg_history  # noqa: E402,F401 — версии фактических поездок, тот же full-admin gate
 from app.admin import kg_applications  # noqa: E402,F401 — заявители и подачи, тот же full-admin gate
+from app.admin import kg_processes  # noqa: E402,F401 — проверка черновых переходов, без записи
