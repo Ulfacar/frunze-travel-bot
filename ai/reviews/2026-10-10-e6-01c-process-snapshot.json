@@ -1,0 +1,85 @@
+{
+  "revision": "6af101f5b6482d8db7073d25d2975273f9ebeee4",
+  "base": "735eaf3",
+  "isolated_copy": "runs/e6-01c-process-committed",
+  "identity": "PASS Git/workspace/copy after LF normalization",
+  "env_files_absent": true,
+  "files": [
+    {
+      "path": "Dockerfile",
+      "sha256_lf": "fb751df974a00840c1eacad8c05220835978eea117f037983c9e8e0e53ba7e34"
+    },
+    {
+      "path": "ai/reviews/2026-10-10-e6-01c-process-self-review.md",
+      "sha256_lf": "41a84cd9afdcd6d36d4c29eaa3d7d1479675a14149787510dc89dd94713bf99b"
+    },
+    {
+      "path": "ai/tasks/2026-10-10-e6-01c-process-preview.md",
+      "sha256_lf": "c7b05848bb88b9b41d8e4ff412172bc2799c33b17da26a322526cd31ba961320"
+    },
+    {
+      "path": "app/admin/kg_processes.py",
+      "sha256_lf": "fcf13941fca785bf5a4d53a6ebe0e4f0d68a07853d621cc5788deea45305e2d7"
+    },
+    {
+      "path": "app/admin/router.py",
+      "sha256_lf": "673a416ef86008cbe990bdaa4b328fcade3b31ec14f6eb8300145213c20785de"
+    },
+    {
+      "path": "app/admin/templates/kg_entry.html",
+      "sha256_lf": "2deae576ea8c0325cd8c5f3a4dabdf5c7a4e16987f534074d3fe1d3e70ee8f4f"
+    },
+    {
+      "path": "app/admin/templates/kg_processes.html",
+      "sha256_lf": "79df5954c12e7aeb1db01356ff816bd51f80d18092ba6fdca1439099f976bb89"
+    },
+    {
+      "path": "app/knowledge/process_preview.py",
+      "sha256_lf": "f637046070deb19a38935ee00099c49847c593831b9689411801572ef971bea0"
+    },
+    {
+      "path": "docs/crm-delivery/backlog.json",
+      "sha256_lf": "db2944087bd9e752416e5b8f9e30d1c013e2415803de6eeb6c856ad2d2b9b69b"
+    },
+    {
+      "path": "docs/crm-delivery/backlog.md",
+      "sha256_lf": "1717ea682385e9bef1b7b99ec23fa0355310962c85624df069a2d9618459242a"
+    },
+    {
+      "path": "docs/e5-pdf-progress.md",
+      "sha256_lf": "392c4399d690724bf0cafbbca288c91463b9a9bd32d264294a81d7f7a2073527"
+    },
+    {
+      "path": "docs/e5-pdf-section-coverage.md",
+      "sha256_lf": "e2b02dfb0f156fccbc453057c898aa7567a40af20776690ad4e8f42f20aee191"
+    },
+    {
+      "path": "docs/e6-01c-process-preview.md",
+      "sha256_lf": "1750770da98f1883c87863ed3ab7e361c04e7dde7d333b843dbe0b8a5e013cda"
+    },
+    {
+      "path": "knowledge/kg_entry/processes_v1_1/catalog.json",
+      "sha256_lf": "cc17f508dee484534b9667a0235402630db8848618450109f9bcd746b2d78a6c"
+    },
+    {
+      "path": "scripts/build_kg_process_catalog.py",
+      "sha256_lf": "be626a2918a4d40a48e56ca754617dce666b06faeb8d3f6d4b282203e73e4f8e"
+    },
+    {
+      "path": "scripts/build_kg_progress_report.py",
+      "sha256_lf": "074208266dbf568c2b92bc485edb5dbbd105133a120e5b834db399eca97bda19"
+    },
+    {
+      "path": "tests/browser_kg_processes.py",
+      "sha256_lf": "dfda68130598425ded2e89775a08c8f0dd9d4c25c2c9eeb6ac64ffd7e5ce1474"
+    },
+    {
+      "path": "tests/test_admin_kg_processes.py",
+      "sha256_lf": "7e680e9ffaf625f0bc00df6137eefea182e554886b54b71a79c164ab5bf73244"
+    },
+    {
+      "path": "tests/test_kg_process_preview.py",
+      "sha256_lf": "9f29ce0b502ca340a751f309aae23168020ca4e466552a49a1a15038b9973044"
+    }
+  ]
+}

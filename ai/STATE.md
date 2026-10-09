@@ -1,5 +1,19 @@
 # Current work
 
+- Updated **2026-10-10**. Active **E6-01C PROCESS PREVIEW**, STANDARD / solo **DONE for local scope**. Whole PDF remains incomplete.
+- Branch `fix/tours-search-quality`; code `6af101f5b6482d8db7073d25d2975273f9ebeee4`, base `735eaf3`; final evidence/report in following docs commit.
+- Task `ai/tasks/2026-10-10-e6-01c-process-preview.md`; contract `docs/e6-01c-process-preview.md`; handoff `ai/handoffs/2026-10-10-0225-e6-01c-process-preview.md`.
+- Result: versioned87 source codes and71 draft edge variants for V/W/R/U, strict hypothetical condition evaluator, native admin preview/source/print. Missing facts differ from false/true; refusal and separate procedures preserved; registration cannot produce L. All results remain unpublished/non-executable, stages unchanged.
+- Existing full-admin/KG-OFF/workday gates; no personal input, domain SQL, application changes, migrations, publication, messages or env changes. Dockerfile includes catalog; image build not claimed.
+- Evidence: initial focused57 PASS /44.88s and browser2 PASS /29.95s before print spacing. Final committed-copy related regression **130 passed /3 deprecation warnings /174.68s**, no selected-file failures/skips. Mobile390 and desktop1365 without JS; final one-page synthetic print visually checked. Cold imports kg_processes/kg_entry/main all exit0.
+- Git/workspace/copy identity **19/19 PASS**, env files absent; manifest `ai/reviews/2026-10-10-e6-01c-process-snapshot.json`. Compilation, staged whitespace, bounded token-shaped scan and protocol structure PASS.
+- Separate SELF_REVIEW `ai/reviews/2026-10-10-e6-01c-process-self-review.md` PASS for local STANDARD target. Prior E6-01A CRITICAL independent review/audit/PG gates remain UNKNOWN. Full suite/traps/build not rerun; previous date/traps baseline not promoted to green.
+- Coverage/backlog updated; five-page report `docs/reports/frunze-pdf-progress-2026-10-10-process-preview.pdf`, all pages inspected and26/26 source headings verified. No new measured percentage or whole-PDF completion claim.
+- Next: required-document/checklist drafts on synthetic data, evidence bindings, existing owner decisions and independent CRITICAL review/PG verification before executable workflows or real-data use. DEC-02/06/07/08/11/12 still open; redesign later.
+- Working-branch commit/push authorized. No production deployment or acceptance. Preserve unrelated untracked artifacts; never stage env files.
+
+## Previous checkpoint - E6-01B
+
 - Updated **2026-10-10**. Active **E6-01B GROUP OVERVIEW**, STANDARD / solo **DONE for local scope**. Whole PDF remains incomplete.
 - Branch `fix/tours-search-quality`; code `f923a446449bc8010a4a78d09a192d0156315d71`, base `6d74465083d3650df7a76a7bb3ab714a3bcdb555`; evidence/report follow in docs commit.
 - Task `ai/tasks/2026-10-10-e6-01b-group-overview.md`; contract `docs/e6-01b-group-overview.md`; handoff `ai/handoffs/2026-10-10-0113-e6-01b-group-overview.md`.
