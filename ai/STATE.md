@@ -1,5 +1,18 @@
 # Current work
 
+- Updated **2026-10-10**. Active **E6-02A DOCUMENT CHECKLISTS**, STANDARD / solo **DONE for local slice**. Entire E6-02 and PDF remain incomplete.
+- Branch `fix/tours-search-quality`; code `1d3372ed7116d99a13b1ef989c9d0c31c5d248a5`, base `1747d0c`; final evidence/report follow in docs commit.
+- Task `ai/tasks/2026-10-10-e6-02a-document-checklists.md`; contract `docs/e6-02a-document-checklists.md`; handoff `ai/handoffs/2026-10-10-0300-e6-02a-document-checklists.md`.
+- Result: versioned23 rows x9 types of source document matrix, mandatory/conditional/recommended distinctions and full source supplements. Native synthetic checklist with receipt/correction/check states, unknown applicability and current-version invalidation. No result accepts a real package or permits submission; supplements are outside automatic assessment.
+- Existing full-admin/KG-OFF/workday gates; CSRF/whitelists/version pin, no file uploads/PII fields/domain SQL/answer persistence, migrations or new permissions. Product switch resets answers. Dockerfile includes catalog; no image-build/deploy claim.
+- Evidence: initial pure23 PASS; isolated new44 PASS /3 warnings /46.55s before final print refinements. Final exact-copy related regression **121 passed /3 deprecation warnings /182.03s**, no selected-file failures/skips. Mobile390, desktop1365 without JS, two-page print and result screens inspected. Cold imports kg_documents/kg_processes/kg_entry/main all exit0.
+- Git/workspace/archive **20/20 PASS**, env absent; manifest `ai/reviews/2026-10-10-e6-02a-documents-snapshot.json`. Compilation, staged whitespace, token-shaped scan, protocol structure PASS. Separate SELF_REVIEW `ai/reviews/2026-10-10-e6-02a-documents-self-review.md` PASS for local target.
+- Five-page report `docs/reports/frunze-pdf-progress-2026-10-10-document-checklists.pdf`; all pages inspected,26/26 source headings/revision/checks/estimate verified. Coverage/backlog updated. User progress answer: **about30% complete /70% remaining**, rounded engineering estimate for full inbound PDF+CRM scope, not measured requirements or launch readiness.
+- Next: per-applicant checklist/evidence design under existing consent/storage decisions; prior CRITICAL independent review/audit/PG16 remain UNKNOWN. Real files/acceptance, full profiles/processes, dialog/handoff, publication/calendars/prices and end-to-end acceptance still pending. Redesign later.
+- Full suite/traps/build not rerun; previous date/traps baseline not promoted to green. Working-branch commits/push authorized; no production release/env changes/live migrations/messages. Preserve unrelated untracked artifacts and never stage env files.
+
+## Previous checkpoint - E6-01C
+
 - Updated **2026-10-10**. Active **E6-01C PROCESS PREVIEW**, STANDARD / solo **DONE for local scope**. Whole PDF remains incomplete.
 - Branch `fix/tours-search-quality`; code `6af101f5b6482d8db7073d25d2975273f9ebeee4`, base `735eaf3`; final evidence/report in following docs commit.
 - Task `ai/tasks/2026-10-10-e6-01c-process-preview.md`; contract `docs/e6-01c-process-preview.md`; handoff `ai/handoffs/2026-10-10-0225-e6-01c-process-preview.md`.
