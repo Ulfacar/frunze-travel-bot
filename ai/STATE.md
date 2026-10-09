@@ -1,11 +1,11 @@
 # Current work
 
 - Updated: **2026-10-09**, Алан продолжил работу по PDF. Active task **E5-03D QUALIFICATION REVIEW**, CRITICAL / solo, **PARTIALLY_READY**.
-- Branch/revision: `fix/tours-search-quality` / **UNCOMMITTED**, base `430768bfe9de7dc798db18671173c2e39436cbf2`.
+- Branch/revision: `fix/tours-search-quality` / code **cdc490c691d0437cfc0863bc1dc399ae1f39f723**, final evidence docs-only commit; base `430768bfe9de7dc798db18671173c2e39436cbf2`.
 - Task `ai/tasks/2026-10-09-e5-03d-qualification-review.md`; contract `docs/e5-03d-qualification-review.md`.
 - Handoff `ai/handoffs/2026-10-09-1926-e5-03d-qualification.md`; packet/SELF_REVIEW/snapshot в `ai/reviews/2026-10-09-e5-03d-qualification-*`.
 - Result: единый отчёт по partial profile: до 3 вопросов RU/EN, known manager stops, country/condition candidates, registration references, withheld all_others. Read-only DB adapter проверяет pinned knowledge/projection/history; auth прежний named full-admin.
-- Evidence: **382 passed / 83.81s** related modules; после 2 дополнительных tests **51 passed / 12.33s** final new module. CLI real PDF + synthetic MDA: conflict, 2 candidates/2 registration references, 6 input SHA+mtime неизменны. SQL SELECT only. Full suite N/A для isolated additions без existing runtime/model edits.
+- Evidence: **382 passed / 83.81s** related modules; после 2 дополнительных tests **51 passed / 12.33s** final new module. CLI real PDF + synthetic MDA: conflict, 2 candidates/2 registration references, 6 input SHA+mtime неизменны. SQL SELECT only. Git copy cdc490c: **51 passed / 11.30s**, 10/10 manifest hashes, без .env. Full suite N/A для isolated additions без existing runtime/model edits.
 - Boundaries: selected_regime/visa_required/exact dates/remaining=NULL, may_quote=false. Не весь CALC-01/Б.4; qualified routing ещё не client eligibility. Нет persistence квалификации, manager HTTP/LLM, автоматических CALC-02/03 или публикации.
 - Review: SELF_REVIEW, independent reviewer/final auditor **UNKNOWN**, прежний PG16 runtime UNKNOWN. 208 source units, 0 confirmed; нормы/официальный календарь/эталоны/DEC-06/07 не утверждены.
 - Next action: independent packet review; следующий отдельный scope — публикация с согласованной политикой или сохранение квалификации/manager flow. Серверный scope и authorization обязательны до HTTP/LLM.
@@ -13,7 +13,7 @@
 - Предыдущий full suite: 3161 passed / 2 failed / 8 skipped. Migration expectation исправлен и повтор прошёл; dates failure test_facts_live_errors подтверждён на base ef77321 (clock06.10 PASS/09.10 FAIL). Не выдавать исторический full suite за зелёный или новый прогон.
 - Previous stages: E5-03A/B calculators, E5-02D/E/F index/conditions/projection, E5-01B search corpus. Нормативный source bundle неизменен.
 - PDF progress `docs/e5-pdf-progress.md`: приблизительно **70–80% осталось**, нового измеренного процента нет.
-- Delivery E5-03D: ещё не committed/pushed. Разрешение на commits/push в рабочую ветку сохраняется; main/production/deploy/реальные данные не входят в текущий scope. Repo public.
+- Delivery E5-03D: code **cdc490c committed/pushed**; следующий docs-only commit фиксирует Git-copy evidence и handoff. Разрешение на commits/push в рабочую ветку сохраняется; main/production/deploy/реальные данные не входят в текущий scope. Repo public.
 - Last observed prod_traps baseline (E5-03C): **1 ERROR / 57 WARN**, ANTHROPIC_API_KEY compose forwarding; текущий этап config не менял.
 - Unrelated audio/zip/reports/temp сохранены untracked; не включать в commits.
 

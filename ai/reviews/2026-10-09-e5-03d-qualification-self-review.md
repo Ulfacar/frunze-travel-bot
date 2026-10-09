@@ -1,7 +1,7 @@
 # SELF_REVIEW — E5-03D
 
 - Reviewer: Codex, тот же builder/context; независимость отсутствует.
-- CRITICAL / solo; base 430768b, target UNCOMMITTED.
+- CRITICAL / solo; base 430768b, target **cdc490c691d0437cfc0863bc1dc399ae1f39f723**.
 - Local checks PASS; статус **PARTIALLY_READY**, independent review/final audit UNKNOWN.
 
 Повторно прочитаны task AC1–6, весь новый code/tests/CLI и соседние schema/index/conditions,
@@ -36,6 +36,10 @@ read-only DB boundary. Existing implementation/source files не менялис�
   migration/существующих алгоритмов changes. Предыдущий полный прогон и его dates baseline
   не выдаются за новый PASS. Независимое review и PG16 UNKNOWN.
 - Production N/A: локальный scope; runtime не подключён, внешних записей/отправок не было.
+
+- Git copy cdc490c: **51 passed / 11.30s**, без .env, 10/10 hashes совпали с Git blobs.
+- git diff --cached --check PASS; credential-pattern scan новых строк без находок.
+- Code cdc490c отправлен в origin/fix/tours-search-quality; последующий commit docs-only.
 
 ## Remaining limits
 

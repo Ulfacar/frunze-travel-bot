@@ -2,7 +2,7 @@
 
 - Risk/mode: CRITICAL / solo. Target local implementation, not release.
 - Base `430768bfe9de7dc798db18671173c2e39436cbf2`; branch fix/tours-search-quality.
-- Target UNCOMMITTED; manifest `2026-10-09-e5-03d-qualification-snapshot.json`.
+- Target **cdc490c691d0437cfc0863bc1dc399ae1f39f723**; manifest `2026-10-09-e5-03d-qualification-snapshot.json`.
 - Independent reviewer/final auditor UNKNOWN. Builder SELF_REVIEW читать после своего прохода.
 
 Требования: task `ai/tasks/2026-10-09-e5-03d-qualification-review.md`, AC1–6;
