@@ -1,5 +1,13 @@
 # Current work
 
+- Updated **2026-10-10**. ACTIVE GOAL: continue until70% evidenced engineering implementation; user requested no intermediate completion response. Goal task `ai/tasks/2026-10-10-pdf-to70.md`.
+- Branch `fix/tours-search-quality`, base `f0d9efa`. Fixed50 weighted criteria (100 points) in `docs/pdf-engineering-criteria.json`; baseline37/100 evidenced technical points; `ai/reviews/2026-10-10-pdf-to70-baseline.md`. Historical30% was approximate, not a measured score.
+- Current slice **E6-02B DOCUMENT INVENTORY**, CRITICAL / solo, IN PROGRESS. Task/pre-audit `ai/tasks/2026-10-10-e6-02b-document-inventory.md`. Persistent per-application versions/review/history; synthetic data only, no file upload or policy invention.
+- Required independent review/audit/PG runtime remain UNKNOWN. Complete authorized local work/checks, prepare concrete review packets, continue other useful goal work. Do not promote UNKNOWN to PASS or declare the goal complete after one slice.
+- Commit/push authorized; production/env/live migrations/real personal data/messages not authorized. Preserve unrelated untracked artifacts.
+
+## Previous checkpoint - E6-02A
+
 - Updated **2026-10-10**. Active **E6-02A DOCUMENT CHECKLISTS**, STANDARD / solo **DONE for local slice**. Entire E6-02 and PDF remain incomplete.
 - Branch `fix/tours-search-quality`; code `1d3372ed7116d99a13b1ef989c9d0c31c5d248a5`, base `1747d0c`; final evidence/report follow in docs commit.
 - Task `ai/tasks/2026-10-10-e6-02a-document-checklists.md`; contract `docs/e6-02a-document-checklists.md`; handoff `ai/handoffs/2026-10-10-0300-e6-02a-document-checklists.md`.

@@ -1,0 +1,596 @@
+{
+  "format": "pdf-engineering-criteria/1",
+  "base_revision": "f0d9efa",
+  "target_points": 70,
+  "total_points": 100,
+  "definition_sha256": "3a26373ae606cb6bba64adf1bd41fd8efb7a767663523d328cbd166aca219f4a",
+  "scope": "Full inbound PDF+CRM engineering; no implied production readiness",
+  "scoring": "PASS only for fully demonstrated acceptance with exact revision/check evidence; partial/unknown earns zero. Required critical reviews remain separately gated; no source approval inferred.",
+  "criteria": [
+    {
+      "id": "A01",
+      "weight": 3,
+      "pdf": "IT/0",
+      "acceptance": "Versioned lossless corpus and pinned source integrity",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Versioned lossless corpus and pinned source integrity",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "A02",
+      "weight": 3,
+      "pdf": "B.3/18",
+      "acceptance": "Strict machine schema and semantic validation",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Strict machine schema and semantic validation",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "A03",
+      "weight": 4,
+      "pdf": "1-17",
+      "acceptance": "Source-grounded local search with native CRM citations and uncertainty labels",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Source-grounded local search with native CRM citations and uncertainty labels",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "A04",
+      "weight": 4,
+      "pdf": "0/Г/Д",
+      "acceptance": "Complete source coverage with provenance, unresolved values and reproducible extraction",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Complete source coverage with provenance, unresolved values and reproducible extraction",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "B01",
+      "weight": 3,
+      "pdf": "3/4",
+      "acceptance": "Versioned qualification save/reload, CAS, retry and native RU/EN form",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Versioned qualification save/reload, CAS, retry and native RU/EN form",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "B02",
+      "weight": 3,
+      "pdf": "3/18",
+      "acceptance": "Individual applicant qualification linkage; payer and family identities separated",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "B03",
+      "weight": 3,
+      "pdf": "3/9/10/11",
+      "acceptance": "Complete conditional A-H interview fields and specialist/family/employer branches",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "B04",
+      "weight": 3,
+      "pdf": "4/Б.4",
+      "acceptance": "Durable review/handoff with pinned facts, gaps, owner and automation stop",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "C01",
+      "weight": 2,
+      "pdf": "2",
+      "acceptance": "Deterministic interval/window arithmetic with boundary and overlap scenarios",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Deterministic interval/window arithmetic with boundary and overlap scenarios",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "C02",
+      "weight": 2,
+      "pdf": "13",
+      "acceptance": "Versioned work calendars and business-day/deadline arithmetic",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Versioned work calendars and business-day/deadline arithmetic",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "C03",
+      "weight": 2,
+      "pdf": "2/13",
+      "acceptance": "Immutable history/calculation storage and exact replay with provenance",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Immutable history/calculation storage and exact replay with provenance",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "C04",
+      "weight": 2,
+      "pdf": "12",
+      "acceptance": "Versioned quote calculation with separate currencies/fees and unknown-price blocking",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "C05",
+      "weight": 2,
+      "pdf": "1/2/4/8",
+      "acceptance": "Product/regime qualification using approved versioned rules and explicit uncertainty",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "D01",
+      "weight": 2,
+      "pdf": "Б.5",
+      "acceptance": "Atomic versioned knowledge import with idempotency and rollback",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Atomic versioned knowledge import with idempotency and rollback",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "D02",
+      "weight": 2,
+      "pdf": "Б.5",
+      "acceptance": "Review index/diff preserves source and changed dependencies",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Review index/diff preserves source and changed dependencies",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "D03",
+      "weight": 2,
+      "pdf": "Г/Д",
+      "acceptance": "Recorded knowledge decisions and confirmation/rejection evidence",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "D04",
+      "weight": 2,
+      "pdf": "IT/0",
+      "acceptance": "Atomic publication gates, active version pin and rollback",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "D05",
+      "weight": 2,
+      "pdf": "IT/Б",
+      "acceptance": "Runtime knowledge adapter refuses draft/stale/conflicting rules",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "E01",
+      "weight": 2,
+      "pdf": "14/18",
+      "acceptance": "Case-scoped applicants and separate linked application attempts",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Case-scoped applicants and separate linked application attempts",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "E02",
+      "weight": 2,
+      "pdf": "7/14/15",
+      "acceptance": "Immutable dated portal/manual facts, unique reference and corrections within attempt",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Immutable dated portal/manual facts, unique reference and corrections within attempt",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "E03",
+      "weight": 2,
+      "pdf": "10/14",
+      "acceptance": "Complete group overview of current and historical attempts",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Complete group overview of current and historical attempts",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "E04",
+      "weight": 2,
+      "pdf": "14",
+      "acceptance": "Persistent versioned procedural stages with evidence-bound prerequisites",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "E05",
+      "weight": 2,
+      "pdf": "14/15",
+      "acceptance": "Refusal/exception recovery preserves original attempt and history",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Refusal/exception recovery preserves original attempt and history",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "E06",
+      "weight": 2,
+      "pdf": "11/14",
+      "acceptance": "Employer, permit, resident and registration dependencies remain distinct",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "E07",
+      "weight": 2,
+      "pdf": "16",
+      "acceptance": "Verified issue/correction/delivery/receipt/actual entry or exit events",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "F01",
+      "weight": 2,
+      "pdf": "5.2",
+      "acceptance": "Lossless typed matrix review including mixed/conditional/dash cells",
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "f0d9efa2a63c62dbfe34c239ec4a9b529c65ca01",
+          "command": "Baseline command 1; command 2 for native search and RU/EN qualification (full commands in artifact)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Lossless typed matrix review including mixed/conditional/dash cells",
+          "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        }
+      ],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "F02",
+      "weight": 2,
+      "pdf": "5/18",
+      "acceptance": "Per-application persistent versioned inventory and document history",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "F03",
+      "weight": 2,
+      "pdf": "5/6",
+      "acceptance": "New document/passport version invalidates old review with traceable evidence",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "F04",
+      "weight": 2,
+      "pdf": "5.1-5.5/11.4",
+      "acceptance": "Complete conditional checklists and supplements, unknown conditions block acceptance",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "F05",
+      "weight": 2,
+      "pdf": "5/6/14",
+      "acceptance": "Immutable package review tied to exact definitions/versions and revocation",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "F06",
+      "weight": 2,
+      "pdf": "5.5/18",
+      "acceptance": "Bounded authorized file adapter, checksum/type checks and quarantine with explicit policy gate",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "F07",
+      "weight": 2,
+      "pdf": "5/18",
+      "acceptance": "Document receipt/correction/acceptance CRM flow with errors, print and access checks",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "G01",
+      "weight": 2,
+      "pdf": "13/18",
+      "acceptance": "Application deadlines bind actual events, calendar version and source",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "G02",
+      "weight": 2,
+      "pdf": "13/19",
+      "acceptance": "Manual deadline override/recalculation history and unknown-date handling",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "G03",
+      "weight": 2,
+      "pdf": "14/19",
+      "acceptance": "Persistent assigned tasks with completion/cancel/escalation and dedup",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "G04",
+      "weight": 2,
+      "pdf": "13/19",
+      "acceptance": "Deadline worker handles retries, changes, ordering and duplicate execution",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "H01",
+      "weight": 2,
+      "pdf": "3/Б",
+      "acceptance": "Stateful RU/EN interview adapter with bounded questions, save/resume and revisions",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "H02",
+      "weight": 2,
+      "pdf": "4/17/Б.6",
+      "acceptance": "Interrupts, stop factors and specialist escalation in dialogue flow",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "H03",
+      "weight": 2,
+      "pdf": "IT/Б",
+      "acceptance": "Grounded approved knowledge answers with source/version and fallback",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "H04",
+      "weight": 2,
+      "pdf": "4/Б.4",
+      "acceptance": "Manager handoff acknowledgement and suppression of autonomous client replies",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "I01",
+      "weight": 1,
+      "pdf": "А",
+      "acceptance": "Safe typed template rendering preserves conditional placeholders and source status",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "I02",
+      "weight": 1,
+      "pdf": "А/14",
+      "acceptance": "Notification drafts/outbox with explicit policy gate and dedup",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "I03",
+      "weight": 1,
+      "pdf": "7/14",
+      "acceptance": "Portal notification import correlates reference and retains evidence",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "I04",
+      "weight": 1,
+      "pdf": "7/14",
+      "acceptance": "Duplicate/out-of-order notification recovery without state regression",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "I05",
+      "weight": 1,
+      "pdf": "7/19",
+      "acceptance": "Manual operator confirmation path when email integration is unavailable",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "J01",
+      "weight": 1,
+      "pdf": "19",
+      "acceptance": "End-to-end source SOP scenarios exercise actual connected functions",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "J02",
+      "weight": 1,
+      "pdf": "Б.8",
+      "acceptance": "Golden intake/qualification scenarios and adversarial uncertainty cases",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "J03",
+      "weight": 1,
+      "pdf": "18/IT",
+      "acceptance": "Independent critical review and final audit of affected implementation",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "J04",
+      "weight": 1,
+      "pdf": "18/IT",
+      "acceptance": "PostgreSQL constraints/concurrency and backup/recovery rehearsal",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    },
+    {
+      "id": "J05",
+      "weight": 1,
+      "pdf": "0/Г",
+      "acceptance": "Owner acceptance, approved source/business decisions and authorized pilot",
+      "status": "UNKNOWN",
+      "evidence": [],
+      "review": "UNKNOWN"
+    }
+  ]
+}
