@@ -1,0 +1,26 @@
+<div class="kg-field">
+  <label for="{{ field.id }}">{{ field.label }}</label>
+  {% if field.kind in ['date','integer'] %}
+  <div class="kg-date">
+    <select name="{{ field.path }}_state" aria-label="{{ field.label }}: известно ли значение" data-value-state="{{ field.id }}">
+      {% for val, text in [('', 'Не спрашивали'), ('unknown', 'Клиент не знает'), ('not_applicable', 'Не применимо'), ('value', 'Дата известна' if field.kind == 'date' else 'Число известно')] %}
+      {% if val != 'not_applicable' or field.get('allow_na',true) %}<option value="{{ val }}" {% if values.get(field.path + '_state','') == val %}selected{% endif %}>{{ text }}</option>{% endif %}
+      {% endfor %}
+    </select>
+    <input type="{{ 'date' if field.kind == 'date' else 'number' }}" id="{{ field.id }}" name="{{ field.path }}" value="{{ values.get(field.path,'') }}" {% if field.kind == 'integer' %}min="{{ field.minimum }}" max="{{ field.maximum }}" step="1"{% endif %}>
+  </div>
+  {% elif field.kind == 'text' %}
+    <textarea id="{{ field.id }}" name="{{ field.path }}" rows="3" maxlength="{{ field.max_length }}">{{ values.get(field.path,'') }}</textarea>
+  {% elif field.kind in ['country','countries'] %}
+    {% if field.kind == 'countries' %}<small class="kg-muted" id="kg-citizenship-hint">Можно выбрать несколько гражданств — до пяти.</small>{% endif %}
+    <select id="{{ field.id }}" name="{{ field.path }}" {% if field.kind == 'countries' %}multiple size="5" aria-describedby="kg-citizenship-hint"{% endif %}>
+      {% set selected = values.get(field.path,[]) if field.kind == 'countries' else [values.get(field.path,'')] %}
+      <option value="" {% if '' in selected or not selected %}selected{% endif %}>Не спрашивали</option>
+      <option value="unknown" {% if 'unknown' in selected %}selected{% endif %}>Клиент не знает</option>
+      {% if field.kind == 'country' %}<option value="not_applicable" {% if 'not_applicable' in selected %}selected{% endif %}>Не применимо</option>{% endif %}
+      {% for code, title in countries %}<option value="{{ code }}" {% if code in selected %}selected{% endif %}>{{ title }}</option>{% endfor %}
+    </select>
+  {% else %}
+    <select id="{{ field.id }}" name="{{ field.path }}">{% for val, text in field.options %}<option value="{{ val }}" {% if values.get(field.path,'') == val %}selected{% endif %}>{{ text }}</option>{% endfor %}</select>
+  {% endif %}
+</div>

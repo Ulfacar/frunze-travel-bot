@@ -18,7 +18,7 @@ def _runtime():
     root = Path(__file__).resolve().parents[1]
     names = ("domain/qualification_storage.py", "domain/entry_qualification.py", "domain/entry_storage.py",
              "domain/entry_calculations.py", "domain/knowledge_review.py", "domain/knowledge_projection.py",
-             "knowledge/qualification.py", "knowledge/qualification_schema.py", "knowledge/country_index.py",
+             "knowledge/qualification.py", "knowledge/qualification_schema.py", "knowledge/intake.py", "knowledge/country_index.py",
              "knowledge/conditions.py", "knowledge/condition_schema.py", "knowledge/projection.py",
              "knowledge/bundle.py", "knowledge/bundle_schema.py", "knowledge/slots.py",
              "knowledge/schemas/kg-entry-slots-v1.json", "knowledge/review.py", "knowledge/validation.py")

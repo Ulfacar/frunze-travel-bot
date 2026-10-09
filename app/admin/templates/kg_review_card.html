@@ -30,6 +30,7 @@
   <nav class="kg-actions kg-no-print" aria-label="Карточка проверки">
     <a href="{{ form_url }}?qualification_id={{ saved.qualification_id }}">← К этой версии анкеты</a>
     <a href="/admin/case/{{ case.id }}">К услуге №{{ case.id }}</a>
+    <a href="/admin/kg-entry/knowledge">Поиск по исходному PDF</a>
     <button type="button" id="kg-print" hidden>Печать / сохранить PDF</button>
   </nav>
   <h1>Карточка проверки въезда в Кыргызстан</h1>
@@ -60,7 +61,7 @@
     <h2 id="kg-card-gaps">Что ещё нужно для полной карточки передачи</h2>
     {% if report.missing %}<h3>Неуточнённые ответы анкеты</h3><ul>{% for item in report.missing %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
     <h3>Дополнительные сведения по PDF, раздел 3.4</h3><ul>{% for item in gaps %}<li>{{ item }}</li>{% endfor %}</ul>
-    <p class="kg-muted">Имя и контактные данные сверяются в CRM. Полная карточка передачи также потребует деталей цели, кратности въезда, группы и приглашения; автоматическая оценка стоимости и уверенности не сформирована.</p>
+    <p class="kg-muted">Имя и контактные данные сверяются в CRM. Отдельные заявители и документы оформляются следующим этапом; автоматическая оценка стоимости и уверенности не сформирована.</p>
     {% if specialist_count %}<p>Для проверки специальных условий не хватает сведений: {{ specialist_count }}. Специалист должен уточнить их по соответствующим правилам ниже.</p>{% endif %}
   </section>
   <section aria-labelledby="kg-card-checks">

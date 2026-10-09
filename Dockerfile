@@ -21,6 +21,9 @@ COPY alembic ./alembic
 # Операционные скрипты (разбор владения, журнал ошибок бота) — нужны В образе, иначе
 # каждый разовый прогон на проде требует docker cp. Кода приложения не касаются.
 COPY scripts ./scripts
+# Зафиксированные исходники пилота поиска: только нужные публичные файлы.
+COPY docs/kb-visa-inbound-v1.1-derived.md ./docs/kb-visa-inbound-v1.1-derived.md
+COPY knowledge/kg_entry/search_v1_1/corpus.json knowledge/kg_entry/search_v1_1/source-lock.json ./knowledge/kg_entry/search_v1_1/
 
 # Непривилегированный пользователь.
 RUN useradd --create-home appuser

@@ -8,8 +8,8 @@
 .kg-muted{color:var(--muted,#64748b);line-height:1.5}.kg-card{background:var(--surface,#fff);border:1px solid var(--border,#d6dee8);border-radius:12px;padding:20px;margin:18px 0}
 .kg-alert{border-left:4px solid #b7791f}.kg-error{border-left:4px solid #c0392b}.kg-wrap a{color:var(--accent,#2563eb)}
 .kg-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.kg-field{min-width:0;display:flex;flex-direction:column;gap:7px}
-.kg-field label{font-weight:600;line-height:1.4}.kg-field input,.kg-field select{font:inherit;color:var(--text,#182738);background:var(--surface,#fff);border:1px solid var(--border,#c5ced9);border-radius:6px;min-height:42px;padding:8px;width:100%;max-width:100%;box-sizing:border-box}
-.kg-field select[multiple]{min-height:120px}.kg-field select:focus,.kg-field input:focus{outline:2px solid var(--accent,#2563eb);outline-offset:2px}
+.kg-field label{font-weight:600;line-height:1.4}.kg-field input,.kg-field select,.kg-field textarea{font:inherit;color:var(--text,#182738);background:var(--surface,#fff);border:1px solid var(--border,#c5ced9);border-radius:6px;min-height:42px;padding:8px;width:100%;max-width:100%;box-sizing:border-box}
+.kg-field select[multiple]{min-height:120px}.kg-field select:focus,.kg-field input:focus,.kg-field textarea:focus{outline:2px solid var(--accent,#2563eb);outline-offset:2px}
 .kg-card fieldset{border:0;margin:0;padding:0;min-width:0}.kg-card legend{font-size:18px;font-weight:700;margin:18px 0 14px}
 .kg-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:24px}.kg-submit{font:inherit;font-weight:600;padding:12px 20px;border:0;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer}.kg-submit:disabled{opacity:.55;cursor:not-allowed}
 .kg-check{display:flex;align-items:flex-start;gap:8px;margin-top:14px}.kg-check input{margin-top:4px}.kg-wrap li{line-height:1.5;margin:6px 0}.kg-wrap summary{cursor:pointer;min-height:30px}
@@ -53,36 +53,30 @@
     <fieldset {% if not editable or not write_on %}disabled{% endif %}>
       {% if editable %}<p class="kg-muted">Новая проверка будет выполнена на дату {{ envelope._kg_asof }}.</p>{% endif %}
       <div class="kg-field"><label for="kg-language">Язык вопросов клиенту</label><select name="language" id="kg-language"><option value="ru" {% if values.language == 'ru' %}selected{% endif %}>Русский</option><option value="en" {% if values.language == 'en' %}selected{% endif %}>English</option></select></div>
-      {% for group, title in [('profile','Документ и поездка'),('current','Если клиент уже в Кыргызстане'),('risks','Нарушения и отказы')] %}
+      {% for group, title in [('party','Обращение и заявители'),('profile','Документ и поездка'),('current','Если клиент уже в Кыргызстане'),('inviter','Приглашающая сторона'),('risks','Нарушения и отказы'),('conversation','Поводы для проверки специалистом')] %}
       <fieldset><legend>{{ title }}</legend>
       {% if group == 'current' %}<p class="kg-muted">При выборе «За рубежом» сведения о текущем пребывании убираются из новой версии. Предыдущая версия сохраняется.</p>{% endif %}
+      {% if group == 'inviter' %}<p class="kg-muted">При ответе «Нет» сведения о приглашающей стороне убираются из новой версии. Названия, ИНН и контакты здесь не запрашиваются.</p>{% endif %}
+      {% if group == 'conversation' %}<p class="kg-muted">Отметьте только то, что известно из обращения клиента. Причина проверки не означает, что передача уже выполнена.</p>{% endif %}
       <div class="kg-grid">
       {% for field in fields if field.group == group %}
-        <div class="kg-field">
-          <label for="{{ field.id }}">{{ field.label }}</label>
-          {% if field.kind == 'date' %}
-          <div class="kg-date">
-            <select name="{{ field.path }}_state" aria-label="{{ field.label }}: известна ли дата" data-date-state="{{ field.id }}">
-              {% for val, text in [('', 'Не спрашивали'), ('unknown', 'Клиент не знает'), ('not_applicable', 'Не применимо'), ('value', 'Дата известна')] %}<option value="{{ val }}" {% if values.get(field.path + '_state','') == val %}selected{% endif %}>{{ text }}</option>{% endfor %}
-            </select>
-            <input type="date" id="{{ field.id }}" name="{{ field.path }}" value="{{ values.get(field.path,'') }}">
-          </div>
-          {% elif field.kind in ['country','countries'] %}
-            {% if field.kind == 'countries' %}<small class="kg-muted" id="kg-citizenship-hint">Можно выбрать несколько гражданств — до пяти.</small>{% endif %}
-            <select id="{{ field.id }}" name="{{ field.path }}" {% if field.kind == 'countries' %}multiple size="5" aria-describedby="kg-citizenship-hint"{% endif %}>
-              {% set selected = values.get(field.path,[]) if field.kind == 'countries' else [values.get(field.path,'')] %}
-              <option value="" {% if '' in selected or not selected %}selected{% endif %}>Не спрашивали</option>
-              <option value="unknown" {% if 'unknown' in selected %}selected{% endif %}>Клиент не знает</option>
-              {% if field.kind == 'country' %}<option value="not_applicable" {% if 'not_applicable' in selected %}selected{% endif %}>Не применимо</option>{% endif %}
-              {% for code, title in countries %}<option value="{{ code }}" {% if code in selected %}selected{% endif %}>{{ title }}</option>{% endfor %}
-            </select>
-          {% else %}
-            <select id="{{ field.id }}" name="{{ field.path }}">{% for val, text in field.options %}<option value="{{ val }}" {% if values.get(field.path,'') == val %}selected{% endif %}>{{ text }}</option>{% endfor %}</select>
-          {% endif %}
-        </div>
+        {% include '_kg_entry_field.html' %}
       {% endfor %}
       </div></fieldset>
       {% endfor %}
+      <fieldset><legend>Семья</legend>
+        <div class="kg-field"><label for="kg-family-state">Едут ли члены семьи</label><select name="family_state" id="kg-family-state">
+          {% for val, text in [('', 'Не спрашивали'), ('unknown', 'Клиент не знает'), ('not_applicable', 'Не применимо'), ('none', 'Члены семьи не едут'), ('value', 'Указать состав семьи')] %}<option value="{{ val }}" {% if values.family_state == val %}selected{% endif %}>{{ text }}</option>{% endfor %}
+        </select></div>
+        <p class="kg-muted">Укажите только родство и сведения для проверки; имена и номера документов не нужны. Всего заявителей — включая клиента и указанных родственников. Смена ответа убирает состав из новой версии.</p>
+        <details id="kg-family-members" {% if values.family_state == 'value' %}open{% endif %}><summary>Состав семьи · до {{ family_limit }} человек</summary>
+          {% for number in range(family_limit) %}{% set prefix = 'family.' ~ number ~ '.' %}
+          <details {% if values.get(prefix ~ 'relation') or number == 0 %}open{% endif %}><summary>Член семьи №{{ number + 1 }}</summary><div class="kg-grid">
+            {% for field in fields if field.path.startswith(prefix) %}{% include '_kg_entry_field.html' %}{% endfor %}
+          </div></details>
+          {% endfor %}
+        </details>
+      </fieldset>
       {% if has_conditions %}<p class="kg-muted">Дополнительные проверки виз, ВНЖ и специальных условий сохранятся вместе с анкетой.</p><label class="kg-check"><input type="checkbox" name="clear_conditions" value="yes" {% if values.get('clear_conditions') == 'yes' %}checked{% endif %}>Убрать дополнительные проверки: сведения больше не актуальны</label>{% endif %}
       {% if editable %}<div class="kg-actions"><button class="kg-submit" type="submit" {% if not write_on %}disabled{% endif %}>Сохранить анкету</button><span class="kg-muted" id="kg-save-status" role="status" aria-live="polite">Будет создана новая версия.</span></div>{% endif %}
     </fieldset>
@@ -94,10 +88,19 @@
 <script>
 (function(){
   const form=document.getElementById('kg-entry-form');if(!form)return;
-  form.querySelectorAll('[data-date-state]').forEach(function(select){
-    function update(){const input=document.getElementById(select.dataset.dateState);input.disabled=select.value!=='value';input.required=select.value==='value';}
+  form.querySelectorAll('[data-value-state]').forEach(function(select){
+    function update(){const input=document.getElementById(select.dataset.valueState);input.disabled=select.value!=='value';input.required=select.value==='value';}
     select.addEventListener('change',update);update();
   });
+  const familyState=document.getElementById('kg-family-state'),members=document.getElementById('kg-family-members');
+  function familyUpdate(){
+    members.hidden=familyState.value!=='value';if(!members.hidden)members.open=true;
+    members.querySelectorAll('input,select,textarea').forEach(function(el){el.disabled=members.hidden;});
+    if(!members.hidden)members.querySelectorAll('[data-value-state]').forEach(function(select){
+      const input=document.getElementById(select.dataset.valueState);input.disabled=select.value!=='value';input.required=select.value==='value';
+    });
+  }
+  familyState.addEventListener('change',familyUpdate);familyUpdate();
   form.addEventListener('submit',function(){const b=form.querySelector('button[type="submit"]');if(b)b.disabled=true;const s=document.getElementById('kg-save-status');if(s)s.textContent='Сохраняем анкету…';});
 })();
 </script>

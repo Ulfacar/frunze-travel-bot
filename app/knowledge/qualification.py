@@ -7,10 +7,11 @@ from .bundle import validate_bundle
 from .conditions import ConditionReview
 from .country_index import CountryRuleIndex
 from .qualification_schema import REQUEST_SCHEMA
+from .intake import review_intake
 from .review import canonical, review_findings
 from .validation import InvalidDocument, check_tree, schema_errors
 
-ALGORITHM = "kg-qualification-review/1"
+ALGORITHM = "kg-qualification-review/2"
 REGIMES = ("visa_free_regime", "visa_required_regime", "special_regime")
 UNKNOWN = (None, "unknown", "not_applicable")
 # Questions collect facts, never ask the applicant to approve legal interpretations.
@@ -83,6 +84,12 @@ class QualificationReview:
             raise QualificationError("invalid_qualification_request") from None
         request = deepcopy(request)
         p = request["profile"]
+        intake = None
+        if request["format"] == "kg-qualification-review-input/2":
+            try:
+                intake = review_intake(p)
+            except ValueError as exc:
+                raise QualificationError(str(exc)) from None
         today = date.fromisoformat(request["as_of"])
         citizenship = p.get("citizenship")
         country, document = p.get("entry_passport_country"), p.get("document_type")
@@ -178,11 +185,16 @@ class QualificationReview:
             blockers.append("no_candidate_resolved")
         questions = [{"path": "profile." + k, "step": QUESTIONS[k][0],
                       "text": QUESTIONS[k][1 if request["language"] == "ru" else 2]} for k in missing]
+        if intake is not None:
+            questions += [{"path": q["path"], "step": q["step"], "text": q[request["language"]]}
+                          for q in intake["questions"]]
+            questions.sort(key=lambda q: q["step"])
+            stops = list(dict.fromkeys(stops + intake["stops"]))
         condition_missing = sorted({f for r in candidates.values() for f in r["missing_facts"]
                                     if f not in ("entry_passport_country", "document_type")})
         return {"format": ALGORITHM, "mode": "review_only", "source": deepcopy(self._source),
                 "request_hash": _hash(request), "as_of": request["as_of"],
-                "status": "manager_review" if stops else "needs_input" if missing else "knowledge_review",
+                "status": "manager_review" if stops else "needs_input" if questions else "knowledge_review",
                 "stop_reasons": stops, "missing_facts": [q["path"] for q in questions],
                 "next_questions": [] if stops else questions[:3], "specialist_missing_facts": condition_missing,
                 "candidate_rules": [candidates[k] for k in sorted(candidates)],

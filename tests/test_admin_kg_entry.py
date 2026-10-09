@@ -30,7 +30,7 @@ class Form(HTMLParser):
     """Read actual selected inputs/options; no hard-coded security tokens."""
     def __init__(self,html):
         super().__init__(convert_charrefs=True)
-        self.data={};self.current=None;self.nodes=[];self.active=False;self.feed(html)
+        self.data={};self.current=None;self.textarea=None;self.nodes=[];self.active=False;self.feed(html)
     def handle_starttag(self,tag,attrs):
         a=dict(attrs)
         if tag=='form':self.active=a.get('id')=='kg-entry-form'
@@ -38,17 +38,21 @@ class Form(HTMLParser):
         self.nodes.append((tag,a));name=a.get('name')
         if tag=='input' and name and (a.get('type')!='checkbox' or 'checked' in a):
             self.data[name]=a.get('value','')
+        if tag=='textarea' and name:self.textarea=name;self.data[name]=''
         if tag=='select' and name:self.current={'name':name,'multi':'multiple' in a,'all':[],'selected':[]}
         if tag=='option' and self.current is not None:
             value=a.get('value','');self.current['all'].append(value)
             if 'selected' in a:self.current['selected'].append(value)
     def handle_endtag(self,tag):
+        if tag=='textarea':self.textarea=None
         if tag=='form':self.active=False
         if not self.active:return
         if tag=='select' and self.current is not None:
             s=self.current;values=s['selected'] or s['all'][:1]
             self.data[s['name']]=values if s['multi'] else values[0]
             self.current=None
+    def handle_data(self,data):
+        if self.active and self.textarea:self.data[self.textarea]+=data
 
 
 @pytest.fixture
@@ -107,7 +111,7 @@ def test_case_link_get_read_only_and_labels(env):
     page=c.get(env['url']);form=Form(page.text)
     assert page.status_code==200 and page.headers['cache-control']=='no-store'
     assert 'Анкета общая для визовых услуг' in page.text and count(env)==0
-    controls=[a for tag,a in form.nodes if tag in ('input','select') and a.get('type')!='hidden']
+    controls=[a for tag,a in form.nodes if tag in ('input','select','textarea') and a.get('type')!='hidden']
     labels={a['for'] for tag,a in form.nodes if tag=='label' and 'for' in a}
     assert all(a.get('id') in labels or a.get('aria-label') for a in controls)
     assert {'_kg_signature','_kg_csrf','_kg_key'} <= form.data.keys()

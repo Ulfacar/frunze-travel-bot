@@ -1,5 +1,6 @@
 """Human-readable review card, using existing interview labels and pinned facts."""
 from app.admin.kg_entry_form import FIELDS, country_options, report_view, values_from_request
+from app.knowledge.intake import known
 
 
 BLOCKERS = {
@@ -26,10 +27,12 @@ FINDINGS = {
 
 def _display(field, values, countries):
     value = values.get(field["path"], "")
-    if field["kind"] == "date":
+    if field["kind"] in ("date", "integer"):
         state = values.get(field["path"] + "_state", "")
         return value if state == "value" else {"unknown": "Клиент не знает",
             "not_applicable": "Не применимо"}.get(state, "Не спрашивали")
+    if field["kind"] == "text":
+        return value or "Не спрашивали"
     labels = {"": "Не спрашивали", "unknown": "Клиент не знает", "not_applicable": "Не применимо"}
     if field["kind"] in ("country", "countries"):
         labels.update(countries)
@@ -91,25 +94,44 @@ def card_view(card):
     values = values_from_request(saved["input"])
     countries = dict(country_options(card["countries"]))
     groups = []
-    for key, title in (("profile", "Документ и поездка"), ("current", "Текущее пребывание в Кыргызстане"),
-                       ("risks", "Нарушения и отказы")):
+    for key, title in (("party", "Обращение и заявители"), ("profile", "Документ и поездка"),
+                       ("current", "Текущее пребывание в Кыргызстане"), ("inviter", "Приглашающая сторона"),
+                       ("risks", "Нарушения и отказы"), ("conversation", "Поводы для проверки специалистом")):
         if key == "current" and profile.get("current_location") == "abroad":
+            continue
+        if key == "conversation" and not profile.get("escalation"):
+            continue
+        if key == "inviter" and not profile.get("inviting_party") and profile.get("purpose") in ("tourism", "transit"):
             continue
         groups.append({"title": title, "rows": [{"label": f["label"], "value": _display(f, values, countries)}
                                                for f in FIELDS if f["group"] == key]})
+    family = profile.get("family")
+    if isinstance(family, list) and family:
+        for index in range(len(family)):
+            prefix = f"family.{index}."
+            groups.append({"title": f"Член семьи №{index + 1}", "rows": [
+                {"label": f["label"], "value": _display(f, values, countries)} for f in FIELDS if f["path"].startswith(prefix)]})
+    else:
+        label = "Члены семьи не едут" if family == [] else {"unknown": "Клиент не знает", "not_applicable": "Не применимо"}.get(family, "Не спрашивали")
+        groups.append({"title": "Семья", "rows": [{"label": "Состав семьи", "value": label}]})
 
     # PDF 3.4 has more requirements than the partial-profile form. Do not mark
     # handoff complete merely because this form has no missing_facts remaining.
-    gaps = ["Личная, семейная, групповая или корпоративная заявка (A5).",
-            "Состав семьи и группы, отдельные заявители (G1).",
-            "Режим въезда, рекомендуемый продукт и альтернативы — после проверки специалистом."]
+    gaps = ["Режим въезда, рекомендуемый продукт и альтернативы — после проверки специалистом."]
+    if not known(profile.get("client_type")) or not known(profile.get("applicants_count")):
+        gaps.append("Личная, семейная, групповая или корпоративная заявка (A5).")
+    if not isinstance(family, list):
+        gaps.append("Состав семьи и группы, отдельные заявители (G1).")
     purpose = profile.get("purpose")
-    if purpose not in ("tourism", "transit"):
+    inviter = profile.get("inviting_party", {})
+    if purpose not in ("tourism", "transit") and not known(inviter.get("exists")):
         gaps.append("Приглашающая сторона (F1): уточнить после подтверждения цели поездки." if purpose in (None, "unknown")
                     else "Наличие и сведения приглашающей стороны (F1).")
-    if profile.get("current_location") == "in_kg":
+    if inviter.get("exists") is True:
+        gaps.append("Реквизиты и контакт приглашающей стороны (F2) — для дальнейшего оформления.")
+    if profile.get("current_location") == "in_kg" and not known(profile.get("in_kg_entry_point")):
         gaps.append("Пункт фактического въезда в Кыргызстан (B8).")
-    if profile.get("previous_refusals_kg") is True:
+    if profile.get("previous_refusals_kg") is True and not profile.get("previous_refusals_details", "").strip():
         gaps.append("Даты и типы прежних отказов по Кыргызстану (D4).")
     if profile.get("violations", {}).get("fines") in (None, "unknown", "not_applicable"):
         gaps.append("Сведения о штрафах (D3).")

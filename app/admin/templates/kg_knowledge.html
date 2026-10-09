@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Frunze — Поиск по исходному PDF{% endblock %}
+{% block brand_sub %}база знаний по въезду{% endblock %}
+{% block head %}
+<style>
+.kg-search{max-width:1000px;margin:auto;padding:24px 16px;overflow-wrap:anywhere;line-height:1.5}
+.kg-search h1{font-size:clamp(24px,4vw,32px);line-height:1.2}.kg-search h2{font-size:20px}
+.kg-search form{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:24px 0}
+.kg-search label{display:block;font-weight:600;margin-bottom:5px}.kg-search .kg-query{flex:1 1 260px;min-width:0}
+.kg-search input,.kg-search select,.kg-search button{font:inherit;max-width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)}
+.kg-search input{width:100%;box-sizing:border-box}.kg-search button,.kg-search summary{cursor:pointer}
+.kg-search :focus{outline:2px solid var(--accent);outline-offset:3px}.kg-search a{color:var(--accent)}
+.kg-search article,.kg-search .kg-notice{padding:18px;border:1px solid var(--border);border-radius:12px;margin:16px 0;background:var(--surface)}
+.kg-search .kg-notice{border-left:4px solid #b7791f}.kg-search pre{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere}
+.kg-search .kg-meta{color:var(--muted)}.kg-search summary{font-weight:600;padding:8px 0}
+@media(max-width:600px){.kg-search{padding:14px 10px}.kg-search article{padding:12px}}
+</style>
+{% endblock %}
+{% block content %}
+<main class="kg-search">
+  <a href="/admin/work">← Рабочий день</a>
+  <h1>Поиск по исходному PDF</h1>
+  <p class="kg-notice">База v1.1 от 02.10.2026 — <strong>черновик для проверки специалистом</strong>.
+    Найденный текст может содержать неподтверждённые сведения. Перед ответом клиенту нужно проверить правило и его применимость.</p>
+  <form method="get" action="/admin/kg-entry/knowledge" role="search">
+    <div class="kg-query"><label for="kg-search-query">Тема или номер фрагмента</label><input id="kg-search-query" name="q" value="{{ query }}" maxlength="200" placeholder="Например: семья, приглашение, регистрация"></div>
+    <div><label for="kg-search-block">Раздел</label><select id="kg-search-block" name="block"><option value="">Все доступные блоки</option>{% for b in blocks %}<option value="{{ b }}" {% if selected_block == b|string %}selected{% endif %}>Блок {{ b }}</option>{% endfor %}</select></div>
+    <button type="submit">Найти</button>
+  </form>
+  {% if error %}<p class="kg-notice" role="alert">{{ error }}</p>
+  {% elif not query.strip() %}<p id="kg-search-empty">Введите тему. Поиск охватывает блоки 1–2, 5–13, 15–17, указанные в инструкции PDF для базы знаний.</p>
+  {% elif not report.results %}<p id="kg-search-none">Совпадений нет. Попробуйте другое слово или уберите фильтр блока. Это не означает, что правило отсутствует.</p>
+  {% else %}
+    <p id="kg-search-count">Найдено фрагментов: {{ report.total_matches }}. Показано: {{ report.results|length }}.</p>
+    {% for hit in report.results %}{% set f = hit.fragment %}
+    <article aria-labelledby="kg-hit-{{ loop.index }}">
+      <h2 id="kg-hit-{{ loop.index }}">{{ f.title }}</h2>
+      <p class="kg-meta">{{ f.id }} · Блок {{ f.block }} · Раздел {{ f.section }}<br>
+        Страницы PDF по маркерам конверсии: {{ f.pdf_pages_from_markers|join(', ') or 'не определены' }} · Сведения на {{ f.rules_as_of }}</p>
+      <p><strong>Черновик · выдача клиенту не разрешена.</strong>{% if f.labels %} Метки источника: {% for label in f.labels %}{{ {'verify':'ПРОВЕРИТЬ','practice':'ПРАКТИКА','decision':'РЕШЕНИЕ'}.get(label,label) }}{% if not loop.last %}, {% endif %}{% endfor %}.{% endif %}</p>
+      {% if f.source_issue_refs %}<p>Вопросы к источнику: {{ f.source_issue_refs|join(', ') }}.</p>{% endif %}
+      {% if f.oversized %}<p class="kg-meta">Объёмный фрагмент оставлен целиком, чтобы сохранить таблицу или связанный текст.</p>{% endif %}
+      <details {% if loop.first %}open{% endif %}><summary>Полный исходный фрагмент</summary><pre class="kg-fragment">{{ f.text }}</pre></details>
+      <details><summary>Источник и контроль целостности</summary><p>{{ f.source_document }}<br>Строки: {{ f.source_span.start_line }}–{{ f.source_span.end_line }}<br>SHA-256 PDF: {{ f.source_pdf_sha256 }}<br>SHA-256 фрагмента: {{ f.text_sha256 }}</p></details>
+    </article>
+    {% endfor %}
+  {% endif %}
+</main>
+{% endblock %}

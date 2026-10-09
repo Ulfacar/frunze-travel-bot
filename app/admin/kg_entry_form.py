@@ -1,8 +1,10 @@
 """Typed HTML interview adapter. No contact details, legal decisions or source ids."""
 from copy import deepcopy
 from datetime import date
+import re
 
 from app.knowledge.slots import slots_schema
+from app.knowledge.intake import get as profile_value
 
 UNKNOWN = [("", "Не спрашивали"), ("unknown", "Клиент не знает")]
 OPTIONAL = [*UNKNOWN, ("not_applicable", "Не применимо")]
@@ -21,9 +23,9 @@ BASES = dict(visa_free="Безвизовое пребывание", visa="Виз
     residence_permit="Вид на жительство", registration_contract="Регистрация по договору", none="Основания нет")
 
 
-def field(path, label, kind="select", options=None, *, group="profile"):
+def field(path, label, kind="select", options=None, *, group="profile", **attrs):
     return {"path": path, "label": label, "kind": kind, "options": options or [], "group": group,
-            "id": "kg-" + path.replace(".", "-")}
+            "id": "kg-" + path.replace(".", "-"), **attrs}
 
 
 FIELDS = [
@@ -46,15 +48,68 @@ FIELDS = [
     field("violations.fines", "Были штрафы", options=TRI, group="risks"),
     field("previous_refusals_kg", "Были отказы по Кыргызстану", options=TRI, group="risks"),
 ]
+ENTRY_POINTS = dict(manas="Аэропорт Манас", osh="Аэропорт Ош", ak_jol="Ак-Жол", other_land="Другой пограничный пункт")
+INVITERS = dict(company="Компания", university="Вуз", clinic="Клиника", relative_kg_citizen="Родственник — гражданин КР",
+                state_body="Госорган", individual="Физическое лицо", tour_organization="Туристическая организация", other="Другая сторона")
+RELATIONS = dict(spouse="Супруг / супруга", child="Ребёнок", parent="Родитель", other="Другой член семьи")
+PROCESS = dict(visa="Виза / въезд", unified_permit="Единое разрешение", resident_card="Резидент-карта",
+               residence_permit="Вид на жительство", regularization="Урегулирование пребывания")
+FIELDS += [
+    field("client_type", "Частное или корпоративное обращение", options=[*UNKNOWN, ("b2c", "Частный клиент"), ("b2b", "Компания")], group="party"),
+    field("applicants_count", "Всего заявителей, включая клиента", "integer", group="party", minimum=1, maximum=200, allow_na=False),
+    field("requested_process", "С чем обратился клиент", options=[*UNKNOWN, *PROCESS.items()], group="party"),
+    field("purpose_details", "Подробности фактической цели", "text", max_length=1000),
+    field("multiple_entries_needed", "Нужны выезды и возвращения в этой поездке", options=TRI),
+    field("entry_point", "Планируемый пункт въезда", options=[*OPTIONAL, *ENTRY_POINTS.items()]),
+    field("entry_point_other", "Название другого пограничного пункта", "text", max_length=100),
+    field("tickets_bought", "Билеты уже куплены", options=TRI),
+    field("urgency_deadline", "Жёсткая дата готовности, если есть", "date"),
+    field("event_dates.from", "Начало мероприятия, если применимо", "date"),
+    field("event_dates.to", "Окончание мероприятия, если применимо", "date"),
+    field("in_kg_entry_point", "Пункт фактического въезда", options=[*OPTIONAL, *ENTRY_POINTS.items()], group="current"),
+    field("purpose_declared_at_border", "Цель, указанная при въезде", "text", max_length=500, group="current"),
+    field("previous_refusals_details", "Когда и по какому типу визы был отказ", "text", max_length=500, group="risks"),
+    field("inviting_party.exists", "Есть приглашающая сторона в Кыргызстане", options=TRI, group="inviter"),
+    field("inviting_party.type", "Тип приглашающей стороны", options=[*OPTIONAL, *INVITERS.items()], group="inviter"),
+    field("inviting_party.can_issue_letter", "Готова выдать официальное письмо", options=TRI, group="inviter"),
+    field("inviting_party.has_portal_cabinet", "Есть кабинет на портале", options=TRI, group="inviter"),
+    field("inviting_party.tax_debts_absent", "Подтверждено отсутствие налоговой задолженности", options=TRI, group="inviter"),
+    field("escalation.complaint", "Клиент раздражён или жалуется", options=TRI, group="conversation"),
+    field("escalation.refund_question", "Клиент спрашивает о возврате денег", options=TRI, group="conversation"),
+    field("escalation.legal_question", "Есть вопрос о штрафах, депортации или суде", options=TRI, group="conversation"),
+    field("escalation.conflicting_answers", "В ответах клиента есть противоречие", options=TRI, group="conversation"),
+]
+FAMILY_LIMIT = 20  # Same bound as the source slot schema; no applicant identities here.
+FAMILY_FIELDS = []
+for index in range(FAMILY_LIMIT):
+    prefix = f"family.{index}."
+    label = f"Член семьи №{index + 1}: "
+    FAMILY_FIELDS += [
+        field(prefix + "relation", label + "родство", options=[("", "Не указано"), *RELATIONS.items()], group="family"),
+        field(prefix + "age", label + "возраст, полных лет", "integer", group="family", minimum=0, maximum=2147483647),
+        *[field(prefix + key, label + title, options=TRI, group="family") for key, title in (
+            ("travels_together", "въезжает вместе с клиентом"), ("arrives_later", "приедет позже"),
+            ("both_parents_travel", "ребёнок едет с обоими родителями"), ("born_in_kg", "ребёнок родился в Кыргызстане"),
+            ("documents_apostilled", "документы о родстве апостилированы"))],
+        field(prefix + "kg_status_of_principal", label + "статус основного члена семьи в КР", options=[*OPTIONAL,
+            ("citizen", "Гражданин КР"), *[(k, BASES[k]) for k in ("ep", "resident_card", "residence_permit", "visa", "none")]], group="family"),
+    ]
+FIELDS += FAMILY_FIELDS
 LABELS = {"profile." + f["path"]: f["label"] for f in FIELDS}
+LABELS["profile.family"] = "Состав семьи и возраст детей"
 STOP_LABELS = dict(special_document_review="Особый тип проездного документа", work_purpose_review="Цель связана с работой",
     passport_expired="Срок действия документа истёк", passport_pages_review="Нет свободных страниц",
     reported_overstay="Указано нарушение срока пребывания", reported_deportation_or_ban="Указаны депортация или запрет",
     reported_refusal="Указан отказ по Кыргызстану", current_basis_missing="Нет основания текущего пребывания",
     current_basis_until_passed="Срок текущего основания истёк", registration_until_passed="Срок регистрации истёк",
     planned_entry_in_past="Планируемая дата въезда уже прошла")
-FORM_FIELDS = {"language", "clear_conditions", *(f["path"] for f in FIELDS),
-               *(f["path"] + "_state" for f in FIELDS if f["kind"] == "date")}
+STOP_LABELS.update(reported_fines="Указаны штрафы в Кыргызстане", large_group_review="Более пяти заявителей",
+    special_process_requested="Запрошены разрешение, статус проживания или урегулирование",
+    reported_complaint="Клиент раздражён или жалуется", reported_refund_question="Вопрос о возврате денег",
+    reported_legal_question="Вопрос о штрафах, депортации или суде", reported_conflicting_answers="Противоречивые ответы клиента")
+FORM_FIELDS = {"language", "clear_conditions", "family_state", *(f["path"] for f in FIELDS),
+               *(f["path"] + "_state" for f in FIELDS if f["kind"] in ("date", "integer"))}
+MAX_LENGTHS = {f["path"]: f.get("max_length", 128) for f in FIELDS}
 
 
 class FormInvalid(ValueError):
@@ -64,13 +119,15 @@ class FormInvalid(ValueError):
 def values_from_request(request):
     values = {"language": request.get("language", "ru"), "clear_conditions": "", "citizenship": []}
     profile = request.get("profile", {})
+    family = profile.get("family")
+    values["family_state"] = ("value" if family else "none") if isinstance(family, list) else family or ""
     for f in FIELDS:
         path = f["path"]
-        value = profile.get(path) if "." not in path else profile.get("violations", {}).get(path.split(".")[1])
-        if f["kind"] == "date":
-            state = "value" if value and value not in ("unknown", "not_applicable") else value or ""
+        value = profile_value(profile, path)
+        if f["kind"] in ("date", "integer"):
+            state = "value" if value is not None and value not in ("unknown", "not_applicable", "") else value or ""
             values[path + "_state"] = state
-            values[path] = value if state == "value" else ""
+            values[path] = str(value) if state == "value" else ""
         elif f["kind"] == "countries":
             values[path] = list(value) if isinstance(value, list) else [value] if value else []
         else:
@@ -80,21 +137,38 @@ def values_from_request(request):
 
 def request_from_values(values, *, as_of, base_request):
     profile = {}
+    family_rows = [{} for _ in range(FAMILY_LIMIT)]
+    family_state = values.get("family_state", "")
+    if family_state not in ("", "unknown", "not_applicable", "none", "value"):
+        raise FormInvalid("Выберите состояние сведений о семье.")
     for f in FIELDS:
         path = f["path"]
+        if f["group"] == "family" and family_state != "value":
+            continue
         value = values.get(path, [] if f["kind"] == "countries" else "")
-        if f["kind"] == "date":
+        if f["kind"] in ("date", "integer"):
             state = values.get(path + "_state", "")
             if state == "value":
                 try:
-                    if date.fromisoformat(value).isoformat() != value:
-                        raise ValueError
+                    if f["kind"] == "date":
+                        if date.fromisoformat(value).isoformat() != value:
+                            raise ValueError
+                    else:
+                        if not re.fullmatch(r"0|[1-9][0-9]{0,9}", value):
+                            raise ValueError
+                        value = int(value)
+                        if not f["minimum"] <= value <= f["maximum"]:
+                            raise ValueError
                 except (ValueError, TypeError):
-                    raise FormInvalid("Укажите корректную дату: " + f["label"] + ".") from None
+                    raise FormInvalid("Укажите корректное значение: " + f["label"] + ".") from None
             elif state in ("", "unknown", "not_applicable"):
                 value = state
             else:
-                raise FormInvalid("Выберите состояние даты: " + f["label"] + ".")
+                raise FormInvalid("Выберите состояние значения: " + f["label"] + ".")
+        elif f["kind"] == "text":
+            value = value.replace("\r\n", "\n").strip()
+            if len(value) > f["max_length"]:
+                raise FormInvalid("Сократите ответ: " + f["label"] + ".")
         elif f["kind"] == "countries":
             value = [v for v in value if v]
             if "unknown" in value:
@@ -108,17 +182,34 @@ def request_from_values(values, *, as_of, base_request):
                 raise FormInvalid("Выберите допустимый ответ: " + f["label"] + ".")
             if value in ("true", "false"):
                 value = value == "true"
-        if "." in path:
-            profile.setdefault("violations", {})[path.split(".")[1]] = value
+        if path.startswith("family."):
+            _, number, key = path.split(".")
+            family_rows[int(number)][key] = value
+        elif "." in path:
+            parent, key = path.split(".")
+            profile.setdefault(parent, {})[key] = value
         else:
             profile[path] = value
+    if family_state == "value":
+        members = [row for row in family_rows if row]
+        if not members or any(not row.get("relation") for row in members):
+            raise FormInvalid("Укажите родство для каждого заполненного члена семьи.")
+        profile["family"] = members
+    elif family_state:
+        profile["family"] = [] if family_state == "none" else family_state
     if profile.get("current_location") == "abroad":
         for f in FIELDS:
             if f["group"] == "current":
                 profile.pop(f["path"], None)
     if profile.get("current_basis_in_kg") in set(BASES) - {"visa"}:
         profile.pop("current_visa_type", None)
-    result = {"format": "kg-qualification-review-input/1", "as_of": as_of,
+    if profile.get("entry_point") != "other_land":
+        profile.pop("entry_point_other", None)
+    if profile.get("previous_refusals_kg") is False:
+        profile.pop("previous_refusals_details", None)
+    if profile.get("inviting_party", {}).get("exists") is False:
+        profile["inviting_party"] = {"exists": False}
+    result = {"format": "kg-qualification-review-input/2", "as_of": as_of,
               "language": values.get("language", "ru"), "profile": profile}
     if "condition_facts" in base_request and values.get("clear_conditions") != "yes":
         result["condition_facts"] = deepcopy(base_request["condition_facts"])

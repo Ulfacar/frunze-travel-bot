@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 
 import app.admin.router as ar
-from app.admin.kg_entry_form import (FIELDS, FORM_FIELDS, FormInvalid, country_options,
+from app.admin.kg_entry_form import (FIELDS, FORM_FIELDS, MAX_LENGTHS, FAMILY_LIMIT, FormInvalid, country_options,
                                     report_view, request_from_values, values_from_request)
 from app.admin.kg_review_card import card_view
 from app.admin.workday import _case_or_404, _require_workday, _write_on
@@ -27,7 +27,8 @@ from app.domain.service_authz import PermissionDenied
 log = logging.getLogger("admin.kg_entry")
 META = ("_kg_key", "_kg_contact", "_kg_base", "_kg_revision", "_kg_version", "_kg_history", "_kg_asof")
 SECURITY = {"_kg_csrf", "_kg_signature"}
-BODY_LIMIT = 16_384
+# Includes URL-encoded Unicode at every text bound and all 20 family rows.
+BODY_LIMIT = 65_536
 
 
 def _gate(request, manager, *, write=False):
@@ -96,13 +97,13 @@ async def _form(request):
         body.extend(chunk)
     try:
         pairs = parse_qsl(body.decode("utf-8", errors="strict"), keep_blank_values=True,
-                          max_num_fields=70, encoding="utf-8", errors="strict")
+                          max_num_fields=384, encoding="utf-8", errors="strict")
     except (ValueError, UnicodeError):
         raise HTTPException(422, "Не удалось прочитать форму.") from None
     values = {"citizenship": []}
     seen = set()
     for name, value in pairs:
-        if name not in FORM_FIELDS | set(META) | SECURITY or len(value) > 128:
+        if name not in FORM_FIELDS | set(META) | SECURITY or len(value) > MAX_LENGTHS.get(name, 128):
             raise HTTPException(422, "Недопустимое поле анкеты.")
         if name in seen and name != "citizenship":
             raise HTTPException(422, "Повторяющееся поле анкеты.")
@@ -177,7 +178,7 @@ async def _render(request, manager, actor, case, *, qualification_id=None, echo=
         context["values"] = echo
         context["envelope"] = {k: echo.get(k, "") for k in (*META, *SECURITY)}
     return ar.templates.TemplateResponse(request, "kg_entry.html", {**context, "manager": manager, "case": case,
-        "fields": FIELDS, "error": error, "write_on": _write_on(request),
+        "fields": FIELDS, "family_limit": FAMILY_LIMIT, "error": error, "write_on": _write_on(request),
         "form_url": f"/admin/case/{case['id']}/kg-entry"}, status_code=status,
         headers={"Cache-Control": "no-store", "X-Action-Outcome": "failed" if status == 503 else "invalid" if error else "form"})
 
@@ -228,7 +229,7 @@ async def qualification_submit(case_id: int, request: Request, manager: dict = D
             error="Не удалось подтвердить сохранение. Ответы сохранены в этой форме: повторите отправку без изменений, чтобы проверить результат.")
     except DomainError:
         return await _render(request, manager, actor, case, echo=values, status=422,
-            error="Проверьте ответы: гражданство должно соответствовать паспорту, даты — идти по порядку. Если данные верны, нужна проверка источников администратором.")
+            error="Проверьте ответы: гражданство должно соответствовать паспорту, даты — идти по порядку, число заявителей — включать указанных членов семьи. Нельзя одновременно въезжать вместе и приезжать позже. Если данные верны, нужна проверка источников администратором.")
     except Exception:
         log.warning("KG interview: save unavailable")
         return await _render(request, manager, actor, case, echo=values, status=503,
