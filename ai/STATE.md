@@ -1,5 +1,18 @@
 # Current work
 
+- Updated **2026-10-09**. Active **E5-04D HISTORY CRM**, CRITICAL / solo **PARTIALLY_READY**. Whole PDF is **not complete**.
+- Branch `fix/tours-search-quality`; code `f851f635688ad92d202034a4a3eb605452e21421`, base `54a6e9d94c8fde5a8b602b49646702dc91633f83`. Final evidence/report in following docs commit.
+- Task `ai/tasks/2026-10-09-e5-04d-history-crm.md`; contract `docs/e5-04d-history-crm.md`; handoff `ai/handoffs/2026-10-09-2318-e5-04d-history-crm.md`.
+- Result: native actual-stay editor, completeness/provenance, immutable versions, explicit history selection for a new qualification, pinned trips in old cards/print. Full-admin/default-OFF/workday/write gates retained. No migration, permission expansion or client legal calculation.
+- Evidence: initial HTTP46; related301 pass before final banner/country-change refinement; corrected combined browser3 pass (mobile390 JS/desktop1365 no JS). Final committed-copy HTTP/shared-shell/browser **134 passed / 3 warnings / 167.19s**. Four-page synthetic print and mobile history screen inspected.
+- 20/20 changed files match code Git blobs/workspace/isolated copy (LF-normalized), with `.env`/`prod.env` absent; manifest `ai/reviews/2026-10-09-e5-04d-history-snapshot.json`. Cold imports kg_history/kg_entry/main PASS; compilation/staged whitespace/credential-shaped scan PASS.
+- SELF_REVIEW packet `ai/reviews/2026-10-09-e5-04d-history-packet.md`; independent reviewer/final auditor and PG16 remain UNKNOWN. Docker build/full suite/traps not rerun here; prior full suite has known date failure, prior traps 1 ERROR/57 WARN. No green release claim.
+- Full map `docs/e5-pdf-section-coverage.md`; new five-page report `docs/reports/frunze-pdf-progress-2026-10-09-history.pdf`, all pages visually checked and 26 headings verified. Partial D1/D2/D5 only: unknown dates, historical visa details and passport continuity still incomplete. No new measured percentage.
+- Next: independent review/PG checks; owner manager-scope decision before broadened access/handoff assignments; E6 Applicant/Application/four processes. Legal publication/calendar/prices/privacy decisions remain. Redesign later.
+- Working-branch commit/push authorized. No production deploy, env changes, migrations, real-data work or messages. Preserve unrelated untracked artifacts; never stage `.env`/`prod.env`.
+
+## Previous checkpoint — E5-04C / E5-01C
+
 - Updated **2026-10-09**. Active **E5-04C INTAKE + E5-01C SEARCH**. Intake CRITICAL / solo **PARTIALLY_READY**; local search STANDARD / solo **DONE**. Entire PDF is **not complete**.
 - Branch `fix/tours-search-quality`; code `e23e39eb78a3586557c712219118344e2cfb9b46`, base `13835bb275bd20881dab8a83c6eec45c94ce114a`. Follow-up docs/report commit records final evidence.
 - Tasks `ai/tasks/2026-10-09-e5-04c-intake.md`, `ai/tasks/2026-10-09-e5-01c-knowledge-search.md`; contracts `docs/e5-04c-intake.md`, `docs/e5-01c-knowledge-search.md`.

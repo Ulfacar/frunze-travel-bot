@@ -1,0 +1,89 @@
+{
+  "revision": "f851f635688ad92d202034a4a3eb605452e21421",
+  "base": "54a6e9d94c8fde5a8b602b49646702dc91633f83",
+  "copy": "runs/e5-04d-history-committed",
+  "env_files_absent": true,
+  "files": [
+    {
+      "path": "Dockerfile",
+      "sha256_lf": "ae47acbea0cf6778924284ce886dfe173023aba76e660d42fb1aa0dd41471614"
+    },
+    {
+      "path": "ai/reviews/2026-10-09-e5-04d-history-packet.md",
+      "sha256_lf": "de2b99ca0e16620c6e122f141bda6a167eb55b1866bd15ffbbf3981945e2ad78"
+    },
+    {
+      "path": "ai/tasks/2026-10-09-e5-04d-history-crm.md",
+      "sha256_lf": "918703e980265064085ea5dd2d657d3a3426bf95e84d957738448b02222232e2"
+    },
+    {
+      "path": "app/admin/kg_entry.py",
+      "sha256_lf": "014e4a004820b6da2134ea2e91f97801c132da209b46bf8aaaf4f2f7f76ff219"
+    },
+    {
+      "path": "app/admin/kg_history.py",
+      "sha256_lf": "5c9a3d13102a7550519d5b2f4d9bf607632e386dc69f7157b9462f1e60727c2f"
+    },
+    {
+      "path": "app/admin/kg_history_form.py",
+      "sha256_lf": "ded409205cc143642e64a19fb7eaa9ead9764c0c4f7d0b267c1ed9c5429c4f7d"
+    },
+    {
+      "path": "app/admin/kg_review_card.py",
+      "sha256_lf": "018092abd355d8046526cb43ce61c3e18ba503e7ec059cd7c5b775f3001d150a"
+    },
+    {
+      "path": "app/admin/router.py",
+      "sha256_lf": "cafce1d192a2994f549acad3a421631cf7ab6d0ddbeb0ac7624cad12dc9935bf"
+    },
+    {
+      "path": "app/admin/templates/kg_entry.html",
+      "sha256_lf": "4a3f1a4048c2afe5db5d80e06477e45333699aa8bc22ef755367914c194ac786"
+    },
+    {
+      "path": "app/admin/templates/kg_history.html",
+      "sha256_lf": "4c59f7f0d50bf1faf0928fe0c5fd9324997300b3639418fb346b52d2e8db0d21"
+    },
+    {
+      "path": "app/admin/templates/kg_review_card.html",
+      "sha256_lf": "764ce9b6f1471bcbfa9d51cd66731a0c852eebe3606ade282ea2d8f82ebbe290"
+    },
+    {
+      "path": "app/domain/qualification_card.py",
+      "sha256_lf": "165a07786c0c86044a72d70fe09f3ae8e148e1e1a5f363a77efcd6ae13800957"
+    },
+    {
+      "path": "docs/crm-delivery/backlog.md",
+      "sha256_lf": "b8ef25ca50249a8c65d074397d276a4d30d4ce62fb52c305892efcfc2d0753ac"
+    },
+    {
+      "path": "docs/e5-04d-history-crm.md",
+      "sha256_lf": "fee55a884397c2026d52566f25c3628d0ff4c5c64e74046823bd59048c4b4601"
+    },
+    {
+      "path": "docs/e5-pdf-progress.md",
+      "sha256_lf": "d5fab62c88c627f27f72d5eab04170850795f22a157d73039b4ad579de4ec26c"
+    },
+    {
+      "path": "docs/e5-pdf-section-coverage.md",
+      "sha256_lf": "56e2050b83362f4a59b6bf5eddcbc2b475415cca82ed6ca1d853a7ab9d804943"
+    },
+    {
+      "path": "scripts/build_kg_progress_report.py",
+      "sha256_lf": "e02631375ffd38b18975ff0604e55b3eab789189fa6668e7890177ee39c6ceb8"
+    },
+    {
+      "path": "tests/browser_kg_history.py",
+      "sha256_lf": "09446ec2b40263a1e5d1bd6291cdcb9d731ac8427ed14c66c5f5e52d144a61d9"
+    },
+    {
+      "path": "tests/test_admin_kg_entry.py",
+      "sha256_lf": "96804aea5f72f51577d3417783a0e4cb424134cbcd7dbfb573281fdd1a9b23cd"
+    },
+    {
+      "path": "tests/test_admin_kg_history.py",
+      "sha256_lf": "19b7020be9394d05c96364ed81edd610cf0cf1a492e61715675c3a09a0d298c4"
+    }
+  ],
+  "scope": "Code checkpoint only; later evidence/report docs not included"
+}

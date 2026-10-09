@@ -30,3 +30,13 @@ drop out-of-view trips, infer confirmed from client statement, or rewrite old sn
 Unknown exit dates must not be represented as a known ongoing stay. No deployment.
 Separate self-review and review packet required; critical final status remains
 PARTIALLY_READY when independent review/PG gates are still UNKNOWN.
+
+## Outcome / evidence
+
+Code `f851f635688ad92d202034a4a3eb605452e21421`, **PARTIALLY_READY**.
+Acceptance implemented locally: existing immutable service, native version editor,
+explicit source attachment and pinned print facts. No deployment or migration.
+Related regression301 and corrected browser3 PASS before final banner refinement;
+final Git-copy HTTP/shared-shell/browser **134 passed / 167.19s**. Exact commands/limits and report in
+`ai/handoffs/2026-10-09-2318-e5-04d-history-crm.md`.
+Review packet is **SELF_REVIEW**; independent reviewer/audit/PG remain UNKNOWN.

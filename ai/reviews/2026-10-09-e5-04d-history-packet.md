@@ -55,6 +55,9 @@ combined browser tests: 3 passed / 45.33s on isolated loopback Chromium (390 JS,
 card PDF visually inspected page by page, plus mobile history screenshot.
 Final related regression and committed-copy results are recorded separately in
 handoff; do not promote these initial worktree numbers to final-commit evidence.
+Final code `f851f63`: isolated Git-copy new/old HTTP, shared shell and both browser
+files **134 passed / 3 warnings / 167.19s**. Related earlier regression301 passed;
+20/20 changed files match Git blobs at the code checkpoint. No independent approval.
 
 Independent reviewer/final audit and PG16 runtime UNKNOWN. Docker engine absent in
 preceding checkpoint; no image build attempted here. Previous full-suite tour-date
