@@ -1,0 +1,528 @@
+{
+  "format": "kg-message-template-draft/1",
+  "publication_approved": false,
+  "source_sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
+  "templates": [
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [],
+      "label": "none",
+      "page": "85",
+      "section": "А.1",
+      "source_ref": "KB v1.1, раздел А.1",
+      "text": "RU: Здравствуйте! Я помощник Frunze Travel / Get Visa — помогаю с визами и пребыванием в Кыргызстане. Чтобы\nподобрать правильный вариант, ответьте, пожалуйста: 1) ваше гражданство; 2) цель поездки (туризм, бизнес, работа,\nучёба, семья, лечение, транзит); 3) примерные даты въезда и выезда.\nEN: Hello! I’m the Frunze Travel / Get Visa assistant — I help with visas and stays in Kyrgyzstan. To find the right option, please\ntell me: 1) your citizenship; 2) the purpose of your trip (tourism, business, work, study, family, medical, transit); 3)\napproximate entry and exit dates.",
+      "text_sha256": "8c13bc3ff484d83c8cb3688f00392160116f8f92501998a189dff23f5cab06f9",
+      "title": "Первый ответ",
+      "unit_id": "KG.TPL.A01"
+    },
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [],
+      "label": "none",
+      "page": "85",
+      "section": "А.2",
+      "source_ref": "KB v1.1, раздел А.2",
+      "text": "Спасибо! Ещё пара вопросов: где вы сейчас находитесь (если уже в Кыргызстане — с какой даты)? Едете один или с\nсемьёй/коллегами? Есть ли в Кыргызстане компания, вуз или родственник, который вас приглашает?",
+      "text_sha256": "ac19db85825aea62fd21b1b3f3c323aabf73790ccbe009c57dff6616d8f111d0",
+      "title": "Уточнение (после первых ответов)",
+      "unit_id": "KG.TPL.A02"
+    },
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p01",
+          "kind": "text",
+          "token": "Имя"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p02",
+          "kind": "positive_integer",
+          "token": "N"
+        },
+        {
+          "choices": [
+            "однократная",
+            "многократная"
+          ],
+          "currency": null,
+          "id": "p03",
+          "kind": "choice",
+          "token": "однократная/многократная"
+        },
+        {
+          "choices": [],
+          "currency": "USD",
+          "id": "p04",
+          "kind": "money",
+          "token": "сумма"
+        }
+      ],
+      "label": "none",
+      "page": "85",
+      "section": "А.3",
+      "source_ref": "KB v1.1, раздел А.3",
+      "text": "{Имя}, для вашей поездки подходит туристическая электронная виза (TS) на {N} дней, {однократная/многократная}. •\nКонсульский сбор: ${сумма} (оплата в сомах по курсу НБ КР, возможна комиссия банка) • Наши услуги: $50 • Срок\nрассмотрения: до 5 рабочих дней (срочно — до 2 рабочих дней, сбор ×3) • Что нужно от вас: скан паспорта\n(действителен ≥ 6 мес. после поездки), фото на белом фоне, адрес проживания в Кыргызстане. Важно: консульский\nсбор при отказе не возвращается; решение принимает МИД КР. Пожалуйста, не покупайте билеты до получения визы.\nОформляем?",
+      "text_sha256": "7466e393e12c0d43cc8c9e35a93127712ad066d6b6cb900a66f315eb60ddd1e0",
+      "title": "Коммерческое предложение (пример TS)",
+      "unit_id": "KG.TPL.A03"
+    },
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [],
+      "label": "none",
+      "page": "85",
+      "section": "А.4",
+      "source_ref": "KB v1.1, раздел А.4",
+      "text": "TS: Пришлите, пожалуйста: 1) цветной скан страницы паспорта с фото — целиком, без бликов, чтобы читались две\nстроки внизу; 2) фото на белом фоне (лицо и плечи, взгляд в камеру, без очков); 3) адрес, где будете жить (отель или\nквартира). Фото документов можно сделать телефоном при хорошем освещении.\nB: Плюс к паспорту и фото: письмо приглашающей компании на бланке (подпись, печать) с вашими данными, целью и\nдатами визита + копии её учредительных документов и свидетельства о регистрации. Шаблон письма отправим\nкомпании сами — дайте контакт.\nRL / FF: Плюс: свидетельства о браке/рождении (если выданы за рубежом — с апостилем и нотариальным переводом\nна русский), документы родственника-приглашающего (паспорт КР / ЕР / резидент-карта / ВНЖ), справка о доходе.",
+      "text_sha256": "7cb331787560d53dd6ca4d6a523bed34f60973b4d72ae396952cd5ab43415147",
+      "title": "Запрос документов",
+      "unit_id": "KG.TPL.A04"
+    },
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p01",
+          "kind": "money",
+          "token": "сумма"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p02",
+          "kind": "https_url",
+          "token": "ссылка"
+        }
+      ],
+      "label": "none",
+      "page": "85",
+      "section": "А.5",
+      "source_ref": "KB v1.1, раздел А.5",
+      "text": "Счёт на {сумма} во вложении / по ссылке: {ссылка}. После оплаты сразу начинаем подготовку. Консульский сбор\nоплачивается до подачи и при отказе не возвращается.",
+      "text_sha256": "99e81cfa9f7bb0e2b0394c2e77d9efaa5d92b3f2c2c741dc62b9ad8d92c15574",
+      "title": "Оплата",
+      "unit_id": "KG.TPL.A05"
+    },
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p01",
+          "kind": "date",
+          "token": "дата"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p02",
+          "kind": "text",
+          "token": "reference"
+        },
+        {
+          "choices": [
+            "5",
+            "2"
+          ],
+          "currency": null,
+          "id": "p03",
+          "kind": "choice",
+          "token": "5/2"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p04",
+          "kind": "date",
+          "token": "дата"
+        }
+      ],
+      "label": "none",
+      "page": "85",
+      "section": "А.6",
+      "source_ref": "KB v1.1, раздел А.6",
+      "text": "Ваша заявка подана {дата}, номер {reference}. Срок рассмотрения — до {5/2} рабочих дней, ожидаем решение до\n{дата}. Во время рассмотрения могут позвонить из МИД или ГКНБ — пожалуйста, отвечайте на звонки. Мы проверяем\nстатус дважды в день и сразу напишем.",
+      "text_sha256": "d76cab36f9072c1359d8b0b5b1f50ba65d22e824659a1d19ae1b6dd13ca93616",
+      "title": "Заявка подана",
+      "unit_id": "KG.TPL.A06"
+    },
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p01",
+          "kind": "text",
+          "token": "Имя"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p02",
+          "kind": "text",
+          "token": "номер"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p03",
+          "kind": "date",
+          "token": "дата"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p04",
+          "kind": "date",
+          "token": "дата"
+        },
+        {
+          "choices": [
+            "однократная",
+            "многократная"
+          ],
+          "currency": null,
+          "id": "p05",
+          "kind": "choice",
+          "token": "однократная/многократная"
+        },
+        {
+          "choices": [
+            "туризм",
+            "деловая поездка"
+          ],
+          "currency": null,
+          "id": "p06",
+          "kind": "choice",
+          "token": "туризм/деловая поездка"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p07",
+          "kind": "positive_integer",
+          "token": "N"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p08",
+          "kind": "date",
+          "token": "дата"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p09",
+          "kind": "date",
+          "token": "дата окончания"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p10",
+          "kind": "text",
+          "token": "телефон"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p11",
+          "kind": "text",
+          "token": "Name"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p12",
+          "kind": "text",
+          "token": "number"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p13",
+          "kind": "date",
+          "token": "date"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p14",
+          "kind": "date",
+          "token": "date"
+        },
+        {
+          "choices": [
+            "single",
+            "multiple"
+          ],
+          "currency": null,
+          "id": "p15",
+          "kind": "choice",
+          "token": "single/multiple"
+        },
+        {
+          "choices": [
+            "tourism",
+            "business"
+          ],
+          "currency": null,
+          "id": "p16",
+          "kind": "choice",
+          "token": "tourism/business"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p17",
+          "kind": "positive_integer",
+          "token": "N"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p18",
+          "kind": "date",
+          "token": "date"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p19",
+          "kind": "date",
+          "token": "end date"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p20",
+          "kind": "text",
+          "token": "phone"
+        }
+      ],
+      "label": "none",
+      "page": "85,86",
+      "section": "А.7",
+      "source_ref": "KB v1.1, раздел А.7",
+      "text": "RU: {Имя}, ваша виза готова ✅ Файл во вложении. Проверьте ФИО и номер паспорта.\n1. Распечатайте визу и сохраните в телефоне.\n2. Въезжайте по этому же паспорту № {номер}.\n3. Въезд — через аэропорт «Манас», «Ош» или КПП «Ак-Жол».\n4. Срок: с {дата} по {дата}, {однократная/многократная}. Нельзя въезжать раньше и оставаться позже.\n5. На границе называйте цель: {туризм/деловая поездка}. Работать по этой визе нельзя.\n6. Если будете в Кыргызстане дольше {N} дней — нужна регистрация до {дата}. Мы можем её сделать.\n7. Хотите продлить пребывание — напишите минимум за 10 рабочих дней до {дата окончания}. Туристическая виза\nне продлевается.\n8. Просрочка — штраф от 5 500 сом, выездная виза от $200 и запрет въезда; оплатить штраф в аэропорту нельзя.\n9. Потеряли паспорт — сразу пишите нам: {телефон}.\nEN: {Name}, your visa is ready ✅ The file is attached — please check your name and passport number.\n1. Print the visa and keep a copy on your phone.\n2. Enter with the same passport No. {number}.\n3. Entry via Manas airport, Osh airport or the Ak-Jol checkpoint.\n4. Valid from {date} to {date}, {single/multiple} entry. Do not arrive earlier or stay later.\n5. Tell the border officer your purpose: {tourism/business}. Work is not allowed on this visa.\n6. If you stay longer than {N} days, registration is required by {date} — we can do it for you.\n7. To extend your stay, contact us at least 10 working days before {end date}. Tourist visas cannot be extended.\n8. Overstay means a fine (from 5,500 KGS), an exit visa (from $200) and an entry ban; fines cannot be paid at the airport.\n9. Lost passport — contact us immediately: {phone}.",
+      "text_sha256": "b8585f35d6ccdea61313c69fbf6f795e9e5d3215ac7323b4ca1b5d3b11476b7a",
+      "title": "Виза готова — памятка",
+      "unit_id": "KG.TPL.A07"
+    },
+    {
+      "confirmation_status": "blocked",
+      "fields": [
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p01",
+          "kind": "text",
+          "token": "что требуется"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p02",
+          "kind": "unresolved_calculation",
+          "token": "дата = +30 дней"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p03",
+          "kind": "text",
+          "token": "документ"
+        }
+      ],
+      "label": "none",
+      "page": "86",
+      "section": "А.8",
+      "source_ref": "KB v1.1, раздел А.8",
+      "text": "МИД вернул заявку на уточнение: {что требуется}. Чтобы не потерять сбор, нужно исправить до {дата = +30 дней}.\nПришлите, пожалуйста, {документ} сегодня — после исправления рассмотрение снова занимает до 5 рабочих дней.",
+      "text_sha256": "4c8ce3ac199dce6acac8dd7fb1a3bb182015ffd3f401d76e738e81999d76ecd1",
+      "title": "Возврат на доработку",
+      "unit_id": "KG.TPL.A08"
+    },
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p01",
+          "kind": "text",
+          "token": "Имя"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p02",
+          "kind": "text",
+          "token": "…"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p03",
+          "kind": "text",
+          "token": "вариант 1 — усилить документы и подать повторно; вариант 2 — другой тип визы"
+        }
+      ],
+      "label": "none",
+      "page": "86",
+      "section": "А.9",
+      "source_ref": "KB v1.1, раздел А.9",
+      "text": "{Имя}, к сожалению, МИД КР отказал в визе. Причины государство не сообщает (так установлено правилами).\nКонсульский сбор по закону не возвращается. По нашему анализу, вероятная причина — {…}. Что можно сделать:\n{вариант 1 — усилить документы и подать повторно; вариант 2 — другой тип визы}. Хотите, обсудим по телефону?",
+      "text_sha256": "a6b0a788c10bc28f8c7e98c64564c9958da9f5d2258aa7dac0330cf442bbc57f",
+      "title": "Отказ",
+      "unit_id": "KG.TPL.A09"
+    },
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p01",
+          "kind": "text",
+          "token": "Имя"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p02",
+          "kind": "date",
+          "token": "дата"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p03",
+          "kind": "date",
+          "token": "дата"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p04",
+          "kind": "date",
+          "token": "дата"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p05",
+          "kind": "unresolved_calculation",
+          "token": "дата −5 р.д."
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p06",
+          "kind": "date",
+          "token": "дата"
+        }
+      ],
+      "label": "none",
+      "page": "86",
+      "section": "А.10",
+      "source_ref": "KB v1.1, раздел А.10",
+      "text": "Регистрация: {Имя}, вы в Кыргызстане с {дата}. Без регистрации для вашего гражданства можно находиться до\n{дата}. Если остаётесь дольше — оформим регистрацию за 1 день. Нужна помощь?\nПродление: Ваша виза действует до {дата}. Если нужно остаться дольше, подать документы нужно не позднее\n{дата −5 р.д.}. Начинаем?\nВыезд: Напоминаем: срок пребывания заканчивается {дата}. Пожалуйста, выезжайте не позднее этой даты.",
+      "text_sha256": "4eff5135637883429f7bea0784aa0c8cc58e0cb9c032d202738e1298583eb36e",
+      "title": "Напоминания",
+      "unit_id": "KG.TPL.A10"
+    },
+    {
+      "confirmation_status": "blocked",
+      "fields": [
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p01",
+          "kind": "text",
+          "token": "страна"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p02",
+          "kind": "positive_integer",
+          "token": "N"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p03",
+          "kind": "positive_integer",
+          "token": "M"
+        },
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p04",
+          "kind": "positive_integer",
+          "token": "K"
+        }
+      ],
+      "label": "none",
+      "page": "86",
+      "section": "А.11",
+      "source_ref": "KB v1.1, раздел А.11",
+      "text": "Хорошие новости: гражданам {страна} виза не нужна — можно находиться до {N} дней в каждом {M}-дневном\nпериоде. Если пробудете дольше {K} дней — нужна регистрация (можем сделать). Работать без разрешения нельзя.\nНужны отель, трансфер или тур? Поможем.",
+      "text_sha256": "23a6e26eb842a3b59e34dab7cd1854c3ecf42cdb0e16aaa34de66c3f75a55441",
+      "title": "Виза не нужна",
+      "unit_id": "KG.TPL.A11"
+    },
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p01",
+          "kind": "date",
+          "token": "дата"
+        }
+      ],
+      "label": "none",
+      "page": "86",
+      "section": "А.12",
+      "source_ref": "KB v1.1, раздел А.12",
+      "text": "По правилам Кыргызстана туристическую визу нельзя оформить, находясь в стране. Варианты: 1) выехать до {дата} и\nвернуться по туристической e-Visa (оформим заранее); 2) если у вас есть деловая цель, родственники-граждане КР или\nучёба — подходит другой тип визы, его можно оформить без выезда. Что вам ближе?",
+      "text_sha256": "e329913db5304581ec98e8348a80441a8ca966e09330f135cda938abc66e3d97",
+      "title": "TS изнутри КР оформить нельзя",
+      "unit_id": "KG.TPL.A12"
+    },
+    {
+      "confirmation_status": "needs_verification",
+      "fields": [
+        {
+          "choices": [],
+          "currency": null,
+          "id": "p01",
+          "kind": "positive_integer",
+          "token": "N"
+        }
+      ],
+      "label": "none",
+      "page": "86",
+      "section": "А.13",
+      "source_ref": "KB v1.1, раздел А.13",
+      "text": "Понимаю, ситуация срочная. Я передаю ваш вопрос менеджеру — он свяжется с вами в течение {N} минут и подскажет\nпорядок действий. Пожалуйста, не езжайте в аэропорт до разговора с менеджером.",
+      "text_sha256": "4cdcec34a4fcf22c96a2500195ede6ce6c1e1cf5fb5dc52ffd569eca60baee4f",
+      "title": "Просрочка (бот → менеджер)",
+      "unit_id": "KG.TPL.A13"
+    }
+  ],
+  "version": "pdf-1.1-templates-1"
+}
