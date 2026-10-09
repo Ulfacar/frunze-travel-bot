@@ -59,6 +59,7 @@ DOMAIN_TABLES = {
     "entry_qualifications",
     # E6-01A: separate people, attempts, processing facts and unique portal refs.
     "entry_applicants", "entry_applications", "entry_application_events", "entry_application_references",
+    "entry_document_revisions",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",

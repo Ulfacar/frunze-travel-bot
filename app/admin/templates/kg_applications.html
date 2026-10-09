@@ -58,6 +58,7 @@
 
   {% if selected %}<section class="box" aria-labelledby="kg-application-title">
     <h2 id="kg-application-title">Заявка №{{ selected.id }} · попытка {{ selected.attempt }}</h2>
+    <p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/documents">Документы этой заявки</a></p>
     <p>Заявитель №{{ selected.applicant_id }} · {{ processes[selected.process] }} · {{ procedures[selected.procedure][1] }}</p>
     <p id="kg-application-status"><strong>{{ statuses[selected.current.status] }}</strong> · запись {{ selected.current.revision }}</p>
     {% if selected.current.reference %}<p id="kg-application-reference">Reference портала: <strong>{{ selected.current.reference }}</strong></p>{% endif %}
