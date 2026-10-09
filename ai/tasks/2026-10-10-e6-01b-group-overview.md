@@ -48,3 +48,12 @@ whitespace, protocol structure; separate SELF_REVIEW. Full suite only if unresol
 regression warrants it; previous full run has one reproduced date baseline after the
 migration-list correction. No CI configured; release/real customer acceptance N/A to
 local target. Save exact results/revision and next action in a dated handoff/STATE.
+
+## Outcome
+
+**DONE for local STANDARD scope**. Code `f923a446449bc8010a4a78d09a192d0156315d71`.
+Corrected new tests49 passed; exact-code related regression120 passed /3 warnings /
+184.11s. Git/worktree/copy16/16 identity, cold imports, static/protocol checks PASS.
+Separate SELF_REVIEW passed for local scope; five-page PDF and all26 headings checked.
+Handoff `ai/handoffs/2026-10-10-0113-e6-01b-group-overview.md` records limits/baseline.
+No whole-PDF or production completion claim; inherited CRITICAL gates remain open.

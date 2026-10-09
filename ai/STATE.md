@@ -1,5 +1,19 @@
 # Current work
 
+- Updated **2026-10-10**. Active **E6-01B GROUP OVERVIEW**, STANDARD / solo **DONE for local scope**. Whole PDF remains incomplete.
+- Branch `fix/tours-search-quality`; code `f923a446449bc8010a4a78d09a192d0156315d71`, base `6d74465083d3650df7a76a7bb3ab714a3bcdb555`; evidence/report follow in docs commit.
+- Task `ai/tasks/2026-10-10-e6-01b-group-overview.md`; contract `docs/e6-01b-group-overview.md`; handoff `ai/handoffs/2026-10-10-0113-e6-01b-group-overview.md`.
+- Result: whole-service totals by applicant/current chain/four families, explicit missing applications and exceptions, historical attempts kept separately; filters/page20 and print with filter/page/time. All approvals do not imply complete documents, travel readiness or service completion.
+- Bounded coherent read validates all hashes/events/reference/subject links; six SELECT, no SQL writes/schema/rights changes. Existing full-admin/KG-OFF/workday gates; normal register remains available when overview is oversized. No migration or production changes.
+- New focused checks **49 passed /3 warnings /75.28s** after correcting test fixtures and improving print. Final exact-copy related regression **120 passed /3 warnings /184.11s**, no failures/skips in selected files. Cold imports kg_applications/kg_entry/main all exit0. Initial run111 passed/4 failed was3 invalid corrupt-hash fixtures plus existing logout POST assertion, not runtime defects.
+- Git/worktree/copy identity **16/16 PASS**, env files absent; manifest `ai/reviews/2026-10-10-e6-01b-group-snapshot.json`. Compilation, whitespace, token-shaped scan and protocol structure PASS.
+- Separate SELF_REVIEW `ai/reviews/2026-10-10-e6-01b-group-self-review.md`. STANDARD local view does not close prior E6-01A CRITICAL independent review/audit/PG gates; they remain UNKNOWN.
+- Coverage/backlog updated; new five-page report `docs/reports/frunze-pdf-progress-2026-10-10-group-overview.pdf`, all pages visually checked and26/26 source headings verified. Source regularization codes corrected to U01–U09 (L is exit-visa type). Prior reports remain unchanged. No new measured percentage.
+- Next: E6-01A independent review/PG checks; versioned procedural stages/mandatory facts on synthetic data. Real profiles/documents/access await existing decisions; redesign later. No full-suite/build/traps rerun or production acceptance claimed for this slice.
+- Working-branch commit/push authorized. Preserve unrelated untracked artifacts; never stage env files.
+
+## Previous checkpoint — E6-01A
+
 - Updated **2026-10-10**. Active **E6-01A APPLICATION REGISTER**, CRITICAL / solo **PARTIALLY_READY**. Entire PDF remains incomplete.
 - Branch `fix/tours-search-quality`; code `91a43fa0202fbacfe62ee337c188bb156276a4df`, base `208a04d95a54ca0da9535bdeab5a81fdfcc7b15f`; final evidence/report in following docs commit.
 - Task `ai/tasks/2026-10-09-e6-01a-applications.md`; contract `docs/e6-01a-applications.md`; handoff `ai/handoffs/2026-10-10-0005-e6-01a-applications.md`.

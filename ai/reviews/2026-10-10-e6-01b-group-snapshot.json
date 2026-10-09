@@ -1,0 +1,73 @@
+{
+  "revision": "f923a446449bc8010a4a78d09a192d0156315d71",
+  "base": "6d74465083d3650df7a76a7bb3ab714a3bcdb555",
+  "copy": "runs/e6-01b-group-committed",
+  "env_files_absent": true,
+  "files": [
+    {
+      "path": "ai/reviews/2026-10-10-e6-01b-group-self-review.md",
+      "sha256_lf": "f77862d0abdfc1446c19bf8aee13484ab208c9e318af9301e1f4264545a22130"
+    },
+    {
+      "path": "ai/tasks/2026-10-10-e6-01b-group-overview.md",
+      "sha256_lf": "aa93f9b6900df43afa1f5ebc27c9d86aa3174762efae0eb2f29acb44659c7aaf"
+    },
+    {
+      "path": "app/admin/kg_applications.py",
+      "sha256_lf": "8ce0c96e01a55ad2f96ebb40f7e93bd346f250f4aa61ecbd03456ecfceb50509"
+    },
+    {
+      "path": "app/admin/templates/kg_applications.html",
+      "sha256_lf": "085b118dc0a5fdba66f14b84b0162ad7b2118c8d6616914a6b394e1134fa10fc"
+    },
+    {
+      "path": "app/admin/templates/kg_group_overview.html",
+      "sha256_lf": "9184a188b4b1cb2c13981bbd03b99ae0cd08d437d771e5282797c8a90ff11b0f"
+    },
+    {
+      "path": "app/domain/entry_applications.py",
+      "sha256_lf": "b1d3edd2f51038750128d660980fb0166630047c150bebfba05636816b3cd89e"
+    },
+    {
+      "path": "app/domain/entry_group_overview.py",
+      "sha256_lf": "484f9971de662c4a3e9324c58170c13e5b3858e1472e4ac617f03bb34c2c9533"
+    },
+    {
+      "path": "docs/crm-delivery/backlog.json",
+      "sha256_lf": "a7223b350f4cd753345c4d031d6c1b6618a7b8cedb3e6037055848fc2b344381"
+    },
+    {
+      "path": "docs/crm-delivery/backlog.md",
+      "sha256_lf": "af6e4b1f5befe5048ff10f8e41325828e04e4b7ef01407faadd0d4e72bbd2e16"
+    },
+    {
+      "path": "docs/e5-pdf-progress.md",
+      "sha256_lf": "8dde22cca13c224717dcbfca47feb2e9426c05f6c0749e0ba6f26ce9f3f6ee99"
+    },
+    {
+      "path": "docs/e5-pdf-section-coverage.md",
+      "sha256_lf": "7e707c8635bb27e96f394db9aca45726686dcb3cf316c2d3e43aac5b732cf226"
+    },
+    {
+      "path": "docs/e6-01b-group-overview.md",
+      "sha256_lf": "afa66a4c9268e56dd2709e33f3cd9fe0cf2f6bfafd4c5a6f9987a2ef8fdd8002"
+    },
+    {
+      "path": "scripts/build_kg_progress_report.py",
+      "sha256_lf": "b528aa9f5403310f7d74dc62b59b78bf65c9e1df67fa7a83bcc4a78c3c14000e"
+    },
+    {
+      "path": "tests/browser_kg_group_overview.py",
+      "sha256_lf": "9d7a038a2c0de2d4aa8e730fcaf1ec79afd9608e9f30053f81d9535728f114ec"
+    },
+    {
+      "path": "tests/test_admin_kg_group_overview.py",
+      "sha256_lf": "344c54a03c2d6bc63b2c70605d5f6a940827b4daaaa601f264a704dc9dfa11ed"
+    },
+    {
+      "path": "tests/test_entry_group_overview.py",
+      "sha256_lf": "2b229e34f8f093a6e906442a9c1172813e644a1d1d271aff29ab62c9d45e2610"
+    }
+  ],
+  "scope": "Code checkpoint only; following evidence/report docs excluded"
+}
