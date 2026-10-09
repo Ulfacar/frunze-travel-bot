@@ -1,5 +1,18 @@
 # Current work
 
+- Updated **2026-10-09**. Active **E5-04C INTAKE + E5-01C SEARCH**. Intake CRITICAL / solo **PARTIALLY_READY**; local search STANDARD / solo **DONE**. Entire PDF is **not complete**.
+- Branch `fix/tours-search-quality`; code `e23e39eb78a3586557c712219118344e2cfb9b46`, base `13835bb275bd20881dab8a83c6eec45c94ce114a`. Follow-up docs/report commit records final evidence.
+- Tasks `ai/tasks/2026-10-09-e5-04c-intake.md`, `ai/tasks/2026-10-09-e5-01c-knowledge-search.md`; contracts `docs/e5-04c-intake.md`, `docs/e5-01c-knowledge-search.md`.
+- Handoff `ai/handoffs/2026-10-09-2201-e5-intake-search.md`; review packet and 34-file Git-copy manifest `ai/reviews/2026-10-09-e5-intake-search-*`.
+- Result: v2 manual interview (party/family/inviter/trip/border/refusal/escalation facts), RU/EN questions, old v1 read compatibility, new facts in review card/print. Verified local 74-fragment PDF search + CLI + full-admin CRM screen. Same OFF/workday/admin gates, no new migration or rights.
+- Checks: focused183; search43; final extended HTTP21 (including max Unicode payload); cold-import HTTP54; shared-panel + final browser43. Final code-commit full regression **3447 passed / 1 known date failure / 13 skipped / 659.79s**. Earlier worktree3448 pass/4 fail/8skip included 3 new navigation/flag-registration failures, all corrected. Suite not all-green.
+- At code checkpoint, 34/34 file hashes matched Git blobs, workspace and isolated copy without `.env`/`prod.env`; manifest pins that revision, later docs excluded. Separate imports kg_entry/kg_knowledge/main PASS. Static checks PASS. Traps 1 ERROR/57 WARN baseline. Docker engine unavailable; no image build claimed.
+- Full map `docs/e5-pdf-section-coverage.md`: IT instruction, blocks0–19, appendicesА–Д; 26 original headings/pages checked. New five-page report `docs/reports/frunze-pdf-progress-2026-10-09-intake-search.pdf`; old report remains historical. 208 draft units/0confirmed; old rough70–80% remainder is not a new measured percentage.
+- Independent review/audit and PG16 UNKNOWN. Existing manager-scope question unanswered. No production deployment/env edits/migrations/messages or source publication. Preserve unrelated untracked artifacts.
+- Next: independent review and owner scope decision → durable handoff + E6 Applicant/Application/four processes. Remaining source/calendar/price/privacy decisions and CONTRACT-UI gates unchanged; redesign later. Commit/push working branch is authorized; use Git history for the final evidence/report revision and verify origin when resuming.
+
+## Previous checkpoint — E5-04B
+
 - Updated **2026-10-09**. Active **E5-04B REVIEW CARD**, CRITICAL / solo, **PARTIALLY_READY**.
 - User: продолжать требования PDF + CRM; общий редизайн позже. Current branch `fix/tours-search-quality`, base `ccc6e038b75448750f23681261e2b3a6d015881b`; code `0520c8b7c8caf29cea83be6918c34a0aeef6fcc9`, followed by an evidence-only docs commit.
 - Task `ai/tasks/2026-10-09-e5-04b-review-card.md`; contract `docs/e5-04b-review-card.md`; packet + SELF_REVIEW `ai/reviews/2026-10-09-e5-04b-card-packet.md`.

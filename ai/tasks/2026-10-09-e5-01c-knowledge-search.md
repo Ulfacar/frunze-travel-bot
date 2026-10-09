@@ -20,3 +20,11 @@
 This fulfils local retrieval for human review, not the publication gate or approved
 bot answering. Existing CRITICAL intake/storage/permission gates are unchanged.
 Record exact revision/checks in handoff and project PDF coverage map.
+
+## Result
+
+Local target DONE, code `e23e39eb78a3586557c712219118344e2cfb9b46`. Separate SELF_REVIEW
+for STANDARD scope complete; no independent approval claimed. Search43, final HTTP54,
+shared-panel/browser43 PASS. Final full Git copy: 3447 pass / 1 old tour-date fail /
+13 skip / 659.79s. Handoff `ai/handoffs/2026-10-09-2201-e5-intake-search.md` records
+source integrity, limits, Docker UNKNOWN and critical gates of the surrounding pilot.
