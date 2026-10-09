@@ -1,11 +1,12 @@
 # Current work
 
 - Updated **2026-10-09**. Active **E5-04B REVIEW CARD**, CRITICAL / solo, **PARTIALLY_READY**.
-- User: продолжать требования PDF + CRM; общий редизайн позже. Current branch `fix/tours-search-quality`, base `ccc6e038b75448750f23681261e2b3a6d015881b`; E5-04B uncommitted snapshot, code revision pending.
+- User: продолжать требования PDF + CRM; общий редизайн позже. Current branch `fix/tours-search-quality`, base `ccc6e038b75448750f23681261e2b3a6d015881b`; code `0520c8b7c8caf29cea83be6918c34a0aeef6fcc9`, followed by an evidence-only docs commit.
 - Task `ai/tasks/2026-10-09-e5-04b-review-card.md`; contract `docs/e5-04b-review-card.md`; packet + SELF_REVIEW `ai/reviews/2026-10-09-e5-04b-card-packet.md`.
 - Handoff `ai/handoffs/2026-10-09-2058-e5-04b-review-card.md`.
 - Result: saved interview → read-only review card with pinned answers, specialist facts, gaps from §3.4/Б.4, sources, old-version notice and print/save PDF. Current case owner labelled current. No new task/handoff/Applicant/Application records.
 - Checks: related **170 passed / 151.45s** before final specialist-facts display; final new HTTP/domain **30 passed / 36.80s**; final browser **1 passed / 20.95s** (mobile390 JS/desktop1365 no JS, native flow/print/focus/no overflow). Synthetic PDF **2 pages**, both inspected, ignored `runs/e5-04b-crm-browser/review-demo.pdf`.
+- Committed copy `0520c8b`: **30 passed / 1 warning / 36.55s**, no `.env`/`prod.env`; 14/14 changed files match Git blobs after LF normalization. Compilation and staged whitespace PASS; token-boundary credential-shaped scan 0 matches, not a full secret audit.
 - Existing full-admin + default-OFF pilot/workday gates preserved; no new flag/migration/settings. GET checked for zero SQL writes. No-store/no-referrer, foreign/corrupt source denial.
 - Decision pending: async question whether assigned visa manager may access the interview, or admin-only. No answer received; dependent permission expansion and handoff assignment not implemented.
 - Independent review/final auditor/PG runtime UNKNOWN; SELF_REVIEW only. Full suite/traps not rerun for this read-only slice; earlier date failure and 1 ERROR / 57 WARN remain historical baselines, not current green gates.

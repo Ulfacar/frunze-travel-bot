@@ -1,7 +1,7 @@
 # Review packet — E5-04B
 
 - CRITICAL / solo, local target; base `ccc6e038b75448750f23681261e2b3a6d015881b`.
-- Target: E5-04B uncommitted snapshot, branch `fix/tours-search-quality`.
+- Target: `0520c8b7c8caf29cea83be6918c34a0aeef6fcc9`, branch `fix/tours-search-quality`.
 - Independent reviewer / final auditor UNKNOWN. Builder SELF_REVIEW below is not approval.
 
 Read `ai/tasks/2026-10-09-e5-04b-review-card.md` and actual diff before builder findings.
@@ -45,5 +45,9 @@ No independent verdict claimed. Findings addressed:
 
 Evidence pointers: task/handoff E5-04B. Relevant suite 170 passed before the final
 specialist-facts display addition; final new tests 30 passed, final browser 1 passed.
+Isolated committed-copy tests **30 passed / 1 warning / 36.55s**, no `.env`/`prod.env`;
+14/14 changed-file hashes match Git blobs and copy. Staged whitespace and compilation
+PASS. Token-boundary credential-shaped scan found 0 matches; the initial overbroad
+substring expression matched text inside a longer identifier. Not a full secret audit.
 PG runtime, independent review/audit remain UNKNOWN. Full suite/traps not rerun in this
 read-only slice; prior failure baselines must not be represented as current green gates.

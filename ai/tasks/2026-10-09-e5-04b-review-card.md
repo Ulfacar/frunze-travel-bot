@@ -52,6 +52,9 @@ baseline are not evidence of a new regression and must not be presented as green
 
 ## Results
 
+- Code `0520c8b7c8caf29cea83be6918c34a0aeef6fcc9`; follow-up docs commit records final evidence.
+- Isolated committed copy: **30 passed / 1 warning / 36.55s**, no `.env`/`prod.env`;
+  14/14 changed-file hashes match Git blobs and copy. Compilation/whitespace PASS.
 - Related HTTP/domain/CRM suite: **170 passed / 1 warning / 151.45s**, before final
   specialist-facts display. Final new tests: **30 passed / 1 warning / 36.80s**.
 - Final browser: **1 passed / 3 deprecation warnings / 20.95s**, mobile390 with JS,
