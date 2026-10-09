@@ -117,7 +117,7 @@ async def _form(request):
     return values
 
 
-async def _context(request, case, actor, qualification_id=None):
+async def _context(request, case, actor, qualification_id=None, attach_history_id=None):
     engine = _engine()
     latest = await read_qualification(engine, actor=actor, contact_id=case["contact_id"])
     try:
@@ -144,21 +144,24 @@ async def _context(request, case, actor, qualification_id=None):
                                               .order_by(StayHistory.revision.desc()).limit(1))
         if version_id is None:
             return {"empty_knowledge": True, "saved": None, "values": values_from_request({}), "editable": False}
+        if attach_history_id is not None:
+            history_id = attach_history_id
         await _qualification_sources(session, case["contact_id"], version_id, history_id)
         version = await session.get(KnowledgeVersion, version_id)
         countries = country_options(version.country_aliases)
         version_label = f"Версия базы №{version.version} · требует проверки"
     base = saved["input"] if saved else {}
     return {"saved": saved, "values": values_from_request(base), "countries": countries,
+            "selected_history_id": attach_history_id,
             "version_label": version_label, "has_conditions": "condition_facts" in base,
             "report": report_view(saved["result"]) if saved else None,
             "editable": qualification_id is None or latest is not None and saved["qualification_id"] == latest["qualification_id"],
             "envelope": _envelope(request, actor, case, saved, version_id, history_id)}
 
 
-async def _render(request, manager, actor, case, *, qualification_id=None, echo=None, error="", status=200):
+async def _render(request, manager, actor, case, *, qualification_id=None, attach_history_id=None, echo=None, error="", status=200):
     try:
-        context = await _context(request, case, actor, qualification_id)
+        context = await _context(request, case, actor, qualification_id, attach_history_id)
     except PermissionDenied:
         raise HTTPException(403) from None
     except HTTPException:
@@ -177,6 +180,9 @@ async def _render(request, manager, actor, case, *, qualification_id=None, echo=
     if echo is not None:
         context["values"] = echo
         context["envelope"] = {k: echo.get(k, "") for k in (*META, *SECURITY)}
+        # POST errors retain the signed selection, even if the latest saved report
+        # still points to another history. Keep that pending source visible.
+        context["selected_history_id"] = int(echo["_kg_history"]) or None
     return ar.templates.TemplateResponse(request, "kg_entry.html", {**context, "manager": manager, "case": case,
         "fields": FIELDS, "family_limit": FAMILY_LIMIT, "error": error, "write_on": _write_on(request),
         "form_url": f"/admin/case/{case['id']}/kg-entry"}, status_code=status,
@@ -185,15 +191,18 @@ async def _render(request, manager, actor, case, *, qualification_id=None, echo=
 
 @ar.router.get("/case/{case_id}/kg-entry", response_class=HTMLResponse)
 async def qualification_form(case_id: int, request: Request, qualification_id: int | None = Query(None, ge=1),
+                             history_id: int | None = Query(None, ge=1, le=2147483647),
                              manager: dict = Depends(ar.require_full_admin)):
     actor = _gate(request, manager)
+    if qualification_id is not None and history_id is not None:
+        raise HTTPException(422, "Для новой истории откройте последнюю анкету без выбора старой версии.")
     try:
         case = await _case(case_id, actor)
     except HTTPException:
         raise
     except Exception:
         return HTMLResponse("Реестр услуг временно недоступен.", status_code=503, headers={"Cache-Control": "no-store"})
-    return await _render(request, manager, actor, case, qualification_id=qualification_id)
+    return await _render(request, manager, actor, case, qualification_id=qualification_id, attach_history_id=history_id)
 
 
 @ar.router.post("/case/{case_id}/kg-entry", response_class=HTMLResponse)

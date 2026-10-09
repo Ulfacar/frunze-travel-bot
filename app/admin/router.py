@@ -2634,3 +2634,4 @@ from app.admin import workday  # noqa: E402,F401 — side-effect: регистр
 from app.admin import contracts  # noqa: E402,F401 — договор из переписки, за флагами E2-06
 from app.admin import kg_entry  # noqa: E402,F401 — пилот анкеты въезда, default OFF
 from app.admin import kg_knowledge  # noqa: E402,F401 — поиск источника за тем же пилотным флагом
+from app.admin import kg_history  # noqa: E402,F401 — версии фактических поездок, тот же full-admin gate

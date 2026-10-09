@@ -20,6 +20,7 @@
 {% block content %}
 <main class="kg-wrap">
   <a href="/admin/case/{{ case.id }}">← К визовой услуге №{{ case.id }}</a>
+  <a href="/admin/case/{{ case.id }}/kg-entry/history">История поездок в Кыргызстан</a>
   <h1>Анкета въезда в Кыргызстан</h1>
   <p class="kg-muted">{{ case.title }}. Анкета общая для визовых услуг этого клиента. Сохраняйте здесь сведения о его поездке в Кыргызстан.</p>
   {% if error %}<div class="kg-card kg-error" role="alert"><h2>Сохранение требует внимания</h2><p>{{ error }}</p><a href="{{ form_url }}">Открыть последнюю анкету</a></div>{% endif %}
@@ -27,6 +28,7 @@
   <section class="kg-card"><h2>База знаний ещё не загружена</h2><p>Администратору нужно импортировать базу въезда в Кыргызстан. После этого здесь появится анкета.</p></section>
   {% elif envelope %}
   <div class="kg-meta kg-muted"><span>{{ version_label }}</span><span>Проверка на дату {{ saved.input.as_of if saved else envelope._kg_asof }}</span></div>
+  {% if selected_history_id %}<p class="kg-card kg-alert" id="kg-selected-history">Для новой проверки выбрана история №{{ selected_history_id }}. Нажмите «Сохранить анкету», чтобы применить её.{% if saved %} Сохранённый результат ниже пока относится к прежней версии.{% endif %}</p>{% endif %}
   {% if saved %}
   <section class="kg-card" aria-labelledby="kg-result-title">
     <h2 id="kg-result-title">{{ report.status }}</h2>

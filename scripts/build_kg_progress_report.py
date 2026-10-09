@@ -1,4 +1,4 @@
-"""Build the offline 2026-10-09 E5-04C/E5-01C PDF checkpoint from its coverage matrix.
+"""Build the offline 2026-10-09 E5-04D PDF checkpoint from its coverage matrix.
 
 Requires local PyMuPDF (document tooling only, not an application dependency).
 No network, CRM database, personal data or source PDF modification.
@@ -10,7 +10,7 @@ from pathlib import Path
 import fitz
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGET = ROOT / "docs/reports/frunze-pdf-progress-2026-10-09-intake-search.pdf"
+TARGET = ROOT / "docs/reports/frunze-pdf-progress-2026-10-09-history.pdf"
 CSS = """body{font-family:sans-serif;font-size:10pt;line-height:1.4;color:#17263b}
 h1{font-size:25pt;color:#123b60}h2{font-size:15pt;color:#123b60}
 table{border-collapse:collapse;width:100%;font-size:9pt}
@@ -39,17 +39,19 @@ def main(argv=None):
     if len(rows) != 26 or any(len(row) != 3 for row in rows):
         raise SystemExit("Unexpected coverage matrix; review the report builder.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
-    <p>9 октября 2026 · E5-04C + E5-01C</p>
+    <p>9 октября 2026 · E5-04D · история поездок в CRM</p>
     <p class="note"><b>Весь PDF ещё не выполнен.</b> Закончены локальная расширенная анкета,
-    обновлённая карточка для печати и поиск по исходнику. Пилот выключен по умолчанию;
+    история фактических поездок, карточка для печати и поиск по исходнику. Пилот выключен по умолчанию;
     на рабочий сервер эти изменения не выкатывались.</p>
     <h2>Результат этого этапа</h2>
-    <ul><li>Анкета CRM: число заявителей, сведения о семье, приглашающая сторона,
-    детали поездки и причины проверки. Сохранение и история версий, вопросы RU/EN.</li>
-    <li>Карточка проверки и печать/PDF показывают новые ответы и незакрытые вопросы.
-    Старые версии сохраняют прежние сведения.</li>
-    <li>Поиск по 74 фрагментам с целыми таблицами, страницами, метками и проверкой
-    целостности. Это источник для специалиста, а не автоматический ответ клиенту.</li>
+    <ul><li>В CRM можно внести фактические въезды/выезды, основание, страну паспорта,
+    источник и полноту истории. Исправление создаёт новую версию.</li>
+    <li>Новая история явно подключается к следующей проверке. Старая анкета и её
+    печатная карточка продолжают показывать закреплённые поездки.</li>
+    <li>Неизвестный выезд не считается открытой поездкой. Непроверенные сведения
+    и пересекающиеся даты видны специалисту. Право въезда и остаток дней не выдаются.</li>
+    <li>Ранее выполнены расширенная анкета RU/EN и поиск по 74 фрагментам с целыми
+    таблицами, метками и источниками. Это локальный ручной пилот.</li>
     <li>Сверка всех 26 разделов исходного документа: выполненное и конкретный остаток
     приведены на следующих страницах.</li></ul>
     <h2>Проверка</h2><p>{escape(args.checks)}</p>

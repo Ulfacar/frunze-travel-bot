@@ -1,7 +1,7 @@
 """Read a pinned KG qualification in a checked service-case context; no writes."""
 from sqlalchemy import select
 
-from app.domain.entry_storage import EntryStorageInvalid, _authorize, _id, _transaction
+from app.domain.entry_storage import EntryStorageInvalid, _authorize, _history, _id, _transaction
 from app.domain.models import KnowledgeVersion, Product, ServiceCase
 from app.domain.qualification_storage import _latest, _read, _report
 
@@ -22,6 +22,10 @@ async def read_qualification_card(engine, *, actor, case_id, qualification_id):
         row, *_ = await _read(session, case.contact_id, qualification_id)
         latest = await _latest(session, case.contact_id)
         version = await session.get(KnowledgeVersion, row.knowledge_version_id)
+        history = None
+        if row.history_id is not None:
+            history_row, history_document, _ = await _history(session, case.contact_id, row.history_id)
+            history = {'history_id': history_row.id, 'revision': history_row.revision, 'document': history_document}
         return {
             "case": {"id": case.id, "contact_id": case.contact_id, "title": product.name,
                      "owner_login": case.owner_login},
@@ -29,6 +33,7 @@ async def read_qualification_card(engine, *, actor, case_id, qualification_id):
             "latest_id": latest.id,
             "is_latest": latest.id == row.id,
             "countries": dict(version.country_aliases),
+            "stay_history": history,
         }
 
     return await _transaction(engine, read)

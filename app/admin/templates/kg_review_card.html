@@ -57,6 +57,21 @@
     {% for group in condition_groups %}<h3>{{ group.title }}</h3><dl>{% for row in group.rows %}<div class="kg-answer"><dt>{{ row.label }}</dt><dd>{{ row.value }}</dd></div>{% endfor %}</dl>{% endfor %}
   </section>
   {% endif %}
+  {% if stay_history %}
+  <section aria-labelledby="kg-card-history">
+    <h2 id="kg-card-history">Фактические поездки из этой проверки</h2>
+    <p>История №{{ stay_history.history_id }}, версия {{ stay_history.revision }} · сведения на {{ stay_history.document.as_of }}.<br>
+      Полнота: {{ 'все поездки восстановлены' if stay_history.document.history_complete is sameas true else 'история неполная' if stay_history.document.history_complete is sameas false else 'не установлена' }}.</p>
+    <p class="kg-no-print"><a href="{{ form_url }}/history?history_id={{ stay_history.history_id }}">Открыть эту версию истории</a></p>
+    {% if history_overlaps %}<p>Даты поездок пересекаются; нужна сверка, включая пересечения границы в один день.</p>{% endif %}
+    {% for trip in history_rows %}<h3>Поездка №{{ loop.index }}</h3><dl>
+      <div class="kg-answer"><dt>Фактический въезд / выезд</dt><dd>{{ trip.entry }} / {{ trip.exit }}</dd></div>
+      <div class="kg-answer"><dt>Основание / страна паспорта</dt><dd>{{ trip.basis }} / {{ trip.country }}</dd></div>
+      <div class="kg-answer"><dt>Источник / проверка</dt><dd>{{ trip.evidence }} / {{ trip.confirmed }}</dd></div>
+    </dl>{% else %}<p>{{ 'Поездок не было.' if stay_history.document.history_complete is sameas true else 'Поездки не внесены; это не подтверждает их отсутствие.' }}</p>{% endfor %}
+    <p class="kg-muted">Планируемые даты не заменяют фактические. Совпадение паспорта между поездками и допустимый срок пребывания требуют отдельной проверки.</p>
+  </section>
+  {% endif %}
   <section aria-labelledby="kg-card-gaps">
     <h2 id="kg-card-gaps">Что ещё нужно для полной карточки передачи</h2>
     {% if report.missing %}<h3>Неуточнённые ответы анкеты</h3><ul>{% for item in report.missing %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}

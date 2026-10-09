@@ -1,6 +1,7 @@
 """Human-readable review card, using existing interview labels and pinned facts."""
 from app.admin.kg_entry_form import FIELDS, country_options, report_view, values_from_request
 from app.knowledge.intake import known
+from app.admin.kg_history_form import BASES as HISTORY_BASES, EVIDENCE as HISTORY_EVIDENCE, history_overlaps
 
 
 BLOCKERS = {
@@ -142,7 +143,16 @@ def card_view(card):
         for row in rows:
             sources.append({"kind": kind, "id": row["unit_id"], **row["source"],
                             "notes": [FINDINGS.get(f, "Требует дополнительной проверки") for f in row["findings"]]})
+    history = card.get('stay_history')
+    history_rows = []
+    if history:
+        for item in history['document']['intervals']:
+            history_rows.append({'entry': item['entry_date'], 'exit': item['exit_date'] or 'Ещё в Кыргызстане на дату истории',
+                'basis': HISTORY_BASES.get(item['basis'], 'Не установлено'),
+                'country': countries.get(item['passport_country'], item['passport_country']) or 'Не установлено',
+                'evidence': HISTORY_EVIDENCE[item['evidence']], 'confirmed': 'Проверена' if item['confirmed'] else 'Требует проверки'})
     return {"groups": groups, "report": report_view(result), "gaps": gaps, "sources": sources,
+            'history_rows': history_rows, 'history_overlaps': history_overlaps(history['document']) if history else False,
             "blockers": [BLOCKERS.get(b, "Дополнительная проверка источника или расчёта.") for b in result["blockers"]],
             "specialist_count": len(result["specialist_missing_facts"]),
             "condition_groups": _condition_groups(saved["input"]["condition_facts"], countries)

@@ -28,12 +28,12 @@ ADMIN=Actor('admin',True)
 
 class Form(HTMLParser):
     """Read actual selected inputs/options; no hard-coded security tokens."""
-    def __init__(self,html):
+    def __init__(self,html,form_id='kg-entry-form'):
         super().__init__(convert_charrefs=True)
-        self.data={};self.current=None;self.textarea=None;self.nodes=[];self.active=False;self.feed(html)
+        self.form_id=form_id;self.data={};self.current=None;self.textarea=None;self.nodes=[];self.active=False;self.feed(html)
     def handle_starttag(self,tag,attrs):
         a=dict(attrs)
-        if tag=='form':self.active=a.get('id')=='kg-entry-form'
+        if tag=='form':self.active=a.get('id')==self.form_id
         if not self.active:return
         self.nodes.append((tag,a));name=a.get('name')
         if tag=='input' and name and (a.get('type')!='checkbox' or 'checked' in a):

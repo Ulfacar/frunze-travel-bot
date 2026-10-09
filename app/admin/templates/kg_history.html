@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Frunze — История поездок в Кыргызстан{% endblock %}
+{% block brand_sub %}визовая услуга{% endblock %}
+{% block head %}<style>
+.kg-history-page{max-width:960px;margin:auto;padding:24px 16px;overflow-wrap:anywhere;line-height:1.5}
+.kg-history-page h1{font-size:clamp(24px,4vw,32px);line-height:1.2}.kg-history-page h2{font-size:19px}
+.kg-history-page a{color:var(--accent)}.kg-history-page :focus{outline:2px solid var(--accent);outline-offset:3px}
+.kg-history-page .box{padding:18px;margin:18px 0;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.kg-history-page .notice{border-left:4px solid #b7791f}.kg-history-page .error{border-left:4px solid #c0392b}
+.kg-history-page .muted{color:var(--muted)}.kg-history-page .grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.kg-history-page label{display:block;font-weight:600}.kg-history-page input:not([type=checkbox]),.kg-history-page select{font:inherit;padding:9px;border:1px solid var(--border);border-radius:7px;color:var(--text);background:var(--surface);width:100%;box-sizing:border-box;min-height:42px}
+.kg-history-page fieldset{border:0;padding:0;margin:0;min-width:0}.kg-history-page .field{min-width:0}
+.kg-history-page summary{cursor:pointer;padding:10px 0;font-weight:600}.kg-history-page .check{font-weight:400;margin:12px 0}
+.kg-history-page .actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.kg-history-page button{font:inherit;padding:11px 16px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface);color:var(--text)}
+.kg-history-page .primary{background:#2563eb;color:white}.kg-history-page button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:600px){.kg-history-page{padding:14px 10px}.kg-history-page .grid{grid-template-columns:1fr}.kg-history-page .box{padding:12px}}
+</style>{% endblock %}
+{% block content %}
+<main class="kg-history-page">
+  <nav class="actions"><a href="/admin/case/{{ case.id }}/kg-entry">← К анкете въезда</a><a href="/admin/case/{{ case.id }}">К услуге №{{ case.id }}</a></nav>
+  <h1>История поездок в Кыргызстан</h1>
+  <p class="muted">{{ case.title }} · контакт №{{ case.contact_id }}. История общая для визовых услуг этого контакта.</p>
+  <p class="box notice">Записывайте только фактические въезды и выезды. Планируемые даты указываются в анкете.
+    История сама по себе не подтверждает право въезда или остаток разрешённых дней. Номера паспортов и сканы здесь не нужны.</p>
+  {% if error %}<div class="box error" role="alert"><h2>Проверьте историю</h2><p>{{ error }}</p><a href="{{ form_url }}">Открыть последнюю историю</a></div>{% endif %}
+  {% if saved %}<section class="box" aria-labelledby="history-version"><h2 id="history-version">История №{{ saved.history_id }}, версия {{ saved.revision }}</h2>
+    <p>Сведения на {{ saved.document.as_of }}. Поездок: {{ saved.document.intervals|length }}.</p>
+    {% if history_overlaps %}<p class="notice">Даты некоторых поездок пересекаются. Проверьте записи и пересечения границы в один день; поездки сохранены без автоматического объединения.</p>{% endif %}
+    {% if not editable %}<p id="history-outdated"><strong>Открыта предыдущая версия, доступен только просмотр.</strong></p>{% endif %}
+    <div class="actions">{% if previous_id %}<a href="{{ form_url }}?history_id={{ previous_id }}">Предыдущая версия истории</a>{% endif %}
+      <a href="{{ form_url }}">Последняя история</a>
+      <a href="/admin/case/{{ case.id }}/kg-entry?history_id={{ saved.history_id }}">Использовать эту историю в новой проверке</a></div>
+    <p class="muted">Сохранённые анкеты и расчёты сохраняют свою прежнюю историю. По ссылке откроется анкета; новая проверка появится только после её сохранения.</p>
+  </section>{% endif %}
+  {% if not write_on %}<p class="box notice">Сохранение отключено администратором. Доступен просмотр.</p>{% endif %}
+  {% if envelope %}
+  <form method="post" action="{{ form_url }}" id="kg-history-form" class="box">
+    {% for name, value in envelope.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    <input type="hidden" name="rows_count" value="{{ rows|length }}">
+    <fieldset {% if not editable or not write_on %}disabled{% endif %}>
+      <p>Новая версия будет актуальна на <strong>{{ envelope._sh_asof }}</strong>. Сверьте сведения перед сохранением.</p>
+      <label for="history-complete">Все поездки восстановлены?</label><select id="history-complete" name="history_complete">
+        {% for value,label in [('unknown','Пока неизвестно'),('false','Нет, история неполная'),('true','Да, история полная')] %}<option value="{{ value }}" {% if values.history_complete == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <label class="check"><input type="checkbox" name="no_trips" value="yes" {% if values.get('no_trips') == 'yes' %}checked{% endif %}> Подтверждено: поездок в Кыргызстан не было.</label>
+      <datalist id="history-countries">{% for code,label in countries %}<option value="{{ code }}">{{ label }} ({{ code }})</option>{% endfor %}</datalist>
+      {% for row in rows %}{% set i = loop.index0 %}{% set prefix = 'trip.' ~ i ~ '.' %}
+      <details class="box" {% if loop.first or error or not row.entry_date %}open{% endif %}><summary>Поездка №{{ loop.index }}{% if row.entry_date %} · {{ row.entry_date }} — {{ row.exit_date if row.exit_state == 'date' else 'ещё в КР' if row.exit_state == 'ongoing' else 'дата не установлена' }}{% endif %}</summary>
+        <div class="grid">
+          <div class="field"><label for="trip-{{ i }}-entry">Фактический въезд</label><input id="trip-{{ i }}-entry" name="{{ prefix }}entry_date" type="date" value="{{ row.entry_date }}" max="{{ envelope._sh_asof }}"></div>
+          <div class="field"><label for="trip-{{ i }}-exit-state">Что известно о выезде</label><select id="trip-{{ i }}-exit-state" name="{{ prefix }}exit_state">{% for value,label in [('','Не спрашивали'),('date','Дата выезда известна'),('ongoing','Ещё в Кыргызстане'),('unknown','Дата выезда неизвестна')] %}<option value="{{ value }}" {% if row.exit_state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="trip-{{ i }}-exit">Фактический выезд, если дата известна</label><input id="trip-{{ i }}-exit" name="{{ prefix }}exit_date" type="date" value="{{ row.exit_date }}" max="{{ envelope._sh_asof }}"></div>
+          <div class="field"><label for="trip-{{ i }}-basis">Основание пребывания</label><select id="trip-{{ i }}-basis" name="{{ prefix }}basis">{% for value,label in bases.items() %}<option value="{{ value }}" {% if row.basis == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="trip-{{ i }}-country">Страна паспорта</label><input id="trip-{{ i }}-country" name="{{ prefix }}passport_country" value="{{ row.passport_country }}" list="history-countries" maxlength="3" pattern="[A-Z]{3}" placeholder="Выберите страну из списка" aria-describedby="trip-{{ i }}-country-help"><small id="trip-{{ i }}-country-help">RUS — Россия, KGZ — Кыргызстан. Пустое поле означает «не установлено».</small></div>
+          <div class="field"><label for="trip-{{ i }}-evidence">Источник сведений</label><select id="trip-{{ i }}-evidence" name="{{ prefix }}evidence">{% for value,label in evidence.items() %}<option value="{{ value }}" {% if row.evidence == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="trip-{{ i }}-confirmed">Поездка проверена по источнику?</label><select id="trip-{{ i }}-confirmed" name="{{ prefix }}confirmed"><option value="false" {% if row.confirmed == 'false' %}selected{% endif %}>Нет, требует проверки</option><option value="true" {% if row.confirmed == 'true' %}selected{% endif %}>Да, проверена</option></select><small>Одних слов клиента недостаточно для отметки «проверена».</small></div>
+        </div>
+        <label class="check"><input type="checkbox" name="{{ prefix }}clear_passport" value="yes" {% if row.clear_passport == 'yes' %}checked{% endif %}> Связь с прежним паспортом не подтверждена / паспорт изменился.</label>
+        <label class="check"><input type="checkbox" name="{{ prefix }}remove" value="yes" {% if row.remove == 'yes' %}checked{% endif %}> Исключить эту поездку из новой версии (предыдущая запись сохранится).</label>
+      </details>{% endfor %}
+      {% if editable %}<div class="actions">
+        {% if rows|length < limit %}<button type="submit" name="history_action" value="add" formnovalidate>Добавить поездку</button>{% endif %}
+        <button class="primary" type="submit" name="history_action" value="save">Сохранить историю</button>
+      </div>{% endif %}
+    </fieldset>
+  </form>{% endif %}
+</main>
+{% endblock %}

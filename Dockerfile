@@ -24,6 +24,7 @@ COPY scripts ./scripts
 # Зафиксированные исходники пилота поиска: только нужные публичные файлы.
 COPY docs/kb-visa-inbound-v1.1-derived.md ./docs/kb-visa-inbound-v1.1-derived.md
 COPY knowledge/kg_entry/search_v1_1/corpus.json knowledge/kg_entry/search_v1_1/source-lock.json ./knowledge/kg_entry/search_v1_1/
+COPY knowledge/kg_entry/source_v1_1/iso3166.json ./knowledge/kg_entry/source_v1_1/iso3166.json
 
 # Непривилегированный пользователь.
 RUN useradd --create-home appuser
