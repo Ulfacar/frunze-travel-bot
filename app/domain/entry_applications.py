@@ -278,7 +278,7 @@ async def record_application_event(engine, *, actor, case_id, application_id, ex
                'expected_revision': expected_revision, 'status': status, 'occurred_on': occurred_on,
                'source': source, 'reference': reference, 'confirmed': True, 'actor': actor.manager_id}
     async def write(session):
-        await _case(session, case_id)
+        case = await _case(session, case_id, lock=True)
         application = await _application(session, case_id, application_id, lock=True)
         rows = await _events(session, application)
         old = next((row for row in rows if row.request_key == request_key), None)
@@ -297,6 +297,8 @@ async def record_application_event(engine, *, actor, case_id, application_id, ex
             request_key=request_key, request_hash=_hash(command), created_by=actor.manager_id, created_at=_now())
         row.snapshot_hash = _hash(_event_payload(row))
         session.add(row); await session.flush()
+        from app.domain.entry_deadline_tasks import sync_enabled
+        await sync_enabled(session, case, application, actor.manager_id)
         return _event_view(row)
     return await _run(engine, write)
 

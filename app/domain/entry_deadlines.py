@@ -126,7 +126,7 @@ async def record_deadline_operation(engine, *, actor, case_id, application_id, r
     operation=sources.normalize(operation,cutoff=applications._today())
     command=_command(case_id,application_id,rule_unit_id,expected_revision,operation,actor.manager_id)
     async def write(session):
-        case=await applications._case(session,case_id)
+        case=await applications._case(session,case_id,lock=True)
         application=await applications._application(session,case_id,application_id,lock=True)
         rows,size,stale=await _history(session,case,application,rule_unit_id)
         old=next((r for r in rows if r.request_key==request_key),None)
@@ -154,6 +154,8 @@ async def record_deadline_operation(engine, *, actor, case_id, application_id, r
         payload=_payload(row)
         if size+len(canonical(payload).encode())>MAX_BYTES:raise EntryStorageInvalid('deadline_history_limit')
         row.snapshot_hash=_hash(payload);session.add(row);await session.flush()
+        from app.domain.entry_deadline_tasks import sync_enabled
+        await sync_enabled(session,case,application,actor.manager_id)
         return _view(row,stale=bool(snapshot['anchor'] and snapshot['anchor']['superseded']))
     return await applications._run(engine,write)
 

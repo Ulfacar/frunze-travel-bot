@@ -62,7 +62,7 @@ async def record_issued_operation(engine,*,actor,case_id,application_id,expected
     operation=normalize(operation,cutoff=applications._today())
     command=_command(case_id,application_id,expected_revision,operation,actor.manager_id)
     async def write(session):
-        await applications._case(session,case_id)
+        case=await applications._case(session,case_id,lock=True)
         application=await applications._application(session,case_id,application_id,lock=True)
         events=await applications._events(session,application);approval=_approval(application,events)
         rows,size=await _history(session,application,approval)
@@ -80,6 +80,9 @@ async def record_issued_operation(engine,*,actor,case_id,application_id,expected
             revision=len(rows)+1,previous_id=rows[-1].id if rows else None,request_key=request_key,
             request_hash=_hash(command),command=command,snapshot=snapshot,created_by=actor.manager_id,created_at=_now())
         row.snapshot_hash=_hash(_payload(row));session.add(row);await session.flush()
+        if operation['action']=='travel':
+            from app.domain.entry_deadline_tasks import sync_enabled
+            await sync_enabled(session,case,application,actor.manager_id)
         return _view(row)
     return await applications._run(engine,write)
 

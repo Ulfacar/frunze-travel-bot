@@ -1671,6 +1671,38 @@ class EntryDeadlineRevision(DomainBase):
         return _ServiceJSON.freeze(value)
 
 
+class EntryDeadlineTask(DomainBase):
+    """Operational task binding; lifecycle audit remains in CalendarTaskEvent."""
+    __tablename__ = "entry_deadline_tasks"
+    __table_args__ = (
+        UniqueConstraint("application_id", "rule_unit_id", "generation", name="uq_entry_deadline_task_generation"),
+        UniqueConstraint("task_id", name="uq_entry_deadline_task_identity"),
+        Index("ix_entry_deadline_task_sweep", "case_id", "generation", "id"),
+        ForeignKeyConstraint(["application_id", "case_id"], ["entry_applications.id", "entry_applications.case_id"], name="fk_entry_deadline_task_application"),
+        ForeignKeyConstraint(["deadline_revision_id", "application_id", "case_id", "rule_unit_id"],
+            ["entry_deadline_revisions.id", "entry_deadline_revisions.application_id", "entry_deadline_revisions.case_id", "entry_deadline_revisions.rule_unit_id"], name="fk_entry_deadline_task_source"),
+        CheckConstraint("generation BETWEEN 1 AND 250 AND revision >= 1", name="ck_entry_deadline_task_revision"),
+        CheckConstraint("length(source_hash) = 64 AND length(target_hash) = 64", name="ck_entry_deadline_task_hashes"),
+        CheckConstraint("attention IN ('','unknown_date','missing_owner','claimed','schedule_conflict','generation_limit')", name="ck_entry_deadline_task_attention"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer)
+    application_id: Mapped[int] = mapped_column(Integer)
+    rule_unit_id: Mapped[str] = mapped_column(String(80))
+    generation: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[int] = mapped_column(Integer)
+    deadline_revision_id: Mapped[int] = mapped_column(Integer)
+    task_id: Mapped[int | None] = mapped_column(ForeignKey("calendar_tasks.id"), nullable=True)
+    source_hash: Mapped[str] = mapped_column(String(64))
+    target_hash: Mapped[str] = mapped_column(String(64))
+    expected_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    attention: Mapped[str] = mapped_column(String(32), default="")
+    created_by: Mapped[str] = mapped_column(String(64))
+    updated_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision)
 
 

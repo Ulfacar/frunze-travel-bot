@@ -35,7 +35,7 @@
 {% if current.snapshot.manual %}<p>Ранее записанная дата: {{ current.snapshot.manual.due_on }}; подтверждение от {{ current.snapshot.manual.evidence_on }}. Автор: {{ current.snapshot.manual.actor }}.</p><p class="muted">Контрольная сумма подтверждения: {{ current.snapshot.manual.proof }}</p>{% endif %}
 {% if current.summary.blockers %}<ul>{% for reason in current.summary.blockers %}<li>{{ blockers.get(reason,'Требуется сверка источника, календаря или правила отсчёта') }}</li>{% endfor %}</ul>{% endif %}
 {% if current.snapshot.source.calendars %}<p>Календари: {% for calendar in current.snapshot.source.calendars %}{{ calendar.year }} / версия {{ calendar.version }}{% if not loop.last %}; {% endif %}{% endfor %}.</p>{% endif %}
-</section>{% endif %}
+{% if history.selected.revision == history.current_revision %}<p class="no-print"><a href="{{ url|replace('/deadlines','/deadline-tasks') }}?rule={{ rule.unit_id }}">Задача контроля срока</a></p>{% endif %}</section>{% endif %}
 {% if not write_on %}<p class="box notice">Сохранение отключено. Доступен просмотр.</p>{% endif %}
 {% if history.selected and history.selected.revision != history.current_revision %}<p class="box notice" id="kg-dl-historical">Предыдущая версия доступна для просмотра. <a href="{{ url }}?rule={{ rule.unit_id }}">Открыть последнюю версию</a>.</p>{% endif %}
 {% if forms.recalculate %}<form method="post" action="{{ url }}" class="box" id="kg-dl-recalculate">{{ envelope('recalculate') }}<fieldset {% if not write_on %}disabled{% endif %}>

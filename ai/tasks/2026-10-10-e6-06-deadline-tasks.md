@@ -16,3 +16,9 @@
 - Additive migration only; local synthetic SQLite, scoped FK/negative tests, PG DDL, safe populated/offline downgrade behavior. Independent critical review/audit and PG runtime remain required and UNKNOWN until evidenced.
 
 Acceptance scenarios: two applications/same payer; two rules/same application; no source date; verified manual date; recalculation clears date; later anchor invalidation; case reassignment; complete/cancel/escalate; repeated/concurrent/out-of-order jobs; crash before/after commit; partial batch recovery; claimed-task/manual-schedule conflict; native full-admin/OFF/write/CSRF gates; mobile/no-JS.
+
+## Implementation direction
+
+Use a small operational binding per task generation, while retaining CalendarTask and its authoritative CalendarTaskEvent history. Do not duplicate the existing task engine with another immutable task-event journal. Preserve old terminal generations; log source-binding changes with generated structured details in existing events. Bindings keep the last expected schedule and source fingerprint so an external manual reschedule is detected. Terminal same-source retries do not recreate work; owner-only changes must not reopen completed tasks.
+
+After an operator explicitly enables a deadline task, changes to its deadline or actual anchor must invalidate/synchronize it in the source transaction. Use consistent case→application→task lock ordering for these hooks; no nested owned transactions. Claimed/conflicting tasks are surfaced for reconciliation, not blindly changed. A bounded batch processor can initialize/reconcile tasks and resume partial failures. No new daemon identity or live scheduler is introduced without its separate authorization policy.
