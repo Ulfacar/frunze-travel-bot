@@ -814,7 +814,8 @@
       "status": "ЧАСТИЧНО — E6-02A: черновая матрица; реальные документы и сопровождение впереди",
       "owner": "Codex (локальная матрица)",
       "role": "Разработчик; проверка владельцем соответствующего направления",
-      "implementation": "docs/e6-02a-document-checklists.md"
+      "implementation": "docs/e6-02a-document-checklists.md",
+      "implementation_note": "E6-02B local persistent document inventory; code5feb4e0;210 PASS/2PG SKIP; CRITICAL independent review UNKNOWN. Complete package/file/post-issue workflow pending."
     },
     {
       "id": "E6-03",
@@ -842,7 +843,8 @@
       "evidence": "Чужое/повторное/старое письмо не меняет новую заявку; авторизация отправителя не сводится к показанному полю From.",
       "status": "НЕ НАЧАТО",
       "owner": "Не назначен",
-      "role": "Разработчик; проверка владельцем соответствующего направления"
+      "role": "Разработчик; проверка владельцем соответствующего направления",
+      "implementation_note": "Supporting E6-03A typed draft-template preview1d4a73c;95 PASS. No sending/publication. Email import remains unimplemented."
     },
     {
       "id": "E6-04",

@@ -4,6 +4,7 @@ Requires local PyMuPDF (document tooling only, not an application dependency).
 No network, CRM database, personal data or source PDF modification.
 """
 import argparse
+import json
 from datetime import date
 from html import escape
 from pathlib import Path
@@ -32,7 +33,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -95,6 +96,27 @@ def main(argv=None):
         <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
         не загружаются и не принимаются; подача не разрешается.</li></ul>"""
         estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
+    if args.checkpoint == "engineering-progress":
+        if __package__:
+            from .check_pdf_engineering_progress import evaluate
+        else:
+            from check_pdf_engineering_progress import evaluate
+        score = evaluate(json.loads((ROOT/'docs/pdf-engineering-criteria.json').read_text(encoding='utf-8')))
+        title = "Учёт документов и черновики сообщений"
+        intro = "Добавлены история проверки документов каждой заявки и безопасное заполнение исходных шаблонов."
+        result = """<ul><li>Получение, проверка, доработка и отзыв конкретной версии документа;
+        замена паспорта делает прежние проверки неактуальными. История сохраняется.</li>
+        <li>Проверяются права, принадлежность заявке, конфликты и повторы сохранения.
+        Нативные формы работают на телефоне, без JavaScript и при печати.</li>
+        <li>Все 13 шаблонов приложения А: отдельные значения повторяющихся дат,
+        строгие типы, явная валюта, видимые незаполненные условия. Спорные расчёты
+        не вычисляются автоматически. Отправка клиенту не разрешается.</li>
+        <li>Используются только тестовые данные. Реальные файлы не загружаются;
+        весь комплект пока не принимается, подача не разрешается.</li></ul>"""
+        estimate = (f"По фиксированным 50 критериям: {score['engineering_points']}/100 баллов инженерной реализации; "
+                    f"осталось {score['remaining_points']}/100. Частичные и неподтверждённые критерии дают ноль. "
+                    "Это проверяемая техническая оценка, не процент готовности к запуску. "
+                    "Цель 70/100 ещё не достигнута; работа продолжается.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
     <p>{args.report_date:%d.%m.%Y} · {title}</p>
     <p class="note"><b>Весь PDF ещё не выполнен.</b> {intro} Пилот выключен по умолчанию;

@@ -1,0 +1,15 @@
+{
+  "report": "docs\\reports\\frunze-pdf-progress-2026-10-10-engineering-progress.pdf",
+  "sha256": "44b742e8e3ffc5e6f6dc694f2cb8d799018ae888855bb0542e88d718cd7ebe0a",
+  "pages": 5,
+  "source_headings_checked": 26,
+  "technical_points": 42,
+  "source_approved": false,
+  "critical_independent_review": "UNKNOWN",
+  "visual_review": "all5 pages inspected; final page1 rechecked after full-suite result",
+  "code_revisions": [
+    "5feb4e0",
+    "1d4a73c",
+    "8e9ab4f"
+  ]
+}

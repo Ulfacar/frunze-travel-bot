@@ -381,8 +381,17 @@
       "weight": 2,
       "pdf": "5/18",
       "acceptance": "Per-application persistent versioned inventory and document history",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "5feb4e03da07b98a9526b0433738634cfb903494",
+          "command": "Exact related regression incl. SQLite, native HTTP and browser; full command in artifact (210 PASS /2 PG SKIP)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Per-application persistent versioned inventory and document history",
+          "artifact": "ai/handoffs/2026-10-10-0600-e6-02b-document-inventory.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {
@@ -390,8 +399,17 @@
       "weight": 2,
       "pdf": "5/6",
       "acceptance": "New document/passport version invalidates old review with traceable evidence",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "5feb4e03da07b98a9526b0433738634cfb903494",
+          "command": "Exact related regression incl. SQLite, native HTTP and browser; full command in artifact (210 PASS /2 PG SKIP)",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "New document/passport version invalidates old review with traceable evidence",
+          "artifact": "ai/handoffs/2026-10-10-0600-e6-02b-document-inventory.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {
@@ -507,9 +525,18 @@
       "weight": 1,
       "pdf": "А",
       "acceptance": "Safe typed template rendering preserves conditional placeholders and source status",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "1d4a73cd09cf5124dcfa10492607df9a02724fbc",
+          "command": "python -m pytest tests/test_kg_template_preview.py tests/test_admin_kg_templates.py tests/test_admin_kg_entry.py tests/test_admin_kg_documents.py tests/browser_kg_templates.py -q --tb=short",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite and loopback browser / no env files",
+          "scope": "Safe typed template rendering preserves conditional placeholders and source status",
+          "artifact": "ai/handoffs/2026-10-10-0630-e6-03a-template-preview.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "I02",

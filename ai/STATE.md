@@ -1,10 +1,13 @@
 # Current work
 
-- Updated **2026-10-10**. ACTIVE GOAL: continue until70% evidenced engineering implementation; user requested no intermediate completion response. Goal task `ai/tasks/2026-10-10-pdf-to70.md`.
-- Branch `fix/tours-search-quality`, base `f0d9efa`. Fixed50 weighted criteria (100 points) in `docs/pdf-engineering-criteria.json`; baseline37/100 evidenced technical points; `ai/reviews/2026-10-10-pdf-to70-baseline.md`. Historical30% was approximate, not a measured score.
-- Current slice **E6-02B DOCUMENT INVENTORY**, CRITICAL / solo, IN PROGRESS. Task/pre-audit `ai/tasks/2026-10-10-e6-02b-document-inventory.md`. Persistent per-application versions/review/history; synthetic data only, no file upload or policy invention.
-- Required independent review/audit/PG runtime remain UNKNOWN. Complete authorized local work/checks, prepare concrete review packets, continue other useful goal work. Do not promote UNKNOWN to PASS or declare the goal complete after one slice.
-- Commit/push authorized; production/env/live migrations/real personal data/messages not authorized. Preserve unrelated untracked artifacts.
+- Updated **2026-10-10**. ACTIVE GOAL: continue until70% evidenced engineering implementation; no intermediate final response. `ai/tasks/2026-10-10-pdf-to70.md`.
+- Branch `fix/tours-search-quality`, HEAD `8e9ab4f`; inventory `5feb4e0`, templates `1d4a73c`. Fixed50 criteria in `docs/pdf-engineering-criteria.json`: **42/100 technical points** (37 verified baseline +4 F02/F03 +1 I01). No production-readiness claim.
+- E6-02B **PARTIALLY_READY**, CRITICAL / solo. Immutable per-application document inventory/history and passport/version invalidation; native forms/print. Handoff `ai/handoffs/2026-10-10-0600-e6-02b-document-inventory.md`; independent review/audit UNKNOWN.
+- Exact-commit related check210 PASS /2 PostgreSQL SKIP /3 warnings /242.76s;22-file snapshot identity verified after CRLF/LF normalization. Full suite at `5feb4e0`:3732 PASS/3 FAIL/13 SKIP/1092.43s. Two baseline OFF-route smoke failures fixed in8e9ab4f; known tour-date fixture remains. Do not claim full green.
+- E6-03A **DONE for local slice**, STANDARD / solo: typed literal source-template preview; task `ai/tasks/2026-10-10-e6-03a-template-preview.md`. 95 PASS /3 warnings /151.37s; SELF_REVIEW PASS; handoff `ai/handoffs/2026-10-10-0630-e6-03a-template-preview.md`. No sending/publication. Legacy smoke flags corrected with7 PASS, baseline2 failures reproduced. Current **E6-02C IN PROGRESS**, CRITICAL: issued-document12-field checks, corrections, delivery/receipt and actual travel facts. Task `ai/tasks/2026-10-10-e6-02c-issued-documents.md`; pure reducer started. Then deadlines/tasks and full conditional package proof.
+- Docker Linux engine unavailable; PostgreSQL runtime/recovery UNKNOWN. Source/policy approvals stay unresolved; required critical review is not replaced by SELF_REVIEW.
+- Updated5-page PDF `docs/reports/frunze-pdf-progress-2026-10-10-engineering-progress.pdf`;26/26 source headings,42/100 technical points; SHA44b742e8e3ffc5e6f6dc694f2cb8d799018ae888855bb0542e88d718cd7ebe0a.
+- Commit/push authorized; production/env/live migrations/real personal data/messages not authorized. Preserve unrelated untracked artifacts. Do not close the parent goal after one slice.
 
 ## Previous checkpoint - E6-02A
 
