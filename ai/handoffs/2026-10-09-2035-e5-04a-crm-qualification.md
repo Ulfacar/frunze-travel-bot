@@ -2,7 +2,7 @@
 
 - STATUS **PARTIALLY_READY**, CRITICAL / solo, target local implementation + review packet.
 - Branch `fix/tours-search-quality`, base `46284fbaf05d4596b39d889961b01771ee661cfc`.
-- Current uncommitted snapshot; LF manifest `ai/reviews/2026-10-09-e5-04a-crm-snapshot.json`.
+- Code `56f84e0db3ba5817f6fa4dad6030e891eaf2b0e4`; follow-up docs-only commit records final evidence. LF manifest `ai/reviews/2026-10-09-e5-04a-crm-snapshot.json`.
 - Task `ai/tasks/2026-10-09-e5-04a-crm-qualification.md`; contract `docs/e5-04a-crm-qualification.md`.
 - Builder Codex, separate SELF_REVIEW performed. Independent reviewer/final auditor UNKNOWN.
 
@@ -27,10 +27,12 @@ writing additionally requires service_cases_enabled. New env flag forwarded in C
 |---|---|---|
 | Related new HTTP + existing contracts/workday/storage | Synthetic SQLite, worktree | **187 passed / 1 warning / 156.80s**, before four extra tests |
 | Final HTTP including XSS/history/as-of/flag and buffer bound | Synthetic SQLite, final new code | **42 passed / 1 warning / 57.58s** |
+| Committed-copy HTTP | `56f84e0`, `runs/e5-04a-committed-copy-20261009/`, `python -m pytest tests/test_admin_kg_entry.py -q` | **42 passed / 1 warning / 53.86s**; `.env`/`prod.env` absent; 13/13 manifest hashes match Git blobs and copy |
 | Browser | Isolated loopback FastAPI, Chromium, synthetic data | **1 passed / 3 deprecation warnings / 31.82s**; mobile390 with JS, desktop1365 without JS; native save/reload/history/focus, no overflow; screenshots inspected |
 | Full suite | `python -m pytest tests -q` | **3318 passed / 1 failed / 8 skipped / 1 warning / 605.66s**; known tour-date baseline only; run started before buffer ordering refinement covered by final HTTP42 |
 | Deployment traps | `python scripts/prod_traps_check.py --diff-base 46284fb --limit 1` | **FAIL**, 1 ERROR / 57 WARN, historical ANTHROPIC_API_KEY Compose-forwarding gap; new flag forwarded |
 | Static compilation / whitespace | Local worktree | PASS, line-ending warnings only |
+| Staged public-repository checks | Code commit index | PASS, whitespace check and 13/13 manifest hashes; credential-shaped literal scan found 0 matches (not a comprehensive secret audit) |
 | Independent review/final audit/PG runtime | Not available/performed | UNKNOWN; SELF_REVIEW is not independent approval |
 | CI/deploy/production acceptance | Local target only | N/A, no production release requested or executed |
 

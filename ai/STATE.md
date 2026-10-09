@@ -2,12 +2,13 @@
 
 - Updated **2026-10-09**. Active **E5-04A CRM QUALIFICATION**, CRITICAL / solo, **PARTIALLY_READY**.
 - User: требования исходного PDF и CRM двигать вместе; общий редизайн позже.
-- Branch `fix/tours-search-quality`, base `46284fbaf05d4596b39d889961b01771ee661cfc`; current uncommitted snapshot, code commit pending.
+- Branch `fix/tours-search-quality`, base `46284fbaf05d4596b39d889961b01771ee661cfc`; code `56f84e0db3ba5817f6fa4dad6030e891eaf2b0e4`, followed by an evidence-only docs commit.
 - Task `ai/tasks/2026-10-09-e5-04a-crm-qualification.md`; contract `docs/e5-04a-crm-qualification.md`.
 - Handoff `ai/handoffs/2026-10-09-2035-e5-04a-crm-qualification.md`; packet/SELF_REVIEW/manifest `ai/reviews/2026-10-09-e5-04a-crm-*`.
 - Result: visa case → manual KG questionnaire → E5-03E save/reload, RU/EN questions, review reasons, old revisions. Shared per-contact profile clearly labelled. No new E6 direction/products/applicants or automatic handoff.
 - Access: прежний named full-admin. New `ADMIN_KG_ENTRY_ENABLED=false` default + existing workday/write gates. CSRF/session HMAC, source/base binding, bounded POST, retry/CAS/error recovery. No new migrations.
 - Tests: related **187 passed / 156.80s**, final HTTP **42 passed / 57.58s**; browser **1 passed / 31.82s**, mobile390 JS/desktop1365 no JS, save/reload/history/focus/no overflow. Full suite **3318 passed / 1 known dates failure / 8 skipped / 605.66s**; run began before final buffer-bound ordering refinement, covered separately by final HTTP42. Не выдавать suite за зелёный.
+- Committed Git copy `56f84e0`: **42 passed / 1 warning / 53.86s**, without `.env`/`prod.env`; 13/13 manifest hashes match Git blobs and copy. Staged whitespace check passed; credential-shaped literal scan found 0 matches.
 - Traps fresh run: **1 ERROR / 57 WARN**, same ANTHROPIC_API_KEY Compose-forwarding baseline; new flag forwarded. Not a green deployment gate.
 - Review: SELF_REVIEW only, independent reviewer/final auditor/PG runtime UNKNOWN. Current code local; feature OFF, no production release/migrations/real-data work or messages.
 - PDF map `docs/e5-pdf-progress.md`; 208 draft units, 0 confirmed, 82 NULL. Historical PDF report `docs/reports/frunze-pdf-progress-2026-10-09.pdf` describes E5-03E; newer E5-04A documented in current map. Rough remaining estimate 70–80%, not a measured percentage.

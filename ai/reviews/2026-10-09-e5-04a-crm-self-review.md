@@ -1,7 +1,7 @@
 # SELF_REVIEW — E5-04A
 
 - Codex, same builder/context; not independent review/final audit.
-- Base 46284fb, target current uncommitted snapshot, CRITICAL / solo.
+- Base 46284fb, target `56f84e0db3ba5817f6fa4dad6030e891eaf2b0e4`, CRITICAL / solo.
 - Status PARTIALLY_READY: required independent gates and PostgreSQL runtime UNKNOWN.
 
 Separate pass over task A1–7, complete new routes/form/template/tests, shared integration
@@ -46,7 +46,11 @@ and existing source/storage/auth paths. Original PDF physical pages 29 and 88 di
 - Full suite: **3318 passed / 1 failed / 8 skipped / 1 warning / 605.66s**; only known
   test_facts_live_errors date baseline. During that run, body limit was tightened to reject
   a chunk before copying into memory; separate final HTTP gate: **42 passed / 57.58s**.
-  No full-suite PASS claimed. Final Git-copy evidence will be recorded after commit.
+  No full-suite PASS claimed.
+- Committed Git copy `56f84e0`, no `.env`/`prod.env`: **42 passed / 1 warning / 53.86s**
+  (`python -m pytest tests/test_admin_kg_entry.py -q`). 13/13 LF manifest hashes match
+  Git blobs and copy. Staged whitespace check passed; credential-shaped literal scan
+  found 0 matches, not a comprehensive secret audit.
 
 Not a release certification. Existing panel session lifetime/role revocation semantics unchanged;
 privileged SQL tampering with all matching hashes is not prevented cryptographically.

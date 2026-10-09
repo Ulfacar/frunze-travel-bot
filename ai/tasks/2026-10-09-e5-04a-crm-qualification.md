@@ -52,6 +52,8 @@ or business access policy invented. Public repo: synthetic fixtures only, no cre
 
 ## Local evidence
 
+- Code revision `56f84e0db3ba5817f6fa4dad6030e891eaf2b0e4`; final evidence recorded in a follow-up docs-only commit.
+- Isolated committed Git copy, no `.env`/`prod.env`: HTTP **42 passed / 1 warning / 53.86s**; 13/13 manifest hashes match Git blobs and copy.
 - Related CRM/HTTP/storage: 187 passed / 156.80s; final new HTTP42 passed / 57.58s.
 - Browser: 1 passed / 31.82s, mobile390 JS + desktop1365 no JS, native save/reload/history, no overflow.
 - Full regression: 3318 passed / 1 known tour-date failure / 8 skipped / 605.66s.
