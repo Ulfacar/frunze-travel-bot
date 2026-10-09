@@ -2641,3 +2641,5 @@ from app.admin import kg_documents  # noqa: E402,F401 — черновая ма�
 from app.admin import kg_document_inventory  # noqa: E402,F401 — версии документов отдельных заявок
 
 from app.admin import kg_templates  # noqa: E402,F401
+
+from app.admin import kg_issued  # noqa: E402,F401 — проверки после выдачи

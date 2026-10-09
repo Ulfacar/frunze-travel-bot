@@ -1560,10 +1560,44 @@ class EntryDocumentRevision(DomainBase):
         return _ServiceJSON.freeze(value)
 
 
+class EntryIssuedRevision(DomainBase):
+    """Immutable post-issue verification, delivery and actual travel facts."""
+    __tablename__ = "entry_issued_revisions"
+    __table_args__ = (
+        UniqueConstraint("id", "application_id", "case_id", name="uq_entry_issued_parent"),
+        UniqueConstraint("application_id", "revision", name="uq_entry_issued_revision"),
+        UniqueConstraint("application_id", "request_key", name="uq_entry_issued_request"),
+        ForeignKeyConstraint(["application_id", "case_id"], ["entry_applications.id", "entry_applications.case_id"], name="fk_entry_issued_case"),
+        ForeignKeyConstraint(["previous_id", "application_id", "case_id"],
+            ["entry_issued_revisions.id", "entry_issued_revisions.application_id", "entry_issued_revisions.case_id"], name="fk_entry_issued_previous"),
+        ForeignKeyConstraint(["approval_event_id", "application_id"], ["entry_application_events.id", "entry_application_events.application_id"], name="fk_entry_issued_approval"),
+        CheckConstraint("revision BETWEEN 1 AND 250", name="ck_entry_issued_revision"),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL) OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id)", name="ck_entry_issued_previous"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_issued_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer)
+    application_id: Mapped[int] = mapped_column(Integer)
+    approval_event_id: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("command", "snapshot")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
 ENTRY_APPLICATION_MODELS = (EntryApplicant, EntryApplication, EntryApplicationEvent, EntryApplicationReference)
 ENTRY_STORAGE_MODELS = (StayHistory, StayInterval, WorkCalendar, WorkCalendarDay, EntryCalculation,
                         EntryCalculationInterval, EntryCalculationCalendar)
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision)
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision)
 
 
 def _entry_immutable(mapper, connection, target):
