@@ -2,17 +2,17 @@
 
 - Updated: **2026-10-09**, Алан вернулся; продолжает исходную работу над PDF. Эрмек — коллега с тем же согласованным scope разработки; реальные доступы учитывать отдельно.
 - Active task: **E5-03C CALCULATION STORAGE**, CRITICAL / solo, **PARTIALLY_READY**.
-- Branch/revision: `fix/tours-search-quality` / **UNCOMMITTED**, base `ef77321`.
+- Branch/revision: `fix/tours-search-quality` / code **4cd8f6ddb52d763a3722db2d307568fafe0b393d**, base `ef77321`; финальное evidence — следующий docs-only commit.
 - Task: `ai/tasks/2026-10-09-e5-03c-calculation-storage.md`; contract: `docs/e5-03c-calculation-storage.md`.
 - Handoff: `ai/handoffs/2026-10-09-1857-e5-03c-calculation-storage.md`; independent packet, SELF_REVIEW и snapshot — `ai/reviews/2026-10-09-e5-03c-calculation-storage-*`.
 - Result: 7 новых таблиц + миграция **e5_calculation_0015** после **e5_projection_0014**; полные immutable history revisions, draft-календари, DB adapter, сохранённые CALC-02/03, FK источников и verified replay. Только named full-admin, synthetic/local; HTTP/LLM/runtime не подключены.
-- Evidence: targeted **67 passed / 48.44s**, SAWarning=error; SQLite end-to-end PASS (counts 1/1/2/6/2/1/2, replay=true, synthetic 6 дней/08.10). Full suite: 3161 passed / 2 failed / 8 skipped / 1 warning; stale migration expectation исправлен, повтор 64 passed / 2 skipped. Оставшийся facts dates failure воспроизведён на base ef77321 (clock=06.10 PASS, 09.10 FAIL), вне этапа; полного зелёного suite нет. Snapshot включает новые untracked файлы реализации.
+- Evidence: targeted **67 passed / 48.44s**, SAWarning=error; SQLite end-to-end PASS (counts 1/1/2/6/2/1/2, replay=true, synthetic 6 дней/08.10). Full suite: 3161 passed / 2 failed / 8 skipped / 1 warning; stale migration expectation исправлен, повтор 64 passed / 2 skipped. Оставшийся facts dates failure воспроизведён на base ef77321 (clock=06.10 PASS, 09.10 FAIL), вне этапа; полного зелёного suite нет. Git copy 4cd8f6d: **68 passed / 47.68s**, SAWarning=error; 16/16 manifest hashes, без .env.
 - Найденная утечка соединения при after_commit exception исправлена; повтор с прежним ключом не создаёт дубль. Cross-contact/history FK, CAS, rollback, corruption и runtime drift проверены.
 - Boundaries: exact_remaining_days/exact_deadline=NULL, may_quote=false. 208 source units прежние, 0 confirmed; официальный календарь/нормы/эталоны/DEC-06/07 не утверждены. Независимые review/final audit и PG16 runtime/concurrency **UNKNOWN**; SELF_REVIEW не заменяет gates.
 - Next action: независимая проверка packet + PG16; следующий отдельный implementation scope — unified selection/qualification и trusted manager adapter с серверным scope доступа. Затем publication/runtime/диалог и въездные процессы.
 - PDF progress: `docs/e5-pdf-progress.md`, ориентировочно **70–80% осталось**, без нового измеренного процента; persistence готов локально, весь PDF не выполнен.
 - Предыдущие этапы: E5-03A stay-days; E5-03B deadlines (7722d37); E5-02F projection (bd2f2f6); E5-02E conditions (820a837); E5-02D country index; E5-01B 74 search fragments. Их independent gates сохраняются.
-- Delivery: GitHub working branch ранее обновлена до ef77321 по поручению «пушни всё свежее» 08.10, repo public. Current E5-03C ещё не committed/pushed. Production deploy/DB/клиентских отправок не было. Main не сливался с инженерной веткой.
+- Delivery: GitHub working branch ранее обновлена до ef77321 по поручению «пушни всё свежее» 08.10, repo public. E5-03C code **4cd8f6d committed/pushed** 09.10; следующий docs-only commit фиксирует эту передачу и проверку Git-копии. Production deploy/DB/клиентских отправок не было. Main не сливался с инженерной веткой.
 - Baseline: prod_traps --diff-base ef77321 --limit 1 FAIL **1 ERROR / 57 WARN**, ANTHROPIC_API_KEY compose forwarding; конфигурация не менялась.
 - Unrelated аудио/архивы/выгрузки/temp сохранены untracked, в commits не включать.
 

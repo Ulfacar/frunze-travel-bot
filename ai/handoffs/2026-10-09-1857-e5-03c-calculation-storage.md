@@ -2,7 +2,7 @@
 
 - STATUS: **PARTIALLY_READY**; CLASS / MODE: **CRITICAL / solo**.
 - Task: `ai/tasks/2026-10-09-e5-03c-calculation-storage.md`; project `ai/PROJECT.md`.
-- Branch: `fix/tours-search-quality`; base ef77321; target UNCOMMITTED snapshot.
+- Branch: `fix/tours-search-quality`; base ef77321; code **4cd8f6ddb52d763a3722db2d307568fafe0b393d**; финальное evidence отдельным docs-only commit.
 - Completion target: local implementation + authorized commits; production не входит.
 - Алан подтвердил продолжение хранения истории/расчётов и сообщил, что вернулся к работе.
 
@@ -22,6 +22,8 @@ SQL вне границы, обнаруживается несогласован
 `entry_calculations.py`, models; schema `app/knowledge/storage_schema.py`;
 CLI `scripts/rehearse_kg_calculations.py`. Backlog, slots schema и PDF progress обновлены.
 Нормативный bundle не изменялся. Бот/HTTP/LLM не подключены.
+Код 4cd8f6d отправлен на GitHub в fix/tours-search-quality; main не менялся.
+Далее отправляется только финальная фиксация evidence/STATE.
 
 ## Evidence
 
@@ -35,6 +37,7 @@ CLI `scripts/rehearse_kg_calculations.py`. Backlog, slots schema и PDF progress
 | Baseline failure isolation | test_facts_live_errors::test_still_reads_a_plain_request | отдельная Git archive ef77321 без .env | FAIL: 1 / 0.38s | даты зависят от текущего дня |
 | PG DDL | targeted migration test | offline PostgreSQL compiler | PASS | runtime/concurrency UNKNOWN |
 | Existing release gate | prod_traps --diff-base ef77321 --limit 1 | local | FAIL, 1 ERROR / 57 WARN | прежний compose forwarding, вне этапа |
+| Committed copy | storage/migration + service migration test, SAWarning=error | Git copy 4cd8f6d без .env | PASS: 68 / 47.68s, 16/16 hashes | independent review UNKNOWN |
 | Whitespace | git diff --check | local | PASS | не semantic review |
 | Independent review/final audit | packet prepared | — | UNKNOWN | SELF_REVIEW не заменяет |
 

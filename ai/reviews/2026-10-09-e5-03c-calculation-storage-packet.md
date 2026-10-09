@@ -6,7 +6,7 @@ handoff — после своего первого прохода. Доступ 
 - Task: `ai/tasks/2026-10-09-e5-03c-calculation-storage.md`, AC1–8.
 - CRITICAL / solo; target local implementation + commits, не release.
 - Base `ef77321241319974fa392f212f8e6933b8e92e66`, branch `fix/tours-search-quality`.
-- Target: UNCOMMITTED snapshot; `2026-10-09-e5-03c-calculation-storage-snapshot.json`.
+- Target: **4cd8f6ddb52d763a3722db2d307568fafe0b393d**; `2026-10-09-e5-03c-calculation-storage-snapshot.json`.
 - Independent reviewer/final auditor: UNKNOWN. Builder не делегировал работу.
 
 ## Requirement → implementation → scenario

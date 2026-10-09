@@ -1,7 +1,7 @@
 # SELF_REVIEW — E5-03C
 
 - Builder/reviewer: Codex, тот же контекст, **не независимая проверка**.
-- Mode/risk: solo / CRITICAL. Base ef77321; target UNCOMMITTED snapshot.
+- Mode/risk: solo / CRITICAL. Base ef77321; target **4cd8f6ddb52d763a3722db2d307568fafe0b393d**.
 - Локальный результат PARTIALLY_READY; independent review/final audit UNKNOWN.
 - Проверены task AC1–8, все новые файлы и diff общих models/calendar, adjacent
   knowledge import/review/projection, pure CALC-02/03 и существующие migration checks.
@@ -45,7 +45,11 @@
   Полностью зелёного full-suite не заявляем. Warning — прежний Starlette/httpx deprecation.
 - prod_traps: FAIL baseline **1 ERROR / 57 WARN**, существующий ANTHROPIC_API_KEY
   compose forwarding. Конфигурация запуска этим этапом не менялась.
-- git diff --check: PASS. Snapshot includes untracked implementation files.
+- Git copy 4cd8f6d: **68 passed / 47.68s**, storage/migration + исправленный legacy
+  migration test, SAWarning=error. 16/16 manifest hashes совпали с Git blobs и копией;
+  .env отсутствует. Последующий commit меняет только evidence/STATE.
+- git diff --check: PASS; credential-pattern scan добавленных строк без находок.
+- GitHub: code 4cd8f6d отправлен в origin/fix/tours-search-quality; main не менялся.
 
 ## Остаточные границы
 
