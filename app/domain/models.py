@@ -1703,7 +1703,39 @@ class EntryDeadlineTask(DomainBase):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision)
+class KnowledgeDecision(DomainBase):
+    """A reviewer's evidence record; never mutates the imported source or publishes it."""
+    __tablename__ = "knowledge_decisions"
+    __table_args__ = (
+        UniqueConstraint("id", "version_id", "unit_id", name="uq_knowledge_decision_scope"),
+        UniqueConstraint("version_id", "unit_id", "revision", name="uq_knowledge_decision_revision"),
+        UniqueConstraint("version_id", "unit_id", "request_key", name="uq_knowledge_decision_request"),
+        ForeignKeyConstraint(["version_id", "unit_id"], ["knowledge_units.version_id", "knowledge_units.unit_id"], name="fk_knowledge_decision_unit"),
+        ForeignKeyConstraint(["previous_id", "version_id", "unit_id"], ["knowledge_decisions.id", "knowledge_decisions.version_id", "knowledge_decisions.unit_id"], name="fk_knowledge_decision_previous"),
+        CheckConstraint("revision BETWEEN 1 AND 250", name="ck_knowledge_decision_revision"),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL) OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id)", name="ck_knowledge_decision_previous"),
+        CheckConstraint("length(unit_hash) = 64 AND length(bundle_hash) = 64 AND length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_knowledge_decision_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    version_id: Mapped[int] = mapped_column(Integer)
+    unit_id: Mapped[str] = mapped_column(Text)
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    unit_hash: Mapped[str] = mapped_column(String(64))
+    bundle_hash: Mapped[str] = mapped_column(String(64))
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("command")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision)
 
 
 def _entry_immutable(mapper, connection, target):
