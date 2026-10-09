@@ -471,8 +471,17 @@
       "weight": 2,
       "pdf": "13/18",
       "acceptance": "Application deadlines bind actual events, calendar version and source",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "06df2a61d4fe709f4b0cc0ae9e73f001f6022057",
+          "command": "Exact-commit related suite241 PASS /2 PG SKIP; full command in artifact",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Application deadlines bind actual events, calendar version and source",
+          "artifact": "ai/handoffs/2026-10-10-0800-e6-05-application-deadlines.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {
@@ -480,8 +489,17 @@
       "weight": 2,
       "pdf": "13/19",
       "acceptance": "Manual deadline override/recalculation history and unknown-date handling",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "06df2a61d4fe709f4b0cc0ae9e73f001f6022057",
+          "command": "Exact-commit related suite241 PASS /2 PG SKIP; full command in artifact",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Manual deadline override/recalculation history and unknown-date handling",
+          "artifact": "ai/handoffs/2026-10-10-0800-e6-05-application-deadlines.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {

@@ -811,11 +811,11 @@
         "DEC-06"
       ],
       "evidence": "Подача без принятого комплекта запрещена; новый паспорт требует проверки; плановая дата не считается фактом въезда.",
-      "status": "ЧАСТИЧНО — E6-02A: черновая матрица; реальные документы и сопровождение впереди",
+      "status": "ЧАСТИЧНО — E6-02A/B/C и журнал сроков; полный комплект/файлы/задачи впереди",
       "owner": "Codex (локальная матрица)",
       "role": "Разработчик; проверка владельцем соответствующего направления",
       "implementation": "docs/e6-02a-document-checklists.md",
-      "implementation_note": "E6-02B local persistent document inventory; code5feb4e0;210 PASS/2PG SKIP; CRITICAL independent review UNKNOWN. Complete package/file/post-issue workflow pending."
+      "implementation_note": "Inventory5feb4e0:210 PASS/2PG SKIP; post-issue6c4b587:193 PASS/2PG SKIP; deadlines06df2a6:241 PASS/2PG SKIP. Independent CRITICAL review UNKNOWN. No files, complete package, legal publication or automatic reminders."
     },
     {
       "id": "E6-03",
@@ -877,7 +877,8 @@
       "evidence": "Менеджер проходит семью/работодателя и конфликт правила; утверждённые функции отдельно от передаваемых человеку.",
       "status": "НЕ НАЧАТО",
       "owner": "Не назначен",
-      "role": "Разработчик; проверка владельцем соответствующего направления"
+      "role": "Разработчик; проверка владельцем соответствующего направления",
+      "implementation_note": "Supporting individual applicant profiles71ba91e:275 PASS/2PG SKIP; payer/family facts separated. Local E6-04 profile task is a supporting slice, not acceptance of this whole pilot. Independent CRITICAL review UNKNOWN."
     },
     {
       "id": "E7-01",

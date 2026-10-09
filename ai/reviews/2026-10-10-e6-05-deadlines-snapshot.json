@@ -1,0 +1,151 @@
+{
+  "revision": "06df2a61d4fe709f4b0cc0ae9e73f001f6022057",
+  "environment": "isolated Git archive, no env files",
+  "normalization": "CRLF to LF only",
+  "files": [
+    {
+      "path": "ai/reviews/2026-10-10-e6-05-deadlines-packet.md",
+      "normalized_sha256": "36b8eab6c30a271001cb0859546623e086530709c4498e6b93a757c63d963f55",
+      "raw_sha256": {
+        "git": "36b8eab6c30a271001cb0859546623e086530709c4498e6b93a757c63d963f55",
+        "workspace": "36b8eab6c30a271001cb0859546623e086530709c4498e6b93a757c63d963f55",
+        "archive": "4683a51160292d40f21529ee09a335f3c8cc5d554d52cf77767e0e6272283f74"
+      }
+    },
+    {
+      "path": "alembic/versions/e6_deadlines_0021.py",
+      "normalized_sha256": "e53e96b1ac3d84e51e4e9dea3c65bf195f0df40cc8a69bbec2602f3cbe5c516e",
+      "raw_sha256": {
+        "git": "e53e96b1ac3d84e51e4e9dea3c65bf195f0df40cc8a69bbec2602f3cbe5c516e",
+        "workspace": "e53e96b1ac3d84e51e4e9dea3c65bf195f0df40cc8a69bbec2602f3cbe5c516e",
+        "archive": "f7867bda2c5c1786e7f25717d0f907b081a9596949cbfff495083bfe7918a0da"
+      }
+    },
+    {
+      "path": "app/admin/kg_deadlines.py",
+      "normalized_sha256": "507025e4f878be55e3a62341d651b28d0754f1ebc68eea249a20d4ebcea14a23",
+      "raw_sha256": {
+        "git": "507025e4f878be55e3a62341d651b28d0754f1ebc68eea249a20d4ebcea14a23",
+        "workspace": "507025e4f878be55e3a62341d651b28d0754f1ebc68eea249a20d4ebcea14a23",
+        "archive": "a3846a86195e794bc22487bbf876fb27fa65fb39f8f48bd8da97a4fa4ea0cef9"
+      }
+    },
+    {
+      "path": "app/admin/router.py",
+      "normalized_sha256": "00de8aa62d2b2f18372147c7d0b5ab63f8d73b6784f634036eca4c0d8b435ba0",
+      "raw_sha256": {
+        "git": "00de8aa62d2b2f18372147c7d0b5ab63f8d73b6784f634036eca4c0d8b435ba0",
+        "workspace": "e2a1c37c25ce317fb05d6ea9f9d9a521da1b61b299b7d27eb1189d85af92b467",
+        "archive": "e2a1c37c25ce317fb05d6ea9f9d9a521da1b61b299b7d27eb1189d85af92b467"
+      }
+    },
+    {
+      "path": "app/admin/templates/kg_applications.html",
+      "normalized_sha256": "d26417da6d76c6a1179a0b4b9ac0ad0b76795c6f564b811db5e5c0c404046645",
+      "raw_sha256": {
+        "git": "d26417da6d76c6a1179a0b4b9ac0ad0b76795c6f564b811db5e5c0c404046645",
+        "workspace": "0c8350449e3d7a9c711d2f6cb43172b8ed663e8989b1b433b4e98d4133164d22",
+        "archive": "0c8350449e3d7a9c711d2f6cb43172b8ed663e8989b1b433b4e98d4133164d22"
+      }
+    },
+    {
+      "path": "app/admin/templates/kg_deadlines.html",
+      "normalized_sha256": "56a3909cb0f8ac247a40195b95f3ea621608c0778edb33a0a3a9d57510eeac5a",
+      "raw_sha256": {
+        "git": "56a3909cb0f8ac247a40195b95f3ea621608c0778edb33a0a3a9d57510eeac5a",
+        "workspace": "37757bafd9c6236f44a1f211ebcae25a1a2b53abd843f12cc7ad441b1408329d",
+        "archive": "37757bafd9c6236f44a1f211ebcae25a1a2b53abd843f12cc7ad441b1408329d"
+      }
+    },
+    {
+      "path": "app/domain/entry_deadline_sources.py",
+      "normalized_sha256": "324da21ac4c979725e1a9180a1e7b572f0170513e4628964343105b13abc6f50",
+      "raw_sha256": {
+        "git": "324da21ac4c979725e1a9180a1e7b572f0170513e4628964343105b13abc6f50",
+        "workspace": "324da21ac4c979725e1a9180a1e7b572f0170513e4628964343105b13abc6f50",
+        "archive": "80b2c3c2f03daa1712b6d638740db7ce12e7a1fb2e90b90ee47d35299f83f726"
+      }
+    },
+    {
+      "path": "app/domain/entry_deadlines.py",
+      "normalized_sha256": "947b2782cb701a13797ae684e776caf8068db1596982ebc3a3da90c97afff9a8",
+      "raw_sha256": {
+        "git": "947b2782cb701a13797ae684e776caf8068db1596982ebc3a3da90c97afff9a8",
+        "workspace": "947b2782cb701a13797ae684e776caf8068db1596982ebc3a3da90c97afff9a8",
+        "archive": "067282c603ed1dace18696d73cfa652882b0c396c943e1f0d0207453930641a6"
+      }
+    },
+    {
+      "path": "app/domain/models.py",
+      "normalized_sha256": "3001dff2f5fed7f3a6a74a851e5d7fefce48ff84edfee05cbc76b31085cb3358",
+      "raw_sha256": {
+        "git": "3001dff2f5fed7f3a6a74a851e5d7fefce48ff84edfee05cbc76b31085cb3358",
+        "workspace": "ed7084832ef48278f591ca200cb1ef94e616f4ca8577903bbab306c2910f3b04",
+        "archive": "ed7084832ef48278f591ca200cb1ef94e616f4ca8577903bbab306c2910f3b04"
+      }
+    },
+    {
+      "path": "tests/browser_kg_deadlines.py",
+      "normalized_sha256": "bd2552ea2899f23eff9b49386b24abe8f81bcb8da99aeb070c9facbdae6c19be",
+      "raw_sha256": {
+        "git": "bd2552ea2899f23eff9b49386b24abe8f81bcb8da99aeb070c9facbdae6c19be",
+        "workspace": "bd2552ea2899f23eff9b49386b24abe8f81bcb8da99aeb070c9facbdae6c19be",
+        "archive": "9481c0bb3484506c6fd1fdab4cfb29210a1ad64f111327de7a87193744ef1e7b"
+      }
+    },
+    {
+      "path": "tests/test_admin_kg_deadlines.py",
+      "normalized_sha256": "2639cb4bdc3a2e24d5eecea248c7e0e873d510831b9fb6068d7159417f7c95e9",
+      "raw_sha256": {
+        "git": "2639cb4bdc3a2e24d5eecea248c7e0e873d510831b9fb6068d7159417f7c95e9",
+        "workspace": "2639cb4bdc3a2e24d5eecea248c7e0e873d510831b9fb6068d7159417f7c95e9",
+        "archive": "3cac220724549d39bc944dd1e12a629593f6f040c1454c457acb2ee2f9a5c508"
+      }
+    },
+    {
+      "path": "tests/test_alembic_domain_migration.py",
+      "normalized_sha256": "efd7f588185f65319c1f1756f594120c3dd4b59883c37b636141d4eff8fa927c",
+      "raw_sha256": {
+        "git": "efd7f588185f65319c1f1756f594120c3dd4b59883c37b636141d4eff8fa927c",
+        "workspace": "dfff2694a4325882b576c4f73f5f531dc1f8970478df90f187ff8cc0ec2c0ab1",
+        "archive": "dfff2694a4325882b576c4f73f5f531dc1f8970478df90f187ff8cc0ec2c0ab1"
+      }
+    },
+    {
+      "path": "tests/test_entry_deadline_sources.py",
+      "normalized_sha256": "7e1c692b04e4f6021caa29328f1b8df42099cfe1a359b6f958bbc0a2ce08bc2d",
+      "raw_sha256": {
+        "git": "7e1c692b04e4f6021caa29328f1b8df42099cfe1a359b6f958bbc0a2ce08bc2d",
+        "workspace": "7e1c692b04e4f6021caa29328f1b8df42099cfe1a359b6f958bbc0a2ce08bc2d",
+        "archive": "255827f51f17adc21abbe7d1c96c1b622f14d3790e08c50b31f8ee24fe29cc05"
+      }
+    },
+    {
+      "path": "tests/test_entry_deadlines.py",
+      "normalized_sha256": "869774e63b6ec53af4a7ad24a92ffdc69f573650f15b0aa2bdfc8ff803a47b95",
+      "raw_sha256": {
+        "git": "869774e63b6ec53af4a7ad24a92ffdc69f573650f15b0aa2bdfc8ff803a47b95",
+        "workspace": "869774e63b6ec53af4a7ad24a92ffdc69f573650f15b0aa2bdfc8ff803a47b95",
+        "archive": "6d41a602019732cf34e7d991f6334a32b35adc08efcffbfcf540784db7bdf745"
+      }
+    },
+    {
+      "path": "tests/test_entry_deadlines_migration.py",
+      "normalized_sha256": "d99dd531e07c9b22f092cfa6d48e9faf92165662750d66c161b51fb12e42c77a",
+      "raw_sha256": {
+        "git": "d99dd531e07c9b22f092cfa6d48e9faf92165662750d66c161b51fb12e42c77a",
+        "workspace": "d99dd531e07c9b22f092cfa6d48e9faf92165662750d66c161b51fb12e42c77a",
+        "archive": "5a3be64c79d9510793af86858b596229754a88a5c8fedd20897e9c4784ab5180"
+      }
+    },
+    {
+      "path": "tests/test_service_cases.py",
+      "normalized_sha256": "6809bcc9744fc5a785d91144dfafe128f580cff81d34dc5d79238939b7d23144",
+      "raw_sha256": {
+        "git": "6809bcc9744fc5a785d91144dfafe128f580cff81d34dc5d79238939b7d23144",
+        "workspace": "ea1d0f2332a9f7bb27d7626e81b09f7f08797c136ac3f835906adda3241a4c79",
+        "archive": "ea1d0f2332a9f7bb27d7626e81b09f7f08797c136ac3f835906adda3241a4c79"
+      }
+    }
+  ]
+}
