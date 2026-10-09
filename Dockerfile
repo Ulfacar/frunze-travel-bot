@@ -26,6 +26,7 @@ COPY docs/kb-visa-inbound-v1.1-derived.md ./docs/kb-visa-inbound-v1.1-derived.md
 COPY knowledge/kg_entry/search_v1_1/corpus.json knowledge/kg_entry/search_v1_1/source-lock.json ./knowledge/kg_entry/search_v1_1/
 COPY knowledge/kg_entry/source_v1_1/iso3166.json ./knowledge/kg_entry/source_v1_1/iso3166.json
 COPY knowledge/kg_entry/processes_v1_1/catalog.json ./knowledge/kg_entry/processes_v1_1/catalog.json
+COPY knowledge/kg_entry/documents_v1_1/catalog.json ./knowledge/kg_entry/documents_v1_1/catalog.json
 
 # Непривилегированный пользователь.
 RUN useradd --create-home appuser

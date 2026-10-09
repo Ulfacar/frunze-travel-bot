@@ -32,7 +32,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -80,6 +80,21 @@ def main(argv=None):
         Регистрация не превращается в визу L; резидент-карта — отдельная процедура.</li>
         <li>Экран без JavaScript, печать, версия/хеши и защита устаревших форм.
         Ни один результат не разрешает исполнение и не меняет реальные заявки.</li></ul>"""
+    estimate = "Новый точный процент не вычислялся. Исторический ориентир остатка 70–80% — грубая оценка, не измерение трудозатрат."
+    if args.checkpoint == "document-checklists":
+        title = "E6-02A · черновые чек-листы документов"
+        intro = "Добавлена проверка условного комплекта по матрице документов из исходного PDF."
+        result = """<ul><li>Все 23 строки и 9 типов матрицы §5.2: символы, пояснения,
+        исходные ячейки и страницы. Обязательный адрес отделён от желательной брони.</li>
+        <li>Применимость условий: да/нет/неизвестно. Состояния: нет документа,
+        получен, доработка, проверен. Получение не заменяет проверку содержания.</li>
+        <li>Изменённая или неизвестная версия требует повторной проверки.
+        Пометка источника «ПРОВЕРИТЬ» не снимается ответами формы.</li>
+        <li>Полные дополнения §§5.1–5.5/11.4 сохранены для сверки. Они ещё не входят
+        в автоматическую оценку; даже все отметки не подтверждают полноту пакета.</li>
+        <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
+        не загружаются и не принимаются; подача не разрешается.</li></ul>"""
+        estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
     <p>{args.report_date:%d.%m.%Y} · {title}</p>
     <p class="note"><b>Весь PDF ещё не выполнен.</b> {intro} Пилот выключен по умолчанию;
@@ -91,8 +106,7 @@ def main(argv=None):
     Это локальная реализация, не подтверждение готовности к запуску.</p>
     <h2>Главный остаток</h2><p>Полные профили заявителей, четыре исполняемых процесса CRM,
     документы, согласия, сроки и сопровождение; диалог и передача менеджеру; утверждение знаний,
-    цен и календаря. Новый точный процент не вычислялся. Исторический ориентир
-    остатка 70–80% — грубая оценка, не измерение трудозатрат.</p>""")
+    цен и календаря. {estimate}</p>""")
     for start in range(0, len(rows), 7):
         table = "<tr>" + "".join(f"<th>{escape(cell)}</th>" for cell in header) + "</tr>"
         for row in rows[start:start + 7]:

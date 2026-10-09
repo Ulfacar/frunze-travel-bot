@@ -23,6 +23,7 @@
   <a href="/admin/case/{{ case.id }}/kg-entry/history">История поездок в Кыргызстан</a>
   <a href="/admin/case/{{ case.id }}/kg-entry/applications">Заявители и подачи</a>
   <a href="/admin/kg-entry/processes">Проверка черновых процессов</a>
+  <a href="/admin/kg-entry/documents">Черновой чек-лист документов</a>
   <h1>Анкета въезда в Кыргызстан</h1>
   <p class="kg-muted">{{ case.title }}. Анкета общая для визовых услуг этого клиента. Сохраняйте здесь сведения о его поездке в Кыргызстан.</p>
   {% if error %}<div class="kg-card kg-error" role="alert"><h2>Сохранение требует внимания</h2><p>{{ error }}</p><a href="{{ form_url }}">Открыть последнюю анкету</a></div>{% endif %}

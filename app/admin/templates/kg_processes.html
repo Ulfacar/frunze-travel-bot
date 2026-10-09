@@ -19,7 +19,7 @@
 {% macro value_label(key,value) %}{% if value is none %}Неизвестно{% elif value is sameas true %}Да{% elif value is sameas false %}Нет{% else %}{{ data.facts[key]['values'][value] }}{% endif %}{% endmacro %}
 {% block content %}
 <main class="kg-process">
-  <nav><a href="/admin/kg-entry/knowledge">Поиск по исходной базе</a></nav>
+  <nav><a href="/admin/kg-entry/knowledge">Поиск по исходной базе</a> · <a href="/admin/kg-entry/documents">Чек-листы документов</a></nav>
   <h1>Проверка черновых процессов</h1>
   <p class="box notice" id="kg-process-boundary">Это проверка условного сценария по неутверждённому черновику.
     Факты вводятся вручную только для проверки и не берутся из карточек клиентов.
