@@ -777,10 +777,11 @@
         "DEC-11"
       ],
       "evidence": "Отказ/доработка одному не меняет остальных; доступ другого направления закрыт; коды источника сопоставлены с версиями процесса.",
-      "status": "ЧАСТИЧНО — локальный реестр E6-01A; CRITICAL PARTIALLY_READY",
-      "owner": "Codex (E6-01A); независимые review/audit UNKNOWN",
+      "status": "ЧАСТИЧНО — реестр E6-01A и сводка E6-01B; CRITICAL gates остаются",
+      "owner": "Codex (E6-01A/B); независимые CRITICAL review/audit UNKNOWN",
       "role": "Разработчик; проверка владельцем соответствующего направления",
-      "implementation": "docs/e6-01a-applications.md"
+      "implementation": "docs/e6-01a-applications.md",
+      "group_overview": "docs/e6-01b-group-overview.md"
     },
     {
       "id": "E6-02",

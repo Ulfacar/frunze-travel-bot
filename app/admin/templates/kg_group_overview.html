@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Frunze — Сводка группы{% endblock %}
+{% block brand_sub %}визовая услуга{% endblock %}
+{% block head %}<style>
+.kg-group{max-width:1050px;margin:auto;padding:24px 16px;line-height:1.5;overflow-wrap:anywhere}
+.kg-group h1{font-size:clamp(24px,4vw,32px)}.kg-group h2{font-size:21px}.kg-group h3{font-size:18px}
+.kg-group a{color:var(--accent)}.kg-group :focus{outline:2px solid var(--accent);outline-offset:3px}
+.kg-group .box{margin:18px 0;padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.kg-group .notice{border-left:4px solid #b7791f}.kg-group .muted{color:var(--muted)}
+.kg-group .actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}.kg-group .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kg-group .grid>section{min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px}
+.kg-group ul{padding-left:22px}.kg-group li{margin:7px 0}.kg-group .attempts{list-style:none;padding:0}
+.kg-group .attempts>li{border-top:1px solid var(--border);padding:12px 0}
+.kg-group label{display:block;font-weight:600}.kg-group select,.kg-group button{font:inherit;padding:10px;max-width:100%;min-height:44px;border:1px solid var(--border);border-radius:7px;color:var(--text);background:var(--surface)}
+@media(max-width:600px){.kg-group{padding:14px 10px}.kg-group .box{padding:12px}.kg-group .grid{grid-template-columns:1fr}}
+@page{size:A4;margin:12mm}
+@media print{.topbar,.kg-group nav,.kg-group form,.kg-group .no-print{display:none!important}.kg-group{max-width:none;padding:0;color:black;font-size:10pt;line-height:1.35}.kg-group .box,.kg-group .grid>section{background:white;border-color:#aaa;padding:10px;margin:10px 0}.kg-group article.box,.kg-group .grid>section,.kg-group .attempts>li{break-inside:avoid}.kg-group h1{font-size:22pt}.kg-group h2{font-size:14pt}.kg-group h3{font-size:12pt}.kg-group h2,.kg-group h3{break-after:avoid;margin:8px 0}.kg-group p{margin:6px 0}.kg-group #kg-group-counts{columns:2}.kg-group .grid{gap:8px}}
+</style>{% endblock %}
+{% block content %}
+<main class="kg-group">
+  <nav class="actions"><a href="{{ registry_url }}">← Заявители и подачи</a><a href="/admin/case/{{ case.id }}">К услуге №{{ case.id }}</a></nav>
+  <h1>Сводка группы</h1>
+  <p>{{ case.title }} · услуга №{{ case.id }} · контакт №{{ case.contact_id }}</p>
+  <p class="box notice">Сводка показывает факты по зарегистрированным заявкам на момент открытия страницы.
+    Одобрение не подтверждает проверку и передачу документа, готовность к поездке или завершение услуги.
+    Полнота нужного человеку набора документов здесь не определяется.</p>
+  {% if error %}<section class="box notice" role="alert"><h2>Сводка недоступна</h2><p>{{ error }}</p><a href="{{ registry_url }}">Открыть реестр заявок</a></section>{% endif %}
+  {% if overview %}
+  <p class="muted" id="kg-group-read-at">Сводка сформирована: {{ overview.read_at }} (UTC)</p>
+  <section class="box" aria-labelledby="kg-group-summary-title" id="kg-group-summary">
+    <h2 id="kg-group-summary-title">По всей услуге: {{ states[overview.state] }}</h2>
+    <p id="kg-group-totals">Заявителей: {{ overview.total_people }} · текущих заявок: {{ overview.current_applications }} · прежних попыток: {{ overview.historical_applications }} · всего попыток: {{ overview.total_applications }}</p>
+    <p id="kg-group-missing">Заявителей без заявок: {{ overview.without_applications }}</p>
+    <ul id="kg-group-counts">{% for status,label in statuses.items() %}<li data-status="{{ status }}">{{ label }}: <strong>{{ overview.counts[status] }}</strong></li>{% endfor %}</ul>
+    <p class="muted">Текущая заявка — последняя попытка каждой отдельной процедуры. Связанный повтор заменяет прежнюю попытку только в сводке; история сохраняется. Независимые заявки учитываются отдельно.</p>
+  </section>
+  <section class="box" aria-labelledby="kg-group-process-title"><h2 id="kg-group-process-title">Четыре направления · вся услуга</h2>
+    <div class="grid" id="kg-group-processes">{% for process,label in processes.items() %}<section data-process="{{ process }}"><h3>{{ label }}</h3>
+      {% set counts = overview.processes[process] %}{% if counts.values()|sum %}<ul>{% for status,title in statuses.items() %}{% if counts[status] %}<li>{{ title }}: {{ counts[status] }}</li>{% endif %}{% endfor %}</ul>
+      {% else %}<p>Текущих заявок нет.</p>{% endif %}</section>{% endfor %}</div>
+  </section>
+  <section class="box" aria-labelledby="kg-group-people-title"><h2 id="kg-group-people-title">По заявителям</h2>
+    <form method="get" action="{{ registry_url }}/overview" class="actions" id="kg-group-filter">
+      <div><label for="kg-group-selection">Показать заявителей</label><select id="kg-group-selection" name="selection">{% for value,label in filters.items() %}<option value="{{ value }}" {% if value == overview.selection %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <button type="submit">Применить фильтр</button>
+    </form>
+    <p id="kg-group-page-scope">Фильтр: {{ filters[overview.selection] }}. Показаны заявители {{ overview.first }}–{{ overview.last }} из {{ overview.matching_people }}; страница {{ overview.page }}. Общие итоги выше охватывают всю услугу.</p>
+    <p class="muted">У выбранного заявителя показаны все его текущие заявки, включая другие статусы.</p>
+    <div id="kg-group-people">{% for person in overview.people %}<article class="box" data-applicant="{{ person.id }}">
+      <h3>Заявитель №{{ person.id }} · {{ roles[person.role] }}</h3>
+      {% if person.applications %}<ul class="attempts">{% for item in person.applications %}<li data-application="{{ item.id }}">
+        <a href="{{ registry_url }}?application_id={{ item.id }}">Заявка №{{ item.id }} · {{ procedures[item.procedure][1] }}</a><br>
+        {{ processes[item.process] }} · попытка {{ item.attempt }} · <strong>{{ statuses[item.current.status] }}</strong><br>
+        Факт: {{ item.current.occurred_on }} · запись {{ item.current.revision }}
+        {% if item.previous_id %}<br><a href="{{ registry_url }}?application_id={{ item.previous_id }}">Предыдущая попытка №{{ item.previous_id }}</a>{% endif %}
+      </li>{% endfor %}</ul>{% else %}<p class="notice">Заявок пока нет. Требуемые процедуры ещё не подтверждены.</p>{% endif %}
+      <p class="muted">Прежних связанных попыток: {{ person.historical_count }}</p>
+    </article>{% else %}<p id="kg-group-empty">По выбранному фильтру заявителей нет.</p>{% endfor %}</div>
+    <nav class="actions" aria-label="Страницы заявителей">{% if overview.page > 1 %}<a href="{{ registry_url }}/overview?selection={{ overview.selection }}&amp;page={{ overview.page - 1 }}">Предыдущая страница</a>{% endif %}{% if overview.has_next %}<a href="{{ registry_url }}/overview?selection={{ overview.selection }}&amp;page={{ overview.page + 1 }}">Следующая страница</a>{% endif %}</nav>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

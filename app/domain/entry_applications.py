@@ -148,11 +148,17 @@ def _event_facts(*, status, occurred_on, source, reference, previous, cutoff):
 async def _events(session, application):
     rows = (await session.scalars(select(EntryApplicationEvent).where(
         EntryApplicationEvent.application_id == application.id).order_by(EntryApplicationEvent.revision).limit(MAX_EVENTS + 1))).all()
+    reference = await session.get(EntryApplicationReference, application.id)
+    return _validate_events(application, rows, reference)
+
+
+def _validate_events(application, rows, reference):
+    """Same integrity rules for one journal and a coherent batched group read."""
     if not rows or len(rows) > MAX_EVENTS:
         raise EntryStorageInvalid('application_integrity_failed')
     previous = None
     for i, row in enumerate(rows, 1):
-        if (row.case_id != application.case_id or row.revision != i or
+        if (row.application_id != application.id or row.case_id != application.case_id or row.revision != i or
                 row.previous_id != (previous.id if previous else None) or row.snapshot_hash != _hash(_event_payload(row))):
             raise EntryStorageInvalid('application_integrity_failed')
         if previous is None:
@@ -167,9 +173,8 @@ async def _events(session, application):
             _event_facts(status=row.status, occurred_on=row.occurred_on, source=row.source, reference=row.reference,
                          previous=previous, cutoff=_local_day(row.created_at))
         previous = row
-    reference = await session.get(EntryApplicationReference, application.id)
     if (rows[-1].reference is None) != (reference is None) or reference and (
-            reference.case_id != application.case_id or reference.reference != rows[-1].reference):
+            reference.application_id != application.id or reference.case_id != application.case_id or reference.reference != rows[-1].reference):
         raise EntryStorageInvalid('application_integrity_failed')
     return rows
 

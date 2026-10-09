@@ -21,7 +21,7 @@
 {% macro security(values) %}{% for key in meta %}<input type="hidden" name="{{ key }}" value="{{ values.get(key,'') }}">{% endfor %}{% endmacro %}
 {% block content %}
 <main class="kg-apps">
-  <nav class="actions"><a href="/admin/case/{{ case.id }}/kg-entry">← Анкета въезда</a><a href="/admin/case/{{ case.id }}">К услуге №{{ case.id }}</a></nav>
+  <nav class="actions"><a href="/admin/case/{{ case.id }}/kg-entry">← Анкета въезда</a><a href="{{ form_url }}/overview">Сводка группы</a><a href="/admin/case/{{ case.id }}">К услуге №{{ case.id }}</a></nav>
   <h1>Заявители и подачи в Кыргызстан</h1>
   <p class="muted">{{ case.title }} · услуга №{{ case.id }} · контакт №{{ case.contact_id }}</p>
   <p class="box notice">Каждый человек и каждый документ учитываются отдельно. Здесь фиксируются проверенные факты подачи;

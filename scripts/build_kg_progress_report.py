@@ -1,4 +1,4 @@
-"""Build the offline E6-01A PDF checkpoint from its coverage matrix.
+"""Build an offline PDF checkpoint from the current coverage matrix.
 
 Requires local PyMuPDF (document tooling only, not an application dependency).
 No network, CRM database, personal data or source PDF modification.
@@ -32,21 +32,18 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview"), default="applications")
     args = parser.parse_args(argv)
-    target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-applications.pdf"
+    target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
     rows = [[part.strip() for part in line.strip().strip("|").split("|")]
             for line in source.splitlines() if line.startswith("| ")]
     header, rows = rows[0], rows[1:]
     if len(rows) != 26 or any(len(row) != 3 for row in rows):
         raise SystemExit("Unexpected coverage matrix; review the report builder.")
-    output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
-    <p>{args.report_date:%d.%m.%Y} · E6-01A · заявители и подачи в CRM</p>
-    <p class="note"><b>Весь PDF ещё не выполнен.</b> Добавлен локальный реестр отдельных
-    заявителей и попыток подачи с журналом фактов. Пилот выключен по умолчанию;
-    на рабочий сервер эти изменения не выкатывались.</p>
-    <h2>Результат этого этапа</h2>
-    <ul><li>У услуги теперь отдельные номерные заявители и заявки на каждый документ.
+    title = "E6-01A · заявители и подачи в CRM"
+    intro = "Добавлен локальный реестр отдельных заявителей и попыток подачи с журналом фактов."
+    result = """<ul><li>У услуги теперь отдельные номерные заявители и заявки на каждый документ.
     Шесть видов процедур сгруппированы в четыре семейства из PDF.</li>
     <li>Фиксируются подача, доработка, повторная отправка, одобрение, отказ и закрытие
     в CRM: дата, источник, автор и неизменяемая история.</li>
@@ -55,7 +52,26 @@ def main(argv=None):
     <li>Нативные формы, пагинация, печать, контроль доступа, повторов и конфликтов.
     Четыре новые таблицы проверяются на синтетике; реальные анкеты и сканы не добавлены.</li>
     <li>Сверка всех 26 разделов исходного документа: выполненное и конкретный остаток
-    приведены на следующих страницах.</li></ul>
+    приведены на следующих страницах.</li></ul>"""
+    if args.checkpoint == "group-overview":
+        title = "E6-01B · сводка группы в CRM"
+        intro = "Добавлена общая сводка по заявителям и текущим попыткам подачи в рамках одной услуги."
+        result = """<ul><li>Общие итоги охватывают всю услугу: людей, текущие заявки,
+        прежние попытки и четыре направления. Пагинация реестра не скрывает остаток.</li>
+        <li>Видны заявители без заявок, черновики, ожидание решения, доработки,
+        отказы и закрытия. Связанный повтор учитывается как текущая попытка,
+        а прежняя остаётся в истории. Независимые процедуры считаются отдельно.</li>
+        <li>Фильтры по заявителям сохраняют общие итоги. Мобильный экран, работа без
+        JavaScript и печать с указанием фильтра, страницы и времени формирования.</li>
+        <li>Проверяются история и связи всех попыток. При повреждении, недоступности
+        или превышении размера сводка не выдаёт частичный итог за полный.</li>
+        <li>Одобрение не подтверждает передачу документа, готовность к поездке
+        или завершение услуги. Полнота необходимых процедур ещё не определяется.</li></ul>"""
+    output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
+    <p>{args.report_date:%d.%m.%Y} · {title}</p>
+    <p class="note"><b>Весь PDF ещё не выполнен.</b> {intro} Пилот выключен по умолчанию;
+    на рабочий сервер эти изменения не выкатывались.</p>
+    <h2>Результат этого этапа</h2>{result}
     <h2>Проверка</h2><p>{escape(args.checks)}</p>
     <p class="small">Код: {escape(args.revision)}<br>Ветка: fix/tours-search-quality<br>
     Независимые CRITICAL review/audit и PostgreSQL runtime остаются UNKNOWN.

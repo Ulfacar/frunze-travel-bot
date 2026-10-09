@@ -14,6 +14,7 @@ import app.admin.kg_entry as entry
 import app.admin.router as ar
 from app.admin.workday import _write_on
 from app.domain import entry_applications as service
+from app.domain import entry_group_overview as groups
 from app.domain.entry_application_rules import PROCEDURES, PROCESSES, RETRYABLE, ROLES, SOURCES, STATUSES, TRANSITIONS
 from app.domain.entry_storage import EntryStorageConflict, EntryStorageInvalid
 from app.domain.service_authz import PermissionDenied
@@ -130,6 +131,37 @@ async def _case(case_id, actor):
     try: return await entry._case(case_id, actor)
     except HTTPException: raise
     except Exception: raise HTTPException(503, 'Реестр услуг временно недоступен.', headers=HEADERS) from None
+
+
+@ar.router.get('/case/{case_id}/kg-entry/applications/overview', response_class=HTMLResponse)
+async def applications_overview(case_id: int, request: Request, page: int = Query(1, ge=1, le=100000),
+                                selection: str = Query('all', max_length=24), manager=Depends(ar.require_full_admin)):
+    actor = entry._gate(request, manager)
+    if selection not in groups.FILTERS:
+        raise HTTPException(422, 'Выберите фильтр сводки.', headers=HEADERS)
+    case = await _case(case_id, actor)
+    overview, error, status = None, '', 200
+    try:
+        overview = await groups.read_group_overview(entry._engine(), actor=actor, case_id=case_id, page=page, selection=selection)
+    except PermissionDenied:
+        raise HTTPException(403, headers=HEADERS) from None
+    except EntryStorageInvalid as exc:
+        if str(exc) in UNAVAILABLE:
+            raise HTTPException(404, headers=HEADERS) from None
+        status = 503
+        error = ('Группа превышает размер для общей сводки. Используйте реестр заявок; частичный итог не показан.'
+                 if str(exc) == 'group_overview_too_large' else
+                 'Не удалось проверить целостность общей сводки. Итоги временно недоступны.')
+        log.warning('KG group overview: unverified snapshot')
+    except Exception:
+        status, error = 503, 'Общая сводка временно недоступна. Попробуйте открыть её ещё раз.'
+        log.warning('KG group overview: storage unavailable')
+    return ar.templates.TemplateResponse(request, 'kg_group_overview.html', {
+        'manager': manager, 'case': case, 'overview': overview, 'error': error,
+        'filters': groups.FILTERS, 'states': groups.STATES, 'statuses': STATUSES,
+        'roles': ROLES, 'processes': PROCESSES, 'procedures': PROCEDURES,
+        'registry_url': f'/admin/case/{case_id}/kg-entry/applications',
+    }, status_code=status, headers=HEADERS)
 
 
 @ar.router.get('/case/{case_id}/kg-entry/applications', response_class=HTMLResponse)
