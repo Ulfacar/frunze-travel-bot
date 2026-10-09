@@ -65,6 +65,7 @@
       </a>
       <div class="cs-id">
         <h1 class="cs-title">{{ d.title }}</h1>
+        {% if kg_entry_on %}<a href="/admin/case/{{ case.id }}/kg-entry">Анкета въезда в Кыргызстан</a>{% endif %}
         <div class="cs-sub">{{ dir_label }}{% if d.product_code %} · <span class="ref">{{ d.product_code }}</span>{% endif %}
           · ведёт <b>{{ d.owner_login }}</b> · услуга <span class="ref">№{{ d.case_id }}</span>
           {# номер договора уже в d.title — второй раз не повторяем #}

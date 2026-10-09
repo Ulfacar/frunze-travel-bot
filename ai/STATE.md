@@ -1,21 +1,19 @@
 # Current work
 
-- Updated **2026-10-09**. Active task **E5-03E QUALIFICATION STORAGE**, CRITICAL / solo, **PARTIALLY_READY**.
-- Branch `fix/tours-search-quality`; base `6d24227b2e206308bb8921dc8efc5130c5174c7a`; code **2ebe7f4531e514f1cee06632efc37de8556f4c13**, follow-up docs-only commit records final evidence/PDF.
-- Task `ai/tasks/2026-10-09-e5-03e-qualification-storage.md`; contract `docs/e5-03e-qualification-storage.md`.
-- Handoff `ai/handoffs/2026-10-09-1957-e5-03e-qualification-storage.md`; packet/SELF_REVIEW/manifest `ai/reviews/2026-10-09-e5-03e-qualification-*`.
-- Result: immutable partial questionnaire + report revisions, resume latest/id, CAS/idempotency, pinned KB/history/projection, verified replay. Migration **e5_qualification_0016**, одна additive таблица. Прежний named full-admin; HTTP/LLM и handoff lifecycle ещё не подключены.
-- Tests: **233 passed / 2 skipped / 115.29s** related; full final code **3276 passed / 1 failed / 8 skipped / 1 warning / 490.61s**, включая 8 дополнительных негативных сценариев. Единственный failure — прежний `test_facts_live_errors::test_still_reads_a_plain_request` (даты тура); parser/test не изменены. Не выдавать suite за полностью зелёный.
-- Git-copy check: **63 passed / 33.39s**, 11/11 manifest/Git hashes, без .env/prod.env.
-- Manual: original PDF + real draft/catalog, synthetic contact, 3 revisions, restart/resume/replay PASS; source_conflict preserved; 6/6 source SHA+mtime unchanged. SQLite + PG offline DDL PASS; PostgreSQL runtime **UNKNOWN**.
-- PDF: `docs/reports/frunze-pdf-progress-2026-10-09.pdf`, отдельный 2-page отчёт о разработке, не новая юридическая база. Final layout/text проверены, указаны code revision и итог полного прогона.
-- Review: SELF_REVIEW; независимые reviewer/final auditor **UNKNOWN**. 208 source units, 0 confirmed, 82 NULL; источники, календарь/эталоны и политика публикации ещё требуют утверждения.
-- Scope: локальная реализация + commits/push рабочей ветки разрешены ранее. Production/main/real data не входят в этот этап. Repo public; unrelated audio/zip/reports/temp сохраняются untracked.
-- Next action: independent packet review; затем RU/EN flow с сохранённой анкетой и server-side scoped handoff. Полные слоты, публикация, client eligibility, автоматические CALC-02/03 и менеджерский UI остаются отдельными этапами.
-- PDF estimate `docs/e5-pdf-progress.md`: **70–80% осталось**, экспертный диапазон, нового измеренного процента нет.
-- Previous **E5-03D**: code cdc490c, docs 6d24227, pushed; `ai/handoffs/2026-10-09-1926-e5-03d-qualification.md`.
-- Previous **E5-03C**: code 4cd8f6d, docs 430768b, pushed; `ai/handoffs/2026-10-09-1857-e5-03c-calculation-storage.md`. History/calendars/calculations, migration e5_calculation_0015, independent gates open.
-- Prior prod_traps baseline 1 ERROR / 57 WARN (ANTHROPIC_API_KEY compose forwarding), не новый прогон; settings/env не менялись. Prior baseline dates failure reproduced on isolated ef77321 on Oct9; evidence in E5-03C handoff.
+- Updated **2026-10-09**. Active **E5-04A CRM QUALIFICATION**, CRITICAL / solo, **PARTIALLY_READY**.
+- User: требования исходного PDF и CRM двигать вместе; общий редизайн позже.
+- Branch `fix/tours-search-quality`, base `46284fbaf05d4596b39d889961b01771ee661cfc`; current uncommitted snapshot, code commit pending.
+- Task `ai/tasks/2026-10-09-e5-04a-crm-qualification.md`; contract `docs/e5-04a-crm-qualification.md`.
+- Handoff `ai/handoffs/2026-10-09-2035-e5-04a-crm-qualification.md`; packet/SELF_REVIEW/manifest `ai/reviews/2026-10-09-e5-04a-crm-*`.
+- Result: visa case → manual KG questionnaire → E5-03E save/reload, RU/EN questions, review reasons, old revisions. Shared per-contact profile clearly labelled. No new E6 direction/products/applicants or automatic handoff.
+- Access: прежний named full-admin. New `ADMIN_KG_ENTRY_ENABLED=false` default + existing workday/write gates. CSRF/session HMAC, source/base binding, bounded POST, retry/CAS/error recovery. No new migrations.
+- Tests: related **187 passed / 156.80s**, final HTTP **42 passed / 57.58s**; browser **1 passed / 31.82s**, mobile390 JS/desktop1365 no JS, save/reload/history/focus/no overflow. Full suite **3318 passed / 1 known dates failure / 8 skipped / 605.66s**; run began before final buffer-bound ordering refinement, covered separately by final HTTP42. Не выдавать suite за зелёный.
+- Traps fresh run: **1 ERROR / 57 WARN**, same ANTHROPIC_API_KEY Compose-forwarding baseline; new flag forwarded. Not a green deployment gate.
+- Review: SELF_REVIEW only, independent reviewer/final auditor/PG runtime UNKNOWN. Current code local; feature OFF, no production release/migrations/real-data work or messages.
+- PDF map `docs/e5-pdf-progress.md`; 208 draft units, 0 confirmed, 82 NULL. Historical PDF report `docs/reports/frunze-pdf-progress-2026-10-09.pdf` describes E5-03E; newer E5-04A documented in current map. Rough remaining estimate 70–80%, not a measured percentage.
+- Next: independent packet review, then full interview/handoff + Applicant/Application under agreed manager scope. Legal/source/calendar decisions remain for owner. Redesign follows functional work.
+- Previous E5-03E: code 2ebe7f4, docs 46284fb, pushed; handoff `ai/handoffs/2026-10-09-1957-e5-03e-qualification-storage.md`. Full suite 3276 passed / 1 known dates failure / 8 skipped; new Git-copy tests63.
+- Permission to commit/push working branch persists. Repo public; preserve unrelated audio/zip/reports/temp untracked. Prior date parser failure reproduced on base ef77321; code/test unchanged here.
 
 ## Сохраняющаяся задача — форма договора
 

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Frunze — Анкета въезда в Кыргызстан{% endblock %}
+{% block brand_sub %}визовая услуга{% endblock %}
+{% block head %}
+<style>
+.kg-wrap{max-width:960px;margin:auto;padding:24px 16px;color:var(--text,#182738);overflow-wrap:anywhere}
+.kg-wrap h1{font-size:clamp(24px,4vw,32px);margin:12px 0}.kg-wrap h2{font-size:19px;margin:0 0 12px}
+.kg-muted{color:var(--muted,#64748b);line-height:1.5}.kg-card{background:var(--surface,#fff);border:1px solid var(--border,#d6dee8);border-radius:12px;padding:20px;margin:18px 0}
+.kg-alert{border-left:4px solid #b7791f}.kg-error{border-left:4px solid #c0392b}.kg-wrap a{color:var(--accent,#2563eb)}
+.kg-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.kg-field{min-width:0;display:flex;flex-direction:column;gap:7px}
+.kg-field label{font-weight:600;line-height:1.4}.kg-field input,.kg-field select{font:inherit;color:var(--text,#182738);background:var(--surface,#fff);border:1px solid var(--border,#c5ced9);border-radius:6px;min-height:42px;padding:8px;width:100%;max-width:100%;box-sizing:border-box}
+.kg-field select[multiple]{min-height:120px}.kg-field select:focus,.kg-field input:focus{outline:2px solid var(--accent,#2563eb);outline-offset:2px}
+.kg-card fieldset{border:0;margin:0;padding:0;min-width:0}.kg-card legend{font-size:18px;font-weight:700;margin:18px 0 14px}
+.kg-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:24px}.kg-submit{font:inherit;font-weight:600;padding:12px 20px;border:0;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer}.kg-submit:disabled{opacity:.55;cursor:not-allowed}
+.kg-check{display:flex;align-items:flex-start;gap:8px;margin-top:14px}.kg-check input{margin-top:4px}.kg-wrap li{line-height:1.5;margin:6px 0}.kg-wrap summary{cursor:pointer;min-height:30px}
+.kg-date{display:grid;grid-template-columns:1fr;gap:6px}.kg-meta{display:flex;gap:12px;flex-wrap:wrap}.kg-history{margin-top:12px}
+@media(max-width:600px){.kg-wrap{padding:14px 10px}.kg-card{padding:15px}.kg-grid{grid-template-columns:1fr}.kg-actions>*{max-width:100%}}
+</style>
+{% endblock %}
+{% block content %}
+<main class="kg-wrap">
+  <a href="/admin/case/{{ case.id }}">← К визовой услуге №{{ case.id }}</a>
+  <h1>Анкета въезда в Кыргызстан</h1>
+  <p class="kg-muted">{{ case.title }}. Анкета общая для визовых услуг этого клиента. Сохраняйте здесь сведения о его поездке в Кыргызстан.</p>
+  {% if error %}<div class="kg-card kg-error" role="alert"><h2>Сохранение требует внимания</h2><p>{{ error }}</p><a href="{{ form_url }}">Открыть последнюю анкету</a></div>{% endif %}
+  {% if empty_knowledge %}
+  <section class="kg-card"><h2>База знаний ещё не загружена</h2><p>Администратору нужно импортировать базу въезда в Кыргызстан. После этого здесь появится анкета.</p></section>
+  {% elif envelope %}
+  <div class="kg-meta kg-muted"><span>{{ version_label }}</span><span>Проверка на дату {{ saved.input.as_of if saved else envelope._kg_asof }}</span></div>
+  {% if saved %}
+  <section class="kg-card" aria-labelledby="kg-result-title">
+    <h2 id="kg-result-title">{{ report.status }}</h2>
+    <div class="kg-muted">Сохранённая версия №{{ saved.revision }} · {{ saved.created_at[:19]|replace('T',' ') }} UTC</div>
+    <p>Следующий шаг — сверка режима въезда и сроков специалистом.</p>
+    {% if report.stops %}<h3>Причины проверки</h3><ul>{% for reason in report.stops %}<li>{{ reason }}</li>{% endfor %}</ul>{% endif %}
+    {% if report.conflict %}<p class="kg-card kg-alert">В базе есть противоречие. Условия въезда или регистрации нужно уточнить по источникам.</p>{% endif %}
+    {% if report.questions %}<h3>Следующие вопросы клиенту</h3><ol id="kg-next-questions">{% for question in report.questions %}<li>{{ question.text }}</li>{% endfor %}</ol>{% endif %}
+    {% if report.missing %}<details><summary>Что ещё уточнить · {{ report.missing|length }}</summary><ul>{% for name in report.missing %}<li>{{ name }}</li>{% endfor %}</ul></details>{% endif %}
+    {% if not report.history_attached %}<p class="kg-muted">История поездок ещё не приложена. Расчёт дней потребует отдельной проверки.</p>{% endif %}
+    {% for note in report.history_notes %}<p class="kg-muted">{{ note }}</p>{% endfor %}
+    {% if report.conditions_missing %}<p class="kg-muted">Потребуются дополнительные сведения для проверки специальных условий.</p>{% endif %}
+    <div class="kg-history">
+      {% if saved.previous_id %}<a href="{{ form_url }}?qualification_id={{ saved.previous_id }}">Предыдущая версия</a> · {% endif %}
+      <a href="{{ form_url }}">Последняя анкета</a>
+    </div>
+  </section>
+  {% endif %}
+  {% if not editable %}<p class="kg-card kg-alert">Предыдущая версия доступна для просмотра. Для изменений <a href="{{ form_url }}">откройте последнюю анкету</a>.</p>{% endif %}
+  {% if not write_on %}<p class="kg-card kg-alert">Сохранение анкет отключено администратором. Сейчас доступен просмотр.</p>{% endif %}
+  <form method="post" action="{{ form_url }}" class="kg-card" id="kg-entry-form">
+    {% for name, value in envelope.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    <fieldset {% if not editable or not write_on %}disabled{% endif %}>
+      {% if editable %}<p class="kg-muted">Новая проверка будет выполнена на дату {{ envelope._kg_asof }}.</p>{% endif %}
+      <div class="kg-field"><label for="kg-language">Язык вопросов клиенту</label><select name="language" id="kg-language"><option value="ru" {% if values.language == 'ru' %}selected{% endif %}>Русский</option><option value="en" {% if values.language == 'en' %}selected{% endif %}>English</option></select></div>
+      {% for group, title in [('profile','Документ и поездка'),('current','Если клиент уже в Кыргызстане'),('risks','Нарушения и отказы')] %}
+      <fieldset><legend>{{ title }}</legend>
+      {% if group == 'current' %}<p class="kg-muted">При выборе «За рубежом» сведения о текущем пребывании убираются из новой версии. Предыдущая версия сохраняется.</p>{% endif %}
+      <div class="kg-grid">
+      {% for field in fields if field.group == group %}
+        <div class="kg-field">
+          <label for="{{ field.id }}">{{ field.label }}</label>
+          {% if field.kind == 'date' %}
+          <div class="kg-date">
+            <select name="{{ field.path }}_state" aria-label="{{ field.label }}: известна ли дата" data-date-state="{{ field.id }}">
+              {% for val, text in [('', 'Не спрашивали'), ('unknown', 'Клиент не знает'), ('not_applicable', 'Не применимо'), ('value', 'Дата известна')] %}<option value="{{ val }}" {% if values.get(field.path + '_state','') == val %}selected{% endif %}>{{ text }}</option>{% endfor %}
+            </select>
+            <input type="date" id="{{ field.id }}" name="{{ field.path }}" value="{{ values.get(field.path,'') }}">
+          </div>
+          {% elif field.kind in ['country','countries'] %}
+            {% if field.kind == 'countries' %}<small class="kg-muted" id="kg-citizenship-hint">Можно выбрать несколько гражданств — до пяти.</small>{% endif %}
+            <select id="{{ field.id }}" name="{{ field.path }}" {% if field.kind == 'countries' %}multiple size="5" aria-describedby="kg-citizenship-hint"{% endif %}>
+              {% set selected = values.get(field.path,[]) if field.kind == 'countries' else [values.get(field.path,'')] %}
+              <option value="" {% if '' in selected or not selected %}selected{% endif %}>Не спрашивали</option>
+              <option value="unknown" {% if 'unknown' in selected %}selected{% endif %}>Клиент не знает</option>
+              {% if field.kind == 'country' %}<option value="not_applicable" {% if 'not_applicable' in selected %}selected{% endif %}>Не применимо</option>{% endif %}
+              {% for code, title in countries %}<option value="{{ code }}" {% if code in selected %}selected{% endif %}>{{ title }}</option>{% endfor %}
+            </select>
+          {% else %}
+            <select id="{{ field.id }}" name="{{ field.path }}">{% for val, text in field.options %}<option value="{{ val }}" {% if values.get(field.path,'') == val %}selected{% endif %}>{{ text }}</option>{% endfor %}</select>
+          {% endif %}
+        </div>
+      {% endfor %}
+      </div></fieldset>
+      {% endfor %}
+      {% if has_conditions %}<p class="kg-muted">Дополнительные проверки виз, ВНЖ и специальных условий сохранятся вместе с анкетой.</p><label class="kg-check"><input type="checkbox" name="clear_conditions" value="yes" {% if values.get('clear_conditions') == 'yes' %}checked{% endif %}>Убрать дополнительные проверки: сведения больше не актуальны</label>{% endif %}
+      {% if editable %}<div class="kg-actions"><button class="kg-submit" type="submit" {% if not write_on %}disabled{% endif %}>Сохранить анкету</button><span class="kg-muted" id="kg-save-status" role="status" aria-live="polite">Будет создана новая версия.</span></div>{% endif %}
+    </fieldset>
+  </form>
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  const form=document.getElementById('kg-entry-form');if(!form)return;
+  form.querySelectorAll('[data-date-state]').forEach(function(select){
+    function update(){const input=document.getElementById(select.dataset.dateState);input.disabled=select.value!=='value';input.required=select.value==='value';}
+    select.addEventListener('change',update);update();
+  });
+  form.addEventListener('submit',function(){const b=form.querySelector('button[type="submit"]');if(b)b.disabled=true;const s=document.getElementById('kg-save-status');if(s)s.textContent='Сохраняем анкету…';});
+})();
+</script>
+{% endblock %}

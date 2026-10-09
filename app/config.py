@@ -367,6 +367,8 @@ class Settings(BaseSettings):
     # ссылки в меню нет, панель прежняя. Отдельно от `service_cases_enabled`, который
     # гейтит ЗАПИСЬ: можно включить показ на реальных данных, не открывая операции.
     admin_workday_enabled: bool = False
+    # Пилот анкеты въезда из визовой услуги: прежний full-admin scope, default OFF.
+    admin_kg_entry_enabled: bool = False
     # Secure-флаг на cookie сессии. На проде ОБЯЗАТЕЛЕН (TLS терминирует nginx) и потому
     # True по умолчанию. Выключается только для локального просмотра панели по http —
     # иначе браузер не сохранит cookie и войти в панель на localhost нельзя.

@@ -362,6 +362,7 @@ async def _case_context(request: Request, case_id: int, manager: dict, *,
             # Исход нужен шаблону, чтобы назвать причину словами: «выключено»,
             # «нет прав» и «реестр недоступен» — это разные вещи для менеджера.
             "outcome": outcome,
+            "kg_entry_on": ar.settings.admin_kg_entry_enabled and actor.is_full_admin and direction == "visa",
         }
 
 

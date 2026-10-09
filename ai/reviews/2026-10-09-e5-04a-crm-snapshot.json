@@ -1,0 +1,20 @@
+{
+  "base": "46284fbaf05d4596b39d889961b01771ee661cfc",
+  "target": "uncommitted snapshot E5-04A",
+  "hash_method": "SHA256 of bytes with CRLF normalized to LF",
+  "files": {
+    "app/admin/kg_entry.py": "4ec885e0cfc7d72870a9527813870d95f32a0ef60b7e755d9cf6a4a99a41ea96",
+    "app/admin/kg_entry_form.py": "86ce28a9d6d0b83672cf61b0e84423587a2b0d7a1b52b09c552e25ce0441644d",
+    "app/admin/templates/kg_entry.html": "556e5399f338687cee5fe62752eb9270b0308a2d268ab07d60935cb9aa4bf900",
+    "app/admin/router.py": "ac5479c48e62e3609e3a2a55df2c35f618bf2b8d9e0b78a76d7fe55020ffbd15",
+    "app/admin/workday.py": "d94d0c225b0a2443fa2ec799830375bcae3c7462d11f6af234c06d5b73859b3c",
+    "app/admin/templates/_case_panel.html": "c14128b1d312a1efac325f4526b7818b02341978c52ea10c350b6247251629f8",
+    "app/config.py": "c03682edee7fee33612d1ca3fb33a16d2d8028110ae1b96625f6738fbd779695",
+    "docker-compose.yml": "ee3811617f70b2fc2bee84e045180e01a4db2f1fa93b7783969d9268a9f5fe88",
+    "tests/test_admin_kg_entry.py": "85ac4dbe5944690512eed53debb2e746bc09c0fc2c46a40576e0841d2d46ddaa",
+    "tests/browser_kg_entry.py": "46860e05bf25395a2f91c36de2b90521672dd44b205283b20cdc87bddc337fa7",
+    "docs/e5-04a-crm-qualification.md": "baeeccf79806e0e0941a26bbbfcc9624adff537f09f5bd5506df4b676895f15e",
+    "docs/e5-pdf-progress.md": "e3908d298addbde5b34c8050f93c76edeee6b35fbe6bf6c5f2ab98361739cd09",
+    "docs/crm-delivery/backlog.md": "20e77cb44a87f036dea46f7f2803109a16dd8d3065d2fa6081743a14ef69c148"
+  }
+}
