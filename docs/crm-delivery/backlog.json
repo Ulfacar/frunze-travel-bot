@@ -815,7 +815,14 @@
       "owner": "Codex (локальная матрица)",
       "role": "Разработчик; проверка владельцем соответствующего направления",
       "implementation": "docs/e6-02a-document-checklists.md",
-      "implementation_note": "Inventory5feb4e0:210 PASS/2PG SKIP; post-issue6c4b587:193 PASS/2PG SKIP; deadlines06df2a6:241 PASS/2PG SKIP. Independent CRITICAL review UNKNOWN. No files, complete package, legal publication or automatic reminders."
+      "implementation_note": "Inventory5feb4e0:210 PASS/2PG SKIP; post-issue6c4b587:193 PASS/2PG SKIP; deadlines06df2a6:241 PASS/2PG SKIP. Independent CRITICAL review UNKNOWN. No files, complete package, legal publication or automatic reminders.",
+      "deadline_tasks_checkpoint": {
+        "revision": "9e3048ffcd9bbb0cef0690474341db413d269253",
+        "status": "PARTIALLY_READY",
+        "checks": "261 PASS /2 PG SKIP /3 warnings /205.27s",
+        "handoff": "ai/handoffs/2026-10-10-0545-e6-06-deadline-tasks.md",
+        "production_release": false
+      }
     },
     {
       "id": "E6-03",

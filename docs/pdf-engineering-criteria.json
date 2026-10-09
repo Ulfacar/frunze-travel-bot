@@ -507,8 +507,17 @@
       "weight": 2,
       "pdf": "14/19",
       "acceptance": "Persistent assigned tasks with completion/cancel/escalation and dedup",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "9e3048ffcd9bbb0cef0690474341db413d269253",
+          "command": "Exact-commit related suite:261 passed /2 PG skipped; full command in artifact",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Persistent assigned tasks with completion/cancel/escalation and dedup",
+          "artifact": "ai/handoffs/2026-10-10-0545-e6-06-deadline-tasks.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {
@@ -516,8 +525,17 @@
       "weight": 2,
       "pdf": "13/19",
       "acceptance": "Deadline worker handles retries, changes, ordering and duplicate execution",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "9e3048ffcd9bbb0cef0690474341db413d269253",
+          "command": "Exact-commit related suite:261 passed /2 PG skipped; full command in artifact",
+          "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
+          "scope": "Deadline worker handles retries, changes, ordering and duplicate execution",
+          "artifact": "ai/handoffs/2026-10-10-0545-e6-06-deadline-tasks.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {
