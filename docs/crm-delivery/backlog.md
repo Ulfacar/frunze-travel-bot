@@ -406,6 +406,12 @@ partial profile, ordered questions RU/EN, known manager stops, объедине�
 без записей. Нет автоматического выбора режима, публикации и client eligibility;
 CRITICAL PARTIALLY_READY, независимые gates UNKNOWN.
 
+[E5-03E — сохранение квалификации](../e5-03e-qualification-storage.md), Codex, 09.10:
+immutable версии partial profile/report, resume latest/id, CAS/idempotency и replay;
+одна additive migration `e5_qualification_0016`, прежний named full-admin scope.
+Полная collecting/handoff анкета, HTTP/LLM и передача менеджеру ещё не подключены.
+CRITICAL PARTIALLY_READY; независимые review/audit и PG16 runtime UNKNOWN.
+
 **Результат:** Полная история поездок, правила включения дней/окон, календарь праздников/переносов, цены из утверждённых данных и объяснение расчёта.
 
 **Зависимости:** E5-02. **Решения:** DEC-01, DEC-07.

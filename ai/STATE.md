@@ -1,21 +1,20 @@
 # Current work
 
-- Updated: **2026-10-09**, Алан продолжил работу по PDF. Active task **E5-03D QUALIFICATION REVIEW**, CRITICAL / solo, **PARTIALLY_READY**.
-- Branch/revision: `fix/tours-search-quality` / code **cdc490c691d0437cfc0863bc1dc399ae1f39f723**, final evidence docs-only commit; base `430768bfe9de7dc798db18671173c2e39436cbf2`.
-- Task `ai/tasks/2026-10-09-e5-03d-qualification-review.md`; contract `docs/e5-03d-qualification-review.md`.
-- Handoff `ai/handoffs/2026-10-09-1926-e5-03d-qualification.md`; packet/SELF_REVIEW/snapshot в `ai/reviews/2026-10-09-e5-03d-qualification-*`.
-- Result: единый отчёт по partial profile: до 3 вопросов RU/EN, known manager stops, country/condition candidates, registration references, withheld all_others. Read-only DB adapter проверяет pinned knowledge/projection/history; auth прежний named full-admin.
-- Evidence: **382 passed / 83.81s** related modules; после 2 дополнительных tests **51 passed / 12.33s** final new module. CLI real PDF + synthetic MDA: conflict, 2 candidates/2 registration references, 6 input SHA+mtime неизменны. SQL SELECT only. Git copy cdc490c: **51 passed / 11.30s**, 10/10 manifest hashes, без .env. Full suite N/A для isolated additions без existing runtime/model edits.
-- Boundaries: selected_regime/visa_required/exact dates/remaining=NULL, may_quote=false. Не весь CALC-01/Б.4; qualified routing ещё не client eligibility. Нет persistence квалификации, manager HTTP/LLM, автоматических CALC-02/03 или публикации.
-- Review: SELF_REVIEW, independent reviewer/final auditor **UNKNOWN**, прежний PG16 runtime UNKNOWN. 208 source units, 0 confirmed; нормы/официальный календарь/эталоны/DEC-06/07 не утверждены.
-- Next action: independent packet review; следующий отдельный scope — публикация с согласованной политикой или сохранение квалификации/manager flow. Серверный scope и authorization обязательны до HTTP/LLM.
-- Previous checkpoint **E5-03C**: code `4cd8f6d`, docs `430768b`, committed/pushed. Handoff `ai/handoffs/2026-10-09-1857-e5-03c-calculation-storage.md`; 7 таблиц, migration e5_calculation_0015, immutable history/calendar/calculations + replay; 68 tests в Git copy. Independent gates сохраняются.
-- Предыдущий full suite: 3161 passed / 2 failed / 8 skipped. Migration expectation исправлен и повтор прошёл; dates failure test_facts_live_errors подтверждён на base ef77321 (clock06.10 PASS/09.10 FAIL). Не выдавать исторический full suite за зелёный или новый прогон.
-- Previous stages: E5-03A/B calculators, E5-02D/E/F index/conditions/projection, E5-01B search corpus. Нормативный source bundle неизменен.
-- PDF progress `docs/e5-pdf-progress.md`: приблизительно **70–80% осталось**, нового измеренного процента нет.
-- Delivery E5-03D: code **cdc490c committed/pushed**; следующий docs-only commit фиксирует Git-copy evidence и handoff. Разрешение на commits/push в рабочую ветку сохраняется; main/production/deploy/реальные данные не входят в текущий scope. Repo public.
-- Last observed prod_traps baseline (E5-03C): **1 ERROR / 57 WARN**, ANTHROPIC_API_KEY compose forwarding; текущий этап config не менял.
-- Unrelated audio/zip/reports/temp сохранены untracked; не включать в commits.
+- Updated **2026-10-09**. Active task **E5-03E QUALIFICATION STORAGE**, CRITICAL / solo, **PARTIALLY_READY**.
+- Branch `fix/tours-search-quality`; base `6d24227b2e206308bb8921dc8efc5130c5174c7a`; current uncommitted snapshot, code commit pending.
+- Task `ai/tasks/2026-10-09-e5-03e-qualification-storage.md`; contract `docs/e5-03e-qualification-storage.md`.
+- Handoff `ai/handoffs/2026-10-09-1957-e5-03e-qualification-storage.md`; packet/SELF_REVIEW/manifest `ai/reviews/2026-10-09-e5-03e-qualification-*`.
+- Result: immutable partial questionnaire + report revisions, resume latest/id, CAS/idempotency, pinned KB/history/projection, verified replay. Migration **e5_qualification_0016**, одна additive таблица. Прежний named full-admin; HTTP/LLM и handoff lifecycle ещё не подключены.
+- Tests: **233 passed / 2 skipped / 115.29s** related; full final code **3276 passed / 1 failed / 8 skipped / 1 warning / 490.61s**, включая 8 дополнительных негативных сценариев. Единственный failure — прежний `test_facts_live_errors::test_still_reads_a_plain_request` (даты тура); parser/test не изменены. Не выдавать suite за полностью зелёный.
+- Manual: original PDF + real draft/catalog, synthetic contact, 3 revisions, restart/resume/replay PASS; source_conflict preserved; 6/6 source SHA+mtime unchanged. SQLite + PG offline DDL PASS; PostgreSQL runtime **UNKNOWN**.
+- PDF: `docs/reports/frunze-pdf-progress-2026-10-09.pdf`, отдельный 2-page отчёт о разработке, не новая юридическая база. Layout/text extraction проверены; final revision/tests update pending.
+- Review: SELF_REVIEW; независимые reviewer/final auditor **UNKNOWN**. 208 source units, 0 confirmed, 82 NULL; источники, календарь/эталоны и политика публикации ещё требуют утверждения.
+- Scope: локальная реализация + commits/push рабочей ветки разрешены ранее. Production/main/real data не входят в этот этап. Repo public; unrelated audio/zip/reports/temp сохраняются untracked.
+- Next action: independent packet review; затем RU/EN flow с сохранённой анкетой и server-side scoped handoff. Полные слоты, публикация, client eligibility, автоматические CALC-02/03 и менеджерский UI остаются отдельными этапами.
+- PDF estimate `docs/e5-pdf-progress.md`: **70–80% осталось**, экспертный диапазон, нового измеренного процента нет.
+- Previous **E5-03D**: code cdc490c, docs 6d24227, pushed; `ai/handoffs/2026-10-09-1926-e5-03d-qualification.md`.
+- Previous **E5-03C**: code 4cd8f6d, docs 430768b, pushed; `ai/handoffs/2026-10-09-1857-e5-03c-calculation-storage.md`. History/calendars/calculations, migration e5_calculation_0015, independent gates open.
+- Prior prod_traps baseline 1 ERROR / 57 WARN (ANTHROPIC_API_KEY compose forwarding), не новый прогон; settings/env не менялись. Prior baseline dates failure reproduced on isolated ef77321 on Oct9; evidence in E5-03C handoff.
 
 ## Сохраняющаяся задача — форма договора
 

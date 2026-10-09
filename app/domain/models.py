@@ -1398,15 +1398,52 @@ class EntryCalculationCalendar(DomainBase):
     calendar_id: Mapped[int] = mapped_column(ForeignKey("work_calendars.id"), primary_key=True)
 
 
+class EntryQualification(DomainBase):
+    """E5-03E full replacement snapshots of the partial review interview."""
+    __tablename__ = "entry_qualifications"
+    __table_args__ = (
+        UniqueConstraint("id", "contact_id", name="uq_entry_qualification_contact"),
+        UniqueConstraint("contact_id", "revision", name="uq_entry_qualification_revision"),
+        UniqueConstraint("contact_id", "request_key", name="uq_entry_qualification_request"),
+        ForeignKeyConstraint(["previous_id", "contact_id"], ["entry_qualifications.id", "entry_qualifications.contact_id"],
+                             name="fk_entry_qualification_previous"),
+        ForeignKeyConstraint(["history_id", "contact_id"], ["stay_histories.id", "stay_histories.contact_id"],
+                             name="fk_entry_qualification_history"),
+        CheckConstraint("revision >= 1", name="ck_entry_qualification_revision"),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL) OR (revision > 1 AND previous_id IS NOT NULL)",
+                        name="ck_entry_qualification_previous"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_qualification_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    contact_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"))
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    history_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    knowledge_version_id: Mapped[int] = mapped_column(ForeignKey("knowledge_versions.id"))
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    input_snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    result_snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    provenance: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("input_snapshot", "result_snapshot", "provenance")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
 ENTRY_STORAGE_MODELS = (StayHistory, StayInterval, WorkCalendar, WorkCalendarDay, EntryCalculation,
                         EntryCalculationInterval, EntryCalculationCalendar)
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification)
 
 
 def _entry_immutable(mapper, connection, target):
     raise DomainError("entry review snapshots are immutable; create a new revision")
 
 
-for _entry_model in ENTRY_STORAGE_MODELS:
+for _entry_model in ENTRY_IMMUTABLE_MODELS:
     event.listen(_entry_model, "before_update", _entry_immutable)
     event.listen(_entry_model, "before_delete", _entry_immutable)
 
@@ -1415,7 +1452,7 @@ for _entry_model in ENTRY_STORAGE_MODELS:
 def _entry_reject_bulk(state):
     if state.is_update or state.is_delete:
         table = getattr(state.statement, "table", None)
-        if table is not None and table.name in {m.__tablename__ for m in ENTRY_STORAGE_MODELS}:
+        if table is not None and table.name in {m.__tablename__ for m in ENTRY_IMMUTABLE_MODELS}:
             raise DomainError("bulk writes bypass entry snapshot invariants")
 
 

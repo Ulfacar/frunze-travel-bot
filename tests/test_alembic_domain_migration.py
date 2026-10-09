@@ -56,6 +56,7 @@ DOMAIN_TABLES = {
     "knowledge_projections", "knowledge_country_links", "knowledge_condition_links",
     "stay_histories", "stay_intervals", "work_calendars", "work_calendar_days",
     "entry_calculations", "entry_calculation_intervals", "entry_calculation_calendars",
+    "entry_qualifications",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",

@@ -1,0 +1,18 @@
+{
+  "base": "6d24227b2e206308bb8921dc8efc5130c5174c7a",
+  "target": "uncommitted snapshot E5-03E",
+  "hash_method": "SHA256 of bytes with CRLF normalized to LF",
+  "files": {
+    "app/domain/models.py": "73f82bfb63a1c9e2ba23e62492245febed74ac377772ae798ea12ff3b36ad080",
+    "app/domain/entry_qualification.py": "d636406d87fc7a2710240465dfe000c407b54a2cffa1a9ad040a24ea7ee90a6a",
+    "app/domain/qualification_storage.py": "8a879272705d0826a93664dacd9c8245f30a550e396a4cee54437b4fa19ba34f",
+    "alembic/versions/e5_qualification_0016.py": "72707b352db3b279471d1b458bbb2e13e2d7b82daa2609d4124a72ed6657d3d2",
+    "tests/test_qualification_storage.py": "17095784babf663b3932f803b1689703aa4bb061b1ac4caa546c5e1fa49c8485",
+    "tests/test_qualification_migration.py": "c7fe2520b7d8b814eeaf67910d799f331f40dd286e7f25cf76443871275db066",
+    "tests/test_service_cases.py": "a64be5c0e340a7202a46a81c2af24058a1adbcdab30867d9eadb930fe55905fa",
+    "tests/test_alembic_domain_migration.py": "f13eacd4b87d702bf4a031442b86ad2cf68ee2a1af2bd52301401ebc1f7a801d",
+    "docs/e5-03e-qualification-storage.md": "fccf9b603d6c0a39d7fbe6f5721ff6bfcac0010e5b154d220f7289316e0f5581",
+    "docs/e5-pdf-progress.md": "2b1cdca617ad901ef6efeefc121f16420110f953553329cb81b848e556508457",
+    "docs/crm-delivery/backlog.md": "eb5fe559c6cc2dea5709267a193c934883a02b086bd52fb1074e70490eaf33ba"
+  }
+}
