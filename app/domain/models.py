@@ -1597,7 +1597,41 @@ class EntryIssuedRevision(DomainBase):
 ENTRY_APPLICATION_MODELS = (EntryApplicant, EntryApplication, EntryApplicationEvent, EntryApplicationReference)
 ENTRY_STORAGE_MODELS = (StayHistory, StayInterval, WorkCalendar, WorkCalendarDay, EntryCalculation,
                         EntryCalculationInterval, EntryCalculationCalendar)
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision)
+class EntryApplicantProfile(DomainBase):
+    """Individual qualification snapshots; payer-level facts are never inherited."""
+    __tablename__ = "entry_applicant_profiles"
+    __table_args__ = (
+        UniqueConstraint("id", "applicant_id", "case_id", name="uq_entry_profile_scope"),
+        UniqueConstraint("applicant_id", "revision", name="uq_entry_profile_revision"),
+        UniqueConstraint("applicant_id", "request_key", name="uq_entry_profile_request"),
+        ForeignKeyConstraint(["applicant_id", "case_id"], ["entry_applicants.id", "entry_applicants.case_id"], name="fk_entry_profile_applicant"),
+        ForeignKeyConstraint(["previous_id", "applicant_id", "case_id"],
+            ["entry_applicant_profiles.id", "entry_applicant_profiles.applicant_id", "entry_applicant_profiles.case_id"], name="fk_entry_profile_previous"),
+        CheckConstraint("revision BETWEEN 1 AND 250", name="ck_entry_profile_revision"),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL) OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id)", name="ck_entry_profile_previous"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_profile_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer)
+    applicant_id: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    knowledge_version_id: Mapped[int] = mapped_column(ForeignKey("knowledge_versions.id"))
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    input_snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    result_snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    provenance: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("input_snapshot", "result_snapshot", "provenance")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile)
 
 
 def _entry_immutable(mapper, connection, target):

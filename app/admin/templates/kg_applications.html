@@ -31,7 +31,7 @@
 
   <section class="box" aria-labelledby="kg-people-title"><h2 id="kg-people-title">Заявители</h2>
     <p class="muted">Пока используются номера и роли. ФИО, паспортные данные и сканы на этом этапе не вносятся.</p>
-    {% if register.applicants %}<details class="no-print"><summary>Все заявители: {{ register.applicants|length }}</summary><ul class="items" id="kg-applicants">{% for person in register.applicants %}<li>Заявитель №{{ person.id }} · {{ roles[person.role] }}</li>{% endfor %}</ul></details>
+    {% if register.applicants %}<details class="no-print"><summary>Все заявители: {{ register.applicants|length }}</summary><ul class="items" id="kg-applicants">{% for person in register.applicants %}<li>Заявитель №{{ person.id }} · {{ roles[person.role] }} · <a href="/admin/case/{{ case.id }}/kg-entry/applicants/{{ person.id }}/qualification">Анкета заявителя №{{ person.id }}</a></li>{% endfor %}</ul></details>
     <ul class="items print-only" id="kg-applicants-print">{% for person in register.applicants %}<li>Заявитель №{{ person.id }} · {{ roles[person.role] }}</li>{% endfor %}</ul>
     {% else %}<p id="kg-applicants-empty">Заявители ещё не добавлены. Контакт услуги может быть плательщиком или представителем.</p>{% endif %}
     {% if forms.applicant %}{% set values = forms.applicant %}<form method="post" action="{{ form_url }}" id="kg-applicant-form">
@@ -60,6 +60,7 @@
     <h2 id="kg-application-title">Заявка №{{ selected.id }} · попытка {{ selected.attempt }}</h2>
     <p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/documents">Документы этой заявки</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/issued">После выдачи</a></p>
     <p>Заявитель №{{ selected.applicant_id }} · {{ processes[selected.process] }} · {{ procedures[selected.procedure][1] }}</p>
+    <p><a href="/admin/case/{{ case.id }}/kg-entry/applicants/{{ selected.applicant_id }}/qualification">Анкета заявителя №{{ selected.applicant_id }}</a></p>
     <p id="kg-application-status"><strong>{{ statuses[selected.current.status] }}</strong> · запись {{ selected.current.revision }}</p>
     {% if selected.current.reference %}<p id="kg-application-reference">Reference портала: <strong>{{ selected.current.reference }}</strong></p>{% endif %}
     <div class="actions">{% if selected.previous_id %}<a href="{{ form_url }}?application_id={{ selected.previous_id }}">Предыдущая попытка №{{ selected.previous_id }}</a>{% endif %}

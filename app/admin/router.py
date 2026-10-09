@@ -2643,3 +2643,4 @@ from app.admin import kg_document_inventory  # noqa: E402,F401 — версии 
 from app.admin import kg_templates  # noqa: E402,F401
 
 from app.admin import kg_issued  # noqa: E402,F401 — проверки после выдачи
+from app.admin import kg_applicant_profiles  # noqa: E402,F401 — отдельные анкеты заявителей

@@ -20,13 +20,14 @@
 {% block content %}
 <main class="kg-wrap">
   <a href="/admin/case/{{ case.id }}">← К визовой услуге №{{ case.id }}</a>
-  <a href="/admin/case/{{ case.id }}/kg-entry/history">История поездок в Кыргызстан</a>
+  {% if not individual_profile %}<a href="/admin/case/{{ case.id }}/kg-entry/history">История поездок в Кыргызстан</a>{% endif %}
   <a href="/admin/case/{{ case.id }}/kg-entry/applications">Заявители и подачи</a>
   <a href="/admin/kg-entry/processes">Проверка черновых процессов</a>
   <a href="/admin/kg-entry/templates">Черновики сообщений</a>
   <a href="/admin/kg-entry/documents">Черновой чек-лист документов</a>
-  <h1>Анкета въезда в Кыргызстан</h1>
-  <p class="kg-muted">{{ case.title }}. Анкета общая для визовых услуг этого клиента. Сохраняйте здесь сведения о его поездке в Кыргызстан.</p>
+  <h1>Анкета въезда в Кыргызстан{% if individual_profile %} · заявитель №{{ applicant.id }}{% endif %}</h1>
+  {% if individual_profile %}<p class="kg-muted">{{ case.title }}. Отдельная анкета заявителя №{{ applicant.id }} в этой услуге. Плательщик и заявитель могут быть разными людьми. Сведения и история поездок плательщика сюда не переносятся.</p>
+  {% else %}<p class="kg-muted">{{ case.title }}. Анкета общая для визовых услуг этого клиента. Сохраняйте здесь сведения о его поездке в Кыргызстан.</p>{% endif %}
   {% if error %}<div class="kg-card kg-error" role="alert"><h2>Сохранение требует внимания</h2><p>{{ error }}</p><a href="{{ form_url }}">Открыть последнюю анкету</a></div>{% endif %}
   {% if empty_knowledge %}
   <section class="kg-card"><h2>База знаний ещё не загружена</h2><p>Администратору нужно импортировать базу въезда в Кыргызстан. После этого здесь появится анкета.</p></section>
@@ -36,6 +37,7 @@
   {% if saved %}
   <section class="kg-card" aria-labelledby="kg-result-title">
     <h2 id="kg-result-title">{{ report.status }}</h2>
+    {% if individual_profile %}<p>Заявитель №{{ applicant.id }} · услуга №{{ case.id }}</p>{% endif %}
     <div class="kg-muted">Сохранённая версия №{{ saved.revision }} · {{ saved.created_at[:19]|replace('T',' ') }} UTC</div>
     <p>Следующий шаг — сверка режима въезда и сроков специалистом.</p>
     {% if report.stops %}<h3>Причины проверки</h3><ul>{% for reason in report.stops %}<li>{{ reason }}</li>{% endfor %}</ul>{% endif %}
@@ -46,7 +48,7 @@
     {% for note in report.history_notes %}<p class="kg-muted">{{ note }}</p>{% endfor %}
     {% if report.conditions_missing %}<p class="kg-muted">Потребуются дополнительные сведения для проверки специальных условий.</p>{% endif %}
     <div class="kg-history">
-      <a href="{{ form_url }}/review/{{ saved.qualification_id }}">Карточка для проверки</a> ·
+      {% if not individual_profile %}<a href="{{ form_url }}/review/{{ saved.qualification_id }}">Карточка для проверки</a> ·{% endif %}
       {% if saved.previous_id %}<a href="{{ form_url }}?qualification_id={{ saved.previous_id }}">Предыдущая версия</a> · {% endif %}
       <a href="{{ form_url }}">Последняя анкета</a>
     </div>
