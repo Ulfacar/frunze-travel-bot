@@ -1,0 +1,57 @@
+{
+  "base": "430768bfe9de7dc798db18671173c2e39436cbf2",
+  "revision": "UNCOMMITTED",
+  "normalization": "UTF-8 bytes, CRLF to LF only",
+  "files": [
+    {
+      "path": "app/knowledge/qualification_schema.py",
+      "sha256_lf": "995ace242fb85bf67baca3c034455a371d753bd50ea0f32825bd84b30ef23be4",
+      "bytes_lf": 1219
+    },
+    {
+      "path": "app/knowledge/qualification.py",
+      "sha256_lf": "c30c37f8bdf199ada2a977490492edd3271d9c59395e3c77394341524c4c5a3e",
+      "bytes_lf": 12683
+    },
+    {
+      "path": "app/domain/entry_qualification.py",
+      "sha256_lf": "e446aa5ac9faed945b9c4475cafead75b76a7770c20cf0ad733756513afc869c",
+      "bytes_lf": 3292
+    },
+    {
+      "path": "scripts/review_kg_qualification.py",
+      "sha256_lf": "95e1600f5c9f9aeb8e6b36d5b2aca4c87ae75e2eb1878af18303fc565c89db8e",
+      "bytes_lf": 1497
+    },
+    {
+      "path": "tests/test_kg_qualification.py",
+      "sha256_lf": "3afac695ebd3da39a43a064fb3118ab44a8dd8d2b473ad2433aa92fa76885a7f",
+      "bytes_lf": 13632
+    },
+    {
+      "path": "tests/fixtures/kg_entry/synthetic_qualification_review.json",
+      "sha256_lf": "e185a4a16b2ef44c7079909459ed2e7d01248d7a81d14d2bb530dde67aeb852e",
+      "bytes_lf": 506
+    },
+    {
+      "path": "docs/e5-03d-qualification-review.md",
+      "sha256_lf": "1d7655c3570738af019d1f42ab16663bb31e5e34e84171fb00bb790c6e519760",
+      "bytes_lf": 9430
+    },
+    {
+      "path": "docs/crm-delivery/backlog.md",
+      "sha256_lf": "05063dec14ae1b8ee7e0ddc29fddac912f4ccc716312133cdfb3030b591aeeec",
+      "bytes_lf": 45629
+    },
+    {
+      "path": "docs/e5-pdf-progress.md",
+      "sha256_lf": "68ba6af1b411c2377dcd6c16a92992715b9fb9ceb1323e2d255a0530bef2d77d",
+      "bytes_lf": 9452
+    },
+    {
+      "path": "ai/tasks/2026-10-09-e5-03d-qualification-review.md",
+      "sha256_lf": "afab01f211bc36e1a57d23f8bde5992874aee234e44235ab01315fe12534d22d",
+      "bytes_lf": 5041
+    }
+  ]
+}

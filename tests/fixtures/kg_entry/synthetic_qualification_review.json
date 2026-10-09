@@ -1,0 +1,18 @@
+{
+  "format": "kg-qualification-review-input/1",
+  "as_of": "2026-10-09",
+  "language": "ru",
+  "profile": {
+    "citizenship": ["RUS"],
+    "entry_passport_country": "RUS",
+    "document_type": "ordinary",
+    "passport_expiry": "2030-01-01",
+    "passport_pages_ok": true,
+    "purpose": "tourism",
+    "current_location": "abroad",
+    "entry_date": "2026-11-01",
+    "exit_date": "2026-11-10",
+    "violations": {"overstay": false, "deportation_or_ban": false},
+    "previous_refusals_kg": false
+  }
+}

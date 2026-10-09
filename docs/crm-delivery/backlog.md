@@ -400,6 +400,12 @@ CRITICAL PARTIALLY_READY, независимые review/audit и PG16 runtime UN
 Официальный календарь, утверждение границ/событий/примеров, processing-time mapping,
 стоимость, менеджерский доступ и runtime впереди.
 
+[E5-03D — единый отчёт квалификации](../e5-03d-qualification-review.md), Codex, 09.10:
+partial profile, ordered questions RU/EN, known manager stops, объединение country index
+и conditions с registration references. DB adapter читает pinned verified knowledge/history
+без записей. Нет автоматического выбора режима, публикации и client eligibility;
+CRITICAL PARTIALLY_READY, независимые gates UNKNOWN.
+
 **Результат:** Полная история поездок, правила включения дней/окон, календарь праздников/переносов, цены из утверждённых данных и объяснение расчёта.
 
 **Зависимости:** E5-02. **Решения:** DEC-01, DEC-07.
