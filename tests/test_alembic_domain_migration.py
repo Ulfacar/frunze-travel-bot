@@ -54,6 +54,8 @@ DOMAIN_TABLES = {
     # E5-02B: draft storage only; calculators/publication are separate work.
     "knowledge_sets", "knowledge_versions", "knowledge_units", "knowledge_imports",
     "knowledge_projections", "knowledge_country_links", "knowledge_condition_links",
+    "stay_histories", "stay_intervals", "work_calendars", "work_calendar_days",
+    "entry_calculations", "entry_calculation_intervals", "entry_calculation_calendars",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",

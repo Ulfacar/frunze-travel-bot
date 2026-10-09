@@ -60,6 +60,11 @@ class WorkCalendars:
                  "completeness": c["completeness"], "source_ref": c["source_ref"], "hash": h}
                 for y, (c, _, h) in sorted(self._years.items())]
 
+    def export(self):
+        """Owned, canonical document for immutable storage and later replay."""
+        return {"format": "kg-work-calendars/1",
+                "calendars": [deepcopy(self._years[y][0]) for y in sorted(self._years)]}
+
     def day(self, value: date):
         if type(value) is not date:
             raise CalendarError("invalid_calendar_date")

@@ -1,0 +1,87 @@
+{
+  "base": "ef77321241319974fa392f212f8e6933b8e92e66",
+  "revision": "UNCOMMITTED",
+  "normalization": "UTF-8 bytes, CRLF to LF only",
+  "files": [
+    {
+      "path": "app/domain/models.py",
+      "sha256_lf": "002d45b9dfe88b72cce46b414fc9789bac61f1b02fdb25610fba758d89bfbc54",
+      "bytes_lf": 87507
+    },
+    {
+      "path": "app/domain/entry_storage.py",
+      "sha256_lf": "9b3c04a54dc425635f598e1de603b1145a44185ee09db30e48261bd5a7cfd23e",
+      "bytes_lf": 13348
+    },
+    {
+      "path": "app/domain/entry_calculations.py",
+      "sha256_lf": "d6a4805b18aa1cec0eb08f3286ac2e2a8ba80774d3380566dfcacc8c5bc7e2c2",
+      "bytes_lf": 11681
+    },
+    {
+      "path": "app/knowledge/storage_schema.py",
+      "sha256_lf": "f295dfe90c6912393738553150c6ad5db3a738067be92d57950bc1bc904661cf",
+      "bytes_lf": 963
+    },
+    {
+      "path": "app/knowledge/work_calendar.py",
+      "sha256_lf": "7050a5e2ebf53836c21c64b0af21297600b610e8a96dea203e5ea9b53c5628cb",
+      "bytes_lf": 4002
+    },
+    {
+      "path": "alembic/versions/e5_calculation_0015.py",
+      "sha256_lf": "0a3e3028c072eb1a96066d7097f19df45a1939dde627276ebaf83f95dfdf6e2c",
+      "bytes_lf": 9379
+    },
+    {
+      "path": "scripts/rehearse_kg_calculations.py",
+      "sha256_lf": "b934ff07fe7d3633cde3695c5a70b546439bc59a3ca5f3c0c186cef5a155aff1",
+      "bytes_lf": 5479
+    },
+    {
+      "path": "tests/test_entry_storage.py",
+      "sha256_lf": "deb8fd7c6fca53e34f35d61b3df4ec023514fbfb3ffd217f6294a99c21d1fd32",
+      "bytes_lf": 24885
+    },
+    {
+      "path": "tests/test_entry_storage_migration.py",
+      "sha256_lf": "543aeeeff441ae5225590c8b153f1f76166a14a3c5506ec5aa5459d6a48ce2e7",
+      "bytes_lf": 5282
+    },
+    {
+      "path": "tests/test_alembic_domain_migration.py",
+      "sha256_lf": "170ca19050a98bede6fc58c03bd46ad32b118f5e5149f97529aa04a3e0035926",
+      "bytes_lf": 17422
+    },
+    {
+      "path": "docs/e5-03c-calculation-storage.md",
+      "sha256_lf": "e67aefed8a6e04bf5cf5daee6c169208903e104c644e64dbf940a1f4b44e4151",
+      "bytes_lf": 11078
+    },
+    {
+      "path": "docs/e5-02-slots-schema.md",
+      "sha256_lf": "ebebe14a37cb65bb217eb436292b08fdd4f91cc087a4c414ba9e2272e6d91a41",
+      "bytes_lf": 78257
+    },
+    {
+      "path": "docs/e5-pdf-progress.md",
+      "sha256_lf": "78a1d772a935abe8e2eb06dea48b6d28ad6b25d62bcc18552fac6adbdc948f20",
+      "bytes_lf": 8939
+    },
+    {
+      "path": "docs/crm-delivery/backlog.md",
+      "sha256_lf": "efb2c0831981e8608a7e2894f3aa58910a1c18f8c418582109f42f8c342d8b3f",
+      "bytes_lf": 45120
+    },
+    {
+      "path": "ai/tasks/2026-10-09-e5-03c-calculation-storage.md",
+      "sha256_lf": "80b3c537853ce5d3a17d1026ff39136097a4b1988a3a47044756d807538e5e8f",
+      "bytes_lf": 6911
+    },
+    {
+      "path": "tests/test_service_cases.py",
+      "sha256_lf": "47de3ea3ad6f7a960d9b9e412cd9637990b11ee1b15e612ed78045abc96d4ecd",
+      "bytes_lf": 29893
+    }
+  ]
+}

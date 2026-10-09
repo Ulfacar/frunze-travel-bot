@@ -1,24 +1,20 @@
 # Current work
 
-- Updated: 2026-10-08. Алан разрешил «пушни все свежее на гитхаб»; актуальная работа опубликована в origin/fix/tours-search-quality.
-- GitHub sync: 27 commits af8e440..f6cb74c отправлены, GitHub API подтвердил f6cb74c7707b82f89e321f9e465c4585ca8afa13. Следующий docs commit обновляет памятку Эрмека и эту запись; operational handoff `ai/handoffs/2026-10-08-1611-github-sync.md`.
-- Active task: **E5-03B DEADLINES**, CRITICAL / solo, **PARTIALLY_READY**: local implementation готова, independent review/final audit, official calendar и owner-approved policies UNKNOWN.
-- Branch/code revision: `fix/tours-search-quality` / **7722d378cd4cc086ca5c93eaa3f0cefb26f609d7**; 12-file manifest verified in committed copy. Финальные STATE/handoff/evidence — docs-only commit после кода.
-- Task: `ai/tasks/2026-10-07-e5-03b-deadlines.md`; contract: `docs/e5-03b-deadlines.md`.
-- Relevant handoff: `ai/handoffs/2026-10-07-1317-e5-03b-deadlines.md`.
-- Result: pure CALC-03 yearly calendar versions, holiday/transferred-workday overrides, coverage guards, working/calendar days, elapsed hours, calendar months; explicit proposed policy, trace/hashes, read-only CLI. No DB/runtime edits.
-- Evidence: **399 passed / 20.39s**, five knowledge modules; **99 новых tests** + 120 seeded workday-set oracle cases. CLI original PDF returns rule_value_missing/NULL scenario; synthetic CLI Oct08, exact deadline NULL. SHA+mtime inputs unchanged. Git copy 7722d37: **397 passed / 2 skipped, 15.40s** (PDF вне Git), 12/12 hashes. CLI original PDF и synthetic fixture идентичны рабочей копии; full suite N/A for pure additions.
-- Review: `ai/reviews/2026-10-07-e5-03b-deadlines-self-review.md`, APPROVE SELF_REVIEW; independent packet/manifest рядом. Independent review/final audit UNKNOWN.
-- Boundaries: all calendars draft; fixtures synthetic, no official holidays. 22 real deadline values and 10 processing-time values stay NULL. exact_deadline=NULL, may_quote/publication false. Source boundary flag не утверждает proposed anchor inclusion; owner policies нужны.
-- Next action: independent review/owner examples; следующая отдельная implementation task — StayInterval/WorkCalendar/Calculation persistence и trusted DB adapter, без реальных данных. Затем unified selection/processing-time mapping/runtime. Проверить actual migration head e5_projection_0014.
-- Prior E5-03A: **abad74f / 2f71d8e**, CALC-02 stay-day scenarios, 300 passed; committed copy 298 passed / 2 skipped, original PDF CLI PASS. Handoff `ai/handoffs/2026-10-07-1127-e5-03a-stay-days.md`.
-- Prior E5-02F: **cf7fb0d / 1980b1a**, atomic projection 208 units / 201 country links / 6 conditions, 82 SQL NULL / 0 confirmed / NULL active. Full suite того этапа 2917 passed / 8 skipped / 1 warning, 414.81s. Handoff `ai/handoffs/2026-10-07-1040-e5-02f-projection.md`.
-- Prior E5-02E ca387a0/bd1a84e: 6 draft condition profiles; E5-02D dba3847/e410078: country index; E5-01B 74 search fragments, no retrieval. Source bundle hash прежний.
-- Remaining gates: IMPORT/CONTRACT/PROJECTION/STAY-DAYS/DEADLINES independent review/audit, прежний PG16 runtime UNKNOWN; нормы/DEC-06/07/подпись эталонов не утверждены.
-- PDF progress: `docs/e5-pdf-progress.md`, ориентировочно 70–80% осталось (около 75%), не измеренный процент.
-- Delivery: код опубликован на GitHub 08.10 по прямому поручению Алана. Production deploy/DB/клиентских отправок не было; CRITICAL review/audit gates выше сохраняются.
-- Baseline: prod_traps --diff-base 2f71d8e --limit 1 FAIL 1 ERROR / 57 WARN, ANTHROPIC_API_KEY compose forwarding, не менялся.
-- Unrelated аудио/экспорты/temp сохранены untracked, в commits не включать.
+- Updated: **2026-10-09**, Алан вернулся; продолжает исходную работу над PDF. Эрмек — коллега с тем же согласованным scope разработки; реальные доступы учитывать отдельно.
+- Active task: **E5-03C CALCULATION STORAGE**, CRITICAL / solo, **PARTIALLY_READY**.
+- Branch/revision: `fix/tours-search-quality` / **UNCOMMITTED**, base `ef77321`.
+- Task: `ai/tasks/2026-10-09-e5-03c-calculation-storage.md`; contract: `docs/e5-03c-calculation-storage.md`.
+- Handoff: `ai/handoffs/2026-10-09-1857-e5-03c-calculation-storage.md`; independent packet, SELF_REVIEW и snapshot — `ai/reviews/2026-10-09-e5-03c-calculation-storage-*`.
+- Result: 7 новых таблиц + миграция **e5_calculation_0015** после **e5_projection_0014**; полные immutable history revisions, draft-календари, DB adapter, сохранённые CALC-02/03, FK источников и verified replay. Только named full-admin, synthetic/local; HTTP/LLM/runtime не подключены.
+- Evidence: targeted **67 passed / 48.44s**, SAWarning=error; SQLite end-to-end PASS (counts 1/1/2/6/2/1/2, replay=true, synthetic 6 дней/08.10). Full suite: 3161 passed / 2 failed / 8 skipped / 1 warning; stale migration expectation исправлен, повтор 64 passed / 2 skipped. Оставшийся facts dates failure воспроизведён на base ef77321 (clock=06.10 PASS, 09.10 FAIL), вне этапа; полного зелёного suite нет. Snapshot включает новые untracked файлы реализации.
+- Найденная утечка соединения при after_commit exception исправлена; повтор с прежним ключом не создаёт дубль. Cross-contact/history FK, CAS, rollback, corruption и runtime drift проверены.
+- Boundaries: exact_remaining_days/exact_deadline=NULL, may_quote=false. 208 source units прежние, 0 confirmed; официальный календарь/нормы/эталоны/DEC-06/07 не утверждены. Независимые review/final audit и PG16 runtime/concurrency **UNKNOWN**; SELF_REVIEW не заменяет gates.
+- Next action: независимая проверка packet + PG16; следующий отдельный implementation scope — unified selection/qualification и trusted manager adapter с серверным scope доступа. Затем publication/runtime/диалог и въездные процессы.
+- PDF progress: `docs/e5-pdf-progress.md`, ориентировочно **70–80% осталось**, без нового измеренного процента; persistence готов локально, весь PDF не выполнен.
+- Предыдущие этапы: E5-03A stay-days; E5-03B deadlines (7722d37); E5-02F projection (bd2f2f6); E5-02E conditions (820a837); E5-02D country index; E5-01B 74 search fragments. Их independent gates сохраняются.
+- Delivery: GitHub working branch ранее обновлена до ef77321 по поручению «пушни всё свежее» 08.10, repo public. Current E5-03C ещё не committed/pushed. Production deploy/DB/клиентских отправок не было. Main не сливался с инженерной веткой.
+- Baseline: prod_traps --diff-base ef77321 --limit 1 FAIL **1 ERROR / 57 WARN**, ANTHROPIC_API_KEY compose forwarding; конфигурация не менялась.
+- Unrelated аудио/архивы/выгрузки/temp сохранены untracked, в commits не включать.
 
 ## Сохраняющаяся задача — форма договора
 

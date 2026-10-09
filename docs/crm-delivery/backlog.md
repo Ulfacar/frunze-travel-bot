@@ -393,8 +393,12 @@ CRITICAL PARTIALLY_READY: независимые review/audit и подпись 
 [E5-03B — календарь и сроки](../e5-03b-deadlines.md): версии draft-календарей, рабочие
 дни/переносы, часы/дни/месяцы и trace/hashes; missing/provisional год блокирует дату.
 Все holiday fixtures synthetic, все 22 реальные deadline values остаются NULL.
-StayInterval/Calendar/Calculation persistence, официальный календарь, утверждение
-границ/событий/примеров, processing-time mapping, стоимость и runtime впереди.
+[E5-03C — история и расчёты в БД](../e5-03c-calculation-storage.md), Codex, 09.10:
+семь таблиц, атомарные immutable revisions, draft-календари, trusted DB adapter,
+идемпотентность/CAS и replay сохранённых CALC-02/03. Локально, synthetic-only;
+CRITICAL PARTIALLY_READY, независимые review/audit и PG16 runtime UNKNOWN.
+Официальный календарь, утверждение границ/событий/примеров, processing-time mapping,
+стоимость, менеджерский доступ и runtime впереди.
 
 **Результат:** Полная история поездок, правила включения дней/окон, календарь праздников/переносов, цены из утверждённых данных и объяснение расчёта.
 

@@ -1241,3 +1241,206 @@ class ServiceEvent(DomainBase):
         event.listen(cls, "before_update", reject_write)
         event.listen(cls, "before_delete", reject_write)
         event.listen(Session, "do_orm_execute", reject_bulk_write)
+
+
+# E5-03C: immutable review storage. No live runtime wiring or publication.
+class StayHistory(DomainBase):
+    __tablename__ = "stay_histories"
+    __table_args__ = (
+        UniqueConstraint("id", "contact_id", name="uq_stay_history_contact"),
+        UniqueConstraint("contact_id", "revision", name="uq_stay_history_revision"),
+        UniqueConstraint("contact_id", "request_key", name="uq_stay_history_request"),
+        ForeignKeyConstraint(["previous_id", "contact_id"], ["stay_histories.id", "stay_histories.contact_id"],
+                             name="fk_stay_history_previous"),
+        CheckConstraint("revision >= 1", name="ck_stay_history_revision"),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL) OR (revision > 1 AND previous_id IS NOT NULL)",
+                        name="ck_stay_history_previous"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_stay_history_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    contact_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"))
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    as_of: Mapped[date] = mapped_column(Date)
+    history_complete: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("snapshot")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+class StayInterval(DomainBase):
+    __tablename__ = "stay_intervals"
+    __table_args__ = (
+        ForeignKeyConstraint(["history_id", "contact_id"], ["stay_histories.id", "stay_histories.contact_id"],
+                             name="fk_stay_interval_history"),
+        UniqueConstraint("history_id", "ref", name="uq_stay_interval_ref"),
+        UniqueConstraint("id", "history_id", name="uq_stay_interval_history"),
+        CheckConstraint("exit_date IS NULL OR exit_date >= entry_date", name="ck_stay_interval_dates"),
+        CheckConstraint("basis IN ('visa_free','visa','ep','resident_card','residence_permit','registration_contract','unknown')",
+                        name="ck_stay_interval_basis"),
+        CheckConstraint("evidence IN ('esuvm','passport_stamp','boarding_pass','visa_document','client_statement','crm_record')",
+                        name="ck_stay_interval_evidence"),
+        CheckConstraint("(confirmed AND confirmed_by IS NOT NULL AND confirmed_at IS NOT NULL) OR "
+                        "(NOT confirmed AND confirmed_by IS NULL AND confirmed_at IS NULL)", name="ck_stay_interval_confirmation"),
+        CheckConstraint("evidence <> 'client_statement' OR NOT confirmed", name="ck_stay_interval_statement"),
+        CheckConstraint("passport_ref IS NULL OR length(passport_ref) = 32", name="ck_stay_interval_passport"),
+        Index("uq_stay_history_open", "history_id", unique=True,
+              sqlite_where=text("exit_date IS NULL"), postgresql_where=text("exit_date IS NULL")),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    history_id: Mapped[int] = mapped_column(Integer)
+    contact_id: Mapped[int] = mapped_column(Integer)
+    ref: Mapped[str] = mapped_column(String(64))
+    entry_date: Mapped[date] = mapped_column(Date)
+    exit_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    basis: Mapped[str] = mapped_column(String(32))
+    passport_country: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    passport_ref: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    evidence: Mapped[str] = mapped_column(String(32))
+    confirmed: Mapped[bool] = mapped_column(Boolean)
+    confirmed_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class WorkCalendar(DomainBase):
+    __tablename__ = "work_calendars"
+    __table_args__ = (
+        UniqueConstraint("jurisdiction", "year", "version", name="uq_work_calendar_version"),
+        CheckConstraint("jurisdiction = 'KG' AND status = 'draft'", name="ck_work_calendar_scope"),
+        CheckConstraint("year BETWEEN 1 AND 9999 AND version BETWEEN 1 AND 1000000", name="ck_work_calendar_version"),
+        CheckConstraint("length(content_hash) = 64", name="ck_work_calendar_hash"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    jurisdiction: Mapped[str] = mapped_column(String(2))
+    year: Mapped[int] = mapped_column(Integer)
+    version: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16))
+    content_hash: Mapped[str] = mapped_column(String(64))
+    document: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("document")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+class WorkCalendarDay(DomainBase):
+    __tablename__ = "work_calendar_days"
+    __table_args__ = (
+        CheckConstraint("kind IN ('public_holiday','floating_holiday','transfer_rest','transfer_working','weekend_override')",
+                        name="ck_work_calendar_day_kind"),
+        CheckConstraint("(kind = 'weekend_override') OR (kind = 'transfer_working' AND is_working) OR "
+                        "(kind IN ('public_holiday','floating_holiday','transfer_rest') AND NOT is_working)",
+                        name="ck_work_calendar_day_working"),
+    )
+    calendar_id: Mapped[int] = mapped_column(ForeignKey("work_calendars.id"), primary_key=True)
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    is_working: Mapped[bool] = mapped_column(Boolean)
+    kind: Mapped[str] = mapped_column(String(32))
+    title: Mapped[str] = mapped_column(Text)
+    source_ref: Mapped[str] = mapped_column(Text)
+
+
+class EntryCalculation(DomainBase):
+    __tablename__ = "entry_calculations"
+    __table_args__ = (
+        ForeignKeyConstraint(["history_id", "contact_id"], ["stay_histories.id", "stay_histories.contact_id"],
+                             name="fk_entry_calculation_history"),
+        UniqueConstraint("contact_id", "request_key", name="uq_entry_calculation_request"),
+        UniqueConstraint("id", "history_id", name="uq_entry_calculation_history"),
+        CheckConstraint("(kind = 'stay' AND history_id IS NOT NULL) OR (kind = 'deadline' AND history_id IS NULL)",
+                        name="ck_entry_calculation_kind"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_calculation_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    contact_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"))
+    history_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    knowledge_version_id: Mapped[int] = mapped_column(ForeignKey("knowledge_versions.id"))
+    kind: Mapped[str] = mapped_column(String(16))
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    input_snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    result_snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    provenance: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("input_snapshot", "result_snapshot", "provenance")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+class EntryCalculationInterval(DomainBase):
+    __tablename__ = "entry_calculation_intervals"
+    __table_args__ = (
+        ForeignKeyConstraint(["calculation_id", "history_id"], ["entry_calculations.id", "entry_calculations.history_id"],
+                             name="fk_calculation_interval_calculation"),
+        ForeignKeyConstraint(["interval_id", "history_id"], ["stay_intervals.id", "stay_intervals.history_id"],
+                             name="fk_calculation_interval_history"),
+    )
+    calculation_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    interval_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    history_id: Mapped[int] = mapped_column(Integer)
+
+
+class EntryCalculationCalendar(DomainBase):
+    __tablename__ = "entry_calculation_calendars"
+    calculation_id: Mapped[int] = mapped_column(ForeignKey("entry_calculations.id"), primary_key=True)
+    calendar_id: Mapped[int] = mapped_column(ForeignKey("work_calendars.id"), primary_key=True)
+
+
+ENTRY_STORAGE_MODELS = (StayHistory, StayInterval, WorkCalendar, WorkCalendarDay, EntryCalculation,
+                        EntryCalculationInterval, EntryCalculationCalendar)
+
+
+def _entry_immutable(mapper, connection, target):
+    raise DomainError("entry review snapshots are immutable; create a new revision")
+
+
+for _entry_model in ENTRY_STORAGE_MODELS:
+    event.listen(_entry_model, "before_update", _entry_immutable)
+    event.listen(_entry_model, "before_delete", _entry_immutable)
+
+
+@event.listens_for(Session, "do_orm_execute")
+def _entry_reject_bulk(state):
+    if state.is_update or state.is_delete:
+        table = getattr(state.statement, "table", None)
+        if table is not None and table.name in {m.__tablename__ for m in ENTRY_STORAGE_MODELS}:
+            raise DomainError("bulk writes bypass entry snapshot invariants")
+
+
+@event.listens_for(StayInterval, "before_insert")
+def _stay_interval_matches_snapshot(mapper, connection, target):
+    parent = connection.execute(select(StayHistory.snapshot, StayHistory.created_by).where(
+        StayHistory.id == target.history_id, StayHistory.contact_id == target.contact_id)).first()
+    expected = next((r for r in parent.snapshot["intervals"] if r["ref"] == target.ref), None) if parent else None
+    if expected is None:
+        raise DomainError("interval must belong to its immutable history snapshot")
+    for key, value in expected.items():
+        actual = getattr(target, key)
+        if isinstance(actual, date):
+            actual = actual.isoformat()
+        if actual != value:
+            raise DomainError("interval must match its immutable history snapshot")
+    if target.confirmed_by != (parent.created_by if target.confirmed else None):
+        raise DomainError("interval confirmation must name its recording administrator")
+
+
+@event.listens_for(WorkCalendarDay, "before_insert")
+def _work_day_matches_snapshot(mapper, connection, target):
+    document = connection.scalar(select(WorkCalendar.document).where(WorkCalendar.id == target.calendar_id))
+    expected = next((r for r in document["days"] if r["date"] == target.day.isoformat()), None) if document else None
+    actual = {"date": target.day.isoformat(), "is_working": target.is_working, "kind": target.kind,
+              "title": target.title, "source_ref": target.source_ref}
+    if actual != expected:
+        raise DomainError("calendar day must match its immutable version")

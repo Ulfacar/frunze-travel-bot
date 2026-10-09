@@ -1,5 +1,11 @@
 # E5-02 — Схема слотов квалификации и импорта въездных правил КР
 
+09.10: [E5-03C — история и расчёты в БД](e5-03c-calculation-storage.md) реализован
+локально: семь таблиц, миграция e5_calculation_0015, immutable history revisions,
+draft-календари и сохранение/replay CALC-02/03. Полный snapshot истории заменяет
+проектный mutable superseded_by; паспорт обозначается opaque ref. Applicant/Qualification,
+публикация, доступ менеджеров и runtime остаются отдельными этапами. CRITICAL review/audit UNKNOWN.
+
 05.10.2026. Класс задачи — S (документ, кода нет). Роль — архитектура/схема до первой миграции (Fable); реализация — Sonnet по этой схеме, ревью — Codex.
 
 Источники: [KB v1.1 (производная конверсия)](kb-visa-inbound-v1.1-derived.md) — Б.3 (с. 87), Б.5 (с. 88), блок 2 (с. 19–25), блок 13 (с. 61–62), блок 18.4–18.5, 18.11; [ТЗ](spec-crm-frunze-getvisa-2026-10-03.md) §9 (KB-01..05, CALC-01..05), §16 (SRC-04/05/06), §17 (AC-18..23), §20 (DEC-01, DEC-07); [карточка E5-02](crm-delivery/backlog.md); стиль таблиц — [technical-design §2](crm-delivery/technical-design.md). Код-контекст: `app/domain/models.py` (DomainBase, `Product`/`WorkflowVersion`/`ServiceCase`/`ServiceEvent`, `_ServiceJSON`), `alembic/versions/e1_services_0007.py`.

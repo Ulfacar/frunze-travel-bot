@@ -523,7 +523,9 @@ def test_migration_is_additive_empty_and_reversible(tmp_path, monkeypatch):
                   "service_payments", "ticket_segments",
                   "booking_attempts", "knowledge_sets", "knowledge_versions",
                   "knowledge_units", "knowledge_imports", "knowledge_projections",
-                  "knowledge_country_links", "knowledge_condition_links"}
+                  "knowledge_country_links", "knowledge_condition_links",
+                  "stay_histories", "stay_intervals", "work_calendars", "work_calendar_days",
+                  "entry_calculations", "entry_calculation_intervals", "entry_calculation_calendars"}
     engine = create_engine(url)
     try:
         command.upgrade(cfg, "bitrix_dossier_0006")
