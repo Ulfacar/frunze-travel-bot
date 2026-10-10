@@ -33,7 +33,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -96,7 +96,7 @@ def main(argv=None):
         <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
         не загружаются и не принимаются; подача не разрешается.</li></ul>"""
         estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
-    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes"):
+    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff"):
         if __package__:
             from .check_pdf_engineering_progress import evaluate
         else:
@@ -208,6 +208,24 @@ def main(argv=None):
                      "полные сквозные сценарии PDF, аудит прежних модулей и приёмка владельцем.")
         review_note = ("Локальные PostgreSQL и восстановление через COPY проверены; штатный pg_dump заблокирован "
                        "защитой Windows. Полный аудит прежних модулей и production recovery ещё не подтверждены.")
+    if args.checkpoint == "channel-handoff":
+        title = "Передача специалисту и остановка автоответов"
+        intro = "Добавлена постоянная остановка ответов в явно привязанном личном WhatsApp-диалоге."
+        result = """<ul><li>Администратор проверяет существующий диалог, профиль и получателя.
+        Карточка с фактами/пробелами и остановка сохраняются вместе; принятие сотрудником — отдельно.</li>
+        <li>Последняя проверка перед отправкой блокирует старый ответ LLM и заранее выбранный дожим.
+        Изменение исходного адресата во время ожидания не меняет проверенный маршрут.</li>
+        <li>Повтор, истечение правил, принятие карточки и восстановление базы не снимают остановку.
+        Недоступное или повреждённое хранилище запрещает автоматическую отправку в активированном режиме.</li>
+        <li>Проверены настоящая локальная PostgreSQL, гонки, восстановление, мобильный экран,
+        формы без JavaScript и печать. Независимые ревью и финальный аудит завершены.</li>
+        <li>Охват: только явно активированные и привязанные личные WhatsApp-диалоги.
+        Остальные каналы и старые сценарии не охвачены; реальные настройки остаются пустыми.</li></ul>"""
+        remaining = ("Квалификация и ответы по утверждённым правилам, все клиентские триггеры и каналы, "
+                     "сохранённые уведомления клиента, полные сквозные сценарии PDF, "
+                     "аудит прежних модулей и приёмка владельцем.")
+        review_note = ("Локальное восстановление через COPY проверено; штатный pg_dump заблокирован "
+                       "защитой Windows. Полный аудит прежних модулей и production recovery не подтверждены.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
     <p>{args.report_date:%d.%m.%Y} · {title}</p>
     <p class="note"><b>Весь PDF ещё не выполнен.</b> {intro} Пилот выключен по умолчанию;

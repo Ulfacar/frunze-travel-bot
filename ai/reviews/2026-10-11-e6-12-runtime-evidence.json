@@ -56,6 +56,16 @@
       "errors": 0.0,
       "skipped": 2.0,
       "time": 783.63
+    },
+    {
+      "artifact": "runs/e6-12-review-r3/runs/interview-full.xml",
+      "sha256": "847858418dbe1e7096b62cb462b2ddad63aaf4405f625572ad95b8e7ae824ad7",
+      "snapshot": "frozen E6-12r3",
+      "tests": "4437",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "66",
+      "time": "2660.317"
     }
   ],
   "recovery_artifact": "runs/auditor-e612-r3/runs/auditor-interview-r3-recovery.json",

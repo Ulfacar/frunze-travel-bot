@@ -1,3 +1,11 @@
+# E6-14 checkpoint — durable handoff suppression
+
+Reviewed local code `fe43b46a9dc184a5430ee7b9f4653c8e296c475a`, saved/pushed only to origin working branch. **89/100 technical points,11 remaining**. Fixed B04/H04 add5 only for explicitly activated and bound private WhatsApp routes. Atomic frozen card/stop, separate named-owner ACK, installed final reply/followup guards and durable suppression through policy removal/recovery. No global multi-channel claim; real activation and authority remain empty.
+
+Builder163 PASS/2 optionalPG SKIP plus30 actualPG PASS; independent review APPROVE and separate audit GO (118/31/2/1 and153 PASS, overlapping scopes). Mobile/no-JS/sole print page inspected. Exact26-file root/archive/commit identity PASS. Two reviewed concurrency defects were fixed and retested. Broad/full exact-r2 suites continue; running checks are not counted green. E6-12 full completed4371PASS/66SKIP. Detailed evidence: `ai/handoffs/2026-10-11-0435-e6-14-channel-handoff.md`.
+
+Next E6-15 connected source scenarios and E6-16 policy-gated saved notification drafts. Approved qualification/answers, full escalation/trigger integration, earlier critical review and owner acceptance remain. No deploy; final Telegram pending.
+
 # E6-13 checkpoint — versioned internal quotations
 
 Reviewed local code `c611b86d23d622c64bb9056e4e855c6e93437370`. **84/100 technical points,16 remaining**, fixed definitions unchanged; only C04 adds2. Immutable exact application/applicant quotes retain old algorithms and policy snapshots, separate four fee components and USD/KGS, and block complete prices when any required amount is unknown. Explicit preview/save, current authority overlay, native history/print. Actual server recipes remain empty; no legal eligibility, FX, payment, contract or client sending is inferred.

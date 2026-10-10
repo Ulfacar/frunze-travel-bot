@@ -138,9 +138,18 @@
       "weight": 3,
       "pdf": "4/Б.4",
       "acceptance": "Durable review/handoff with pinned facts, gaps, owner and automation stop",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "fe43b46a9dc184a5430ee7b9f4653c8e296c475a",
+          "command": "Exact-r2 builder163 PASS/2 optionalPG SKIP +30 actualPG; independent118/31/2/1 PASS and auditor153 PASS; full commands in handoff",
+          "environment": "Windows Python3.12; env-free frozen archive; synthetic SQLite/Chromium; actual isolated PostgreSQL16.15",
+          "scope": "Durable review/handoff with pinned facts, gaps, owner and automation stop; ONLY explicitly activated and bound private WhatsApp routes; no global/multi-channel or production claim",
+          "artifact": "ai/handoffs/2026-10-11-0435-e6-14-channel-handoff.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "C01",
@@ -678,9 +687,18 @@
       "weight": 2,
       "pdf": "4/Б.4",
       "acceptance": "Manager handoff acknowledgement and suppression of autonomous client replies",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "fe43b46a9dc184a5430ee7b9f4653c8e296c475a",
+          "command": "Exact-r2 builder163 PASS/2 optionalPG SKIP +30 actualPG; independent118/31/2/1 PASS and auditor153 PASS; full commands in handoff",
+          "environment": "Windows Python3.12; env-free frozen archive; synthetic SQLite/Chromium; actual isolated PostgreSQL16.15",
+          "scope": "Manager handoff acknowledgement and suppression of autonomous client replies; ONLY explicitly activated and bound private WhatsApp routes; no global/multi-channel or production claim",
+          "artifact": "ai/handoffs/2026-10-11-0435-e6-14-channel-handoff.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "I01",
