@@ -508,6 +508,11 @@ async def balance_of(session: AsyncSession, case_id: int, *, by: Actor) -> Balan
                           owner_login=case.owner_login), "view money")
 
     rows = await _ledger(session, case_id)
+    return balance_from_rows(case, rows)
+
+
+def balance_from_rows(case, rows) -> Balance:
+    """Same ledger arithmetic for a current case or an immutable evidence pin."""
     by_id = {row.id: row for row in rows}
     # Аннулированные строки выпадают вместе с самим аннулированием: записи не было.
     voided = {row.corrects_id for row in rows if row.kind == VOID}

@@ -2637,6 +2637,7 @@ from app.admin import kg_knowledge  # noqa: E402,F401 — поиск источ�
 from app.admin import kg_history  # noqa: E402,F401 — версии фактических поездок, тот же full-admin gate
 from app.admin import kg_applications  # noqa: E402,F401 — заявители и подачи, тот же full-admin gate
 from app.admin import kg_processes  # noqa: E402,F401 — проверка черновых переходов, без записи
+from app.admin import kg_process_journal  # noqa: E402,F401 — этапы с подтверждениями, политика default OFF
 from app.admin import kg_documents  # noqa: E402,F401 — черновая матрица документов, без записи
 from app.admin import kg_document_inventory  # noqa: E402,F401 — версии документов отдельных заявок
 from app.admin import kg_document_packages  # noqa: E402,F401 — полные комплекты и их приёмка

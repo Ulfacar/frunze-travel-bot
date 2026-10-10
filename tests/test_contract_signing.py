@@ -752,7 +752,11 @@ async def with_postgres_schema(scenario):
 
         def upgrade(conn):
             scripts = ScriptDirectory.from_config(migration_config())
-            revisions = list(scripts.iterate_revisions("e1_contract_0008", "base"))
+            # Runtime scenarios call today's service and ORM (including the
+            # calendar-task links introduced after the contract migration).
+            # Apply the current schema; the focused 0008 downgrade/upgrade
+            # assertions below still verify that revision's own contract.
+            revisions = list(scripts.iterate_revisions("head", "base"))
             with Operations.context(MigrationContext.configure(conn)):
                 for revision in reversed(revisions):
                     revision.module.upgrade()
@@ -846,7 +850,11 @@ def test_postgresql_applied_migration_constraints_and_roundtrip():
             assert "IS NOT NULL" in str(index["dialect_options"]["postgresql_where"]).upper()
             for values in ({"idempotency_key": first.idempotency_key}, {"currency": None}):
                 with pytest.raises(IntegrityError):
-                    async with session.begin_nested():
+                    # This intentionally tests DB constraints through the
+                    # connection, bypassing the separately tested ORM guard.
+                    # Own its savepoint on that same connection: a session
+                    # savepoint starts lazily and would not enclose this SQL.
+                    async with connection.begin_nested():
                         await connection.execute(update(ServiceCase.__table__)
                             .where(ServiceCase.id == second.id).values(**values))
             await session.commit()

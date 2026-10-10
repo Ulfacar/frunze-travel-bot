@@ -79,11 +79,21 @@ def test_decimal_in_party_is_refused():
 
 # --- КОНТРОЛЬНАЯ ГРУППА: это ломать нельзя ---------------------------------------------
 
-def test_still_reads_a_plain_request():
+def test_still_reads_a_plain_request(monkeypatch):
+    # Keep the original control phrase/assertions; pin its pre-departure clock.
+    # After October7 the parser intentionally rolls an unqualified year forward,
+    # and the separate >310-day guard correctly refuses that far-future window.
+    from datetime import date
+    from app.integrations.tourvisor import client
+    class BeforeDeparture(date):
+        @classmethod
+        def today(cls): return cls(2026,9,30)
+    monkeypatch.setattr(client,'date',BeforeDeparture)
     got = facts.extract("Хотели тур на двоих в Турцию с 7 по 14 октября")
     assert got.get("destination") == "Турция"
     assert str(got.get("tourists")) == "2"
     assert got.get("dates")
+    assert got['dates']=='07.10.2026-14.10.2026'
 
 
 def test_still_reads_the_resort():

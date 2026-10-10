@@ -2,7 +2,7 @@
 import hashlib
 import re
 
-from sqlalchemy import inspect, select
+from sqlalchemy import inspect, select, text
 
 from app.domain import entry_applications as applications, entry_document_packages as packages
 from app.domain.entry_package_rules import normalize
@@ -11,6 +11,16 @@ from app.domain.entry_storage import EntryStorageConflict, EntryStorageInvalid, 
 from app.domain.knowledge_review import _plain
 from app.domain.models import EntryDocumentPackageEvent, EntryQuarantinedFile
 from app.domain.permissions import Actor
+
+
+async def lock_process_observation(session):
+    """Order global quarantine writes with process evidence commits across cases.
+
+    Both writers take this transaction lock before case/application locks. SQLite
+    already serializes writers and the owned transaction retries stale snapshots.
+    """
+    if session.bind.dialect.name == 'postgresql':
+        await session.execute(text('SELECT pg_advisory_xact_lock(721613002710)'))
 
 
 def _payload(row):
@@ -95,6 +105,7 @@ async def record_upload(engine,*,actor,case_id,application_id,expected_revision,
     request_hash=_hash(request)
 
     async def write(session):
+        await lock_process_observation(session)
         await applications._case(session,case_id,lock=True)
         application=await applications._application(session,case_id,application_id,lock=True)
         # Validate the existing full history before relying on its receipt links.

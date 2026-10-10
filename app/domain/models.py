@@ -1863,7 +1863,92 @@ class EntryQuarantinedFile(DomainBase):
         return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile)
+class EntryProcessEvent(DomainBase):
+    """Root workflow envelope; each linked application keeps its own procedure."""
+    __tablename__ = "entry_process_events"
+    __table_args__ = (
+        UniqueConstraint("id", "application_id", "case_id", "applicant_id", name="uq_entry_process_scope"),
+        UniqueConstraint("application_id", "revision", name="uq_entry_process_revision"),
+        UniqueConstraint("application_id", "request_key", name="uq_entry_process_request"),
+        ForeignKeyConstraint(["application_id", "case_id", "applicant_id", "root_procedure"],
+            ["entry_applications.id", "entry_applications.case_id", "entry_applications.applicant_id", "entry_applications.procedure"], name="fk_entry_process_root"),
+        ForeignKeyConstraint(["active_application_id", "case_id", "applicant_id", "active_procedure"],
+            ["entry_applications.id", "entry_applications.case_id", "entry_applications.applicant_id", "entry_applications.procedure"], name="fk_entry_process_active"),
+        ForeignKeyConstraint(["previous_id", "application_id", "case_id", "applicant_id"],
+            ["entry_process_events.id", "entry_process_events.application_id", "entry_process_events.case_id", "entry_process_events.applicant_id"], name="fk_entry_process_previous"),
+        CheckConstraint("revision BETWEEN 1 AND 250", name="ck_entry_process_revision"),
+        CheckConstraint("action IN ('initialize','link','attest','withdraw','transition','stop')", name="ck_entry_process_action"),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL AND action = 'initialize') OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id AND action != 'initialize')", name="ck_entry_process_initial"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_process_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    application_id: Mapped[int] = mapped_column(Integer)
+    case_id: Mapped[int] = mapped_column(Integer)
+    applicant_id: Mapped[int] = mapped_column(Integer)
+    root_procedure: Mapped[str] = mapped_column(String(24))
+    active_application_id: Mapped[int] = mapped_column(Integer)
+    active_procedure: Mapped[str] = mapped_column(String(24))
+    revision: Mapped[int] = mapped_column(Integer)
+    action: Mapped[str] = mapped_column(String(16))
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    policy: Mapped[dict | None] = mapped_column(_ServiceJSON(none_as_null=True), nullable=True)
+    evidence: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("command", "snapshot", "policy", "evidence")
+    def _freeze(self, key, value): return _ServiceJSON.freeze(value)
+
+
+class EntryProcessPin(DomainBase):
+    """Relational source bindings for a process event, including dependency links."""
+    __tablename__ = "entry_process_pins"
+    __table_args__ = (
+        ForeignKeyConstraint(["event_id", "root_id", "case_id", "applicant_id"],
+            ["entry_process_events.id", "entry_process_events.application_id", "entry_process_events.case_id", "entry_process_events.applicant_id"], name="fk_entry_process_pin_parent"),
+        ForeignKeyConstraint(["application_id", "case_id", "applicant_id", "procedure"],
+            ["entry_applications.id", "entry_applications.case_id", "entry_applications.applicant_id", "entry_applications.procedure"], name="fk_entry_process_pin_application"),
+        ForeignKeyConstraint(["application_event_id", "application_id"],
+            ["entry_application_events.id", "entry_application_events.application_id"], name="fk_entry_process_pin_app_event"),
+        ForeignKeyConstraint(["package_event_id", "application_id", "case_id"],
+            ["entry_document_package_events.id", "entry_document_package_events.application_id", "entry_document_package_events.case_id"], name="fk_entry_process_pin_package"),
+        ForeignKeyConstraint(["issued_id", "application_id", "case_id"],
+            ["entry_issued_revisions.id", "entry_issued_revisions.application_id", "entry_issued_revisions.case_id"], name="fk_entry_process_pin_issued"),
+        ForeignKeyConstraint(["profile_id", "applicant_id", "case_id"],
+            ["entry_applicant_profiles.id", "entry_applicant_profiles.applicant_id", "entry_applicant_profiles.case_id"], name="fk_entry_process_pin_profile"),
+        ForeignKeyConstraint(["attestation_id", "root_id", "case_id", "applicant_id"],
+            ["entry_process_events.id", "entry_process_events.application_id", "entry_process_events.case_id", "entry_process_events.applicant_id"], name="fk_entry_process_pin_attestation"),
+        CheckConstraint("ordinal BETWEEN 1 AND 160", name="ck_entry_process_pin_ordinal"),
+        CheckConstraint("kind IN ('application','application_event','package','issued','profile','attestation','payment','contract')", name="ck_entry_process_pin_kind"),
+        CheckConstraint("(CASE WHEN application_event_id IS NULL THEN 0 ELSE 1 END + CASE WHEN package_event_id IS NULL THEN 0 ELSE 1 END + CASE WHEN issued_id IS NULL THEN 0 ELSE 1 END + CASE WHEN profile_id IS NULL THEN 0 ELSE 1 END + CASE WHEN attestation_id IS NULL THEN 0 ELSE 1 END + CASE WHEN payment_id IS NULL THEN 0 ELSE 1 END + CASE WHEN contract_event_id IS NULL THEN 0 ELSE 1 END) = CASE WHEN kind = 'application' THEN 0 ELSE 1 END", name="ck_entry_process_pin_one_source"),
+        CheckConstraint("kind = 'application' OR (kind = 'application_event' AND application_event_id IS NOT NULL) OR (kind = 'package' AND package_event_id IS NOT NULL) OR (kind = 'issued' AND issued_id IS NOT NULL) OR (kind = 'profile' AND profile_id IS NOT NULL) OR (kind = 'attestation' AND attestation_id IS NOT NULL AND attestation_id < event_id) OR (kind = 'payment' AND payment_id IS NOT NULL) OR (kind = 'contract' AND contract_event_id IS NOT NULL)", name="ck_entry_process_pin_source_kind"),
+        CheckConstraint("length(source_hash) = 64", name="ck_entry_process_pin_hash"),
+    )
+    event_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    root_id: Mapped[int] = mapped_column(Integer)
+    case_id: Mapped[int] = mapped_column(Integer)
+    applicant_id: Mapped[int] = mapped_column(Integer)
+    application_id: Mapped[int] = mapped_column(Integer)
+    procedure: Mapped[str] = mapped_column(String(24))
+    fact: Mapped[str] = mapped_column(String(100))
+    kind: Mapped[str] = mapped_column(String(24))
+    source_hash: Mapped[str] = mapped_column(String(64))
+    application_event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    package_event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    issued_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    profile_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    attestation_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    payment_id: Mapped[int | None] = mapped_column(ForeignKey("service_payments.id"), nullable=True)
+    contract_event_id: Mapped[int | None] = mapped_column(ForeignKey("service_events.id"), nullable=True)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin)
 
 
 def _entry_immutable(mapper, connection, target):

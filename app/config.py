@@ -378,6 +378,8 @@ class Settings(BaseSettings):
     kg_document_package_policy: dict = Field(default_factory=dict)
     # Empty until storage/privacy/retention and named uploaders are authorized.
     kg_document_quarantine_policy: dict = Field(default_factory=dict)
+    # Explicit named-operator authority for selected procedural source edges.
+    kg_process_execution_policy: dict = Field(default_factory=dict)
     # Secure-флаг на cookie сессии. На проде ОБЯЗАТЕЛЕН (TLS терминирует nginx) и потому
     # True по умолчанию. Выключается только для локального просмотра панели по http —
     # иначе браузер не сохранит cookie и войти в панель на localhost нельзя.
