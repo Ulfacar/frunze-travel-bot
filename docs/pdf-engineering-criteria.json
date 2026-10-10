@@ -354,9 +354,18 @@
       "weight": 2,
       "pdf": "14",
       "acceptance": "Persistent versioned procedural stages with evidence-bound prerequisites",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "9f26aece903a65e585f622eadea38d4215f932cd",
+          "command": "Final84 core/browser PASS;100 schema/legacy PG PASS; independent8+7 PG PASS including COPY recovery; full commands in artifact",
+          "environment": "Windows Python3.12 / env-free frozen archives / synthetic FK SQLite / PostgreSQL16.15 isolated localhost / Chromium",
+          "scope": "Persistent versioned procedural stages with evidence-bound prerequisites",
+          "artifact": "ai/handoffs/2026-10-11-0150-e6-10-procedural-stages.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "E05",
@@ -381,9 +390,18 @@
       "weight": 2,
       "pdf": "11/14",
       "acceptance": "Employer, permit, resident and registration dependencies remain distinct",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "9f26aece903a65e585f622eadea38d4215f932cd",
+          "command": "Final84 core/browser PASS;100 schema/legacy PG PASS; independent8+7 PG PASS including COPY recovery; full commands in artifact",
+          "environment": "Windows Python3.12 / env-free frozen archives / synthetic FK SQLite / PostgreSQL16.15 isolated localhost / Chromium",
+          "scope": "Employer, permit, resident and registration dependencies remain distinct",
+          "artifact": "ai/handoffs/2026-10-11-0150-e6-10-procedural-stages.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "E07",
@@ -723,9 +741,18 @@
       "weight": 1,
       "pdf": "18/IT",
       "acceptance": "PostgreSQL constraints/concurrency and backup/recovery rehearsal",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "9f26aece903a65e585f622eadea38d4215f932cd",
+          "command": "Final84 core/browser PASS;100 schema/legacy PG PASS; independent8+7 PG PASS including COPY recovery; full commands in artifact",
+          "environment": "Windows Python3.12 / env-free frozen archives / synthetic FK SQLite / PostgreSQL16.15 isolated localhost / Chromium",
+          "scope": "PostgreSQL constraints/concurrency and backup/recovery rehearsal",
+          "artifact": "ai/handoffs/2026-10-11-0150-e6-10-procedural-stages.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "J05",

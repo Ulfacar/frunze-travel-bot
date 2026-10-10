@@ -33,7 +33,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -96,7 +96,7 @@ def main(argv=None):
         <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
         не загружаются и не принимаются; подача не разрешается.</li></ul>"""
         estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
-    if args.checkpoint in ("engineering-progress", "document-quarantine"):
+    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal"):
         if __package__:
             from .check_pdf_engineering_progress import evaluate
         else:
@@ -135,6 +135,25 @@ def main(argv=None):
     remaining = ("Полная условная анкета, четыре исполняемых процесса с доказательствами и зависимостями, "
                  "подбор продукта и расчёт стоимости по утверждённым правилам; сохранённый диалог RU/EN "
                  "и передача менеджеру; уведомления, сквозные сценарии, PostgreSQL и приёмка владельцем.")
+    review_note = "Полное покрытие прежних CRITICAL изменений и PostgreSQL runtime остаются UNKNOWN."
+    if args.checkpoint == "procedural-journal":
+        title = "Этапы процедур, зависимости и восстановление"
+        intro = "Добавлен постоянный журнал этапов с проверкой доказательств и отдельных зависимых заявок."
+        result = """<ul><li>Переходы сохраняют точные версии подтверждений и историю.
+        Отзыв, просрочка, смена паспорта, карантин и неизвестная оплата блокируют зависимые шаги.</li>
+        <li>Работодатель, разрешение, резидент-карта, регистрация и выездная виза учитываются отдельно.
+        Одобрение одной заявки не подтверждает другую; регистрация не превращается в визу L.</li>
+        <li>Повтор после потери ответа возвращает исходную запись. Доработка требует новой подачи
+        и проверки комплекта; остановка доступна при просроченных правилах и у предела журнала.</li>
+        <li>Проверены мобильный экран, формы без JavaScript и печать, SQLite и настоящий локальный PostgreSQL16.
+        Копия тестовых данных восстановлена в новую БД, чтение и новая запись прошли.</li>
+        <li>Независимые review/audit завершены для этого модуля. Исполнение выключено
+        без явно утверждённых источников и полномочий.</li></ul>"""
+        remaining = ("Полная условная анкета, подбор продукта и стоимость по утверждённым правилам, "
+                     "сохранённый диалог RU/EN и передача менеджеру, уведомления портала и клиента, "
+                     "сквозная проверка всех маршрутов, проверка остальных CRITICAL модулей и приёмка владельцем.")
+        review_note = ("Локальные PostgreSQL и восстановление через COPY проверены; штатный pg_dump заблокирован "
+                       "защитой Windows. Полный аудит прежних модулей и production recovery ещё не подтверждены.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
     <p>{args.report_date:%d.%m.%Y} · {title}</p>
     <p class="note"><b>Весь PDF ещё не выполнен.</b> {intro} Пилот выключен по умолчанию;
@@ -143,7 +162,7 @@ def main(argv=None):
     <h2>Проверка</h2><p>{escape(args.checks)}</p>
     <p class="small">Код: {escape(args.revision)}<br>Ветка: fix/tours-search-quality<br>
     Независимые review/audit текущих модулей указаны в проверке;
-    полное покрытие прежних CRITICAL изменений и PostgreSQL runtime остаются UNKNOWN.
+    {review_note}
     Это локальная реализация, не подтверждение готовности к запуску.</p>
     <h2>Главный остаток</h2><p>{remaining} {estimate}</p>""")
     for start in range(0, len(rows), 7):

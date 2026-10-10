@@ -8,4 +8,12 @@ Explicit user instruction received2026-10-11 (clock19:24 UTC10 October,00:24 Asi
 - Start checkpoint: code E6-09 `4c570a3`, final independent review/audit and documentation in progress. F06 not yet scored until evidence record is complete; previous score67/100. Next prepared work E6-10 procedural stages/dependencies, task `2026-10-11-e6-10-procedural-stages.md`.
 - Final Telegram should distinguish implemented/tested from remaining/UNKNOWN, cite saved revision and local report, and explicitly say no deployment. Record actual send result; do not claim delivery without API evidence.
 
-Status: active continuation. No Telegram sent yet. Notification destination discovery pending.
+Status: active continuation. No Telegram sent yet. Notification destination verified below; revalidate at final send.
+
+## Verified final notification path
+
+Read-only SSH alias `frunze` reaches the existing server. Its `/root/.hermes/.env` provides `TELEGRAM_BOT_TOKEN` and a single `TELEGRAM_ALLOWED_USERS` entry. Server-side Telegram `getMe` returned bot `@Ulfacar_bot`; `getChat` for that configured allowed user returned a private chat, Alan / `@Albeshev`. Both API responses had `ok=true`. Credentials and numeric destination remain in server configuration; no values copied here. Resolve and revalidate the same configuration at send time, send only the requested final status, and record sanitized `ok`/message ID evidence. Do not send a test message or notify anyone else. No message sent yet.
+
+Saved checkpoint `f227e38` pushed to `origin fix/tours-search-quality`; code `4c570a3`,69/100. E6-09 reviewed local result and five-page PDF are preserved. Next E6-10.
+
+At01:55 Almaty: E6-10 code `9f26aec` saved, review APPROVE/final audit GO,24-file identity PASS;74/100 including local PostgreSQL/COPY recovery J04. Five-page `docs/reports/frunze-pdf-progress-2026-10-11-procedural-journal.pdf` inspected. Two whole-suite runs continue; do not claim green until actual results. Next E6-11 portal observations, pre-audit GO and pure parser34 PASS; persistence/native/review remain. No deploy or Telegram send.
