@@ -120,9 +120,18 @@
       "weight": 3,
       "pdf": "3/9/10/11",
       "acceptance": "Complete conditional A-H interview fields and specialist/family/employer branches",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "594a9f3c28be2d2b44986c6eed583b805e0c677b",
+          "command": "Exact-r3 rules/domain/native/goldens/PostgreSQL/recovery; independent reviewer116+28 PASS and auditor30 PASS; full commands in handoff/review",
+          "environment": "Windows Python3.12; env-free frozen archive; synthetic SQLite/Chromium; actual isolated PostgreSQL16.15",
+          "scope": "Complete conditional A-H interview fields and specialist/family/employer branches; local typed adapter, no installed-channel integration",
+          "artifact": "ai/handoffs/2026-10-11-0325-e6-12-interview-handoff.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "B04",
@@ -624,9 +633,18 @@
       "weight": 2,
       "pdf": "3/Б",
       "acceptance": "Stateful RU/EN interview adapter with bounded questions, save/resume and revisions",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "594a9f3c28be2d2b44986c6eed583b805e0c677b",
+          "command": "Exact-r3 rules/domain/native/goldens/PostgreSQL/recovery; independent reviewer116+28 PASS and auditor30 PASS; full commands in handoff/review",
+          "environment": "Windows Python3.12; env-free frozen archive; synthetic SQLite/Chromium; actual isolated PostgreSQL16.15",
+          "scope": "Stateful RU/EN interview adapter with bounded questions, save/resume and revisions; local typed adapter, no installed-channel integration",
+          "artifact": "ai/handoffs/2026-10-11-0325-e6-12-interview-handoff.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "H02",

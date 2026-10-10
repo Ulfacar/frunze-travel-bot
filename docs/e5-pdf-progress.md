@@ -1,3 +1,11 @@
+# E6-12 checkpoint - 2026-10-11
+
+Reviewed local code `594a9f3c28be2d2b44986c6eed583b805e0c677b`, pushed to origin working branch. **82/100 technical points,18 remaining**, fixed definitions unchanged. Only B03/H01 add5 points for the complete typed A-H catalog and persisted RU/EN adapter. B04/H02/H04/J02 remain partial/UNKNOWN; installed bot/followup suppression and exact approved qualification scenarios are not complete.
+
+Independent review APPROVE, final audit GO;22-file root/archive/commit identity PASS. Exact-r3 builder43 focused +19 actualPG PASS, reviewer116+28 PASS, auditor30 PASS including five goldens/two browsers/21actualPG checks; counts overlap. COPY recovery/read/retry/new write PASS. Whole-project review, actual source/privacy authority, native pg_dump and owner acceptance remain UNKNOWN. No deploy. Evidence: `ai/handoffs/2026-10-11-0325-e6-12-interview-handoff.md`.
+
+Next E6-13 versioned quotations; preliminary36pure arithmetic checks do not earn C04. Final Telegram status remains pending until the overnight work concludes.
+
 # Прогресс по Kyrgyzstan visa knowledge base v1.1
 
 Текущая фиксированная техническая оценка: **77/100**; сверка — `docs/pdf-engineering-criteria.json` и `docs/e5-pdf-section-coverage.md`. Журнал уведомлений портала и отдельное атомарное подтверждение сохранены в `8ad7b78`; локальные PostgreSQL16, конкуренция и восстановление через COPY проверены. Независимые review/audit этого модуля завершены. Реальная почта и политики ещё не подключены. Ниже сохранён исторический экспертный ориентир предыдущего этапа, а не текущий процент или статус всех модулей.

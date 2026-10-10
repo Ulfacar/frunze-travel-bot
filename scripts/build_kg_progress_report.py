@@ -33,7 +33,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -96,7 +96,7 @@ def main(argv=None):
         <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
         не загружаются и не принимаются; подача не разрешается.</li></ul>"""
         estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
-    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations"):
+    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff"):
         if __package__:
             from .check_pdf_engineering_progress import evaluate
         else:
@@ -170,6 +170,24 @@ def main(argv=None):
         remaining = ("Полная условная анкета, стоимость и подбор продукта по утверждённым правилам, "
                      "сохраняемый диалог RU/EN, передача сотруднику и остановка автоматических ответов; "
                      "клиентские уведомления, подключение реальной почты, общая сквозная проверка и приёмка владельцем.")
+        review_note = ("Локальные PostgreSQL и восстановление через COPY проверены; штатный pg_dump заблокирован "
+                       "защитой Windows. Полный аудит прежних модулей и production recovery ещё не подтверждены.")
+    if args.checkpoint == "interview-handoff":
+        title = "Полная анкета и принятие карточки специалистом"
+        intro = "Добавлены все57 кодов A–H, сохраняемый опрос RU/EN и неизменяемая карточка передачи."
+        result = """<ul><li>144 атомарных поля, условные ветки семьи/работодателя/компании,
+        до3 вопросов за шаг. Неизвестное, отказ, ноль и неприменимость различаются.</li>
+        <li>Ответы сохраняются с версиями. Смена исходного факта требует подтверждения
+        зависимых ответов; повтор того же актуального согласия не отменяет его доказательства.</li>
+        <li>Специалист принимает точную карточку с фактами и пробелами. Последующие исправления
+        не переписывают её. Отзыв согласия прекращает сбор на любом этапе.</li>
+        <li>Мобильный экран, работа без JavaScript, потеря ответа сервера и трёхстраничная печать
+        проверены. Старые версии каталога и точные повторы остаются читаемыми.</li>
+        <li>Независимые review/audit и восстановление PostgreSQL пройдены. Остановка ответов
+        установленного бота ещё не подключена; реальные политики остаются пустыми.</li></ul>"""
+        remaining = ("Версионированная стоимость и квалификация по утверждённым правилам, "
+                     "подключение клиентского диалога и остановка всех автоматических ответов после передачи; "
+                     "уведомления клиента, точные сквозные сценарии PDF, аудит прежних модулей и приёмка владельцем.")
         review_note = ("Локальные PostgreSQL и восстановление через COPY проверены; штатный pg_dump заблокирован "
                        "защитой Windows. Полный аудит прежних модулей и production recovery ещё не подтверждены.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
