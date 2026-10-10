@@ -687,27 +687,54 @@
       "weight": 1,
       "pdf": "7/14",
       "acceptance": "Portal notification import correlates reference and retains evidence",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "8ad7b78a80e8e71f6204ce7e91820857263c7d8e",
+          "command": "Frozen-r2 independent117 SQLite/native/browser +12 PostgreSQL +4 adversarial; separate auditor27+3+39; full commands in handoff/reviews",
+          "environment": "Windows Python3.12 / env-free archive / synthetic SQLite, Chromium, isolated PostgreSQL16.15",
+          "scope": "Portal notification import correlates reference and retains evidence; bounded local synthetic policy; no real mailbox/source/privacy/release approval",
+          "artifact": "ai/handoffs/2026-10-11-0220-e6-11-portal-observations.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "I04",
       "weight": 1,
       "pdf": "7/14",
       "acceptance": "Duplicate/out-of-order notification recovery without state regression",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "8ad7b78a80e8e71f6204ce7e91820857263c7d8e",
+          "command": "Frozen-r2 independent117 SQLite/native/browser +12 PostgreSQL +4 adversarial; separate auditor27+3+39; full commands in handoff/reviews",
+          "environment": "Windows Python3.12 / env-free archive / synthetic SQLite, Chromium, isolated PostgreSQL16.15",
+          "scope": "Duplicate/out-of-order notification recovery without state regression; bounded local synthetic policy; no real mailbox/source/privacy/release approval",
+          "artifact": "ai/handoffs/2026-10-11-0220-e6-11-portal-observations.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "I05",
       "weight": 1,
       "pdf": "7/19",
       "acceptance": "Manual operator confirmation path when email integration is unavailable",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "8ad7b78a80e8e71f6204ce7e91820857263c7d8e",
+          "command": "Frozen-r2 independent117 SQLite/native/browser +12 PostgreSQL +4 adversarial; separate auditor27+3+39; full commands in handoff/reviews",
+          "environment": "Windows Python3.12 / env-free archive / synthetic SQLite, Chromium, isolated PostgreSQL16.15",
+          "scope": "Manual operator confirmation path when email integration is unavailable; bounded local synthetic policy; no real mailbox/source/privacy/release approval",
+          "artifact": "ai/handoffs/2026-10-11-0220-e6-11-portal-observations.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "J01",

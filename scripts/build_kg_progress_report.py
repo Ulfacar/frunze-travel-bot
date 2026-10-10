@@ -33,7 +33,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -96,7 +96,7 @@ def main(argv=None):
         <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
         не загружаются и не принимаются; подача не разрешается.</li></ul>"""
         estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
-    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal"):
+    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations"):
         if __package__:
             from .check_pdf_engineering_progress import evaluate
         else:
@@ -152,6 +152,24 @@ def main(argv=None):
         remaining = ("Полная условная анкета, подбор продукта и стоимость по утверждённым правилам, "
                      "сохранённый диалог RU/EN и передача менеджеру, уведомления портала и клиента, "
                      "сквозная проверка всех маршрутов, проверка остальных CRITICAL модулей и приёмка владельцем.")
+        review_note = ("Локальные PostgreSQL и восстановление через COPY проверены; штатный pg_dump заблокирован "
+                       "защитой Windows. Полный аудит прежних модулей и production recovery ещё не подтверждены.")
+    if args.checkpoint == "portal-observations":
+        title = "Уведомления портала и проверка сотрудником"
+        intro = "Добавлен журнал входящих сведений, точное сопоставление с подачей и отдельное подтверждение сотрудником."
+        result = """<ul><li>Пять видов уведомлений различаются. Текст проверяется по явно заданным меткам;
+        неизвестные и противоречивые сведения остаются неподтверждёнными.</li>
+        <li>Reference связан с точной заявкой и циклом подачи. Получение письма само по себе
+        не подтверждает одобрение, оплату или передачу документа.</li>
+        <li>Результат независимой проверки и событие заявки сохраняются вместе с задачами.
+        Старое письмо, повтор и потеря ответа не создают новое решение.</li>
+        <li>Ручная проверка работает без почтовой интеграции при отдельных явных полномочиях.
+        Мобильный экран, формы без JavaScript, история и печать проверены.</li>
+        <li>Независимые review/audit, настоящий локальный PostgreSQL и восстановление с последующей
+        записью пройдены. Реальные тексты писем и правила хранения ещё не утверждены.</li></ul>"""
+        remaining = ("Полная условная анкета, стоимость и подбор продукта по утверждённым правилам, "
+                     "сохраняемый диалог RU/EN, передача сотруднику и остановка автоматических ответов; "
+                     "клиентские уведомления, подключение реальной почты, общая сквозная проверка и приёмка владельцем.")
         review_note = ("Локальные PostgreSQL и восстановление через COPY проверены; штатный pg_dump заблокирован "
                        "защитой Windows. Полный аудит прежних модулей и production recovery ещё не подтверждены.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>

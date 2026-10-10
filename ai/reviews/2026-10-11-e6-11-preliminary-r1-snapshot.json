@@ -1,0 +1,15 @@
+{
+  "base": "e9e7c351b493aeb5d78e09f3ccf907107c73a919",
+  "snapshot": "uncommitted E6-11 preliminary domain r1; UI absent",
+  "files": {
+    "app/domain/entry_applications.py": "f3e4faebd6ba2c99dda4741f9bd301feb88d634d90ac503223ce3edc8ec718ba",
+    "app/domain/models.py": "b32c4607d0f4cea7606be5bf0f8f83318e8391fa2a4f7fe95fc9308d4c6b1d6b",
+    "app/domain/entry_portal.py": "ae4ff9c6170328e75fa588a138ea2c32d15016d6763fe3f6e585d600a5fb63b9",
+    "app/domain/entry_portal_policy.py": "6399ccd2570d99488342003e35f8a6fb6f00380fa1c83a7a12ff44edd3af9cb1",
+    "app/domain/entry_portal_parser.py": "54299b92afc2df352aa9e667eb2de8d8a746a1b1bde785edf27283b645286e9b",
+    "alembic/versions/e6_portal_observations_0028.py": "301a707026befba7b72221f802334a7b96f6e2db658697bbc125d329cb783a0e",
+    "tests/test_entry_portal.py": "128ba73950af4955169203122cb686a7a9539d23c6c1a55e0899588e32489247",
+    "tests/test_entry_portal_parser.py": "bd5dc25a605c373bad1afc92d717b19bf9bf5853410cc933ecfce56cd45cfe08",
+    "tests/test_alembic_domain_migration.py": "9c7d92cca34ed64045599ff0614903ea4f3a261ddfba49435a017b1212cf17cd"
+  }
+}
