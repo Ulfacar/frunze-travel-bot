@@ -2094,7 +2094,42 @@ class EntryInterviewEvent(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent)
+class EntryQuoteRevision(DomainBase):
+    """An internal calculation snapshot, never a payment or agreed contract price."""
+    __tablename__='entry_quote_revisions'
+    __table_args__=(
+        UniqueConstraint('id','application_id','case_id',name='uq_entry_quote_scope'),
+        UniqueConstraint('application_id','revision',name='uq_entry_quote_revision'),
+        UniqueConstraint('case_id','request_key',name='uq_entry_quote_request'),
+        ForeignKeyConstraint(['application_id','case_id','applicant_id','procedure'],['entry_applications.id','entry_applications.case_id','entry_applications.applicant_id','entry_applications.procedure'],name='fk_entry_quote_subject'),
+        ForeignKeyConstraint(['previous_id','application_id','case_id'],['entry_quote_revisions.id','entry_quote_revisions.application_id','entry_quote_revisions.case_id'],name='fk_entry_quote_previous'),
+        CheckConstraint('revision BETWEEN 1 AND 128',name='ck_entry_quote_revision'),
+        CheckConstraint('(revision=1 AND previous_id IS NULL) OR (revision>1 AND previous_id IS NOT NULL AND previous_id<id)',name='ck_entry_quote_previous'),
+        CheckConstraint('length(request_hash)=64 AND length(snapshot_hash)=64',name='ck_entry_quote_hashes'),
+    )
+    id:Mapped[int]=mapped_column(Integer,primary_key=True)
+    application_id:Mapped[int]=mapped_column(Integer)
+    case_id:Mapped[int]=mapped_column(Integer)
+    applicant_id:Mapped[int]=mapped_column(Integer)
+    procedure:Mapped[str]=mapped_column(String(32))
+    revision:Mapped[int]=mapped_column(Integer)
+    previous_id:Mapped[int|None]=mapped_column(Integer,nullable=True)
+    request_key:Mapped[str]=mapped_column(String(64))
+    request_hash:Mapped[str]=mapped_column(String(64))
+    snapshot_hash:Mapped[str]=mapped_column(String(64))
+    command:Mapped[dict]=mapped_column(_ServiceJSON)
+    policy:Mapped[dict]=mapped_column(_ServiceJSON)
+    source_pin:Mapped[dict]=mapped_column(_ServiceJSON)
+    result:Mapped[dict]=mapped_column(_ServiceJSON)
+    authority:Mapped[dict]=mapped_column(_ServiceJSON)
+    created_by:Mapped[str]=mapped_column(String(64))
+    created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=_now)
+
+    @validates('command','policy','source_pin','result','authority')
+    def _freeze(self,key,value):return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision)
 
 
 def _entry_immutable(mapper, connection, target):

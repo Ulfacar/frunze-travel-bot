@@ -384,6 +384,8 @@ class Settings(BaseSettings):
     kg_portal_observation_policy: dict = Field(default_factory=dict)
     # Explicit source/privacy/operator authority for the local applicant interview.
     kg_interview_policy: dict = Field(default_factory=dict)
+    # Internal quotation recipes require explicit source/commercial authority.
+    kg_quote_policy: dict = Field(default_factory=dict)
     # Secure-флаг на cookie сессии. На проде ОБЯЗАТЕЛЕН (TLS терминирует nginx) и потому
     # True по умолчанию. Выключается только для локального просмотра панели по http —
     # иначе браузер не сохранит cookie и войти в панель на localhost нельзя.

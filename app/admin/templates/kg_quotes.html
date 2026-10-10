@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Расчёт стоимости · заявка №{{ application_id }}{% endblock %}
+{% block head %}<style>
+.kg-quotes{max-width:1000px;margin:auto;padding:24px 18px;line-height:1.5;overflow-wrap:anywhere}.kg-quotes a{color:var(--accent)}.kg-quotes :focus{outline:2px solid var(--accent);outline-offset:3px}.kg-quotes .box{padding:16px;margin:16px 0;background:var(--surface);border:1px solid var(--border);border-radius:10px}.kg-quotes .notice{border-left:4px solid #b7791f}.kg-quotes .error{border-left:4px solid #c0392b}.kg-quotes label{display:block;font-weight:600;margin-top:12px}.kg-quotes input,.kg-quotes select,.kg-quotes button{font:inherit;min-height:44px;padding:9px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:6px}.kg-quotes input,.kg-quotes select{width:100%;box-sizing:border-box}.kg-quotes button{margin-top:12px}.kg-quotes .line{border-top:1px solid var(--border);padding:10px 0;break-inside:avoid}.kg-quotes .muted{font-size:13px;color:var(--muted)}.kg-quotes .amounts{font-weight:700}.kg-quotes ul{padding-left:20px}
+@media(max-width:600px){.kg-quotes{padding:12px 8px}.kg-quotes .box{padding:12px}}
+@page{size:A4;margin:14mm}@media print{header,nav,aside,.no-print,body>footer{display:none!important}body{background:white!important;color:black!important}.kg-quotes{max-width:none;padding:0;font-size:10pt}.kg-quotes .box{background:white;color:black;border-color:#999}.kg-quotes .muted{color:#333}a{color:black!important}.kg-quotes h1{font-size:20pt}.kg-quotes h2{font-size:14pt}.kg-quotes .line{padding:5px 0}}
+</style>{% endblock %}
+{% macro hidden(values) %}{% for key,value in values.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}{% endmacro %}
+{% macro calculation(value) %}
+<div class="box quote-calculation" data-quote-complete="{{ 'yes' if value.complete else 'no' }}">
+<h2>{{ 'Итоги расчёта по валютам' if value.complete else 'Полная цена не определена' }}</h2>
+{% if not value.complete %}<p class="notice">Нельзя использовать известную часть суммы как полную стоимость.</p>{% endif %}
+<p>На {{ value.on }} · один заявитель · прайс {{ value.recipe_id }} / {{ value.recipe_version }}</p>
+{% for line in value.lines %}<section class="line"><strong>{{ components[line.component] }} · {{ line.title_ru }}</strong>
+{% if line.status=='not_applicable' %}<p>Не применяется: {{ line.reason }}</p>
+{% elif line.total is not none %}<p class="amounts">{{ line.total }} {{ line.currency }}</p><p class="muted">База {{ line.base }} + {{ line.additional_blocks }} × {{ line.step }}; множитель {{ line.multiplier }}.</p>
+{% else %}<p>Стоимость неизвестна{% if line.currency %} ({{ line.currency }}){% endif %}. {{ line.reason or '' }}</p>{% endif %}
+{% if line.reference %}<p class="muted">Основание {{ line.reference }} · SHA256 {{ line.proof }}</p>{% endif %}
+{% if line.urgent_reference %}<p class="muted">Срочность: {{ line.urgent_reference }} · SHA256 {{ line.urgent_proof }}</p>{% endif %}
+</section>{% endfor %}
+{% if value.issues %}<ul class="quote-issues">{% for issue in value.issues %}<li>{{ issue.line_id or 'Итог' }}: {{ reasons.get(issue.code,'Нужна проверка расчёта') }}</li>{% endfor %}</ul>{% endif %}
+<h3>{{ 'Итого по отдельным валютам' if value.complete else 'Только известные промежуточные суммы' }}</h3>
+{% for currency,amount in value.known_subtotals.items() %}<p class="amounts">{{ amount }} {{ currency }}</p>{% else %}<p>Подтверждённых сумм нет.</p>{% endfor %}
+<p class="muted">Валюты не пересчитывались. Курс и сумма списания в день оплаты не определены. Расчёт не создаёт оплату, счёт или обязательство.</p>
+</div>{% endmacro %}
+{% block content %}<main class="kg-quotes">
+<h1>Расчёт стоимости · заявка №{{ application_id }}</h1><p>Услуга №{{ case.id }}{% if current %} · заявитель №{{ current.applicant_id }} · попытка {{ current.application.attempt }}{% endif %}</p>
+<nav class="no-print"><a href="/admin/case/{{ case.id }}/kg-entry/applications?application_id={{ application_id }}">← К заявкам</a> · <a href="/admin/case/{{ case.id }}">К услуге</a></nav>
+<p class="box notice">Внутренний расчёт по явно выбранным параметрам. Право на визу, категория и срок не проверяются автоматически. Здесь нет оплаты или отправки клиенту.</p>
+{% if error %}<p class="box error no-print" role="alert">{{ error }}</p>{% endif %}
+{% if retry %}<form class="box no-print" action="{{ url }}" method="post" data-quote-action="retry">{{ hidden(retry) }}<p>Повтор сохраняет исходный запрос, даже если перечитать историю сейчас невозможно.</p><button type="submit">Проверить исходное сохранение</button></form>{% endif %}
+{% if preview %}<section id="quote-preview"><h2>Предварительный расчёт — ещё не сохранён</h2>{{ calculation(preview.preview.result) }}
+{% if save_form %}<form class="no-print" action="{{ url }}" method="post" data-quote-action="save">{{ hidden(save_form) }}<p>Проверьте все позиции. Сохранение закрепит эту версию расчёта, включая неизвестные суммы.</p><button type="submit">Сохранить проверенный расчёт</button></form>{% endif %}</section>{% endif %}
+{% if form %}<form class="box no-print" action="{{ url }}" method="post" data-quote-action="preview">{{ hidden(form) }}<h2>Новый предварительный расчёт</h2>
+<label for="quote-recipe">Прайс и вариант процедуры</label><select id="quote-recipe" name="recipe_id" required>{% for recipe in current.recipes %}<option value="{{ recipe.id }}">{{ recipe.title_ru }} · {{ recipe.version }} · дополнительных блоков: 0–{{ recipe.max_additional_blocks }}</option>{% endfor %}</select>
+<label for="quote-blocks">Дополнительные 30-дневные блоки сверх базового</label><input id="quote-blocks" name="additional_blocks" type="number" min="0" max="120" step="1" value="0" required><p class="muted">Укажите число вручную. Дни и календарные месяцы здесь не преобразуются, допустимость срока не подтверждается.</p>
+<label for="quote-urgent">Срочность по выбранному прайсу</label><select id="quote-urgent" name="urgent"><option value="0">Обычный расчёт</option><option value="1">Срочный расчёт</option></select><button type="submit">Проверить предварительный расчёт</button></form>
+{% elif current and not retry %}<p id="quote-disabled" class="box no-print">Новый расчёт недоступен: проверьте полномочия, утверждённый прайс, состояние заявки и режим записи.</p>{% endif %}
+{% if selected %}<section id="quote-saved"><h2>Сохранённый расчёт · версия {{ selected.receipt.revision }}</h2><p>Записал {{ selected.receipt.created_by }} · {{ selected.receipt.created_at }}</p>
+{% if not selected.current.usable %}<div class="box notice"><strong>Эту версию нельзя использовать как текущую полную цену.</strong><ul>{% for reason in selected.current.reasons %}<li>{{ reasons.get(reason,'Требуется новая проверка') }}</li>{% endfor %}</ul></div>{% else %}<p>Арифметика полна для выбранных параметров и действующего внутреннего прайса.</p>{% endif %}
+{{ calculation(selected.receipt.result) }}<p class="muted">Зафиксировано событие заявки №{{ selected.receipt.source_pin.event_id }}, версия {{ selected.receipt.source_pin.event_revision }}. Отпечаток расчёта {{ selected.receipt.snapshot_hash }}.</p></section>{% endif %}
+{% if current and current.history %}<section class="box no-print"><h2>История версий</h2><ul>{% for entry in current.history %}<li><a href="{{ url }}?revision={{ entry.receipt.revision }}">Версия {{ entry.receipt.revision }}</a> · {{ entry.receipt.created_by }} · {{ entry.receipt.result.on }} · {{ 'арифметика полна' if entry.receipt.result.complete else 'цена неизвестна' }}</li>{% endfor %}</ul></section>{% endif %}
+</main>{% endblock %}
