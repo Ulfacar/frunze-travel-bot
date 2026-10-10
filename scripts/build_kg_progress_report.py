@@ -33,7 +33,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -96,7 +96,7 @@ def main(argv=None):
         <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
         не загружаются и не принимаются; подача не разрешается.</li></ul>"""
         estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
-    if args.checkpoint == "engineering-progress":
+    if args.checkpoint in ("engineering-progress", "document-quarantine"):
         if __package__:
             from .check_pdf_engineering_progress import evaluate
         else:
@@ -119,6 +119,22 @@ def main(argv=None):
                     "Это проверяемая техническая оценка, не процент готовности к запуску. "
                     + (f"Цель {score['target_points']}/100 ещё не достигнута; работа продолжается." if score['engineering_points'] < score['target_points']
                        else f"Технический порог {score['target_points']}/100 достигнут; ограничения запуска и проверки остаются отдельными."))
+    if args.checkpoint == "document-quarantine":
+        title = "Полные комплекты документов и карантин файлов"
+        intro = "Добавлены полные индивидуальные комплекты, проверка версий и отдельная загрузка файлов в карантин."
+        result = """<ul><li>Дополнительные требования и условия из PDF включены в комплект.
+        Рекомендации отделены от обязательных документов; история сохраняет прежние определения.</li>
+        <li>Приёмка привязана к версиям документов и явно заданным полномочиям.
+        Смена паспорта отменяет актуальность проверки; отзыв доступен даже у предела журнала.</li>
+        <li>Загрузка PDF/JPEG проверяет тип, размер и контрольную сумму. Файл и запись
+        о получении сохраняются вместе; повтор после сбоя ответа не создаёт дубль.</li>
+        <li>Карантин запрещает открытие и подтверждение файла, включая повторный учёт
+        того же содержимого в другой заявке или старом реестре.</li>
+        <li>Мобильный экран, работа без JavaScript и печать проверены на синтетике.
+        Загрузка выключена без утверждённых правил хранения и доступа.</li></ul>"""
+    remaining = ("Полная условная анкета, четыре исполняемых процесса с доказательствами и зависимостями, "
+                 "подбор продукта и расчёт стоимости по утверждённым правилам; сохранённый диалог RU/EN "
+                 "и передача менеджеру; уведомления, сквозные сценарии, PostgreSQL и приёмка владельцем.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
     <p>{args.report_date:%d.%m.%Y} · {title}</p>
     <p class="note"><b>Весь PDF ещё не выполнен.</b> {intro} Пилот выключен по умолчанию;
@@ -126,11 +142,10 @@ def main(argv=None):
     <h2>Результат этого этапа</h2>{result}
     <h2>Проверка</h2><p>{escape(args.checks)}</p>
     <p class="small">Код: {escape(args.revision)}<br>Ветка: fix/tours-search-quality<br>
-    Независимые CRITICAL review/audit и PostgreSQL runtime остаются UNKNOWN.
+    Независимые review/audit текущих модулей указаны в проверке;
+    полное покрытие прежних CRITICAL изменений и PostgreSQL runtime остаются UNKNOWN.
     Это локальная реализация, не подтверждение готовности к запуску.</p>
-    <h2>Главный остаток</h2><p>Полные профили заявителей, четыре исполняемых процесса CRM,
-    документы, согласия, сроки и сопровождение; диалог и передача менеджеру; утверждение знаний,
-    цен и календаря. {estimate}</p>""")
+    <h2>Главный остаток</h2><p>{remaining} {estimate}</p>""")
     for start in range(0, len(rows), 7):
         table = "<tr>" + "".join(f"<th>{escape(cell)}</th>" for cell in header) + "</tr>"
         for row in rows[start:start + 7]:

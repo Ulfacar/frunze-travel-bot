@@ -1,0 +1,109 @@
+{
+  "base_revision": "419fe40cca04f8ed9c65e0386c48c18764c32424",
+  "revision": "uncommitted E6-09 candidate",
+  "normalization": "CRLF to LF",
+  "environment": "Windows Python3.12 / env-free isolated archive / synthetic SQLite",
+  "files": [
+    {
+      "path": "alembic/versions/e6_document_quarantine_0026.py",
+      "sha256": "5482a307458150cf4cac381a91c99453ff6e0fa25723c7b7bcc59c6e13e221f7"
+    },
+    {
+      "path": "app/admin/kg_document_inventory.py",
+      "sha256": "26439aedfa48b76d3123dbcfacfe454b157149081eb1f3b70a603a39e14c9eff"
+    },
+    {
+      "path": "app/admin/kg_document_packages.py",
+      "sha256": "f9e5f881017f40f71e61648c56945893a5f9e238be1d7938297121d0739f17b8"
+    },
+    {
+      "path": "app/admin/kg_document_quarantine.py",
+      "sha256": "1c0e2219903977cca33fddaf6a0b5943c32a23c6096412562929b9136f7e0850"
+    },
+    {
+      "path": "app/admin/kg_document_ui.py",
+      "sha256": "4e133c55dba61c070cfb75fc4283f783859e25831c366d21c2363cfa138c43c0"
+    },
+    {
+      "path": "app/admin/kg_issued.py",
+      "sha256": "26856bcffad0ba3cd7d3de91a34ee0be17d273f511c53764b26ba75b9185df37"
+    },
+    {
+      "path": "app/admin/kg_quarantine_multipart.py",
+      "sha256": "fd0e24d1c2a1b1798534a775434bc8b6d70e375abca9d75017bc4538102dfdc6"
+    },
+    {
+      "path": "app/admin/router.py",
+      "sha256": "260a8bb956519db6108198e3ee05ce7698b26a4b864094a9905594c4d758de74"
+    },
+    {
+      "path": "app/admin/templates/kg_document_package.html",
+      "sha256": "d89007cd409432c098637de7de0edbf10569f8f62ed88dc73361e4c47077d0c7"
+    },
+    {
+      "path": "app/admin/templates/kg_document_quarantine.html",
+      "sha256": "7fae49785b9aebd0a0d209644209acafb2de6bb7ce5d80cae55e723d9c58371a"
+    },
+    {
+      "path": "app/admin/templates/kg_issued.html",
+      "sha256": "32101cb07912c6fd5114f1688ecb1f57661b5f936f5c7dfdffa380a4dd3bdc73"
+    },
+    {
+      "path": "app/config.py",
+      "sha256": "d7d0382ce63da45df06a154028b5b19fd0b3652278dd376433c3c58819a22d75"
+    },
+    {
+      "path": "app/domain/entry_document_packages.py",
+      "sha256": "bbc6b72e761f677c33bc7e530bdfd468b3d369c1144616b633ea34b7a20fde4b"
+    },
+    {
+      "path": "app/domain/entry_documents.py",
+      "sha256": "4164fb1ca9b1819d64e19904c37aa15ea5874ba3d297e3bb020d9732f8c57e7b"
+    },
+    {
+      "path": "app/domain/entry_issued.py",
+      "sha256": "ef50eadfce8b1c45354eb8fa692df2de02a060cec5b3e91cca75ac5cb312337b"
+    },
+    {
+      "path": "app/domain/entry_quarantine.py",
+      "sha256": "3c5def4a7ac489c8e5a718dd3b2d53a8baed09c223d529ef4cffa05cd2e3f7a0"
+    },
+    {
+      "path": "app/domain/entry_quarantine_policy.py",
+      "sha256": "e40651f2353a63ac38a487249565411bf74f7fd8d738076ff328a758d472f0b8"
+    },
+    {
+      "path": "app/domain/models.py",
+      "sha256": "9317cc1dc59416e90ae2728287d49e0180fd003fbc450bdeb54398e96de9122a"
+    },
+    {
+      "path": "tests/browser_kg_document_quarantine.py",
+      "sha256": "8c9e56ca6ebb1186e15a70d7547f9b98d85aecd25bf4c7bfc7da4fde66fe576f"
+    },
+    {
+      "path": "tests/test_admin_kg_document_quarantine.py",
+      "sha256": "33cf81f2151efdcd64ac60cf5dab26709c05b181e6da49a3c51b2c5373a01229"
+    },
+    {
+      "path": "tests/test_alembic_domain_migration.py",
+      "sha256": "e7031247ed2e277dae90087a38fe0d7dcd8bafb971ff4348dca9cc34eaf2f5fa"
+    },
+    {
+      "path": "tests/test_entry_quarantine.py",
+      "sha256": "f44fad383d8b2e95892ddd691d87f7064a5aeafc2f1d71f90e39d66819aeee8a"
+    },
+    {
+      "path": "tests/test_entry_quarantine_migration.py",
+      "sha256": "f57e40cc2b3ef7bd6f71b383a9e57a3d6a8296b83ca7e9d21c3634bcc2927509"
+    },
+    {
+      "path": "tests/test_quarantine_multipart.py",
+      "sha256": "1b33e1e0ed340ee096da2a75d8084779251c2a88dd5c5c25f5f90768d30955d4"
+    },
+    {
+      "path": "tests/test_service_cases.py",
+      "sha256": "1246ec7926f27079c6854f5f04e3ab914b5f4ff63160bf1f2a1232f222e80a18"
+    }
+  ],
+  "committed_revision": "4c570a3408d21d1749543c1144eabf4cdc6a20fa"
+}

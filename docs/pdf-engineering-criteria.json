@@ -498,9 +498,18 @@
       "weight": 2,
       "pdf": "5.5/18",
       "acceptance": "Bounded authorized file adapter, checksum/type checks and quarantine with explicit policy gate",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "4c570a3408d21d1749543c1144eabf4cdc6a20fa",
+          "command": "Supporting218 PASS/2 PG SKIP; final UI39 PASS and quarantine/issued68 PASS; full commands in artifact",
+          "environment": "Windows Python3.12 / env-free archive / synthetic FK-enabled SQLite / Chromium",
+          "scope": "Bounded authorized file adapter, checksum/type checks and quarantine with explicit policy gate",
+          "artifact": "ai/handoffs/2026-10-11-0030-e6-09-document-quarantine.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "F07",
