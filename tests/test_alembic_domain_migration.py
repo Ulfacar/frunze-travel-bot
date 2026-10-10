@@ -62,6 +62,7 @@ DOMAIN_TABLES = {
     "entry_document_revisions", "entry_issued_revisions", "entry_applicant_profiles", "entry_deadline_revisions", "entry_deadline_tasks", "knowledge_decisions", "knowledge_publication_events", "knowledge_publication_units", "entry_document_package_events", "entry_quarantined_files",
     # E6-10: immutable procedural stages and their relational evidence pins.
     "entry_process_events", "entry_process_pins",
+    "entry_portal_receipts", "entry_portal_actions",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",

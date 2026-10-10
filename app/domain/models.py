@@ -1948,7 +1948,88 @@ class EntryProcessPin(DomainBase):
     contract_event_id: Mapped[int | None] = mapped_column(ForeignKey("service_events.id"), nullable=True)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin)
+class EntryPortalReceipt(DomainBase):
+    """Untrusted structured observation, never an application decision."""
+    __tablename__ = 'entry_portal_receipts'
+    __table_args__ = (
+        UniqueConstraint('id', 'case_id', name='uq_entry_portal_receipt_scope'),
+        UniqueConstraint('case_id', 'request_key', name='uq_entry_portal_receipt_request'),
+        UniqueConstraint('source_namespace', 'channel', 'transport_id', name='uq_entry_portal_receipt_transport'),
+        CheckConstraint("channel IN ('paste','portal','official_document')", name='ck_entry_portal_receipt_channel'),
+        CheckConstraint('raw_bytes BETWEEN 1 AND 16384', name='ck_entry_portal_receipt_size'),
+        CheckConstraint('length(raw_sha256) = 64 AND length(request_hash) = 64 AND length(snapshot_hash) = 64', name='ck_entry_portal_receipt_hashes'),
+        Index('ix_entry_portal_receipt_case_id', 'case_id', 'id'),
+        Index('ix_entry_portal_receipt_content', 'source_namespace', 'raw_sha256'),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey('service_cases.id'))
+    source_namespace: Mapped[str] = mapped_column(String(80))
+    channel: Mapped[str] = mapped_column(String(24))
+    transport_id: Mapped[str] = mapped_column(String(160))
+    raw_sha256: Mapped[str] = mapped_column(String(64))
+    raw_bytes: Mapped[int] = mapped_column(Integer)
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    captures: Mapped[dict] = mapped_column(_ServiceJSON)
+    policy: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates('command', 'captures', 'policy')
+    def _freeze(self, key, value): return _ServiceJSON.freeze(value)
+
+
+class EntryPortalAction(DomainBase):
+    """Immutable correlation and independent confirmation, with exact cycle pins."""
+    __tablename__ = 'entry_portal_actions'
+    __table_args__ = (
+        UniqueConstraint('id', 'receipt_id', 'case_id', name='uq_entry_portal_action_scope'),
+        UniqueConstraint('receipt_id', 'revision', name='uq_entry_portal_action_revision'),
+        UniqueConstraint('receipt_id', 'request_key', name='uq_entry_portal_action_request'),
+        UniqueConstraint('applied_event_id', name='uq_entry_portal_applied_event'),
+        UniqueConstraint('applied_content_hash', name='uq_entry_portal_applied_content'),
+        ForeignKeyConstraint(['receipt_id', 'case_id'], ['entry_portal_receipts.id', 'entry_portal_receipts.case_id'], name='fk_entry_portal_action_receipt'),
+        ForeignKeyConstraint(['previous_id', 'receipt_id', 'case_id'], ['entry_portal_actions.id', 'entry_portal_actions.receipt_id', 'entry_portal_actions.case_id'], name='fk_entry_portal_action_previous'),
+        ForeignKeyConstraint(['application_id', 'case_id', 'applicant_id', 'procedure'], ['entry_applications.id', 'entry_applications.case_id', 'entry_applications.applicant_id', 'entry_applications.procedure'], name='fk_entry_portal_action_application'),
+        ForeignKeyConstraint(['head_id', 'application_id'], ['entry_application_events.id', 'entry_application_events.application_id'], name='fk_entry_portal_action_head'),
+        ForeignKeyConstraint(['cycle_id', 'application_id'], ['entry_application_events.id', 'entry_application_events.application_id'], name='fk_entry_portal_action_cycle'),
+        ForeignKeyConstraint(['applied_event_id', 'application_id'], ['entry_application_events.id', 'entry_application_events.application_id'], name='fk_entry_portal_action_event'),
+        CheckConstraint('revision BETWEEN 1 AND 64', name='ck_entry_portal_action_revision'),
+        CheckConstraint("action IN ('correlate','confirm','dismiss')", name='ck_entry_portal_action_kind'),
+        CheckConstraint('(revision = 1 AND previous_id IS NULL) OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id)', name='ck_entry_portal_action_previous'),
+        CheckConstraint('(application_id IS NULL AND applicant_id IS NULL AND procedure IS NULL AND head_id IS NULL AND cycle_id IS NULL) OR (application_id IS NOT NULL AND applicant_id IS NOT NULL AND procedure IS NOT NULL AND head_id IS NOT NULL AND cycle_id IS NOT NULL)', name='ck_entry_portal_action_binding'),
+        CheckConstraint("(applied_event_id IS NULL AND applied_content_hash IS NULL) OR (action = 'confirm' AND applied_event_id IS NOT NULL AND applied_content_hash IS NOT NULL AND length(applied_content_hash) = 64)", name='ck_entry_portal_action_applied'),
+        CheckConstraint('length(request_hash) = 64 AND length(snapshot_hash) = 64', name='ck_entry_portal_action_hashes'),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    receipt_id: Mapped[int] = mapped_column(Integer)
+    case_id: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    action: Mapped[str] = mapped_column(String(16))
+    application_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    applicant_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    procedure: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    head_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cycle_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    applied_event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    applied_content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    policy: Mapped[dict | None] = mapped_column(_ServiceJSON(none_as_null=True), nullable=True)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates('command', 'snapshot', 'policy')
+    def _freeze(self, key, value): return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction)
 
 
 def _entry_immutable(mapper, connection, target):

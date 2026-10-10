@@ -527,6 +527,8 @@ def test_migration_is_additive_empty_and_reversible(tmp_path, monkeypatch):
                   "stay_histories", "stay_intervals", "work_calendars", "work_calendar_days",
                   "entry_calculations", "entry_calculation_intervals", "entry_calculation_calendars",
                   "entry_qualifications", "entry_applicants", "entry_applications",
+                  "entry_process_events", "entry_process_pins",
+                  "entry_portal_receipts", "entry_portal_actions",
                   "entry_application_events", "entry_application_references", "entry_document_revisions", "entry_issued_revisions", "entry_applicant_profiles", "entry_deadline_revisions", "entry_deadline_tasks", "knowledge_decisions", "knowledge_publication_events", "knowledge_publication_units", "entry_document_package_events", "entry_quarantined_files"}
     engine = create_engine(url)
     try:

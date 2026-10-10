@@ -264,6 +264,53 @@ async def open_application(engine, *, actor, case_id, applicant_id, procedure, p
 
 async def record_application_event(engine, *, actor, case_id, application_id, expected_revision, request_key,
                                    status, occurred_on, source, reference=None, confirmed=False):
+    # Preserve the public preflight contract before any engine/session access.
+    _validated_event_input(actor=actor, case_id=case_id, application_id=application_id,
+        expected_revision=expected_revision, request_key=request_key, status=status,
+        occurred_on=occurred_on, source=source, reference=reference, confirmed=confirmed)
+    async def write(session):
+        return await _record_application_event_in_session(session, actor=actor, case_id=case_id,
+            application_id=application_id, expected_revision=expected_revision, request_key=request_key,
+            status=status, occurred_on=occurred_on, source=source, reference=reference, confirmed=confirmed)
+    return await _run(engine, write)
+
+
+async def _record_application_event_in_session(session, *, actor, case_id, application_id, expected_revision,
+        request_key, status, occurred_on, source, reference=None, confirmed=False):
+    """Caller owns the transaction; keep case→application locks and task sync.
+
+    Used by explicit portal-observation confirmation to commit the application
+    fact and its receipt action together. No commit/session/exception swallowing.
+    """
+    command, actual_date = _validated_event_input(actor=actor, case_id=case_id, application_id=application_id,
+        expected_revision=expected_revision, request_key=request_key, status=status,
+        occurred_on=occurred_on, source=source, reference=reference, confirmed=confirmed)
+    case = await _case(session, case_id, lock=True)
+    application = await _application(session, case_id, application_id, lock=True)
+    rows = await _events(session, application)
+    old = next((row for row in rows if row.request_key == request_key), None)
+    if old:
+        if old.request_hash != _hash(command): raise EntryStorageConflict('request_key_reused')
+        return _event_view(old)
+    previous = rows[-1]
+    if previous.revision != expected_revision: raise EntryStorageConflict('application_revision_changed')
+    _event_facts(status=status, occurred_on=actual_date, source=source, reference=reference, previous=previous, cutoff=_today())
+    if reference and not previous.reference:
+        if await session.scalar(select(EntryApplicationReference.application_id).where(EntryApplicationReference.reference == reference)):
+            raise EntryStorageConflict('portal_reference_already_recorded')
+        session.add(EntryApplicationReference(application_id=application_id, case_id=case_id, reference=reference))
+    row = EntryApplicationEvent(case_id=case_id, application_id=application_id, revision=previous.revision + 1,
+        previous_id=previous.id, status=status, occurred_on=actual_date, source=source, reference=reference,
+        request_key=request_key, request_hash=_hash(command), created_by=actor.manager_id, created_at=_now())
+    row.snapshot_hash = _hash(_event_payload(row))
+    session.add(row); await session.flush()
+    from app.domain.entry_deadline_tasks import sync_enabled
+    await sync_enabled(session, case, application, actor.manager_id)
+    return _event_view(row)
+
+
+def _validated_event_input(*, actor, case_id, application_id, expected_revision, request_key,
+        status, occurred_on, source, reference, confirmed):
     _authorize(actor); _id(case_id); _id(application_id); _key(request_key)
     if type(expected_revision) is not int or not 1 <= expected_revision < MAX_EVENTS:
         raise EntryStorageInvalid('invalid_application_revision')
@@ -277,30 +324,7 @@ async def record_application_event(engine, *, actor, case_id, application_id, ex
     command = {'action': 'event', 'case_id': case_id, 'application_id': application_id,
                'expected_revision': expected_revision, 'status': status, 'occurred_on': occurred_on,
                'source': source, 'reference': reference, 'confirmed': True, 'actor': actor.manager_id}
-    async def write(session):
-        case = await _case(session, case_id, lock=True)
-        application = await _application(session, case_id, application_id, lock=True)
-        rows = await _events(session, application)
-        old = next((row for row in rows if row.request_key == request_key), None)
-        if old:
-            if old.request_hash != _hash(command): raise EntryStorageConflict('request_key_reused')
-            return _event_view(old)
-        previous = rows[-1]
-        if previous.revision != expected_revision: raise EntryStorageConflict('application_revision_changed')
-        _event_facts(status=status, occurred_on=actual_date, source=source, reference=reference, previous=previous, cutoff=_today())
-        if reference and not previous.reference:
-            if await session.scalar(select(EntryApplicationReference.application_id).where(EntryApplicationReference.reference == reference)):
-                raise EntryStorageConflict('portal_reference_already_recorded')
-            session.add(EntryApplicationReference(application_id=application_id, case_id=case_id, reference=reference))
-        row = EntryApplicationEvent(case_id=case_id, application_id=application_id, revision=previous.revision + 1,
-            previous_id=previous.id, status=status, occurred_on=actual_date, source=source, reference=reference,
-            request_key=request_key, request_hash=_hash(command), created_by=actor.manager_id, created_at=_now())
-        row.snapshot_hash = _hash(_event_payload(row))
-        session.add(row); await session.flush()
-        from app.domain.entry_deadline_tasks import sync_enabled
-        await sync_enabled(session, case, application, actor.manager_id)
-        return _event_view(row)
-    return await _run(engine, write)
+    return command, actual_date
 
 
 async def read_application(engine, *, actor, case_id, application_id):
