@@ -2029,7 +2029,72 @@ class EntryPortalAction(DomainBase):
     def _freeze(self, key, value): return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction)
+class EntryInterview(DomainBase):
+    """One immutable enrollment per exact case/applicant; no provider route binding."""
+    __tablename__='entry_interviews'
+    __table_args__=(
+        UniqueConstraint('id','case_id','applicant_id',name='uq_entry_interview_scope'),
+        UniqueConstraint('case_id','applicant_id',name='uq_entry_interview_subject'),
+        UniqueConstraint('case_id','request_key',name='uq_entry_interview_request'),
+        ForeignKeyConstraint(['applicant_id','case_id'],['entry_applicants.id','entry_applicants.case_id'],name='fk_entry_interview_applicant'),
+        ForeignKeyConstraint(['profile_id','applicant_id','case_id'],['entry_applicant_profiles.id','entry_applicant_profiles.applicant_id','entry_applicant_profiles.case_id'],name='fk_entry_interview_profile'),
+        CheckConstraint('length(request_hash)=64 AND length(snapshot_hash)=64',name='ck_entry_interview_hashes'),
+        Index('ix_entry_interview_case_id','case_id','id'),
+    )
+    id:Mapped[int]=mapped_column(Integer,primary_key=True)
+    case_id:Mapped[int]=mapped_column(ForeignKey('service_cases.id'))
+    applicant_id:Mapped[int]=mapped_column(Integer)
+    profile_id:Mapped[int|None]=mapped_column(Integer,nullable=True)
+    owner_login:Mapped[str]=mapped_column(String(64))
+    request_key:Mapped[str]=mapped_column(String(64))
+    request_hash:Mapped[str]=mapped_column(String(64))
+    snapshot_hash:Mapped[str]=mapped_column(String(64))
+    command:Mapped[dict]=mapped_column(_ServiceJSON)
+    policy:Mapped[dict]=mapped_column(_ServiceJSON)
+    catalog:Mapped[dict]=mapped_column(_ServiceJSON)
+    source_pin:Mapped[dict]=mapped_column(_ServiceJSON)
+    authority:Mapped[dict]=mapped_column(_ServiceJSON)
+    created_by:Mapped[str]=mapped_column(String(64))
+    created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=_now)
+
+    @validates('command','policy','catalog','source_pin','authority')
+    def _freeze(self,key,value):return _ServiceJSON.freeze(value)
+
+
+class EntryInterviewEvent(DomainBase):
+    """Answer, handoff card and acknowledgement share an immutable transaction."""
+    __tablename__='entry_interview_events'
+    __table_args__=(
+        UniqueConstraint('id','interview_id','case_id','applicant_id',name='uq_entry_interview_event_scope'),
+        UniqueConstraint('interview_id','revision',name='uq_entry_interview_event_revision'),
+        UniqueConstraint('interview_id','request_key',name='uq_entry_interview_event_request'),
+        ForeignKeyConstraint(['interview_id','case_id','applicant_id'],['entry_interviews.id','entry_interviews.case_id','entry_interviews.applicant_id'],name='fk_entry_interview_event_subject'),
+        ForeignKeyConstraint(['previous_id','interview_id','case_id','applicant_id'],['entry_interview_events.id','entry_interview_events.interview_id','entry_interview_events.case_id','entry_interview_events.applicant_id'],name='fk_entry_interview_event_previous'),
+        CheckConstraint('revision BETWEEN 1 AND 256',name='ck_entry_interview_event_revision'),
+        CheckConstraint('(revision=1 AND previous_id IS NULL) OR (revision>1 AND previous_id IS NOT NULL AND previous_id<id)',name='ck_entry_interview_event_previous'),
+        CheckConstraint("action IN ('start','answer','correct','remove','language','pause','resume','interrupt','handoff','ack','refresh')",name='ck_entry_interview_event_kind'),
+        CheckConstraint('length(request_hash)=64 AND length(snapshot_hash)=64',name='ck_entry_interview_event_hashes'),
+    )
+    id:Mapped[int]=mapped_column(Integer,primary_key=True)
+    interview_id:Mapped[int]=mapped_column(Integer)
+    case_id:Mapped[int]=mapped_column(Integer)
+    applicant_id:Mapped[int]=mapped_column(Integer)
+    revision:Mapped[int]=mapped_column(Integer)
+    previous_id:Mapped[int|None]=mapped_column(Integer,nullable=True)
+    action:Mapped[str]=mapped_column(String(16))
+    request_key:Mapped[str]=mapped_column(String(64))
+    request_hash:Mapped[str]=mapped_column(String(64))
+    snapshot_hash:Mapped[str]=mapped_column(String(64))
+    command:Mapped[dict]=mapped_column(_ServiceJSON)
+    snapshot:Mapped[dict]=mapped_column(_ServiceJSON)
+    created_by:Mapped[str]=mapped_column(String(64))
+    created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=_now)
+
+    @validates('command','snapshot')
+    def _freeze(self,key,value):return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent)
 
 
 def _entry_immutable(mapper, connection, target):

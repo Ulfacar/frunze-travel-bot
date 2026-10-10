@@ -1,0 +1,27 @@
+{
+  "base": "8575f1f278659cc0d92c8342dbf25262afce5dc7",
+  "snapshot": "uncommitted E6-12 complete source r1",
+  "archive": "runs/e6-12-review-r1",
+  "normalization": "LF",
+  "files": {
+    "app/config.py": "24ab61c55e520438933aeb62790daae87bbfb2a88868ee43b365801ad15b7fa0",
+    "app/domain/models.py": "6ae4485e2c2124eca77b34eb0afa4f54bc476eb059df56834e156dee0954ea1c",
+    "app/domain/entry_interview_policy.py": "24697b2172eabe2d3aa7431f1b985ea1113778959c51c8c133dd0b4672d91ae2",
+    "app/domain/entry_interviews.py": "371254cdc88e43b998bd39ae45fc64438c8e56396c1c1ebc965b27f30214a8db",
+    "app/knowledge/interview_catalog.py": "ec2439ad6c4639ff569250b651275b269743219befc2cb026c6ce36d9e6c9a45",
+    "app/knowledge/interview_rules.py": "c03714932a50b12634ddd92decbd50a6124b7531f123ccfca91d6962350035be",
+    "alembic/versions/e6_interview_handoff_0029.py": "ab058244968d2dea509f7968dcfe88972f7747cdc4a61c63ea157fc9e6960ee4",
+    "app/admin/kg_interviews.py": "e767b18f80e0f4bb845594784ed853b40930dccfc0f6a6cb50ddf241849340e4",
+    "app/admin/router.py": "e709fda5ca579388919e9f20639b4466e79801feb01cb8e46277fd9ce5daf47a",
+    "app/admin/templates/kg_interviews.html": "86d918c1426262032c76547e7952b069246787382d33536d33d058b227f8048b",
+    "app/admin/templates/kg_applications.html": "2e2371e366a77a1010898f99d592337d57e974bf77e02b209981f5560a751042",
+    "tests/test_kg_interview_rules.py": "8cd5d620b20dc6a191ed0e3b05808db203806a303e822cbde1e2ad345ea82ce9",
+    "tests/test_entry_interviews.py": "39ee61b0e6f3b6cf1a65600830a3939de6de331d166b4845cc290e59b48c3666",
+    "tests/test_admin_kg_interviews.py": "9962b80929d35183314c7ae04ee994bcb2bc00a7f215029c020595c56edf9272",
+    "tests/test_entry_interview_migration.py": "627c695e7e982d347bbf47bf92efbc479849ec8a336e75b68650925e5aafdebe",
+    "tests/test_entry_interview_postgres.py": "de43a7ee473e764a38f5a29a6147fa4ee5164dab9ae0ec004785b08afdf3c55c",
+    "tests/browser_kg_interviews.py": "5d993a7f6bd950029bdddcbf9e22ee8e49989c6b7555a54297eb335b914c4a21",
+    "tests/test_alembic_domain_migration.py": "b5fcb0adb7d54ffb6e4c3442aa0c23bf7e2e98fdfe6e5e029a20df90bf928f48",
+    "tests/test_service_cases.py": "381fb25e9605180b95a377bb9bc6c3a13bf1c74fcaceb426f4f1e89b391cf180"
+  }
+}

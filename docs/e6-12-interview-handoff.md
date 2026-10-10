@@ -1,0 +1,34 @@
+# E6-12: typed interview and accepted review card
+
+Target: reviewed local implementation with synthetic information. CRITICAL, solo. Actual source/privacy authority, client collection, retention and deployment are outside this target. `kg_interview_policy` is empty by default. The installed reply and followup channels are not connected to this journal; H04 remains unscored.
+
+The entry point is the applicant list in an existing visa service, then **Полная анкета и передача специалисту**. A named existing full administrator starts one interview for that exact case/applicant and designates another existing full administrator (or themselves) as the accepting owner. This does not change the case owner or give managers new access. An optional qualification pin accepts only an exact profile of that applicant; it never copies the payer's shared qualification.
+
+The new catalog maps atomic fields to all57 source A–H codes, including the applicant's own relationship and minor fields when travelling alone, separate companion ordinal slots, employer tax/social debts, employment/permit/company/investment details, and commercial preferences. It is separate from historical qualification v1/v2 schemas. The supplied PDF is the requirement source, not proof that its legal rules or privacy policy have been approved. No legal eligibility, fee or confidence result is invented.
+
+## Answer contract
+
+- Each displayed batch has at most3 canonical fields. Native forms sign the exact actor, case, applicant, interview, revision, question paths, policy and request key. Only typed values are consumed. Free-text intent extraction and chat delivery are outside the adapter.
+- Missing, explicit unknown, false, zero, empty optional choice lists and not-applicable are distinct. Unknown stays a gap without an endless immediate repeat. Not-applicable requires a proven false condition; unknown prerequisites do not count as false. A false parent condition propagates to its descendants.
+- Changes to prerequisites preserve dependent records as stale or inapplicable. Returning a prerequisite to its previous value cannot revive a prior dependent answer without a new explicit confirmation. Family/history/visa slots have stable ordinal paths; changing the count does not shift another person's answer into that identity.
+- Reaffirming the same canonical value of a fresh answer preserves its dependency stamp and existing evidence. Reconfirming a stale answer, even with the old value, creates a new stamp. The command itself remains in the immutable journal; a positive consent reaffirmation never becomes an implied withdrawal.
+- Processing consent and offer acceptance each have their own affirmative status, date, version and evidence reference/hash. A configured policy must explicitly list any permitted fields before complete consent. A fixture permitting fields is synthetic authorization for tests only. Refusal/withdrawal stops further collection; no scans, criminal narrative or diagnosis fields are provided.
+- Structurally valid conflicting dates/facts are persisted together with the resulting handoff. Invalid types, wrong field sets, cross-scope profiles and unsupported values fail without a write. Corrections/removal are explicit and retain prior commands in history.
+
+## Journal and handoff
+
+`entry_interviews` and `entry_interview_events` are additive immutable domain tables in migration0029. Scoped foreign keys, one enrollment per case/applicant, unique request/revision keys and ORM/bulk mutation guards enforce the normal application path. Raw-SQL probes challenge semantic replay; the hashes are integrity checks, not a claim of cryptographic protection against a database administrator rewriting an entirely valid history.
+
+Every accepted command is reduced deterministically and stores its original result. Reads replay the bounded history and validate scope, typed operation, question set, policy/catalog/source pins, hashes and outcomes. Exact authorized retries return the original event before checking current policy availability or compare-and-swap revision. Current identity revocation is checked before database/idempotency access. New operators must also belong to the interview's original trusted administrator snapshot.
+
+Answer plus handoff is one transaction. Explicit interrupts work while paused and without new sensitive narrative. The card freezes facts, gaps, reasons, source/policy versions, original revision and owner. Pending and accepted interviews return no autonomous drafts. The designated owner acknowledges the exact card hash; only that owner may manually correct facts after acknowledgement. Those later facts do not rewrite the card or restart automated questions. A retired owner cannot be silently replaced; reassignment policy is not implemented here.
+
+History is limited to256 events,1MiB per event and16MiB total event payload. Normal commands reserve three events and3MiB for handoff, acknowledgement and a possible later consent withdrawal. A non-blocked handoff reserves two; a non-blocked acknowledgement reserves one. Once consent withdrawal/refusal has blocked collection, a pending card reserves only its acknowledgement; an acknowledged blocked card needs no further terminal operation. Replay checks those same per-state limits. Withdrawal is accepted in active, paused, pending and acknowledged states, including after policy expiry, without rewriting the frozen card. A repeated withdrawal with a new key cannot consume capacity. The writer rejects a backwards clock and checks policy validity against the timestamp it actually stores, including a midnight boundary. Exact authorized retries return their original result.
+
+## Native and recovery evidence contract
+
+The native screen uses existing full-admin, KG feature, workday/write and CSRF/session gates. The questionnaire is usable without JavaScript. An ambiguous commit preserves the complete signed request even if rereading storage also fails; retry uses that same envelope. The printed card contains all gaps and the separately labelled current answers, including later specialist changes.
+
+SQLite and isolated loopback PostgreSQL checks cover migration/model parity, empty upgrade/downgrade, refusal to remove populated tables, scoped keys, concurrent CAS, duplicate acknowledgement, rollback, uncertain commit, semantic tampering and recovery. The bounded recovery rehearsal uses binary COPY into a fresh Alembic schema with foreign keys enabled and sequences restored, followed by history equality, an old acknowledgement retry, native read and a new manual answer. It is not a production backup certification; native Windows `pg_dump` remains blocked by App Control.
+
+Completion and scoring depend on the final reviewed snapshot and recorded checks. This contract itself is not runtime or approval evidence.

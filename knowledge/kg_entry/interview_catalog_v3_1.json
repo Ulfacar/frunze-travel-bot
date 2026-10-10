@@ -1,0 +1,2404 @@
+{
+  "version": "kg-interview-catalog/3.1",
+  "source_sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
+  "section": "3.3 A-H",
+  "fields": [
+    {
+      "code": "A1",
+      "path": "contact_name",
+      "ru": "Как обращаться к этому заявителю?",
+      "en": "How should we address this applicant?",
+      "kind": "text",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 120,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A2",
+      "path": "language",
+      "ru": "На каком языке продолжить?",
+      "en": "Which language should we use?",
+      "kind": "choice",
+      "choices": [
+        "ru",
+        "en"
+      ],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A3",
+      "path": "contact_phone",
+      "ru": "Телефон заявителя или уполномоченного представителя",
+      "en": "Applicant or authorized representative phone",
+      "kind": "text",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A3",
+      "path": "contact_messenger",
+      "ru": "Удобный мессенджер",
+      "en": "Preferred messenger",
+      "kind": "text",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A3",
+      "path": "contact_role",
+      "ru": "Контакт принадлежит заявителю или представителю?",
+      "en": "Does this contact belong to the applicant or a representative?",
+      "kind": "choice",
+      "choices": [
+        "applicant",
+        "representative"
+      ],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A4",
+      "path": "contact_email",
+      "ru": "Доступный адрес электронной почты",
+      "en": "Email address you can access",
+      "kind": "text",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 254,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A5",
+      "path": "party_type",
+      "ru": "Для кого обращение?",
+      "en": "Who is this request for?",
+      "kind": "choice",
+      "choices": [
+        "individual",
+        "family",
+        "group",
+        "company"
+      ],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A5",
+      "path": "applicants_count",
+      "ru": "Сколько всего заявителей?",
+      "en": "How many applicants are there in total?",
+      "kind": "integer",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 200,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A6",
+      "path": "consent.given",
+      "ru": "Получено согласие именно этого заявителя на обработку данных?",
+      "en": "Has this applicant given consent to data processing?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A6",
+      "path": "consent.on",
+      "ru": "Дата согласия",
+      "en": "Consent date",
+      "kind": "date",
+      "choices": [],
+      "when": "consent_yes",
+      "depends": [
+        "consent.given"
+      ],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A6",
+      "path": "consent.evidence_ref",
+      "ru": "Номер подтверждения согласия",
+      "en": "Consent evidence reference",
+      "kind": "opaque",
+      "choices": [],
+      "when": "consent_yes",
+      "depends": [
+        "consent.given"
+      ],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A6",
+      "path": "consent.evidence_sha256",
+      "ru": "SHA256 подтверждения согласия",
+      "en": "Consent evidence SHA256",
+      "kind": "proof",
+      "choices": [],
+      "when": "consent_yes",
+      "depends": [
+        "consent.given"
+      ],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A6",
+      "path": "terms.accepted",
+      "ru": "Приняты условия оферты отдельно от согласия на данные?",
+      "en": "Have the offer terms been accepted separately from data consent?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A6",
+      "path": "terms.on",
+      "ru": "Дата принятия условий",
+      "en": "Terms acceptance date",
+      "kind": "date",
+      "choices": [],
+      "when": "terms_yes",
+      "depends": [
+        "terms.accepted"
+      ],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A6",
+      "path": "terms.evidence_ref",
+      "ru": "Номер подтверждения принятия условий",
+      "en": "Terms acceptance evidence reference",
+      "kind": "opaque",
+      "choices": [],
+      "when": "terms_yes",
+      "depends": [
+        "terms.accepted"
+      ],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "A6",
+      "path": "terms.evidence_sha256",
+      "ru": "SHA256 подтверждения принятия условий",
+      "en": "Terms acceptance evidence SHA256",
+      "kind": "proof",
+      "choices": [],
+      "when": "terms_yes",
+      "depends": [
+        "terms.accepted"
+      ],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B1",
+      "path": "citizenships",
+      "ru": "Все гражданства заявителя",
+      "en": "All citizenships of the applicant",
+      "kind": "countries",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B2",
+      "path": "passport_country",
+      "ru": "По паспорту какой страны планируется въезд?",
+      "en": "Which country issued the passport to be used for entry?",
+      "kind": "country",
+      "choices": [],
+      "when": "multiple_citizenships",
+      "depends": [
+        "citizenships"
+      ],
+      "maximum": 500,
+      "page": 26,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B3",
+      "path": "document_type",
+      "ru": "Тип документа для въезда",
+      "en": "Document type for entry",
+      "kind": "choice",
+      "choices": [
+        "ordinary",
+        "diplomatic",
+        "service",
+        "un_lp",
+        "stateless",
+        "refugee",
+        "id_card",
+        "internal",
+        "other",
+        "unrecognized"
+      ],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B4",
+      "path": "passport_expiry",
+      "ru": "До какой даты действует паспорт?",
+      "en": "When does the passport expire?",
+      "kind": "date",
+      "choices": [],
+      "when": "always",
+      "depends": [
+        "document_type",
+        "passport_country"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B5",
+      "path": "passport_two_blank_pages",
+      "ru": "Есть две чистые страницы?",
+      "en": "Are there two blank pages?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [
+        "document_type",
+        "passport_country"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B5",
+      "path": "passport_undamaged",
+      "ru": "Паспорт без повреждений и посторонних отметок?",
+      "en": "Is the passport free of damage and unofficial marks?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [
+        "document_type",
+        "passport_country"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B6",
+      "path": "residence_country",
+      "ru": "Страна постоянного проживания",
+      "en": "Country of permanent residence",
+      "kind": "country",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B6",
+      "path": "foreign_residence.exists",
+      "ru": "Есть вид на жительство или резидент-карта другой страны?",
+      "en": "Do you hold another country’s residence permit or card?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B6",
+      "path": "foreign_residence.country",
+      "ru": "Страна резидентского документа",
+      "en": "Residence document country",
+      "kind": "country",
+      "choices": [],
+      "when": "foreign_residence",
+      "depends": [
+        "foreign_residence.exists"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B6",
+      "path": "foreign_residence.until",
+      "ru": "Срок действия резидентского документа",
+      "en": "Residence document expiry",
+      "kind": "date",
+      "choices": [],
+      "when": "foreign_residence",
+      "depends": [
+        "foreign_residence.exists"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B7",
+      "path": "long_visa.exists",
+      "ru": "Есть виза США, Великобритании или Шенгена со сроком действия более трёх лет?",
+      "en": "Do you have a US, UK or Schengen visa valid for more than three years?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "china_india",
+      "depends": [
+        "citizenships"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B7",
+      "path": "long_visa.country",
+      "ru": "Страна долгосрочной визы",
+      "en": "Long-term visa country",
+      "kind": "country",
+      "choices": [],
+      "when": "long_visa",
+      "depends": [
+        "long_visa.exists"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B7",
+      "path": "long_visa.from",
+      "ru": "Начало действия долгосрочной визы",
+      "en": "Long-term visa valid from",
+      "kind": "date",
+      "choices": [],
+      "when": "long_visa",
+      "depends": [
+        "long_visa.exists"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B7",
+      "path": "long_visa.until",
+      "ru": "Конец действия долгосрочной визы",
+      "en": "Long-term visa valid until",
+      "kind": "date",
+      "choices": [],
+      "when": "long_visa",
+      "depends": [
+        "long_visa.exists"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B8",
+      "path": "location",
+      "ru": "Где сейчас заявитель?",
+      "en": "Where is the applicant now?",
+      "kind": "choice",
+      "choices": [
+        "abroad",
+        "in_kg"
+      ],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B8",
+      "path": "current_country",
+      "ru": "Текущая страна пребывания",
+      "en": "Current country of stay",
+      "kind": "country",
+      "choices": [],
+      "when": "abroad",
+      "depends": [
+        "location"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B8",
+      "path": "actual_entry.on",
+      "ru": "Дата фактического въезда в Кыргызстан",
+      "en": "Actual entry date into Kyrgyzstan",
+      "kind": "date",
+      "choices": [],
+      "when": "in_kg",
+      "depends": [
+        "location"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "B8",
+      "path": "actual_entry.point",
+      "ru": "Пункт фактического въезда",
+      "en": "Actual entry crossing",
+      "kind": "text",
+      "choices": [],
+      "when": "in_kg",
+      "depends": [
+        "location"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C1",
+      "path": "purpose",
+      "ru": "Фактическая цель поездки",
+      "en": "Actual purpose of the trip",
+      "kind": "choice",
+      "choices": [
+        "tourism",
+        "private_visit",
+        "relatives_kg_citizen",
+        "family_of_foreigner",
+        "business_meeting",
+        "event",
+        "sport",
+        "medical",
+        "study",
+        "work_hire",
+        "work_individual_employer",
+        "entrepreneur",
+        "investor",
+        "it_remote",
+        "journalism",
+        "volunteer",
+        "equipment_installation",
+        "transit",
+        "religious",
+        "driver",
+        "accompanying_gcc",
+        "official",
+        "other"
+      ],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C2",
+      "path": "purpose_detail",
+      "ru": "Что планируется делать: организация, занятие или родственная связь? Без диагнозов.",
+      "en": "What is planned: organization, activity or family relationship? Do not include diagnoses.",
+      "kind": "text",
+      "choices": [],
+      "when": "detailed_purpose",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C3",
+      "path": "entry_on",
+      "ru": "Планируемая дата въезда",
+      "en": "Planned entry date",
+      "kind": "date",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C4",
+      "path": "exit_on",
+      "ru": "Планируемая дата выезда",
+      "en": "Planned exit date",
+      "kind": "date",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C5",
+      "path": "multiple_entries",
+      "ru": "Планируются выезды и возвращения в этой поездке?",
+      "en": "Will this trip include departures and re-entries?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C6",
+      "path": "planned_entry_point",
+      "ru": "Планируемый аэропорт или наземный пункт въезда",
+      "en": "Planned airport or land entry crossing",
+      "kind": "text",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C7",
+      "path": "tickets_bought",
+      "ru": "Билеты уже куплены?",
+      "en": "Have tickets already been purchased?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C8",
+      "path": "accommodation_address",
+      "ru": "Планируемое место проживания и адрес",
+      "en": "Planned accommodation and address",
+      "kind": "text",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C9",
+      "path": "hard_deadline.exists",
+      "ru": "Есть жёсткая дата получения результата?",
+      "en": "Is there a fixed date by which the result is needed?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C9",
+      "path": "hard_deadline.on",
+      "ru": "Какая именно дата?",
+      "en": "What is that date?",
+      "kind": "date",
+      "choices": [],
+      "when": "hard_deadline",
+      "depends": [
+        "hard_deadline.exists"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C10",
+      "path": "organized_group.exists",
+      "ru": "Поездка в организованной группе?",
+      "en": "Is this an organized group trip?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "tourism",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C10",
+      "path": "organized_group.size",
+      "ru": "Число участников организованной группы",
+      "en": "Organized group size",
+      "kind": "integer",
+      "choices": [],
+      "when": "organized_group",
+      "depends": [
+        "organized_group.exists"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C10",
+      "path": "organized_group.operator",
+      "ru": "Организатор группы",
+      "en": "Group operator",
+      "kind": "text",
+      "choices": [],
+      "when": "organized_group",
+      "depends": [
+        "organized_group.exists"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C11",
+      "path": "event.from",
+      "ru": "Начало мероприятия или лечения",
+      "en": "Event or treatment start date",
+      "kind": "date",
+      "choices": [],
+      "when": "event",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "C11",
+      "path": "event.to",
+      "ru": "Окончание мероприятия или лечения",
+      "en": "Event or treatment end date",
+      "kind": "date",
+      "choices": [],
+      "when": "event",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "D1",
+      "path": "previous_visits",
+      "ru": "Заявитель раньше бывал в Кыргызстане?",
+      "en": "Has the applicant previously visited Kyrgyzstan?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D1",
+      "path": "history_count",
+      "ru": "Сколько интервалов пребывания нужно записать?",
+      "en": "How many stay intervals need to be recorded?",
+      "kind": "integer",
+      "choices": [],
+      "when": "previous_visits",
+      "depends": [
+        "previous_visits"
+      ],
+      "maximum": 100,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D1",
+      "path": "history.{i}.entry",
+      "ru": "Дата въезда по этому интервалу",
+      "en": "Entry date for this interval",
+      "kind": "date",
+      "choices": [],
+      "when": "history_member",
+      "depends": [
+        "history_count"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D1",
+      "path": "history.{i}.exit",
+      "ru": "Дата выезда по этому интервалу",
+      "en": "Exit date for this interval",
+      "kind": "date",
+      "choices": [],
+      "when": "history_member",
+      "depends": [
+        "history_count"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D1",
+      "path": "history.{i}.passport_country",
+      "ru": "Страна паспорта этого въезда",
+      "en": "Passport country used for this entry",
+      "kind": "country",
+      "choices": [],
+      "when": "history_member",
+      "depends": [
+        "history_count"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D2",
+      "path": "reported_window",
+      "ru": "За какое окно заявитель сам сообщает число дней? Это не расчёт режима.",
+      "en": "For which window does the applicant report days? This is not an eligibility calculation.",
+      "kind": "choice",
+      "choices": [
+        "60",
+        "120",
+        "180",
+        "360"
+      ],
+      "when": "previous_visits",
+      "depends": [
+        "previous_visits"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D2",
+      "path": "reported_days",
+      "ru": "Сообщённое заявителем число дней в этом окне",
+      "en": "Applicant-reported days in that window",
+      "kind": "integer",
+      "choices": [],
+      "when": "reported_window",
+      "depends": [
+        "reported_window"
+      ],
+      "maximum": 360,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D3",
+      "path": "risk.overstay",
+      "ru": "Были просрочки пребывания?",
+      "en": "Have there been overstays?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D3",
+      "path": "risk.fines",
+      "ru": "Были штрафы в Кыргызстане?",
+      "en": "Have there been fines in Kyrgyzstan?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D3",
+      "path": "risk.deportation",
+      "ru": "Было выдворение или депортация?",
+      "en": "Has there been expulsion or deportation?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D3",
+      "path": "risk.entry_ban",
+      "ru": "Был запрет на въезд?",
+      "en": "Has there been an entry ban?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D3",
+      "path": "risk.ban_until",
+      "ru": "До какой даты действует известный запрет?",
+      "en": "Until what date does the known ban apply?",
+      "kind": "date",
+      "choices": [],
+      "when": "entry_ban",
+      "depends": [
+        "risk.entry_ban"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D4",
+      "path": "previous_refusal",
+      "ru": "Были отказы в визе Кыргызстана?",
+      "en": "Has a Kyrgyzstan visa been refused before?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D4",
+      "path": "refusal.on",
+      "ru": "Дата прежнего отказа",
+      "en": "Previous refusal date",
+      "kind": "date",
+      "choices": [],
+      "when": "previous_refusal",
+      "depends": [
+        "previous_refusal"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D4",
+      "path": "refusal.type",
+      "ru": "Тип визы по прежнему отказу",
+      "en": "Visa type of the previous refusal",
+      "kind": "text",
+      "choices": [],
+      "when": "previous_refusal",
+      "depends": [
+        "previous_refusal"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D5",
+      "path": "previous_visa_count",
+      "ru": "Сколько прежних виз Кыргызстана нужно записать?",
+      "en": "How many previous Kyrgyzstan visas need to be recorded?",
+      "kind": "integer",
+      "choices": [],
+      "when": "previous_visits",
+      "depends": [
+        "previous_visits"
+      ],
+      "maximum": 20,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D5",
+      "path": "previous_visa.{i}.type",
+      "ru": "Тип прежней визы",
+      "en": "Previous visa type",
+      "kind": "text",
+      "choices": [],
+      "when": "previous_visa_member",
+      "depends": [
+        "previous_visa_count"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D5",
+      "path": "previous_visa.{i}.from",
+      "ru": "Начало действия прежней визы",
+      "en": "Previous visa valid from",
+      "kind": "date",
+      "choices": [],
+      "when": "previous_visa_member",
+      "depends": [
+        "previous_visa_count"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "D5",
+      "path": "previous_visa.{i}.until",
+      "ru": "Конец действия прежней визы",
+      "en": "Previous visa valid until",
+      "kind": "date",
+      "choices": [],
+      "when": "previous_visa_member",
+      "depends": [
+        "previous_visa_count"
+      ],
+      "maximum": 500,
+      "page": 27,
+      "rationale_ru": "Это нужно сотруднику для проверки обстоятельств и риска отказа.",
+      "rationale_en": "This helps the specialist check the circumstances and refusal risk."
+    },
+    {
+      "code": "E1",
+      "path": "current_basis",
+      "ru": "На каком основании заявитель сейчас в Кыргызстане?",
+      "en": "What is the applicant’s current basis of stay in Kyrgyzstan?",
+      "kind": "choice",
+      "choices": [
+        "visa_free",
+        "visa",
+        "ep",
+        "resident_card",
+        "residence_permit",
+        "none"
+      ],
+      "when": "in_kg",
+      "depends": [
+        "location"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "E1",
+      "path": "current_visa_type",
+      "ru": "Тип текущей визы",
+      "en": "Current visa type",
+      "kind": "text",
+      "choices": [],
+      "when": "current_visa",
+      "depends": [
+        "current_basis"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "E2",
+      "path": "registration.exists",
+      "ru": "Есть действующая регистрация?",
+      "en": "Is there a valid registration?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "in_kg",
+      "depends": [
+        "location"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "E2",
+      "path": "registration.until",
+      "ru": "До какой даты действует регистрация?",
+      "en": "When does registration expire?",
+      "kind": "date",
+      "choices": [],
+      "when": "registered",
+      "depends": [
+        "registration.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "E2",
+      "path": "registration.address",
+      "ru": "Адрес регистрации",
+      "en": "Registration address",
+      "kind": "text",
+      "choices": [],
+      "when": "registered",
+      "depends": [
+        "registration.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "E3",
+      "path": "current_inviter",
+      "ru": "Кто оформлял текущую визу или приглашение?",
+      "en": "Who arranged the current visa or invitation?",
+      "kind": "text",
+      "choices": [],
+      "when": "current_visa",
+      "depends": [
+        "current_basis"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "E4",
+      "path": "current_until",
+      "ru": "До какой даты действует текущее основание пребывания?",
+      "en": "When does the current basis of stay expire?",
+      "kind": "date",
+      "choices": [],
+      "when": "in_kg",
+      "depends": [
+        "location",
+        "current_basis"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "E5",
+      "path": "residence_petition",
+      "ru": "Подано ходатайство о ВНЖ или гражданстве?",
+      "en": "Has a residence or citizenship application been submitted?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "in_kg",
+      "depends": [
+        "location"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "E6",
+      "path": "declared_purpose",
+      "ru": "Какая цель была заявлена при въезде?",
+      "en": "What purpose was declared on entry?",
+      "kind": "text",
+      "choices": [],
+      "when": "in_kg",
+      "depends": [
+        "location"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F1",
+      "path": "inviter.exists",
+      "ru": "Есть приглашающая сторона в Кыргызстане?",
+      "en": "Is there an inviting party in Kyrgyzstan?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "inviter_needed",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F1",
+      "path": "inviter.type",
+      "ru": "Тип приглашающей стороны",
+      "en": "Type of inviting party",
+      "kind": "choice",
+      "choices": [
+        "company",
+        "university",
+        "clinic",
+        "relative",
+        "government",
+        "other"
+      ],
+      "when": "inviter",
+      "depends": [
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F2",
+      "path": "inviter.name",
+      "ru": "Название приглашающей стороны",
+      "en": "Inviting party name",
+      "kind": "text",
+      "choices": [],
+      "when": "inviter",
+      "depends": [
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F2",
+      "path": "inviter.tax_id",
+      "ru": "ИНН приглашающей стороны",
+      "en": "Inviting party tax identifier",
+      "kind": "text",
+      "choices": [],
+      "when": "inviter",
+      "depends": [
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F2",
+      "path": "inviter.contact",
+      "ru": "Контактное лицо приглашающей стороны",
+      "en": "Inviting party contact person",
+      "kind": "text",
+      "choices": [],
+      "when": "inviter",
+      "depends": [
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F2",
+      "path": "inviter.phone",
+      "ru": "Телефон приглашающей стороны",
+      "en": "Inviting party phone",
+      "kind": "text",
+      "choices": [],
+      "when": "inviter",
+      "depends": [
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F2",
+      "path": "inviter.email",
+      "ru": "E-mail приглашающей стороны",
+      "en": "Inviting party email",
+      "kind": "text",
+      "choices": [],
+      "when": "inviter",
+      "depends": [
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F3",
+      "path": "inviter.letter",
+      "ru": "Готовы выдать письмо с подписью и печатью?",
+      "en": "Can they issue a signed and stamped letter?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "inviter",
+      "depends": [
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F3",
+      "path": "inviter.constituent_documents",
+      "ru": "Готовы предоставить учредительные документы?",
+      "en": "Can they provide incorporation documents?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "inviter",
+      "depends": [
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F3",
+      "path": "inviter.portal_account",
+      "ru": "Есть кабинет на портале?",
+      "en": "Do they have a portal account?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "inviter",
+      "depends": [
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F4",
+      "path": "inviter.tax_debt_absent",
+      "ru": "Подтверждено отсутствие налогового долга?",
+      "en": "Has absence of tax arrears been confirmed?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "employer_or_study",
+      "depends": [
+        "purpose",
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F4",
+      "path": "inviter.social_debt_absent",
+      "ru": "Подтверждено отсутствие долга по соцвзносам?",
+      "en": "Has absence of social contribution arrears been confirmed?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "employer_or_study",
+      "depends": [
+        "purpose",
+        "inviter.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F5",
+      "path": "employment.position",
+      "ru": "Должность",
+      "en": "Job title",
+      "kind": "text",
+      "choices": [],
+      "when": "work",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F5",
+      "path": "employment.salary_kgs",
+      "ru": "Заявленная зарплата в сомах за месяц",
+      "en": "Reported monthly salary in KGS",
+      "kind": "decimal",
+      "choices": [],
+      "when": "work",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F5",
+      "path": "employment.contract_from",
+      "ru": "Начало трудового договора",
+      "en": "Employment contract start",
+      "kind": "date",
+      "choices": [],
+      "when": "work",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F5",
+      "path": "employment.contract_until",
+      "ru": "Конец трудового договора",
+      "en": "Employment contract end",
+      "kind": "date",
+      "choices": [],
+      "when": "work",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F5",
+      "path": "employment.workplace",
+      "ru": "Место работы",
+      "en": "Workplace",
+      "kind": "text",
+      "choices": [],
+      "when": "work",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F5",
+      "path": "employment.form",
+      "ru": "Найм или индивидуальное предпринимательство?",
+      "en": "Employment or individual entrepreneurship?",
+      "kind": "choice",
+      "choices": [
+        "employment",
+        "individual_business"
+      ],
+      "when": "work",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F6",
+      "path": "employment.prior_permits",
+      "ru": "Работодатель ранее оформлял ЕР?",
+      "en": "Has the employer obtained unified permits before?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "work",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F6",
+      "path": "employment.quota",
+      "ru": "Есть одобренная квота?",
+      "en": "Is there an approved quota?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "work",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F7",
+      "path": "employment.sector",
+      "ru": "Отрасль работодателя",
+      "en": "Employer industry",
+      "kind": "text",
+      "choices": [],
+      "when": "work",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F7",
+      "path": "employment.garment",
+      "ru": "Работодатель занимается швейным производством?",
+      "en": "Does the employer operate in garment manufacturing?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "work",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F7",
+      "path": "employment.chamber_member",
+      "ru": "Работодатель состоит в ТПП?",
+      "en": "Is the employer a chamber of commerce member?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "garment",
+      "depends": [
+        "employment.garment"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F8",
+      "path": "permit.exists",
+      "ru": "Есть действующее ЕР или разрешение?",
+      "en": "Is there an existing unified or work permit?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "work_in_kg",
+      "depends": [
+        "purpose",
+        "location"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F8",
+      "path": "permit.number",
+      "ru": "Номер действующего разрешения",
+      "en": "Existing permit number",
+      "kind": "text",
+      "choices": [],
+      "when": "permit",
+      "depends": [
+        "permit.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F8",
+      "path": "permit.until",
+      "ru": "Срок действующего разрешения",
+      "en": "Existing permit expiry",
+      "kind": "date",
+      "choices": [],
+      "when": "permit",
+      "depends": [
+        "permit.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F9",
+      "path": "company.exists",
+      "ru": "Есть собственная компания или ИП в Кыргызстане?",
+      "en": "Do you own a company or individual business in Kyrgyzstan?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "business",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F9",
+      "path": "company.planned",
+      "ru": "Планируется открыть компанию или ИП?",
+      "en": "Do you plan to establish a company or individual business?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "business",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F9",
+      "path": "company.form",
+      "ru": "Компания или ИП?",
+      "en": "Company or individual business?",
+      "kind": "choice",
+      "choices": [
+        "company",
+        "individual_business"
+      ],
+      "when": "company",
+      "depends": [
+        "company.exists",
+        "company.planned"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F10",
+      "path": "investment.amount_kgs",
+      "ru": "Заявленная сумма инвестиций в сомах",
+      "en": "Reported investment amount in KGS",
+      "kind": "decimal",
+      "choices": [],
+      "when": "investor",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "F10",
+      "path": "investment.authority_letter",
+      "ru": "Есть письмо органа по инвестициям?",
+      "en": "Is there a letter from the investment authority?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "investor",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G1",
+      "path": "family_count",
+      "ru": "Сколько членов семьи едет с заявителем? Ноль — никто.",
+      "en": "How many family members will travel with the applicant? Zero means none.",
+      "kind": "integer",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 20,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G1",
+      "path": "applicant.age",
+      "ru": "Возраст самого заявителя",
+      "en": "Applicant’s own age",
+      "kind": "integer",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 150,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G1",
+      "path": "applicant.family_relation",
+      "ru": "Кем заявитель приходится основному члену семьи в Кыргызстане?",
+      "en": "How is the applicant related to the principal family member in Kyrgyzstan?",
+      "kind": "choice",
+      "choices": [
+        "spouse",
+        "child",
+        "parent",
+        "other"
+      ],
+      "when": "family_purpose",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G3",
+      "path": "relationship_document.exists",
+      "ru": "Есть свидетельство о родстве самого заявителя?",
+      "en": "Does the applicant have their own relationship certificate?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "family_purpose",
+      "depends": [
+        "purpose",
+        "applicant.family_relation"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G3",
+      "path": "relationship_document.country",
+      "ru": "Страна выдачи документа о родстве заявителя",
+      "en": "Country issuing the applicant’s relationship certificate",
+      "kind": "country",
+      "choices": [],
+      "when": "own_family_document",
+      "depends": [
+        "purpose",
+        "applicant.family_relation",
+        "relationship_document.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G3",
+      "path": "relationship_document.apostille",
+      "ru": "Есть апостиль или легализация документа заявителя?",
+      "en": "Is the applicant’s certificate apostilled or legalized?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "own_family_document",
+      "depends": [
+        "purpose",
+        "applicant.family_relation",
+        "relationship_document.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G3",
+      "path": "relationship_document.translation",
+      "ru": "Есть перевод документа заявителя?",
+      "en": "Is the applicant’s certificate translated?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "own_family_document",
+      "depends": [
+        "purpose",
+        "applicant.family_relation",
+        "relationship_document.exists"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G5",
+      "path": "applicant.both_parents",
+      "ru": "Сам несовершеннолетний заявитель едет с обоими родителями?",
+      "en": "Will the minor applicant travel with both parents?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "own_minor",
+      "depends": [
+        "applicant.age"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G6",
+      "path": "applicant.born_in_kg",
+      "ru": "Сам несовершеннолетний заявитель родился в Кыргызстане?",
+      "en": "Was the minor applicant born in Kyrgyzstan?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "own_minor",
+      "depends": [
+        "applicant.age"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G6",
+      "path": "applicant.birth_on",
+      "ru": "Дата рождения самого заявителя",
+      "en": "Applicant’s own date of birth",
+      "kind": "date",
+      "choices": [],
+      "when": "own_child_born_kg",
+      "depends": [
+        "applicant.age",
+        "applicant.born_in_kg"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G6",
+      "path": "applicant.passport_received",
+      "ru": "Сам заявитель получил паспорт?",
+      "en": "Has the applicant received a passport?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "own_child_born_kg",
+      "depends": [
+        "applicant.age",
+        "applicant.born_in_kg"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G7",
+      "path": "applicant.dependent",
+      "ru": "Сам заявитель — родитель или совершеннолетний ребёнок на иждивении?",
+      "en": "Is the applicant a dependent parent or adult child?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "own_adult_child_or_parent",
+      "depends": [
+        "purpose",
+        "applicant.family_relation",
+        "applicant.age"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G7",
+      "path": "applicant.disability_basis",
+      "ru": "Для самого совершеннолетнего ребёнка заявлено основание инвалидности? Без диагноза.",
+      "en": "Is disability claimed as a basis for the adult child applicant? Do not provide a diagnosis.",
+      "kind": "boolean",
+      "choices": [],
+      "when": "own_adult_child",
+      "depends": [
+        "purpose",
+        "applicant.family_relation",
+        "applicant.age"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G1",
+      "path": "family.{i}.relation",
+      "ru": "Родство члена семьи №{i}",
+      "en": "Relationship of family member #{i}",
+      "kind": "choice",
+      "choices": [
+        "spouse",
+        "child",
+        "parent",
+        "other"
+      ],
+      "when": "family_member",
+      "depends": [
+        "family_count"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G1",
+      "path": "family.{i}.age",
+      "ru": "Возраст ребёнка №{i}",
+      "en": "Age of child #{i}",
+      "kind": "integer",
+      "choices": [],
+      "when": "child",
+      "depends": [
+        "family_count",
+        "family.{i}.relation"
+      ],
+      "maximum": 2147483647,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G2",
+      "path": "family.{i}.together",
+      "ru": "Член семьи №{i} въезжает вместе с заявителем?",
+      "en": "Will family member #{i} enter with the applicant?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "family_member",
+      "depends": [
+        "family_count"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G2",
+      "path": "family.{i}.later",
+      "ru": "Член семьи №{i} въезжает позже?",
+      "en": "Will family member #{i} enter later?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "family_member",
+      "depends": [
+        "family_count"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G3",
+      "path": "family.{i}.relationship_document",
+      "ru": "Есть свидетельство о родстве для члена семьи №{i}?",
+      "en": "Is there a relationship certificate for family member #{i}?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "family_purpose_member",
+      "depends": [
+        "family_count",
+        "purpose",
+        "family.{i}.relation"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G3",
+      "path": "family.{i}.document_country",
+      "ru": "Страна выдачи документа о родстве №{i}",
+      "en": "Country issuing relationship certificate #{i}",
+      "kind": "country",
+      "choices": [],
+      "when": "family_document",
+      "depends": [
+        "family_count",
+        "purpose",
+        "family.{i}.relation",
+        "family.{i}.relationship_document"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G3",
+      "path": "family.{i}.apostille",
+      "ru": "Есть апостиль или легализация документа №{i}?",
+      "en": "Is certificate #{i} apostilled or legalized?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "family_document",
+      "depends": [
+        "family_count",
+        "purpose",
+        "family.{i}.relation",
+        "family.{i}.relationship_document"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G3",
+      "path": "family.{i}.translation",
+      "ru": "Есть перевод документа №{i}?",
+      "en": "Is there a translation of certificate #{i}?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "family_document",
+      "depends": [
+        "family_count",
+        "purpose",
+        "family.{i}.relation",
+        "family.{i}.relationship_document"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G4",
+      "path": "principal.status",
+      "ru": "Статус основного члена семьи в Кыргызстане",
+      "en": "Principal family member’s status in Kyrgyzstan",
+      "kind": "choice",
+      "choices": [
+        "citizen",
+        "ep",
+        "resident_card",
+        "residence_permit",
+        "visa",
+        "none"
+      ],
+      "when": "foreign_family_purpose",
+      "depends": [
+        "purpose"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G4",
+      "path": "principal.until",
+      "ru": "До какой даты действует документ основного члена семьи?",
+      "en": "When does the principal family member’s document expire?",
+      "kind": "date",
+      "choices": [],
+      "when": "principal_document",
+      "depends": [
+        "principal.status"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G5",
+      "path": "family.{i}.both_parents",
+      "ru": "Ребёнок №{i} едет с обоими родителями?",
+      "en": "Will child #{i} travel with both parents?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "minor_child",
+      "depends": [
+        "family_count",
+        "family.{i}.relation",
+        "family.{i}.age"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G6",
+      "path": "family.{i}.born_in_kg",
+      "ru": "Ребёнок №{i} родился в Кыргызстане?",
+      "en": "Was child #{i} born in Kyrgyzstan?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "child",
+      "depends": [
+        "family_count",
+        "family.{i}.relation"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G6",
+      "path": "family.{i}.birth_on",
+      "ru": "Дата рождения ребёнка №{i}",
+      "en": "Child #{i} date of birth",
+      "kind": "date",
+      "choices": [],
+      "when": "child_born_kg",
+      "depends": [
+        "family_count",
+        "family.{i}.born_in_kg"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G6",
+      "path": "family.{i}.passport_received",
+      "ru": "Ребёнок №{i} получил паспорт?",
+      "en": "Has child #{i} received a passport?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "child_born_kg",
+      "depends": [
+        "family_count",
+        "family.{i}.born_in_kg"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G7",
+      "path": "family.{i}.dependent",
+      "ru": "Член семьи №{i} находится на иждивении?",
+      "en": "Is family member #{i} a dependant?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "adult_child_or_parent",
+      "depends": [
+        "family_count",
+        "family.{i}.relation",
+        "family.{i}.age"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "G7",
+      "path": "family.{i}.disability_basis",
+      "ru": "Для совершеннолетнего ребёнка №{i} заявлено основание инвалидности? Без диагноза.",
+      "en": "Is disability claimed as a basis for adult child #{i}? Do not provide a diagnosis.",
+      "kind": "boolean",
+      "choices": [],
+      "when": "adult_child",
+      "depends": [
+        "family_count",
+        "family.{i}.relation",
+        "family.{i}.age"
+      ],
+      "maximum": 500,
+      "page": 28,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "H1",
+      "path": "payer",
+      "ru": "Кто оплачивает услугу?",
+      "en": "Who will pay for the service?",
+      "kind": "choice",
+      "choices": [
+        "self",
+        "company",
+        "other"
+      ],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 29,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "H1",
+      "path": "commercial.contract",
+      "ru": "Нужен договор?",
+      "en": "Is a contract required?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 29,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "H1",
+      "path": "commercial.company_invoice",
+      "ru": "Нужен счёт на юридическое лицо?",
+      "en": "Is a company invoice required?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 29,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "H1",
+      "path": "commercial.closing_documents",
+      "ru": "Нужны закрывающие документы?",
+      "en": "Are completion/accounting documents required?",
+      "kind": "boolean",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 29,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "H2",
+      "path": "payment_preference",
+      "ru": "Предпочтительный способ оплаты",
+      "en": "Preferred payment method",
+      "kind": "choice",
+      "choices": [
+        "cash",
+        "card",
+        "bank_transfer",
+        "other"
+      ],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 29,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "H3",
+      "path": "extra_services",
+      "ru": "Какие дополнительные услуги интересуют?",
+      "en": "Which additional services are of interest?",
+      "kind": "choices",
+      "choices": [
+        "hotel",
+        "transfer",
+        "tour",
+        "tickets",
+        "insurance",
+        "registration"
+      ],
+      "when": "always",
+      "depends": [],
+      "maximum": 500,
+      "page": 29,
+      "rationale_ru": "",
+      "rationale_en": ""
+    },
+    {
+      "code": "H4",
+      "path": "referral",
+      "ru": "Откуда узнали о компании?",
+      "en": "How did you hear about the company?",
+      "kind": "text",
+      "choices": [],
+      "when": "always",
+      "depends": [],
+      "maximum": 200,
+      "page": 29,
+      "rationale_ru": "",
+      "rationale_en": ""
+    }
+  ],
+  "primary": [
+    "citizenships",
+    "location",
+    "current_country",
+    "actual_entry.on",
+    "purpose",
+    "entry_on",
+    "exit_on",
+    "document_type",
+    "inviter.exists",
+    "party_type",
+    "applicants_count"
+  ],
+  "repeats": {
+    "family": "family_count",
+    "history": "history_count",
+    "previous_visa": "previous_visa_count"
+  },
+  "legal_rules_approved": false,
+  "reducer_version": "kg-interview-reducer/1"
+}
