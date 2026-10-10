@@ -1,0 +1,13 @@
+{
+  "base": "8f415662f374f29d6cd374ddf5f781bf43c6891a",
+  "snapshot": "E6-15 final r2, EOF-only test whitespace correction",
+  "archive": "runs/e6-15-final-r2",
+  "normalization": "LF",
+  "files": {
+    "tests/test_entry_source_scenarios.py": "3a9fe5563fa0b1ccde436202de495dfe58ef0ca414ef5b4c03849199560454b7",
+    "tests/test_entry_source_postgres.py": "91b51628715ba5a965858faaef4281f87e960635dfae323eddaf29cc2e97959f",
+    "ai/tasks/2026-10-11-e6-15-source-scenarios.md": "c3b357ec5c8b6ee7d7c21add4fd19f8118c68950d863e60ad893718e666c9b5b"
+  },
+  "runtime_snapshot": "runs/e6-15-final",
+  "runtime_equivalence": "Both test module ASTs identical; only trailing blank line removed; task unchanged"
+}
