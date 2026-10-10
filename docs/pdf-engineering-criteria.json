@@ -1,7 +1,7 @@
 {
   "format": "pdf-engineering-criteria/1",
   "base_revision": "f0d9efa",
-  "target_points": 70,
+  "target_points": 100,
   "total_points": 100,
   "definition_sha256": "3a26373ae606cb6bba64adf1bd41fd8efb7a767663523d328cbd166aca219f4a",
   "scope": "Full inbound PDF+CRM engineering; no implied production readiness",

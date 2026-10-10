@@ -1,6 +1,6 @@
 # TASK — publication audit, atomic version switch and runtime knowledge gate
 
-CRITICAL / solo. Local synthetic implementation/checks; required independent reviewer/final auditor UNKNOWN. D04/D05, parent70-point goal stays ACTIVE. Requirements: PDF IT/0/Б and CRM KB-03/04/05, AC-22. Read the actual KB-04: a stale/conflicting rule must not disable other still-confirmed rules. No actual publication, source approval, env changes or production release.
+CRITICAL / solo. Local synthetic implementation/checks; required independent reviewer/final auditor UNKNOWN. D04/D05, parent100-point goal stays ACTIVE. Requirements: PDF IT/0/Б and CRM KB-03/04/05, AC-22. Read the actual KB-04: a stale/conflicting rule must not disable other still-confirmed rules. No actual publication, source approval, env changes or production release.
 
 ## Observable acceptance / risk pre-audit
 

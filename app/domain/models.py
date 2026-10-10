@@ -1735,7 +1735,58 @@ class KnowledgeDecision(DomainBase):
         return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision)
+class KnowledgePublicationEvent(DomainBase):
+    """Immutable lifecycle audit; active pointer/status stay in the existing tables."""
+    __tablename__ = "knowledge_publication_events"
+    __table_args__ = (
+        UniqueConstraint("id", "set_id", name="uq_knowledge_publication_set"),
+        UniqueConstraint("id", "version_id", name="uq_knowledge_publication_version"),
+        UniqueConstraint("set_id", "revision", name="uq_knowledge_publication_revision"),
+        UniqueConstraint("set_id", "request_key", name="uq_knowledge_publication_request"),
+        ForeignKeyConstraint(["version_id", "set_id"], ["knowledge_versions.id", "knowledge_versions.set_id"], name="fk_knowledge_publication_version"),
+        ForeignKeyConstraint(["previous_id", "set_id"], ["knowledge_publication_events.id", "knowledge_publication_events.set_id"], name="fk_knowledge_publication_previous"),
+        CheckConstraint("revision BETWEEN 1 AND 250", name="ck_knowledge_publication_revision"),
+        CheckConstraint("action IN ('review','approve','activate','rollback','withdraw')", name="ck_knowledge_publication_action"),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL) OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id)", name="ck_knowledge_publication_previous"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_knowledge_publication_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    set_id: Mapped[int] = mapped_column(ForeignKey("knowledge_sets.id"))
+    version_id: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    action: Mapped[str] = mapped_column(String(16))
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("command", "snapshot")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+class KnowledgePublicationUnit(DomainBase):
+    __tablename__ = "knowledge_publication_units"
+    __table_args__ = (
+        ForeignKeyConstraint(["event_id", "version_id"], ["knowledge_publication_events.id", "knowledge_publication_events.version_id"], name="fk_knowledge_publication_unit_event"),
+        ForeignKeyConstraint(["version_id", "unit_id"], ["knowledge_units.version_id", "knowledge_units.unit_id"], name="fk_knowledge_publication_unit_source"),
+        ForeignKeyConstraint(["decision_id", "version_id", "unit_id"], ["knowledge_decisions.id", "knowledge_decisions.version_id", "knowledge_decisions.unit_id"], name="fk_knowledge_publication_unit_decision"),
+        CheckConstraint("length(unit_hash) = 64 AND (decision_hash IS NULL OR length(decision_hash) = 64)", name="ck_knowledge_publication_unit_hashes"),
+        CheckConstraint("(decision_id IS NULL) = (decision_hash IS NULL)", name="ck_knowledge_publication_unit_decision"),
+    )
+    event_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    unit_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    version_id: Mapped[int] = mapped_column(Integer)
+    decision_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    unit_hash: Mapped[str] = mapped_column(String(64))
+    decision_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit)
 
 
 def _entry_immutable(mapper, connection, target):

@@ -2647,3 +2647,4 @@ from app.admin import kg_applicant_profiles  # noqa: E402,F401 — отдель�
 from app.admin import kg_deadlines  # noqa: E402,F401 — сроки конкретной заявки
 from app.admin import kg_deadline_tasks  # noqa: E402,F401 — задачи контроля срока
 from app.admin import kg_knowledge_decisions  # noqa: E402,F401 — журнал проверки знаний
+from app.admin import kg_knowledge_publication  # noqa: E402,F401 — публикация проверенных правил

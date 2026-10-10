@@ -8,6 +8,7 @@
 </style>{% endblock %}
 {% block content %}<main class="kg-review">
 <p class="no-print"><a href="/admin/kg-entry/knowledge">← Поиск по PDF</a>{% if report %} · <a href="{{ url }}?version={{ report.version.id }}">Все правила версии</a>{% endif %}</p>
+<p class="no-print"><a href="/admin/kg-entry/publication{% if report %}?version={{ report.version.id }}&units={{ report.unit.unit_id }}{% elif catalog and catalog.version_id %}?version={{ catalog.version_id }}{% endif %}">Публикация проверенных правил</a></p>
 <h1>Проверка базы знаний</h1><p class="box notice">Решение сохраняет результат сверки и его основание. Исходные пометки и конфликты остаются в версии источника. Выдача клиенту требует отдельного допуска и публикации.</p>
 {% if error %}<p class="box error" role="alert">{{ error }}</p>{% endif %}
 {% if retry %}<form method="post" action="{{ url }}" class="box" id="kg-review-retry">{% for name,value in retry.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}<button type="submit" {% if not write_on %}disabled{% endif %}>Повторить исходный запрос</button></form>{% endif %}

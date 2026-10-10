@@ -369,6 +369,11 @@ class Settings(BaseSettings):
     admin_workday_enabled: bool = False
     # Пилот анкеты въезда из визовой услуги: прежний full-admin scope, default OFF.
     admin_kg_entry_enabled: bool = False
+    # DEC-07 authority must be explicitly configured after an owner decision.
+    # Empty defaults deny publication; these values are never editable in forms.
+    kg_knowledge_publishers: list[str] = Field(default_factory=list)
+    kg_knowledge_policy_ref: str = ""
+    kg_knowledge_policy_sha256: str = ""
     # Secure-флаг на cookie сессии. На проде ОБЯЗАТЕЛЕН (TLS терминирует nginx) и потому
     # True по умолчанию. Выключается только для локального просмотра панели по http —
     # иначе браузер не сохранит cookie и войти в панель на localhost нельзя.
