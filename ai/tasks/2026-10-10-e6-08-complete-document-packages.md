@@ -1,0 +1,19 @@
+# TASK — complete conditional document packages
+
+CRITICAL / solo, local synthetic implementation/checks. Required independent reviewer/final auditor UNKNOWN. Parent100-point target ACTIVE. F04/F05/F07; F06 file quarantine is a separate policy-gated follow-up. Completion target: local implementation with exact revision evidence; no production or real document upload.
+
+## Source and observable acceptance
+
+- PDF §§5.1–5.5,11.4, matrix pages36–37, medical supplement38, detailed types38–39, invitation39–40, quality40 and employer/resident53–54. Use original PDF plus the hash-pinned derived catalog. Matrix alone is incomplete: detailed types include TR, SW1/SW2, DN/J/M/I/R/T/A outside its nine columns. Do not invent matrix cells or treat an omitted cell as an exemption.
+- Preserve each source obligation, recommendation, alternative and conditional supplement with exact source section/page/text/hash. Keep normative, practice, verify and decision marks distinct. Unknown applicability blocks acceptance; false is not the default. Alternative documents are alternatives, not cumulative requirements. Medical/student/employer/family/registration branches remain separate.
+- A full versioned definition must include general quality/translation/legalization checks, detailed type-specific documents, invitation contents and EP/resident dependencies. Source uncertainty or unapproved definitions remain visible and do not become legal approval from a checked box.
+- Extend existing document inventory without rewriting historical definitions, command hashes or snapshots. Preserve file version/passport invalidation, per-application/case ownership, immutable history, CAS and exact retry. Existing matrix-only inventories remain readable and visibly incomplete until explicitly upgraded.
+- Immutable package review pins exact definition/policy, applicability evidence and document versions/fingerprints. Approval is disabled unless explicit server-owned authority/definition approval is configured; no invented DEC-06/07/11 policies. New file/passport/condition/definition changes revoke effective acceptance. Review cannot authorize portal submission by itself.
+- Native CRM flow: preview full requirements, receive/correct/review, explicit package review/revocation, exact history/print, errors and uncertain-write retry, full-admin/OFF/workday/write protection, mobile and no-JS. No arbitrary personal data or new external messages.
+- Negative checks: unknown and conflicting facts, unselected alternatives, stale inventory/definition/policy, substituted file/case/application, lost commit acknowledgement, concurrent saves, late/out-of-order corrections and source corruption. Additive migration if needed; SQLite FK/model parity, PG DDL and populated/offline downgrade refusal. PG runtime remains UNKNOWN until actually available and exercised.
+
+## Current evidence / next action
+
+E6-02A preserves23 matrix rows ×9 columns plus full source sections as text. E6-02B persists matrix inventory and review/correction but always reports supplements_assessed=False/package_accepted=False. Read actual source paragraphs and existing reducer before extending. Do not count F04/F05/F07 until the complete behavior, native flow and meaningful tests pass on a committed revision. File bytes/quarantine and real policy approval are separate gates.
+
+Source verification: original physical pages38/39/53/54 visually inspected on2026-10-10 (renders in ignored `runs/e6-08-source`). Medical supplements for long-term SW1/SW2/S/RL/FF include HIV/086-U/OMS; work-based resident has HIV/086-U. This is a preserved source statement, not current legal confirmation. Alternatives in TR/RL/registration must not become cumulative requirements; ESUVM tax-record and foreign-document treaty exceptions remain explicit unknown conditions. No new code for this task yet.

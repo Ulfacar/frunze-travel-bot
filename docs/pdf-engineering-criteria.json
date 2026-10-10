@@ -264,8 +264,17 @@
       "weight": 2,
       "pdf": "IT/0",
       "acceptance": "Atomic publication gates, active version pin and rollback",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "6e6fd8ce6a102d519655aaef1953f009cc569726",
+          "command": "python -m pytest tests/test_knowledge_publication.py tests/test_admin_kg_knowledge_publication.py tests/test_knowledge_publication_migration.py tests/test_knowledge_decisions.py tests/test_knowledge_review.py tests/test_entry_storage.py tests/browser_kg_knowledge_publication.py -q --tb=short -ra",
+          "environment": "Env-free Git archive / Windows Python3.12 / synthetic SQLite / Playwright",
+          "scope": "Atomic policy-gated lifecycle, exact recovery, source/evidence pin and per-rule runtime expiry/revocation;152 PASS. Independent review and production approval UNKNOWN.",
+          "artifact": "ai/handoffs/2026-10-10-0625-e6-07b-knowledge-publication.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {
@@ -273,8 +282,17 @@
       "weight": 2,
       "pdf": "IT/Б",
       "acceptance": "Runtime knowledge adapter refuses draft/stale/conflicting rules",
-      "status": "UNKNOWN",
-      "evidence": [],
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "6e6fd8ce6a102d519655aaef1953f009cc569726",
+          "command": "python -m pytest tests/test_knowledge_publication.py tests/test_admin_kg_knowledge_publication.py tests/test_knowledge_publication_migration.py tests/test_knowledge_decisions.py tests/test_knowledge_review.py tests/test_entry_storage.py tests/browser_kg_knowledge_publication.py -q --tb=short -ra",
+          "environment": "Env-free Git archive / Windows Python3.12 / synthetic SQLite / Playwright",
+          "scope": "Atomic policy-gated lifecycle, exact recovery, source/evidence pin and per-rule runtime expiry/revocation;152 PASS. Independent review and production approval UNKNOWN.",
+          "artifact": "ai/handoffs/2026-10-10-0625-e6-07b-knowledge-publication.md"
+        }
+      ],
       "review": "UNKNOWN"
     },
     {

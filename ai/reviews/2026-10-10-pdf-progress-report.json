@@ -1,18 +1,14 @@
 {
-  "report": "docs\\reports\\frunze-pdf-progress-2026-10-10-engineering-progress.pdf",
-  "sha256": "08ef3ebda238988191352c6e8c286d8ab4af3c2b5a3ea07622a293462ae744ff",
+  "report": "docs/reports/frunze-pdf-progress-2026-10-10-engineering-progress.pdf",
+  "sha256": "7548688c52cbc3042d4c0b9c197ad2718d5d16651cdafd29e1a72230cef8d14d",
   "pages": 5,
   "source_headings_checked": 26,
-  "technical_points": 51,
+  "technical_points": 61,
+  "target_points": 100,
   "source_approved": false,
   "critical_independent_review": "UNKNOWN",
   "visual_review": "all5 pages inspected;26 headings checked after removing PDF layout whitespace",
   "code_revisions": [
-    "5feb4e0",
-    "1d4a73c",
-    "8e9ab4f",
-    "6c4b587",
-    "71ba91e",
-    "06df2a6"
+    "6e6fd8ce6a102d519655aaef1953f009cc569726"
   ]
 }

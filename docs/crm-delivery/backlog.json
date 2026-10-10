@@ -686,7 +686,7 @@
       "evidence": "Повреждённый JSON/YAML/колонка отклонены с местом ошибки; активная версия сохранена; исключения не спрятаны в комментариях.",
       "status": "ЧАСТИЧНО",
       "owner": "Этапы E5-02A/B/C/D/E реализовал Codex 06–07.10.2026; владелец утверждения не назначен",
-      "progress": "Валидация, 208 draft units, локальный импорт, diff, review-индекс стран и профильные условия 6 режимов (met/not_met/unknown) реализованы. DB-индекс/полный выбор режима впереди. Импорт CRITICAL PARTIALLY_READY: независимое review/audit и PG16 UNKNOWN. Публикация/откат и полные AC-18/22/23 открыты; подробности в backlog.md.",
+      "progress": "Импорт/валидация/diff/индекс, журнал проверки и атомарная публикация/откат с runtime-допуском отдельных правил реализованы локально. Исходные208 units не утверждены. Полный выбор режима, independent review/audit, PG runtime и бизнес-приёмка открыты.",
       "role": "Разработчик; проверка владельцем соответствующего направления",
       "decision_journal_checkpoint": {
         "revision": "29c27ab3a26be9eb075e53645050e5308678d785",
@@ -694,6 +694,13 @@
         "checks": "229 PASS /4 SKIP; supplementary original PDF2 PASS",
         "handoff": "ai/handoffs/2026-10-10-0557-e6-07a-knowledge-decisions.md",
         "publication_approved": false
+      },
+      "publication_checkpoint": {
+        "revision": "6e6fd8ce6a102d519655aaef1953f009cc569726",
+        "status": "PARTIALLY_READY",
+        "checks": "152 PASS /3 warnings; prior broader323 PASS /2 PG SKIP",
+        "handoff": "ai/handoffs/2026-10-10-0625-e6-07b-knowledge-publication.md",
+        "actual_source_approved": false
       }
     },
     {
