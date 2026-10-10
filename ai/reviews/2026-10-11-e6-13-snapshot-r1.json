@@ -1,0 +1,27 @@
+{
+  "base": "e37749a07023aabfa1134602ee6c384254eafcfd",
+  "snapshot": "uncommitted E6-13 complete source r1",
+  "archive": "runs/e6-13-review-r1",
+  "normalization": "LF",
+  "files": {
+    "app/config.py": "5c9f4695d9359f1e243a426a46c32b1d593c560f7f00dd8496a6be8abe1b675d",
+    "app/domain/models.py": "141a2a10aae76c94ee0fcc9c6bac5e19e808ac08c2d8f4899c68f8f795068f19",
+    "app/domain/entry_quote_policy.py": "baf17de7039821ac062f91e614b9aa65ea7aecd1d42bca15cd8d7f58f33b3529",
+    "app/domain/entry_quotes.py": "a91935b1edef0e9ba751b3d44e14198205620d7df389cdd195f0abae82c5f161",
+    "app/knowledge/quote_rules.py": "390773052c2a6c9ce728054961c4bceb7871863fe718ac6d7c3269ebecfb8e91",
+    "alembic/versions/e6_quote_revisions_0030.py": "c4103d06251b62b76c59c0547d5b5419088f1fc88bd412c85bda1fc25ef37347",
+    "app/admin/kg_quotes.py": "4bd20e7286025cb77c021f98a64d747689909a705c6d895075ff4a7c8ced98b0",
+    "app/admin/router.py": "2ceeea7866db098eea5604a2869b95541c0f9ffda320ec32ad7ac68584f24e85",
+    "app/admin/templates/kg_quotes.html": "a6b3bead3dd977bb36324627f60ab5231f8ccac37bb413685347f98894652d49",
+    "app/admin/templates/kg_applications.html": "6697f90a079945d7b0e7ceb0ba1278e78d8dd879827ec29f6e5c4424bb87cf01",
+    "tests/test_quote_rules.py": "22069a76bad5fa752c99e2476f2c1838a3304e2c16a35ce59bab45a0df42f0f5",
+    "tests/test_entry_quotes.py": "ea066cfd9d8428ecc1a6e8f3c2567f569aa0142f92015ff1966f585e77b79939",
+    "tests/test_admin_kg_quotes.py": "7a7613602b54786eef0bc47527f5b932ceb7af75bc7d8ac41f61ff19bffc8e3e",
+    "tests/test_entry_quote_migration.py": "0109b4535cb1a80aa4e0f2e2a77d5b8b8ce67492af392b4218c6614ef0f059f7",
+    "tests/test_entry_quote_postgres.py": "ec586526ce98fad4ca7a21e1c11fadeeba8267745aca20193a3e91eb671e4006",
+    "tests/browser_kg_quotes.py": "ceecd8a70698d34f84f8a7cfcf4b5f6828ef1ef1b38633616098a35a1fee8502",
+    "tests/test_alembic_domain_migration.py": "a13300536b5f426e96c17e2307d68210d3dceda14c4d3d8431c7dbc8221b4f1d",
+    "tests/test_service_cases.py": "5b5f075e139d06be9d7201032d372589a02e79eceb34803dc9df47eacbdfad0a",
+    "docs/e6-13-versioned-quotes.md": "718668a1078486f59f1908faeb2f124e03d57623b261f83df8c2cc191ad816ae"
+  }
+}

@@ -201,9 +201,18 @@
       "weight": 2,
       "pdf": "12",
       "acceptance": "Versioned quote calculation with separate currencies/fees and unknown-price blocking",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "c611b86d23d622c64bb9056e4e855c6e93437370",
+          "command": "Builder92 core/browser +23 actualPG; independent94/24/1/2; separate121 final audit; r3 whitespace AST identity+37pure. Exact commands in artifact.",
+          "environment": "Windows Python3.12 / env-free archives / synthetic FK SQLite, Chromium, isolated PostgreSQL16.15",
+          "scope": "Versioned quote calculation with separate currencies/fees and unknown-price blocking; explicit default-empty server authority, local synthetic scope only",
+          "artifact": "ai/handoffs/2026-10-11-0350-e6-13-versioned-quotes.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "C05",

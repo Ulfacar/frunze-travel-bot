@@ -46,6 +46,16 @@
       "errors": "0",
       "skipped": "0",
       "time": "284.193"
+    },
+    {
+      "artifact": "runs/e6-12-local/runs/interview-r3-regression.xml",
+      "sha256": "2870d4c1e71175e73657da6769eff39f6c49b330379fda5a1650315ac7cb0cbb",
+      "snapshot": "r3",
+      "tests": 298.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 2.0,
+      "time": 783.63
     }
   ],
   "recovery_artifact": "runs/auditor-e612-r3/runs/auditor-interview-r3-recovery.json",

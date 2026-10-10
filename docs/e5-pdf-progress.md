@@ -1,3 +1,11 @@
+# E6-13 checkpoint — versioned internal quotations
+
+Reviewed local code `c611b86d23d622c64bb9056e4e855c6e93437370`. **84/100 technical points,16 remaining**, fixed definitions unchanged; only C04 adds2. Immutable exact application/applicant quotes retain old algorithms and policy snapshots, separate four fee components and USD/KGS, and block complete prices when any required amount is unknown. Explicit preview/save, current authority overlay, native history/print. Actual server recipes remain empty; no legal eligibility, FX, payment, contract or client sending is inferred.
+
+Independent review APPROVE/final audit GO for r2, extended to exact r3 after independent one-file whitespace/AST checks. Builder92 focused/browser,23 actualPG; broader273PASS/2 optionalPG SKIP; reviewer94/24/1/2 and separate auditor121PASS with26 actualPG checks (overlapping scopes). Binary COPY recovery preserves old receipts and supports a new revision; root inspected both print pages. Failure/fix sequence, exact commands and limitations: `ai/handoffs/2026-10-11-0350-e6-13-versioned-quotes.md`.
+
+Next E6-14: explicitly bound WhatsApp dialog suppression and atomic handoff, pre-audit GO. No runtime implementation or B04/H04 credit yet. Complete classification/approved responses, client notifications, exact whole-SOP/B8 acceptance, prior critical review and owner decisions remain. No deploy; final Telegram pending.
+
 # E6-12 checkpoint - 2026-10-11
 
 Reviewed local code `594a9f3c28be2d2b44986c6eed583b805e0c677b`, pushed to origin working branch. **82/100 technical points,18 remaining**, fixed definitions unchanged. Only B03/H01 add5 points for the complete typed A-H catalog and persisted RU/EN adapter. B04/H02/H04/J02 remain partial/UNKNOWN; installed bot/followup suppression and exact approved qualification scenarios are not complete.

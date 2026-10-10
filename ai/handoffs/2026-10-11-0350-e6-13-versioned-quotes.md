@@ -1,0 +1,46 @@
+# E6-13 — versioned internal quotations
+
+**DONE for reviewed LOCAL synthetic target**, CRITICAL / solo. Code `c611b86d23d622c64bb9056e4e855c6e93437370`, root/archive/commit19/19 identity PASS. Parent overnight scope remains active, no deploy. No production or actual tariff approval is implied. Task `ai/tasks/2026-10-11-e6-13-versioned-quotes.md`; contract `docs/e6-13-versioned-quotes.md`.
+
+## Delivered scope
+
+Default-empty explicit server recipe authority; exact Decimal strings, mandatory service/government/bank/partner components, separate USD/KGS, additional-block arithmetic and government-only urgency. Unknown, zero and exemption remain distinct. Incomplete, sub-cent, expired or overflowing results cannot become full prices. No FX, payments, refund terms, contracts, client offers, eligibility decision or source publication is invented.
+
+One exact application/applicant/attempt per quote, explicit read-only preview then signed save; additive immutable table0030. Original policy, recipe, observed application event, calculator version and result are retained. Transactional preview recheck/CAS, exact request retry before current policy/limits, current identity revocation before DB, semantic bounded replay and separate current-use status. Native application link, history, unknown/stale displays, no-JS/mobile and print. Different active calculator/policy or later application facts preserve historical receipts and invalidate their current authority.
+
+Frozen r2: `runs/e6-13-review-r2`, base `e37749a07023aabfa1134602ee6c384254eafcfd`,19 files. Manifest `ai/reviews/2026-10-11-e6-13-snapshot-r2.json`, SHA256 `91b2ecb93a91665ac33c7d80e46582a597425ad2830dd02d40ccd2f110d56e07`. Root/archive LF identity19/19 PASS, all Python files AST-parse; cold imports `app.admin.kg_quotes`, `app.admin.kg_interviews`, `app.admin.kg_applications`, `app.main` PASS in env-free frozen copy. Protocol structure and `git diff --check` PASS. Commit identity is checked after saving.
+
+## Failure history and corrected evidence
+
+R1 retained unchanged, manifest SHA987bb02e7a3b0e3581c7265338c3c7a3271b093141b0e5cf94c6621cc40705d7. Ordinary suites passed, but independent original probes found five defects: v1 output read the mutable active VERSION and broke old replay; native body was fully buffered before its limit; non-ASCII security tokens caused an unhandled comparison TypeError; replay accepted an impossible backwards observed application head; bool values compared equal to integer revisions. These failures were not hidden by positive baseline counts.
+
+R2 retains literal calculator versions, resolves the active version at call time, requires the original calculator on save/retry and labels a changed calculator as stale. Streaming input stops at16KiB, declared length is checked before reading, security tokens require64 lowercase hex. Replay checks source-head monotonicity and canonical type-sensitive command/pin/result equality; bool pin/result and null calculator attacks also fail closed. Independent unchanged probes now PASS on SQLite and PostgreSQL. A separate native switch probe verifies exact old SAVE retry, rejection of an unsaved old preview, and a new working v2 preview/save.
+
+Builder checks, Python3.12 / env-free `runs/e6-13-local` / synthetic FK SQLite and Chromium:
+
+- `python -m pytest tests/test_quote_rules.py tests/test_entry_quotes.py tests/test_admin_kg_quotes.py tests/test_entry_quote_migration.py tests/browser_kg_quotes.py -q --tb=short --basetemp=runs/quote-r2-tmp --junitxml=runs/quote-r2.xml`: **92 PASS**,3 dependency deprecation warnings,162.18s.
+- Root `python runs/e610_legacy_pg_probe.py runs/e6-13-local tests/test_entry_quote_postgres.py -q --tb=short --basetemp=runs/quote-r2-pg-tmp --junitxml=runs/quote-r2-pg.xml`: **23 PASS**,1 warning,83.45s. Actual PostgreSQL16.15 localhost55971, isolated UUID databases; CAS, application races, commit faults, time boundaries, invalid/rehashed histories, schema/parity/FKs/downgrade refusal and recovery.
+- Earlier core1 **59 PASS**; native3 **18 PASS**; PG1 **17 PASS**; extra capacity/actor **2 PASS**. Earlier core2 **74 PASS/1 FAIL** was a test fixture referencing nonexistent `admin_workday_write_enabled`, corrected to the actual write gate. Counts overlap and are not summed.
+- Initial selected broader command failed collection because existing `test_contract_signing.py` imports bare `test_service_cases`; retry explicitly adds the tests directory to `sys.path`, without changing unrelated production/test code. The completed rerun result is recorded below.
+
+Broader r2 regression **273PASS/2 optional PostgreSQL SKIP/1 deprecation warning/545.17s**, `runs/e6-13-local/runs/quote-r2-regression2.xml`. Command: `python -c "import sys,pytest; sys.path.insert(0,'tests'); raise SystemExit(pytest.main(['tests/test_service_money.py','tests/test_service_cases.py','tests/test_admin_kg_applications.py','tests/test_admin_kg_entry.py','tests/test_alembic_domain_migration.py','tests/test_entry_interviews.py','tests/test_admin_kg_interviews.py','-q','--tb=short','--basetemp=runs/quote-r2-regression2-tmp','--junitxml=runs/quote-r2-regression2.xml']))"`. Existing money, case, application, interview, native and metadata paths pass. The two skips do not substitute for separate actual PostgreSQL evidence. This is not a whole-suite claim.
+
+Reviewer `ai/reviews/2026-10-11-e6-13-independent-review.md`: **APPROVE r2**, all five findings closed. Own94 core,24 actualPG,1 native version-switch and2 browser PASS; commands, hashes and original failures preserved in the report. Separate auditor `ai/reviews/2026-10-11-e6-13-final-audit.md`: **GO**,121PASS including26 actualPG checks,313.71s, no failures/skips. Original probes run unchanged on both engines; full command and artifacts in its report. These are overlapping scopes, not one unique test count.
+
+Final cosmetic r3: staged whitespace check detected one extra blank line at EOF in the previously untracked pure-test file. Moved that line before the last function; **only tests/test_quote_rules.py changed, AST/nonblank text unchanged**, all18 other files identical to r2. Frozen `runs/e6-13-review-r3`, manifest SHA256 `23472efaf061922632ee2c5b95c0750b82f6b1387a66bbb54b2f6a58ff0d6dd6`. Both independent reviewers checked the exact delta and extended APPROVE/GO to r3; reports preserve the r2 execution provenance. Additional exact-r3 `python -m pytest tests/test_quote_rules.py -q --tb=short --basetemp=runs/quote-r3-pure-tmp --junitxml=runs/quote-r3-pure.xml`: **37PASS/0.41s**. Final staged whitespace PASS. No runtime change followed the reviewed r2 executions.
+
+## Recovery and visual evidence
+
+Builder Binary COPY creates a repeatable-read backup, rebuilds all30 migrations in a fresh isolated database, restores with FKs enabled and sequences, compares all54 domain table counts/57 rows. Exact old receipt/read/retry survives; current policy removal still blocks use; native read and a new quote revision succeed. Report `runs/e6-13-local/runs/quote-postgres-recovery.json`, SHA256 `607cb0c96861026029f384fcd82b570c3d50d77b56361d9ef5114350efc4cd37`; backup SHA256 `e8a8a24d2f3b7fce2cce579a433e26b39f88d09d547e77c1650b162d59e808a0`. Independent reviewer recovery also PASS, report SHA787dea9a0f6c7340f978a1a1129f1a867824adedd14c13acf84f29ba9178a697.
+
+Root inspected mobile preview/retry, desktop saved receipt and **both** final print pages. Final builder synthetic PDF SHA256 `0fccb54098db32b1326baf3b868a50043449c62da9b19faaa3ed00b0d9dfc0d8`. Unknown bank fee blocks a complete total; known200USD remains a labelled subtotal; removed present authority is visible on paper. Actual tariffs were never configured.
+
+Native `pg_dump`/`pg_restore` remains UNKNOWN under Windows App Control4551. This is application-level same-code COPY/Alembic recovery, not production/PITR or every-table-populated recovery. No security setting changed. Full E6-12 frozen suite continues separately; E6-11 full4258PASS/47SKIP is historical, not E6-13 full-suite evidence.
+
+## Completion and continuation
+
+Both independent opinions support **C04 PASS**, adding2 technical points: **82→84/100**,16 remain. Definitions/weights and all other criterion statuses are unchanged. Whole-project CRITICAL coverage, real source/privacy/commercial policy, native backup tooling and owner acceptance remain UNKNOWN. Separate audit COPY report SHA256 `aecf8e9bb61b62303822a8cd153c3c98fa82998ec6a5654ecc8fd96298c026d1` confirms exact old receipt, current authority denial and new write after restore.
+
+Next prepared E6-14 addresses installed channel/follow-up suppression after handoff; pre-audit requested, no runtime changes yet. Final Telegram to the verified user through the existing server bot remains pending until overnight work ends. No deployment.
+
+Final five-page progress PDF `docs/reports/frunze-pdf-progress-2026-10-11-versioned-quotes.pdf`, SHA256 `7a76912a525b12c96ecdaf41a363bb8df18d3dfc105e5e67a9e3f443dae15b77`: all five pages inspected,84/16 score, all26 source sections, saved revision and limits visible. Compact JUnit counters and sanitized COPY reports are preserved in `ai/reviews/2026-10-11-e6-13-runtime-evidence.json`. E6-14 pre-audit now GO for exact bound WhatsApp dialogs; real activation/recipient authority remains empty and runtime has not started.

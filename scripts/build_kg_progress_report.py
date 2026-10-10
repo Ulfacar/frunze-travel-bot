@@ -33,7 +33,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -96,7 +96,7 @@ def main(argv=None):
         <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
         не загружаются и не принимаются; подача не разрешается.</li></ul>"""
         estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
-    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff"):
+    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes"):
         if __package__:
             from .check_pdf_engineering_progress import evaluate
         else:
@@ -188,6 +188,24 @@ def main(argv=None):
         remaining = ("Версионированная стоимость и квалификация по утверждённым правилам, "
                      "подключение клиентского диалога и остановка всех автоматических ответов после передачи; "
                      "уведомления клиента, точные сквозные сценарии PDF, аудит прежних модулей и приёмка владельцем.")
+        review_note = ("Локальные PostgreSQL и восстановление через COPY проверены; штатный pg_dump заблокирован "
+                       "защитой Windows. Полный аудит прежних модулей и production recovery ещё не подтверждены.")
+    if args.checkpoint == "versioned-quotes":
+        title = "Расчёт стоимости с сохранением версий"
+        intro = "Добавлен внутренний расчёт по явно заданному прайсу для одной заявки и одного заявителя."
+        result = """<ul><li>Сервисный, государственный, банковский и партнёрский сборы разделены.
+        USD и KGS не складываются; срочность влияет только на подтверждённые государственные позиции.</li>
+        <li>Неизвестный сбор блокирует полную цену. Ноль, освобождение и неизвестная сумма различаются;
+        курс валют, округление и реальные ставки не выдумываются.</li>
+        <li>Предварительный расчёт сохраняется отдельным подтверждением. Старые версии остаются читаемыми
+        после смены алгоритма, прайса или заявки; их текущая применимость проверяется отдельно.</li>
+        <li>Проверены повторы, параллельные записи, повреждённая история, формы без JavaScript,
+        мобильный экран и обе страницы печати. Оплаты и договоры не меняются.</li>
+        <li>Независимые review/audit и восстановление PostgreSQL пройдены.
+        Реальный прайс пуст; расчёт не подтверждает право на визу и не отправляется клиенту.</li></ul>"""
+        remaining = ("Квалификация и ответы по утверждённым правилам, подключение клиентского диалога "
+                     "и остановка автоматических ответов после передачи, уведомления клиента, "
+                     "полные сквозные сценарии PDF, аудит прежних модулей и приёмка владельцем.")
         review_note = ("Локальные PostgreSQL и восстановление через COPY проверены; штатный pg_dump заблокирован "
                        "защитой Windows. Полный аудит прежних модулей и production recovery ещё не подтверждены.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
