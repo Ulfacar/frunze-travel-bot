@@ -206,8 +206,7 @@ def annotate(clauses):
         all_of(product('SW2'),any_of(
             fact('sw2_category','Основание SW2','volunteer',['journalist','volunteer','fund']),
             fact('sw2_category','Основание SW2','fund',['journalist','volunteer','fund']))),
-        all_of(product('TS'),any_of(fact('gambling','Основание связано с игорным заведением'),
-            fact('high_risk_country','Риск по гражданству отдельно оценён специалистом'))),
+        all_of(product('TS'),fact('gambling','Основание связано с игорным заведением')),
         all_of(product('RES'),fact('resident_basis','Основание резидент-карты','work',['work','SW1','SW2','S','RL','FF'])),
         fact('invitation_required', 'Письмо приглашающей стороны требуется по дополнительному основанию'))
     set_when('g08_01 '+' '.join(f'letter{i:02}' for i in range(1,11)), invitation)
@@ -279,7 +278,7 @@ def annotate(clauses):
 def build():
     catalog = load_document_catalog(); source = catalog.document()
     clauses, facts = annotate(extract_clauses(source))
-    return dict(format='kg-complete-document-definitions/1', version='pdf-1.1-complete-documents-review-2',
+    return dict(format='kg-complete-document-definitions/1', version='pdf-1.1-complete-documents-review-3',
         source_sha256=source['source_sha256'], matrix_catalog_sha256=catalog.digest,
         publication_approved=False, products=PRODUCTS, clauses=clauses, facts=facts, alternatives=ALTERNATIVES,
         matrix={product:checklist(catalog, product) for product in source['products']},

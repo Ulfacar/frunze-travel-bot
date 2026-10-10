@@ -7,8 +7,9 @@ from pathlib import Path
 from app.knowledge.document_checklist import DocumentChecklistError, STATES
 
 CATALOG_PATH = Path(__file__).resolve().parents[2]/'knowledge/kg_entry/complete_documents_v1_1/catalog.json'
-CATALOG_SHA256 = 'f176ab74144a593fd9ff644ba219d6731205c5fd232f1a661616c0223d40ad1a'
+CATALOG_SHA256 = '555f15c6befb85da5c5386b2981d94897891aecafbce4e0edbb5362897e049f9'
 KNOWN_CATALOGS = {CATALOG_SHA256: CATALOG_PATH,
+    'f176ab74144a593fd9ff644ba219d6731205c5fd232f1a661616c0223d40ad1a': CATALOG_PATH.with_name('catalog-review-2.json'),
     '5014a02c362964d74f0c55915dd2045c040ea513f9d9488585f745c0a67401d0': CATALOG_PATH.with_name('catalog-foundation.json')}
 
 

@@ -53,7 +53,7 @@ def test_native_document_package_versions_and_history(env,width,js):
             assert 'Текущая приёмка не подтверждена' in page.locator('#kg-dp-summary').inner_text()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             page.locator('#kg-dp-item').focus();assert page.locator('#kg-dp-item').evaluate('(e)=>document.activeElement===e')
-            page.evaluate('window.scrollTo(0,0)');page.screenshot(path=str(artifacts/f'package-{width}.png'))
+            page.evaluate("window.scrollTo({top:0,behavior:'instant'})");page.screenshot(path=str(artifacts/f'package-{width}.png'))
             if width==1365:
                 page.emulate_media(media='print')
                 assert page.locator('#kg-dp-receive').is_hidden() and page.locator('#kg-dp-all').is_visible()
@@ -98,7 +98,7 @@ def test_native_acceptance_and_revocation(env,monkeypatch):
             page.locator('#kg-di-confirm-approve').check();page.locator('#kg-dp-approve button').click();page.wait_for_load_state('networkidle')
             assert page.locator('#kg-dp-accepted').is_visible()
             assert 'Подача не разрешена' in page.locator('#kg-dp-summary').inner_text()
-            page.evaluate('window.scrollTo(0,0)');page.screenshot(path=str(artifacts/'package-accepted.png'))
+            page.evaluate("window.scrollTo({top:0,behavior:'instant'})");page.screenshot(path=str(artifacts/'package-accepted.png'))
             page.locator('#kg-di-date-revoke').fill(applications._today().isoformat())
             page.locator('#kg-dp-revoke-reason').select_option('review_error');page.locator('#kg-di-confirm-revoke').check()
             page.locator('#kg-dp-revoke button').click();page.wait_for_load_state('networkidle')

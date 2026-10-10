@@ -70,6 +70,15 @@ def test_required_invitation_details_cannot_be_disabled_by_optional_fact(catalog
     assert len(letters)==10 and all(r['applicable'] is True for r in letters)
 
 
+def test_risk_recommendation_does_not_mandate_a_tourist_invitation(catalog):
+    result=assess(catalog,'TS',{'high_risk_country':True,'gambling':False,'invitation_required':False})
+    recommendation=row(result,'t02_03')
+    assert recommendation['kind']=='recommended' and recommendation['applicable'] is True
+    assert all(r['applicable'] is False for r in result['rows'] if r['id'].startswith('letter'))
+    assert row(result,'g08_01')['applicable'] is False
+    assert 'personal' in row(result,'t01_03')['alternatives']
+
+
 def test_medical_study_resident_and_work_scopes_are_distinct(catalog):
     student=assess(catalog,'RES',{'resident_basis':'S'})
     assert row(student,'med01')['applicable'] is True

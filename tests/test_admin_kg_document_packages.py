@@ -48,6 +48,8 @@ def test_native_full_package_facts_receipt_correction_history_and_navigation(env
     assert url in register.text
     initial=initialize(env,url)
     assert 'Приёмка недоступна' in initial.text and not Form(initial.text,'kg-dp-approve').data
+    assert 'id="kg-dp-fact-sw2_category"' not in initial.text and 'id="kg-dp-fact-resident_basis"' not in initial.text
+    assert 'id="kg-dp-fact-minor"' in initial.text
     assert env['client'].post(url,data=receive(env,url)).status_code==200
     values=form(env,url,'review','t08_02');values.update(on='2026-09-02',outcome='checked',reason='')
     response=env['client'].post(url,data=values)
@@ -92,6 +94,16 @@ def test_invalid_policy_preserves_history_and_disables_acceptance(env,subject,mo
     assert response.status_code==200 and 'Настройки политики приёмки некорректны' in response.text
     assert not Form(response.text,'kg-dp-approve').data
     assert env['client'].post(url,data=receive(env,url)).status_code==200
+
+
+def test_journal_limit_keeps_only_meaningful_withdrawal_forms(env,subject,monkeypatch):
+    from tests.test_entry_document_packages import approve
+    app,url=subject; initialize(env,url); allowed=complete(env,app); approve(env,app,allowed)
+    monkeypatch.setattr(ui.service,'MAX_REVISIONS',read(env,app)['current_revision']+2)
+    response=env['client'].get(url)
+    assert Form(response.text,'kg-dp-revoke').data and Form(response.text,'kg-dp-consent').data
+    assert not Form(response.text,'kg-dp-receive').data and not Form(response.text,'kg-dp-approve').data
+    assert 'value="granted"' not in response.text
 
 
 def test_native_alternative_selection_and_validation(env,subject):

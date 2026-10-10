@@ -299,3 +299,79 @@ def test_selected_tourist_letter_conflicts_with_suppressed_letter_details(env):
     write(env,app,'facts',dict(values={k:v['values'][0] for k,v in definition['facts'].items()}))
     receive(env,app,item='t01_03');check(env,app,item='t01_03',alternative='tour_operator')
     with pytest.raises(EntryStorageInvalid,match='invitation_conflict'):approve(env,app,policy(definition))
+
+
+def test_passport_replacement_invalidates_checks_despite_duplicate_fingerprints(env):
+    app=setup(env,product='TS')
+    receive(env,app,item='matrix_d01_0',fingerprint='a'*64)
+    receive(env,app,item='g02_01',fingerprint='a'*64)
+    receive(env,app,item='matrix_d02_0',fingerprint='b'*64)
+    receive(env,app,item='t01_02',fingerprint='c'*64)
+    check(env,app,item='t01_02',fingerprint='c'*64)
+    before=read(env,app)['selected']['snapshot']['passport_revision']
+    receive(env,app,item='matrix_d01_0',fingerprint='b'*64)
+    current=read(env,app)['selected']
+    assert current['snapshot']['passport_revision']==before+1
+    assert next(r for r in current['summary']['rows'] if r['id']=='t01_02')['effective_status']=='recheck'
+
+
+def test_v1_passport_gap_preserves_history_but_requires_definition_upgrade(env,monkeypatch):
+    import sys
+    original_payload=service._payload; original_apply=service.apply_operation
+    old_digest='f176ab74144a593fd9ff644ba219d6731205c5fd232f1a661616c0223d40ad1a'
+    def old_payload(row):
+        if row.id is None: row.command={k:v for k,v in row.command.items() if k!='rules_version'}
+        return original_payload(row)
+    def old_apply(*args,**kwargs):
+        kwargs['rules_version']=1
+        return original_apply(*args,**kwargs)
+    with monkeypatch.context() as old:
+        old.setattr(sys.modules[__name__],'DIGEST',old_digest)
+        old.setattr(service,'_payload',old_payload); old.setattr(service,'apply_operation',old_apply)
+        old.setattr(service,'_legacy_passport_gap',lambda rows,states:False)
+        app=setup(env,product='TS'); allowed=complete(env,app)
+        for item,digest in [('matrix_d01_0','a'),('g02_01','a'),('matrix_d02_0','b')]:
+            receive(env,app,item=item,fingerprint=digest*64)
+        for item in read(env,app)['selected']['summary']['rows']:
+            if item['fingerprint']:
+                check(env,app,item=item['id'],fingerprint=item['fingerprint'],version=item['version'],alternative=item['alternative'])
+        receive(env,app,item='matrix_d01_0',fingerprint='b'*64)
+        changed=read(env,app)['selected']['snapshot']['items']['matrix_d01_0']
+        check(env,app,item='matrix_d01_0',fingerprint='b'*64,version=changed['version'])
+        approved=approve(env,app,allowed)
+        assert read(env,app,policy=allowed)['current_acceptance']['accepted']
+    preserved=read(env,app,policy=allowed)
+    assert preserved['selected']['snapshot_hash']==approved['snapshot_hash']
+    assert preserved['selected']['snapshot']==approved['snapshot']
+    assert preserved['current_acceptance']==dict(accepted=False,reason='package_passport_recheck_required')
+    with pytest.raises(EntryStorageInvalid,match='passport_recheck_required'): approve(env,app,allowed)
+    write(env,app,'upgrade_definition',dict(catalog_digest=DIGEST))
+    allowed=complete(env,app); approve(env,app,allowed)
+    assert read(env,app,policy=allowed)['current_acceptance']['accepted']
+
+
+@pytest.mark.parametrize('limit',['revisions','bytes'])
+def test_full_journal_preserves_revocation_and_consent_withdrawal(env,monkeypatch,limit):
+    app=setup(env); allowed=complete(env,app)
+    before=read(env,app)['current_revision']
+    if limit=='revisions': monkeypatch.setattr(service,'MAX_REVISIONS',before+3)
+    approval=approve(env,app,allowed)
+    if limit=='bytes':
+        async def size():
+            async with env['sm']() as session:
+                rows=(await session.scalars(select(EntryDocumentPackageEvent))).all()
+                return sum(service._bytes(row) for row in rows)
+        monkeypatch.setattr(service,'MAX_BYTES',asyncio.run(size())+service.WITHDRAWAL_BYTES)
+    assert read(env,app)['ordinary_writes_available'] is False
+    with pytest.raises(EntryStorageInvalid,match='history_limit'):
+        receive(env,app,fingerprint='b'*64)
+    data=dict(on=service.applications._today().isoformat(),reason='policy_changed')
+    write(env,app,'revoke',data,key='terminal-revoke')
+    assert read(env,app,policy=allowed)['current_acceptance']['accepted'] is False
+    with pytest.raises(EntryStorageInvalid,match='history_limit'):
+        write(env,app,'revoke',data,key='repeated-revoke')
+    consent=dict(status='withdrawn',on='2026-09-04',reference='SYNTHETIC-WITHDRAWAL',proof='9'*64)
+    row=write(env,app,'consent',consent,key='terminal-consent')
+    retry=write(env,app,'consent',consent,key='terminal-consent',revision=row['revision']-1)
+    assert retry==row and row['snapshot']['consent']['status']=='withdrawn'
+    assert read(env,app,revision=approval['revision'])['selected']['snapshot']['approval'] is not None

@@ -1,6 +1,6 @@
 {
   "format": "kg-complete-document-definitions/1",
-  "version": "pdf-1.1-complete-documents-review-3",
+  "version": "pdf-1.1-complete-documents-review-2",
   "source_sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
   "matrix_catalog_sha256": "81ebf0f41aec18ebe8ada37d3d709fd73114eea250718fc4b66abb63e22b1c6f",
   "publication_approved": false,
@@ -473,9 +473,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -2660,9 +2670,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -2789,9 +2809,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -2918,9 +2948,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -3047,9 +3087,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -3176,9 +3226,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -3305,9 +3365,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -3434,9 +3504,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -3563,9 +3643,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -3692,9 +3782,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -3821,9 +3921,19 @@
                 ]
               },
               {
-                "eq": [
-                  "gambling",
-                  true
+                "any": [
+                  {
+                    "eq": [
+                      "gambling",
+                      true
+                    ]
+                  },
+                  {
+                    "eq": [
+                      "high_risk_country",
+                      true
+                    ]
+                  }
                 ]
               }
             ]
@@ -5042,6 +5152,13 @@
         true
       ]
     },
+    "high_risk_country": {
+      "label": "Риск по гражданству отдельно оценён специалистом",
+      "values": [
+        false,
+        true
+      ]
+    },
     "resident_basis": {
       "label": "Основание резидент-карты",
       "values": [
@@ -5062,13 +5179,6 @@
     },
     "long_term": {
       "label": "Долгосрочная виза",
-      "values": [
-        false,
-        true
-      ]
-    },
-    "high_risk_country": {
-      "label": "Риск по гражданству отдельно оценён специалистом",
       "values": [
         false,
         true

@@ -66,11 +66,14 @@ def _empty_item():
         reviewed_version=None,reviewed_passport_revision=None,reviewed_facts_revision=None,reason=None,legacy_origin=None,alternative=None)
 
 
-def _passports(state):
-    return {item['fingerprint'] for key,item in state['items'].items() if key in PASSPORT_IDS and item['fingerprint'] and item['status']!='withdrawn'}
+def _passports(state, rules_version=2):
+    items={key:(item['version'],item['fingerprint']) for key,item in state['items'].items()
+           if key in PASSPORT_IDS and item['fingerprint'] and item['status']!='withdrawn'}
+    # The original reducer is retained only for exact historical replay.
+    return {value[1] for value in items.values()} if rules_version==1 else items
 
 
-def apply_operation(state,operation,*,actor,definition,legacy=None,policy=None):
+def apply_operation(state,operation,*,actor,definition,legacy=None,policy=None,rules_version=2):
     action=operation['action'];data=operation['data']
     if state is None:
         if action!='initialize': invalid('document_package_missing')
@@ -122,7 +125,7 @@ def apply_operation(state,operation,*,actor,definition,legacy=None,policy=None):
     if action=='passport_change': result['passport_revision']+=1;return result
     identifier=data['item']
     if identifier not in result['items']: invalid('package_item_unavailable')
-    item=result['items'][identifier]; previous_passports=_passports(result)
+    item=result['items'][identifier]; previous_passports=_passports(result,rules_version)
     if action=='receive':
         if item['fingerprint']==data['fingerprint']: invalid('document_content_unchanged')
         if item['received_on'] and data['on']<item['received_on']: invalid('invalid_document_package_date')
@@ -140,7 +143,7 @@ def apply_operation(state,operation,*,actor,definition,legacy=None,policy=None):
             if data['outcome']=='checked' and choices and data['alternative'] is None: invalid('package_alternative_required')
             item.update(status=data['outcome'],reason=data['reason'],reviewed_on=data['on'],reviewed_by=actor,
                 reviewed_version=item['version'],reviewed_passport_revision=state['passport_revision'],reviewed_facts_revision=state['facts_revision'],alternative=data['alternative'])
-    if _passports(result)!=previous_passports: result['passport_revision']+=1
+    if _passports(result,rules_version)!=previous_passports: result['passport_revision']+=1
     return result
 
 

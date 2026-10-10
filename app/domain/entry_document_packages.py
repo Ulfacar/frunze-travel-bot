@@ -10,7 +10,7 @@ from sqlalchemy import inspect, select
 
 from app.domain import entry_applications as applications, entry_documents as legacy_documents
 from app.domain.entry_package_policy import PackagePolicy, authorize_acceptance, policy_from_document
-from app.domain.entry_package_rules import MAX_BYTES, MAX_REVISIONS, PRODUCTS, apply_operation, normalize, summarize, assert_acceptable
+from app.domain.entry_package_rules import MAX_BYTES, MAX_REVISIONS, PRODUCTS, apply_operation, normalize, summarize, assert_acceptable, _passports
 from app.domain.entry_storage import EntryStorageConflict, EntryStorageInvalid, _authorize, _hash, _id, _key
 from app.domain.knowledge_review import _plain
 from app.domain.models import EntryApplication, EntryDocumentPackageEvent, _now
@@ -19,6 +19,10 @@ from app.domain.service_authz import PermissionDenied
 from app.knowledge.complete_document_checklist import load_definition, load_complete_document_catalog, KNOWN_CATALOGS
 from app.knowledge.document_checklist import DocumentChecklistError
 from app.knowledge.review import canonical
+
+# Even a full journal must retain room to revoke acceptance and withdraw consent.
+WITHDRAWAL_SLOTS = 2
+WITHDRAWAL_BYTES = 8192
 
 
 def _invalid(code='document_package_integrity_failed'):
@@ -78,8 +82,10 @@ async def _history(session, application):
         command=_plain(row.command); stored_definition=_plain(row.definition)
         size+=_bytes(row)
         if size>MAX_BYTES: _invalid('document_package_history_limit')
-        if (type(command) is not dict or command.keys()!={'request','policy'} or
+        if (type(command) is not dict or command.keys() not in ({'request','policy'},{'request','policy','rules_version'}) or
             type(command['request']) is not dict or 'operation' not in command['request']): _invalid()
+        rules_version=command.get('rules_version',1)
+        if type(rules_version) is not int or rules_version not in (1,2): _invalid()
         operation=normalize(command['request']['operation'],cutoff=applications._local_day(row.created_at))
         request=_command(application.case_id,application.id,i-1,operation,row.created_by)
         if (row.case_id!=application.case_id or row.revision!=i or row.action!=operation['action'] or
@@ -111,10 +117,21 @@ async def _history(session, application):
             authorize_acceptance(Actor(row.created_by,True),policy,catalog_digest=state['catalog_digest'],day=applications._local_day(row.created_at))
             if data['on']!=applications._local_day(row.created_at).isoformat(): _invalid('invalid_package_approval_date')
         elif command['policy'] is not None: _invalid()
-        state=apply_operation(state,operation,actor=row.created_by,definition=definition,legacy=legacy,policy=policy)
+        state=apply_operation(state,operation,actor=row.created_by,definition=definition,legacy=legacy,policy=policy,rules_version=rules_version)
         if row.state_hash!=_hash(state): _invalid()
         snapshots.append(deepcopy(state)); definitions.append(definition); previous=row
     return rows,snapshots,definitions,size
+
+
+def _legacy_passport_gap(rows,states):
+    """Keep old hashes readable, but never approve checks affected by the v1 bug."""
+    gap=False
+    for index,row in enumerate(rows):
+        if row.action in ('initialize','upgrade_definition'): gap=False
+        elif index and _plain(row.command).get('rules_version',1)==1:
+            before,after=states[index-1],states[index]
+            if _passports(before)!=_passports(after) and _passports(before,1)==_passports(after,1): gap=True
+    return gap
 
 
 def _view(row,state,definition):
@@ -162,6 +179,12 @@ async def record_package_operation(engine,*,actor,case_id,application_id,expecte
         if rows and applications._utc(occurred_at)<applications._utc(rows[-1].created_at): _invalid('document_package_clock_reversed')
         normalize(operation,cutoff=day)
         state=states[-1] if states else None; definition=definitions[-1] if definitions else None
+        reserved_only = len(rows) >= MAX_REVISIONS-WITHDRAWAL_SLOTS or size >= MAX_BYTES-WITHDRAWAL_BYTES
+        if reserved_only:
+            meaningful = state and (operation['action']=='revoke' and state['approval'] or
+                operation['action']=='consent' and operation['data']['status']=='withdrawn' and
+                state['consent'] and state['consent']['status']=='granted')
+            if not meaningful: _invalid('document_package_history_limit')
         action=operation['action']; data=operation['data']; old=[]; legacy=None; approval_policy=None
         if action=='initialize':
             if data['product'] not in PRODUCTS[application.procedure]: _invalid('document_product_mismatch')
@@ -174,6 +197,7 @@ async def record_package_operation(engine,*,actor,case_id,application_id,expecte
             definition=_definition(data['catalog_digest'],state['product'])
         if action=='approve':
             if state is None: _invalid('document_package_missing')
+            if _legacy_passport_gap(rows,states): _invalid('package_passport_recheck_required')
             authorize_acceptance(actor,policy,catalog_digest=state['catalog_digest'],day=day); _policy_scope(policy)
             if data['on']!=day.isoformat(): _invalid('invalid_package_approval_date')
             approval_policy=policy
@@ -183,9 +207,10 @@ async def record_package_operation(engine,*,actor,case_id,application_id,expecte
             legacy_inventory_hash=old[-1].snapshot_hash if old else None,
             definition=definition if action in ('initialize','upgrade_definition') else None,
             request_key=request_key,request_hash=_hash(request),state_hash=_hash(next_state),
-            command=dict(request=request,policy=approval_policy.document() if approval_policy else None),created_by=actor.manager_id,created_at=occurred_at)
+            command=dict(request=request,policy=approval_policy.document() if approval_policy else None,rules_version=2),created_by=actor.manager_id,created_at=occurred_at)
         row.snapshot_hash=_hash(_payload(row))
-        if size+_bytes(row)>MAX_BYTES: _invalid('document_package_history_limit')
+        byte_limit=MAX_BYTES if withdrawal else MAX_BYTES-WITHDRAWAL_BYTES
+        if size+_bytes(row)>byte_limit: _invalid('document_package_history_limit')
         session.add(row); await session.flush()
         return _view(row,next_state,definition)
     return await applications._run(engine,write)
@@ -198,14 +223,16 @@ async def read_document_package(engine,*,actor,case_id,application_id,revision=N
         await applications._case(session,case_id)
         application=await applications._application(session,case_id,application_id)
         events=await applications._events(session,application)
-        rows,states,definitions,_=await _history(session,application)
+        rows,states,definitions,size=await _history(session,application)
         if revision and revision>len(rows): _invalid('document_package_revision_unavailable')
         index=revision-1 if revision else len(rows)-1
         selected=_view(rows[index],states[index],definitions[index]) if rows else None
         acceptance=effective_acceptance(states[-1],definitions[-1],policy,day=applications._today()) if rows else dict(accepted=False,reason='package_not_initialized')
+        if _legacy_passport_gap(rows,states): acceptance=dict(accepted=False,reason='package_passport_recheck_required')
         if selected and index==len(rows)-1: selected['summary']['package_accepted']=acceptance['accepted']
         old,_=await legacy_documents._history(session,application)
         return dict(application=applications._application_view(application),application_status=events[-1].status,
+            ordinary_writes_available=len(rows)<MAX_REVISIONS-WITHDRAWAL_SLOTS and size<MAX_BYTES-WITHDRAWAL_BYTES,
             current_revision=len(rows),legacy_revision=len(old),legacy_product=old[-1].snapshot['definition']['product'] if old else None,
             selected=selected,current_acceptance=acceptance,
             history=[dict(revision=r.revision,action=r.action,created_by=r.created_by,created_at=applications._utc(r.created_at)) for r in reversed(rows)])

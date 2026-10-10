@@ -19,7 +19,7 @@ from app.domain.entry_package_policy import configured_policy, authorize_accepta
 from app.domain.entry_document_rules import SOURCES, REASONS
 from app.domain.entry_storage import EntryStorageInvalid, EntryStorageConflict
 from app.domain.service_authz import PermissionDenied
-from app.knowledge.complete_document_checklist import CATALOG_SHA256, load_complete_document_catalog, load_definition
+from app.knowledge.complete_document_checklist import CATALOG_SHA256, load_complete_document_catalog, load_definition, _evaluate
 
 META=('_dp_action','_dp_revision','_dp_key','_dp_item','_dp_version','_dp_fingerprint','_dp_catalog',
       '_dp_product','_dp_state','_dp_policy','_dp_legacy')
@@ -34,6 +34,7 @@ ACTIONS={'initialize':'Создан полный комплект','facts':'Ус
          'withdraw_document':'Отзыв документа','passport_change':'Изменение паспорта','consent':'Согласие',
          'approve':'Приёмка комплекта','revoke':'Отзыв приёмки','upgrade_definition':'Обновление требований'}
 ERRORS={'document_package_incomplete':'Остались непроверенные требования или неизвестные условия.',
+        'package_passport_recheck_required':'Старая проверка не учитывала замену одной из копий паспорта. Обновите требования и проверьте комплект заново.',
         'document_package_invitation_conflict':'Выбрано письмо турорганизации. Подтвердите дополнительное основание для письма в условиях заявки и проверьте его содержание.',
         'package_alternative_required':'Укажите, каким из допустимых документов подтверждено требование.',
         'document_package_practice_pending':'Не завершены практические проверки, указанные в политике.',
@@ -138,15 +139,17 @@ async def _render(request,manager,actor,case,application_id,*,item_id='',revisio
         if item_id and (not current or item_id not in current['snapshot']['items']): raise HTTPException(404,headers=HEADERS)
         if current:
             rows=current['summary']['rows']; item=next((r for r in rows if r['id']==item_id),rows[0])
+            relevant={name for row in current['definition']['rows'] for name in _evaluate(row['when'],{},current['snapshot']['product'])[1]}
             facts=[dict(name=k,label=v['label'],options=[(json.dumps(x),'Да' if x is True else 'Нет' if x is False else x) for x in v['values']],
-                selected=json.dumps(current['snapshot']['facts'][k]) if current['snapshot']['facts'][k] is not None else '') for k,v in current['definition']['facts'].items()]
+                selected=json.dumps(current['snapshot']['facts'][k]) if current['snapshot']['facts'][k] is not None else '')
+                for k,v in current['definition']['facts'].items() if k in relevant]
             if policy:
                 try:
                     authorize_acceptance(actor,policy,catalog_digest=current['snapshot']['catalog_digest'],day=ar._bishkek_today())
                     service._policy_scope(policy); policy_ready=True
                 except (EntryStorageInvalid,PermissionDenied): pass
         historical=bool(revision and revision!=inventory['current_revision'])
-        mutable=not historical and inventory['application_status'] not in ('approved','refused','closed') and inventory['current_revision']<MAX_REVISIONS
+        mutable=not historical and inventory['application_status'] not in ('approved','refused','closed') and inventory['ordinary_writes_available']
         if mutable:
             if not current:
                 catalog=load_complete_document_catalog(); products={k:v for k,v in catalog.document()['products'].items() if k in PRODUCTS[inventory['application']['procedure']]}
@@ -160,7 +163,7 @@ async def _render(request,manager,actor,case,application_id,*,item_id='',revisio
                 if current['snapshot']['catalog_digest']!=CATALOG_SHA256: actions+=['upgrade_definition']
             for action in actions: forms[action]=_envelope(request,actor,case['id'],application_id,action,inventory,item,policy)
         elif current and not historical and inventory['current_revision']<MAX_REVISIONS:
-            actions=['consent']
+            actions=['consent'] if current['snapshot']['consent'] and current['snapshot']['consent']['status']=='granted' else []
             if current['snapshot']['approval']:actions+=['revoke']
             for action in actions:forms[action]=_envelope(request,actor,case['id'],application_id,action,inventory,item,policy)
         if echo and echo['_dp_action'] in forms and echo['_dp_revision']==str(inventory['current_revision']): forms[echo['_dp_action']]=echo

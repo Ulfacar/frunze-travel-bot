@@ -1,0 +1,75 @@
+{
+  "base": "26655d40464ecef0ff0647e309e3a725fcc01aae",
+  "revision": "UNCOMMITTED reviewed snapshot; subsequent code commit pins identical blobs",
+  "environment": "Windows Python3.12 / env-free archive / synthetic SQLite; browser Chromium",
+  "env_files_absent": true,
+  "comparison": "CRLF normalized to LF",
+  "tests": "168 passed / 2 PostgreSQL skipped / 3 warnings / 263.96s",
+  "files": [
+    {
+      "path": "Dockerfile",
+      "sha256": "187b65fbe42d10dd5a6f33c6b92fb868b120479615f0ea6eb8ab461f78242301",
+      "snapshot_equal": true
+    },
+    {
+      "path": "app/admin/kg_document_packages.py",
+      "sha256": "f82b0d09404118e09234f2f935586945414aca0635ef865eda153868b7baae7e",
+      "snapshot_equal": true
+    },
+    {
+      "path": "app/admin/templates/kg_document_package.html",
+      "sha256": "ecb93e879227e23b384b19ff07ab827fbcac9a8844ae7884a544e77e334eaec7",
+      "snapshot_equal": true
+    },
+    {
+      "path": "app/domain/entry_document_packages.py",
+      "sha256": "9d491ae8b52ab6fa2770eaa7a86f8a5d7375c789e816aea0905dbe0aefe8fbe5",
+      "snapshot_equal": true
+    },
+    {
+      "path": "app/domain/entry_package_rules.py",
+      "sha256": "4460467d35f8c64fd753dee09b6a1a11070094a346abae92051e5b9ddeb3ae17",
+      "snapshot_equal": true
+    },
+    {
+      "path": "app/knowledge/complete_document_checklist.py",
+      "sha256": "f1d8438a9fb748d0e7f8f33028f9f24c12d4eef67de8455737c4805ba0540b8f",
+      "snapshot_equal": true
+    },
+    {
+      "path": "knowledge/kg_entry/complete_documents_v1_1/catalog.json",
+      "sha256": "555f15c6befb85da5c5386b2981d94897891aecafbce4e0edbb5362897e049f9",
+      "snapshot_equal": true
+    },
+    {
+      "path": "knowledge/kg_entry/complete_documents_v1_1/catalog-review-2.json",
+      "sha256": "f176ab74144a593fd9ff644ba219d6731205c5fd232f1a661616c0223d40ad1a",
+      "snapshot_equal": true
+    },
+    {
+      "path": "scripts/build_kg_complete_document_catalog.py",
+      "sha256": "c7f50996bffc95eb2e260f243270fdb87c7e08b03ed3f9a359eda263379773f0",
+      "snapshot_equal": true
+    },
+    {
+      "path": "tests/test_admin_kg_document_packages.py",
+      "sha256": "1b2f4b278942500922ac745c06daab94f9d49143b6f8f5c1d2d19de8412787a2",
+      "snapshot_equal": true
+    },
+    {
+      "path": "tests/test_entry_document_packages.py",
+      "sha256": "f6c5863cc79f679fd970e5bf293cc415ea0c440b6f6249982b65a711c9a23458",
+      "snapshot_equal": true
+    },
+    {
+      "path": "tests/test_kg_complete_document_checklist.py",
+      "sha256": "74327a6a9c3a603c1bf71e855077a6771d4dc72a286a58083e0f1bd3e0888649",
+      "snapshot_equal": true
+    },
+    {
+      "path": "tests/browser_kg_document_packages.py",
+      "sha256": "191410ac536f1c27678e5c65ba96a7e95f9a540bb52b451cccfb96b33e161e06",
+      "snapshot_equal": true
+    }
+  ]
+}
