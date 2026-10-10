@@ -16,7 +16,7 @@ CRITICAL / solo, local synthetic implementation/checks. Required independent rev
 
 E6-02A preserves23 matrix rows ×9 columns plus full source sections as text. E6-02B persists matrix inventory and review/correction but always reports supplements_assessed=False/package_accepted=False. Read actual source paragraphs and existing reducer before extending. Do not count F04/F05/F07 until the complete behavior, native flow and meaningful tests pass on a committed revision. File bytes/quarantine and real policy approval are separate gates.
 
-Source verification: original physical pages38/39/53/54 visually inspected on2026-10-10 (renders in ignored `runs/e6-08-source`). Medical supplements for long-term SW1/SW2/S/RL/FF include HIV/086-U/OMS; work-based resident has HIV/086-U. This is a preserved source statement, not current legal confirmation. Alternatives in TR/RL/registration must not become cumulative requirements; ESUVM tax-record and foreign-document treaty exceptions remain explicit unknown conditions. No new code for this task yet.
+Source verification: original physical pages38/39/53/54 visually inspected on2026-10-10 (renders in ignored `runs/e6-08-source`). Medical supplements for long-term SW1/SW2/S/RL/FF include HIV/086-U/OMS; work-based resident has HIV/086-U. This is a preserved source statement, not current legal confirmation. Alternatives in TR/RL/registration must not become cumulative requirements; ESUVM tax-record and foreign-document treaty exceptions remain explicit unknown conditions. This was the initial source-inspection checkpoint; implementation progress follows below.
 
 ## In-progress source foundation (not full F04 completion)
 
