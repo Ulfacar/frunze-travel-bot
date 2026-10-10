@@ -462,18 +462,36 @@
       "weight": 2,
       "pdf": "5.1-5.5/11.4",
       "acceptance": "Complete conditional checklists and supplements, unknown conditions block acceptance",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "5eb8e9937d7ab527c3f194dc461ef12e61a6f516",
+          "command": "168 passed /2 PostgreSQL skipped /3 warnings; full command in handoff",
+          "environment": "Windows Python3.12 / env-free archive / synthetic SQLite / Chromium",
+          "scope": "Complete conditional checklists and supplements, unknown conditions block acceptance",
+          "artifact": "ai/handoffs/2026-10-11-0100-e6-08-reviewed-packages.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "F05",
       "weight": 2,
       "pdf": "5/6/14",
       "acceptance": "Immutable package review tied to exact definitions/versions and revocation",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "5eb8e9937d7ab527c3f194dc461ef12e61a6f516",
+          "command": "168 passed /2 PostgreSQL skipped /3 warnings; full command in handoff",
+          "environment": "Windows Python3.12 / env-free archive / synthetic SQLite / Chromium",
+          "scope": "Immutable package review tied to exact definitions/versions and revocation",
+          "artifact": "ai/handoffs/2026-10-11-0100-e6-08-reviewed-packages.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "F06",
@@ -489,9 +507,18 @@
       "weight": 2,
       "pdf": "5/18",
       "acceptance": "Document receipt/correction/acceptance CRM flow with errors, print and access checks",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "5eb8e9937d7ab527c3f194dc461ef12e61a6f516",
+          "command": "168 passed /2 PostgreSQL skipped /3 warnings; full command in handoff",
+          "environment": "Windows Python3.12 / env-free archive / synthetic SQLite / Chromium",
+          "scope": "Document receipt/correction/acceptance CRM flow with errors, print and access checks",
+          "artifact": "ai/handoffs/2026-10-11-0100-e6-08-reviewed-packages.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "G01",

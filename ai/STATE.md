@@ -1,5 +1,13 @@
 # Current work
 
+- Updated **2026-10-11**. Continue PDF/CRM toward100 evidenced technical points; parent scope remains incomplete. Branch `fix/tours-search-quality`.
+- **E6-08 DONE for reviewed local target**, code `5eb8e99`; handoff `ai/handoffs/2026-10-11-0100-e6-08-reviewed-packages.md`. Full packages and review fixes:168 PASS /2 PG SKIP /3 warnings /263.96s; all six print pages inspected. Independent review APPROVE / final local audit GO. Fixed terminal withdrawal capacity, duplicate-passport invalidation and recommendation promotion; preserved versioned historical replay. F04/F05/F07 +6 ? **67/100 technical points**, not production readiness.
+- **Current E6-09/F06 quarantine**, CRITICAL / solo, uncommitted local implementation in progress. Task `ai/tasks/2026-10-10-e6-09-document-quarantine.md`; independent pre-audit `ai/reviews/2026-10-11-e6-09-quarantine-audit.md` permits local synthetic implementation, final audit pending. Use bounded immutable DB BLOB/BYTEA with atomic package receipt, explicit default-empty storage/privacy/retention policy, no file release/download. Multipart development20 PASS. Finish integration, failure/concurrency/migration/browser checks and independent final audit before scoring F06.
+- Tests use env-free `runs/e6-09-local`; do not copy real env/client data. Docker Linux engine still unavailable on fresh check; PG runtime/recovery UNKNOWN. Source/privacy/role approvals remain unresolved. Previous whole-suite date/traps baselines remain unclosed.
+- Working-branch commit/push authorized; production/env/live migrations/real personal data/messages not authorized. Preserve unrelated untracked artifacts. Last generated progress PDF remains the historical61-point report; regenerate after the next verified checkpoint.
+
+# Previous checkpoint ? 2026-10-10
+
 - Updated **2026-10-10**. ACTIVE GOAL: continue until100% evidenced implementation (user extended scope); no intermediate final response. `ai/tasks/2026-10-10-pdf-to70.md`.
 - Branch `fix/tours-search-quality`, latest implementation `d9ecb11`; inventory `5feb4e0`, templates `1d4a73c`. Fixed50 criteria in `docs/pdf-engineering-criteria.json`: **61/100 technical points** (37 baseline +4 F02/F03 +1 I01 +2 E07 +3 B02 +4 G01/G02 +4 G03/G04 +2 D03 +4 D04/D05). No production-readiness claim.
 - E6-02B **PARTIALLY_READY**, CRITICAL / solo. Immutable per-application document inventory/history and passport/version invalidation; native forms/print. Handoff `ai/handoffs/2026-10-10-0600-e6-02b-document-inventory.md`; independent review/audit UNKNOWN.
