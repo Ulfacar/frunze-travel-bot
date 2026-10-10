@@ -68,13 +68,15 @@ async def record_document_operation(engine,*,actor,case_id,application_id,expect
         if old:
             if old.request_hash!=_hash(command):raise EntryStorageConflict('request_key_reused')
             return _view(old)
-        from app.domain.entry_document_packages import has_package
+        from app.domain.entry_document_packages import has_package,quarantined_fingerprints
         if await has_package(session,application_id):raise EntryStorageInvalid('document_inventory_upgraded')
         if len(rows)!=expected_revision:raise EntryStorageConflict('document_revision_changed')
         if events[-1].status in ('approved','refused','closed') or await session.scalar(
             select(EntryApplication.id).where(EntryApplication.previous_id==application.id)):
             raise EntryStorageInvalid('document_application_closed')
         definition=None
+        if operation['action']=='review' and await quarantined_fingerprints(session,{operation['data']['fingerprint']}):
+            raise EntryStorageInvalid('document_in_quarantine')
         if operation['action']=='initialize':
             product=operation['data']['product']
             if product not in PRODUCTS[application.procedure]:raise EntryStorageInvalid('document_product_mismatch')
@@ -105,10 +107,22 @@ async def read_document_inventory(engine,*,actor,case_id,application_id,revision
         rows,_=await _history(session,application)
         selected=next((r for r in rows if r.revision==revision),None) if revision else rows[-1] if rows else None
         if revision and selected is None:raise EntryStorageInvalid('document_revision_unavailable')
-        from app.domain.entry_document_packages import has_package
+        from app.domain.entry_document_packages import has_package,quarantined_fingerprints
         upgraded=await has_package(session,application_id)
+        view=_view(selected) if selected else None
+        if view:
+            quarantine=await quarantined_fingerprints(session,{item['fingerprint'] for item in view['summary']['items']})
+            for item in view['summary']['items']:
+                item['quarantined']=item['fingerprint'] in quarantine and item['status']!='withdrawn'
+                if item['quarantined']:
+                    if item['effective_status']=='checked' and item['applicable']:
+                        if item['kind']=='recommended': view['summary']['counts']['recommended_pending']+=1
+                        else:
+                            view['summary']['counts']['required_checked']-=1
+                            view['summary']['counts']['required_pending']+=1
+                    item['effective_status']='quarantined'
         return dict(application=applications._application_view(application),application_status=events[-1].status,upgraded=upgraded,
-            current_revision=len(rows),selected=_view(selected) if selected else None,
+            current_revision=len(rows),selected=view,
             history=[dict(revision=r.revision,created_by=r.created_by,created_at=applications._utc(r.created_at),
                           action=r.command['operation']['action']) for r in reversed(rows)])
     return await applications._run(engine,read)

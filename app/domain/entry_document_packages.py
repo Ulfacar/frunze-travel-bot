@@ -134,6 +134,23 @@ def _legacy_passport_gap(rows,states):
     return gap
 
 
+async def quarantined_fingerprints(session,fingerprints):
+    """Deny quarantined bytes across applications without exposing their owners.
+
+    The durable receipt remains a denial even if the binary half is missing.
+    Each caller supplies only the bounded fingerprints of its own document view.
+    """
+    values={value for value in fingerprints if value}
+    if not values: return set()
+    if len(values)>500: _invalid('invalid_quarantine_scope')
+    connection=await session.connection()
+    if not await connection.run_sync(lambda c:inspect(c).has_table('entry_document_package_events')): return set()
+    fingerprint=EntryDocumentPackageEvent.command['request']['operation']['data']['fingerprint'].as_string()
+    return set((await session.scalars(select(fingerprint).where(
+        EntryDocumentPackageEvent.request_key.like('quarantine.%'),EntryDocumentPackageEvent.action=='receive',
+        fingerprint.in_(values)).distinct())).all())
+
+
 def _view(row,state,definition):
     return dict(id=row.id,case_id=row.case_id,application_id=row.application_id,revision=row.revision,
         created_by=row.created_by,created_at=applications._utc(row.created_at),snapshot=deepcopy(state),definition=deepcopy(definition),
@@ -156,63 +173,78 @@ def effective_acceptance(state,definition,policy,*,day):
     return dict(accepted=True,reason='approved_current_metadata')
 
 
-async def record_package_operation(engine,*,actor,case_id,application_id,expected_revision,request_key,operation,policy=None):
+async def _record_package_operation(session,*,actor,case_id,application_id,expected_revision,request_key,operation,policy=None):
     _authorize(actor); _id(case_id); _id(application_id); _key(request_key)
     if type(expected_revision) is not int or not 0<=expected_revision<MAX_REVISIONS: _invalid('invalid_document_package_revision')
     operation=normalize(operation,cutoff=applications._today())
     request=_command(case_id,application_id,expected_revision,operation,actor.manager_id)
+    await applications._case(session,case_id,lock=True)
+    application=await applications._application(session,case_id,application_id,lock=True)
+    events=await applications._events(session,application)
+    rows,states,definitions,size=await _history(session,application)
+    for index,row in enumerate(rows):
+        if row.request_key==request_key:
+            if row.request_hash!=_hash(request): raise EntryStorageConflict('request_key_reused')
+            return _view(row,states[index],definitions[index])
+    if len(rows)!=expected_revision: raise EntryStorageConflict('document_package_revision_changed')
+    closed=events[-1].status in ('approved','refused','closed') or await session.scalar(select(EntryApplication.id).where(EntryApplication.previous_id==application.id))
+    withdrawal=operation['action']=='revoke' or operation['action']=='consent' and operation['data']['status']=='withdrawn'
+    if closed and not withdrawal:
+        _invalid('document_application_closed')
+    occurred_at=_now(); day=applications._local_day(occurred_at)
+    if rows and applications._utc(occurred_at)<applications._utc(rows[-1].created_at): _invalid('document_package_clock_reversed')
+    normalize(operation,cutoff=day)
+    state=states[-1] if states else None; definition=definitions[-1] if definitions else None
+    reserved_only = len(rows) >= MAX_REVISIONS-WITHDRAWAL_SLOTS or size >= MAX_BYTES-WITHDRAWAL_BYTES
+    if reserved_only:
+        meaningful = state and (operation['action']=='revoke' and state['approval'] or
+            operation['action']=='consent' and operation['data']['status']=='withdrawn' and
+            state['consent'] and state['consent']['status']=='granted')
+        if not meaningful: _invalid('document_package_history_limit')
+    action=operation['action']; data=operation['data']; old=[]; legacy=None; approval_policy=None
+    if action=='initialize':
+        if data['product'] not in PRODUCTS[application.procedure]: _invalid('document_product_mismatch')
+        definition=_definition(data['catalog_digest'],data['product'])
+        old,_=await legacy_documents._history(session,application)
+        if len(old)!=data['legacy_revision']: raise EntryStorageConflict('package_legacy_revision_changed')
+        legacy=_plain(old[-1].snapshot) if old else None
+    elif action=='upgrade_definition':
+        if state is None: _invalid('document_package_missing')
+        definition=_definition(data['catalog_digest'],state['product'])
+    if action=='approve':
+        if state is None: _invalid('document_package_missing')
+        if _legacy_passport_gap(rows,states): _invalid('package_passport_recheck_required')
+        authorize_acceptance(actor,policy,catalog_digest=state['catalog_digest'],day=day); _policy_scope(policy)
+        if data['on']!=day.isoformat(): _invalid('invalid_package_approval_date')
+        approval_policy=policy
+    if action in ('review','approve'):
+        # Imported lazily to keep the metadata journal usable before migration0026.
+        from app.domain.entry_quarantine import metadata
+        await metadata(session,application_id,history=(rows,states))
+        fingerprints={data['fingerprint']} if action=='review' else {
+            item['fingerprint'] for item in state['items'].values() if item['status']!='withdrawn'}
+        if await quarantined_fingerprints(session,fingerprints): _invalid('document_in_quarantine')
+    next_state=apply_operation(state,operation,actor=actor.manager_id,definition=definition,legacy=legacy,policy=approval_policy)
+    row=EntryDocumentPackageEvent(case_id=case_id,application_id=application_id,revision=len(rows)+1,action=action,
+        previous_id=rows[-1].id if rows else None,legacy_inventory_id=old[-1].id if old else None,
+        legacy_inventory_hash=old[-1].snapshot_hash if old else None,
+        definition=definition if action in ('initialize','upgrade_definition') else None,
+        request_key=request_key,request_hash=_hash(request),state_hash=_hash(next_state),
+        command=dict(request=request,policy=approval_policy.document() if approval_policy else None,rules_version=2),created_by=actor.manager_id,created_at=occurred_at)
+    row.snapshot_hash=_hash(_payload(row))
+    byte_limit=MAX_BYTES if withdrawal else MAX_BYTES-WITHDRAWAL_BYTES
+    if size+_bytes(row)>byte_limit: _invalid('document_package_history_limit')
+    session.add(row); await session.flush()
+    return _view(row,next_state,definition)
+
+
+async def record_package_operation(engine,*,actor,case_id,application_id,expected_revision,request_key,operation,policy=None):
+    # Reserved receipt keys identify the atomic binary pair during recovery.
+    _key(request_key)
+    if request_key.startswith('quarantine.'): _invalid('reserved_quarantine_request_key')
     async def write(session):
-        await applications._case(session,case_id,lock=True)
-        application=await applications._application(session,case_id,application_id,lock=True)
-        events=await applications._events(session,application)
-        rows,states,definitions,size=await _history(session,application)
-        for index,row in enumerate(rows):
-            if row.request_key==request_key:
-                if row.request_hash!=_hash(request): raise EntryStorageConflict('request_key_reused')
-                return _view(row,states[index],definitions[index])
-        if len(rows)!=expected_revision: raise EntryStorageConflict('document_package_revision_changed')
-        closed=events[-1].status in ('approved','refused','closed') or await session.scalar(select(EntryApplication.id).where(EntryApplication.previous_id==application.id))
-        withdrawal=operation['action']=='revoke' or operation['action']=='consent' and operation['data']['status']=='withdrawn'
-        if closed and not withdrawal:
-            _invalid('document_application_closed')
-        occurred_at=_now(); day=applications._local_day(occurred_at)
-        if rows and applications._utc(occurred_at)<applications._utc(rows[-1].created_at): _invalid('document_package_clock_reversed')
-        normalize(operation,cutoff=day)
-        state=states[-1] if states else None; definition=definitions[-1] if definitions else None
-        reserved_only = len(rows) >= MAX_REVISIONS-WITHDRAWAL_SLOTS or size >= MAX_BYTES-WITHDRAWAL_BYTES
-        if reserved_only:
-            meaningful = state and (operation['action']=='revoke' and state['approval'] or
-                operation['action']=='consent' and operation['data']['status']=='withdrawn' and
-                state['consent'] and state['consent']['status']=='granted')
-            if not meaningful: _invalid('document_package_history_limit')
-        action=operation['action']; data=operation['data']; old=[]; legacy=None; approval_policy=None
-        if action=='initialize':
-            if data['product'] not in PRODUCTS[application.procedure]: _invalid('document_product_mismatch')
-            definition=_definition(data['catalog_digest'],data['product'])
-            old,_=await legacy_documents._history(session,application)
-            if len(old)!=data['legacy_revision']: raise EntryStorageConflict('package_legacy_revision_changed')
-            legacy=_plain(old[-1].snapshot) if old else None
-        elif action=='upgrade_definition':
-            if state is None: _invalid('document_package_missing')
-            definition=_definition(data['catalog_digest'],state['product'])
-        if action=='approve':
-            if state is None: _invalid('document_package_missing')
-            if _legacy_passport_gap(rows,states): _invalid('package_passport_recheck_required')
-            authorize_acceptance(actor,policy,catalog_digest=state['catalog_digest'],day=day); _policy_scope(policy)
-            if data['on']!=day.isoformat(): _invalid('invalid_package_approval_date')
-            approval_policy=policy
-        next_state=apply_operation(state,operation,actor=actor.manager_id,definition=definition,legacy=legacy,policy=approval_policy)
-        row=EntryDocumentPackageEvent(case_id=case_id,application_id=application_id,revision=len(rows)+1,action=action,
-            previous_id=rows[-1].id if rows else None,legacy_inventory_id=old[-1].id if old else None,
-            legacy_inventory_hash=old[-1].snapshot_hash if old else None,
-            definition=definition if action in ('initialize','upgrade_definition') else None,
-            request_key=request_key,request_hash=_hash(request),state_hash=_hash(next_state),
-            command=dict(request=request,policy=approval_policy.document() if approval_policy else None,rules_version=2),created_by=actor.manager_id,created_at=occurred_at)
-        row.snapshot_hash=_hash(_payload(row))
-        byte_limit=MAX_BYTES if withdrawal else MAX_BYTES-WITHDRAWAL_BYTES
-        if size+_bytes(row)>byte_limit: _invalid('document_package_history_limit')
-        session.add(row); await session.flush()
-        return _view(row,next_state,definition)
+        return await _record_package_operation(session,actor=actor,case_id=case_id,application_id=application_id,
+            expected_revision=expected_revision,request_key=request_key,operation=operation,policy=policy)
     return await applications._run(engine,write)
 
 
@@ -224,14 +256,30 @@ async def read_document_package(engine,*,actor,case_id,application_id,revision=N
         application=await applications._application(session,case_id,application_id)
         events=await applications._events(session,application)
         rows,states,definitions,size=await _history(session,application)
+        from app.domain.entry_quarantine import metadata
+        quarantine=await metadata(session,application_id,history=(rows,states))
         if revision and revision>len(rows): _invalid('document_package_revision_unavailable')
         index=revision-1 if revision else len(rows)-1
         selected=_view(rows[index],states[index],definitions[index]) if rows else None
+        fingerprints={item['fingerprint'] for state in ([states[-1],states[index]] if rows else []) for item in state['items'].values()}
+        quarantined=await quarantined_fingerprints(session,fingerprints)
         acceptance=effective_acceptance(states[-1],definitions[-1],policy,day=applications._today()) if rows else dict(accepted=False,reason='package_not_initialized')
         if _legacy_passport_gap(rows,states): acceptance=dict(accepted=False,reason='package_passport_recheck_required')
+        if rows and any(item['fingerprint'] in quarantined and item['status']!='withdrawn' for item in states[-1]['items'].values()):
+            acceptance=dict(accepted=False,reason='document_in_quarantine')
+        if selected:
+            for item in selected['summary']['rows']:
+                item['quarantined']=item['fingerprint'] in quarantined and item['status']!='withdrawn'
+                if item['quarantined']:
+                    if item['effective_status']=='checked' and item['applicable']:
+                        bucket='practice_pending' if item['kind']=='practice' else 'recommended_pending' if item['kind']=='recommended' else 'required_pending'
+                        selected['summary']['counts'][bucket]+=1
+                    item['effective_status']='quarantined'
+            selected['summary']['quarantined_count']=sum(item['quarantined'] for item in selected['summary']['rows'])
         if selected and index==len(rows)-1: selected['summary']['package_accepted']=acceptance['accepted']
         old,_=await legacy_documents._history(session,application)
         return dict(application=applications._application_view(application),application_status=events[-1].status,
+            quarantine=quarantine,
             ordinary_writes_available=len(rows)<MAX_REVISIONS-WITHDRAWAL_SLOTS and size<MAX_BYTES-WITHDRAWAL_BYTES,
             current_revision=len(rows),legacy_revision=len(old),legacy_product=old[-1].snapshot['definition']['product'] if old else None,
             selected=selected,current_acceptance=acceptance,

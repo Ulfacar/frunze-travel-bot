@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 import app.admin.router as ar
 import app.admin.kg_entry as entry
 from app.admin.workday import _write_on
-from app.admin.kg_document_inventory import HEADERS, STATES, UNAVAILABLE
+from app.admin.kg_document_ui import HEADERS, STATES, UNAVAILABLE
 from app.domain import entry_document_packages as service
 from app.domain.entry_package_rules import PRODUCTS, MAX_REVISIONS
 from app.domain.entry_package_policy import configured_policy, authorize_acceptance
@@ -34,6 +34,7 @@ ACTIONS={'initialize':'Создан полный комплект','facts':'Ус
          'withdraw_document':'Отзыв документа','passport_change':'Изменение паспорта','consent':'Согласие',
          'approve':'Приёмка комплекта','revoke':'Отзыв приёмки','upgrade_definition':'Обновление требований'}
 ERRORS={'document_package_incomplete':'Остались непроверенные требования или неизвестные условия.',
+        'document_in_quarantine':'В комплекте есть файл в карантине. Проверка и приёмка недоступны.',
         'package_passport_recheck_required':'Старая проверка не учитывала замену одной из копий паспорта. Обновите требования и проверьте комплект заново.',
         'document_package_invitation_conflict':'Выбрано письмо турорганизации. Подтвердите дополнительное основание для письма в условиях заявки и проверьте его содержание.',
         'package_alternative_required':'Укажите, каким из допустимых документов подтверждено требование.',
@@ -157,7 +158,9 @@ async def _render(request,manager,actor,case,application_id,*,item_id='',revisio
                 actions=['initialize'] if products else []
             else:
                 actions=['facts','receive','passport_change','consent']
-                if item['version'] and item['status']!='withdrawn': actions+=['review','withdraw_document']
+                if item['version'] and item['status']!='withdrawn':
+                    actions+=['withdraw_document']
+                    if not item.get('quarantined'): actions+=['review']
                 if policy_ready: actions+=['approve']
                 if current['snapshot']['approval']: actions+=['revoke']
                 if current['snapshot']['catalog_digest']!=CATALOG_SHA256: actions+=['upgrade_definition']

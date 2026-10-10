@@ -33,6 +33,7 @@ ACTIONS={'file':'Записать выданный файл','review':'Свер�
          'travel':'Записать фактический въезд / выезд'}
 NOT_FOUND={'application_case_unavailable','application_unavailable','applicant_unavailable','issued_revision_unavailable'}
 ERRORS={
+    'document_in_quarantine':'Файл или копия паспорта находятся в карантине. Проверка и подтверждение передачи недоступны.',
     'issued_review_required':'Сначала проверьте актуальный файл по текущему паспорту.',
     'issued_version_changed':'Версия файла изменилась. Откройте текущую запись.',
     'issued_passport_mismatch':'Паспорт не совпадает с выданным документом. Нужен исправленный файл.',
@@ -113,6 +114,8 @@ async def _render(request,manager,actor,case,application_id,*,revision=None,erro
         if history['approval_available'] and (revision is None or revision==history['current_revision']) and history['current_revision']<MAX_REVISIONS:
             actions=['file','travel']
             if snapshot and snapshot['version']:actions+=['review','correction','delivery','receipt','passport_change']
+            if current and current['summary'].get('quarantined'):
+                actions=[action for action in actions if action not in ('review','delivery','receipt')]
             for action in actions:forms[action]=_envelope(request,actor,case['id'],application_id,action,history)
         if echo and echo['_is_action'] in forms and echo['_is_revision']==str(history['current_revision']):forms[echo['_is_action']]=echo
         if retry:forms={}

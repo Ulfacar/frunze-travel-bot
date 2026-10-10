@@ -24,7 +24,7 @@ from decimal import Decimal
 
 from sqlalchemy import (JSON, Boolean, CheckConstraint, Date, DateTime, ForeignKey,
                         ForeignKeyConstraint, Index, Integer, String, Text,
-                        Numeric, UniqueConstraint, event, func, inspect, select, text, true,
+                        Numeric, LargeBinary, UniqueConstraint, event, func, inspect, select, text, true,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship, validates
@@ -1825,7 +1825,45 @@ class EntryDocumentPackageEvent(DomainBase):
         return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent)
+class EntryQuarantinedFile(DomainBase):
+    """Immutable quarantined bytes, committed with their exact package receipt."""
+    __tablename__ = "entry_quarantined_files"
+    __table_args__ = (
+        UniqueConstraint("application_id", "request_key", name="uq_entry_quarantine_request"),
+        UniqueConstraint("package_event_id", name="uq_entry_quarantine_receipt"),
+        ForeignKeyConstraint(["package_event_id", "application_id", "case_id"],
+            ["entry_document_package_events.id", "entry_document_package_events.application_id", "entry_document_package_events.case_id"],
+            name="fk_entry_quarantine_receipt"),
+        CheckConstraint("document_version BETWEEN 1 AND 500", name="ck_entry_quarantine_version"),
+        CheckConstraint("byte_size BETWEEN 8 AND 8388608 AND length(content) = byte_size", name="ck_entry_quarantine_size"),
+        CheckConstraint("media_type IN ('application/pdf','image/jpeg')", name="ck_entry_quarantine_type"),
+        CheckConstraint("length(fingerprint) = 64 AND length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_quarantine_hashes"),
+        Index("ix_entry_quarantine_application", "application_id"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer)
+    application_id: Mapped[int] = mapped_column(Integer)
+    package_event_id: Mapped[int] = mapped_column(Integer)
+    item_id: Mapped[str] = mapped_column(String(41))
+    document_version: Mapped[int] = mapped_column(Integer)
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    byte_size: Mapped[int] = mapped_column(Integer)
+    media_type: Mapped[str] = mapped_column(String(32))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    policy: Mapped[dict] = mapped_column(_ServiceJSON)
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    content: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)
+
+    @validates("command", "policy")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile)
 
 
 def _entry_immutable(mapper, connection, target):

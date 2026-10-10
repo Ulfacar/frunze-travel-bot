@@ -22,6 +22,7 @@
 {% if not write_on %}<p class="box notice">Запись отключена администратором.</p>{% endif %}
 {% if current and current.revision!=history.current_revision %}<p class="box notice" id="kg-is-historical">Открыта историческая версия {{ current.revision }}. <a href="{{ url }}">Открыть текущую</a>.</p>{% endif %}
 {% if current %}<section class="box" id="kg-is-summary"><h2>Состояние в версии {{ current.revision }}</h2>
+{% if current.summary.quarantined %}<p class="box notice" id="kg-is-quarantine">Файл или копия паспорта находятся в карантине. Прежняя проверка сейчас недействительна; подтверждение передачи недоступно.</p>{% endif %}
 <p>Версия файла: {{ snapshot.version }}. Проверка актуальна для этой версии истории: <strong>{% if current.summary.verification_current %}да{% else %}нет{% endif %}</strong>.</p>
 {% if current.summary.correction_pending %}<p><strong>Есть ошибка. Требуется исправленный выданный файл.</strong></p>{% endif %}
 <p>Передача через оба канала и копия в CRM: {% if current.summary.delivery_complete %}подтверждены{% else %}не полностью подтверждены{% endif %}.</p>

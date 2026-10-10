@@ -55,6 +55,18 @@ def _view(row):
                 operation=_plain(row.command)['operation'],summary=summarize(snapshot))
 
 
+async def _effective_view(session,row):
+    from app.domain.entry_document_packages import quarantined_fingerprints
+    view=_view(row);state=view['snapshot']
+    quarantined=bool(await quarantined_fingerprints(session,{state.get('fingerprint'),
+        state.get('current_passport'),state.get('issued_passport')}))
+    view['summary']['quarantined']=quarantined
+    if quarantined:
+        for key in ('verification_current','delivery_complete','receipt_current_and_checked'):
+            view['summary'][key]=False
+    return view
+
+
 async def record_issued_operation(engine,*,actor,case_id,application_id,expected_revision,request_key,operation):
     _authorize(actor);_id(case_id);_id(application_id);_key(request_key)
     if type(expected_revision) is not int or not 0<=expected_revision<MAX_REVISIONS:
@@ -69,9 +81,15 @@ async def record_issued_operation(engine,*,actor,case_id,application_id,expected
         old=next((r for r in rows if r.request_key==request_key),None)
         if old:
             if old.request_hash!=_hash(command):raise EntryStorageConflict('request_key_reused')
-            return _view(old)
+            return await _effective_view(session,old)
         if len(rows)!=expected_revision:raise EntryStorageConflict('issued_revision_changed')
         if approval is None:raise EntryStorageInvalid('issued_approval_required')
+        if operation['action'] in ('review','delivery','receipt'):
+            from app.domain.entry_document_packages import quarantined_fingerprints
+            state=_plain(rows[-1].snapshot) if rows else {}
+            if await quarantined_fingerprints(session,{operation['data']['fingerprint'],
+                    state.get('current_passport'),state.get('issued_passport')}):
+                raise EntryStorageInvalid('document_in_quarantine')
         snapshot=apply_operation(_plain(rows[-1].snapshot) if rows else None,operation,actor=actor.manager_id,
                                  approved_on=approval.occurred_on.isoformat())
         if size+len(canonical(command).encode())+len(canonical(snapshot).encode())>MAX_BYTES:
@@ -83,7 +101,7 @@ async def record_issued_operation(engine,*,actor,case_id,application_id,expected
         if operation['action']=='travel':
             from app.domain.entry_deadline_tasks import sync_enabled
             await sync_enabled(session,case,application,actor.manager_id)
-        return _view(row)
+        return await _effective_view(session,row)
     return await applications._run(engine,write)
 
 
@@ -98,8 +116,9 @@ async def read_issued_history(engine,*,actor,case_id,application_id,revision=Non
         rows,_=await _history(session,application,approval)
         selected=next((r for r in rows if r.revision==revision),None) if revision else rows[-1] if rows else None
         if revision and selected is None:raise EntryStorageInvalid('issued_revision_unavailable')
+        view=await _effective_view(session,selected) if selected else None
         return dict(application=applications._application_view(application),application_status=events[-1].status,
-            approval_available=approval is not None,current_revision=len(rows),selected=_view(selected) if selected else None,
+            approval_available=approval is not None,current_revision=len(rows),selected=view,
             history=[dict(revision=r.revision,created_by=r.created_by,created_at=applications._utc(r.created_at),
                           action=r.command['operation']['action']) for r in reversed(rows)])
     return await applications._run(engine,read)

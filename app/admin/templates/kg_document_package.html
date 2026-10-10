@@ -1,9 +1,9 @@
 {% extends "kg_document_inventory.html" %}
 {% block title %}Frunze — Полный комплект документов{% endblock %}
 {% block content %}<main class="kg-inventory">
-<nav><a href="/admin/case/{{ case.id }}/kg-entry/applications?application_id={{ application_id }}">К заявке</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/documents">Прежний реестр</a></nav>
+<nav><a href="/admin/case/{{ case.id }}/kg-entry/applications?application_id={{ application_id }}">К заявке</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/documents">Прежний реестр</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/quarantine">Файлы заявки</a></nav>
 <h1>Полный комплект документов</h1><p>Услуга №{{ case.id }} · заявка №{{ application_id }} · {{ case.title }}</p>
-<p class="box notice">Учитываются матрица, общие требования и дополнения по типу документа. Файлы сюда не загружаются. До утверждения правил работы с реальными документами используйте тестовые данные. Приёмка комплекта сама по себе не разрешает подачу.</p>
+<p class="box notice">Учитываются матрица, общие требования и дополнения по типу документа. Файлы принимаются в отдельный карантин при действующих правилах хранения. До утверждения правил работы с реальными документами используйте тестовые данные. Приёмка комплекта сама по себе не разрешает подачу.</p>
 {% if error %}<p class="box error" role="alert">{{ error }}</p>{% endif %}
 {% if policy_invalid %}<p class="box notice">Настройки политики приёмки некорректны. Приёмка отключена; история и отзыв доступны.</p>{% endif %}
 {% if retry %}<section class="box no-print"><h2>Проверить результат исходного запроса</h2><p>Повтор использует тот же ключ и не создаёт дубль уже сохранённой операции.</p><form method="post" action="{{ url }}" id="kg-dp-retry">{% for name,value in retry.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}<button type="submit" {% if not write_on %}disabled{% endif %}>Повторить исходный запрос</button></form></section>{% endif %}
@@ -17,6 +17,7 @@
 {% elif not current %}<p class="box notice">Комплект ещё не создан. Для этой процедуры или состояния создание недоступно.</p>{% endif %}
 {% if current %}
 <section class="box" id="kg-dp-summary"><h2>Состояние комплекта · версия {{ current.revision }}</h2>
+{% if current.summary.quarantined_count %}<p class="notice">Документов в карантине: {{ current.summary.quarantined_count }}. Проверка этих файлов и приёмка комплекта недоступны.</p>{% endif %}
 <p>{{ current.definition.product }} · {{ current.definition.title }} · {{ current.definition.version }}. Редакция паспорта {{ current.snapshot.passport_revision }}, условий {{ current.snapshot.facts_revision }}.</p>
 <p>Обязательных требуют действия: {{ current.summary.counts.required_pending }}; применимость неизвестна: {{ current.summary.counts.applicability_unknown }}; практических проверок осталось: {{ current.summary.counts.practice_pending }}; рекомендаций не проверено: {{ current.summary.counts.recommended_pending }}.</p>
 {% if current.revision==inventory.current_revision and inventory.current_acceptance.accepted %}<p><strong id="kg-dp-accepted">Комплект принят по действующей политике учёта документов.</strong> Подача не разрешена этой отметкой.</p>{% else %}<p><strong id="kg-dp-not-accepted">Текущая приёмка не подтверждена.</strong> Подача не разрешена.</p>{% endif %}

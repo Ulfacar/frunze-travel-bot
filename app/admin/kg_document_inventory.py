@@ -12,22 +12,20 @@ from fastapi.responses import HTMLResponse,RedirectResponse
 import app.admin.router as ar
 import app.admin.kg_entry as entry
 from app.admin.workday import _write_on
+from app.admin.kg_document_ui import HEADERS, STATES, UNAVAILABLE
 from app.domain import entry_documents as service
 from app.domain.entry_document_rules import PRODUCTS,SOURCES,REASONS,MAX_REVISIONS
 from app.domain.entry_storage import EntryStorageInvalid,EntryStorageConflict
 from app.domain.service_authz import PermissionDenied
 from app.knowledge.document_checklist import load_document_catalog,KINDS
 
-HEADERS={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}
 META=('_di_action','_di_revision','_di_key','_di_item','_di_version','_di_fingerprint','_di_catalog')
 SECURITY={'_di_csrf','_di_signature'}
 FIELDS={'initialize':{'product','confirmed'},'receive':{'fingerprint','on','source','confirmed'},
         'review':{'on','outcome','reason','confirmed'},'withdraw':{'on','reason','confirmed'},
         'applicability':{'applicable','confirmed'},'passport_change':{'on','reason','confirmed'}}
-STATES={'missing':'Нет документа','received':'Получен, ожидает проверки','checked':'Проверен',
-        'correction':'Нужна доработка','withdrawn':'Отозван','recheck':'Нужна повторная проверка'}
-UNAVAILABLE={'application_case_unavailable','application_unavailable','applicant_unavailable'}
 ERRORS={'document_version_changed':'Версия документа изменилась. Откройте актуальную запись.',
+        'document_in_quarantine':'Этот файл находится в карантине. Проверка пока недоступна.',
         'document_content_unchanged':'Этот файл уже записан как текущая версия.',
         'document_source_unverified':'Требование источника ещё не подтверждено; отметка проверки недоступна.',
         'invalid_document_date':'Проверьте фактическую дату: она не может быть в будущем или раньше получения.',
@@ -111,7 +109,9 @@ async def _render(request,manager,actor,case,application_id,*,item_id='',revisio
                 if products:forms['initialize']=_envelope(request,actor,case['id'],application_id,'initialize',0,catalog=catalog.digest)
             else:
                 actions=['receive','passport_change']
-                if selected_item['version'] and selected_item['status']!='withdrawn':actions+=['review','withdraw']
+                if selected_item['version'] and selected_item['status']!='withdrawn':
+                    actions+=['withdraw']
+                    if not selected_item.get('quarantined'): actions+=['review']
                 if selected_item['kind']=='conditional':actions+=['applicability']
                 for action in actions:forms[action]=_envelope(request,actor,case['id'],application_id,action,inventory['current_revision'],selected_item)
         if echo and echo['_di_action'] in forms and echo['_di_revision']==str(inventory['current_revision']):forms[echo['_di_action']]=echo
