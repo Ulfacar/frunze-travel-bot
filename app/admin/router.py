@@ -2641,6 +2641,7 @@ from app.admin import kg_process_journal  # noqa: E402,F401 — этапы с п
 from app.admin import kg_portal  # noqa: E402,F401 — входящие сведения и проверка оператором, default OFF
 from app.admin import kg_interviews  # noqa: E402,F401 — полная анкета и принятие карточки специалистом
 from app.admin import kg_quotes  # noqa: E402,F401 — внутренние версии расчёта стоимости
+from app.admin import kg_channel_stops  # noqa: E402,F401 — постоянная остановка выбранного WhatsApp-диалога
 from app.admin import kg_documents  # noqa: E402,F401 — черновая матрица документов, без записи
 from app.admin import kg_document_inventory  # noqa: E402,F401 — версии документов отдельных заявок
 from app.admin import kg_document_packages  # noqa: E402,F401 — полные комплекты и их приёмка

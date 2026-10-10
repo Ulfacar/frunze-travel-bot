@@ -303,6 +303,8 @@ class Orchestrator:
         if log:
             await self._log_in(msg, NON_TEXT_VOICE_FAILED if msg.voice_failed
                                else _MEDIA_LABEL.get(msg.media_type, "[медиа/голос]"))
+        from app.core.kg_channel_guard import blocked
+        if await blocked(self.channel,msg.chat_id):return
         key = self._key(msg)
         store = get_state_store()
         state = await store.load(key)
@@ -319,8 +321,8 @@ class Orchestrator:
             state.intercepted = True
             await store.save(state)
             await self._sync_card(msg, state)
-            await self._reply(msg, MEDIA_HANDOFF)
-            await self._maybe_instant_handoff(msg, state, MEDIA_HANDOFF)
+            sent = await self._reply(msg, MEDIA_HANDOFF)
+            if sent is not False:await self._maybe_instant_handoff(msg, state, MEDIA_HANDOFF)
             return
 
         state.consecutive_audio += 1
@@ -330,11 +332,11 @@ class Orchestrator:
             state.intercepted = True
             await store.save(state)
             await self._sync_card(msg, state)
-            await self._reply(msg, NON_TEXT_HANDOFF)
+            sent = await self._reply(msg, NON_TEXT_HANDOFF)
             # Это тоже готовая передача менеджеру, просто пришедшая голосом. Без этой
             # строки заявка молча оседала в панели: пуш врезан только в _run_turn, а
             # голосовой хендофф выходит отсюда через return. Голос — самый частый путь.
-            await self._maybe_instant_handoff(msg, state, NON_TEXT_HANDOFF)
+            if sent is not False:await self._maybe_instant_handoff(msg, state, NON_TEXT_HANDOFF)
             return
         await store.save(state)
         await self._reply(msg, NON_TEXT_FALLBACK)
@@ -366,6 +368,8 @@ class Orchestrator:
         Вызывается ПОД локом диалога: синхронно из handle (дебаунс off) либо из
         _debounce_flush со склеенным текстом. Входящее в панель уже записано в handle.
         """
+        from app.core.kg_channel_guard import blocked
+        if await blocked(self.channel,msg.chat_id):return
         key = self._key(msg)
         store = get_state_store()
         state = await store.load(key)
@@ -458,12 +462,12 @@ class Orchestrator:
         await store.save(state)
         await self._sync_card(msg, state)
         if reply and not intercepted_midflight:
-            await self._reply(msg, reply)
+            sent = await self._reply(msg, reply)
             # P1.1: заявка собрана → мгновенный пуш владельцу. Врезка именно ЗДЕСЬ, а не
             # в runner.py на handoff_to_manager: там инструмент возвращает инструкцию для
             # LLM, а не текст клиенту, то есть «что бот пообещал» недоступно. В `reply`
             # лежит буквально отправленная реплика.
-            await self._maybe_instant_handoff(msg, state, reply)
+            if sent is not False:await self._maybe_instant_handoff(msg, state, reply)
         elif intercepted_midflight:
             log.info("reply dropped: intercepted mid-flight (key=%s)", key)
 
@@ -498,7 +502,7 @@ class Orchestrator:
             return
         if state.wait_ack_sent:
             return  # уже подтвердили — дальше о брошенном клиенте напомнит awaiting-джоба
-        await self._reply(msg, wait_ack_for(state.funnel))
+        if await self._reply(msg, wait_ack_for(state.funnel)) is False:return
         state.wait_ack_sent = True
         await store.save(state)
 
@@ -576,7 +580,18 @@ class Orchestrator:
         except Exception:  # noqa: BLE001 — наблюдение не имеет права мешать ответу
             return
 
-    async def _reply(self, msg: Message, text: str, *, counts_as_reply: bool = True) -> None:
+    async def _reply(self, msg: Message, text: str, *, counts_as_reply: bool = True) -> bool:
+        from app.core.kg_channel_guard import send,capture_adapter
+        adapter=capture_adapter(self.channel)
+        msg=replace(msg)
+        async def deliver():return await self._deliver_reply(adapter,msg,text,counts_as_reply=counts_as_reply)
+        try:result=await send(adapter,msg.chat_id,deliver)
+        except Exception:
+            log.warning('autonomous reply outcome unknown; not retrying')
+            return False
+        return result.invoked and result.value is not False
+
+    async def _deliver_reply(self, adapter, msg: Message, text: str, *, counts_as_reply: bool = True) -> bool:
         """`counts_as_reply=False` — реплику видно в переписке, но диалог остаётся
         неотвеченным: так уходит аварийная отписка, чтобы сторож `awaiting` позвал человека.
         """
@@ -592,7 +607,7 @@ class Orchestrator:
         except Exception:  # noqa: BLE001
             log.warning("panel log_out failed", exc_info=True)
         try:
-            provider = await self.channel.send(msg.chat_id, text)
+            provider = await adapter.send(msg.chat_id, text)
             mark_own(provider)
             if msg_id:
                 await panel.mark_message_status(message_id=msg_id, status="sent",
@@ -611,6 +626,7 @@ class Orchestrator:
                 direction=(self.bot.scenario if self.bot is not None else ""),
                 body=text, idempotency_key=(provider or ""),
                 provider_msg_id=(provider or ""), status="sent")
+            return True
         except Exception:  # noqa: BLE001 — сбой канала: помечаем failed, диалог не роняем
             record_failure("send")
             if msg_id:
@@ -619,6 +635,7 @@ class Orchestrator:
                 except Exception:  # noqa: BLE001
                     pass
             log.warning("bot send failed (channel=%s)", msg.channel, exc_info=True)
+            return False
 
     async def _absorb_silent(self, msg: Message, state) -> None:
         """Вынуть факты из реплики клиента, ничего ему не отвечая.
@@ -752,8 +769,8 @@ class Orchestrator:
                     state.history.append({"role": "assistant", "content": answer})
                     await store.save(state)
                     await self._sync_card(msg, state)
-                    await self._reply(msg, answer)
-                    await self._maybe_instant_handoff(msg, state, answer)
+                    sent = await self._reply(msg, answer)
+                    if sent is not False:await self._maybe_instant_handoff(msg, state, answer)
                     return True
             except Exception:  # noqa: BLE001
                 log.warning("visa deterministic reply failed", exc_info=True)
@@ -786,8 +803,8 @@ class Orchestrator:
         state.history.append({"role": "assistant", "content": answer})
         await store.save(state)
         await self._sync_card(msg, state)
-        await self._reply(msg, answer)
+        sent = await self._reply(msg, answer)
         # FAQ с handoff_only так же собирает заявку и так же выходит через return —
         # без этой строки пуш не уходил (живой случай 02.08: виза США, сутки тишины).
-        await self._maybe_instant_handoff(msg, state, answer)
+        if sent is not False:await self._maybe_instant_handoff(msg, state, answer)
         return True

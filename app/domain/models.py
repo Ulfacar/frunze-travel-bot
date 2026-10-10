@@ -2129,7 +2129,41 @@ class EntryQuoteRevision(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision)
+class EntryChannelStop(DomainBase):
+    """Permanent autonomous-send stop, pinned to one explicit route and handoff."""
+    __tablename__='entry_channel_stops'
+    __table_args__=(
+        UniqueConstraint('transport_key',name='uq_entry_channel_stop_transport'),
+        UniqueConstraint('case_id','request_key',name='uq_entry_channel_stop_request'),
+        ForeignKeyConstraint(['interview_id','case_id','applicant_id'],['entry_interviews.id','entry_interviews.case_id','entry_interviews.applicant_id'],name='fk_entry_channel_stop_subject'),
+        ForeignKeyConstraint(['handoff_event_id','interview_id','case_id','applicant_id'],['entry_interview_events.id','entry_interview_events.interview_id','entry_interview_events.case_id','entry_interview_events.applicant_id'],name='fk_entry_channel_stop_card'),
+        CheckConstraint('length(transport_key)=64 AND length(card_hash)=64 AND length(request_hash)=64 AND length(snapshot_hash)=64',name='ck_entry_channel_stop_hashes'),
+    )
+    id:Mapped[int]=mapped_column(Integer,primary_key=True)
+    case_id:Mapped[int]=mapped_column(Integer)
+    applicant_id:Mapped[int]=mapped_column(Integer)
+    interview_id:Mapped[int]=mapped_column(Integer)
+    handoff_event_id:Mapped[int]=mapped_column(Integer)
+    contact_id:Mapped[int]=mapped_column(ForeignKey('contacts.id'))
+    dialog_id:Mapped[int]=mapped_column(ForeignKey('dialogs.id'))
+    transport_key:Mapped[str]=mapped_column(String(64))
+    card_hash:Mapped[str]=mapped_column(String(64))
+    request_key:Mapped[str]=mapped_column(String(64))
+    request_hash:Mapped[str]=mapped_column(String(64))
+    snapshot_hash:Mapped[str]=mapped_column(String(64))
+    command:Mapped[dict]=mapped_column(_ServiceJSON)
+    policy:Mapped[dict]=mapped_column(_ServiceJSON)
+    route:Mapped[dict]=mapped_column(_ServiceJSON)
+    source_pin:Mapped[dict]=mapped_column(_ServiceJSON)
+    authority:Mapped[dict]=mapped_column(_ServiceJSON)
+    created_by:Mapped[str]=mapped_column(String(64))
+    created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=_now)
+
+    @validates('command','policy','route','source_pin','authority')
+    def _freeze(self,key,value):return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop)
 
 
 def _entry_immutable(mapper, connection, target):

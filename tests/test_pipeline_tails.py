@@ -207,9 +207,10 @@ def _silent_conv(key: str, *, lead: str, pings: int = 0, stage_by_bot: str = "UC
 
 def _run_followup(monkeypatch, fired: list):
     async def fake_send(channel, bot_id, chat_id, text):
-        return "pmid"
+        from app.domain.entry_channel_stops import SendResult
+        return SendResult(True,"pmid")
 
-    monkeypatch.setattr(followup.outbound, "send_to_client", fake_send)
+    monkeypatch.setattr(followup.outbound, "send_automated_to_client", fake_send)
     monkeypatch.setattr(followup.settings, "followup_enabled", True)
     monkeypatch.setattr(followup.settings, "followup_after_hours", 24)
     monkeypatch.setattr(followup.settings, "followup_quiet_from", 0)

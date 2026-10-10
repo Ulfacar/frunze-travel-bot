@@ -22,6 +22,7 @@
 {% block content %}<main class="kg-interview">
 <nav><a href="/admin/case/{{ case.id }}/kg-entry/applications">К заявителям и заявкам</a> · <a href="{{ url }}">Текущая анкета</a></nav>
 <h1>Анкета заявителя №{{ applicant_id }}</h1><p>Услуга №{{ case.id }} · {{ case.title }}</p>
+{% if current and current.interview %}<p class="box no-print"><a href="{{ url }}/{{ current.interview.id }}/channel-stop">Проверить остановку автоответов и привязать диалог WhatsApp</a>. Принятие карточки и остановка канала проверяются отдельно.</p>{% endif %}
 <p class="box notice">Ответы относятся к этому заявителю. Контакт услуги может быть плательщиком или представителем. Согласие на данные и принятие оферты фиксируются отдельно.</p>
 {% if error %}<p role="alert" class="box error">{{ error }}</p>{% endif %}
 {% if not allowed %}<p class="box notice" id="kg-interview-disabled">Действующие условия сбора не установлены. Новые ответы недоступны; сохранённую историю можно просмотреть.</p>{% endif %}

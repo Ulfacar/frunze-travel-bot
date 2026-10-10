@@ -297,32 +297,46 @@ async def start_interview(engine,*,actor,case_id,applicant_id,owner_login,langua
     return await _run(engine,write)
 
 
-async def record_action(engine,*,actor,case_id,applicant_id,interview_id,expected_revision,request_key,operation,
-                        policy=None,expected_policy_hash=None):
+def _action_input(actor,case_id,applicant_id,interview_id,expected_revision,request_key,operation,expected_policy_hash):
     _access(actor);_id(case_id);_id(applicant_id);_id(interview_id);_key(request_key)
     if type(expected_revision) is not int or not 1<=expected_revision<=MAX_EVENTS:_fail('invalid_interview_revision')
     operation=_operation(deepcopy(operation))
     if expected_policy_hash is not None:proof(expected_policy_hash)
+    return operation
+
+
+async def record_action(engine,*,actor,case_id,applicant_id,interview_id,expected_revision,request_key,operation,
+                        policy=None,expected_policy_hash=None):
+    operation=_action_input(actor,case_id,applicant_id,interview_id,expected_revision,request_key,operation,expected_policy_hash)
     async def write(session):
-        case=await applications._case(session,case_id,lock=True);person=await applications._applicant(session,case_id,applicant_id)
-        header,pinned=await _header(session,case,person,interview_id);rows,state,size=await _history(session,header,pinned)
-        command=_command(header,expected_revision,actor.manager_id,operation,expected_policy_hash)
-        old=next((r for r in rows if r.request_key==request_key),None)
-        if old:
-            if old.request_hash!=_hash(command):raise EntryStorageConflict('interview_request_conflict')
-            return _result(old)
-        if actor.manager_id not in header.authority['full_admins'] or actor.manager_id not in pinned.operators:raise PermissionDenied('interview_operator_denied')
-        if expected_revision!=len(rows):raise EntryStorageConflict('interview_revision_changed')
-        if operation['action'] not in OPERATIONAL:
-            authorize(actor,policy,on=applications._today())
-            if policy.digest!=pinned.digest or expected_policy_hash!=pinned.digest:raise EntryStorageConflict('interview_policy_changed')
-        elif expected_policy_hash is not None and expected_policy_hash!=pinned.digest:raise EntryStorageConflict('interview_policy_changed')
-        at=_now()
-        if operation['action'] not in OPERATIONAL:authorize(actor,policy,on=applications._local_day(at))
-        after=_reduce(header,pinned,state,operation,revision=len(rows)+1,on=applications._local_day(at).isoformat(),actor=actor.manager_id)
-        command['_request_key']=request_key
-        return await _append(session,header,rows,after,command,at,size)
+        return await _record_action_in_session(session,actor=actor,case_id=case_id,applicant_id=applicant_id,
+            interview_id=interview_id,expected_revision=expected_revision,request_key=request_key,operation=operation,
+            policy=policy,expected_policy_hash=expected_policy_hash)
     return await _run(engine,write)
+
+
+async def _record_action_in_session(session,*,actor,case_id,applicant_id,interview_id,expected_revision,request_key,
+                                    operation,policy=None,expected_policy_hash=None,at=None):
+    """Caller owns transaction; channel-stop enrollment may atomically add its latch."""
+    operation=_action_input(actor,case_id,applicant_id,interview_id,expected_revision,request_key,operation,expected_policy_hash)
+    case=await applications._case(session,case_id,lock=True);person=await applications._applicant(session,case_id,applicant_id)
+    header,pinned=await _header(session,case,person,interview_id);rows,state,size=await _history(session,header,pinned)
+    command=_command(header,expected_revision,actor.manager_id,operation,expected_policy_hash)
+    old=next((r for r in rows if r.request_key==request_key),None)
+    if old:
+        if old.request_hash!=_hash(command):raise EntryStorageConflict('interview_request_conflict')
+        return _result(old)
+    if actor.manager_id not in header.authority['full_admins'] or actor.manager_id not in pinned.operators:raise PermissionDenied('interview_operator_denied')
+    if expected_revision!=len(rows):raise EntryStorageConflict('interview_revision_changed')
+    if operation['action'] not in OPERATIONAL:
+        authorize(actor,policy,on=applications._today())
+        if policy.digest!=pinned.digest or expected_policy_hash!=pinned.digest:raise EntryStorageConflict('interview_policy_changed')
+    elif expected_policy_hash is not None and expected_policy_hash!=pinned.digest:raise EntryStorageConflict('interview_policy_changed')
+    at=_now() if at is None else at
+    if operation['action'] not in OPERATIONAL:authorize(actor,policy,on=applications._local_day(at))
+    after=_reduce(header,pinned,state,operation,revision=len(rows)+1,on=applications._local_day(at).isoformat(),actor=actor.manager_id)
+    command['_request_key']=request_key
+    return await _append(session,header,rows,after,command,at,size)
 
 
 async def read_interview(engine,*,actor,case_id,applicant_id,interview_id=None,policy=None):

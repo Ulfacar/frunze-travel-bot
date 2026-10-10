@@ -88,9 +88,10 @@ def test_followup_run_sends_once(monkeypatch):
 
     async def fake_send(channel, bot_id, chat_id, text):
         sent.append((chat_id, text))
-        return "pmid"
+        from app.domain.entry_channel_stops import SendResult
+        return SendResult(True,"pmid")
 
-    monkeypatch.setattr(followup.outbound, "send_to_client", fake_send)
+    monkeypatch.setattr(followup.outbound, "send_automated_to_client", fake_send)
     monkeypatch.setattr(followup.settings, "followup_enabled", True)
     monkeypatch.setattr(followup.settings, "followup_after_hours", 24)
     monkeypatch.setattr(followup.settings, "followup_quiet_from", 0)  # отключить тихие часы
@@ -122,9 +123,10 @@ def test_followup_dojimaet_office_lead_and_increments_count(monkeypatch):
 
     async def fake_send(channel, bot_id, chat_id, text):
         sent.append((chat_id, text))
-        return "pmid"
+        from app.domain.entry_channel_stops import SendResult
+        return SendResult(True,"pmid")
 
-    monkeypatch.setattr(followup.outbound, "send_to_client", fake_send)
+    monkeypatch.setattr(followup.outbound, "send_automated_to_client", fake_send)
     monkeypatch.setattr(followup.settings, "followup_enabled", True)
     monkeypatch.setattr(followup.settings, "followup_quiet_from", 0)
     monkeypatch.setattr(followup.settings, "followup_quiet_to", 0)
@@ -151,9 +153,10 @@ def test_send_followups_uses_second_text_for_second_ping(monkeypatch):
 
     async def fake_send(channel, bot_id, chat_id, text):
         sent.append((chat_id, text))
-        return "pmid"
+        from app.domain.entry_channel_stops import SendResult
+        return SendResult(True,"pmid")
 
-    monkeypatch.setattr(followup.outbound, "send_to_client", fake_send)
+    monkeypatch.setattr(followup.outbound, "send_automated_to_client", fake_send)
 
     count = asyncio.run(followup._send_followups(now, _Cfg()))
 
@@ -189,9 +192,10 @@ def test_followup_run_manual_sends_regardless_of_auto_flag(monkeypatch):
 
     async def fake_send(channel, bot_id, chat_id, text):
         sent.append((chat_id, text))
-        return "pmid"
+        from app.domain.entry_channel_stops import SendResult
+        return SendResult(True,"pmid")
 
-    monkeypatch.setattr(followup.outbound, "send_to_client", fake_send)
+    monkeypatch.setattr(followup.outbound, "send_automated_to_client", fake_send)
     monkeypatch.setattr(followup.settings, "followup_enabled", False)   # авто OFF
     monkeypatch.setattr(followup.settings, "followup_quiet_from", 0)    # тихие часы off
     monkeypatch.setattr(followup.settings, "followup_quiet_to", 0)

@@ -386,6 +386,9 @@ class Settings(BaseSettings):
     kg_interview_policy: dict = Field(default_factory=dict)
     # Internal quotation recipes require explicit source/commercial authority.
     kg_quote_policy: dict = Field(default_factory=dict)
+    # Permanent stops are enrolled only under explicit authority, on activated Wappi profiles.
+    kg_channel_guard_scopes: list[dict] = Field(default_factory=list)
+    kg_channel_stop_policy: dict = Field(default_factory=dict)
     # Secure-флаг на cookie сессии. На проде ОБЯЗАТЕЛЕН (TLS терминирует nginx) и потому
     # True по умолчанию. Выключается только для локального просмотра панели по http —
     # иначе браузер не сохранит cookie и войти в панель на localhost нельзя.
