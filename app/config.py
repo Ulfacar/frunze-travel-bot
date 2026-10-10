@@ -374,6 +374,8 @@ class Settings(BaseSettings):
     kg_knowledge_publishers: list[str] = Field(default_factory=list)
     kg_knowledge_policy_ref: str = ""
     kg_knowledge_policy_sha256: str = ""
+    # No document/privacy/source approval or reviewer identity is implied by default.
+    kg_document_package_policy: dict = Field(default_factory=dict)
     # Secure-флаг на cookie сессии. На проде ОБЯЗАТЕЛЕН (TLS терминирует nginx) и потому
     # True по умолчанию. Выключается только для локального просмотра панели по http —
     # иначе браузер не сохранит cookie и войти в панель на localhost нельзя.

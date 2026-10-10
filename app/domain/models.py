@@ -1786,7 +1786,46 @@ class KnowledgePublicationUnit(DomainBase):
     decision_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit)
+class EntryDocumentPackageEvent(DomainBase):
+    """Full-package commands; the definition is pinned once, not copied per event."""
+    __tablename__ = "entry_document_package_events"
+    __table_args__ = (
+        UniqueConstraint("id", "application_id", "case_id", name="uq_entry_package_scope"),
+        UniqueConstraint("application_id", "revision", name="uq_entry_package_revision"),
+        UniqueConstraint("application_id", "request_key", name="uq_entry_package_request"),
+        ForeignKeyConstraint(["application_id", "case_id"], ["entry_applications.id", "entry_applications.case_id"], name="fk_entry_package_application"),
+        ForeignKeyConstraint(["previous_id", "application_id", "case_id"], ["entry_document_package_events.id", "entry_document_package_events.application_id", "entry_document_package_events.case_id"], name="fk_entry_package_previous"),
+        ForeignKeyConstraint(["legacy_inventory_id", "application_id", "case_id"], ["entry_document_revisions.id", "entry_document_revisions.application_id", "entry_document_revisions.case_id"], name="fk_entry_package_legacy"),
+        CheckConstraint("revision BETWEEN 1 AND 500", name="ck_entry_package_revision"),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL AND action = 'initialize') OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id AND action != 'initialize' AND legacy_inventory_id IS NULL)", name="ck_entry_package_initial"),
+        CheckConstraint("action IN ('initialize','facts','receive','review','withdraw_document','passport_change','consent','approve','revoke','upgrade_definition')", name="ck_entry_package_action"),
+        CheckConstraint("(action IN ('initialize','upgrade_definition') AND definition IS NOT NULL) OR (action NOT IN ('initialize','upgrade_definition') AND definition IS NULL)", name="ck_entry_package_definition"),
+        CheckConstraint("(legacy_inventory_id IS NULL) = (legacy_inventory_hash IS NULL)", name="ck_entry_package_legacy"),
+        CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64 AND length(state_hash) = 64 AND (legacy_inventory_hash IS NULL OR length(legacy_inventory_hash) = 64)", name="ck_entry_package_hashes"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer)
+    application_id: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[int] = mapped_column(Integer)
+    action: Mapped[str] = mapped_column(String(24))
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    legacy_inventory_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    legacy_inventory_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    definition: Mapped[dict | None] = mapped_column(_ServiceJSON(none_as_null=True), nullable=True)
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    state_hash: Mapped[str] = mapped_column(String(64))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates("command", "definition")
+    def _freeze(self, key, value):
+        return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent)
 
 
 def _entry_immutable(mapper, connection, target):

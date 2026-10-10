@@ -57,8 +57,17 @@ def test_transit_alternatives_remain_one_requirement_without_invented_matrix(cat
     alternative=row(result,'t08_03')
     assert 'билет' in alternative['text'] and 'или виза' in alternative['text'] and 'или разрешение' in alternative['text']
     assert len([r for r in result['rows'] if r['id'].startswith('t08_')])==3
+    assert set(alternative['alternatives'])=={'ticket','visa','authority'}
     checked=assess(catalog,'TR',states={'t08_03':'checked'})
     assert row(checked,'t08_03')['outcome']=='checked' and not checked['assessments_complete']
+
+
+@pytest.mark.parametrize('product,facts',[('B',{}),('RL',{}),('EP',{}),('FF',{'employer_invites':True}),
+    ('SW2',{'sw2_category':'volunteer'}),('RES',{'resident_basis':'work'})])
+def test_required_invitation_details_cannot_be_disabled_by_optional_fact(catalog,product,facts):
+    result=assess(catalog,product,{'invitation_required':False,**facts})
+    letters=[r for r in result['rows'] if r['id'].startswith('letter')]
+    assert len(letters)==10 and all(r['applicable'] is True for r in letters)
 
 
 def test_medical_study_resident_and_work_scopes_are_distinct(catalog):

@@ -7,7 +7,11 @@ from pathlib import Path
 from app.knowledge.document_checklist import DocumentChecklistError, STATES
 
 CATALOG_PATH = Path(__file__).resolve().parents[2]/'knowledge/kg_entry/complete_documents_v1_1/catalog.json'
-CATALOG_SHA256 = '5014a02c362964d74f0c55915dd2045c040ea513f9d9488585f745c0a67401d0'
+CATALOG_SHA256 = 'f176ab74144a593fd9ff644ba219d6731205c5fd232f1a661616c0223d40ad1a'
+KNOWN_CATALOGS = {CATALOG_SHA256: CATALOG_PATH,
+    '5014a02c362964d74f0c55915dd2045c040ea513f9d9488585f745c0a67401d0': CATALOG_PATH.with_name('catalog-foundation.json')}
+
+
 
 
 @dataclass(frozen=True)
@@ -18,12 +22,12 @@ class CompleteDocumentCatalog:
         if type(self._raw) is not bytes or len(self._raw)>524288:
             raise DocumentChecklistError('complete_document_catalog_invalid')
         normalized = self._raw.replace(b'\r\n',b'\n')
-        if hashlib.sha256(normalized).hexdigest()!=CATALOG_SHA256:
+        if hashlib.sha256(normalized).hexdigest() not in KNOWN_CATALOGS:
             raise DocumentChecklistError('complete_document_catalog_invalid')
         object.__setattr__(self,'_raw',normalized)
 
     @property
-    def digest(self): return CATALOG_SHA256
+    def digest(self): return hashlib.sha256(self._raw).hexdigest()
 
     def document(self): return json.loads(self._raw)
 
@@ -32,6 +36,15 @@ def load_complete_document_catalog(path=CATALOG_PATH):
     try:
         with Path(path).open('rb') as stream: return CompleteDocumentCatalog(stream.read(524289))
     except OSError: raise DocumentChecklistError('complete_document_catalog_unavailable') from None
+
+
+def load_definition(catalog_digest, product):
+    """Only server-bundled registered versions; a request never supplies a file path."""
+    path=KNOWN_CATALOGS.get(catalog_digest)
+    if path is None: raise DocumentChecklistError('complete_document_version_unavailable')
+    catalog=load_complete_document_catalog(path)
+    if catalog.digest!=catalog_digest: raise DocumentChecklistError('complete_document_catalog_invalid')
+    return complete_definition(catalog,product)
 
 
 def _evaluate(expression, facts, product):
@@ -72,6 +85,7 @@ def complete_definition(catalog, product):
         rows.append(dict(id=item['id'],name=item['text'],text=item['source_fragment'],section=item['section'],page=item['page'],
             kind=item['kind'],marks=item['marks'],when=item['when'],source=item))
         for name in _fields(item['when']): facts[name]=document['facts'][name]
+    for row in rows: row['alternatives']=dict(document.get('alternatives',{}).get(row['id'],{}))
     return dict(product=product,title=document['products'][product],catalog_sha256=catalog.digest,version=document['version'],
                 source_sha256=document['source_sha256'],rows=rows,facts=facts,
                 matrix_present=product in document['matrix'],source_approved=False)

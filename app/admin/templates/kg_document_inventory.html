@@ -22,12 +22,14 @@
 {% block content %}<main class="kg-inventory">
 <nav><a href="/admin/case/{{ case.id }}/kg-entry/applications?application_id={{ application_id }}">К заявке</a> · <a href="/admin/kg-entry/documents">Исходная матрица документов</a></nav>
 <h1>Документы заявки №{{ application_id }}</h1>
+<p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/document-package">Полный комплект с дополнительными требованиями</a></p>
 <p>Услуга №{{ case.id }} · {{ case.title }}</p>
 <p class="box notice">Сохраняется история учёта и проверки версий. Файлы сюда не загружаются. Политика работы с реальными документами ещё требует утверждения; используйте тестовые данные. Исходная матрица неполна без дополнительных требований: эта запись не принимает весь комплект и не разрешает подачу.</p>
 {% if error %}<p class="box error" role="alert">{{ error }}</p>{% endif %}
 {% if retry %}<section class="box no-print"><h2>Проверить результат исходного запроса</h2><p>Повтор сохраняет исходный ключ операции. При уже выполненном сохранении новая запись не создаётся.</p><form method="post" action="{{ url }}" id="kg-di-retry">{% for name,value in retry.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}<button type="submit" {% if not write_on %}disabled{% endif %}>Повторить исходный запрос</button></form></section>{% endif %}
 {% if inventory %}
 {% set current=inventory.selected %}
+{% if inventory.upgraded %}<p class="box notice">Заявка переведена в полный комплект. Этот реестр доступен только для просмотра истории; новые операции выполняются в полном комплекте.</p>{% endif %}
 <p>Заявитель №{{ inventory.application.applicant_id }} · попытка {{ inventory.application.attempt }}. Текущая версия учёта: {{ inventory.current_revision }}.</p>
 {% if not write_on %}<p class="box notice">Запись отключена администратором. История доступна для просмотра.</p>{% endif %}
 {% if current and current.revision!=inventory.current_revision %}<p class="box notice" id="kg-di-historical">Открыта историческая версия {{ current.revision }}. <a href="{{ url }}">Открыть текущую</a>. Изменения этой версии недоступны.</p>{% endif %}

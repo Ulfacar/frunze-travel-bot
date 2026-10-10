@@ -60,7 +60,7 @@ async def record_document_operation(engine,*,actor,case_id,application_id,expect
     command=_command(case_id=case_id,application_id=application_id,expected_revision=expected_revision,
                      operation=operation,actor=actor.manager_id)
     async def write(session):
-        await applications._case(session,case_id)
+        await applications._case(session,case_id,lock=True)
         application=await applications._application(session,case_id,application_id,lock=True)
         events=await applications._events(session,application)
         rows,size=await _history(session,application)
@@ -68,6 +68,8 @@ async def record_document_operation(engine,*,actor,case_id,application_id,expect
         if old:
             if old.request_hash!=_hash(command):raise EntryStorageConflict('request_key_reused')
             return _view(old)
+        from app.domain.entry_document_packages import has_package
+        if await has_package(session,application_id):raise EntryStorageInvalid('document_inventory_upgraded')
         if len(rows)!=expected_revision:raise EntryStorageConflict('document_revision_changed')
         if events[-1].status in ('approved','refused','closed') or await session.scalar(
             select(EntryApplication.id).where(EntryApplication.previous_id==application.id)):
@@ -103,7 +105,9 @@ async def read_document_inventory(engine,*,actor,case_id,application_id,revision
         rows,_=await _history(session,application)
         selected=next((r for r in rows if r.revision==revision),None) if revision else rows[-1] if rows else None
         if revision and selected is None:raise EntryStorageInvalid('document_revision_unavailable')
-        return dict(application=applications._application_view(application),application_status=events[-1].status,
+        from app.domain.entry_document_packages import has_package
+        upgraded=await has_package(session,application_id)
+        return dict(application=applications._application_view(application),application_status=events[-1].status,upgraded=upgraded,
             current_revision=len(rows),selected=_view(selected) if selected else None,
             history=[dict(revision=r.revision,created_by=r.created_by,created_at=applications._utc(r.created_at),
                           action=r.command['operation']['action']) for r in reversed(rows)])

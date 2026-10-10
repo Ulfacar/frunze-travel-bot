@@ -104,7 +104,7 @@ async def _render(request,manager,actor,case,application_id,*,item_id='',revisio
             items=current['summary']['items']
             selected_item=next((r for r in items if r['id']==item_id),items[0])
         historical=bool(revision and revision!=inventory['current_revision'])
-        mutable=(not historical and inventory['application_status'] not in ('approved','refused','closed') and inventory['current_revision']<MAX_REVISIONS)
+        mutable=(not historical and not inventory['upgraded'] and inventory['application_status'] not in ('approved','refused','closed') and inventory['current_revision']<MAX_REVISIONS)
         if mutable:
             if not current:
                 catalog=load_document_catalog();products={k:v for k,v in catalog.document()['products'].items() if k in PRODUCTS[inventory['application']['procedure']]}

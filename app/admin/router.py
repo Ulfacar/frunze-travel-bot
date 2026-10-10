@@ -2639,6 +2639,7 @@ from app.admin import kg_applications  # noqa: E402,F401 — заявители 
 from app.admin import kg_processes  # noqa: E402,F401 — проверка черновых переходов, без записи
 from app.admin import kg_documents  # noqa: E402,F401 — черновая матрица документов, без записи
 from app.admin import kg_document_inventory  # noqa: E402,F401 — версии документов отдельных заявок
+from app.admin import kg_document_packages  # noqa: E402,F401 — полные комплекты и их приёмка
 
 from app.admin import kg_templates  # noqa: E402,F401
 

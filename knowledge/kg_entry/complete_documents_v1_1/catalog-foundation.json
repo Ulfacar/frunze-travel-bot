@@ -1,6 +1,6 @@
 {
   "format": "kg-complete-document-definitions/1",
-  "version": "pdf-1.1-complete-documents-review-2",
+  "version": "pdf-1.1-complete-documents-review-1",
   "source_sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
   "matrix_catalog_sha256": "81ebf0f41aec18ebe8ada37d3d709fd73114eea250718fc4b66abb63e22b1c6f",
   "publication_approved": false,
@@ -409,108 +409,9 @@
         "practice"
       ],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -2606,108 +2507,9 @@
       "condition": "Письмо/ходатайство требуется и этот пункт применим к приглашающей стороне",
       "marks": [],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -2745,108 +2547,9 @@
       "condition": "Письмо/ходатайство требуется и этот пункт применим к приглашающей стороне",
       "marks": [],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -2884,108 +2587,9 @@
       "condition": "Письмо/ходатайство требуется и этот пункт применим к приглашающей стороне",
       "marks": [],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -3023,108 +2627,9 @@
       "condition": "Письмо/ходатайство требуется и этот пункт применим к приглашающей стороне",
       "marks": [],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -3162,108 +2667,9 @@
       "condition": "Письмо/ходатайство требуется и этот пункт применим к приглашающей стороне",
       "marks": [],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -3301,108 +2707,9 @@
       "condition": "Письмо/ходатайство требуется и этот пункт применим к приглашающей стороне",
       "marks": [],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -3440,108 +2747,9 @@
       "condition": "Письмо/ходатайство требуется и этот пункт применим к приглашающей стороне",
       "marks": [],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -3579,108 +2787,9 @@
       "condition": "Письмо/ходатайство требуется и этот пункт применим к приглашающей стороне",
       "marks": [],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -3718,108 +2827,9 @@
       "condition": "Письмо/ходатайство требуется и этот пункт применим к приглашающей стороне",
       "marks": [],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -3857,108 +2867,9 @@
       "condition": "Письмо/ходатайство требуется и этот пункт применим к приглашающей стороне",
       "marks": [],
       "when": {
-        "any": [
-          {
-            "product": [
-              "B",
-              "RL",
-              "S",
-              "SW1",
-              "DN",
-              "J",
-              "I",
-              "R",
-              "T",
-              "A",
-              "EP"
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "FF"
-                ]
-              },
-              {
-                "eq": [
-                  "employer_invites",
-                  true
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "SW2"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "volunteer"
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "sw2_category",
-                      "fund"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "TS"
-                ]
-              },
-              {
-                "any": [
-                  {
-                    "eq": [
-                      "gambling",
-                      true
-                    ]
-                  },
-                  {
-                    "eq": [
-                      "high_risk_country",
-                      true
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "product": [
-                  "RES"
-                ]
-              },
-              {
-                "eq": [
-                  "resident_basis",
-                  "work"
-                ]
-              }
-            ]
-          },
-          {
-            "eq": [
-              "invitation_required",
-              true
-            ]
-          }
+        "eq": [
+          "invitation_required",
+          true
         ]
       }
     },
@@ -5130,30 +4041,15 @@
         true
       ]
     },
-    "employer_invites": {
-      "label": "Приглашает юрлицо — работодатель",
+    "invitation_required": {
+      "label": "В составе пакета нужно письмо/ходатайство приглашающей стороны",
       "values": [
         false,
         true
       ]
     },
-    "sw2_category": {
-      "label": "Основание SW2",
-      "values": [
-        "journalist",
-        "volunteer",
-        "fund"
-      ]
-    },
-    "gambling": {
-      "label": "Основание связано с игорным заведением",
-      "values": [
-        false,
-        true
-      ]
-    },
-    "high_risk_country": {
-      "label": "Риск по гражданству отдельно оценён специалистом",
+    "long_term": {
+      "label": "Долгосрочная виза",
       "values": [
         false,
         true
@@ -5170,15 +4066,8 @@
         "FF"
       ]
     },
-    "invitation_required": {
-      "label": "Письмо приглашающей стороны требуется по дополнительному основанию",
-      "values": [
-        false,
-        true
-      ]
-    },
-    "long_term": {
-      "label": "Долгосрочная виза",
+    "high_risk_country": {
+      "label": "Риск по гражданству отдельно оценён специалистом",
       "values": [
         false,
         true
@@ -5186,6 +4075,13 @@
     },
     "simplified_ts": {
       "label": "Проверяется упрощённая TS по иностранному ВНЖ/резидент-карте",
+      "values": [
+        false,
+        true
+      ]
+    },
+    "gambling": {
+      "label": "Основание связано с игорным заведением",
       "values": [
         false,
         true
@@ -5219,11 +4115,26 @@
         true
       ]
     },
+    "employer_invites": {
+      "label": "Приглашает юрлицо — работодатель",
+      "values": [
+        false,
+        true
+      ]
+    },
     "tax_in_esuvm": {
       "label": "Налоговые сведения доступны в ЕСУВМ",
       "values": [
         false,
         true
+      ]
+    },
+    "sw2_category": {
+      "label": "Основание SW2",
+      "values": [
+        "journalist",
+        "volunteer",
+        "fund"
       ]
     },
     "extension": {
@@ -5330,107 +4241,6 @@
         false,
         true
       ]
-    }
-  },
-  "alternatives": {
-    "g04_02": {
-      "parent": "Родитель",
-      "representative": "Законный представитель"
-    },
-    "g05_01": {
-      "ky": "Кыргызский язык",
-      "ru": "Русский язык"
-    },
-    "g06_01": {
-      "apostille": "Апостиль и нотариальный перевод",
-      "legalization": "Консульская легализация и нотариальный перевод",
-      "treaty": "Исключение по международному договору, проверенное для конкретной страны"
-    },
-    "t01_03": {
-      "personal": "Личное обращение заявителя",
-      "tour_operator": "Письмо принимающей туристической организации"
-    },
-    "t03_01": {
-      "residence_permit": "ВНЖ",
-      "resident_card": "Резидент-карта"
-    },
-    "t06_01": {
-      "international": "Письмо аккредитованного представительства международной организации",
-      "diplomatic": "Письмо дипмиссии или консульства"
-    },
-    "t08_03": {
-      "ticket": "Билет до конечного пункта в третьей стране",
-      "visa": "Виза страны назначения",
-      "authority": "Разрешение властей третьей страны при визе по прибытии"
-    },
-    "t09_05": {
-      "marriage": "Свидетельство о браке",
-      "kinship": "Иные документы родства"
-    },
-    "t09_06": {
-      "salary": "Справка о зарплате",
-      "solvency": "Иной документ о платёжеспособности"
-    },
-    "t10_01": {
-      "residence": "Рассмотрение ходатайства о ВНЖ",
-      "citizenship": "Рассмотрение ходатайства о гражданстве"
-    },
-    "t15_02": {
-      "agency": "Обращение госоргана КР и документы организации",
-      "employer": "Обращение работодателя и документы организации"
-    },
-    "t17_04": {
-      "volunteer": "Волонтёрский договор",
-      "charity": "Благотворительный договор"
-    },
-    "t21_03": {
-      "ethnicity": "Подтверждение этнической принадлежности",
-      "birth": "Подтверждение рождения в КР или Киргизской ССР"
-    },
-    "t21_04": {
-      "residence": "Рассмотрение ходатайства о ВНЖ",
-      "citizenship": "Рассмотрение ходатайства о гражданстве"
-    },
-    "t26_02": {
-      "security": "Письмо органа национальной безопасности",
-      "interior": "Письмо ОВД",
-      "migration": "Письмо уполномоченного органа по миграции"
-    },
-    "t28_03": {
-      "passport": "Паспорт гражданина КР",
-      "digital_passport": "Цифровой паспорт в «Тундук»",
-      "permanent_residence": "ПМЖ принимающей стороны-иностранца"
-    },
-    "t29_01": {
-      "consent": "Нотариальное согласие собственника",
-      "power_of_attorney": "Доверенность"
-    },
-    "t32_01": {
-      "unified_permit": "ЕР",
-      "resident_card": "Резидент-карта"
-    },
-    "t32_02": {
-      "employment": "Трудовой договор",
-      "entrepreneur": "Свидетельство ИП",
-      "director": "Документы о назначении руководителем",
-      "patent": "Патент"
-    },
-    "t33_01": {
-      "oms": "Полис ОМС",
-      "dms": "Полис ДМС"
-    },
-    "work13": {
-      "patent": "Личное обращение и патент",
-      "entrepreneur": "Личное обращение и свидетельство о регистрации ИП"
-    },
-    "work17": {
-      "apostille": "Нотариальный перевод и апостиль",
-      "legalization": "Нотариальный перевод и легализация"
-    },
-    "g04_01_2": {
-      "ky": "Анкета на кыргызском",
-      "ru": "Анкета на русском",
-      "en": "Анкета на английском"
     }
   },
   "matrix": {

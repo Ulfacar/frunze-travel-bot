@@ -27,6 +27,37 @@ PRODUCTS = {
 }
 
 
+# Explicit evidence choices from the preserved source paragraphs. These do not
+# decide legal eligibility; the selected alternative must itself be reviewed.
+ALTERNATIVES = {
+    'g04_02': {'parent':'Родитель','representative':'Законный представитель'},
+    'g05_01': {'ky':'Кыргызский язык','ru':'Русский язык'},
+    'g06_01': {'apostille':'Апостиль и нотариальный перевод','legalization':'Консульская легализация и нотариальный перевод',
+               'treaty':'Исключение по международному договору, проверенное для конкретной страны'},
+    't01_03': {'personal':'Личное обращение заявителя','tour_operator':'Письмо принимающей туристической организации'},
+    't03_01': {'residence_permit':'ВНЖ','resident_card':'Резидент-карта'},
+    't06_01': {'international':'Письмо аккредитованного представительства международной организации',
+               'diplomatic':'Письмо дипмиссии или консульства'},
+    't08_03': {'ticket':'Билет до конечного пункта в третьей стране','visa':'Виза страны назначения',
+               'authority':'Разрешение властей третьей страны при визе по прибытии'},
+    't09_05': {'marriage':'Свидетельство о браке','kinship':'Иные документы родства'},
+    't09_06': {'salary':'Справка о зарплате','solvency':'Иной документ о платёжеспособности'},
+    't10_01': {'residence':'Рассмотрение ходатайства о ВНЖ','citizenship':'Рассмотрение ходатайства о гражданстве'},
+    't15_02': {'agency':'Обращение госоргана КР и документы организации','employer':'Обращение работодателя и документы организации'},
+    't17_04': {'volunteer':'Волонтёрский договор','charity':'Благотворительный договор'},
+    't21_03': {'ethnicity':'Подтверждение этнической принадлежности','birth':'Подтверждение рождения в КР или Киргизской ССР'},
+    't21_04': {'residence':'Рассмотрение ходатайства о ВНЖ','citizenship':'Рассмотрение ходатайства о гражданстве'},
+    't26_02': {'security':'Письмо органа национальной безопасности','interior':'Письмо ОВД','migration':'Письмо уполномоченного органа по миграции'},
+    't28_03': {'passport':'Паспорт гражданина КР','digital_passport':'Цифровой паспорт в «Тундук»','permanent_residence':'ПМЖ принимающей стороны-иностранца'},
+    't29_01': {'consent':'Нотариальное согласие собственника','power_of_attorney':'Доверенность'},
+    't32_01': {'unified_permit':'ЕР','resident_card':'Резидент-карта'},
+    't32_02': {'employment':'Трудовой договор','entrepreneur':'Свидетельство ИП','director':'Документы о назначении руководителем','patent':'Патент'},
+    't33_01': {'oms':'Полис ОМС','dms':'Полис ДМС'},
+    'work13': {'patent':'Личное обращение и патент','entrepreneur':'Личное обращение и свидетельство о регистрации ИП'},
+    'work17': {'apostille':'Нотариальный перевод и апостиль','legalization':'Нотариальный перевод и легализация'},
+    'g04_01_2': {'ky':'Анкета на кыргызском','ru':'Анкета на русском','en':'Анкета на английском'},
+}
+
 def digest(value):
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',',':')).encode()).hexdigest()
 
@@ -169,7 +200,16 @@ def annotate(clauses):
     set_when('g05_01', fact('foreign_language_documents', 'Документы не на кыргызском/русском языке', False))
     set_when('g05_02', foreign_language)
     set_when('g06_01 work17', fact('foreign_public_documents', 'Есть иностранные документы, требующие проверки перевода/легализации'))
-    invitation = fact('invitation_required', 'В составе пакета нужно письмо/ходатайство приглашающей стороны')
+    invitation = any_of(
+        product('B','RL','S','SW1','DN','J','I','R','T','A','EP'),
+        all_of(product('FF'),fact('employer_invites','Приглашает юрлицо — работодатель')),
+        all_of(product('SW2'),any_of(
+            fact('sw2_category','Основание SW2','volunteer',['journalist','volunteer','fund']),
+            fact('sw2_category','Основание SW2','fund',['journalist','volunteer','fund']))),
+        all_of(product('TS'),any_of(fact('gambling','Основание связано с игорным заведением'),
+            fact('high_risk_country','Риск по гражданству отдельно оценён специалистом'))),
+        all_of(product('RES'),fact('resident_basis','Основание резидент-карты','work',['work','SW1','SW2','S','RL','FF'])),
+        fact('invitation_required', 'Письмо приглашающей стороны требуется по дополнительному основанию'))
     set_when('g08_01 '+' '.join(f'letter{i:02}' for i in range(1,11)), invitation)
     long_term = fact('long_term', 'Долгосрочная виза')
     basis_values = ['work','SW1','SW2','S','RL','FF']
@@ -239,9 +279,9 @@ def annotate(clauses):
 def build():
     catalog = load_document_catalog(); source = catalog.document()
     clauses, facts = annotate(extract_clauses(source))
-    return dict(format='kg-complete-document-definitions/1', version='pdf-1.1-complete-documents-review-1',
+    return dict(format='kg-complete-document-definitions/1', version='pdf-1.1-complete-documents-review-2',
         source_sha256=source['source_sha256'], matrix_catalog_sha256=catalog.digest,
-        publication_approved=False, products=PRODUCTS, clauses=clauses, facts=facts,
+        publication_approved=False, products=PRODUCTS, clauses=clauses, facts=facts, alternatives=ALTERNATIVES,
         matrix={product:checklist(catalog, product) for product in source['products']},
         reference_sections=source['sections'])
 

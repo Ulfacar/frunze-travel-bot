@@ -58,7 +58,7 @@
 
   {% if selected %}<section class="box" aria-labelledby="kg-application-title">
     <h2 id="kg-application-title">Заявка №{{ selected.id }} · попытка {{ selected.attempt }}</h2>
-    <p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/documents">Документы этой заявки</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/issued">После выдачи</a></p>
+    <p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/document-package">Полный комплект документов</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/documents">Документы этой заявки</a> (прежний реестр) · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/issued">После выдачи</a></p>
     <p>Заявитель №{{ selected.applicant_id }} · {{ processes[selected.process] }} · {{ procedures[selected.procedure][1] }}</p>
     <p><a href="/admin/case/{{ case.id }}/kg-entry/applicants/{{ selected.applicant_id }}/qualification">Анкета заявителя №{{ selected.applicant_id }}</a></p>
     <p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/deadlines">Сроки заявки</a></p>
