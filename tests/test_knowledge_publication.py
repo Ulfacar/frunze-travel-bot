@@ -301,3 +301,25 @@ def test_new_version_preview_includes_old_cases_and_preserves_calculation_replay
                                           calculation_id=saved['calculation_id']))
     assert replay['replay_verified'] and replay['result'] == saved['result']
     assert cases_before == sql(release, 'SELECT id,agreed_amount,currency,revision FROM service_cases ORDER BY id')
+
+
+def test_publication_uses_one_instant_when_source_expires_during_transaction(env, tmp_path, monkeypatch):
+    env['release'] = load_source(env, tmp_path, changes={IDS[0]:{'review_due_at':'2026-11-01T00:00:00Z'}})
+    publish(env, 'review'); publish(env, 'approve'); current = preview(env)
+    stamps = [datetime(2026,10,31,23,59,59,999999,tzinfo=timezone.utc), datetime(2026,11,1,tzinfo=timezone.utc)]
+    def advancing():
+        return stamps.pop(0) if len(stamps)>1 else stamps[0]
+    monkeypatch.setattr(publication, '_now', advancing)
+    row = asyncio.run(publication.publish_knowledge(env['engine'], actor=ADMIN, policy=POLICY, version_id=env['release'],
+        action='activate', expected_revision=2, request_key='boundary', unit_ids=IDS, manifest_hash=current['manifest_hash']))
+    assert row['created_at'].startswith('2026-10-31T23:59:59.999999')
+    # Journal remains valid at its recorded instant; current read expires only the affected rule.
+    result = runtime(env)
+    assert len(result['available']) == 1 and result['unavailable'][0]['reasons'] == ['source_review_expired']
+
+
+def test_clock_rollback_does_not_commit_invalid_journal(release, monkeypatch):
+    publish(release, 'review')
+    monkeypatch.setattr(publication, '_now', lambda:datetime(2026,9,1,tzinfo=timezone.utc))
+    with pytest.raises(EntryStorageInvalid, match='clock_before_history'): publish(release, 'review', key='clock-rollback')
+    assert preview(release)['current_revision'] == 1

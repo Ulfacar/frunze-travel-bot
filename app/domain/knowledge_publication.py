@@ -247,16 +247,19 @@ async def publish_knowledge(engine, *, actor, policy, version_id, action, expect
                     await context.manifest(version_id, ids))
         if manifest is None or _hash(manifest) != manifest_hash or [u['unit_id'] for u in manifest['units']] != ids:
             raise EntryStorageConflict('publication_manifest_changed')
+        occurred_at = _now()
+        if history['rows'] and _utc(occurred_at) < _utc(history['rows'][-1].created_at):
+            raise EntryStorageInvalid('publication_clock_before_history')
         if action in ('approve', 'activate', 'rollback'):
             if history['policies'].get(version_id) != _policy(policy):
                 raise EntryStorageConflict('publication_policy_changed')
-            if any(item['reasons'] for item in await context.availability(version_id, manifest, at=_now())):
+            if any(item['reasons'] for item in await context.availability(version_id, manifest, at=occurred_at)):
                 raise EntryStorageInvalid('publication_rules_unavailable')
         active = _transition(history['states'], history['manifests'], history['releases'], history['active'],
                              action, version_id, manifest)
         row = KnowledgePublicationEvent(set_id=context.target.id, version_id=version_id, revision=expected_revision+1,
             previous_id=history['rows'][-1].id if history['rows'] else None, action=action, request_key=request_key,
-            request_hash=_hash(command), command=command, snapshot=manifest, created_by=actor.manager_id, created_at=_now())
+            request_hash=_hash(command), command=command, snapshot=manifest, created_by=actor.manager_id, created_at=occurred_at)
         if history['size'] + len(canonical(_payload(row)).encode()) > MAX_BYTES:
             raise EntryStorageInvalid('publication_history_limit')
         row.snapshot_hash = _hash(_payload(row)); session.add(row); await session.flush()
