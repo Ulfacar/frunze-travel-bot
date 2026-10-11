@@ -1,5 +1,14 @@
 # E6-20 — bounded application-deadline review closure
 
+Status: **DONE for the reviewed local G01/G02 target**, runtime
+`27b8463e5672c89e2026a2d79b3bc3364de46e2e`. Exact-r3 builder113 PASS;
+independent APPROVE and separate GO. Later compatibility240 PASS includes all230
+previously skipped PostgreSQL cases. Final evidence and limits:
+`ai/handoffs/2026-10-11-0658-e6-20-deadline-review.md`.
+The source snapshot contains the earlier task text; this status update is a later
+documentation change. Historical pending/reproduction notes below are preserved.
+Whole PDF remains90/100/PARTIALLY_READY; no release authorization or deployment.
+
 CRITICAL / solo. Target: independent review and separate audit of the existing
 E6-05 application-deadline journal and native flow, fixed G01/G02 criteria.
 This is a remaining parent J03 review obligation, not a new feature or score.

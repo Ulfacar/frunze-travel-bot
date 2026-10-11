@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "checked_utc": "2026-10-11T02:21:50.889166+00:00",
+  "artifact": "docs/reports/frunze-pdf-progress-2026-10-11-overnight-local.pdf",
+  "sha256": "83075f39bc1aa452e7efe6c598019764699a50282bbf554d4130937236d5d651",
+  "bytes": 79467,
+  "pages": 5,
+  "code_revision": "27b8463e5672c89e2026a2d79b3bc3364de46e2e",
+  "report_builder_snapshot": "uncommitted documentation tooling, to be saved in final report commit",
+  "source_pdf": {
+    "pages": 94,
+    "sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
+    "unchanged": true
+  },
+  "coverage_headings_matched": 26,
+  "score": 90,
+  "remaining_points": 10,
+  "all_page_footers": "PASS",
+  "visual_review": {
+    "reviewer": "root",
+    "pages": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "artifacts": "runs/overnight-final-pdf-render/page-N.png",
+    "result": "PASS: legible Cyrillic; no clipping/overlap; complete tables and footers"
+  },
+  "evidence_scope": "4702 PASS/231 SKIP belong to pre-E620 full suite; exact final r3 correction113 PASS and broader240 PASS are separate overlapping suites; sole earlier external-network skip was not executed",
+  "whole_pdf_project_status": "PARTIALLY_READY",
+  "deploy": "NOT_PERFORMED",
+  "telegram": "Recorded separately after actual send; report verification does not prove delivery",
+  "independent_evidence_audit": {
+    "result": "PASS for bounded evidence/PDF accuracy",
+    "artifact": "ai/reviews/2026-10-11-overnight-evidence-audit.md",
+    "lf_sha256": "c6c318d25244c8bd288af822d2142bebe82397a59f4d6bfcb7a4a3525e1a39e5",
+    "scope": "All five rendered pages matched final PDF pixels; all26 headings, score/remainder, revision and scoped test counts independently verified; not whole-project acceptance"
+  }
+}

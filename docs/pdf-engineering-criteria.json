@@ -596,9 +596,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Application deadlines bind actual events, calendar version and source",
           "artifact": "ai/handoffs/2026-10-10-0800-e6-05-application-deadlines.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "27b8463e5672c89e2026a2d79b3bc3364de46e2e",
+          "command": "Exact r3 builder113 PASS including26actualPG; independent review APPROVE and separate audit GO; commands and preserved original failures in artifact",
+          "environment": "Windows Python3.12 / immutable archive / synthetic FK SQLite / isolated PostgreSQL16.15 / Chromium; no real env or data",
+          "scope": "Application deadlines bind actual events, calendar version and source; bounded terminal withdrawal after ordinary capacity, old receipts, native251, populated migration and COPY recovery",
+          "artifact": "ai/handoffs/2026-10-11-0658-e6-20-deadline-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "G02",
@@ -614,9 +622,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Manual deadline override/recalculation history and unknown-date handling",
           "artifact": "ai/handoffs/2026-10-10-0800-e6-05-application-deadlines.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "27b8463e5672c89e2026a2d79b3bc3364de46e2e",
+          "command": "Exact r3 builder113 PASS including26actualPG; independent review APPROVE and separate audit GO; commands and preserved original failures in artifact",
+          "environment": "Windows Python3.12 / immutable archive / synthetic FK SQLite / isolated PostgreSQL16.15 / Chromium; no real env or data",
+          "scope": "Manual deadline override/recalculation history and unknown-date handling; bounded terminal withdrawal after ordinary capacity, old receipts, native251, populated migration and COPY recovery",
+          "artifact": "ai/handoffs/2026-10-11-0658-e6-20-deadline-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "G03",

@@ -33,7 +33,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts", "overnight-local"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -96,7 +96,7 @@ def main(argv=None):
         <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
         не загружаются и не принимаются; подача не разрешается.</li></ul>"""
         estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
-    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts"):
+    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts", "overnight-local"):
         if __package__:
             from .check_pdf_engineering_progress import evaluate
         else:
@@ -244,6 +244,29 @@ def main(argv=None):
                      "и приёмка владельцем. Реальные правила и цены не утверждались.")
         review_note = ("Локальное восстановление через COPY проверено. Штатный pg_dump заблокирован "
                        "защитой Windows; production recovery и общая приёмка ещё не подтверждены.")
+    if args.checkpoint == "overnight-local":
+        title = "Итог локальной работы и остаток по PDF"
+        intro = (f"Технический счёт: {score['engineering_points']}/100; остаётся {score['remaining_points']}. "
+                 "Модули CRM и результаты проверок сохранены локально.")
+        result = """<ul><li>Документы и карантин, журнал процедур, уведомления портала,
+        полная анкета RU/EN, передача специалисту и внутренние расчёты проверены на синтетике.</li>
+        <li>Остановка автоответов проверена только для явно включённых и привязанных личных
+        WhatsApp-диалогов. Остальные каналы и триггеры ещё требуют подключения.</li>
+        <li>13 шаблонов внутренних уведомлений сохраняются с версиями, историей и печатью.
+        Старые записи читаются после изменения кода; повтор не создаёт дубль.</li>
+        <li>Исправлена целостность анкет и семи журналов: разные JSON-типы не подменяют
+        подтверждения. Прежние корректные записи и точные повторы сохранены.</li>
+        <li>Исправлены гонки и повторы задач. Заполненный журнал позволяет завершить задачу
+        и снять ручную дату с сохранением истории; прежние записи и связи проверены.</li>
+        <li>Проверки используют локальные SQLite/PostgreSQL и тестовые данные.
+        Ни отправка клиентам, ни реальные источники, цены и полномочия не активированы.</li></ul>"""
+        remaining = ("C05: утверждённая квалификация и выбор продукта; H02/H03: все прерывания диалога "
+                     "и ответы по утверждённым источникам; J01/J02: полностью связанные 14 SOP и точные эталоны "
+                     "приёма/квалификации; J03: остальные критические ревью; J05: приёмка владельцем и допуск пилота. "
+                     "Нужны также решения по деньгам, хранению, ролям, источникам и правилам сообщений.")
+        review_note = ("Объём каждой независимой проверки ограничен её отчётом. Локальное восстановление через COPY "
+                       "проверено; штатный pg_dump, production recovery и общая приёмка не подтверждены.")
+        estimate = estimate.replace("работа продолжается.", "остаток сохранён для продолжения.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
     <p>{args.report_date:%d.%m.%Y} · {title}</p>
     <p class="note"><b>Весь PDF ещё не выполнен.</b> {intro} Пилот выключен по умолчанию;

@@ -8,7 +8,7 @@ Explicit user instruction received2026-10-11 (clock19:24 UTC10 October,00:24 Asi
 - Start checkpoint: code E6-09 `4c570a3`, final independent review/audit and documentation in progress. F06 not yet scored until evidence record is complete; previous score67/100. Next prepared work E6-10 procedural stages/dependencies, task `2026-10-11-e6-10-procedural-stages.md`.
 - Final Telegram should distinguish implemented/tested from remaining/UNKNOWN, cite saved revision and local report, and explicitly say no deployment. Record actual send result; do not claim delivery without API evidence.
 
-Status: active continuation. No Telegram sent yet. Notification destination verified below; revalidate at final send.
+Status: local implementation, checks and final PDF complete; final save and Telegram delivery in progress. Full PDF scope remains PARTIALLY_READY,90/100. Current handoff `ai/handoffs/2026-10-11-0705-overnight-local-pdf.md`; historical checkpoints below retain their original pending statuses. No Telegram sent yet; revalidate destination at final send.
 
 ## Verified final notification path
 

@@ -1,0 +1,58 @@
+{
+  "revision": "27b8463e5672c89e2026a2d79b3bc3364de46e2e",
+  "frozen_snapshot": "runs/e6-20-review-r3",
+  "manifest_raw_lf_sha256": "7cad9f5ac9b63100fe8d7e30be98de2370c5219c7a4a32521f8b9e4d93f96947",
+  "identity": {
+    "overlay_root_archive_index_commit": "10 PASS",
+    "all_non_ai_docs_files_matching_commit": 719
+  },
+  "builder": {
+    "artifact": "runs/e6-20-review-r3/runs/builder-deadline-clear-r3.xml",
+    "sha256": "a17ade4c0134898017595fa9974b3233dacd21951a0da7c0ca72abcc7116b71a",
+    "tests": 113,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 113,
+    "actual_postgresql": 26,
+    "seconds": 338.069
+  },
+  "independent_review": {
+    "result": "APPROVE",
+    "artifact": "ai/reviews/2026-10-11-e6-20-independent-review.md",
+    "sha256": "cf5df4c5cbdb9e0d27a3ba0fe9f506db1a0cdd4fa2fbcfaf5e38eab3b3f859b1"
+  },
+  "separate_audit": {
+    "result": "GO",
+    "artifact": "ai/reviews/2026-10-11-e6-20-final-audit.md",
+    "sha256": "3e1481395d610b29157d962a044154c8e07e74cf883a7800d7cc5751cc0e784a"
+  },
+  "broader_postgresql": {
+    "revision": "27b8463e5672c89e2026a2d79b3bc3364de46e2e",
+    "snapshot": "runs/e6-20-review-r3",
+    "artifact": "runs/e6-20-review-r3/runs/postgres-completion-r3.xml",
+    "sha256": "e6c895d9dce8bea6b526a87b4ee57cf13a47763419b92d6e7473ac1f329a7171",
+    "tests": 240,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 240,
+    "seconds": 1274.109,
+    "previous_full_pg_skips_matched_and_passed": 230,
+    "additional_foundation_checks": 10,
+    "remaining_previous_full_skips": {
+      "external_network_test_not_run": 1
+    },
+    "scope": "All230 previously skipped PostgreSQL cases plus10 foundation SQLite checks on exact final r3; this is not a final-code full-suite execution."
+  },
+  "full_suite": {
+    "scope": "PRE-E620 dc474d8 only",
+    "artifact": "ai/reviews/2026-10-11-overnight-full-evidence.json",
+    "passed": 4702,
+    "skipped": 231,
+    "failures": 0,
+    "errors": 0
+  },
+  "hygiene": "10-file AST/hash/staged-whitespace, three cold imports and protocol PASS",
+  "production": "No deployment, production migration, policy activation or client messages"
+}

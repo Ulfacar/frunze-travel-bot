@@ -1,5 +1,17 @@
 # Project: Frunze Travel Bot
 
+## Local PDF/CRM work boundary — 11.10.2026
+
+The current continuation builds the inbound Kyrgyzstan PDF/CRM scope locally:
+versioned sources, applications/documents, procedures, portal observations,
+RU/EN interview, internal quotations/drafts, deadlines and assigned tasks.
+Actual source/policy approval and pilot activation remain separate owner gates.
+Current revision, fixed criterion status, evidence and remaining work live in
+`ai/STATE.md` and `docs/pdf-engineering-criteria.json`. A technical score is not
+production readiness. The user explicitly prohibited deployment for this work.
+The dated production observations below were not revalidated by these local
+tests; do not infer a current production revision from them.
+
 ## Identity
 - Project type: bot
 - Work mode: solo

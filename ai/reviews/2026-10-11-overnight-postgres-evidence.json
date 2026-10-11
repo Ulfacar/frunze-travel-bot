@@ -1,0 +1,20 @@
+{
+  "revision": "27b8463e5672c89e2026a2d79b3bc3364de46e2e",
+  "snapshot": "runs/e6-20-review-r3",
+  "artifact": "runs/e6-20-review-r3/runs/postgres-completion-r3.xml",
+  "sha256": "e6c895d9dce8bea6b526a87b4ee57cf13a47763419b92d6e7473ac1f329a7171",
+  "tests": 240,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "passed": 240,
+  "seconds": 1274.109,
+  "previous_full_pg_skips_matched_and_passed": 230,
+  "additional_foundation_checks": 10,
+  "remaining_previous_full_skips": {
+    "external_network_test_not_run": 1
+  },
+  "scope": "All230 previously skipped PostgreSQL cases plus10 foundation SQLite checks on exact final r3; this is not a final-code full-suite execution.",
+  "command": "python runs/e610_legacy_pg_probe.py runs/e6-20-review-r3 tests/test_applicant_profile_integrity_postgres.py tests/test_entry_channel_postgres.py tests/test_entry_deadline_task_integrity_postgres.py tests/test_entry_interview_postgres.py tests/test_entry_notification_postgres.py tests/test_entry_portal_postgres.py tests/test_entry_process_postgres.py tests/test_entry_quote_postgres.py tests/test_entry_source_postgres.py tests/test_entry_typed_integrity_postgres.py tests/test_alembic_domain_migration.py tests/test_assign_manager_backlog.py::TestPostgresTier tests/test_contract_signing.py::test_postgresql_parallel_sessions_never_duplicate_or_return_someone_elses_case tests/test_contract_signing.py::test_postgresql_applied_migration_constraints_and_roundtrip -q --tb=short --basetemp=runs/postgres-completion-r3-tmp --junitxml=runs/postgres-completion-r3.xml",
+  "environment": "Guarded synthetic localhost127.0.0.1:55971 PostgreSQL16.15; UUID-only disposable databases; no production DSN or external network opt-in"
+}
