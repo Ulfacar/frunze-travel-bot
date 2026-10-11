@@ -14,6 +14,9 @@ from app.knowledge.review import canonical
 MAX_REVISIONS = 250
 MAX_BYTES = 4 * 1024 * 1024
 MAX_TRACKS = 64
+# A terminal clear inherits the preceding snapshot. Its bounded receipt fields
+# can grow slightly, but cannot grant another general-purpose history budget.
+CLEAR_RECEIPT_ALLOWANCE = 1024
 
 
 def _runtime():
@@ -73,11 +76,13 @@ async def _verify_sources(session, case, application, rule_id, snapshot):
 async def _history(session, case, application, rule):
     rows = list((await session.scalars(select(EntryDeadlineRevision).where(
         EntryDeadlineRevision.application_id==application.id,EntryDeadlineRevision.rule_unit_id==rule)
-        .order_by(EntryDeadlineRevision.revision).limit(MAX_REVISIONS+1))).all())
-    if len(rows)>MAX_REVISIONS:
+        .order_by(EntryDeadlineRevision.revision).limit(MAX_REVISIONS+2))).all())
+    if len(rows)>MAX_REVISIONS+1:
         raise EntryStorageInvalid('deadline_history_limit')
     size=0
     previous=None
+    previous_size=0
+    terminal=False
     stale={}
     verified={}
     for revision,row in enumerate(rows,1):
@@ -85,9 +90,14 @@ async def _history(session, case, application, rule):
         operation=sources.normalize(_plain(row.command)['operation'],cutoff=applications._local_day(row.created_at))
         command=_command(case.id,application.id,rule,revision-1,operation,row.created_by)
         payload=_payload(row)
-        size+=len(canonical(payload).encode())
-        if size>MAX_BYTES:
+        row_size=len(canonical(payload).encode())
+        overflow=revision>MAX_REVISIONS or size+row_size>MAX_BYTES
+        if terminal or overflow and (operation['action']!='clear' or previous is None or
+                _plain(previous.snapshot)['manual'] is None or
+                row_size>previous_size+CLEAR_RECEIPT_ALLOWANCE):
             raise EntryStorageInvalid('deadline_history_limit')
+        terminal=overflow
+        size+=row_size
         if (row.case_id!=case.id or row.revision!=revision or row.command!=command or
             row.previous_id!=(previous.id if previous else None) or previous and row.id<=previous.id or
             row.request_hash!=_hash(command) or row.snapshot_hash!=_hash(payload) or
@@ -104,6 +114,7 @@ async def _history(session, case, application, rule):
             verified[identity]=await _verify_sources(session,case,application,rule,snapshot)
         stale[row.id]=verified[identity]
         previous=row
+        previous_size=row_size
     return rows,size,stale
 
 
@@ -121,7 +132,7 @@ async def record_deadline_operation(engine, *, actor, case_id, application_id, r
                                     expected_revision, request_key, operation):
     _authorize(actor)
     _id(case_id);_id(application_id);_key(request_key);sources.unit_id(rule_unit_id)
-    if type(expected_revision) is not int or not 0<=expected_revision<MAX_REVISIONS:
+    if type(expected_revision) is not int or not 0<=expected_revision<=MAX_REVISIONS:
         raise EntryStorageInvalid('invalid_deadline_revision')
     operation=sources.normalize(operation,cutoff=applications._today())
     command=_command(case_id,application_id,rule_unit_id,expected_revision,operation,actor.manager_id)
@@ -134,6 +145,10 @@ async def record_deadline_operation(engine, *, actor, case_id, application_id, r
             if old.request_hash!=_hash(command):raise EntryStorageConflict('deadline_request_key_reused')
             return _view(old,stale=stale[old.id])
         if len(rows)!=expected_revision:raise EntryStorageConflict('deadline_revision_changed')
+        if len(rows)>MAX_REVISIONS or size>MAX_BYTES:
+            raise EntryStorageInvalid('deadline_history_limit')
+        if len(rows)==MAX_REVISIONS and operation['action']!='clear':
+            raise EntryStorageInvalid('invalid_deadline_revision')
         previous=rows[-1] if rows else None
         if previous is None:
             tracks=(await session.scalars(select(EntryDeadlineRevision.rule_unit_id).where(
@@ -156,7 +171,10 @@ async def record_deadline_operation(engine, *, actor, case_id, application_id, r
             revision=len(rows)+1,previous_id=previous.id if previous else None,request_key=request_key,
             request_hash=_hash(command),command=command,snapshot=snapshot,created_by=actor.manager_id,created_at=_now())
         payload=_payload(row)
-        if size+len(canonical(payload).encode())>MAX_BYTES:raise EntryStorageInvalid('deadline_history_limit')
+        row_size=len(canonical(payload).encode())
+        if (len(rows)+1>MAX_REVISIONS or size+row_size>MAX_BYTES) and (operation['action']!='clear' or previous is None or
+                row_size>len(canonical(_payload(previous)).encode())+CLEAR_RECEIPT_ALLOWANCE):
+            raise EntryStorageInvalid('deadline_history_limit')
         row.snapshot_hash=_hash(payload);session.add(row);await session.flush()
         from app.domain.entry_deadline_tasks import sync_enabled
         await sync_enabled(session,case,application,actor.manager_id)
@@ -167,13 +185,13 @@ async def record_deadline_operation(engine, *, actor, case_id, application_id, r
 async def read_deadline_history(engine, *, actor, case_id, application_id, rule_unit_id, revision=None, replay=False):
     _authorize(actor)
     _id(case_id);_id(application_id);sources.unit_id(rule_unit_id)
-    if revision is not None and (type(revision) is not int or not 1<=revision<=MAX_REVISIONS):
+    if revision is not None and (type(revision) is not int or not 1<=revision<=MAX_REVISIONS+1):
         raise EntryStorageInvalid('invalid_deadline_revision')
     if type(replay) is not bool:raise EntryStorageInvalid('invalid_deadline_replay')
     async def read(session):
         case=await applications._case(session,case_id)
         application=await applications._application(session,case_id,application_id)
-        rows,_,stale=await _history(session,case,application,rule_unit_id)
+        rows,size,stale=await _history(session,case,application,rule_unit_id)
         row=next((r for r in rows if r.revision==revision),None) if revision else rows[-1] if rows else None
         if revision and row is None:raise EntryStorageInvalid('deadline_revision_unavailable')
         if row and replay:
@@ -186,7 +204,8 @@ async def read_deadline_history(engine, *, actor, case_id, application_id, rule_
             expected.update(runtime=snapshot['runtime'],manual=snapshot['manual'])
             if canonical(expected)!=canonical(snapshot):raise EntryStorageInvalid('deadline_replay_result_changed')
         return dict(application=applications._application_view(application),rule_unit_id=rule_unit_id,
-            current_revision=len(rows),selected=_view(row,stale=stale[row.id]) if row else None,
+            current_revision=len(rows),terminal=len(rows)>MAX_REVISIONS or size>MAX_BYTES,
+            selected=_view(row,stale=stale[row.id]) if row else None,
             history=[dict(revision=r.revision,created_by=r.created_by,created_at=applications._utc(r.created_at),
                           action=r.command['operation']['action']) for r in reversed(rows)])
     return await applications._run(engine,read)

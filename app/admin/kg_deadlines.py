@@ -136,8 +136,11 @@ async def _render(request,manager,actor,case,application_id,*,rule='',revision=N
                     month_end=policy.get('month_end') or '',hours_mode=policy.get('hours_mode') or '')
             else:values=dict(knowledge_version_id=str(options['knowledge_version_id']),calendar_id=[])
             historical=revision is not None and revision!=history['current_revision']
-            if not historical and history['current_revision']<service.MAX_REVISIONS and retry is None:
-                actions=['recalculate']+(['manual'] if current else [])+(['clear'] if current and current['snapshot']['manual'] else [])
+            if not historical and not history['terminal'] and retry is None:
+                actions=(['recalculate']+(['manual'] if current else [])
+                         if history['current_revision']<service.MAX_REVISIONS else [])
+                if current and current['snapshot']['manual']:
+                    actions.append('clear')
                 forms={action:_envelope(request,actor,case['id'],application_id,rule,history['current_revision'],action) for action in actions}
             if echo and echo['_dl_action'] in forms and echo['_dl_revision']==str(history['current_revision']):
                 forms[echo['_dl_action']]=echo
@@ -156,7 +159,7 @@ async def _render(request,manager,actor,case,application_id,*,rule='',revision=N
 
 @ar.router.get('/case/{case_id}/kg-entry/applications/{application_id}/deadlines',response_class=HTMLResponse)
 async def deadline_form(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),
-    rule:str=Query('',max_length=80),revision:int|None=Query(None,ge=1,le=service.MAX_REVISIONS),
+    rule:str=Query('',max_length=80),revision:int|None=Query(None,ge=1,le=service.MAX_REVISIONS+1),
     version:int|None=Query(None,ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
     actor=entry._gate(request,manager)
     pairs=list(request.query_params.multi_items())

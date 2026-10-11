@@ -191,7 +191,7 @@ async def reconcile_deadline_task(engine, *, actor, case_id, application_id, rul
     _validate(actor, case_id, application_id, rule_unit_id)
     if type(enable) is not bool or type(restore) is not bool:
         raise EntryStorageInvalid('invalid_deadline_task_command')
-    if minimum_revision is not None and (type(minimum_revision) is not int or not 1 <= minimum_revision <= deadlines.MAX_REVISIONS):
+    if minimum_revision is not None and (type(minimum_revision) is not int or not 1 <= minimum_revision <= deadlines.MAX_REVISIONS+1):
         raise EntryStorageInvalid('invalid_deadline_revision')
     async def write(session):
         case = await applications._case(session, case_id, lock=True)

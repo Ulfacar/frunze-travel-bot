@@ -1644,7 +1644,7 @@ class EntryDeadlineRevision(DomainBase):
         ForeignKeyConstraint(["anchor_event_id", "application_id"], ["entry_application_events.id", "entry_application_events.application_id"], name="fk_entry_deadline_event"),
         ForeignKeyConstraint(["anchor_issued_id", "application_id", "case_id"],
             ["entry_issued_revisions.id", "entry_issued_revisions.application_id", "entry_issued_revisions.case_id"], name="fk_entry_deadline_travel"),
-        CheckConstraint("revision BETWEEN 1 AND 250", name="ck_entry_deadline_revision"),
+        CheckConstraint("revision BETWEEN 1 AND 251", name="ck_entry_deadline_revision"),
         CheckConstraint("anchor_event_id IS NULL OR anchor_issued_id IS NULL", name="ck_entry_deadline_anchor"),
         CheckConstraint("(revision = 1 AND previous_id IS NULL) OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id)", name="ck_entry_deadline_previous"),
         CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_entry_deadline_hashes"),
