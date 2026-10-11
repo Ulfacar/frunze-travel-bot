@@ -64,7 +64,7 @@ DOMAIN_TABLES = {
     "entry_process_events", "entry_process_pins",
     "entry_portal_receipts", "entry_portal_actions",
     "entry_interviews", "entry_interview_events",
-    "entry_quote_revisions", "entry_channel_stops",
+    "entry_quote_revisions", "entry_channel_stops", "entry_notification_drafts",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",

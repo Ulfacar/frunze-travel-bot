@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+{% set printed = preview.preview.result if preview else (selected.receipt.result if selected else none) %}
+<style>
+.draft-page{max-width:920px;margin:28px auto;padding:0 16px}.draft-box{padding:20px;border:1px solid #d6e0ea;border-radius:12px;background:white;margin:18px 0}.draft-note{border-left:4px solid #c38b23}.draft-page label{display:block;margin:12px 0 6px}.draft-page input,.draft-page select{max-width:100%;box-sizing:border-box}.draft-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.draft-meta{font-size:13px;overflow-wrap:anywhere}.draft-page button{margin-top:14px}.draft-page .error{color:#9d241c}
+@page{size:A4;margin:18mm 14mm 23mm;{% if printed %}@bottom-left{content:"Внутренний черновик. Отправка не разрешена.\A{{ printed.template_id }} · {{ printed.renderer_version }} · PDF v1.1 · стр. {{ printed.page }}";white-space:pre-wrap;font:9pt/1.3 sans-serif;color:black;vertical-align:middle}{% endif %}}
+@media print{html,body{height:auto!important;min-height:0!important;margin:0!important}nav,header,.no-print{display:none!important}.draft-page{max-width:none;margin:0;padding:0}.draft-box{break-inside:auto;border-radius:0}.draft-text{font-size:11pt}.draft-meta{font-size:9pt}}
+</style>
+<main class="draft-page"><h1>Черновики уведомлений</h1>
+<p>Услуга №{{ case.id }} · заявка №{{ application_id }}{% if current %} · заявитель №{{ current.applicant_id }}{% endif %}</p>
+<p class="no-print"><a href="/admin/case/{{ case.id }}/kg-entry/applications?application_id={{ application_id }}">К заявкам</a></p>
+<div class="draft-box draft-note"><strong>Внутренний черновик. Отправка не разрешена.</strong>
+<p>Сохранение не утверждает текст, цену, срок или юридический вывод. Значения введены сотрудником и отдельно не проверены. Условные ветки и незаполненные места сохраняются. Получатель не выбирается, сообщение никому не отправляется.</p></div>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+{% macro save_controls(fields, retrying=false) %}
+<form method="post" action="{{ url }}" id="{{ 'notification-retry' if retrying else 'notification-save' }}" class="no-print">
+{% for name,value in fields.items() if name!='_n_confirm' %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+<label><input type="checkbox" name="_n_confirm" value="1" required {% if retrying %}checked{% endif %}> Подтверждаю сохранение этого внутреннего черновика</label>
+<button type="submit">{{ 'Повторить исходное сохранение' if retrying else 'Сохранить черновик' }}</button></form>
+{% endmacro %}
+{% if retry %}<div class="draft-box"><p>Результат предыдущего сохранения неизвестен. Этот повтор проверит исходный запрос.</p>{{ save_controls(retry,true) }}</div>{% endif %}
+{% if preview %}<section class="draft-box" id="notification-preview-result"><h2>Предварительный просмотр</h2>
+<p>Шаблон {{ preview.preview.result.template_id }} · статус источника: {{ preview.preview.result.confirmation_status }}</p>
+<pre class="draft-text">{{ preview.preview.result.text }}</pre>
+<p>Незаполненные места: {{ preview.preview.result.unresolved|join(', ') or 'нет; текст всё равно не утверждён' }}</p>
+<p class="draft-meta">{{ preview.preview.result.source_ref }} · страница {{ preview.preview.result.page }} · {{ preview.preview.renderer_version }}</p>
+{% if save_form %}{{ save_controls(save_form) }}{% endif %}</section>{% endif %}
+{% if form %}<section class="draft-box no-print"><h2>Подготовить новый черновик</h2>
+<form method="get" action="{{ url }}"><label for="draft-template">Шаблон из источника</label><select name="template" id="draft-template">{% for item in current.templates %}<option value="{{ item.unit_id }}" {% if item.unit_id==template.unit_id %}selected{% endif %}>{{ item.unit_id }} · {{ item.label }}</option>{% endfor %}</select><button>Выбрать шаблон</button></form>
+<form method="post" action="{{ url }}" id="notification-preview">
+{% for name,value in form.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+{% for field in template.fields %}<label for="draft-{{ field.id }}">{{ field.token }} ({{ field.id }})</label>
+{% if field.kind=='unresolved_calculation' %}<p>Расчёт не утверждён; место остаётся незаполненным.</p>
+{% elif field.kind=='choice' %}<select id="draft-{{ field.id }}" name="{{ field.id }}"><option value="">Не заполнено</option>{% for choice in field.choices %}<option>{{ choice }}</option>{% endfor %}</select>
+{% else %}<input id="draft-{{ field.id }}" name="{{ field.id }}" maxlength="500" type="{{ 'date' if field.kind=='date' else 'text' }}" {% if field.kind=='positive_integer' %}inputmode="numeric"{% endif %}>
+{% if field.kind=='money' %}<label for="draft-{{ field.id }}-currency">Валюта {{ field.id }}</label><input id="draft-{{ field.id }}-currency" name="{{ field.id }}_currency" maxlength="3" value="{{ field.currency or '' }}">{% endif %}{% endif %}{% endfor %}
+<button>Проверить предварительный просмотр</button></form></section>
+{% elif not retry %}<p class="no-print" id="notification-disabled">Новые черновики недоступны: проверьте полномочия хранения, источник и режим записи.</p>{% endif %}
+{% if selected %}<section class="draft-box{% if preview %} no-print{% endif %}" id="notification-saved"><h2>Сохранённый черновик №{{ selected.receipt.revision }}</h2>
+<p>Шаблон {{ selected.receipt.result.template_id }} · статус источника: {{ selected.receipt.result.confirmation_status }}</p>
+<pre class="draft-text">{{ selected.receipt.result.text }}</pre>
+<p>Незаполненные места: {{ selected.receipt.result.unresolved|join(', ') or 'нет; текст всё равно не утверждён' }}</p>
+{% for reason in selected.current.reasons %}<p>{{ reasons.get(reason,reason) }}</p>{% endfor %}
+<p class="draft-meta">Сохранил {{ selected.receipt.created_by }} · {{ selected.receipt.created_at }}<br>
+{{ selected.receipt.result.source_ref }} · страница {{ selected.receipt.result.page }} · {{ selected.receipt.result.renderer_version }}<br>
+Источник {{ selected.receipt.result.source_sha256 }}<br>Подтверждение записи {{ selected.receipt.snapshot_hash }}</p>
+<p><strong>Черновик не утверждён для отправки. Сведения введены вручную.</strong></p></section>{% endif %}
+{% if current and current.history %}<section class="no-print"><h2>История сохранений</h2><ul>{% for row in current.history %}<li><a href="{{ url }}?revision={{ row.receipt.revision }}">№{{ row.receipt.revision }} · {{ row.receipt.result.template_id }} · {{ row.receipt.created_at }}</a></li>{% endfor %}</ul></section>{% endif %}
+</main>
+{% endblock %}
