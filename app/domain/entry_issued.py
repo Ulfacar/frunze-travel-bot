@@ -39,11 +39,11 @@ async def _history(session,application,approval):
         expected=_command(application.case_id,application.id,i-1,command['operation'],row.created_by)
         if (row.case_id!=application.case_id or row.approval_event_id!=approval.id or row.revision!=i or
             row.previous_id!=(previous.id if previous else None) or previous and row.id<=previous.id or
-            command!=expected or row.request_hash!=_hash(command) or row.snapshot_hash!=_hash(_payload(row))):
+            canonical(command)!=canonical(expected) or row.request_hash!=_hash(command) or row.snapshot_hash!=_hash(_payload(row))):
             raise EntryStorageInvalid('issued_integrity_failed')
         operation=normalize(command['operation'],cutoff=applications._local_day(row.created_at))
         snapshot=apply_operation(snapshot,operation,actor=row.created_by,approved_on=approval.occurred_on.isoformat())
-        if snapshot!=stored:raise EntryStorageInvalid('issued_integrity_failed')
+        if canonical(snapshot)!=canonical(stored):raise EntryStorageInvalid('issued_integrity_failed')
         previous=row
     return rows,size
 

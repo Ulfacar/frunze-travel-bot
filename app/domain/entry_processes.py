@@ -152,11 +152,11 @@ async def _history(sources):
         package_policy = package_policy_from_document(stored_evidence['package_policy']) if stored_evidence['package_policy'] is not None else None
         evidence = await _evidence(sources, initial, rows[:revision-1], operation, policy, package_policy, row.created_at,
             historical=True, observed=stored_evidence['observed'])
-        if evidence != stored_evidence: invalid('process_evidence_changed')
+        if canonical(evidence) != canonical(stored_evidence): invalid('process_evidence_changed')
         if operation['action'] == 'transition' and operation['data']['evidence_digest'] != _hash(evidence):
             invalid('process_evidence_changed')
         state = apply(state, operation, root=root, revision=revision, resolved=evidence['facts'])
-        if (state != _plain(row.snapshot) or row.active_application_id != state['active_application_id'] or
+        if (canonical(state) != canonical(_plain(row.snapshot)) or row.active_application_id != state['active_application_id'] or
             row.active_procedure != ROLES[state['active_role']]): invalid('process_integrity_failed')
         expected_pins = _pins(evidence); actual_pins = by_event.get(row.id, [])
         if len(expected_pins) != len(actual_pins): invalid('process_pin_integrity_failed')

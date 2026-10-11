@@ -58,14 +58,14 @@ async def _verify_sources(session, case, application, rule_id, snapshot):
     data = snapshot['selection']
     bundle, _, _, _, provenance = await _sources(session,case.contact_id,data['knowledge_version_id'],None,data['calendar_ids'])
     rule = next((r for r in bundle['units'] if r['unit_id']==rule_id and r['kind']=='deadline'),None)
-    if (rule is None or snapshot['source']!=provenance or snapshot['rule_hash']!=_hash(rule) or
+    if (rule is None or canonical(snapshot['source'])!=canonical(provenance) or snapshot['rule_hash']!=_hash(rule) or
         snapshot['application_hash']!=application.snapshot_hash or snapshot['source_label']!=bundle['meta']['version_label'] or snapshot['publication_approved'] is not False or
         snapshot['may_quote'] is not False):
         raise EntryStorageInvalid('deadline_sources_changed')
     current = await sources.actual_anchor(session,application,data['anchor'])
     old = snapshot['anchor']
     if (current is None)!=(old is None) or current is not None and (
-        {k:v for k,v in current.items() if k!='superseded'}!={k:v for k,v in old.items() if k!='superseded'}):
+        canonical({k:v for k,v in current.items() if k!='superseded'})!=canonical({k:v for k,v in old.items() if k!='superseded'})):
         raise EntryStorageInvalid('deadline_anchor_changed')
     return bool(current and current['superseded'])
 
@@ -97,7 +97,7 @@ async def _history(session, case, application, rule):
         if operation['action']=='recalculate':
             if snapshot['selection']!=operation['data'] or snapshot['manual'] is not None:
                 raise EntryStorageInvalid('deadline_integrity_failed')
-        elif snapshot!=_manual_change(_plain(previous.snapshot) if previous else None,operation,row.created_by):
+        elif canonical(snapshot)!=canonical(_manual_change(_plain(previous.snapshot) if previous else None,operation,row.created_by)):
             raise EntryStorageInvalid('deadline_integrity_failed')
         identity=_hash({k:v for k,v in snapshot.items() if k!='manual'})
         if identity not in verified:
@@ -147,8 +147,12 @@ async def record_deadline_operation(engine, *, actor, case_id, application_id, r
                 raise EntryStorageInvalid('deadline_recalculation_required')
             snapshot=_manual_change(_plain(previous.snapshot) if previous else None,operation,actor.manager_id)
         event_id,issued_id=_anchor_columns(snapshot)
+        # JSON Schema permits integral floats. Preserve the exact JSON receipt,
+        # but hash INTEGER columns in the same representation the DB reloads.
         row=EntryDeadlineRevision(case_id=case_id,application_id=application_id,rule_unit_id=rule_unit_id,
-            knowledge_version_id=snapshot['selection']['knowledge_version_id'],anchor_event_id=event_id,anchor_issued_id=issued_id,
+            knowledge_version_id=int(snapshot['selection']['knowledge_version_id']),
+            anchor_event_id=int(event_id) if event_id is not None else None,
+            anchor_issued_id=int(issued_id) if issued_id is not None else None,
             revision=len(rows)+1,previous_id=previous.id if previous else None,request_key=request_key,
             request_hash=_hash(command),command=command,snapshot=snapshot,created_by=actor.manager_id,created_at=_now())
         payload=_payload(row)
@@ -180,7 +184,7 @@ async def read_deadline_history(engine, *, actor, case_id, application_id, rule_
             rule=next(r for r in bundle['units'] if r['unit_id']==rule_unit_id)
             expected=sources.build_snapshot(bundle,calendars,provenance,application.snapshot_hash,rule,data,snapshot['anchor'])
             expected.update(runtime=snapshot['runtime'],manual=snapshot['manual'])
-            if expected!=snapshot:raise EntryStorageInvalid('deadline_replay_result_changed')
+            if canonical(expected)!=canonical(snapshot):raise EntryStorageInvalid('deadline_replay_result_changed')
         return dict(application=applications._application_view(application),rule_unit_id=rule_unit_id,
             current_revision=len(rows),selected=_view(row,stale=stale[row.id]) if row else None,
             history=[dict(revision=r.revision,created_by=r.created_by,created_at=applications._utc(r.created_at),

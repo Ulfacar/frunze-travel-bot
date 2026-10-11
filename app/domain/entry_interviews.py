@@ -249,7 +249,7 @@ async def _history(session,header,policy):
         expected_command=_command(header,revision-1,row.created_by,operation,command.get('policy_hash'))
         if (row.case_id!=header.case_id or row.applicant_id!=header.applicant_id or row.revision!=revision or
             row.previous_id!=(previous.id if previous else None) or previous and row.id<=previous.id or
-            row.action!=operation['action'] or command!=expected_command or row.request_hash!=_hash(command) or
+            row.action!=operation['action'] or canonical(command)!=canonical(expected_command) or row.request_hash!=_hash(command) or
             row.snapshot_hash!=_hash(_event_payload(row)) or row.created_by not in policy.operators or
             row.created_by not in header.authority['full_admins']):_fail()
         _key(row.request_key)
@@ -259,7 +259,7 @@ async def _history(session,header,policy):
             if command['policy_hash'] is not None and command['policy_hash']!=policy.digest:_fail()
         elif command['policy_hash']!=policy.digest or not day(policy.valid_from)<=applications._local_day(row.created_at)<=day(policy.review_due_on):_fail()
         expected=_reduce(header,policy,state,operation,revision=revision,on=applications._local_day(row.created_at).isoformat(),actor=row.created_by)
-        if expected!=_plain(row.snapshot):_fail()
+        if canonical(expected)!=canonical(_plain(row.snapshot)):_fail()
         amount=_bytes(_event_payload(row));size+=amount
         _capacity(row.action,revision,amount,size,expected)
         state=expected;previous=row

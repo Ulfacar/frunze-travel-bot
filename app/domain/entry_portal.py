@@ -16,6 +16,7 @@ from app.domain.entry_storage import EntryStorageConflict, EntryStorageInvalid, 
 from app.domain.knowledge_review import _plain
 from app.domain.models import EntryApplicationReference, EntryPortalReceipt, EntryPortalAction, _now
 from app.domain.service_authz import PermissionDenied
+from app.knowledge.review import canonical
 
 MAX_ACTIONS = 64
 MAX_JOURNAL_BYTES = 262144
@@ -262,7 +263,7 @@ async def _history(session, receipt):
         command = _plain(row.command); operation = _operation(command.get('operation'))
         _exact(command, ('receipt_id', 'case_id', 'expected_revision', 'actor', 'policy_hash', 'operation'))
         if (row.case_id != receipt.case_id or row.revision != i or row.previous_id != (previous.id if previous else None) or
-            row.action != operation['action'] or command['receipt_id'] != receipt.id or command['case_id'] != receipt.case_id or
+            row.action != operation['action'] or canonical(command['receipt_id']) != canonical(receipt.id) or canonical(command['case_id']) != canonical(receipt.case_id) or
             type(command['expected_revision']) is not int or command['expected_revision'] != i - 1 or command['actor'] != row.created_by or
             row.request_hash != _hash(command) or row.snapshot_hash != _hash(_action_payload(row)) or
             previous and row.id <= previous.id or applications._utc(row.created_at) < applications._utc(receipt.created_at)): _fail()
@@ -294,7 +295,7 @@ async def _history(session, receipt):
                 expected['applied_event'] = {'id': applied.id, 'hash': applied.snapshot_hash}
                 expected['disposition'] = 'applied'
             else: expected['disposition'] = 'checked'
-        if expected != _plain(row.snapshot): _fail()
+        if canonical(expected) != canonical(_plain(row.snapshot)): _fail()
         binding = expected['binding'] or {}
         for name in ('application_id', 'applicant_id', 'procedure', 'head_id', 'cycle_id'):
             if getattr(row, name) != binding.get(name): _fail()

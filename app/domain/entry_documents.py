@@ -34,13 +34,13 @@ async def _history(session,application):
         expected=_command(case_id=application.case_id,application_id=application.id,expected_revision=i-1,
                           operation=command['operation'],actor=row.created_by)
         if (row.case_id!=application.case_id or row.revision!=i or row.previous_id!=(previous.id if previous else None)
-            or previous and row.id<=previous.id or command!=expected or row.request_hash!=_hash(command)
+            or previous and row.id<=previous.id or canonical(command)!=canonical(expected) or row.request_hash!=_hash(command)
             or row.snapshot_hash!=_hash(_payload(row))):raise EntryStorageInvalid('document_integrity_failed')
         op=normalize(command['operation'],cutoff=applications._local_day(row.created_at))
         if i==1 and op['data']['product'] not in PRODUCTS[application.procedure]:
             raise EntryStorageInvalid('document_product_mismatch')
         snapshot=apply_operation(snapshot,op,actor=row.created_by,definition=stored.get('definition') if i==1 else None)
-        if snapshot!=stored:raise EntryStorageInvalid('document_integrity_failed')
+        if canonical(snapshot)!=canonical(stored):raise EntryStorageInvalid('document_integrity_failed')
         previous=row
     return rows,size
 

@@ -1,0 +1,18 @@
+{
+  "base": "fca93ad8ed7d6a5fcdf53b741b254ba1241ad03e",
+  "archive": "runs/e6-18-review-r1",
+  "normalization": "LF",
+  "files": {
+    "app/domain/entry_documents.py": "22c5a420619d548f58c9fb98300ce51ceb228641ab2692f6c50f64d32734b589",
+    "app/domain/entry_issued.py": "e98a951bfe471ee063ed0ef46ba29730fb51161c95dd3c277aa4b4cd0674d1db",
+    "app/domain/entry_processes.py": "d1e57c30815b2c1819beb507292f008a3d962eca105e7d259cb9d440bc634073",
+    "app/domain/entry_interviews.py": "c15cd9e916891f65426d53cc6af8c3eca0da433176ee82d2be3a233c3e743dcd",
+    "app/domain/entry_portal.py": "0246f28723f78051b83e0c085e7016fb023cf641b4a84966fb53fa839bff5752",
+    "app/domain/entry_deadlines.py": "0e2d50f85d37379556e03382cbdfbfe5576ecfbe7fefd7f59701260a2c424c3d",
+    "app/domain/qualification_storage.py": "f7dd42affd95b7cbfd5f37c3e26f0b1153e3904ef1740b918c6044c01e41ca22",
+    "tests/test_entry_typed_integrity.py": "efbb4bf5bf04c9b86e8239fe1f6fe9dcf541196ccd1595f823be232fe4d45a4c",
+    "ai/tasks/2026-10-11-e6-18-typed-journal-audit.md": "59f7df2cc6fdec9ab615163b8dcfcfb8e0f67cad47700b47e26a4eff8d5314ae",
+    "ai/reviews/2026-10-11-e6-18-pre-audit.md": "edee06e8966361ac07f70372394dc76a4a54b1dc648618baad4238e89ae63c0a",
+    "tests/test_entry_typed_integrity_postgres.py": "70b0caf90e859666c43a4c3be23ec37acbca131209f5dab18df916ae22557e5f"
+  }
+}

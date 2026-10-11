@@ -12,6 +12,7 @@ from app.domain.entry_storage import (EntryStorageConflict, EntryStorageInvalid,
 from app.domain.models import EntryQualification, _now
 from app.knowledge.qualification import ALGORITHM
 from app.knowledge.qualification_schema import REQUEST_SCHEMA
+from app.knowledge.review import canonical
 
 
 def _runtime():
@@ -60,10 +61,10 @@ async def _read(session, contact_id, qualification_id):
         if old is None or old.revision != row.revision - 1 or _hash(_payload(old)) != old.snapshot_hash:
             raise EntryStorageInvalid("qualification_previous_changed")
         previous = {"id": old.id, "revision": old.revision, "snapshot_hash": old.snapshot_hash}
-    if (row.revision == 1) != (previous is None) or previous != row.provenance["previous"]:
+    if (row.revision == 1) != (previous is None) or canonical(previous) != canonical(row.provenance["previous"]):
         raise EntryStorageInvalid("qualification_previous_changed")
     review, context = await _qualification_sources(session, contact_id, row.knowledge_version_id, row.history_id)
-    if context != row.provenance["context"]:
+    if canonical(context) != canonical(row.provenance["context"]):
         raise EntryStorageInvalid("qualification_sources_changed")
     # The old result is intentionally not recomputed here: reads survive code upgrades.
     return row, review, context
