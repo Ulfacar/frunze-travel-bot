@@ -1,0 +1,22 @@
+{
+  "revision": "214d88f2a157139be121d070ddd8217358d58d79",
+  "snapshot": "runs/e6-17-review-r1",
+  "file_identity": "PASS root/frozen/commit LF normalized",
+  "files": 5,
+  "checks": [
+    {
+      "artifact": "runs/e6-17-review-r1/runs/profile-integrity-r1.xml",
+      "sha256": "0ef641d97f0f672c08f19d77191703f2b64c8b36507ebd21a4c99431216a253e",
+      "tests": "52",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "242.401"
+    }
+  ],
+  "review": "APPROVE",
+  "final_audit": "GO",
+  "environment": "Env-free Windows Python3.12 / synthetic FK SQLite, Chromium and isolated loopback PostgreSQL16.15",
+  "scope": "local synthetic; no production or actual policy approval",
+  "overlapping_independent_counts": true
+}

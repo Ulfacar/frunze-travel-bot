@@ -33,7 +33,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -96,7 +96,7 @@ def main(argv=None):
         <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
         не загружаются и не принимаются; подача не разрешается.</li></ul>"""
         estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
-    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff"):
+    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts"):
         if __package__:
             from .check_pdf_engineering_progress import evaluate
         else:
@@ -226,6 +226,24 @@ def main(argv=None):
                      "аудит прежних модулей и приёмка владельцем.")
         review_note = ("Локальное восстановление через COPY проверено; штатный pg_dump заблокирован "
                        "защитой Windows. Полный аудит прежних модулей и production recovery не подтверждены.")
+    if args.checkpoint == "notification-drafts":
+        title = "Сохранённые черновики и целостность анкет"
+        intro = "Внутренние уведомления сохраняются с историей, точным источником и защитой повторов."
+        result = """<ul><li>13 исходных шаблонов: предварительный просмотр, отдельное подтверждение,
+        сохранение и печать. Ручные сведения и непроверенные правила остаются отмеченными.</li>
+        <li>Старая версия текста читается и повторяется после смены текущих правил.
+        Изменение заявки снимает актуальность, сохраняя исходную запись.</li>
+        <li>Исправлены длинный Unicode, согласованность лимитов и пометка черновика
+        на каждой странице. Отправки и выбора адресата в этом модуле нет.</li>
+        <li>Независимые ревью и аудит анкет завершены; исправлено смешение JSON-типов.
+        Сохранённые прежним кодом записи проходят чтение и точный повтор.</li>
+        <li>Дополнительно прогнаны V25/R08 и три примера Б.8 на SQLite/PostgreSQL.
+        Утверждённая квалификация и полная связность всех SOP ещё не доказаны.</li></ul>"""
+        remaining = ("Утверждённый выбор продукта и ответы по источникам; все прерывания и каналы диалога; "
+                     "полностью связанные SOP и эталонная квалификация; остальные критические ревью "
+                     "и приёмка владельцем. Реальные правила и цены не утверждались.")
+        review_note = ("Локальное восстановление через COPY проверено. Штатный pg_dump заблокирован "
+                       "защитой Windows; production recovery и общая приёмка ещё не подтверждены.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
     <p>{args.report_date:%d.%m.%Y} · {title}</p>
     <p class="note"><b>Весь PDF ещё не выполнен.</b> {intro} Пилот выключен по умолчанию;

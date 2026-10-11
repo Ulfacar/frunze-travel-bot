@@ -111,9 +111,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Individual applicant qualification linkage; payer and family identities separated",
           "artifact": "ai/handoffs/2026-10-10-0730-e6-04-applicant-profiles.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "214d88f2a157139be121d070ddd8217358d58d79",
+          "command": "Builder52PASS; independent48+21PGPASS; separate auditor17+24PGPASS, including actual previous-module upgrade compatibility",
+          "environment": "Env-free Windows Python3.12 / synthetic SQLite, Chromium, isolated PostgreSQL16.15",
+          "scope": "Scoped E6-04 individual profiles review closure and typed integrity correction; no whole-project critical approval",
+          "artifact": "ai/handoffs/2026-10-11-0532-e6-17-profile-integrity.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "B03",
@@ -723,9 +731,18 @@
       "weight": 1,
       "pdf": "А/14",
       "acceptance": "Notification drafts/outbox with explicit policy gate and dedup",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "4fcf694d8d7586ec969126e411359d43c345c63d",
+          "command": "Frozen r3 builder137PASS; independent106+30PG+4+3PASS; separate auditor147PASS; exact commands and original defects in handoff/reviews",
+          "environment": "Windows Python3.12 / env-free archive / synthetic FK SQLite, Chromium, isolated PostgreSQL16.15",
+          "scope": "Persistent internal drafts only: explicit default-empty storage policy, immutable retained renderer/source receipts, per-application dedup and no sending; no real policy approval",
+          "artifact": "ai/handoffs/2026-10-11-0530-e6-16-notification-drafts.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "I03",
