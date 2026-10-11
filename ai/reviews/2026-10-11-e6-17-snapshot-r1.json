@@ -1,0 +1,13 @@
+{
+  "base": "fca93ad8ed7d6a5fcdf53b741b254ba1241ad03e",
+  "snapshot": "E6-17 profile typed-integrity correction r1",
+  "archive": "runs/e6-17-review-r1",
+  "normalization": "LF",
+  "files": {
+    "app/domain/applicant_profiles.py": "760d5c9885ba6f4edb2ca90790bfc19e95125945417701b3f631bcb9121c630f",
+    "tests/test_applicant_profiles.py": "2aa060806440fc9679a2336ee3b2640cd45419a80aab5ef9495a1fc15dce7fbf",
+    "tests/browser_kg_applicant_profiles.py": "506de33df6f76bfc64904f501d910acceeb6e5a5e425458b39539e8741fb57c4",
+    "tests/test_applicant_profile_integrity_postgres.py": "a825ef98747f738c0fa4feacfea1669a256a82c3034ef40e9f8e2accaee826dc",
+    "ai/tasks/2026-10-11-e6-17-profile-integrity.md": "443bdb5441fce1490c7f7975b82e9086a4f69eb54e7c9d2e7165d8a2e4ae477f"
+  }
+}

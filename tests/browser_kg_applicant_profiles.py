@@ -37,7 +37,7 @@ def test_native_person_profiles_remain_separate(env,width,js):
             assert context.request.post(origin+'/admin/login',form={'login':'admin','password':'frunze'}).status==200
             page=context.new_page();page.goto(origin+env['url']+'/applications',wait_until='networkidle')
             page.locator('summary',has_text='Все заявители:').click()
-            page.get_by_role('link',name=f'Анкета заявителя №{adult["id"]}',exact=True).click()
+            page.locator(f'a[href="{env["url"]}/applicants/{adult["id"]}/qualification"]').click()
             page.wait_for_load_state('networkidle')
             assert f'заявитель №{adult["id"]}' in page.locator('h1').inner_text()
             page.locator('#kg-language').select_option('en')
@@ -60,7 +60,7 @@ def test_native_person_profiles_remain_separate(env,width,js):
             assert page.get_by_role('button',name='Сохранить анкету',exact=True).count()==0
             page.get_by_role('link',name='Заявители и подачи',exact=True).click();page.wait_for_load_state('networkidle')
             page.locator('summary',has_text='Все заявители:').click()
-            page.get_by_role('link',name=f'Анкета заявителя №{child["id"]}',exact=True).click();page.wait_for_load_state('networkidle')
+            page.locator(f'a[href="{env["url"]}/applicants/{child["id"]}/qualification"]').click();page.wait_for_load_state('networkidle')
             assert page.locator('#kg-purpose').input_value()==''
             assert page.locator('#kg-language').input_value()=='ru'
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')

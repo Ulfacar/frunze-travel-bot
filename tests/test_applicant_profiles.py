@@ -148,10 +148,49 @@ def test_bounded_history_and_runtime_upgrade_preserve_read_but_refuse_replay(env
     runtime = service._runtime()
     monkeypatch.setattr(service, '_runtime', lambda: {**runtime, 'profile_code_hash': 'new'})
     assert read(env, applicant)['saved'] == first
+    assert save(env, applicant) == first
     with pytest.raises(EntryStorageInvalid, match='runtime_changed'): read(env, applicant, replay=True)
     monkeypatch.setattr(service, 'MAX_BYTES', 1)
     with pytest.raises(EntryStorageInvalid, match='history_limit'): read(env, applicant)
     with pytest.raises(EntryStorageInvalid, match='history_limit'): save(env, applicant)
+
+
+TYPE_COERCION_CASES=[
+    ('result_snapshot','may_quote','number'),
+    ('result_snapshot','publication_approved','number'),
+    ('result_snapshot','applicant_id','float'),
+    ('result_snapshot','case_id','bool'),
+    ('context','case_id','float'),('context','case_id','bool'),
+    ('context','applicant_id','float'),('context','applicant_id','bool'),
+    ('context','knowledge_version_id','float'),('context','knowledge_version_id','bool'),
+    ('previous','id','float'),('previous','id','bool'),
+]
+
+
+@pytest.mark.parametrize('area,key,kind',TYPE_COERCION_CASES)
+def test_rehashed_json_type_coercion_never_passes_integrity_checks(env,area,key,kind):
+    applicant=person(env);first=save(env,applicant);selected=first
+    if area=='previous':selected=save(env,applicant,revision=1,key='second')
+    async def corrupt():
+        async with env['sm']() as session:
+            row=await session.get(EntryApplicantProfile,selected['qualification_id'])
+            payload=service._payload(row)
+        column='result_snapshot' if area=='result_snapshot' else 'provenance'
+        target=payload[column] if area=='result_snapshot' else payload[column][area]
+        old=target[key]
+        if kind=='number':assert old is False;target[key]=0
+        elif kind=='bool':assert type(old) is int and old==1;target[key]=True
+        else:assert type(old) is int;target[key]=float(old)
+        async with env['engine'].begin() as conn:
+            await conn.execute(text(f'UPDATE entry_applicant_profiles SET {column}=:value,snapshot_hash=:digest WHERE id=:id'),
+                dict(value=json.dumps(payload[column]),digest=_hash(payload),id=selected['qualification_id']))
+    asyncio.run(corrupt())
+    if area=='result_snapshot':
+        with pytest.raises(EntryStorageInvalid,match='profile_replay_result_changed'):read(env,applicant,replay=True)
+    else:
+        for attempt in (lambda:read(env,applicant),lambda:save(env,applicant),
+                        lambda:save(env,applicant,revision=selected['revision'],key='next')):
+            with pytest.raises(EntryStorageInvalid):attempt()
 
 
 def test_concurrent_writers_create_only_one_successor(env):

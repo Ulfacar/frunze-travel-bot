@@ -77,11 +77,11 @@ async def _history(session, case, person):
         if (row.case_id != case.id or row.revision != revision or
             row.previous_id != (previous.id if previous else None) or previous and row.id <= previous.id or
             row.request_hash != _hash(command) or row.snapshot_hash != _hash(payload) or
-            row.provenance.get("previous") != prior):
+            canonical(row.provenance.get("previous")) != canonical(prior)):
             raise EntryStorageInvalid("profile_integrity_failed")
         if row.knowledge_version_id not in sources:
             sources[row.knowledge_version_id] = await _sources(session, case, person, row.knowledge_version_id)
-        if sources[row.knowledge_version_id][1] != row.provenance.get("context"):
+        if canonical(sources[row.knowledge_version_id][1]) != canonical(row.provenance.get("context")):
             raise EntryStorageInvalid("profile_sources_changed")
         previous = row
     return rows, size, sources
@@ -149,9 +149,9 @@ async def read_applicant_profile(engine, *, actor, case_id, applicant_id, qualif
             raise EntryStorageInvalid("profile_unavailable")
         if replay and row:
             review, context = sources[row.knowledge_version_id]
-            if row.provenance["runtime"] != _runtime():
+            if canonical(row.provenance["runtime"]) != canonical(_runtime()):
                 raise EntryStorageInvalid("profile_replay_runtime_changed")
-            if _evaluate(review, context, _plain(row.input_snapshot)) != row.result_snapshot:
+            if canonical(_evaluate(review, context, _plain(row.input_snapshot))) != canonical(row.result_snapshot):
                 raise EntryStorageInvalid("profile_replay_result_changed")
         return dict(applicant=applications._applicant_view(person), payer_contact_id=case.contact_id,
             current_revision=len(rows), saved=_view(row) if row else None,
