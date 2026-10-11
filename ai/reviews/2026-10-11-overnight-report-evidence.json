@@ -6,7 +6,7 @@
   "bytes": 79467,
   "pages": 5,
   "code_revision": "27b8463e5672c89e2026a2d79b3bc3364de46e2e",
-  "report_builder_snapshot": "uncommitted documentation tooling, to be saved in final report commit",
+  "report_builder_snapshot": "22d9cb3bc2dd20edda2ec122b8969875c07bb745: separate documentation tooling; final PDF and report source saved/pushed",
   "source_pdf": {
     "pages": 94,
     "sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",

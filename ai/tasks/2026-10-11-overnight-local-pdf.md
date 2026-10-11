@@ -8,9 +8,9 @@ Explicit user instruction received2026-10-11 (clock19:24 UTC10 October,00:24 Asi
 - Start checkpoint: code E6-09 `4c570a3`, final independent review/audit and documentation in progress. F06 not yet scored until evidence record is complete; previous score67/100. Next prepared work E6-10 procedural stages/dependencies, task `2026-10-11-e6-10-procedural-stages.md`.
 - Final Telegram should distinguish implemented/tested from remaining/UNKNOWN, cite saved revision and local report, and explicitly say no deployment. Record actual send result; do not claim delivery without API evidence.
 
-Status: local implementation, checks and final PDF complete; final save and Telegram delivery in progress. Full PDF scope remains PARTIALLY_READY,90/100. Current handoff `ai/handoffs/2026-10-11-0705-overnight-local-pdf.md`; historical checkpoints below retain their original pending statuses. No Telegram sent yet; revalidate destination at final send.
+Status: **DONE for overnight local/check/save/report scope**, completed07:24 Asia/Almaty before08:00. Final PDF and context saved/pushed in22d9cb3; exact runtime27b8463. Telegram accepted one authorized PDF/status, message8502, after server-side recipient/bot revalidation. Receipt `ai/reviews/2026-10-11-overnight-telegram-evidence.json`. Full PDF scope remains **PARTIALLY_READY,90/100**. Current handoff `ai/handoffs/2026-10-11-0705-overnight-local-pdf.md`; historical checkpoints below retain their original pending statuses. No deployment.
 
-## Verified final notification path
+## Initial verified notification path and historical checkpoints
 
 Read-only SSH alias `frunze` reaches the existing server. Its `/root/.hermes/.env` provides `TELEGRAM_BOT_TOKEN` and a single `TELEGRAM_ALLOWED_USERS` entry. Server-side Telegram `getMe` returned bot `@Ulfacar_bot`; `getChat` for that configured allowed user returned a private chat, Alan / `@Albeshev`. Both API responses had `ok=true`. Credentials and numeric destination remain in server configuration; no values copied here. Resolve and revalidate the same configuration at send time, send only the requested final status, and record sanitized `ok`/message ID evidence. Do not send a test message or notify anyone else. No message sent yet.
 
@@ -47,3 +47,16 @@ merged r1/broader partial runs deliberately interrupted and not promoted.
 Original94pagePDF/hash reverified, final five-page report currently PREVIEW.
 No deployment or Telegram yet; final notification helper only syntax-checked,
 with verified single-user preflight and no automatic retry after an uncertain send.
+
+## Final overnight checkpoint —07:24 Asia/Almaty
+
+E6-20 runtime27b8463 closes the reproduced deadline-capacity and watermark defects,
+with independent APPROVE/separate GO. Exact final correction113 PASS; broader final
+240 PASS includes all230 PG cases skipped in the pre-E620 full4702 PASS/231 SKIP.
+One external-network case remains unexecuted; overlapping runs are not a final-code
+full-suite claim. All5 final report pages and26 source headings were independently
+checked. Fixed definitions remain unchanged,90/100 technical points; seven criteria
+and owner/source decisions remain. Temporary local PostgreSQL was stopped after
+all jobs; no production operation or PC shutdown. Final report/context22d9cb3 saved
+to origin/fix/tours-search-quality; one Telegram PDF/status API acceptance is recorded
+above. A separate documentation commit records this actual delivery result.

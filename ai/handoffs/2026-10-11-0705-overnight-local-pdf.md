@@ -1,6 +1,6 @@
 # HANDOFF: 2026-10-11-0705 — overnight local PDF/CRM work
 
-- STATUS: PARTIALLY_READY for final delivery; implementation, local checks and final PDF are complete, save/notification remains. The full PDF/project remains PARTIALLY_READY independently of completing this overnight delivery.
+- STATUS: **DONE for overnight local/check/save/report delivery**; final PDF saved/pushed in22d9cb3 and Telegram API accepted at02:24UTC. **The full PDF/project remains PARTIALLY_READY**,90/100, independently of this completed overnight delivery.
 - CLASS / MODE: CRITICAL local implementation slices / solo, with separate independent reviews and final audits for affected critical work.
 - Task: `ai/tasks/2026-10-11-overnight-local-pdf.md`; parent fixed criteria in `docs/pdf-engineering-criteria.json`.
 - Branch / runtime: `fix/tours-search-quality`, `27b8463e5672c89e2026a2d79b3bc3364de46e2e`, saved/pushed only to origin working branch.
@@ -44,7 +44,7 @@ runtime FK enforcement remains on. No migration was run on production.
 | Original PDF |94 pages, SHA256141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2 | Unchanged;26 source sections mapped | Source text is not legal approval |
 | Final progress PDF | `docs/reports/frunze-pdf-progress-2026-10-11-overnight-local.pdf` | PASS: all5 pages inspected,26 source headings,79467 bytes | SHA25683075f39bc1aa452e7efe6c598019764699a50282bbf554d4130937236d5d651; full project remains incomplete |
 | Temporary local database | Verified isolated127.0.0.1:55971 PostgreSQL16.15 cluster, pg_ctl fast stop then status | PASS: server stopped; status exit3 | No production service restart or PC shutdown |
-| Final Telegram | Existing server bot, configured sole private recipient revalidated before send | NOT SENT/NOT ATTEMPTED | One authorized final report only |
+| Final Telegram | Existing @Ulfacar_bot, configured sole private recipient revalidated before send | PASS: one sendDocument accepted, message_id8502,02:24UTC; SSH exit0 | User read receipt UNKNOWN; no retry or other message |
 
 Exact XML hashes, counters and skip reasons are preserved in
 `ai/reviews/2026-10-11-overnight-full-evidence.json`,
@@ -59,7 +59,7 @@ full/broader runs are not promoted to successful evidence.
 The independent parent evidence audit is
 `ai/reviews/2026-10-11-overnight-evidence-audit.md`. It verifies fixed definitions,
 source facts, exact snapshots/commits and scoped review evidence; it does not
-approve the whole project. The final report must retain these seven unfinished
+approve the whole project. The final report retains these seven unfinished
 criteria, totalling10 points:
 
 | Criterion | Points | Remaining acceptance |
@@ -92,10 +92,12 @@ and no production backup/recovery readiness is claimed. The temporary loopback
 cluster was stopped after all checks; its private connection remains in user Temp,
 never Git or reports. PC and production services were not shut down or restarted.
 
-Save the completed checks, final PDF and context to the authorized origin working branch, then send
-one `sendDocument` with concise status through the verified existing bot.
-Record sanitized API acceptance/message ID; never infer a read receipt or retry
-an uncertain send automatically. Preserve unrelated untracked user artifacts.
+Checks, final PDF and context were saved/pushed to the authorized origin working
+branch in `22d9cb3bc2dd20edda2ec122b8969875c07bb745`. One `sendDocument` with concise
+status and the exact verified PDF was accepted by Telegram at02:24UTC, message8502.
+Sanitized receipt and exact caption: `ai/reviews/2026-10-11-overnight-telegram-evidence.json`.
+No read receipt is inferred; no retry, client message, deployment, migration or
+production service restart was performed. Unrelated untracked files are preserved.
 
 For the next work session, restore the current state and exact fixed criteria.
 Prioritize the outstanding source import/publication review boundaries and
