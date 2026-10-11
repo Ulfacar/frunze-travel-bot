@@ -121,6 +121,16 @@
       "errors": 0.0,
       "skipped": 0.0,
       "time": 304.198
+    },
+    {
+      "artifact": "runs/e6-14-review-r2/runs/channel-full.xml",
+      "sha256": "9eac3790929d916cf03969dbf944427f343426d60eebb7b1b74e9e41e7a68a1a",
+      "snapshot": "r2",
+      "tests": 4668.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 119.0,
+      "time": 4315.334
     }
   ],
   "builder_recovery": {
@@ -198,5 +208,6 @@
   },
   "broader": "584 PASS /0 SKIP /304.20s, exactr2",
   "full_suite": "RUNNING exact r2",
-  "identity": "PASS 26 root/archive/commit files"
+  "identity": "PASS 26 root/archive/commit files",
+  "full_suite_status": "PASS4549 /119SKIP optional; frozen E6-14r2 only"
 }

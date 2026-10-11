@@ -25,3 +25,13 @@ E6-12 checkpoint: code `594a9f3` saved/pushed origin; independent APPROVE/GO and
 E6-13 checkpoint: code `c611b86` saved,19-file root/archive/commit identity PASS; independent APPROVE/GO and C04 technical PASS,84/100. Exact versioned internal quotes, four components/separate currencies/unknown blocking, native preview/save/history and retained old calculator versions. Builder92+23PG, broader273PASS/2SKIP; reviewer94/24/1/2, auditor121PASS (overlap). Five-page versioned-quotes report inspected. E6-12 broader296PASS/2SKIP completed; its full suite still running. Next E6-14 bound WhatsApp handoff suppression, pre-audit GO; no runtime changes yet. No deploy/final Telegram.
 
 E6-14 checkpoint: code `fe43b46` saved/pushed origin; independent APPROVE/GO,26-file identity PASS. B04/H04 add5 ONLY explicitly activated+bound private WhatsApp:89/100,11 remain. Builder163PASS/2optionalPG SKIP+30actualPG; reviewer118/31/2/1, auditor153PASS(overlap), COPY recovery and native/sole print page inspected. All5 progress-report pages inspected. Exact-r2 broad/full continue; E6-12 full finished4371PASS/66SKIP. Next E6-15 source scenarios and E6-16 draft persistence pre-audit. No deploy/final Telegram.
+
+E6-16/17 checkpoint:4fcf694 draft storage and214d88f profile correction, separate
+LIGHT label polish b8114c3 and documentation bdc47f0 saved/pushed origin. I02 adds1:
+90/100,10remain; B02 independent review nowPASS without newpoints. Draft137PASS,
+broader252PASS/2SKIP; profiles52PASS; separate independent APPROVE/GO for both.
+Five-page90-point report allpages inspected. E6-15 adds real-service synthetic
+V25/R08 and threeB.8 cases,10PASS acrossSQLite/actualPG, without J01/J02 claims.
+E6-14 full later completed4549PASS/119SKIP. E6-18 typed journal correction exactr2
+84PASS, independent review/final audit finishing; merged full regression running.
+E6-19 reviews existing deadline tasks' older critical gap. No deploy/finalTelegram.
