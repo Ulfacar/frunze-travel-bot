@@ -26,7 +26,7 @@
 <p class="draft-meta">{{ preview.preview.result.source_ref }} · страница {{ preview.preview.result.page }} · {{ preview.preview.renderer_version }}</p>
 {% if save_form %}{{ save_controls(save_form) }}{% endif %}</section>{% endif %}
 {% if form %}<section class="draft-box no-print"><h2>Подготовить новый черновик</h2>
-<form method="get" action="{{ url }}"><label for="draft-template">Шаблон из источника</label><select name="template" id="draft-template">{% for item in current.templates %}<option value="{{ item.unit_id }}" {% if item.unit_id==template.unit_id %}selected{% endif %}>{{ item.unit_id }} · {{ item.label }}</option>{% endfor %}</select><button>Выбрать шаблон</button></form>
+<form method="get" action="{{ url }}"><label for="draft-template">Шаблон из источника</label><select name="template" id="draft-template">{% for item in current.templates %}<option value="{{ item.unit_id }}" {% if item.unit_id==template.unit_id %}selected{% endif %}>{{ item.unit_id }} · {{ item.title }}</option>{% endfor %}</select><button>Выбрать шаблон</button></form>
 <form method="post" action="{{ url }}" id="notification-preview">
 {% for name,value in form.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
 {% for field in template.fields %}<label for="draft-{{ field.id }}">{{ field.token }} ({{ field.id }})</label>
