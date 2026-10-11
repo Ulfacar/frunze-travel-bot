@@ -35,7 +35,11 @@ async def _bindings(session, application, rule):
 
 
 async def _task(session, case, binding, *, lock=False):
-    if binding is None or binding.task_id is None:
+    if binding is None:
+        return None
+    if binding.task_id is None:
+        if binding.expected_date is not None or binding.attention not in ('unknown_date', 'missing_owner'):
+            raise EntryStorageInvalid('deadline_task_binding_audit_invalid')
         return None
     query = select(CalendarTask).where(CalendarTask.id == binding.task_id)
     task = await session.scalar(query.with_for_update(read=not lock, of=CalendarTask))
@@ -47,9 +51,9 @@ async def _task(session, case, binding, *, lock=False):
     try:
         evidence = json.loads(event.detail)
         expected = evidence['after']
-        if (evidence['binding'] != binding.id or expected['source'] != binding.source_hash or
-            expected['target'] != binding.target_hash or expected['deadline'] != binding.deadline_revision_id or
-            expected['task']['id'] != task.id or expected['task']['date'] != binding.expected_date.isoformat()):
+        if (canonical(evidence['binding']) != canonical(binding.id) or expected['source'] != binding.source_hash or
+            expected['target'] != binding.target_hash or canonical(expected['deadline']) != canonical(binding.deadline_revision_id) or
+            canonical(expected['task']['id']) != canonical(task.id) or expected['task']['date'] != binding.expected_date.isoformat()):
             raise ValueError
     except (AttributeError, KeyError, TypeError, ValueError):
         raise EntryStorageInvalid('deadline_task_binding_audit_invalid') from None
@@ -77,7 +81,8 @@ def _view(binding, task, desired=None):
         deadline_revision_id=binding.deadline_revision_id, attention=attention, task=state,
         pending=bool(desired and desired['target_hash'] != binding.target_hash and
             (not task or task.status in ACTIVE or binding.source_hash != desired['source_hash'] or binding.attention == 'missing_owner')),
-        token=_hash(dict(binding_id=binding.id, revision=binding.revision, task=state)))
+        token=_hash(dict(binding_id=binding.id, revision=binding.revision, task=state,
+                         desired_target=desired['target_hash'] if desired else None)))
 
 
 async def _desired(session, case, application, rule):
@@ -195,7 +200,8 @@ async def reconcile_deadline_task(engine, *, actor, case_id, application_id, rul
             bindings = await _bindings(session, application, rule_unit_id)
             binding = bindings[-1] if bindings else None
             task = await _task(session, case, binding, lock=True)
-            if not expected_token or expected_token != _view(binding, task)['token']:
+            desired = await _desired(session, case, application, rule_unit_id)
+            if not expected_token or expected_token != _view(binding, task, desired)['token']:
                 raise EntryStorageConflict('deadline_task_changed')
         return await _reconcile(session, case, application, rule_unit_id, actor.manager_id,
                                 enable=enable, restore=restore, minimum_revision=minimum_revision)
@@ -247,19 +253,23 @@ async def act_on_deadline_task(engine, *, actor, case_id, application_id, rule_u
         if task is None:
             raise EntryStorageInvalid('deadline_task_unavailable')
         receipts = list((await session.scalars(select(CalendarTaskEvent).where(CalendarTaskEvent.task_id == task.id,
-            CalendarTaskEvent.event == 'deadline_action').order_by(CalendarTaskEvent.id).limit(MAX_ACTIONS+1))).all())
+            CalendarTaskEvent.event == 'deadline_action').order_by(CalendarTaskEvent.id).limit(MAX_ACTIONS+2))).all())
+        # One terminal receipt remains possible even for an old full history.
+        # Materialize one extra sentinel and reject overflow before any retry.
+        if len(receipts) > MAX_ACTIONS+1:
+            raise EntryStorageInvalid('deadline_task_action_limit')
         for event in receipts:
             try: receipt = json.loads(event.detail)
             except (ValueError, TypeError): raise EntryStorageInvalid('deadline_task_receipt_invalid') from None
-            if receipt['command']['actor'] != event.actor or receipt['command']['binding'] != binding.id:
+            if receipt['command']['actor'] != event.actor or canonical(receipt['command']['binding']) != canonical(binding.id):
                 raise EntryStorageInvalid('deadline_task_receipt_invalid')
             if receipt['command']['request_key'] == request_key:
-                if receipt['command'] != command:
+                if canonical(receipt['command']) != canonical(command):
                     raise EntryStorageConflict('deadline_task_request_reused')
                 return _view(binding, task, desired)
-        if len(receipts) >= MAX_ACTIONS:
+        if len(receipts) >= MAX_ACTIONS and (len(receipts) > MAX_ACTIONS or action not in ('complete', 'cancel')):
             raise EntryStorageInvalid('deadline_task_action_limit')
-        if binding != bindings[-1] or expected_token != _view(binding, task)['token'] or binding.target_hash != desired['target_hash']:
+        if binding != bindings[-1] or expected_token != _view(binding, task, desired)['token'] or binding.target_hash != desired['target_hash']:
             raise EntryStorageConflict('deadline_task_changed')
         if task.claimed_at or task.claimed_by:
             raise EntryStorageConflict('deadline_task_claimed')

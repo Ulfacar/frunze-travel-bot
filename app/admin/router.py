@@ -2294,12 +2294,28 @@ async def task_create(user_id: str, request: Request, manager: dict = Depends(re
     return await _render_conversation(user_id, request, manager)
 
 
+async def _calendar_task_for_action(session, task_id: int):
+    """Refresh under the same row lock used by deadline hooks before authorizing."""
+    from sqlalchemy import select
+    from app.domain.calendar_tasks import CalendarTaskService
+    from app.domain.models import EntryDeadlineTask
+    task = await CalendarTaskService.get(session, task_id)
+    if task is None:
+        return None
+    await session.refresh(task, with_for_update=True)
+    if (task.claimed_at or task.claimed_by) and await session.scalar(
+        select(EntryDeadlineTask.id).where(EntryDeadlineTask.task_id == task.id).limit(1)
+    ):
+        return None
+    return task
+
+
 async def _apply_task_action(user_id: str, task_id: int, manager: dict, action: str, *,
                              new_date: date | None = None, new_at: datetime | None = None) -> None:
     try:
         from app.domain.calendar_tasks import CalendarTaskService
         async with _domain_sessionmaker()() as s:
-            task = await CalendarTaskService.get(s, task_id)
+            task = await _calendar_task_for_action(s, task_id)
             if (task is None or (task.user_id or "") != user_id
                     or not _manager_can_touch_task(manager, task)):
                 return
@@ -2504,7 +2520,7 @@ async def _apply_calendar_action(task_id: int, manager: dict, action: str, *, mo
     try:
         from app.domain.calendar_tasks import CalendarTaskService
         async with _domain_sessionmaker()() as s:
-            task = await CalendarTaskService.get(s, task_id)
+            task = await _calendar_task_for_action(s, task_id)
             if task is None or not _manager_can_touch_task(manager, task):
                 return
             uid = task.user_id or ""
