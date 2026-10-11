@@ -632,9 +632,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Persistent assigned tasks with completion/cancel/escalation and dedup",
           "artifact": "ai/handoffs/2026-10-10-0545-e6-06-deadline-tasks.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "dc474d858aff9c399d37b8cf0c84ba5e5e803aed",
+          "command": "Exact E619r2: builder70 domain/schema/native/integrity +46 ordinary-calendar/browser; guarded actualPG21 included. Independent APPROVE and separate GO; detailed commands/hashes in reports.",
+          "environment": "Windows Python3.12, FK SQLite, native Chromium, isolated localhost PostgreSQL16.15; synthetic local only",
+          "scope": "Existing G03/G04 bounded task lifecycle and transactional reconciler; five original finding groups fixed. No autonomous scheduler, worker identity, real date policy or all-project J03 approval; no additional points.",
+          "artifact": "ai/handoffs/2026-10-11-0608-e6-19-deadline-task-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "G04",
@@ -650,9 +658,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Deadline worker handles retries, changes, ordering and duplicate execution",
           "artifact": "ai/handoffs/2026-10-10-0545-e6-06-deadline-tasks.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "dc474d858aff9c399d37b8cf0c84ba5e5e803aed",
+          "command": "Exact E619r2: builder70 domain/schema/native/integrity +46 ordinary-calendar/browser; guarded actualPG21 included. Independent APPROVE and separate GO; detailed commands/hashes in reports.",
+          "environment": "Windows Python3.12, FK SQLite, native Chromium, isolated localhost PostgreSQL16.15; synthetic local only",
+          "scope": "Existing G03/G04 bounded task lifecycle and transactional reconciler; five original finding groups fixed. No autonomous scheduler, worker identity, real date policy or all-project J03 approval; no additional points.",
+          "artifact": "ai/handoffs/2026-10-11-0608-e6-19-deadline-task-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "H01",

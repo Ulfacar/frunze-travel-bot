@@ -1,0 +1,39 @@
+{
+  "revision": "dc474d858aff9c399d37b8cf0c84ba5e5e803aed",
+  "frozen_snapshot": "runs/e6-19-review-r2",
+  "manifest_raw_sha256": "5efce2f48f4da2aacf3d9981b90682cd7cb3680cc8e45c56a8091db0307d467e",
+  "manifest_lf_sha256": "2f7a3b267c3b0fcbef0475b360803d07e7e596c108008cd5e51726a7d38026d7",
+  "identity": "5 root/archive/commit PASS",
+  "checks": [
+    {
+      "scenario": "SQLite domain/schema/native + actualPG integrity",
+      "artifact": "runs/e6-19-review-r2/runs/deadline-r2.xml",
+      "sha256": "d152caba31007158fb2dcbc5513282dbff260e4f28a6ff366ee88cdea61b1076",
+      "tests": "70",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "216.060"
+    },
+    {
+      "scenario": "ordinary calendar + mobile/noJS/print",
+      "artifact": "runs/e6-19-review-r2/runs/calendar-browser-r2.xml",
+      "sha256": "9c6d73def0d7c83de418858be03b9d02ca894afe0e1ffeb3947d44baf3c488bd",
+      "tests": "46",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "66.824"
+    }
+  ],
+  "full_suite": "RUNNING, not PASS",
+  "browser_calendar": "46 PASS; mobile390, desktop1365/noJS and sole print page inspected by builder",
+  "independent_review": "APPROVE; 65 named core covered after isolated probe typo correction,21PG+2browser",
+  "separate_final_audit": "GO;39 own passing acceptance checks",
+  "production": "no deployment/activation/real-data use",
+  "builder_combined": "116 PASS (70 domain/schema/native/integrity with21 actualPG +46 calendar/browser); totals overlap with independent reviews",
+  "full_runtime_files_matching_commit": 628,
+  "hygiene": "5fileAST/credential-pattern scan,3coldimports,git diff whitespace,protocol PASS",
+  "all_non_ai_docs_files_matching_commit": 715,
+  "full_identity_scope": "All Git files except ai/ and docs/ compared through in-memory git archive; app/tests/alembic/knowledge subset628 also individually verified"
+}

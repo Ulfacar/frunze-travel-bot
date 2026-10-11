@@ -35,3 +35,15 @@ V25/R08 and threeB.8 cases,10PASS acrossSQLite/actualPG, without J01/J02 claims.
 E6-14 full later completed4549PASS/119SKIP. E6-18 typed journal correction exactr2
 84PASS, independent review/final audit finishing; merged full regression running.
 E6-19 reviews existing deadline tasks' older critical gap. No deploy/finalTelegram.
+
+At06:10 Almaty: E6-18 correction d1c9a38 and E6-19 deadline-task correction
+dc474d8 saved/pushed origin. Both have scoped independent APPROVE and separate GO.
+E6-18 builder84 PASS; E6-19 builder116 PASS incl21actualPG and browser, five
+root/archive/commit hashes plus715 non-ai/docs source files match final execution
+archive. G03/G04 review nowPASS without newpoints;90/100 remains. E6-19 fixes
+five reproduced defect groups, preserving old receipts and legitimate waits.
+Final full suite started00:55UTC on exact E6-19r2; ongoing, not PASS. Earlier
+merged r1/broader partial runs deliberately interrupted and not promoted.
+Original94pagePDF/hash reverified, final five-page report currently PREVIEW.
+No deployment or Telegram yet; final notification helper only syntax-checked,
+with verified single-user preflight and no automatic retry after an uncertain send.
