@@ -153,13 +153,14 @@ def apply_operation(snapshot, operation, *, actor, approved_on):
         if not client_deliveries or data['on'] < min(d['on'] for d in client_deliveries):
             invalid('issued_delivery_missing')
         if result['receipt'] is not None and (result['receipt']['proof']==data['proof'] or
-            result['receipt']['passport_revision']==result['passport_revision'] and result['receipt']['identity_checked'] is True):
+            result['receipt']['passport_revision']==result['passport_revision'] and result['receipt']['identity_checked'] is True and
+            result['receipt']['on']>=result['passport_checked_on']):
             invalid('issued_receipt_already_recorded')
         result['receipt'] = {**data, 'actor': actor,'passport_revision':result['passport_revision']}
     return result
 
 
-def summarize(snapshot):
+def summarize(snapshot,*,rules_version=2):
     return dict(version=snapshot['version'], verification_current=verified(snapshot),
                 correction_pending=bool(snapshot['correction']),
                 delivery_complete=bool(verified(snapshot) and set(snapshot['deliveries']) == set(CHANNELS) and
@@ -167,7 +168,8 @@ def summarize(snapshot):
                         d['review_generation']==snapshot['review']['generation'] for d in snapshot['deliveries'].values())),
                 receipt_recorded=snapshot['receipt'] is not None,
                 receipt_current_and_checked=bool(snapshot['receipt'] and verified(snapshot) and snapshot['receipt']['identity_checked'] is True and
-                    snapshot['receipt']['passport_revision']==snapshot['passport_revision']),
+                    snapshot['receipt']['passport_revision']==snapshot['passport_revision'] and
+                    (rules_version==1 or snapshot['receipt']['on']>=snapshot['passport_checked_on'])),
                 actual_entries=sum(f['direction']=='entry' for f in snapshot['travel']),
                 actual_exits=sum(f['direction']=='exit' for f in snapshot['travel']),
                 travel_permission_granted=False, service_completed=False)

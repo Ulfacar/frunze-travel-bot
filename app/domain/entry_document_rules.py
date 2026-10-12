@@ -112,7 +112,7 @@ def apply_operation(snapshot,operation,*,actor,definition=None):
     return result
 
 
-def summarize(snapshot):
+def summarize(snapshot, *, passport_changed_on=None):
     counts=dict(required_checked=0,required_pending=0,applicability_unknown=0,recommended_pending=0)
     rows=[]
     for definition in snapshot['definition']['items']:
@@ -120,7 +120,8 @@ def summarize(snapshot):
         current=snapshot['items'][definition['id']]
         status=current['status']
         if status=='checked' and (current['reviewed_version']!=current['version'] or
-                                 current['reviewed_passport_revision']!=snapshot['passport_revision']):status='recheck'
+                                 current['reviewed_passport_revision']!=snapshot['passport_revision'] or
+                                 passport_changed_on and current['reviewed_on']<passport_changed_on):status='recheck'
         if current['applicable'] is None:counts['applicability_unknown']+=1
         elif current['applicable']:
             if definition['kind']=='recommended':counts['recommended_pending']+=int(status!='checked')

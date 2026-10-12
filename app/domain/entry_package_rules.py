@@ -147,13 +147,14 @@ def apply_operation(state,operation,*,actor,definition,legacy=None,policy=None,r
     return result
 
 
-def summarize(state,definition):
+def summarize(state,definition,*,passport_changed_on=None):
     rows=[]; counts=dict(required_pending=0,applicability_unknown=0,recommended_pending=0,practice_pending=0,source_review=0)
     for source in definition['rows']:
         if source['kind']=='policy': continue
         item=state['items'][source['id']]; status=item['status']
         if status=='checked' and (item['reviewed_version']!=item['version'] or item['reviewed_passport_revision']!=state['passport_revision'] or
-                                 item['reviewed_facts_revision']!=state['facts_revision']): status='recheck'
+                                 item['reviewed_facts_revision']!=state['facts_revision'] or
+                                 passport_changed_on and item['reviewed_on']<passport_changed_on): status='recheck'
         applies,missing=_evaluate(source['when'],state['facts'],state['product'])
         if applies is None: counts['applicability_unknown']+=1
         if applies is True:
@@ -167,8 +168,8 @@ def summarize(state,definition):
                 package_accepted=False,submission_allowed=False,metadata_only=True)
 
 
-def assert_acceptable(state,definition,policy):
-    report=summarize(state,definition)
+def assert_acceptable(state,definition,policy,*,passport_changed_on=None):
+    report=summarize(state,definition,passport_changed_on=passport_changed_on)
     # An explicitly selected tourist-organisation letter entails its contents;
     # a contradictory optional-applicability answer cannot hide those checks.
     tourist=state['items'].get('t01_03')

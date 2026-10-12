@@ -48,11 +48,11 @@ async def _history(session,application,approval):
     return rows,size
 
 
-def _view(row):
+def _view(row,*,rules_version=2):
     snapshot=_plain(row.snapshot)
     return dict(id=row.id,revision=row.revision,created_by=row.created_by,created_at=applications._utc(row.created_at),
                 approval_event_id=row.approval_event_id,snapshot_hash=row.snapshot_hash,snapshot=snapshot,
-                operation=_plain(row.command)['operation'],summary=summarize(snapshot))
+                operation=_plain(row.command)['operation'],summary=summarize(snapshot,rules_version=rules_version))
 
 
 async def _effective_view(session,row):

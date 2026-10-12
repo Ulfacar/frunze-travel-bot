@@ -64,6 +64,7 @@ class Sources:
         self.session, self.case, self.root = session, case, root
         self.apps = {root.id: root}
         self.events, self.packages, self.issued = {}, {}, {}
+        self.documents = {}
         self.profile_rows = None
         self.ledgers = {}
         self.successors = {}
@@ -104,6 +105,11 @@ class Sources:
             self.issued[app.id] = (await issued._history(self.session, app, approval))[0]
         return self.issued[app.id]
 
+    async def document_history(self, app):
+        if app.id not in self.documents:
+            self.documents[app.id] = (await packages.legacy_documents._history(self.session, app))[0]
+        return self.documents[app.id]
+
     async def profile_history(self):
         if self.profile_rows is None:
             person = await applications._applicant(self.session, self.case.id, self.root.applicant_id)
@@ -143,8 +149,18 @@ class Evidence:
         self.day = applications._local_day(at)
         self.recorded = observed
         self.observed = {'streams':{}, 'quarantine':{}}
-        if historical and (type(observed) is not dict or observed.keys() != self.observed.keys() or
-            any(type(v) is not dict for v in observed.values())): invalid('process_observation_invalid')
+        self.rules_version = 2
+        if historical:
+            if (type(observed) is not dict or observed.keys() not in (
+                {'streams','quarantine'}, {'streams','quarantine','rules_version'}) or
+                any(type(observed[k]) is not dict for k in ('streams','quarantine'))):
+                invalid('process_observation_invalid')
+            if 'rules_version' in observed and (type(observed['rules_version']) is not int or observed['rules_version']!=2):
+                invalid('process_observation_invalid')
+            self.rules_version = observed.get('rules_version',1)
+        # Old evidence replays its original interpretation; fresh observations
+        # pin the dated-passport guard so their future replay stays identical.
+        if self.rules_version==2: self.observed['rules_version']=2
 
     def prefix(self, rows, stream, field='created_at'):
         if self.historical:
@@ -155,7 +171,7 @@ class Evidence:
             if [r.id for r in selected] != ids: invalid('process_observed_source_missing')
             # These journals serialize revisions under their parent lock. An
             # observation may end before today's head, but cannot skip a revision.
-            if (stream == 'profiles' or stream.startswith(('events:', 'packages:', 'issued:'))) and \
+            if (stream == 'profiles' or stream.startswith(('events:', 'packages:', 'issued:', 'documents:'))) and \
                     ids != [r.id for r in rows[:len(ids)]]:
                 invalid('process_observed_prefix_invalid')
             if any(applications._utc(getattr(r,field)) > applications._utc(self.at) for r in selected):
@@ -236,13 +252,18 @@ class Evidence:
         if fact == 'consent_confirmed':
             return packet(bool(state['consent'] and state['consent']['status'] == 'granted'), 'package_consent', pins)
         if fact == 'product_defined': return packet(True, 'explicit_package_product', pins)
-        report = summarize(state, definition)
+        passport_on = None
+        if self.rules_version==2:
+            legacy = self.prefix(await self.sources.document_history(app), f'documents:{app.id}')
+            passport_on = packages._passport_date(prefix,states[:index+1],legacy)
+        report = summarize(state, definition, passport_changed_on=passport_on)
         required = [r for r in report['rows'] if r['applicable'] is True and r['kind'] not in ('recommended', 'practice')]
         unknown = bool(report['counts']['applicability_unknown'])
         if fact in ('documents_received', 'resident_package_received'):
             received = bool(required) and all(r['status'] not in ('missing', 'withdrawn') and r['fingerprint'] for r in required)
             return packet(None if unknown else bool(received), 'package_receipts', pins)
-        accepted = packages.effective_acceptance(state, definition, self.package_policy, day=self.day)
+        accepted = packages.effective_acceptance(state, definition, self.package_policy, day=self.day,
+            passport_changed_on=passport_on)
         quarantined = await self.quarantined({item['fingerprint'] for item in state['items'].values() if item['status'] != 'withdrawn'})
         valid = accepted['accepted'] and not packages._legacy_passport_gap(prefix, states[:index+1]) and not quarantined
         reason = 'document_in_quarantine' if quarantined else accepted['reason']
@@ -263,7 +284,7 @@ class Evidence:
         if app.procedure not in ('visa', 'exit_visa'): return packet(None, 'issued_adapter_unsupported')
         rows = self.prefix(await self.sources.issued_history(app), f'issued:{app.id}')
         if not rows: return packet()
-        row = rows[-1]; view = issued._view(row); state = view['snapshot']; report = view['summary']
+        row = rows[-1]; view = issued._view(row,rules_version=self.rules_version); state = view['snapshot']; report = view['summary']
         pins = [pin('issued', row, app)]
         quarantined = await self.quarantined({state.get('fingerprint'), state.get('current_passport'), state.get('issued_passport')})
         if fact == 'issued_document_downloaded': value = state['version'] > 0

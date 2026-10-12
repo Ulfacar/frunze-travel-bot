@@ -52,6 +52,21 @@ def _view(row):
         snapshot_hash=row.snapshot_hash,operation=_plain(row.command)['operation'],summary=summarize(snapshot))
 
 
+def _passport_date(rows):
+    """Maximum fact date, derived only from a previously validated journal.
+
+    Admission/current-view constraint; historical reducers and receipts remain
+    exact, including old checks that were admitted before this constraint.
+    """
+    dates=[]
+    for row in rows:
+        operation=_plain(row.command)['operation']; data=operation['data']
+        if operation['action']=='passport_change' or (
+            operation['action']=='receive' and data['item'].startswith(('d01_','d02_'))):
+            dates.append(data['on'])
+    return max(dates,default=None)
+
+
 async def record_document_operation(engine,*,actor,case_id,application_id,expected_revision,request_key,operation):
     _authorize(actor);_id(case_id);_id(application_id);_key(request_key)
     if type(expected_revision) is not int or not 0<=expected_revision<MAX_REVISIONS:
@@ -74,6 +89,9 @@ async def record_document_operation(engine,*,actor,case_id,application_id,expect
         if events[-1].status in ('approved','refused','closed') or await session.scalar(
             select(EntryApplication.id).where(EntryApplication.previous_id==application.id)):
             raise EntryStorageInvalid('document_application_closed')
+        passport_on=_passport_date(rows)
+        if operation['action']=='review' and passport_on and operation['data']['on']<passport_on:
+            raise EntryStorageInvalid('invalid_document_date')
         definition=None
         if operation['action']=='review' and await quarantined_fingerprints(session,{operation['data']['fingerprint']}):
             raise EntryStorageInvalid('document_in_quarantine')
@@ -111,6 +129,7 @@ async def read_document_inventory(engine,*,actor,case_id,application_id,revision
         upgraded=await has_package(session,application_id)
         view=_view(selected) if selected else None
         if view:
+            view['summary']=summarize(view['snapshot'],passport_changed_on=_passport_date(rows[:selected.revision]))
             quarantine=await quarantined_fingerprints(session,{item['fingerprint'] for item in view['summary']['items']})
             for item in view['summary']['items']:
                 item['quarantined']=item['fingerprint'] in quarantine and item['status']!='withdrawn'

@@ -134,6 +134,21 @@ def _legacy_passport_gap(rows,states):
     return gap
 
 
+def _passport_date(rows,states,legacy_rows=()):
+    """Bound current checks to all dated passport changes, including import.
+
+    State comparisons include receive/withdraw and the retained v1 reducer's
+    revision gaps. Max preserves the boundary when older facts are backfilled.
+    """
+    dates=[value for value in (legacy_documents._passport_date(legacy_rows),) if value]
+    for index,row in enumerate(rows):
+        operation=_plain(row.command)['request']['operation']; data=operation['data']
+        if row.action=='passport_change' or (index and 'on' in data and
+            _passports(states[index-1])!=_passports(states[index])):
+            dates.append(data['on'])
+    return max(dates,default=None)
+
+
 async def quarantined_fingerprints(session,fingerprints):
     """Deny quarantined bytes across applications without exposing their owners.
 
@@ -158,7 +173,7 @@ def _view(row,state,definition):
         summary=summarize(state,definition),approved_in_revision=state['approval'] is not None)
 
 
-def effective_acceptance(state,definition,policy,*,day):
+def effective_acceptance(state,definition,policy,*,day,passport_changed_on=None):
     approval=state['approval']
     if not approval: return dict(accepted=False,reason=state['last_invalidation'] or 'package_not_approved')
     if not isinstance(policy,PackagePolicy) or approval['policy_hash']!=policy.digest:
@@ -167,7 +182,7 @@ def effective_acceptance(state,definition,policy,*,day):
         _policy_scope(policy)
         authorize_acceptance(Actor(approval['actor'],True),policy,catalog_digest=state['catalog_digest'],day=day)
         if approval['basis_hash']!=_hash({k:v for k,v in state.items() if k not in ('approval','last_invalidation')}): _invalid()
-        assert_acceptable(state,definition,policy)
+        assert_acceptable(state,definition,policy,passport_changed_on=passport_changed_on)
     except (EntryStorageInvalid,PermissionDenied) as exc:
         return dict(accepted=False,reason=str(exc))
     return dict(accepted=True,reason='approved_current_metadata')
@@ -211,12 +226,18 @@ async def _record_package_operation(session,*,actor,case_id,application_id,expec
     elif action=='upgrade_definition':
         if state is None: _invalid('document_package_missing')
         definition=_definition(data['catalog_digest'],state['product'])
+    if action in ('review','approve'):
+        legacy_history,_=await legacy_documents._history(session,application)
+        passport_on=_passport_date(rows,states,legacy_history)
+        if action=='review' and passport_on and data['on']<passport_on:
+            _invalid('invalid_document_package_date')
     if action=='approve':
         if state is None: _invalid('document_package_missing')
         if _legacy_passport_gap(rows,states): _invalid('package_passport_recheck_required')
         authorize_acceptance(actor,policy,catalog_digest=state['catalog_digest'],day=day); _policy_scope(policy)
         if data['on']!=day.isoformat(): _invalid('invalid_package_approval_date')
         approval_policy=policy
+        assert_acceptable(state,definition,policy,passport_changed_on=passport_on)
     if action in ('review','approve'):
         # Imported lazily to keep the metadata journal usable before migration0026.
         from app.domain.entry_quarantine import metadata
@@ -256,6 +277,7 @@ async def read_document_package(engine,*,actor,case_id,application_id,revision=N
         application=await applications._application(session,case_id,application_id)
         events=await applications._events(session,application)
         rows,states,definitions,size=await _history(session,application)
+        old,_=await legacy_documents._history(session,application)
         from app.domain.entry_quarantine import metadata
         quarantine=await metadata(session,application_id,history=(rows,states))
         if revision and revision>len(rows): _invalid('document_package_revision_unavailable')
@@ -263,11 +285,14 @@ async def read_document_package(engine,*,actor,case_id,application_id,revision=N
         selected=_view(rows[index],states[index],definitions[index]) if rows else None
         fingerprints={item['fingerprint'] for state in ([states[-1],states[index]] if rows else []) for item in state['items'].values()}
         quarantined=await quarantined_fingerprints(session,fingerprints)
-        acceptance=effective_acceptance(states[-1],definitions[-1],policy,day=applications._today()) if rows else dict(accepted=False,reason='package_not_initialized')
+        acceptance=effective_acceptance(states[-1],definitions[-1],policy,day=applications._today(),
+            passport_changed_on=_passport_date(rows,states,old)) if rows else dict(accepted=False,reason='package_not_initialized')
         if _legacy_passport_gap(rows,states): acceptance=dict(accepted=False,reason='package_passport_recheck_required')
         if rows and any(item['fingerprint'] in quarantined and item['status']!='withdrawn' for item in states[-1]['items'].values()):
             acceptance=dict(accepted=False,reason='document_in_quarantine')
         if selected:
+            selected['summary']=summarize(states[index],definitions[index],
+                passport_changed_on=_passport_date(rows[:index+1],states[:index+1],old))
             for item in selected['summary']['rows']:
                 item['quarantined']=item['fingerprint'] in quarantined and item['status']!='withdrawn'
                 if item['quarantined']:
@@ -277,7 +302,6 @@ async def read_document_package(engine,*,actor,case_id,application_id,revision=N
                     item['effective_status']='quarantined'
             selected['summary']['quarantined_count']=sum(item['quarantined'] for item in selected['summary']['rows'])
         if selected and index==len(rows)-1: selected['summary']['package_accepted']=acceptance['accepted']
-        old,_=await legacy_documents._history(session,application)
         return dict(application=applications._application_view(application),application_status=events[-1].status,
             quarantine=quarantine,
             ordinary_writes_available=len(rows)<MAX_REVISIONS-WITHDRAWAL_SLOTS and size<MAX_BYTES-WITHDRAWAL_BYTES,
