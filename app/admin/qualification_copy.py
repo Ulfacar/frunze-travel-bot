@@ -16,6 +16,9 @@ group('individual_profile_changed individual_profile_needs_current_confirmation 
       'The profile or source has changed. Open the latest profile and confirm the current answers.')
 group('interview_reconciliation_required', 'По заявителю уже ведётся интервью. Специалисту нужно сверить его ответы и статус передачи.',
       'An interview exists for this applicant. A specialist must reconcile its answers and handoff status.')
+group('individual_profile_answers_conflict',
+      'В сохранённой анкете есть несогласованные ответы. Откройте анкету и уточните их перед подбором.',
+      'The saved profile contains inconsistent answers. Open the profile and clarify them before routing.')
 group('no_active_publication competing_regime_unavailable', 'Не все необходимые правила доступны в действующей утверждённой публикации.',
       'Not all necessary rules are available in the current approved publication.')
 group('qualification_policy_missing qualification_policy_source_changed qualification_policy_outside_validity',

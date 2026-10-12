@@ -15,7 +15,7 @@ from app.domain.entry_storage import EntryStorageInvalid, _authorize, _hash, _id
 from app.domain.models import EntryInterview
 from app.domain.qualification_policy import QualificationPolicy
 from app.knowledge.conditions import _all, _evaluate
-from app.knowledge.qualification import REGIMES, QualificationReview
+from app.knowledge.qualification import REGIMES, QualificationError, QualificationReview
 
 FORMAT = 'kg-approved-route/1'
 KG = ZoneInfo('Asia/Bishkek')
@@ -161,7 +161,14 @@ async def propose_route(engine, *, actor, case_id, applicant_id, qualification_p
             result['reasons'] = ['qualification_policy_outside_validity']
             return result
         review = QualificationReview(**bundle, source_hash=version.source_hash, catalog=catalog)
-        fresh = review.evaluate({**request, 'as_of': today.isoformat()})
+        try:
+            fresh = review.evaluate({**request, 'as_of': today.isoformat()})
+        except QualificationError:
+            # Historical receipts remain valid evidence of what was saved.
+            # A stricter current semantic check needs corrected answers, not
+            # a service-outage response or an inferred eligibility decision.
+            result['reasons'] = ['individual_profile_answers_conflict']
+            return result
         result.update(stop_reasons=fresh['stop_reasons'], missing_facts=fresh['missing_facts'],
                       next_questions=fresh['next_questions'])
         p = request['profile']
