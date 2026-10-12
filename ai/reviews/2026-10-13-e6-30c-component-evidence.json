@@ -1,0 +1,118 @@
+{
+  "status": "DONE_REVIEWED_LOCAL_COMPONENT_ONLY",
+  "base": "d57a0f0a8ea91358edb6e8df654d623fde06264e",
+  "scope": "versioned work observations and separate read-only conditional deadline; NOT whole E630C/source acceptance",
+  "files": {
+    "alembic/versions/e6_work_process_evidence_0040.py": "f56e43f74732c031402f800eba4ef0f08a29c2d4e83372ce7e303a02dcae3d2c",
+    "app/admin/kg_process_journal.py": "ab3f24075b5e3646a697b2472992c5ee0f4aa606d83e4fa95a1f38b6f85cb53e",
+    "app/admin/templates/kg_process_journal.html": "0c29fd1d74172bb4f16ca48c426cee215e11fb9fdefcfbcdc22f1d2854052056",
+    "app/domain/entry_process_evidence.py": "7392eed2bbbd326dd57421a9f94a515dade0d6b844ff2830051a1b37d88874a7",
+    "app/domain/entry_process_policy.py": "511f2e64120f48b94da8784861303570a47eee40d1a4fbd97b7002f304253e18",
+    "app/domain/entry_process_rules.py": "50f69ae76170388a97dcb017ef7320ff6fd107a1f3d02afb80402b3839cb5e31",
+    "app/domain/entry_processes.py": "f9dd3323611b81236ae60ed75c4d6d192f77841648f94f23564c5487577bfe6f",
+    "app/domain/models.py": "fbcce43949c251b5b8d0a8ba45af4b61440fe1b75c50d3c79417929a45501ddd",
+    "app/domain/work_deadlines.py": "63cad5cf5d8ec36aefd739187fcbd8c8bea73fa9741b41cd28814a3146e6d0ec",
+    "app/knowledge/process_preview.py": "9f733f6b8323b76bd3cfa7960d2be628c36cf8024ed1e9d2e6c1ac3477555ac3",
+    "knowledge/kg_entry/processes_work_v2/catalog.json": "31a9bd02864b62621f2968139a6b90bc128889febfebe657001c959d96d09ee2",
+    "scripts/build_kg_work_process_catalog.py": "405c221dba19f4be513b7c2d9fe53f53866651d1ac2bd99b296fb510aaec9e81",
+    "tests/browser_work_process.py": "330bee516c800d9e1f93f63db8fd0d8dd406840ab70c91fc9efeb8a817cc9fb0",
+    "tests/test_entry_process_migration.py": "d929670fc6763215e62998803e0f4ccc39bb5087e1a97b8d342649b548248db1",
+    "tests/test_work_deadlines.py": "9573d686f3eb0733725cf63d4f96f438207876db6f9780fc1b4e2743d1bcd392",
+    "tests/test_work_process_migration.py": "1cf3f6b98cc18dae12af5f807274620da82bebb8b46c04a81fdee137288f0ef3",
+    "tests/test_work_process_recovery_postgres.py": "f55bdcfdd639c2df8f43952a583ca515eba3029fc7837d59647cf382875b2b99",
+    "tests/test_work_process_v2.py": "02c2cbd2cd6188a41a6f3e320622d4e9dc7c08f6559c78a9e4c0589ff7f633d3"
+  },
+  "builder_checks": [
+    {
+      "name": "work-r2",
+      "path": "runs/e6-30c-r2/runs/work-r2.xml",
+      "raw_sha256": "c95a5d726575fe20c23e00ad4bfc3066c07569258f6ae05bf34fd73b5c509999",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "99",
+        "time": "758.757",
+        "timestamp": "2026-10-13T02:40:08.444871+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    {
+      "name": "work-native-r6",
+      "path": "runs/e6-30c-r6/runs/work-r6.xml",
+      "raw_sha256": "e34aeea743450684fec0e75db3d7312cfd43b8766b62a56faebb4bf446b032c4",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "20",
+        "time": "569.838",
+        "timestamp": "2026-10-13T02:46:47.075168+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    {
+      "name": "schema-browser-r12",
+      "path": "runs/e6-30c-r12/runs/work-browser-schema-r12.xml",
+      "raw_sha256": "f253b63ba85c8ee91c0b108b92626dfa61ac5ae18a96ad746e1342f057f0ef23",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "7",
+        "time": "327.623",
+        "timestamp": "2026-10-13T03:05:03.846413+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    {
+      "name": "postgres-copy-r14",
+      "path": "runs/e6-30c-r14/runs/work-recovery-r14.xml",
+      "raw_sha256": "a256de423970aff555b8bd4b7e70a64fa98379720526390b4e40b16ea9ef3910",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "1",
+        "time": "317.765",
+        "timestamp": "2026-10-13T03:09:09.835160+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    {
+      "name": "deadline-r4",
+      "path": "runs/e6-30c-r4/runs/work-deadline-r4.xml",
+      "raw_sha256": "ed5cdd760d3fa6b1941d5c0e3c1d9d1b3d85796ab78efafe76c06a5c97984bb0",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "1",
+        "time": "44.248",
+        "timestamp": "2026-10-13T02:44:20.260469+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    }
+  ],
+  "independent_reports": {
+    "ai/reviews/2026-10-13-e6-30c-work-review.md": "9c3b33fd1a997541d41cd11017648e91e9cc501317430c31ec0ee76ef0d6da53",
+    "ai/reviews/2026-10-13-e6-30c-work-audit.md": "7c23995353e25cdf1979f21b7e8c133e21b603a9772e68aa9ffc5fcd1c054d4b",
+    "ai/reviews/2026-10-13-e6-30c-deadline-review.md": "5be52e3a9a7c5e2e9f526998c203c21838dd528035e0681e7f9b86a63c15a14b",
+    "ai/reviews/2026-10-13-e6-30c-deadline-final-audit.md": "d2a67d8ba7518b86fc253eb436b07bb528956cc43c616024c6e833d250b41df3"
+  },
+  "recovery": "runs/e6-30c-r14/runs/work-recovery.json",
+  "limitations": [
+    "overlapping tests are not summed",
+    "all historical runtime and harness failures retained in reports",
+    "fixed score96 unchanged; J01/J02/J03/J05 open",
+    "no actual policy/source approval or deployment",
+    "conditional deadline creates no task and grants no permission",
+    "W15 presence is consumed milestone only"
+  ],
+  "code_revision": "43ba1cc1ff1365011f3a5d912b3abbde79396e7a"
+}
