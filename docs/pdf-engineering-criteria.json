@@ -718,9 +718,18 @@
       "weight": 2,
       "pdf": "IT/Б",
       "acceptance": "Grounded approved knowledge answers with source/version and fallback",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "c73745744b46f5b3b8029baba201c2506e4c4a06",
+          "command": "E6-21 primary43 PASS incl7actualPG+2browser (r4 runtime identical to final); final shell42 PASS; independent APPROVE and separate GO. Exact commands and snapshot/commit identity in artifact.",
+          "environment": "Windows Python3.12; env-free snapshots; synthetic SQLite/PostgreSQL16.15/Chromium; no production",
+          "scope": "Exact-rule internal RU/EN answers from current approved publication with all qualifiers, source/version and specialist fallback. No personal eligibility, free-form or installed-channel integration, real source approval or delivery claim.",
+          "artifact": "ai/reviews/2026-10-12-e6-21-runtime-evidence.json"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "H04",
