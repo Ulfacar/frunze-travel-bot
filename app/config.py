@@ -386,6 +386,7 @@ class Settings(BaseSettings):
     kg_interview_policy: dict = Field(default_factory=dict)
     # Executable qualification predicates/product routes need separate source approval.
     kg_qualification_policy: dict = Field(default_factory=dict)
+    kg_assessment_policy: dict = Field(default_factory=dict)
     # Internal quotation recipes require explicit source/commercial authority.
     kg_quote_policy: dict = Field(default_factory=dict)
     kg_notification_storage_policy: dict = Field(default_factory=dict)

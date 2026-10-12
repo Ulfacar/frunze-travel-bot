@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block external_scripts %}{% endblock %}
+{% block external_fonts %}{% endblock %}
+{% block title %}Frunze — Проверка поездки{% endblock %}
+{% block head %}<style>
+.kg-assessment{max-width:850px;margin:auto;padding:24px 16px;line-height:1.6;overflow-wrap:anywhere}.kg-assessment h1{font-size:clamp(24px,4vw,32px)}.kg-assessment h2{font-size:21px}.kg-assessment nav{display:flex;gap:16px;flex-wrap:wrap}.kg-assessment a{color:var(--accent,#2563eb);text-decoration:underline}.kg-assessment section{padding:20px;margin:20px 0;border:1px solid var(--border,#cbd5e1);border-radius:8px;background:var(--surface,#fff)}.kg-assessment dl{margin:0}.kg-assessment dt{font-weight:600}.kg-assessment dd{margin:0 0 12px}.kg-assessment :focus-visible{outline:3px solid #d97706;outline-offset:3px}.kg-assessment summary{cursor:pointer}
+@media(max-width:600px){.kg-assessment{padding:14px 10px}.kg-assessment section{padding:14px}}
+@media print{html,body{height:auto!important;min-height:0!important;overflow:visible!important;background:white!important}.topbar,.kg-assessment nav,.kg-assessment details{display:none!important}.kg-assessment{padding:0;max-width:none;font-size:10pt;color:#111!important}.kg-assessment h1{font-size:20pt}.kg-assessment h2{font-size:14pt}.kg-assessment section{padding:10px;margin:10px 0;background:white!important;border-color:#aaa!important;break-inside:avoid}@page{size:A4;margin:14mm}}
+</style>{% endblock %}
+{% block content %}
+{% set en = report and report.language == 'en' %}
+{% set base = '/admin/case/' ~ case_id ~ '/kg-entry/applicants/' ~ applicant_id %}
+<main class="kg-assessment" lang="{{ 'en' if en else 'ru' }}">
+<nav aria-label="{{ 'Applicant records' if en else 'Сведения заявителя' }}"><a href="{{ base }}/qualification">{{ 'Profile' if en else 'Анкета' }}</a><a href="{{ base }}/history">{{ 'Personal history' if en else 'Личная история' }}</a><a href="{{ base }}/interview">{{ 'Interview' if en else 'Интервью' }}</a></nav>
+<h1>{{ 'Trip assessment' if en else 'Проверка поездки' }}</h1>
+<p>{{ 'Applicant' if en else 'Заявитель' }} №{{ applicant_id }} · {{ 'Service' if en else 'Услуга' }} №{{ case_id }}</p>
+{% if not report %}<section role="alert">Проверка временно недоступна. Повторите позже или передайте вопрос специалисту. / Assessment unavailable. Retry later or contact a specialist.</section>
+{% else %}
+<section id="assessment-result"><h2>{{ ('Visa-free route for the recorded plan' if en else 'Безвизовый вариант для указанной поездки') if report.selected_product else ('Specialist review required' if en else 'Требуется проверка специалиста') }}</h2>
+{% if report.selected_product %}<p>{{ 'The recorded profile, personal history, interview, stay allowance and registration exemption agree under the approved interpretation.' if en else 'Анкета, личная история, интервью, лимит пребывания и освобождение от регистрации согласованы по утверждённой трактовке.' }}</p>{% endif %}
+{% if reason_labels %}<ul>{% for label in reason_labels %}<li>{{ label }}</li>{% endfor %}</ul>{% endif %}
+<p>{{ 'This is an internal assessment of recorded facts. It does not guarantee admission or authorize a quote or payment.' if en else 'Это внутренняя проверка записанных сведений. Она не гарантирует пропуск через границу и не разрешает выставлять стоимость или принимать оплату.' }}</p></section>
+{% if report.duration %}<section id="assessment-duration"><h2>{{ 'Stay allowance' if en else 'Лимит пребывания' }}</h2><dl>
+<dt>{{ 'Source limit / rolling window' if en else 'Лимит источника / скользящее окно' }}</dt><dd>{{ report.duration.limit_days }} / {{ report.duration.window_days }} {{ 'days' if en else 'дней' }}</dd>
+<dt>{{ 'Lowest headroom during the planned trip' if en else 'Наименьший остаток в ходе поездки' }}</dt><dd>{{ report.duration.minimum_planned_headroom }} {{ 'days' if en else 'дней' }}</dd>
+{% if report.duration.first_exceeded_date %}<dt>{{ 'First exceeded on' if en else 'Первое превышение' }}</dt><dd>{{ report.duration.first_exceeded_date }}</dd>{% endif %}
+{% if report.duration.first_margin_date %}<dt>{{ 'Manager review threshold reached on' if en else 'Порог проверки менеджером наступает' }}</dt><dd>{{ report.duration.first_margin_date }}</dd>{% endif %}</dl>
+<p>{{ 'Both entry and exit count. Each planned day is checked against its own backward window. This counting convention is separately approved; the original arithmetic scenario remains a review record.' if en else 'Дни въезда и выезда учитываются. Каждый день плана проверен в своём предшествующем окне. Способ подсчёта утверждается отдельно; исходный арифметический сценарий остаётся проверочной записью.' }}</p></section>{% endif %}
+{% if report.registration %}<section id="assessment-registration"><h2>{{ 'Registration' if en else 'Регистрация' }}</h2>
+{% if report.registration.status == 'within_planned_exemption' %}<p>{{ 'The planned trip fits the registration exemption:' if en else 'План поездки укладывается в освобождение от регистрации:' }} {{ report.registration.planned_days }} / {{ report.registration.exemption_days }} {{ 'days.' if en else 'дней.' }}</p>{% else %}<p>{{ 'The registration obligation requires specialist review.' if en else 'Обязанность зарегистрироваться требует проверки специалистом.' }}</p>{% endif %}
+<p>{{ 'No actual filing deadline or completed registration is established. Registration does not extend the visa-free allowance.' if en else 'Фактический срок подачи и факт регистрации не установлены. Регистрация не продлевает безвизовый лимит.' }}</p></section>{% endif %}
+{% if report.candidate %}<section><h2>{{ 'Rule used for the check' if en else 'Правило для проверки' }}</h2><p>{{ report.candidate.title }}</p><p>{{ report.candidate.source_ref }} · {{ report.candidate.section }} · {{ 'page' if en else 'стр.' }} {{ report.candidate.page }}</p></section>{% endif %}
+{% if report.next_questions %}<section><h2>{{ 'Clarify next' if en else 'Что уточнить' }}</h2><ol>{% for q in report.next_questions %}<li>{{ q.text }}</li>{% endfor %}</ol></section>{% endif %}
+{% if report.profile %}<p>{{ 'Profile revision' if en else 'Версия анкеты' }} №{{ report.profile.revision }}{% if report.source %} · {{ report.source.version_label }}{% endif %}</p>{% endif %}
+<p>{{ 'Checked at' if en else 'Проверено' }}: {{ report.checked_at }}</p>
+<details><summary>{{ 'Evidence versions' if en else 'Версии использованных сведений' }}</summary>
+{% for key in ['profile','history','interview','source','authority'] %}{% if report[key] %}<p>{{ key }}: {% if report[key].snapshot_hash %}{{ report[key].snapshot_hash }}{% elif report[key].head_hash %}{{ report[key].head_hash }}{% elif report[key].manifest_hash %}{{ report[key].manifest_hash }}{% else %}{{ report[key].assessment_hash }}{% endif %}</p>{% endif %}{% endfor %}</details>
+{% endif %}</main>{% endblock %}

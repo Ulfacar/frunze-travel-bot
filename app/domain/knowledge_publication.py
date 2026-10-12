@@ -313,7 +313,7 @@ async def _runtime_context(session):
     return context, await _history(context)
 
 
-async def _runtime_in_session(context, history, *, policy, ids):
+async def _runtime_in_session(context, history, *, policy, ids, at=None):
     """Internal composition only; the enclosing service must authorize its actor."""
     session = context.session
     active = history['active']
@@ -321,7 +321,7 @@ async def _runtime_in_session(context, history, *, policy, ids):
         return dict(version_id=None, available=[], unavailable=[dict(unit_id=i, reasons=['no_active_publication']) for i in ids])
     manifest = history['manifests'][active]
     version, bundle, _ = await context.source(active)
-    checked_at = _now()
+    checked_at = _now() if at is None else at
     if _utc(history['rows'][-1].created_at) > _utc(checked_at):
         raise EntryStorageInvalid('publication_clock_before_history')
     projection = await session.get(KnowledgeProjection, active)
