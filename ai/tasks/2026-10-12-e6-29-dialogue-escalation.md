@@ -24,7 +24,15 @@ new connection evidence belongs to a separate versioned receipt if necessary.
 No POINTS until implementation, relevant checks, independent review and separate
 final audit are evidenced. J01/J02/J03 and real J05 remain separate.
 
-Status: IMPLEMENTING. Independent source-first pre-audit completed in
+Final status: DONE / H02 PASS after reviewed E629A/B/C. Final C code
+e08338b1db4df887a54ccc4efc6c2661d7072738; independent APPROVE and separate GO,
+exact26 scoped files and final current-version threshold/connected/PG recovery
+evidence in `ai/handoffs/2026-10-12-1840-e6-29c-incoming-dialogue.md`. Fixed score96.
+All57 source rows are covered as interruption topics; this does not claim their
+entire business procedures or J01/J02 source SOP acceptance. Real policy remains
+empty. Historical implementation checkpoint follows.
+
+Earlier status: IMPLEMENTING. Independent source-first pre-audit completed in
 `ai/reviews/2026-10-12-e6-29-pre-audit.md`, covering all57 section17 rows and
 4.1/Б.6 stops. E6-29A atomic interruption/cause/permanent stop and E6-29B current
 expiry/calendar/observed-headroom components are reviewed and committed locally.

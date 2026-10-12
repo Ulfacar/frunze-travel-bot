@@ -886,9 +886,18 @@
       "weight": 2,
       "pdf": "4/17/Б.6",
       "acceptance": "Interrupts, stop factors and specialist escalation in dialogue flow",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "e08338b1db4df887a54ccc4efc6c2661d7072738",
+          "command": "Mapped A/B/C checks; final C actualPG10 PASS, R16 connected5/threshold6/adapter52 PASS, native/browser PASS; independent APPROVE and separate GO, exact26-file identity. Full commands and preserved failures in handoff/reviews.",
+          "environment": "Windows Python3.12; env-free frozen archives; synthetic SQLite and Chromium; actual isolated PostgreSQL16.15; fake provider only",
+          "scope": "Installed interrupts, stop factors and specialist escalation for explicitly managed private Wappi routes, retained consent stops and supported normal typed RU/EN turns. Local reviewed implementation; no real activation, all-product acceptance or production claim.",
+          "artifact": "ai/handoffs/2026-10-12-1840-e6-29c-incoming-dialogue.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "H03",

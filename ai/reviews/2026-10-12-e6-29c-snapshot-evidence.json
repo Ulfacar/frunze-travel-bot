@@ -1,0 +1,3726 @@
+{
+  "status": "DONE_REVIEWED_LOCAL",
+  "base": "6775d30be496335fc0aad10f6d18e6debc98da25",
+  "runtime_lf_sha256": {
+    "alembic/versions/e6_dialogue_cause_0036.py": "52b506aef51a4fdbf19cd777518cbd9cd147568d00a0f1ad915543176f6cc730",
+    "alembic/versions/e6_dialogue_session_0037.py": "f2e56160dba0dbc0633a753a625b703bded9050d770535471e6abb46bb193eaf",
+    "app/admin/templates/base.html": "65b70c196c2736f2f89b5a8994dc02da71f07373b06ba3c3e36407e207a1b727",
+    "app/admin/templates/boards.html": "9ce80ed0684efa123641dbb71ea171439b48da259572b30b0b24a0652a26b377",
+    "app/admin/templates/kg_channel_stops.html": "f74b8eb77467a38cb4a15013f2a3d5940a60334f53bcd7b29c59920e01a140eb",
+    "app/channels/wappi.py": "59da08f523c616b3bc2565225fba4c6ad780e76e5405f22654476bb2641105a4",
+    "app/config.py": "cd0e01abe4d050fd0781de513ede5de8189bda55cb975758a7d230d941c63d7b",
+    "app/core/kg_channel_guard.py": "870d9c4faf9ac1b7b559631c002ae236bd38aaeabee45496c74bbcc4c483939b",
+    "app/core/kg_dialogue.py": "5a77e1f2cda9d4f0a534931d6aca65fd54d1fe9b197f0d7a7f9569305114cbaf",
+    "app/core/orchestrator.py": "bffcdc86eb117d907887d2e9e8b1454292b7fee57669d9cbf9267ac2ac635c75",
+    "app/domain/current_stay_stops.py": "223ec5c6912aa4970b48b5decffa40bca0f2834490e1b67fce94ccd47019926f",
+    "app/domain/dialogue_authority.py": "98867c6b42caad7e52d6d24636ab710f23cca37a9e5d8557f05b71b08a1ddeb4",
+    "app/domain/dialogue_inbox.py": "1a4f8667409b85f70f1e203bbc31dd60dde91704e90d619c586fd5d56b4f5934",
+    "app/domain/dialogue_journal.py": "3664ead734cc030d11673a492a53140cbfd154d138b4296d8cdfbb5aff5b6d93",
+    "app/domain/dialogue_policy.py": "3506464f9bdbfb84012b6ec49f5829ee1a00c083fbb604cfb0309b882f7e1b87",
+    "app/domain/dialogue_reconciliation.py": "37d49842e5a3fc2593cce0ff9dc08cb4f28277256373b7d05391a09f65e2a282",
+    "app/domain/dialogue_session_policy.py": "f551e41bf5fe4c805b4ff1ff2d590c3e4583232ca10911e2272fedaa25ede6d4",
+    "app/domain/dialogue_sessions.py": "ab535369b3bdcecbf0b9979afb28ce0ed0bf5d4a1b96975a42909b8894441bf2",
+    "app/domain/dialogue_stops.py": "36bcc150549502970ac1d83efdc1cfe6bfc7d125b49049215f35ded0f58ea82f",
+    "app/domain/entry_channel_stops.py": "c91b9fcb896bdedcedc60d535bb64bcdd2aa05d74c23ed64b6b4e45635eabf4a",
+    "app/domain/models.py": "286276e7dca49c0ab0856539a3cba2a67cb4c3902f5b563e8b7e022a1e69aad6",
+    "app/knowledge/dialogue_interrupts.py": "e14b0822845c42428d84ba7ed79224d8ca96174caf32d95e82d1854cee4067d5",
+    "app/knowledge/dialogue_questions.py": "0ba9d568b27635543dddeb735b143c9800cbb824dafd93cc9e9fa7a49443b0fb",
+    "app/knowledge/dialogue_reconciliation.py": "bb3c9215cff81d4c6b9e391dd7e025ee9aa154e60cc76b69d957ae8c955c566b",
+    "app/main.py": "973b32dbdc7a855413b7efee5194ef82088cb1a8a40dcfbe181828d487c3f73a"
+  },
+  "runtime_changes_from_r11": {
+    "e6-29c-r11": [],
+    "e6-29c-r12": [],
+    "e6-29c-r13": [],
+    "e6-29c-r14": [],
+    "e6-29c-r15": [
+      "app/admin/templates/kg_channel_stops.html"
+    ],
+    "e6-29c-r16": [
+      "app/admin/templates/kg_channel_stops.html",
+      "app/channels/wappi.py",
+      "app/core/kg_dialogue.py"
+    ]
+  },
+  "root_runtime_changes_from_r11": [
+    "app/admin/templates/kg_channel_stops.html",
+    "app/channels/wappi.py",
+    "app/core/kg_dialogue.py",
+    "app/domain/models.py"
+  ],
+  "runs": [
+    {
+      "path": "runs/e6-29c-r7/runs/e629c-r7-connected.xml",
+      "sha256": "04e3df93f0a3c677958fbe810eca595a294b8f4d5247edb84851d1ca3b057abc",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "13",
+        "time": "1596.018",
+        "timestamp": "2026-10-12T23:48:54.454824+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_actual_webhook_provider_acceptance_and_normal_saved_progress[ru]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_provider_acceptance_and_normal_saved_progress[en]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_persistent_enum_boolean_date_preserves_original_attestation[ru]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_persistent_enum_boolean_date_preserves_original_attestation[en]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_after_native_ack_and_removed_authority",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw0-True-visa_free_headroom]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw1-True-visa_free_headroom]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw2-False-visa_free_headroom]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw3-True-working_day_margin]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw4-False-working_day_margin]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw5-False-working_day_margin]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_native_correction_then_privacy_preserves_real_observed_head",
+          "status": "PASS"
+        },
+        {
+          "name": "test_native_change_terminal_retains_input_identity_and_original_retry",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r7/runs/e629c-r7-core-compat.xml",
+      "sha256": "202ed61f71eacd0d9fe37691a6d328cc14556fbd632e644a84eb0341c91c4c22",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "236",
+        "time": "156.360",
+        "timestamp": "2026-10-12T23:49:18.288399+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_additive_empty_roundtrip_and_model_parity",
+          "status": "PASS"
+        },
+        {
+          "name": "test_postgres_ddl_and_offline_downgrade_refusal",
+          "status": "PASS"
+        },
+        {
+          "name": "test_enum_bool_date_exact_displayed_batch_and_reloaded_values[ru]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_enum_bool_date_exact_displayed_batch_and_reloaded_values[en]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[1: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[23.3: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[024.3: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.4: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes please]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes\\n24.2: 2030-12-31]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes\\x00]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3:\\tyes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.2: 20301231]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.2: 2030-02-30]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 01]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: ordinary]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 11]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: unknown]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: not_applicable]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples6]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples7]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples8]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples9]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples10]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples11]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples12]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples13]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples14]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples15]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples16]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples17]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples18]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples19]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples20]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples21]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples22]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples23]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples24]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples25]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples26]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples27]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples28]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples29]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples30]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples31]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples32]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples33]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples34]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples35]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples36]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples37]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples38]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples39]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples40]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples41]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples42]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples43]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples44]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples45]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples46]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples47]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples48]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples49]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples50]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples51]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples52]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples53]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples54]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples55]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples56]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_greeting_no_facts_and_special_document_is_typed_stop",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths6]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[wording]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[path]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[label]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[option]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[language]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[hash]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_changed_catalog_cannot_silently_change_choices_or_semantics",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[applicants_count-3-3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[residence_country-RUS-RUS]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[citizenships-RUS, KAZ-value2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-201]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-1.0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[residence_country-XXX]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[citizenships-RUS, RUS]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[citizenships-RUS,KAZ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[residence_country-unknown]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[chat]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[ptt]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[image]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[document]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_managed_legacy_send_denied_even_without_companion_account_activation",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[broken0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[broken1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[None]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unrelated_route_keeps_ordinary_send",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_keeps_auth_filters_and_passes_retries_to_durable_identity",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[greeting]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[persona]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[visa_faq]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[faq]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[normal]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[llm_error]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[wait_ack]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[file]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[voice_handoff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[voice_fallback]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_llm_started_before_atomic_handoff_is_suppressed_at_final_invocation",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bound_early_path_avoids_llm_and_legacy_reset_cannot_resume",
+          "status": "PASS"
+        },
+        {
+          "name": "test_followup_selected_before_handoff_stops_without_count_touch_or_outbound[False]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_followup_selected_before_handoff_stops_without_count_touch_or_outbound[True]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_manual_human_outbound_is_separate_and_unbound_provider_none_is_success",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_wappi_request_uses_captured_route_across_pending_log_await[recipient]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_wappi_request_uses_captured_route_across_pending_log_await[profile]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_wappi_request_uses_captured_route_across_pending_log_await[origin]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_atomic_handoff_stop_ack_policy_removal_and_exact_retry",
+          "status": "PASS"
+        },
+        {
+          "name": "test_existing_card_or_paused_and_no_resumption[paused]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_existing_card_or_paused_and_no_resumption[pending]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_existing_card_or_paused_and_no_resumption[acked]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wrong_dialog_provenance_rejected[change0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wrong_dialog_provenance_rejected[change1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wrong_dialog_provenance_rejected[change2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wrong_dialog_provenance_rejected[change3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wrong_dialog_provenance_rejected[change4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stale_preview_conflict_and_current_actor_before_retry",
+          "status": "PASS"
+        },
+        {
+          "name": "test_injected_write_failure_rolls_back_handoff_and_stop[handoff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_injected_write_failure_rolls_back_handoff_and_stop[binding]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_capacity_preserves_retry_and_block_and_unbound_read",
+          "status": "PASS"
+        },
+        {
+          "name": "test_corrupt_registry_blocks_negative_lookup_too[transport_key-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_corrupt_registry_blocks_negative_lookup_too[card_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_corrupt_registry_blocks_negative_lookup_too[snapshot_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_mutable_dialog_cannot_move_permanent_stop",
+          "status": "PASS"
+        },
+        {
+          "name": "test_provider_callback_at_most_once_on_failure[exception]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_provider_callback_at_most_once_on_failure[timeout]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_provider_callback_at_most_once_on_failure[cancel]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_alias_suffix_and_account_isolation",
+          "status": "PASS"
+        },
+        {
+          "name": "test_installed_guard_failure_closed[config]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_installed_guard_failure_closed[recipient]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_installed_guard_failure_closed[schema]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[+996700000001]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[0996700000001]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[996700000001@s.whatsapp.net]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[123@g.us]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[ 996700000001]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[123]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[True]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_account_metadata_cannot_contain_secrets[http://synthetic.invalid]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_account_metadata_cannot_contain_secrets[https://secret@synthetic.invalid]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_account_metadata_cannot_contain_secrets[https://synthetic.invalid?token=x]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_account_metadata_cannot_contain_secrets[https://synthetic.invalid/path]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_account_metadata_cannot_contain_secrets[https://synthetic.invalid:444]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_rehashed_invalid_pin_or_card_semantics_fails_closed[boolean_pin]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_rehashed_invalid_pin_or_card_semantics_fails_closed[card_fact]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_actor_denied_before_database_access",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_registry_aliases_and_global_profile_fallback_share_route",
+          "status": "PASS"
+        },
+        {
+          "name": "test_adapter_identity_changed_while_waiting_is_not_sent",
+          "status": "PASS"
+        },
+        {
+          "name": "test_expired_policy_cannot_resume_stop_or_prevent_exact_receipt_retry",
+          "status": "PASS"
+        },
+        {
+          "name": "test_new_day_requires_fresh_preview_even_when_policy_remains_valid",
+          "status": "PASS"
+        },
+        {
+          "name": "test_permanent_binding_rejects_orm_mutation[update]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_permanent_binding_rejects_orm_mutation[delete]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_permanent_binding_rejects_orm_mutation[bulk]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[expiry-case]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[expiry-dialog]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[day-case]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[day-dialog]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_atomic_cause_handoff_latch_and_exact_retry",
+          "status": "PASS"
+        },
+        {
+          "name": "test_existing_handoff_and_later_privacy_stop_with_expired_policy[paused]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_existing_handoff_and_later_privacy_stop_with_expired_policy[pending]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_existing_handoff_and_later_privacy_stop_with_expired_policy[acked]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_failure_rolls_back_all_three_connected_writes[EntryDialogueStopCause]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_failure_rolls_back_all_three_connected_writes[EntryChannelStop]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_failure_rolls_back_all_three_connected_writes[EntryInterviewEvent]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_missing_policy_unbound_and_greeting_are_not_answer_admission",
+          "status": "PASS"
+        },
+        {
+          "name": "test_cause_corruption_fails_closed_and_restores",
+          "status": "PASS"
+        },
+        {
+          "name": "test_reserved_terminal_collection_stop_at_registry_capacity",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unparseable_privacy_instruction_still_blocks_collection_after_ack[changes0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unparseable_privacy_instruction_still_blocks_collection_after_ack[changes1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unparseable_privacy_instruction_still_blocks_collection_after_ack[changes2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unparseable_privacy_instruction_still_blocks_collection_after_ack[changes3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_server_assignment_must_match_exact_existing_subject[actor-missing]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_server_assignment_must_match_exact_existing_subject[applicant_id-999999]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_server_assignment_must_match_exact_existing_subject[header_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_server_assignment_must_match_exact_existing_subject[dialog_id-999999]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_native_cause_and_uncertain_privacy_hold_are_readable_and_fail_closed",
+          "status": "PASS"
+        },
+        {
+          "name": "test_assignment_identity_is_not_coerced[True]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_assignment_identity_is_not_coerced[1.0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_assignment_identity_is_not_coerced[1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_native_preview_confirmation_bound_card_ack_and_repeat",
+          "status": "PASS"
+        },
+        {
+          "name": "test_signed_save_cannot_change_target_revision_or_request[dialog_id-9999]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_revision-2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_preview-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_policy-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_key-forged]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_non_ascii_security_values_rejected[_cs_csrf]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_non_ascii_security_values_rejected[_cs_sig]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_missing_confirmation_session_extra_duplicates_and_body_bounds",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stale_card_and_policy_require_new_preview",
+          "status": "PASS"
+        },
+        {
+          "name": "test_lost_commit_and_failed_read_keep_exact_retry_after_policy_removal",
+          "status": "PASS"
+        },
+        {
+          "name": "test_full_admin_off_and_workday_write_gates",
+          "status": "PASS"
+        },
+        {
+          "name": "test_deployment_deactivation_is_visible_and_different_from_policy_expiry",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stream_bounded_before_full_buffer[None]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stream_bounded_before_full_buffer[262144]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stream_bounded_before_full_buffer[-1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stream_bounded_before_full_buffer[wrong]",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r8/runs/e629c-r8-connected.xml",
+      "sha256": "9eab89349a14a18bc67f60372538e761c75ce1e8c3c1d18117e2cd28b5e884e5",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "4",
+        "time": "642.167",
+        "timestamp": "2026-10-12T23:58:14.811501+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_oversized_privacy_after_ack_and_unknown_attempt_never_retains_raw",
+          "status": "PASS"
+        },
+        {
+          "name": "test_inbox_and_turn_commit_together_no_retry_backfill_and_no_orphan_on_failure",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_provider_acceptance_and_normal_saved_progress[ru]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_provider_acceptance_and_normal_saved_progress[en]",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r8/runs/e629c-r8-hook.xml",
+      "sha256": "a26f48a440605b4d8a36d14fe597760120565b1ae9b4843af6fdeaba47cfda69",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "138",
+        "time": "10.610",
+        "timestamp": "2026-10-12T23:58:14.792988+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_enum_bool_date_exact_displayed_batch_and_reloaded_values[ru]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_enum_bool_date_exact_displayed_batch_and_reloaded_values[en]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[1: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[23.3: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[024.3: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.4: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes please]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes\\n24.2: 2030-12-31]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes\\x00]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3:\\tyes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.2: 20301231]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.2: 2030-02-30]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 01]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: ordinary]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 11]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: unknown]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: not_applicable]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples6]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples7]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples8]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples9]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples10]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples11]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples12]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples13]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples14]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples15]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples16]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples17]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples18]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples19]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples20]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples21]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples22]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples23]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples24]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples25]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples26]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples27]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples28]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples29]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples30]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples31]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples32]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples33]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples34]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples35]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples36]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples37]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples38]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples39]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples40]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples41]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples42]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples43]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples44]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples45]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples46]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples47]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples48]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples49]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples50]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples51]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples52]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples53]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples54]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples55]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples56]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_greeting_no_facts_and_special_document_is_typed_stop",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths6]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[wording]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[path]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[label]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[option]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[language]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[hash]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_changed_catalog_cannot_silently_change_choices_or_semantics",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[applicants_count-3-3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[residence_country-RUS-RUS]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[citizenships-RUS, KAZ-value2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-201]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-1.0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[residence_country-XXX]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[citizenships-RUS, RUS]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[citizenships-RUS,KAZ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[residence_country-unknown]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[chat]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[ptt]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[image]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[document]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_managed_legacy_send_denied_even_without_companion_account_activation",
+          "status": "PASS"
+        },
+        {
+          "name": "test_oversized_packet_only_privacy_reaches_stored_operational_hold[False]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_oversized_packet_only_privacy_reaches_stored_operational_hold[True]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[broken0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[broken1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[None]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unrelated_route_keeps_ordinary_send",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_keeps_auth_filters_and_passes_retries_to_durable_identity",
+          "status": "PASS"
+        },
+        {
+          "name": "test_is_incoming_filters_echo_and_status",
+          "status": "PASS"
+        },
+        {
+          "name": "test_parse_text_message",
+          "status": "PASS"
+        },
+        {
+          "name": "test_parse_media_is_non_text",
+          "status": "PASS"
+        },
+        {
+          "name": "test_send_calls_wappi_api",
+          "status": "PASS"
+        },
+        {
+          "name": "test_send_passes_bot_id_so_reply_lands_in_openline",
+          "status": "PASS"
+        },
+        {
+          "name": "test_send_skipped_without_credentials",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wappi_webhook_routes_and_replies",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wappi_webhook_ignores_own_echo",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wappi_webhook_ignores_group_and_reaction",
+          "status": "PASS"
+        },
+        {
+          "name": "test_delivery_status_helpers",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r9/runs/e629c-r9-postgres.xml",
+      "sha256": "68ece00706dfd4f79a722698df2821d0fd2874f377e0cde9a5b808b7108c5cd8",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "2",
+        "time": "423.893",
+        "timestamp": "2026-10-13T00:03:58.904274+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_normal_exact_profile_progression",
+          "status": "PASS"
+        },
+        {
+          "name": "test_two_incoming_retries_and_two_claimants_create_one_inbox_turn_and_attempt",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r9/runs/e629c-r9-privacy.xml",
+      "sha256": "1c83e41eb1152bd360676cd1f27795256367f370109ae881f3d18d5676c17695",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "4",
+        "time": "532.238",
+        "timestamp": "2026-10-13T00:03:58.839901+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_mutable_inbox_removal_cannot_block_privacy_or_repopulate_old_raw",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unsupported_payload_retains_only_cause_without_raw_inbox[https://synthetic.invalid/private-media-kw0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unsupported_payload_retains_only_cause_without_raw_inbox[hello\\x00-kw1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unsupported_payload_retains_only_cause_without_raw_inbox[hello-kw2]",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r10/runs/e629c-r10-compat.xml",
+      "sha256": "9f06af8dffbfc7f87c82b76e7f0e6f0f9d2375c5928736786d14d61f7ff1af9b",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "224",
+        "time": "189.560",
+        "timestamp": "2026-10-13T00:08:35.763508+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_enum_bool_date_exact_displayed_batch_and_reloaded_values[ru]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_enum_bool_date_exact_displayed_batch_and_reloaded_values[en]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[1: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[23.3: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[024.3: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.4: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes please]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes\\n24.2: 2030-12-31]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes\\x00]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3:\\tyes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.2: 20301231]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.2: 2030-02-30]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 01]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: ordinary]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 11]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: unknown]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: not_applicable]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples6]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples7]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples8]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples9]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples10]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples11]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples12]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples13]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples14]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples15]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples16]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples17]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples18]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples19]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples20]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples21]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples22]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples23]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples24]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples25]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples26]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples27]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples28]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples29]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples30]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples31]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples32]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples33]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples34]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples35]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples36]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples37]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples38]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples39]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples40]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples41]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples42]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples43]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples44]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples45]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples46]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples47]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples48]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples49]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples50]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples51]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples52]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples53]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples54]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples55]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples56]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_greeting_no_facts_and_special_document_is_typed_stop",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths6]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[wording]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[path]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[label]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[option]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[language]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[hash]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_changed_catalog_cannot_silently_change_choices_or_semantics",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[applicants_count-3-3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[residence_country-RUS-RUS]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[citizenships-RUS, KAZ-value2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-201]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-1.0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[residence_country-XXX]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[citizenships-RUS, RUS]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[citizenships-RUS,KAZ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[residence_country-unknown]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[chat]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[ptt]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[image]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[document]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_managed_legacy_send_denied_even_without_companion_account_activation",
+          "status": "PASS"
+        },
+        {
+          "name": "test_oversized_packet_only_privacy_reaches_stored_operational_hold[False]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_oversized_packet_only_privacy_reaches_stored_operational_hold[True]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[broken0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[broken1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[None]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unrelated_route_keeps_ordinary_send",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_keeps_auth_filters_and_passes_retries_to_durable_identity",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[greeting]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[persona]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[visa_faq]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[faq]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[normal]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[llm_error]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[wait_ack]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[file]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[voice_handoff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_each_installed_reply_branch_hits_final_stop_without_success_side_effects[voice_fallback]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_llm_started_before_atomic_handoff_is_suppressed_at_final_invocation",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bound_early_path_avoids_llm_and_legacy_reset_cannot_resume",
+          "status": "PASS"
+        },
+        {
+          "name": "test_followup_selected_before_handoff_stops_without_count_touch_or_outbound[False]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_followup_selected_before_handoff_stops_without_count_touch_or_outbound[True]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_manual_human_outbound_is_separate_and_unbound_provider_none_is_success",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_wappi_request_uses_captured_route_across_pending_log_await[recipient]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_wappi_request_uses_captured_route_across_pending_log_await[profile]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_wappi_request_uses_captured_route_across_pending_log_await[origin]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_atomic_handoff_stop_ack_policy_removal_and_exact_retry",
+          "status": "PASS"
+        },
+        {
+          "name": "test_existing_card_or_paused_and_no_resumption[paused]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_existing_card_or_paused_and_no_resumption[pending]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_existing_card_or_paused_and_no_resumption[acked]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wrong_dialog_provenance_rejected[change0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wrong_dialog_provenance_rejected[change1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wrong_dialog_provenance_rejected[change2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wrong_dialog_provenance_rejected[change3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wrong_dialog_provenance_rejected[change4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stale_preview_conflict_and_current_actor_before_retry",
+          "status": "PASS"
+        },
+        {
+          "name": "test_injected_write_failure_rolls_back_handoff_and_stop[handoff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_injected_write_failure_rolls_back_handoff_and_stop[binding]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_capacity_preserves_retry_and_block_and_unbound_read",
+          "status": "PASS"
+        },
+        {
+          "name": "test_corrupt_registry_blocks_negative_lookup_too[transport_key-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_corrupt_registry_blocks_negative_lookup_too[card_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_corrupt_registry_blocks_negative_lookup_too[snapshot_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_mutable_dialog_cannot_move_permanent_stop",
+          "status": "PASS"
+        },
+        {
+          "name": "test_provider_callback_at_most_once_on_failure[exception]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_provider_callback_at_most_once_on_failure[timeout]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_provider_callback_at_most_once_on_failure[cancel]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_alias_suffix_and_account_isolation",
+          "status": "PASS"
+        },
+        {
+          "name": "test_installed_guard_failure_closed[config]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_installed_guard_failure_closed[recipient]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_installed_guard_failure_closed[schema]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[+996700000001]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[0996700000001]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[996700000001@s.whatsapp.net]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[123@g.us]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[ 996700000001]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[123]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[True]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_account_metadata_cannot_contain_secrets[http://synthetic.invalid]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_account_metadata_cannot_contain_secrets[https://secret@synthetic.invalid]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_account_metadata_cannot_contain_secrets[https://synthetic.invalid?token=x]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_account_metadata_cannot_contain_secrets[https://synthetic.invalid/path]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_account_metadata_cannot_contain_secrets[https://synthetic.invalid:444]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_rehashed_invalid_pin_or_card_semantics_fails_closed[boolean_pin]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_rehashed_invalid_pin_or_card_semantics_fails_closed[card_fact]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_actor_denied_before_database_access",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_registry_aliases_and_global_profile_fallback_share_route",
+          "status": "PASS"
+        },
+        {
+          "name": "test_adapter_identity_changed_while_waiting_is_not_sent",
+          "status": "PASS"
+        },
+        {
+          "name": "test_expired_policy_cannot_resume_stop_or_prevent_exact_receipt_retry",
+          "status": "PASS"
+        },
+        {
+          "name": "test_new_day_requires_fresh_preview_even_when_policy_remains_valid",
+          "status": "PASS"
+        },
+        {
+          "name": "test_permanent_binding_rejects_orm_mutation[update]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_permanent_binding_rejects_orm_mutation[delete]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_permanent_binding_rejects_orm_mutation[bulk]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[expiry-case]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[expiry-dialog]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[day-case]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[day-dialog]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_native_preview_confirmation_bound_card_ack_and_repeat",
+          "status": "PASS"
+        },
+        {
+          "name": "test_signed_save_cannot_change_target_revision_or_request[dialog_id-9999]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_revision-2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_preview-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_policy-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_key-forged]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_non_ascii_security_values_rejected[_cs_csrf]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_non_ascii_security_values_rejected[_cs_sig]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_missing_confirmation_session_extra_duplicates_and_body_bounds",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stale_card_and_policy_require_new_preview",
+          "status": "PASS"
+        },
+        {
+          "name": "test_lost_commit_and_failed_read_keep_exact_retry_after_policy_removal",
+          "status": "PASS"
+        },
+        {
+          "name": "test_full_admin_off_and_workday_write_gates",
+          "status": "PASS"
+        },
+        {
+          "name": "test_deployment_deactivation_is_visible_and_different_from_policy_expiry",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stream_bounded_before_full_buffer[None]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stream_bounded_before_full_buffer[262144]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stream_bounded_before_full_buffer[-1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stream_bounded_before_full_buffer[wrong]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_is_incoming_filters_echo_and_status",
+          "status": "PASS"
+        },
+        {
+          "name": "test_parse_text_message",
+          "status": "PASS"
+        },
+        {
+          "name": "test_parse_media_is_non_text",
+          "status": "PASS"
+        },
+        {
+          "name": "test_send_calls_wappi_api",
+          "status": "PASS"
+        },
+        {
+          "name": "test_send_passes_bot_id_so_reply_lands_in_openline",
+          "status": "PASS"
+        },
+        {
+          "name": "test_send_skipped_without_credentials",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wappi_webhook_routes_and_replies",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wappi_webhook_ignores_own_echo",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wappi_webhook_ignores_group_and_reaction",
+          "status": "PASS"
+        },
+        {
+          "name": "test_delivery_status_helpers",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r10/runs/e629c-r10-connected.xml",
+      "sha256": "c3b3bfd293e6fa16eb5a61e8373f29bac06026f7af03f2b3568acf40263425e2",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "4",
+        "time": "687.877",
+        "timestamp": "2026-10-13T00:08:35.723193+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_actual_webhook_provider_acceptance_and_normal_saved_progress[ru]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_provider_acceptance_and_normal_saved_progress[en]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_persistent_panel_required_for_collection_but_not_retained_privacy",
+          "status": "PASS"
+        },
+        {
+          "name": "test_reconstructed_or_unconsumed_claim_cannot_fabricate_provider_acceptance",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r11/runs/e629c-r11-hook.xml",
+      "sha256": "ac0225c78439c764b7a671d6bd374bc873d61c50ce70005af5cbac6fbc7c4afe",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "129",
+        "time": "10.315",
+        "timestamp": "2026-10-13T00:15:55.683099+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[chat]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[ptt]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[image]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[document]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_managed_legacy_send_denied_even_without_companion_account_activation",
+          "status": "PASS"
+        },
+        {
+          "name": "test_oversized_packet_only_privacy_reaches_stored_operational_hold[False]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_oversized_packet_only_privacy_reaches_stored_operational_hold[True]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[broken0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[broken1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[None]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unrelated_route_keeps_ordinary_send",
+          "status": "PASS"
+        },
+        {
+          "name": "test_managed_storage_failure_returns_retryable_webhook_status_without_legacy_send",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_keeps_auth_filters_and_passes_retries_to_durable_identity",
+          "status": "PASS"
+        },
+        {
+          "name": "test_enum_bool_date_exact_displayed_batch_and_reloaded_values[ru]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_enum_bool_date_exact_displayed_batch_and_reloaded_values[en]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[1: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[23.3: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[024.3: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.4: yes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes please]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes\\n24.2: 2030-12-31]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes\\x00]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3:\\tyes]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.2: 20301231]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.2: 2030-02-30]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 01]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: ordinary]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.1: 11]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: unknown]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: not_applicable]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_ambiguous_stale_partial_and_unsupported_answers_never_become_facts[24.3: yes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_envelope_gate_cannot_be_bypassed_by_plain_transcript[kw3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples6]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples7]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples8]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples9]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples10]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples11]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples12]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples13]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples14]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples15]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples16]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples17]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples18]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples19]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples20]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples21]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples22]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples23]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples24]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples25]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples26]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples27]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples28]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples29]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples30]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples31]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples32]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples33]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples34]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples35]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples36]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples37]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples38]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples39]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples40]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples41]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples42]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples43]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples44]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples45]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples46]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples47]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples48]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples49]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples50]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples51]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples52]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples53]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples54]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples55]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_all_source_exception_families_take_precedence_over_labelled_answer[examples56]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_precedes_even_bad_prompt_and_oversize[kw2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_greeting_no_facts_and_special_document_is_typed_stop",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_internal_or_unsupported_questions_are_not_client_prompts[paths6]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[wording]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[path]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[label]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[option]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[language]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_stored_prompt_tampering_rejected[hash]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_changed_catalog_cannot_silently_change_choices_or_semantics",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[applicants_count-3-3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[residence_country-RUS-RUS]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_bounded_integer_and_country_values[citizenships-RUS, KAZ-value2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-201]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[applicants_count-1.0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[residence_country-XXX]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[citizenships-RUS, RUS]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[citizenships-RUS,KAZ]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_country_integer_validation_is_not_coerced[residence_country-unknown]",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r11/runs/e629c-r11-pg-diagnostic.xml",
+      "sha256": "a912b9936b7b8533c1decf0591ee07c84ae839decbe34254dc2ca0172672e769",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "1",
+        "time": "128.568",
+        "timestamp": "2026-10-13T00:15:55.683099+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_two_incoming_retries_and_two_claimants_create_one_inbox_turn_and_attempt",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r12/runs/e629c-r12-browser.xml",
+      "sha256": "7c7256e71ba709f710b77c3b508f582ce504e3109d1043aad0fe6de9cc03a753",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "1",
+        "time": "128.621",
+        "timestamp": "2026-10-13T00:22:26.789933+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_native_session_terminal_delivery_inbox_and_print",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r12/runs/e629c-r12-postgres.xml",
+      "sha256": "d463733066d23a1d15cd9dec8445a251742046fbcd30c6f18a63b7bd033818b0",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "10",
+        "time": "1011.941",
+        "timestamp": "2026-10-13T00:22:26.781444+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_normal_exact_profile_progression",
+          "status": "PASS"
+        },
+        {
+          "name": "test_two_incoming_retries_and_two_claimants_create_one_inbox_turn_and_attempt",
+          "status": "PASS"
+        },
+        {
+          "name": "test_send_holds_admission_locks_until_callback_then_privacy_commits",
+          "status": "PASS"
+        },
+        {
+          "name": "test_privacy_commit_first_waiting_send_cannot_invoke_provider",
+          "status": "PASS"
+        },
+        {
+          "name": "test_held_provider_callback_blocks_actual_profile_history_and_publication_writers",
+          "status": "PASS"
+        },
+        {
+          "name": "test_claim_commit_uncertainty_never_reissues_committed_attempt[before_commit]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_claim_commit_uncertainty_never_reissues_committed_attempt[after_commit]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_reserved_count_and_bytes_allow_first_stop_later_privacy_and_late_outcome",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_migration_parity_empty_roundtrip_and_populated_downgrade_refusal",
+          "status": "PASS"
+        },
+        {
+          "name": "test_binary_copy_restores_inbox_prompt_retry_and_privacy_without_reissuing_send",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r13/runs/e629c-r13-browser.xml",
+      "sha256": "fbc018157540d75686a7c9900c11f2679ca316c0a042a5983ae42455da86fec2",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "1",
+        "time": "152.548",
+        "timestamp": "2026-10-13T00:27:22.982764+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_native_session_terminal_delivery_inbox_and_print",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r14/runs/e629c-r14-delivery.xml",
+      "sha256": "620bf6029c2fe9e0a9505bb61f15754a4c12f359f6b34e3885ea8ab25d391d9d",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "2",
+        "time": "192.913",
+        "timestamp": "2026-10-13T00:28:20.679640+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_actual_managed_attempt_timeout_or_cancellation_is_unknown_and_not_retried[timeout]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_managed_attempt_timeout_or_cancellation_is_unknown_and_not_retried[cancel]",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r15/runs/e629c-r15-browser.xml",
+      "sha256": "bf9fd29c71cc8036e1e5ad53cfdd8bb6ce3a69faada81c0b1c4d6b75221b672c",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "1",
+        "time": "138.599",
+        "timestamp": "2026-10-13T00:30:46.879194+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_native_session_terminal_delivery_inbox_and_print",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r16/runs/e629c-r16-adapter.xml",
+      "sha256": "8b741a2885692d377a6efc6095b6f72ca81b75f7b2ffead6754ccd5281845fba",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "52",
+        "time": "8.008",
+        "timestamp": "2026-10-13T00:34:56.826176+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response0-SYN-ACCEPTED]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response1-SYN-NESTED]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response2-SYN-SAME]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response3-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response4-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response5-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response6-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response7-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response8-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response9-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response10-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response11-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response12-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response13-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response14-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response15-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response16-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response17-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_adapter_strict_acceptance_uses_original_json_identity[response18-]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[chat]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[ptt]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[image]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_parser_and_handle_precede_stt_media_intercept_and_legacy[document]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change2]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change3]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change4]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_direct_entrypoint_does_not_treat_echo_group_or_wrong_identity_as_answer[change5]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_managed_legacy_send_denied_even_without_companion_account_activation",
+          "status": "PASS"
+        },
+        {
+          "name": "test_oversized_packet_only_privacy_reaches_stored_operational_hold[False]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_oversized_packet_only_privacy_reaches_stored_operational_hold[True]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[broken0]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[broken1]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_invalid_deployment_config_is_consumed_and_never_empty[None]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_unrelated_route_keeps_ordinary_send",
+          "status": "PASS"
+        },
+        {
+          "name": "test_managed_storage_failure_returns_retryable_webhook_status_without_legacy_send",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_keeps_auth_filters_and_passes_retries_to_durable_identity",
+          "status": "PASS"
+        },
+        {
+          "name": "test_is_incoming_filters_echo_and_status",
+          "status": "PASS"
+        },
+        {
+          "name": "test_parse_text_message",
+          "status": "PASS"
+        },
+        {
+          "name": "test_parse_media_is_non_text",
+          "status": "PASS"
+        },
+        {
+          "name": "test_send_calls_wappi_api",
+          "status": "PASS"
+        },
+        {
+          "name": "test_send_passes_bot_id_so_reply_lands_in_openline",
+          "status": "PASS"
+        },
+        {
+          "name": "test_send_skipped_without_credentials",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wappi_webhook_routes_and_replies",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wappi_webhook_ignores_own_echo",
+          "status": "PASS"
+        },
+        {
+          "name": "test_wappi_webhook_ignores_group_and_reaction",
+          "status": "PASS"
+        },
+        {
+          "name": "test_delivery_status_helpers",
+          "status": "PASS"
+        },
+        {
+          "name": "test_real_incoming_dialog_is_handled",
+          "status": "PASS"
+        },
+        {
+          "name": "test_real_group_reaction_is_ignored",
+          "status": "PASS"
+        },
+        {
+          "name": "test_real_own_echo_is_ignored",
+          "status": "PASS"
+        },
+        {
+          "name": "test_real_delivery_status_parsed",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r16/runs/e629c-r16-connected.xml",
+      "sha256": "c71c3a7e039b355eb9c1c9b595e233a955546aebc7a50debc8ec0c6957300990",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "5",
+        "time": "521.327",
+        "timestamp": "2026-10-13T00:35:07.026855+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_malformed_provider_identity_persists_unknown_and_cannot_authorize_answer",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_managed_attempt_timeout_or_cancellation_is_unknown_and_not_retried[timeout]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_managed_attempt_timeout_or_cancellation_is_unknown_and_not_retried[cancel]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_provider_acceptance_and_normal_saved_progress[ru]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_actual_webhook_provider_acceptance_and_normal_saved_progress[en]",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-29c-r16/runs/e629c-r16-thresholds.xml",
+      "sha256": "db4e1b0c1339d1a5e5c81fd528f19ae7c98425c09954332b2978bf9eeb93265a",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "6",
+        "time": "443.536",
+        "timestamp": "2026-10-13T00:41:56.116272+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "tests": [
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw0-True-visa_free_headroom]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw1-True-visa_free_headroom]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw2-False-visa_free_headroom]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw3-True-working_day_margin]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw4-False-working_day_margin]",
+          "status": "PASS"
+        },
+        {
+          "name": "test_current_thresholds_selectively_stop_or_permit_actual_prompt_and_turn[kw5-False-working_day_margin]",
+          "status": "PASS"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Original historical FAIL artifacts retained and classified in handoff/reviews.",
+    "R15 print CSS and R16 strict provider acceptance have mapped current passing checks.",
+    "Root working tree contains separate unreviewed E630 additions; approval is exact C26 commit scope.",
+    "No production, real source or policy approval, activation or message."
+  ],
+  "revision": "e08338b1db4df887a54ccc4efc6c2661d7072738",
+  "committed_files_lf_sha256": {
+    "alembic/versions/e6_dialogue_session_0037.py": "f2e56160dba0dbc0633a753a625b703bded9050d770535471e6abb46bb193eaf",
+    "app/admin/templates/kg_channel_stops.html": "25121dbf8908f6f3338dd78e50baaf93e7a2124058784e26f77db3e15d097f2f",
+    "app/channels/wappi.py": "83ad691e446c74223f73d4da733dcdf8d459494215e7931f9d88472f82843f46",
+    "app/config.py": "cd0e01abe4d050fd0781de513ede5de8189bda55cb975758a7d230d941c63d7b",
+    "app/core/kg_channel_guard.py": "870d9c4faf9ac1b7b559631c002ae236bd38aaeabee45496c74bbcc4c483939b",
+    "app/core/kg_dialogue.py": "0367acf1d19a6727b82f831d0afa2a4ba0b0d4569bd624f5c4378ba6e70e0974",
+    "app/core/orchestrator.py": "bffcdc86eb117d907887d2e9e8b1454292b7fee57669d9cbf9267ac2ac635c75",
+    "app/domain/current_stay_stops.py": "223ec5c6912aa4970b48b5decffa40bca0f2834490e1b67fce94ccd47019926f",
+    "app/domain/dialogue_authority.py": "98867c6b42caad7e52d6d24636ab710f23cca37a9e5d8557f05b71b08a1ddeb4",
+    "app/domain/dialogue_inbox.py": "1a4f8667409b85f70f1e203bbc31dd60dde91704e90d619c586fd5d56b4f5934",
+    "app/domain/dialogue_journal.py": "3664ead734cc030d11673a492a53140cbfd154d138b4296d8cdfbb5aff5b6d93",
+    "app/domain/dialogue_reconciliation.py": "37d49842e5a3fc2593cce0ff9dc08cb4f28277256373b7d05391a09f65e2a282",
+    "app/domain/dialogue_session_policy.py": "f551e41bf5fe4c805b4ff1ff2d590c3e4583232ca10911e2272fedaa25ede6d4",
+    "app/domain/dialogue_sessions.py": "ab535369b3bdcecbf0b9979afb28ce0ed0bf5d4a1b96975a42909b8894441bf2",
+    "app/domain/entry_channel_stops.py": "c91b9fcb896bdedcedc60d535bb64bcdd2aa05d74c23ed64b6b4e45635eabf4a",
+    "app/domain/models.py": "286276e7dca49c0ab0856539a3cba2a67cb4c3902f5b563e8b7e022a1e69aad6",
+    "app/knowledge/dialogue_questions.py": "0ba9d568b27635543dddeb735b143c9800cbb824dafd93cc9e9fa7a49443b0fb",
+    "app/knowledge/dialogue_reconciliation.py": "bb3c9215cff81d4c6b9e391dd7e025ee9aa154e60cc76b69d957ae8c955c566b",
+    "app/main.py": "973b32dbdc7a855413b7efee5194ef82088cb1a8a40dcfbe181828d487c3f73a",
+    "tests/browser_kg_dialogue_sessions.py": "958100893fd7837d9b00c17986fd72ed233978bb2ec891eca7c5c5f4de8406e7",
+    "tests/test_dialogue_questions.py": "72e6c8648cbd77020877730fd83d44ff4efdd32eeb58b116078c3ee0bb55fce9",
+    "tests/test_dialogue_session_migration.py": "167e688d16ef752e30402a2e2f9b42d656831c1fd356323fb1c5f031bdd474e4",
+    "tests/test_dialogue_sessions.py": "0d7030e74a374a39c94fa18f1865af8657c7848b9601130c6b117922e9d7540f",
+    "tests/test_dialogue_sessions_postgres.py": "93430c0d56006bf887bd749ad5a99b047a1f19be79a3c0d1b972ddedc8c412a5",
+    "tests/test_kg_dialogue_connected.py": "6a07433bff495eb8eb789649f7c1969920270aff2cfa8b1fcb7984a1941641c3",
+    "tests/test_kg_dialogue_hook.py": "99ab79f5e59f8284735a1a1abffbd7b667447bda6301e7fba27dcde539c94b2e"
+  },
+  "commit_identity": "PASS all26 exact R16/index/commit; later E630 working model excluded",
+  "reviews": {
+    "independent-review": {
+      "verdict": "APPROVE",
+      "path": "ai/reviews/2026-10-12-e6-29c-independent-review.md",
+      "lf_sha256": "65c1f43a5efedc47bf478b83fa364492f6153ac9267ebb9de54e3178b56d2d8d"
+    },
+    "final-audit": {
+      "verdict": "GO",
+      "path": "ai/reviews/2026-10-12-e6-29c-final-audit.md",
+      "lf_sha256": "6237af9cf9398a32df630ff789c7d28656d1a87a91d1ec6771d93e24f0c054cc"
+    },
+    "inbox-review": {
+      "verdict": "SCOPED_APPROVE",
+      "path": "ai/reviews/2026-10-12-e6-29c-inbox-review.md",
+      "lf_sha256": "97f36c93cdf8a073cc6789a53a7b93182aded4d32421e36e5fed50452cd59f5e"
+    }
+  }
+}
