@@ -4,6 +4,7 @@
 .kg-stop{max-width:920px;margin:auto;padding:24px 18px;line-height:1.5;overflow-wrap:anywhere}.kg-stop a{color:var(--accent)}.kg-stop :focus{outline:2px solid var(--accent);outline-offset:3px}.kg-stop .box{padding:16px;margin:16px 0;background:var(--surface);border:1px solid var(--border);border-radius:10px}.kg-stop .notice{border-left:4px solid #b7791f}.kg-stop .error{border-left:4px solid #c0392b}.kg-stop label{display:block;margin:12px 0;font-weight:600}.kg-stop input,.kg-stop select,.kg-stop button{font:inherit;min-height:44px;padding:9px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:6px}.kg-stop select{width:100%;box-sizing:border-box}.kg-stop input[type=checkbox]{min-height:20px;width:20px;height:20px;vertical-align:middle}.kg-stop .muted{font-size:13px;color:var(--muted)}.kg-stop dt{font-weight:600}.kg-stop dd{margin:0 0 12px}
 @media(max-width:600px){.kg-stop{padding:12px 8px}.kg-stop .box{padding:12px}}
 @page{size:A4;margin:15mm}@media print{html,body{height:auto!important;min-height:0!important}.topbar,nav,.no-print{display:none!important}body{background:white!important;color:black!important}.kg-stop{padding:0;max-width:none;font-size:10pt}.kg-stop .box{background:white;color:black;border-color:#999;break-inside:avoid}.kg-stop .muted{color:#333}.kg-stop h1{font-size:20pt}.kg-stop h2{font-size:14pt}}
+@media print{.kg-stop #dialogue-sessions .box{break-inside:auto}.kg-stop h2,.kg-stop h3{break-after:avoid}.kg-stop p{orphans:3;widows:3}.kg-stop :focus{outline:none}}
 </style>{% endblock %}
 {% macro hidden(values) %}{% for key,value in values.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}{% endmacro %}
 {% macro route(value) %}<dl><dt>Канал</dt><dd>Личный диалог WhatsApp</dd><dt>Получатель</dt><dd>{{ value.recipient }}</dd><dt>Профиль отправителя</dt><dd>{{ value.profile_id }} · {{ value.base_url }}</dd></dl>{% endmacro %}
@@ -22,7 +23,28 @@
 {% elif current and not retry %}<p class="box no-print">Новая остановка недоступна: проверьте утверждённые условия, режим записи и наличие подходящего диалога.</p>{% endif %}
 {% if current %}<section id="stop-current"><h2>Сохранённые остановки этой анкеты</h2>{% for saved in current.stops %}<article class="box"><h3>{{ 'Автоответы остановлены' if current.activation[saved.id]=='active' else 'Запрет сохранён' }} · запись №{{ saved.id }}</h3>{{ route(saved.route) }}<p>Сохранил {{ saved.created_by }} · {{ saved.created_at }}</p>
 {% if current.activation[saved.id]=='disabled' %}<p class="notice">Защита этого профиля выключена в настройках сервера. Сохранённый запрет сейчас не проверяется при отправке. Требуется проверка администратора сервера.</p>{% elif current.activation[saved.id]=='invalid_fail_closed' %}<p class="notice">Настройки защиты некорректны. Автоответы WhatsApp блокируются до проверки администратора сервера.</p>{% endif %}
-<p>Принятие карточки ответственным сотрудником проверяется отдельно в анкете.</p><p class="muted">Карточка {{ saved.card_hash }}. Подтверждение записи {{ saved.snapshot_hash }}.</p></article>{% else %}<p>Для этой анкеты остановка диалога ещё не сохранена. Передача карточки сама по себе не связывает её с каналом.</p>{% endfor %}</section>{% endif %}
+<p>Принятие карточки ответственным сотрудником проверяется отдельно в анкете.</p><p class="muted">Карточка {{ saved.card_hash }}. Подтверждение записи {{ saved.snapshot_hash }}.</p></article>{% else %}{% if not current.dialogue_sessions %}<p>Для этой анкеты остановка диалога ещё не сохранена. Передача карточки сама по себе не связывает её с каналом.</p>{% endif %}{% endfor %}</section>{% endif %}
+{% if current and current.dialogue_sessions %}<section id="dialogue-sessions"><h2>Автоматическая анкета в переписке</h2>
+{% for session in current.dialogue_sessions %}<article class="box"><h3>{{ 'Автоматическая анкета остановлена' if session.stopped else 'Сессия анкеты сохранена' }} · №{{ session.id }}</h3>
+{{ route(session.route) }}<p>Создана {{ session.created_at }}. Записей в журнале: {{ session.revision }}.</p>
+{% if session.reason %}<p>Причина: {{ cause_labels[session.reason] }}.</p>{% endif %}
+{% if session.collection_blocked %}<p class="notice">Сбор данных остановлен. Удаление данных не выполнялось.</p>{% endif %}
+{% if session.stopped %}<p>Запрет сохранён в журнале сессии. Принятие карточки сотрудником не возобновляет автоматическую анкету.</p>{% endif %}
+{% if session.old_stop_linked %}<p>Сессия связана с сохранённой остановкой канала.</p>{% elif session.stopped %}<p>Остановка подтверждена журналом сессии; отдельная запись остановки канала не создавалась.</p>{% endif %}
+{% if session.suppression_activation=='active' %}<p>Проверка сохранённых запретов при отправке сейчас включена для этого профиля и получателя.</p>
+{% elif session.suppression_activation=='disabled' %}<p class="notice">Проверка сохранённых запретов отключена в настройках сервера. Требуется проверка администратора сервера.</p>
+{% else %}<p class="notice">Настройки защиты некорректны. Автоответы блокируются до проверки администратора сервера.</p>{% endif %}
+<p>Входящих текстов записано в CRM: {{ session.inbox.recorded }}. Сейчас доступны в исходном виде: {{ session.inbox.available }}.</p>
+{% if session.inbox.unavailable %}<p class="notice">Часть старой переписки удалена или изменена. Исходный текст недоступен; он не восстанавливается автоматически. Остановка сбора данных остаётся доступна.</p>{% endif %}
+<p>Текст запросов о прекращении обработки и содержимое вложений здесь не сохраняются; в анкете остаётся причина остановки.</p>
+{% if session.delivery=='provider_accepted' %}<p>Провайдер принял последний вопрос. Доставка и прочтение клиентом не подтверждены.</p>
+{% elif session.delivery in ('unknown','claimed_outcome_unknown') %}<p class="notice">Результат последней попытки отправки неизвестен. Автоматического повтора не будет; проверьте переписку у провайдера.</p>
+{% elif session.delivery=='denied' %}<p>Отправка последнего вопроса не допущена.</p>
+{% else %}<p>Подтверждения отправки последнего вопроса нет.</p>{% endif %}
+{% if session.prompt_body %}<details><summary>Последний подготовленный вопрос</summary><p style="white-space:pre-wrap;overflow-wrap:anywhere">{{ session.prompt_body }}</p></details>{% endif %}
+<p>Допуск к новым вопросам проверяется заново при каждом сообщении. Статус сессии сам по себе не подтверждает, что автоматизация сейчас включена.</p>
+<p class="muted">Подтверждение записи {{ session.snapshot_hash }}.</p></article>{% endfor %}
+<a class="no-print" href="{{ url }}">Обновить состояние без повторной отправки</a></section>{% endif %}
 {% if current and current.causes %}<section id="stop-causes"><h2>Причины остановки</h2>
 <p>Записи отражают темы для проверки специалистом. Они не подтверждают обстоятельства клиента и не означают, что сотрудник уже принял обращение.</p>
 {% for cause in current.causes %}<article class="box"><h3>{{ cause_labels[cause.reason] }}</h3><p>{{ cause.created_at }} · запись №{{ cause.id }}</p>

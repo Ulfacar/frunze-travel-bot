@@ -218,13 +218,37 @@ async def list_stops(engine,*,actor,case_id,applicant_id,interview_id):
         rows,_=await _registry(session)
         from app.domain import dialogue_stops
         causes,_=await dialogue_stops._registry(session,rows)
+        from app.domain import dialogue_journal,dialogue_inbox
+        bindings=await dialogue_journal.registry(session)
+        typed=[]
+        for binding in bindings:
+            if binding.interview_id!=interview_id:continue
+            events,flow,_=await dialogue_journal.history(session,binding)
+            terminal=next((e for e in reversed(events) if e.kind=='stop'),None)
+            inbox_status=await dialogue_inbox.availability(session,binding,[e for e in events if e.kind=='turn'])
+            route=_plain(binding.document)['delegation']['policy']['assignments'][0]['route']
+            from app.domain.dialogue_session_policy import managed_routes
+            from app.config import settings
+            try:
+                declared=_hash(route) in managed_routes(settings.kg_dialogue_managed_routes)
+                suppression='active' if declared or rules.route_scope(route) in rules.deployment_scopes() else 'disabled'
+            except Exception:suppression='invalid_fail_closed'
+            typed.append(dict(id=binding.id,stopped=flow['stopped'],collection_blocked=flow['collection_blocked'],
+                route=route,suppression_activation=suppression,
+                created_at=applications._utc(binding.created_at),revision=len(events),
+                delivery=flow['outcome'] or ('claimed_outcome_unknown' if flow['claimed'] else 'not_sent'),
+                last_batch=flow['last_batch'],prompt_body=flow['prompt']['prompt']['body'] if flow['prompt'] else None,
+                reason=terminal.document['payload']['reason'] if terminal else None,
+                old_stop_linked=terminal.document['payload']['stop_id'] is not None if terminal else False,
+                inbox=inbox_status,
+                snapshot_hash=events[-1].snapshot_hash if events else binding.snapshot_hash))
         dialogs=list((await session.scalars(select(Dialog).where(Dialog.contact_id==case.contact_id,Dialog.channel=='whatsapp').order_by(Dialog.id).limit(101))).all())
         if len(dialogs)>100:rules.fail('channel_dialog_limit')
         try:
             active=rules.deployment_scopes()
             activation={r.id:'active' if rules.route_scope(_plain(r.route)) in active else 'disabled' for r in rows}
         except Exception:activation={r.id:'invalid_fail_closed' for r in rows}
-        return dict(stops=[_receipt(r) for r in rows if r.interview_id==interview_id],activation=activation,
+        return dict(stops=[_receipt(r) for r in rows if r.interview_id==interview_id],activation=activation,dialogue_sessions=typed,
             language=header.command['language'],
             causes=[dict(**dialogue_stops._result(r),created_at=applications._utc(r.created_at),
                          source_rows=r.document['triage']['source_rows']) for r in causes if r.interview_id==interview_id],
@@ -301,7 +325,7 @@ class SendResult:
     value:object=None
 
 
-async def guarded_send(engine,descriptor,callback):
+async def guarded_send(engine,descriptor,callback,*,typed_capability=None,dialogue_authority=None,dialogue_resolver=None):
     """Exactly one local callback invocation at most; remote delivery may be unknown.
 
 Intentionally NO retry helper and NO commit. Hold admission until callback ends,
@@ -313,6 +337,16 @@ then rollback the read/lock transaction; cleanup failure cannot re-invoke it.
             await _lock(session,descriptor)
             rows,_=await _registry(session)
             if any(r.transport_key==_hash(descriptor) for r in rows):return SendResult(False)
+            from app.domain import dialogue_journal,dialogue_sessions
+            bindings=await dialogue_journal.registry(session)
+            bound=next((r for r in bindings if r.transport_key==_hash(descriptor)),None)
+            if bound is not None:
+                # Every persisted managed session denies legacy automation,
+                # including after assignment expiry/removal and terminal handoff.
+                if not dialogue_sessions.consume_capability(typed_capability):return SendResult(False)
+                if not await dialogue_sessions.admit_in_session(session,route=descriptor,capability=typed_capability,
+                    authority=dialogue_authority,resolver=dialogue_resolver):return SendResult(False)
+            elif typed_capability is not None:return SendResult(False)
             async with asyncio.timeout(PROVIDER_TIMEOUT):value=await callback()
             return SendResult(True,value)
         finally:

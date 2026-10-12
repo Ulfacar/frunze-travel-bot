@@ -36,6 +36,8 @@ def resolve_dialog(channel,bot_id,chat_id):
 
 def _activated(adapter,chat_id):
     if getattr(adapter,'channel',None)!='whatsapp':return None
+    from app.core.kg_dialogue import declared
+    if declared(adapter,chat_id):return descriptor(adapter,chat_id)
     scopes=policy.deployment_scopes()
     if not scopes:return None
     if not isinstance(adapter,WappiAdapter):policy.fail('unsupported_channel_adapter')
@@ -44,20 +46,31 @@ def _activated(adapter,chat_id):
     return descriptor(adapter,chat_id)
 
 
-async def send(adapter,chat_id,callback):
+async def send(adapter,chat_id,callback,*,typed_capability=None,dialogue_authority=None):
     try:
         route=_activated(adapter,chat_id)
     except Exception as exc:
         log.warning('channel guard refused identity: %s',type(exc).__name__)
         return SendResult(False)
-    if route is None:return SendResult(True,await callback())
+    if route is None:
+        if typed_capability is not None:return SendResult(False)
+        return SendResult(True,await callback())
+    from app.core.kg_dialogue import declared
+    if declared(adapter,chat_id) and typed_capability is None:return SendResult(False)
+    if typed_capability is not None:
+        from app.config import settings
+        from app.domain.dialogue_session_policy import managed_routes
+        try:
+            if policy._hash(route) not in managed_routes(settings.kg_dialogue_managed_routes):return SendResult(False)
+        except Exception:return SendResult(False)
     invoked=False
     async def pinned_callback():
         nonlocal invoked
         if descriptor(adapter,chat_id)!=route:policy.fail('channel_adapter_identity_changed')
         invoked=True
         return await callback()
-    try:return await stops.guarded_send(_engine(),route,pinned_callback)
+    try:return await stops.guarded_send(_engine(),route,pinned_callback,typed_capability=typed_capability,
+        dialogue_authority=dialogue_authority,dialogue_resolver=resolve_dialog)
     except Exception as exc:
         # No fallback, no callback retry, no routing/personal data in this log.
         log.warning('channel guard unavailable or delivery unknown: %s',type(exc).__name__)

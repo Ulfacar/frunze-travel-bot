@@ -216,6 +216,9 @@ class Orchestrator:
         return not in_night
 
     async def handle(self, msg: Message) -> None:
+        from app.core.kg_dialogue import consume
+        if await consume(self, msg):
+            return
         if not msg.user_id:
             return  # служебный/пустой апдейт
         key = self._key(msg)

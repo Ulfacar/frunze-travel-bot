@@ -393,6 +393,9 @@ class Settings(BaseSettings):
     # Permanent stops are enrolled only under explicit authority, on activated Wappi profiles.
     kg_channel_guard_scopes: list[dict] = Field(default_factory=list)
     kg_channel_stop_policy: dict = Field(default_factory=dict)
+    # Exact managed routes remain denied when the separate typed authority is absent.
+    kg_dialogue_managed_routes: list[dict] = Field(default_factory=list)
+    kg_typed_dialogue_authority: dict = Field(default_factory=dict)
     # Secure-флаг на cookie сессии. На проде ОБЯЗАТЕЛЕН (TLS терминирует nginx) и потому
     # True по умолчанию. Выключается только для локального просмотра панели по http —
     # иначе браузер не сохранит cookie и войти в панель на localhost нельзя.

@@ -541,14 +541,16 @@ async def wappi_webhook(request: Request) -> dict:
         if not is_incoming_user_message(raw):
             continue
 
-        if _seen_before(str(raw.get("id", ""))):
-            continue  # дубль доставки вебхука — уже обработали
-
         profile_id = str(raw.get("profile_id", ""))
         orchestrator = _wappi_orchestrators.get(profile_id)
         if orchestrator is None:
             log.warning("Wappi-событие без сопоставленного бота (profile_id=%s)", profile_id)
             continue
+
+        from app.core.kg_dialogue import declared
+        managed = declared(orchestrator.channel, raw.get('chatId') or raw.get('from') or '')
+        if not managed and _seen_before(str(raw.get("id", ""))):
+            continue  # Managed routes use durable per-route identity and body conflict detection.
 
         observ.note_inbound()
         # Отметка живости КОНКРЕТНОГО канала: агрегат выше не показывает смерть части.

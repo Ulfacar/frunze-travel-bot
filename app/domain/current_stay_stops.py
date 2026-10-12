@@ -52,6 +52,32 @@ async def evaluate_in_session(session, *, actor, case_id, applicant_id, policy=N
 An incoming composer must take route/capacity locks first. The timestamp is
 sampled only after all current-evidence locks. No nested session or provider.
 """
+    return await _evaluate_in_session(session, actor=actor, case_id=case_id, applicant_id=applicant_id,
+        policy=policy, fact=fact, qualification_policy=qualification_policy,
+        publication_policy=publication_policy, calendars=calendars)
+
+
+async def evaluate_dialogue_in_session(session, *, actor, case_id, applicant_id, dialogue_session_id,
+                                      session_policy, policy, fact, qualification_policy,
+                                      publication_policy, calendars):
+    """Recompute a separately authorized original-anchor proof under these locks.
+
+    No caller-provided proof or rewritten factual attestation is accepted.
+    The ordinary public reader keeps its exact current-head contract.
+    """
+    from app.domain.dialogue_session_policy import SessionPolicy
+    _id(dialogue_session_id)
+    if not isinstance(session_policy, SessionPolicy):
+        raise EntryStorageInvalid('dialogue_session_policy_required')
+    return await _evaluate_in_session(session, actor=actor, case_id=case_id, applicant_id=applicant_id,
+        policy=policy, fact=fact, qualification_policy=qualification_policy,
+        publication_policy=publication_policy, calendars=calendars,
+        dialogue_session_id=dialogue_session_id, session_policy=session_policy)
+
+
+async def _evaluate_in_session(session, *, actor, case_id, applicant_id, policy=None, fact=None,
+                               qualification_policy=None, publication_policy=None, calendars=None,
+                               dialogue_session_id=None, session_policy=None):
     _authorize(actor); _id(case_id); _id(applicant_id)
     for value, expected in ((policy, CurrentStayPolicy), (fact, CurrentStayFact),
                             (qualification_policy, QualificationPolicy), (calendars, WorkCalendars)):
@@ -67,6 +93,8 @@ sampled only after all current-evidence locks. No nested session or provider.
         requires_specialist=True, entry_eligibility_evaluated=False, permission_to_remain=None,
         may_quote=False, delivery='not_sent', profile=None, source=None, authority=None, fact=None,
         interview=None, history=None, arithmetic=None, applicability=None, calendar=None)
+    if dialogue_session_id is not None:
+        result.update(format='kg-dialogue-current-stay/1', reconciliation=None)
     def finish(reason=None):
         if reason:
             result['checks'] = {k: _unknown(reason) for k in KEYS}
@@ -118,10 +146,17 @@ sampled only after all current-evidence locks. No nested session or provider.
         header, pinned = await interviews._header(session, case, person, ids[0])
         events, state, _ = await interviews._history(session, header, pinned)
         result['interview'] = dict(id=header.id, header_hash=header.snapshot_hash, head_hash=events[-1].snapshot_hash)
-        if (pin != result['interview'] or header.profile_id != row.id or
+        if (dialogue_session_id is None and pin != result['interview'] or header.profile_id != row.id or
             transactions._utc(events[-1].created_at) > transactions._utc(now)):
             return finish('current_stay_interview_changed')
         if state['collection_blocked']: return finish('interview_collection_blocked')
+        if dialogue_session_id is not None:
+            from app.domain.dialogue_reconciliation import verify_in_session
+            proof = await verify_in_session(session, dialogue_session_id=dialogue_session_id,
+                policy=session_policy, fact=fact, interview=header, events=events, state=state,
+                profile=p, history=history, at=now)
+            if proof.get('status') != 'verified': return finish(proof['reason'])
+            result['reconciliation'] = proof
         answers = interview_rules.Answers(state['answers'], catalog_document=_plain(header.catalog))
         expected = {'location': location, 'current_basis': attestation['current_basis'],
                     'actual_entry.on': attestation['entered_on'], 'current_until': attestation['lawful_until'],
@@ -144,6 +179,8 @@ sampled only after all current-evidence locks. No nested session or provider.
         if 'previous_visits' in state['answers'] and (answers.get('previous_visits') is not False or
                 history['status'] != 'recorded_inputs' or any(v['exit_date'] is not None for v in intervals)):
             return finish('current_stay_interview_history_conflict')
+    elif dialogue_session_id is not None:
+        return finish('dialogue_interview_required')
     if location == 'abroad':
         if any(p.get(k) not in (None, 'not_applicable') for k in
                ('in_kg_since', 'current_basis_in_kg', 'current_basis_until')):

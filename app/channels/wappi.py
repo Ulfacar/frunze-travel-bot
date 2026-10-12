@@ -335,6 +335,10 @@ class WappiAdapter:
 
     async def parse(self, raw: dict) -> Message:
         """Разобрать событие Wappi incoming_message в нормализованный Message."""
+        from app.core.kg_dialogue import normalize
+        managed = normalize(self, raw)
+        if managed is not None:
+            return managed
         chat_id = str(raw.get("chatId") or raw.get("from") or "")
         sender = str(raw.get("from") or "")
         user_id = (sender or chat_id).split("@")[0]
@@ -437,7 +441,7 @@ class WappiAdapter:
                 json={"recipient": _recipient(chat_id), "body": text},
             )
             resp.raise_for_status()
-            provider_msg_id = _extract_msg_id(resp)
+            provider_msg_id = _extract_msg_id(resp, strict=kwargs.get('require_acceptance_id') is True)
         finally:
             if owns:
                 await client.aclose()
@@ -486,7 +490,7 @@ def message_time(raw: dict) -> int:
         return 0
 
 
-def _extract_msg_id(resp: httpx.Response) -> str:
+def _extract_msg_id(resp: httpx.Response, *, strict: bool = False) -> str:
     """Вытащить id отправленного сообщения из ответа Wappi (ключ варьируется)."""
     try:
         data = resp.json()
@@ -494,6 +498,18 @@ def _extract_msg_id(resp: httpx.Response) -> str:
         return ""
     if not isinstance(data, dict):
         return ""
+    if strict:
+        # Typed dialogue uses this identity as acceptance evidence. Validate the
+        # original JSON values before the legacy extractor can stringify them.
+        candidates = [data[k] for k in ('message_id','msg_id','id') if k in data]
+        msg = data.get('message')
+        if isinstance(msg,dict):
+            candidates += [msg[k] for k in ('id','message_id') if k in msg]
+        candidates = [v for v in candidates if v is not None and v != '']
+        if not candidates or any(type(v) is not str or not 1 <= len(v) <= 256 or
+                not v.isprintable() or any(c.isspace() for c in v) for v in candidates):
+            return ''
+        return candidates[0] if len(set(candidates)) == 1 else ''
     for key in ("message_id", "msg_id", "id"):
         if data.get(key):
             return str(data[key])
