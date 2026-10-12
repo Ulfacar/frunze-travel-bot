@@ -1,0 +1,23 @@
+{
+  "code_commit": "e01c5b0bbce264d918bec31eb34ca3c384129506",
+  "base": "693d683b9a0adcb8f76d5551bf0f121ca6824fec",
+  "snapshot": "runs/e6-25-r3/snapshot.json",
+  "snapshot_sha256": "f4cd2d065d0fde1f9b95bd46e79ed28ea97e87ccd679a34efa32c92820b3e8a3",
+  "scope_files": {
+    "app/domain/entry_document_rules.py": "5cfaad1dc83ebea29fcf207cb2baa83188913bb48c3ba6f6fa6dd1e2ee853b9b",
+    "app/domain/entry_documents.py": "2ed3ca8fef91ba0787b8a71c60db7659dcc8d5ca4a69f1cd85379a582e1ef865",
+    "app/domain/entry_package_rules.py": "854c4e51ad240a859db1665a277c8f579cca719caed03af62e01430bc206491f",
+    "app/domain/entry_document_packages.py": "136c33ee1665d25362c1681a4f31bdf35715e9235d8ad022c63621d35ee7046b",
+    "app/domain/entry_issued_rules.py": "fd9d64c1cf9490f7b41e01cee85cb087c605f2cac9401742f25fa79b5eece528",
+    "app/domain/entry_issued.py": "4c9823f4cd44fe2b3db685db59f0795f444feed053373709519b7b6369bb1d6e",
+    "app/domain/entry_process_evidence.py": "3f98f1dcc323e35f44c1c16a112b42d16de3c571178be85b2e8d653a11b41b5d",
+    "tests/test_document_passport_dates.py": "89d172a229981bbb5f3780de243f73a3dddb060fd2a668bcf421b7ea15465ee7"
+  },
+  "identity": "PASS",
+  "target": "reviewed local E01/E02/E03/E05/E07/F01/F02/F03",
+  "limitations": [
+    "Full PDF and C05 remain incomplete.",
+    "No production release or actual policies.",
+    "No final whole-repository suite."
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "format": "e6-22a-source-evidence/1",
+  "base": "8062f80e89f60c9b42ec74457fd6275bd038e3bd",
+  "snapshot": "runs/e6-22a-r5",
+  "snapshot_sha256": "19cd5114dea64f5533f40b52388454ae69389b750357d937657de778e0004fdf",
+  "normalization": "CRLF to LF",
+  "scope_files": {
+    "alembic/versions/e6_publication_withdraw_0034.py": "1a0e4ab906ff03b17ed8d2481001e36c1b5fd96c4bedb650a4438c5e4db1d017",
+    "app/admin/kg_knowledge_publication.py": "852bd95985b68d1d35c129a941c395af2948a073b7a091f1887d3dd4e182d01b",
+    "app/admin/templates/kg_knowledge_publication.html": "bfda96d58a2392f51b4796fd7267373032344ba74029e8f815673193216f53e5",
+    "app/domain/knowledge_decisions.py": "eaed2a8b8db48d3b173e6a63e8bd5ad6107f37643a026eaa4498336e993d66b8",
+    "app/domain/knowledge_publication.py": "4108130e5fcdfbc45222e27fc45c26b8c563abd1d86652844ce77295386bcce0",
+    "app/domain/models.py": "a7ffc5f5452a4c6a44ccd2fc8b77f5da0a99dedacc1909514141a0924b4691a4",
+    "tests/browser_publication_recovery.py": "ebb64feb456a931ca5c275305bdb2c62d4f7202e48fbae9c7092b8309c1c8475",
+    "tests/test_admin_publication_recovery.py": "9e877c9af17814ac047fa6327eca4f0fbf27f53dc0e6e2a90b8ff28bbba2b24d",
+    "tests/test_knowledge_decisions_migration.py": "7a244e236ef634525debebcaecbd516b97f3a1c21b9ba4bf646e13dd7d178fcd",
+    "tests/test_publication_recovery.py": "f2eaa54dc72a2705ecbe172d23df8e7a719bd560e83abaa3e6a75fef68009342",
+    "tests/test_publication_recovery_migration.py": "cc86d2526c0c6c8047fb5207825c4bc0c1ba76b676b9fcdaa5e3b12a949687e8",
+    "tests/test_publication_recovery_postgres.py": "c4fd90bd5a4bb08cb6f1df8e8f5ae410b87e927f231624c477bdeed5c27bcebd"
+  },
+  "root_staged_archive_identity": "PASS",
+  "preserved_uncommitted_ui": [
+    "app/admin/templates/base.html",
+    "app/admin/templates/boards.html",
+    "tests/test_admin_new_look.py"
+  ],
+  "remaining_qualification_work": [
+    "app/config.py",
+    "app/domain/qualification_policy.py"
+  ],
+  "checks": [
+    {
+      "snapshot": "r1",
+      "passed": 89,
+      "failed": 1,
+      "note": "new test expected invalid but stale revision correctly conflicted; corrected assertion in r2"
+    },
+    {
+      "snapshot": "r2",
+      "passed": 16,
+      "suite": "focused SQLite/native/migration"
+    },
+    {
+      "snapshot": "r2",
+      "passed": 10,
+      "suite": "actual PostgreSQL"
+    },
+    {
+      "snapshot": "r3",
+      "passed": 100,
+      "suite": "core/native/answers/migration",
+      "seconds": 260.81,
+      "note": "Windows WMI allocation warning at import; process continued and completed exit0"
+    },
+    {
+      "snapshot": "r4",
+      "passed": 7,
+      "suite": "command pins/101-unit native/migration/2 legacy-theme browser",
+      "seconds": 48.21
+    },
+    {
+      "snapshot": "r4",
+      "passed": 3,
+      "suite": "actualPG final native delayed retry/101-unit withdrawal/migration refusal",
+      "seconds": 65.45
+    },
+    {
+      "snapshot": "r5",
+      "passed": 2,
+      "suite": "actual dark phone/light no-JS desktop/print browser",
+      "seconds": 25.31
+    }
+  ],
+  "full_repository_suite": "NOT_RUN",
+  "production": "NOT_DEPLOYED",
+  "code_commit": "87ad9e759aae223258742d286310aba2155f112d",
+  "code_commit_identity": "PASS"
+}

@@ -1,0 +1,17 @@
+{
+  "code_commit": "bd572ed04f0227960bac2c280708359ca04c6ccd",
+  "base": "693d683b9a0adcb8f76d5551bf0f121ca6824fec",
+  "snapshot": "runs/e6-26-r1/snapshot.json",
+  "snapshot_sha256": "45e699d155a7602af8aec8a78c62f7c34d1e139d054fbc3b04cda2a5a85db95d",
+  "scope_files": {
+    "app/domain/approved_qualification.py": "f0bb665e38fcfa0eca260d87487da411a6f63758e43c4326f7a5dccef2c29243",
+    "app/admin/qualification_copy.py": "dc32485cd863fa0628883f9039b9710307b6c3c978f4cccf075c86a1154cf409",
+    "tests/test_approved_qualification_legacy.py": "67e3375d5055f8424e0ca6b93ef0532489d61307c9820fce5c9a878a6377f02d"
+  },
+  "identity": "PASS",
+  "target": "reviewed local historical profile semantic conflict fallback",
+  "limitations": [
+    "Full C05 remains incomplete.",
+    "No source approval or production release."
+  ]
+}

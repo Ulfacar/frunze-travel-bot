@@ -21,9 +21,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Versioned lossless corpus and pinned source integrity",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "693d683b9a0adcb8f76d5551bf0f121ca6824fec",
+          "command": "E6-24 source/profile independent APPROVE and separate GO; exact R2 identities and detailed commands in linked handoff",
+          "environment": "Windows Python3.12, env-free archives, actual pinned PDF, synthetic SQLite and loopback PostgreSQL16.15, Chromium",
+          "scope": "Versioned lossless corpus and pinned source integrity; source extraction is unapproved evidence; no full C05 or release claim",
+          "artifact": "ai/handoffs/2026-10-12-2038-e6-24-source-profile-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "A02",
@@ -39,9 +47,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Strict machine schema and semantic validation",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "693d683b9a0adcb8f76d5551bf0f121ca6824fec",
+          "command": "E6-24 source/profile independent APPROVE and separate GO; exact R2 identities and detailed commands in linked handoff",
+          "environment": "Windows Python3.12, env-free archives, actual pinned PDF, synthetic SQLite and loopback PostgreSQL16.15, Chromium",
+          "scope": "Strict machine schema and semantic validation; source extraction is unapproved evidence; no full C05 or release claim",
+          "artifact": "ai/handoffs/2026-10-12-2038-e6-24-source-profile-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "A03",
@@ -57,9 +73,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Source-grounded local search with native CRM citations and uncertainty labels",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "693d683b9a0adcb8f76d5551bf0f121ca6824fec",
+          "command": "E6-24 source/profile independent APPROVE and separate GO; exact R2 identities and detailed commands in linked handoff",
+          "environment": "Windows Python3.12, env-free archives, actual pinned PDF, synthetic SQLite and loopback PostgreSQL16.15, Chromium",
+          "scope": "Source-grounded local search with native CRM citations and uncertainty labels; source extraction is unapproved evidence; no full C05 or release claim",
+          "artifact": "ai/handoffs/2026-10-12-2038-e6-24-source-profile-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "A04",
@@ -75,9 +99,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Complete source coverage with provenance, unresolved values and reproducible extraction",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "693d683b9a0adcb8f76d5551bf0f121ca6824fec",
+          "command": "E6-24 source/profile independent APPROVE and separate GO; exact R2 identities and detailed commands in linked handoff",
+          "environment": "Windows Python3.12, env-free archives, actual pinned PDF, synthetic SQLite and loopback PostgreSQL16.15, Chromium",
+          "scope": "Complete source coverage with provenance, unresolved values and reproducible extraction; source extraction is unapproved evidence; no full C05 or release claim",
+          "artifact": "ai/handoffs/2026-10-12-2038-e6-24-source-profile-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "B01",
@@ -93,9 +125,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Versioned qualification save/reload, CAS, retry and native RU/EN form",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "693d683b9a0adcb8f76d5551bf0f121ca6824fec",
+          "command": "E6-24 source/profile independent APPROVE and separate GO; exact R2 identities and detailed commands in linked handoff",
+          "environment": "Windows Python3.12, env-free archives, actual pinned PDF, synthetic SQLite and loopback PostgreSQL16.15, Chromium",
+          "scope": "Versioned qualification save/reload, CAS, retry and native RU/EN form; source extraction is unapproved evidence; no full C05 or release claim",
+          "artifact": "ai/handoffs/2026-10-12-2038-e6-24-source-profile-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "B02",
@@ -173,9 +213,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Deterministic interval/window arithmetic with boundary and overlap scenarios",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "87ad9e759aae223258742d286310aba2155f112d",
+          "command": "Independent E6-23 review:246 scoped +1 oracle +31 actualPG; separate audit:12 oracle/SQLite +5 actualPG. Exact commands and identities in reports.",
+          "environment": "Windows Python3.12; independent env-free archives of8062f80 and87ad9e7 with unchanged calculation sources; synthetic SQLite and loopback PostgreSQL16.15",
+          "scope": "Deterministic interval/window arithmetic with boundary and overlap scenarios; scoped independent APPROVE and separate GO; no applicant-history bridge, source/calendar policy approval or release",
+          "artifact": "ai/reviews/2026-10-12-calculation-final-audit.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "C02",
@@ -191,9 +239,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Versioned work calendars and business-day/deadline arithmetic",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "87ad9e759aae223258742d286310aba2155f112d",
+          "command": "Independent E6-23 review:246 scoped +1 oracle +31 actualPG; separate audit:12 oracle/SQLite +5 actualPG. Exact commands and identities in reports.",
+          "environment": "Windows Python3.12; independent env-free archives of8062f80 and87ad9e7 with unchanged calculation sources; synthetic SQLite and loopback PostgreSQL16.15",
+          "scope": "Versioned work calendars and business-day/deadline arithmetic; scoped independent APPROVE and separate GO; no applicant-history bridge, source/calendar policy approval or release",
+          "artifact": "ai/reviews/2026-10-12-calculation-final-audit.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "C03",
@@ -209,9 +265,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Immutable history/calculation storage and exact replay with provenance",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "87ad9e759aae223258742d286310aba2155f112d",
+          "command": "Independent E6-23 review:246 scoped +1 oracle +31 actualPG; separate audit:12 oracle/SQLite +5 actualPG. Exact commands and identities in reports.",
+          "environment": "Windows Python3.12; independent env-free archives of8062f80 and87ad9e7 with unchanged calculation sources; synthetic SQLite and loopback PostgreSQL16.15",
+          "scope": "Immutable history/calculation storage and exact replay with provenance; scoped independent APPROVE and separate GO; no applicant-history bridge, source/calendar policy approval or release",
+          "artifact": "ai/reviews/2026-10-12-calculation-final-audit.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "C04",
@@ -254,9 +318,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Atomic versioned knowledge import with idempotency and rollback",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "87ad9e759aae223258742d286310aba2155f112d",
+          "command": "E6-22A scoped source identity and independent D01-D05 review; exact builder/reviewer/auditor commands and original failures in linked handoff",
+          "environment": "Windows Python3.12; env-free frozen r5 with exact12 scoped commit identities; synthetic SQLite, loopback PostgreSQL16.15 and Playwright",
+          "scope": "Atomic versioned knowledge import with idempotency and rollback; clock/capacity/native recovery corrected, independent APPROVE and separate GO; no legal-source approval",
+          "artifact": "ai/handoffs/2026-10-12-1915-e6-22a-publication-recovery.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "D02",
@@ -272,9 +344,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Review index/diff preserves source and changed dependencies",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "87ad9e759aae223258742d286310aba2155f112d",
+          "command": "E6-22A scoped source identity and independent D01-D05 review; exact builder/reviewer/auditor commands and original failures in linked handoff",
+          "environment": "Windows Python3.12; env-free frozen r5 with exact12 scoped commit identities; synthetic SQLite, loopback PostgreSQL16.15 and Playwright",
+          "scope": "Review index/diff preserves source and changed dependencies; clock/capacity/native recovery corrected, independent APPROVE and separate GO; no legal-source approval",
+          "artifact": "ai/handoffs/2026-10-12-1915-e6-22a-publication-recovery.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "D03",
@@ -290,9 +370,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files; original PDF read-only for import checks",
           "scope": "Recorded knowledge decisions and confirmation/rejection evidence",
           "artifact": "ai/handoffs/2026-10-10-0557-e6-07a-knowledge-decisions.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "87ad9e759aae223258742d286310aba2155f112d",
+          "command": "E6-22A scoped source identity and independent D01-D05 review; exact builder/reviewer/auditor commands and original failures in linked handoff",
+          "environment": "Windows Python3.12; env-free frozen r5 with exact12 scoped commit identities; synthetic SQLite, loopback PostgreSQL16.15 and Playwright",
+          "scope": "Recorded knowledge decisions and confirmation/rejection evidence; clock/capacity/native recovery corrected, independent APPROVE and separate GO; no legal-source approval",
+          "artifact": "ai/handoffs/2026-10-12-1915-e6-22a-publication-recovery.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "D04",
@@ -308,9 +396,17 @@
           "environment": "Env-free Git archive / Windows Python3.12 / synthetic SQLite / Playwright",
           "scope": "Atomic policy-gated lifecycle, exact recovery, source/evidence pin and per-rule runtime expiry/revocation;152 PASS. Independent review and production approval UNKNOWN.",
           "artifact": "ai/handoffs/2026-10-10-0625-e6-07b-knowledge-publication.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "87ad9e759aae223258742d286310aba2155f112d",
+          "command": "E6-22A scoped source identity and independent D01-D05 review; exact builder/reviewer/auditor commands and original failures in linked handoff",
+          "environment": "Windows Python3.12; env-free frozen r5 with exact12 scoped commit identities; synthetic SQLite, loopback PostgreSQL16.15 and Playwright",
+          "scope": "Atomic publication gates, active version pin and rollback; clock/capacity/native recovery corrected, independent APPROVE and separate GO; no legal-source approval",
+          "artifact": "ai/handoffs/2026-10-12-1915-e6-22a-publication-recovery.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "D05",
@@ -326,9 +422,17 @@
           "environment": "Env-free Git archive / Windows Python3.12 / synthetic SQLite / Playwright",
           "scope": "Atomic policy-gated lifecycle, exact recovery, source/evidence pin and per-rule runtime expiry/revocation;152 PASS. Independent review and production approval UNKNOWN.",
           "artifact": "ai/handoffs/2026-10-10-0625-e6-07b-knowledge-publication.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "87ad9e759aae223258742d286310aba2155f112d",
+          "command": "E6-22A scoped source identity and independent D01-D05 review; exact builder/reviewer/auditor commands and original failures in linked handoff",
+          "environment": "Windows Python3.12; env-free frozen r5 with exact12 scoped commit identities; synthetic SQLite, loopback PostgreSQL16.15 and Playwright",
+          "scope": "Runtime knowledge adapter refuses draft/stale/conflicting rules; clock/capacity/native recovery corrected, independent APPROVE and separate GO; no legal-source approval",
+          "artifact": "ai/handoffs/2026-10-12-1915-e6-22a-publication-recovery.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "E01",
@@ -344,9 +448,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Case-scoped applicants and separate linked application attempts",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "e01c5b0bbce264d918bec31eb34ca3c384129506",
+          "command": "E6-25 independent APPROVE and separate final GO; builder78PASS, mapped source/domain/native/PG/browser checks and exact commands in handoff",
+          "environment": "Windows Python3.12, env-free exact archives, synthetic SQLite, actual loopback PostgreSQL16.15 and Chromium",
+          "scope": "Case-scoped applicants and separate linked application attempts; current passport-date guards, historical replay compatibility; no source/pilot/release approval",
+          "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "E02",
@@ -362,9 +474,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Immutable dated portal/manual facts, unique reference and corrections within attempt",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "e01c5b0bbce264d918bec31eb34ca3c384129506",
+          "command": "E6-25 independent APPROVE and separate final GO; builder78PASS, mapped source/domain/native/PG/browser checks and exact commands in handoff",
+          "environment": "Windows Python3.12, env-free exact archives, synthetic SQLite, actual loopback PostgreSQL16.15 and Chromium",
+          "scope": "Immutable dated portal/manual facts, unique reference and corrections within attempt; current passport-date guards, historical replay compatibility; no source/pilot/release approval",
+          "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "E03",
@@ -380,9 +500,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Complete group overview of current and historical attempts",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "e01c5b0bbce264d918bec31eb34ca3c384129506",
+          "command": "E6-25 independent APPROVE and separate final GO; builder78PASS, mapped source/domain/native/PG/browser checks and exact commands in handoff",
+          "environment": "Windows Python3.12, env-free exact archives, synthetic SQLite, actual loopback PostgreSQL16.15 and Chromium",
+          "scope": "Complete group overview of current and historical attempts; current passport-date guards, historical replay compatibility; no source/pilot/release approval",
+          "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "E04",
@@ -416,9 +544,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Refusal/exception recovery preserves original attempt and history",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "e01c5b0bbce264d918bec31eb34ca3c384129506",
+          "command": "E6-25 independent APPROVE and separate final GO; builder78PASS, mapped source/domain/native/PG/browser checks and exact commands in handoff",
+          "environment": "Windows Python3.12, env-free exact archives, synthetic SQLite, actual loopback PostgreSQL16.15 and Chromium",
+          "scope": "Refusal/exception recovery preserves original attempt and history; current passport-date guards, historical replay compatibility; no source/pilot/release approval",
+          "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "E06",
@@ -452,9 +588,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Verified issue/correction/delivery/receipt/actual entry or exit events",
           "artifact": "ai/handoffs/2026-10-10-0700-e6-02c-issued-documents.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "e01c5b0bbce264d918bec31eb34ca3c384129506",
+          "command": "E6-25 independent APPROVE and separate final GO; builder78PASS, mapped source/domain/native/PG/browser checks and exact commands in handoff",
+          "environment": "Windows Python3.12, env-free exact archives, synthetic SQLite, actual loopback PostgreSQL16.15 and Chromium",
+          "scope": "Verified issue/correction/delivery/receipt/actual entry or exit events; current passport-date guards, historical replay compatibility; no source/pilot/release approval",
+          "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "F01",
@@ -470,9 +614,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Lossless typed matrix review including mixed/conditional/dash cells",
           "artifact": "ai/reviews/2026-10-10-pdf-to70-baseline.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "e01c5b0bbce264d918bec31eb34ca3c384129506",
+          "command": "E6-25 independent APPROVE and separate final GO; builder78PASS, mapped source/domain/native/PG/browser checks and exact commands in handoff",
+          "environment": "Windows Python3.12, env-free exact archives, synthetic SQLite, actual loopback PostgreSQL16.15 and Chromium",
+          "scope": "Lossless typed matrix review including mixed/conditional/dash cells; current passport-date guards, historical replay compatibility; no source/pilot/release approval",
+          "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "F02",
@@ -488,9 +640,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "Per-application persistent versioned inventory and document history",
           "artifact": "ai/handoffs/2026-10-10-0600-e6-02b-document-inventory.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "e01c5b0bbce264d918bec31eb34ca3c384129506",
+          "command": "E6-25 independent APPROVE and separate final GO; builder78PASS, mapped source/domain/native/PG/browser checks and exact commands in handoff",
+          "environment": "Windows Python3.12, env-free exact archives, synthetic SQLite, actual loopback PostgreSQL16.15 and Chromium",
+          "scope": "Per-application persistent versioned inventory and document history; current passport-date guards, historical replay compatibility; no source/pilot/release approval",
+          "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "F03",
@@ -506,9 +666,17 @@
           "environment": "Windows Python3.12 / isolated Git archive / synthetic SQLite / no env files",
           "scope": "New document/passport version invalidates old review with traceable evidence",
           "artifact": "ai/handoffs/2026-10-10-0600-e6-02b-document-inventory.md"
+        },
+        {
+          "result": "PASS",
+          "revision": "e01c5b0bbce264d918bec31eb34ca3c384129506",
+          "command": "E6-25 independent APPROVE and separate final GO; builder78PASS, mapped source/domain/native/PG/browser checks and exact commands in handoff",
+          "environment": "Windows Python3.12, env-free exact archives, synthetic SQLite, actual loopback PostgreSQL16.15 and Chromium",
+          "scope": "New document/passport version invalidates old review with traceable evidence; current passport-date guards, historical replay compatibility; no source/pilot/release approval",
+          "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "UNKNOWN"
+      "review": "PASS"
     },
     {
       "id": "F04",
