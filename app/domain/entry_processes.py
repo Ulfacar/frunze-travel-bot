@@ -287,6 +287,19 @@ async def record_process_operation(engine, *, actor, case_id, application_id, ex
     return await applications._run(engine, write)
 
 
+async def _current_dependency_receipt(context,role,fact,at):
+    if context.process_rows and applications._utc(context.process_rows[-1].created_at)>applications._utc(at):
+        return dict(value=None,reason='dependent_process_in_future',pins=[])
+    result=await context.resolve(role,fact)
+    if result['value'] is True:
+        record=context.state['attestations'].get(role+'.'+fact)
+        app=await context.app(role)
+        events=await context.events(app)
+        if record is None or record['on']<events[-1].occurred_on.isoformat():
+            return {**result,'value':None,'reason':'receipt_predates_official_approval'}
+    return result
+
+
 async def read_process_history(engine, *, actor, case_id, application_id, revision=None, policy=None, package_policy=None):
     _authorize(actor); _id(case_id); _id(application_id)
     if revision is not None and (type(revision) is not int or not 1 <= revision <= MAX_EVENTS): invalid('invalid_process_revision')
@@ -308,13 +321,48 @@ async def read_process_history(engine, *, actor, case_id, application_id, revisi
             if events[-1].status=='approved':
                 resident_basis=dict(application_id=resident.id,approval_id=events[-1].id,
                     reference=events[-1].reference,occurred_on=events[-1].occurred_on.isoformat())
+        at=_now()
+        dependencies={}
+        # These are current, separately scoped observations. They never change
+        # the parent's stage or turn a visa decision into a resident/REG one.
+        if state and not state['stopped'] and applications._utc(rows[-1].created_at)<=applications._utc(at):
+            try:
+                authorize(actor,policy,day=applications._local_day(at))
+                if policy.catalog_digest!=state['catalog_digest']:invalid('process_catalog_changed')
+            except (PermissionDenied,EntryStorageInvalid):
+                pass
+            else:
+                context=Evidence(sources,state,rows,policy,package_policy,at=at)
+                for role,receipt in (('resident','resident_issued_and_collected'),
+                                     ('registration','registration_certificate_received'),
+                                     ('resident_registration','registration_certificate_received')):
+                    if role not in state['links'] or state['links'][role]==root.id:continue
+                    facts={}
+                    for fact in ('decision','documents_current'):
+                        facts[fact]=await context.resolve(role,fact)
+                    facts[receipt]=await _current_dependency_receipt(context,role,receipt,at)
+                    if role in ('registration','resident_registration'):
+                        # A separately initialized REG process owns its receipt.
+                        # Withdrawal/stop there must not resurrect a duplicated
+                        # parent observation. _history does not recurse here.
+                        child=await context.app(role)
+                        child_sources=Sources(session,case,child)
+                        child_rows,child_state,_=await _history(child_sources)
+                        if child_state is not None:
+                            if child_state['stopped'] or child_state['catalog_digest']!=policy.catalog_digest:
+                                facts[receipt]=dict(value=None,reason='dependent_process_unavailable',pins=[])
+                            else:
+                                child_context=Evidence(child_sources,child_state,child_rows,policy,package_policy,at=at)
+                                facts[receipt]=await _current_dependency_receipt(child_context,'registration',receipt,at)
+                    dependencies[role]=dict(application_id=state['links'][role],facts=facts)
         return dict(application=applications._application_view(root), current_revision=len(rows),
+            dependencies=dependencies,
             resident_basis=resident_basis,
             profile_id=profile_rows[-1].id if profile_rows else None,
             link_candidates=[applications._application_view(r) for r in candidates[:100]],
             link_candidates_truncated=len(candidates) > 100,
             selected=_view(selected) if selected else None,
-            readiness=await _readiness(sources, state, rows, actor, policy, package_policy, _now()),
+            readiness=await _readiness(sources, state, rows, actor, policy, package_policy, at),
             history=[dict(revision=r.revision, action=r.action, stage=r.snapshot['stage'],
                 active_application_id=r.active_application_id, created_by=r.created_by,
                 created_at=applications._utc(r.created_at)) for r in reversed(rows)])

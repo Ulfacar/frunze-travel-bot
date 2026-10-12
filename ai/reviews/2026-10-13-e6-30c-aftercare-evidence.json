@@ -1,0 +1,39 @@
+{
+  "scope": "bounded current dependency reader only",
+  "base": "7b0475b536592f6d254d607fb4baf3619a6e7fff",
+  "files": {
+    "app/domain/entry_processes.py": "700af9a4d7d5a4a51c4281cd3fda6e27c1d5d66c313a955aa355cc8aaa8e54d3",
+    "app/admin/templates/kg_process_journal.html": "d88a511f57338133d35e580edfccaf1872b1fabd650e8fde09a00ad4ed564f96",
+    "tests/test_process_aftercare_reader.py": "be644ff30bae49b5eb464700da575420e73067eca1c4dc46b12ff40d2e9747b5",
+    "tests/test_process_aftercare_reader_boundaries.py": "2a77fd0eec63b66c18294df352616fef8e5193061f05fa060596ee689803ac77",
+    "tests/test_process_aftercare_reader_time.py": "5b6204a01fe5bd07b4c0afe03223f1a9e1dac9064c950efa2fd5a73a47451a99"
+  },
+  "artifacts": [
+    {
+      "path": "runs/e6-30c-r28/runs/source-res-r28.xml",
+      "sha256": "8a2747b149254ee1d0a5b912a2c6fa0f26db02bb4c6e065c70d9e4c0c1303cb7",
+      "tests": "5",
+      "seconds": "1078.820"
+    },
+    {
+      "path": "runs/e6-30c-r33/runs/aftercare-promoted-usa-r33.xml",
+      "sha256": "a387214ef0ed044a406b9f6310c7edcc9aa027063af9e95475c219904fc0ce39",
+      "tests": "12",
+      "seconds": "229.064"
+    },
+    {
+      "path": "runs/e6-30c-aftercare-review-r28/review-aftercare-localized-r28.xml",
+      "sha256": "b5b43343f2a0108a37cea59eafc3c57d6e16b37076fd51deb26143a04edeef0a",
+      "tests": "1",
+      "seconds": "22.402"
+    }
+  ],
+  "reports": {
+    "ai/reviews/2026-10-13-e6-30c-aftercare-review.md": "a15f9ac34a85ca985362a4c3c59397c90a9ccfdff29e2fbc882c3ab04ab4829b",
+    "ai/reviews/2026-10-13-e6-30c-aftercare-final-audit.md": "782ee5b72e38880561b8c846969e14a320f1065e4960476e0c11aabe4a969fda"
+  },
+  "parent_status": "IMPLEMENTING",
+  "score": 96,
+  "root_env_read": false,
+  "production_action": false
+}
