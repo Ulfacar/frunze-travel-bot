@@ -14,6 +14,12 @@ PREVIOUS='e6_work_process_evidence_0040'
 CURRENT='e6_work_review_events_0041'
 
 
+def metadata_options():
+    # 0042 adds these tables; this test continues to verify the exact 0041 schema.
+    later={'entry_anchor_events','entry_anchor_pins','entry_conditional_evidence'}
+    return dict(compare_type=True,include_object=lambda obj,name,kind,reflected,compare_to:kind!='table' or name not in later)
+
+
 def test_review_additive_empty_cycle_and_full_metadata(config):
     command.upgrade(config,PREVIOUS);engine=create_engine(config.get_main_option('sqlalchemy.url'))
     def old_schema(conn):
@@ -23,12 +29,12 @@ def test_review_additive_empty_cycle_and_full_metadata(config):
         command.upgrade(config,CURRENT)
         with engine.connect() as conn:
             assert old_schema(conn)==before
-            assert compare_metadata(MigrationContext.configure(conn,opts={'compare_type':True}),DomainBase.metadata)==[]
+            assert compare_metadata(MigrationContext.configure(conn,opts=metadata_options()),DomainBase.metadata)==[]
             assert conn.scalar(text('SELECT count(*) FROM entry_work_review_events'))==0
         command.downgrade(config,PREVIOUS)
         with engine.connect() as conn:assert 'entry_work_review_events' not in inspect(conn).get_table_names() and old_schema(conn)==before
         command.upgrade(config,CURRENT)
-        with engine.connect() as conn:assert compare_metadata(MigrationContext.configure(conn,opts={'compare_type':True}),DomainBase.metadata)==[]
+        with engine.connect() as conn:assert compare_metadata(MigrationContext.configure(conn,opts=metadata_options()),DomainBase.metadata)==[]
     finally:engine.dispose()
 
 

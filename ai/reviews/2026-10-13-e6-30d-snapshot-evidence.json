@@ -1,0 +1,2166 @@
+{
+  "collected_at": "2026-10-12T23:55:58.622903+00:00",
+  "status": "DONE_REVIEWED_LOCAL",
+  "scope": {
+    "base": "7f7a59a2c17033f3ae45a5434c1087d1fdfe7ea1",
+    "snapshot": "runs/e6-30d-r23",
+    "runtime": [
+      "app/admin/kg_actual_dates.py",
+      "app/admin/templates/kg_actual_dates.html",
+      "app/admin/router.py",
+      "app/admin/templates/kg_applications.html",
+      "app/config.py",
+      "app/domain/models.py",
+      "app/domain/entry_anchor_rules.py",
+      "app/domain/entry_anchors.py",
+      "app/domain/conditional_deadline_rules.py",
+      "app/domain/conditional_deadline_policy.py",
+      "app/domain/conditional_deadline_sources.py",
+      "app/domain/conditional_deadline_evidence.py",
+      "app/domain/conditional_deadlines.py",
+      "app/domain/entry_deadlines.py",
+      "app/domain/entry_deadline_tasks.py",
+      "alembic/versions/e6_actual_anchor_events_0042.py"
+    ],
+    "tests": [
+      "tests/test_admin_actual_dates.py",
+      "tests/test_admin_actual_dates_browser.py",
+      "tests/test_admin_actual_dates_overdue.py",
+      "tests/test_admin_actual_dates_review.py",
+      "tests/test_admin_actual_dates_tokens.py",
+      "tests/test_admin_actual_dates_visa_labels.py",
+      "tests/test_conditional_deadline_audit_postgres.py",
+      "tests/test_conditional_deadline_legacy_upgrade.py",
+      "tests/test_conditional_deadline_locks_postgres.py",
+      "tests/test_conditional_deadline_postgres.py",
+      "tests/test_conditional_deadline_recovery_postgres.py",
+      "tests/test_conditional_deadline_review_absence.py",
+      "tests/test_conditional_deadline_review_absence_passport.py",
+      "tests/test_conditional_deadline_review_absence_presence.py",
+      "tests/test_conditional_deadline_review_anchor_application_bound.py",
+      "tests/test_conditional_deadline_review_atomicity.py",
+      "tests/test_conditional_deadline_review_boundaries.py",
+      "tests/test_conditional_deadline_review_cached_history.py",
+      "tests/test_conditional_deadline_review_historical_selection.py",
+      "tests/test_conditional_deadline_review_privacy.py",
+      "tests/test_conditional_deadline_review_renewal.py",
+      "tests/test_conditional_deadline_review_visa_source_delta.py",
+      "tests/test_conditional_deadline_row_reserve.py",
+      "tests/test_conditional_deadline_sop.py",
+      "tests/test_conditional_deadline_task_recovery_postgres.py",
+      "tests/test_conditional_deadline_visa_sops.py",
+      "tests/test_conditional_deadlines.py",
+      "tests/test_entry_anchor_migration.py",
+      "tests/test_entry_anchor_reserves.py",
+      "tests/test_entry_anchors.py",
+      "tests/test_connected_qualification.py",
+      "tests/test_work_review_migration.py",
+      "tests/fixtures/entry_deadlines_pre_d.py"
+    ],
+    "files": {
+      "app/admin/kg_actual_dates.py": "54be5d2066d359c0903e966d4fee78d888e7b880f19d2d60e84de7a5d569d3ed",
+      "app/admin/templates/kg_actual_dates.html": "5f4a80ffa76e78135677e7887b50fbe469891206748395b5d72366b8fb536480",
+      "app/admin/router.py": "4be38cb82a639c42c7095346fec8f3061b82e282b2c726ff9d55305ff14db50e",
+      "app/admin/templates/kg_applications.html": "ba45507202a1a55ae0bbee6bbf89d5ea517a3bc10afe3d6d5f6d0a270973efb1",
+      "app/config.py": "cc0f17d63db93d6d5495236313da4b410c1324148ce08c6a208cef686ea4e204",
+      "app/domain/models.py": "9c7a352576018e4f66b1b298d709d5acf151eb4e68301853083dfa1163822b79",
+      "app/domain/entry_anchor_rules.py": "da1f65eca3b77b96028e616c46f2ddb69b97cb7b2c1253d8e94d3a010407c0f3",
+      "app/domain/entry_anchors.py": "4de7dd05533664a3dcfdc97552eb0cade4e01d1e068d4e82093503a67ac9b10c",
+      "app/domain/conditional_deadline_rules.py": "2977d3b480dcb5b2c32f1496b2acb5ec70ac87f24e04c83803baac5223df2d8c",
+      "app/domain/conditional_deadline_policy.py": "0a8632f5bde22c0ce8042b73f7aa8e54c93059ef35d46685e78700adf3382d74",
+      "app/domain/conditional_deadline_sources.py": "6d7a4cddaa4e0f50c71cb5563cac4ffa9b01570916a7027481e6374870a34f8e",
+      "app/domain/conditional_deadline_evidence.py": "de837c91ee710ab8bd55b91b812cc0e5f494e612f9f135b7293a47887e182324",
+      "app/domain/conditional_deadlines.py": "8467f55992f777e5c5ea979e296791484a6b41008b69d50435d6bbe168c1e127",
+      "app/domain/entry_deadlines.py": "97e828e1c831a08e11dbcc0baa75031d16e5a1d3fc7239ed06990ab4987a4c9f",
+      "app/domain/entry_deadline_tasks.py": "7dfbc5ae4417b394542bcd31482085818b1826ac2ea18e329779d5a69b97381f",
+      "alembic/versions/e6_actual_anchor_events_0042.py": "2c647d693fad86bdcac453e97d01d23294b47b9c6b4ba6f0b535320973c8a5f2",
+      "tests/test_admin_actual_dates.py": "74f521ce26ac0a41a41bc4cb4f4709e20c5a93626b446246da4d424f56278d35",
+      "tests/test_admin_actual_dates_browser.py": "ed0180ad518711636c685187d6a1f755e32f570e57eba35082e60042fd5515a8",
+      "tests/test_admin_actual_dates_overdue.py": "86e85a48cdefeba3518a94177380473b2cd67b6c90b216a67c952e3d1d8dfdc5",
+      "tests/test_admin_actual_dates_review.py": "1591279694f91f70f99b786b848268e08acec7b40347ea714c24b8f0cbf101d2",
+      "tests/test_admin_actual_dates_tokens.py": "b428b466f6da6680db3a4fb4d6e60f8cbe1a529f7018d145e6342a407faf4b91",
+      "tests/test_admin_actual_dates_visa_labels.py": "03832c29f47fa1bb2da5cd1d66155080edee95aec14198890d21f7a928fcb33b",
+      "tests/test_conditional_deadline_audit_postgres.py": "0e9dcea696aaddcdef4370249f5c2bac3a0fe2589d8c6ae55000b24f156aba00",
+      "tests/test_conditional_deadline_legacy_upgrade.py": "c36e4780b620a79904d001757c190db3f9f7071870eee7ec296250e95cc99ab5",
+      "tests/test_conditional_deadline_locks_postgres.py": "f198c8244d03767ff92500abce994ed7f5726e8861b613e397fe4f2983ef703e",
+      "tests/test_conditional_deadline_postgres.py": "cb0a7ec043a3595d8810eadb3517606c1eb892cd3e5f85c945441236b4d1102e",
+      "tests/test_conditional_deadline_recovery_postgres.py": "7fb5fa9ff3d3a67280611ea4674b861b0f0dd4c9c53ba37e03cabbeac243905e",
+      "tests/test_conditional_deadline_review_absence.py": "4aad315560bd13420730c97c5ce395665d7f50f21f0a26f7e21289746744655d",
+      "tests/test_conditional_deadline_review_absence_passport.py": "bbeb05a567745f11cf7c524123323a359eca4a50da8f78890f3c4b74b2655506",
+      "tests/test_conditional_deadline_review_absence_presence.py": "b3b1dd94da93b204084fb8074e4801a214b9af00da2c29455abff8a45af8fafe",
+      "tests/test_conditional_deadline_review_anchor_application_bound.py": "9f6e6f9b0a2e74a79b05f284b0cb55016cfe9c4c439b8e674f0956ad76303821",
+      "tests/test_conditional_deadline_review_atomicity.py": "c7d881e01ec0e592c3444a9536a5710d1a62cedd6fd5f38d44e1ebf87abb6fa4",
+      "tests/test_conditional_deadline_review_boundaries.py": "14bbadd7e985bd503c54f2e72f5770314238f0aecf17c69759283c7962076323",
+      "tests/test_conditional_deadline_review_cached_history.py": "d0e1a78b5c4088c0c34f359103a79ef63b29d9923a39f2f3608615e0deadd1a8",
+      "tests/test_conditional_deadline_review_historical_selection.py": "e55784fc459154565fe8c289631ffe67ebf7f04e4701fbdf9c66a09d9a925bad",
+      "tests/test_conditional_deadline_review_privacy.py": "b0c6b2568a36c320feafa7f5ab9ce0c9f2ea41eb1582a2c140d3ec31e3268ddb",
+      "tests/test_conditional_deadline_review_renewal.py": "ec6b03838583e12601c203de129e87299378d3e4362f782c72ecc765afb29601",
+      "tests/test_conditional_deadline_review_visa_source_delta.py": "138931cdc755d19bb95dca2d87d14df6307cdc256244a543e5da254f13af09a3",
+      "tests/test_conditional_deadline_row_reserve.py": "f0f55dcd35a7e64c8b222073e0e75fcf11508e2fa3b0c50832cbb9218a6bc56b",
+      "tests/test_conditional_deadline_sop.py": "18586b1622c63dc0e5376272ea6f76ca7e28c18695e4bd2b42c4f85f4faa800c",
+      "tests/test_conditional_deadline_task_recovery_postgres.py": "7ea99e119709427fe48f2c01279b8662cf27d2b60537e2bcbe453a4fd66ae03b",
+      "tests/test_conditional_deadline_visa_sops.py": "8874ba8c711694682c723ea9976f1364c8033fab2dab105df257eedf3d4fe6ec",
+      "tests/test_conditional_deadlines.py": "0de42d637d9fbcd63f09ea844b87df91b63cdcfe25c25438ed654593ece0c2b9",
+      "tests/test_entry_anchor_migration.py": "4794ee24363d5e2919bf6d69b65ec8a26c399cec3bb9a0f06e13ab39354cd2fe",
+      "tests/test_entry_anchor_reserves.py": "9e6ed4a7c9343eab25afda834b0f9ddaa61ca03173de608eea16395d27b0c46b",
+      "tests/test_entry_anchors.py": "354ac10bc0f856c7c917eec13150a92345fdc2624a41248a724e748bc8be7fb2",
+      "tests/test_connected_qualification.py": "990cd8aaed18336d618b33cda34a32146d763f37668196096bc98cd99871bf22",
+      "tests/test_work_review_migration.py": "b94c0f62d3ca7a46fdb7ae9696056e5b978c9b5af26295d8c988d5087b66fe73",
+      "tests/fixtures/entry_deadlines_pre_d.py": "160d0c2aa3f2b334221c9f49df938b8dd6ef5ffcab26cc0a6b6612e5c116614a"
+    }
+  },
+  "identity": "root/frozen/index PASS",
+  "evidence": [
+    {
+      "artifact": "runs/e6-30d-audit-r10/runs/audit-pg-r10.xml",
+      "sha256": "4e97e189d3d245eb97a6c82471eaa3c986a7cbc51c8d2b5e2ee7004ff2ec2544",
+      "suites": [
+        {
+          "tests": "7",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "185.318"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_conditional_postgres::test_first_record_resamples_clock_after_actual_publication_lock",
+          "result": "PASS",
+          "time": "32.075"
+        },
+        {
+          "name": "tests.test_audit_conditional_postgres::test_actual_pg_anchor_reserves[count]",
+          "result": "PASS",
+          "time": "17.282"
+        },
+        {
+          "name": "tests.test_audit_conditional_postgres::test_actual_pg_anchor_reserves[bytes]",
+          "result": "PASS",
+          "time": "13.026"
+        },
+        {
+          "name": "tests.test_audit_conditional_postgres::test_actual_pg_migration_scope_and_populated_inverse_guard",
+          "result": "FAIL",
+          "time": "6.197"
+        },
+        {
+          "name": "tests.test_conditional_deadline_postgres::test_conditional_actual_pg_waited_same_request_or_competing_cas[True]",
+          "result": "PASS",
+          "time": "36.094"
+        },
+        {
+          "name": "tests.test_conditional_deadline_postgres::test_conditional_actual_pg_waited_same_request_or_competing_cas[False]",
+          "result": "PASS",
+          "time": "30.489"
+        },
+        {
+          "name": "tests.test_conditional_deadline_postgres::test_conditional_pin_insert_failure_rolls_back_deadline_and_retries",
+          "result": "PASS",
+          "time": "39.620"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-audit-r10/runs/audit-profile-lock-original-corrected-harness-r10.xml",
+      "sha256": "1cd49ce6914d016aad3fb4284293f54deea1679da96973f237d37d6f628eee22",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "55.667"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_conditional_locks::test_task_projection_holds_person_lock_against_actual_profile_writer",
+          "result": "FAIL",
+          "time": "47.944"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-audit-r10/runs/audit-profile-lock-original-r10.xml",
+      "sha256": "0cdef92dd521b6d9955ad6dc122bb7080b5b0653a27cb01ca848ff5583214faa",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "61.451"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_conditional_locks::test_task_projection_holds_person_lock_against_actual_profile_writer",
+          "result": "FAIL",
+          "time": "51.726"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-audit-r12/runs/audit-event-reserve-original-r12.xml",
+      "sha256": "fe755d7dc90e0d694e28ab6bcc18af2eee314d9ca8b4178a29960a3078474473",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "49.820"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_conditional_row_reserve::test_exact_event_byte_boundary_keeps_terminal_clear_available",
+          "result": "FAIL",
+          "time": "37.576"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-audit-r15/runs/audit-event-reserve-corrected-r15.xml",
+      "sha256": "7d0bca9830524a31cf5d356c64dbe6eab2975b17710c43bed13e7658b1fc5007",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "52.019"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_conditional_row_reserve::test_exact_event_byte_boundary_keeps_terminal_clear_available",
+          "result": "PASS",
+          "time": "42.048"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-audit-r16/runs/audit-actual-legacy-upgrade-corrected-r16.xml",
+      "sha256": "507d65af2209c788f7c6367a0d9310748c0213a2f117e52095983b129c4e93c5",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "9.058"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_actual_legacy_upgrade::test_actual_pre_d_writer_receipts_read_retry_and_explicit_replay_drift",
+          "result": "PASS",
+          "time": "2.348"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-audit-r16/runs/audit-actual-legacy-upgrade-r16.xml",
+      "sha256": "f031c74f04801d19dc1086e3a7892b164d83f1684b0a594bcd9bff37316d2c10",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "8.273"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_actual_legacy_upgrade::test_actual_pre_d_writer_receipts_read_retry_and_explicit_replay_drift",
+          "result": "FAIL",
+          "time": "1.865"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-audit-r16/runs/audit-conditional-capacity-r16.xml",
+      "sha256": "a8c310d5f7677ff1319a32c25251865199c0f425ab2ef753bb2aa48909d6d310",
+      "suites": [
+        {
+          "tests": "2",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "1507.087"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_conditional_capacity::test_real_250_ordinary_revisions_terminal251_and_cache_refresh",
+          "result": "PASS",
+          "time": "1375.764"
+        },
+        {
+          "name": "tests.test_audit_conditional_capacity::test_exact_four_mib_ordinary_bytes_then_terminal_clear",
+          "result": "PASS",
+          "time": "125.298"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-audit-r16/runs/audit-pg-final-r16.xml",
+      "sha256": "00084d16233f02ece0722a9ac2d8ea75696d973919b91da420cfde60c124ac05",
+      "suites": [
+        {
+          "tests": "5",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "193.999"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_conditional_postgres::test_first_record_resamples_clock_after_actual_publication_lock",
+          "result": "PASS",
+          "time": "24.660"
+        },
+        {
+          "name": "tests.test_audit_conditional_postgres::test_actual_pg_migration_scope_and_populated_inverse_guard",
+          "result": "PASS",
+          "time": "6.101"
+        },
+        {
+          "name": "tests.test_audit_conditional_locks::test_task_projection_holds_person_lock_against_actual_profile_writer",
+          "result": "PASS",
+          "time": "41.957"
+        },
+        {
+          "name": "tests.test_audit_conditional_locks::test_conditional_reader_keeps_case_before_application_lock_order",
+          "result": "PASS",
+          "time": "39.933"
+        },
+        {
+          "name": "tests.test_audit_conditional_recovery::test_actual_copy_preserves_enabled_task_and_clears_it_after_restore",
+          "result": "FAIL",
+          "time": "72.228"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-audit-r16/runs/audit-pg-recovery-corrected-r16.xml",
+      "sha256": "3e2935ab8e33617a3dd8b2a43678319e326c11f8d66b4867786bf0cb2dc9c38b",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "68.741"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_conditional_recovery::test_actual_copy_preserves_enabled_task_and_clears_it_after_restore",
+          "result": "PASS",
+          "time": "61.658"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-audit-r8/runs/audit-first-source-lock-r8.xml",
+      "sha256": "c802b0cf75957078ee93851842da0804915de0d5c33b503605e92563a3820905",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "53.037"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_audit_conditional_postgres::test_first_record_resamples_clock_after_actual_publication_lock",
+          "result": "FAIL",
+          "time": "43.570"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r14/runs/reviewer-anchor-application-bound-r14.xml",
+      "sha256": "05388d6289ba6bcf0744b30c5dfa52f0b5f709226fae5cadd4fcf064e31afa06",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "57.223"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_anchor_application_bound::test_thirty_third_passport_application_cannot_poison_existing_current_reads",
+          "result": "FAIL",
+          "time": "51.433"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r14/runs/reviewer-conditional-final-r14.xml",
+      "sha256": "2d51224fb53e82a9aae43d3668f804bce8c2526a7744fa3495f703249572410b",
+      "suites": [
+        {
+          "tests": "5",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "254.290"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_conditional_privacy::test_native_interview_privacy_blocks_review_even_without_channel_session",
+          "result": "PASS",
+          "time": "35.901"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_privacy::test_existing_receipt_stays_exact_but_new_write_is_denied_after_native_withdrawal",
+          "result": "PASS",
+          "time": "39.800"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_renewal::test_renewal_requires_matching_type_purpose_inviter_and_current_actual_period",
+          "result": "PASS",
+          "time": "111.116"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_renewal::test_supplied_interview_date_cannot_disagree_with_actual_visa_period",
+          "result": "FAIL",
+          "time": "23.319"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_absence_passport::test_own_other_application_passport_change_requires_fresh_history_confirmation",
+          "result": "PASS",
+          "time": "34.217"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r16/runs/reviewer-absence-presence-r16.xml",
+      "sha256": "893c04530c62fcea027cca086622e44e0f26986a4fc875f6bef2947da69f2c13",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "54.460"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_absence_presence::test_absence_known_profile_presence_matches_history_or_requires_review",
+          "result": "FAIL",
+          "time": "47.621"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r16/runs/reviewer-conditional-final-delta-r16.xml",
+      "sha256": "49c142557de588c26dd7af6ca43804ece7fb8651e7e11ee97ed03f1b6ff51791",
+      "suites": [
+        {
+          "tests": "4",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "185.645"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_anchor_application_bound::test_thirty_third_passport_application_cannot_poison_existing_current_reads",
+          "result": "PASS",
+          "time": "53.103"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_cached_history::test_two_source_prefixes_replay_exactly_with_one_fresh_cache",
+          "result": "PASS",
+          "time": "53.381"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_renewal::test_supplied_interview_date_cannot_disagree_with_actual_visa_period",
+          "result": "PASS",
+          "time": "35.506"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_privacy::test_existing_receipt_stays_exact_but_new_write_is_denied_after_native_withdrawal",
+          "result": "PASS",
+          "time": "34.931"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r19/runs/reviewer-absence-presence-r19.xml",
+      "sha256": "74132c64e941f88b8c0808723098ec3882f460ff2dfa124b418918e04d321614",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "57.854"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_absence_presence::test_absence_known_profile_presence_matches_history_or_requires_review",
+          "result": "PASS",
+          "time": "49.672"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r20/runs/reviewer-source-delta-r20.xml",
+      "sha256": "33be4f90123fce79930eeb26cdcf2faac9c65b3ad895827be4f881fc89d1e206",
+      "suites": [
+        {
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "129.016"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_visa_source_delta::test_visa_sop_scope_requires_own_kind_and_reconciles_interview",
+          "result": "PASS",
+          "time": "56.875"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_absence::test_absence_uses_actual_history_not_only_last_two_start_dates",
+          "result": "PASS",
+          "time": "27.207"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_absence_passport::test_own_other_application_passport_change_requires_fresh_history_confirmation",
+          "result": "PASS",
+          "time": "34.747"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r4/runs/reviewer-conditional-boundaries-r4.xml",
+      "sha256": "dbfe409cff2dfd88fa41a7392974bd4f2f7872dd437c2c630b2d4c9595065301",
+      "suites": [
+        {
+          "tests": "2",
+          "failures": "2",
+          "errors": "0",
+          "skipped": "0",
+          "time": "74.672"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_conditional_boundaries::test_future_retained_review_is_not_current_after_clock_rollback",
+          "result": "FAIL",
+          "time": "26.191"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_boundaries::test_restore_with_missing_actual_anchor_cannot_cancel_manual_schedule",
+          "result": "FAIL",
+          "time": "39.516"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r4/runs/reviewer-conditional-history-r4.xml",
+      "sha256": "3a2c8cf0ff7f6e9ad438d0bdb48f07ea840627308f817cb4392e8a6e2e091dc4",
+      "suites": [
+        {
+          "tests": "2",
+          "failures": "2",
+          "errors": "0",
+          "skipped": "0",
+          "time": "63.768"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_conditional_absence::test_absence_uses_actual_history_not_only_last_two_start_dates",
+          "result": "FAIL",
+          "time": "19.644"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_historical_selection::test_historical_selection_keeps_receipt_but_not_current_date_after_clear",
+          "result": "FAIL",
+          "time": "38.023"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r6/runs/reviewer-conditional-atomicity-r6.xml",
+      "sha256": "cc98f5e92a7fb52886e4a06cf18d760ba1655d2b9c516acaddb0380885adb086",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "79.114"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_conditional_atomicity::test_task_insert_failure_rolls_back_new_receipt_and_recovers_same_command",
+          "result": "PASS",
+          "time": "72.619"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r6/runs/reviewer-conditional-correction-r6.xml",
+      "sha256": "ce561eb0b7e11fc0eddd06a65a3d2f664774c419b706b4817d068df44fc8de00",
+      "suites": [
+        {
+          "tests": "4",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "149.047"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_conditional_boundaries::test_future_retained_review_is_not_current_after_clock_rollback",
+          "result": "PASS",
+          "time": "29.270"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_boundaries::test_restore_with_missing_actual_anchor_cannot_cancel_manual_schedule",
+          "result": "PASS",
+          "time": "49.968"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_absence::test_absence_uses_actual_history_not_only_last_two_start_dates",
+          "result": "PASS",
+          "time": "27.177"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_historical_selection::test_historical_selection_keeps_receipt_but_not_current_date_after_clear",
+          "result": "PASS",
+          "time": "34.125"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r8/runs/reviewer-conditional-absence-passport-r8-corrected-harness.xml",
+      "sha256": "9bbac68e6e55c7302104b2100d546e4e3fb878487fc94d32c260362db040dd8d",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "46.634"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_conditional_absence_passport::test_own_other_application_passport_change_requires_fresh_history_confirmation",
+          "result": "FAIL",
+          "time": "36.599"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r8/runs/reviewer-conditional-absence-passport-r8.xml",
+      "sha256": "1898890ef0a0d36b7d7c67fb7eabe7f313e708acf4d01dd9900268d8e10c27c7",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "37.929"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_conditional_absence_passport::test_own_other_application_passport_change_requires_fresh_history_confirmation",
+          "result": "FAIL",
+          "time": "29.953"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r8/runs/reviewer-conditional-privacy-r8.xml",
+      "sha256": "d86b9c70370bf3052270fd87fc42304d3c0c67946fae173d5c2835ff4beb0a7d",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "46.685"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_conditional_privacy::test_native_interview_privacy_blocks_review_even_without_channel_session",
+          "result": "FAIL",
+          "time": "35.321"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-conditional-review-r8/runs/reviewer-conditional-renewal-r8.xml",
+      "sha256": "d8cb12e75c9b5afc65360ead0cbc9c7c89391f91e189eab8289d442afc3f8cd3",
+      "suites": [
+        {
+          "tests": "2",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "132.941"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_conditional_renewal::test_renewal_requires_matching_type_purpose_inviter_and_current_actual_period",
+          "result": "PASS",
+          "time": "96.800"
+        },
+        {
+          "name": "tests.test_reviewer_conditional_renewal::test_supplied_interview_date_cannot_disagree_with_actual_visa_period",
+          "result": "FAIL",
+          "time": "28.011"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r1/runs/actual-anchors-r1.xml",
+      "sha256": "f726f6031281fb748d80c2bc4c1d26c14fec3309438def0ba98bcb76fa423d5b",
+      "suites": [
+        {
+          "tests": "4",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "20.490"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_entry_anchors::test_four_actual_period_kinds_preserve_expired_dates_and_require_own_approval",
+          "result": "PASS",
+          "time": "5.992"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_correction_profile_currentness_withdrawal_and_exact_old_retry",
+          "result": "PASS",
+          "time": "2.349"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_repeated_effective_changes_remain_distinct_and_periods_cannot_compete",
+          "result": "PASS",
+          "time": "1.928"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_strict_dates_ids_approval_and_actual_visa_file",
+          "result": "PASS",
+          "time": "1.965"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r10/runs/deadline-compat-r10.xml",
+      "sha256": "2424bc53d7d3a63ff622a693f06c631d971f90f2c67181fbd1bb7a23000d2b2c",
+      "suites": [
+        {
+          "tests": "34",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "59.912"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_entry_deadlines::test_unknown_then_manual_correction_clear_and_recalculation_preserve_history",
+          "result": "PASS",
+          "time": "2.291"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_new_actual_entry_invalidates_manual_date_without_destroying_old_evidence",
+          "result": "PASS",
+          "time": "2.138"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_duplicate_requests_cas_and_person_scope",
+          "result": "PASS",
+          "time": "1.649"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_corrupt_history_fails_closed_on_read_write_and_retry",
+          "result": "PASS",
+          "time": "1.695"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_recalculation_keeps_exact_source_version_and_bounded_history",
+          "result": "PASS",
+          "time": "1.775"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_domain_authorization_precedes_payload_and_engine[None]",
+          "result": "PASS",
+          "time": "0.006"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_domain_authorization_precedes_payload_and_engine[actor1]",
+          "result": "PASS",
+          "time": "0.006"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_domain_authorization_precedes_payload_and_engine[actor2]",
+          "result": "PASS",
+          "time": "0.005"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_domain_authorization_precedes_payload_and_engine[actor3]",
+          "result": "PASS",
+          "time": "0.007"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_new_calendar_version_changes_candidate_without_rewriting_old_deadline",
+          "result": "PASS",
+          "time": "1.906"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_imported_rule_with_unknown_value_never_guesses_a_deadline",
+          "result": "PASS",
+          "time": "1.730"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_concurrent_deadline_writes_have_one_successor",
+          "result": "PASS",
+          "time": "1.386"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_explicit_enable_unknown_waiting_then_atomic_date_and_clear",
+          "result": "PASS",
+          "time": "1.692"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_atomic_date_change_reuses_task_and_repeated_old_job_consumes_latest",
+          "result": "PASS",
+          "time": "1.913"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_actions_durable_receipts_and_completed_history_never_reopens_on_owner_change",
+          "result": "PASS",
+          "time": "2.065"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_case_owner_change_and_missing_owner_waiting",
+          "result": "PASS",
+          "time": "1.710"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_claimed_unknown_outcome_never_blindly_cancelled_or_duplicated",
+          "result": "PASS",
+          "time": "2.120"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_manual_schedule_conflict_requires_explicit_current_token",
+          "result": "PASS",
+          "time": "1.916"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_actual_travel_hook_invalidates_task_in_same_transaction",
+          "result": "PASS",
+          "time": "1.912"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_cross_case_task_corruption_and_source_tamper_fail_closed",
+          "result": "PASS",
+          "time": "2.033"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_auth_before_engine_and_payload[None]",
+          "result": "PASS",
+          "time": "0.006"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_auth_before_engine_and_payload[actor1]",
+          "result": "PASS",
+          "time": "0.007"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_auth_before_engine_and_payload[actor2]",
+          "result": "PASS",
+          "time": "0.009"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_auth_before_engine_and_payload[actor3]",
+          "result": "PASS",
+          "time": "0.009"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_concurrent_enable_is_one_task_and_source_hook_rolls_back_atomically",
+          "result": "PASS",
+          "time": "1.777"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_lost_commit_ack_retry_action_uses_existing_receipt",
+          "result": "PASS",
+          "time": "1.731"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_batch_partial_failure_resume_and_cursor",
+          "result": "PASS",
+          "time": "2.085"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_new_submission_event_atomically_invalidates_bound_task",
+          "result": "PASS",
+          "time": "1.877"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_binding_audit_cannot_be_repointed_to_an_unrelated_same_case_task",
+          "result": "PASS",
+          "time": "1.791"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_generation_limit_does_not_discard_new_source_fact",
+          "result": "PASS",
+          "time": "1.911"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_lost_creation_ack_retry_does_not_duplicate_task",
+          "result": "PASS",
+          "time": "1.872"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_two_rules_same_application_have_independent_dates_and_actions",
+          "result": "PASS",
+          "time": "1.918"
+        },
+        {
+          "name": "tests.test_work_review_migration::test_review_additive_empty_cycle_and_full_metadata",
+          "result": "PASS",
+          "time": "3.184"
+        },
+        {
+          "name": "tests.test_work_review_migration::test_review_postgres_ddl_and_offline_downgrade",
+          "result": "PASS",
+          "time": "0.091"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r15/runs/actual-absence-current-r15.xml",
+      "sha256": "14f270e5a189422774ff6d00ca8b1f3262ead65290500a91f31e9b4bb21f43fd",
+      "suites": [
+        {
+          "tests": "2",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "94.807"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadlines::test_actual_absence_29_30_31_own_history_controls_real_saved_review",
+          "result": "FAIL",
+          "time": "22.263"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_actual_period_to_existing_receipt_task_withdrawal_and_old_retry",
+          "result": "PASS",
+          "time": "63.229"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r16/runs/actual-and-native-r16.xml",
+      "sha256": "512a7f42ad1ff3753d5e31a5a0a8db33f9d1b13b8cf24cf86b1278b4c6ff1282",
+      "suites": [
+        {
+          "tests": "4",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "254.916"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadlines::test_actual_absence_29_30_31_own_history_controls_real_saved_review",
+          "result": "FAIL",
+          "time": "14.758"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_all_remaining_source_periods_and_events_connect_to_saved_receipts",
+          "result": "PASS",
+          "time": "109.902"
+        },
+        {
+          "name": "tests.test_admin_actual_dates::test_native_actual_correction_saved_review_reconcile_and_security",
+          "result": "PASS",
+          "time": "86.238"
+        },
+        {
+          "name": "tests.test_admin_actual_dates::test_native_original_retry_after_unknown_commit_and_authority_loss",
+          "result": "PASS",
+          "time": "34.301"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r17/runs/actual-absence-r17.xml",
+      "sha256": "a3cb63213e807880f736f8bd6e0eb6810d9ca00351f3259ace4a211e8237c117",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "76.140"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadlines::test_actual_absence_29_30_31_own_history_controls_real_saved_review",
+          "result": "PASS",
+          "time": "66.804"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r18/runs/source-sop-connected-r18.xml",
+      "sha256": "8aef9747b036595b9a27a36c00fde809ec6eb18db525489b1a5ea664ac5f96ea",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "105.006"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadline_sop::test_original_eaeu_registration_sop_actual_certificate_review_task_and_withdrawal",
+          "result": "PASS",
+          "time": "96.120"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r20/runs/visa-sop-reviews-r20.xml",
+      "sha256": "6b15545bcf87e6afea0fbe769f1d7b9786d87c5c7f0ce8acf183f669021ef0ae",
+      "suites": [
+        {
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "262.134"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadline_visa_sops::test_actual_visa_source_review_to_existing_task_and_retained_retry[KG.DL.INTERNAL_TS_EXIT_REVIEW-TS-tourism-2026-10-27]",
+          "result": "PASS",
+          "time": "53.889"
+        },
+        {
+          "name": "tests.test_conditional_deadline_visa_sops::test_actual_visa_source_review_to_existing_task_and_retained_retry[KG.DL.INTERNAL_B_RENEWAL_PREPARATION-B-medical-2026-10-08]",
+          "result": "PASS",
+          "time": "54.697"
+        },
+        {
+          "name": "tests.test_conditional_deadline_visa_sops::test_actual_visa_source_review_to_existing_task_and_retained_retry[KG.DL.INTERNAL_RL_RES_PREPARATION-RL-relatives_kg_citizen-2026-10-08]",
+          "result": "PASS",
+          "time": "43.447"
+        },
+        {
+          "name": "tests.test_conditional_deadline_visa_sops::test_actual_visa_source_review_to_existing_task_and_retained_retry[KG.DL.INTERNAL_RL_RES_REVIEW-RL-relatives_kg_citizen-2026-10-19]",
+          "result": "PASS",
+          "time": "47.226"
+        },
+        {
+          "name": "tests.test_conditional_deadline_visa_sops::test_actual_visa_source_review_to_existing_task_and_retained_retry[KG.DL.INTERNAL_S_RES_REVIEW-S-study-2026-10-19]",
+          "result": "PASS",
+          "time": "55.179"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r21/runs/promoted-domain-native-r21.xml",
+      "sha256": "1266f2e9345e6b2127f4ecd4a26a01377f96556e2d0c3438e07f202c3fad3865",
+      "suites": [
+        {
+          "tests": "19",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "722.948"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadline_review_boundaries::test_future_retained_review_is_not_current_after_clock_rollback",
+          "result": "PASS",
+          "time": "31.805"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_boundaries::test_restore_with_missing_actual_anchor_cannot_cancel_manual_schedule",
+          "result": "PASS",
+          "time": "49.519"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_historical_selection::test_historical_selection_keeps_receipt_but_not_current_date_after_clear",
+          "result": "PASS",
+          "time": "29.436"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_atomicity::test_task_insert_failure_rolls_back_new_receipt_and_recovers_same_command",
+          "result": "PASS",
+          "time": "50.537"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_privacy::test_native_interview_privacy_blocks_review_even_without_channel_session",
+          "result": "PASS",
+          "time": "20.933"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_privacy::test_existing_receipt_stays_exact_but_new_write_is_denied_after_native_withdrawal",
+          "result": "PASS",
+          "time": "26.301"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_renewal::test_renewal_requires_matching_type_purpose_inviter_and_current_actual_period",
+          "result": "PASS",
+          "time": "84.261"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_renewal::test_supplied_interview_date_cannot_disagree_with_actual_visa_period",
+          "result": "PASS",
+          "time": "28.041"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_anchor_application_bound::test_thirty_third_passport_application_cannot_poison_existing_current_reads",
+          "result": "PASS",
+          "time": "53.551"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_cached_history::test_two_source_prefixes_replay_exactly_with_one_fresh_cache",
+          "result": "PASS",
+          "time": "48.698"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_absence_presence::test_absence_known_profile_presence_matches_history_or_requires_review",
+          "result": "PASS",
+          "time": "49.180"
+        },
+        {
+          "name": "tests.test_admin_actual_dates_review::test_lost_commit_healthy_reader_keeps_exact_original_retry[conditional_review]",
+          "result": "PASS",
+          "time": "36.709"
+        },
+        {
+          "name": "tests.test_admin_actual_dates_review::test_lost_commit_healthy_reader_keeps_exact_original_retry[record]",
+          "result": "PASS",
+          "time": "26.681"
+        },
+        {
+          "name": "tests.test_admin_actual_dates_review::test_current_signed_visa_context_save_and_cross_scope_refusals",
+          "result": "PASS",
+          "time": "63.487"
+        },
+        {
+          "name": "tests.test_admin_actual_dates_tokens::test_nonascii_tokens_are_controlled_forbidden[csrf]",
+          "result": "PASS",
+          "time": "1.732"
+        },
+        {
+          "name": "tests.test_admin_actual_dates_tokens::test_nonascii_tokens_are_controlled_forbidden[signature]",
+          "result": "PASS",
+          "time": "1.945"
+        },
+        {
+          "name": "tests.test_admin_actual_dates_tokens::test_absent_and_foreign_subject_scope_returns_not_found",
+          "result": "PASS",
+          "time": "1.828"
+        },
+        {
+          "name": "tests.test_admin_actual_dates_overdue::test_real_overdue_report_and_known_invalid_form_are_distinct",
+          "result": "PASS",
+          "time": "33.791"
+        },
+        {
+          "name": "tests.test_admin_actual_dates_browser::test_real_native_themes_nojs_print_and_withdrawn_authority",
+          "result": "PASS",
+          "time": "73.114"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r22/runs/final-delta-schema-legacy-r22.xml",
+      "sha256": "86ab00c9cd22abfc97b56f2b9f5d956793d4478eac289d8e3237c8e62efbbc85",
+      "suites": [
+        {
+          "tests": "40",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "245.007"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadline_review_visa_source_delta::test_visa_sop_scope_requires_own_kind_and_reconciles_interview",
+          "result": "PASS",
+          "time": "65.570"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_absence::test_absence_uses_actual_history_not_only_last_two_start_dates",
+          "result": "PASS",
+          "time": "32.123"
+        },
+        {
+          "name": "tests.test_conditional_deadline_review_absence_passport::test_own_other_application_passport_change_requires_fresh_history_confirmation",
+          "result": "PASS",
+          "time": "40.213"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_actual_absence_29_30_31_own_history_controls_real_saved_review",
+          "result": "PASS",
+          "time": "52.211"
+        },
+        {
+          "name": "tests.test_entry_anchor_migration::test_actual_anchor_empty_round_trip_preserves_old_schema_and_matches_metadata",
+          "result": "PASS",
+          "time": "2.844"
+        },
+        {
+          "name": "tests.test_entry_anchor_migration::test_actual_anchor_postgres_ddl_and_no_unchecked_offline_downgrade",
+          "result": "PASS",
+          "time": "0.072"
+        },
+        {
+          "name": "tests.test_work_review_migration::test_review_additive_empty_cycle_and_full_metadata",
+          "result": "PASS",
+          "time": "2.110"
+        },
+        {
+          "name": "tests.test_work_review_migration::test_review_postgres_ddl_and_offline_downgrade",
+          "result": "PASS",
+          "time": "0.073"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_unknown_then_manual_correction_clear_and_recalculation_preserve_history",
+          "result": "PASS",
+          "time": "1.701"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_new_actual_entry_invalidates_manual_date_without_destroying_old_evidence",
+          "result": "PASS",
+          "time": "1.933"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_duplicate_requests_cas_and_person_scope",
+          "result": "PASS",
+          "time": "1.562"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_corrupt_history_fails_closed_on_read_write_and_retry",
+          "result": "PASS",
+          "time": "1.237"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_recalculation_keeps_exact_source_version_and_bounded_history",
+          "result": "PASS",
+          "time": "1.400"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_domain_authorization_precedes_payload_and_engine[None]",
+          "result": "PASS",
+          "time": "0.004"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_domain_authorization_precedes_payload_and_engine[actor1]",
+          "result": "PASS",
+          "time": "0.007"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_domain_authorization_precedes_payload_and_engine[actor2]",
+          "result": "PASS",
+          "time": "0.006"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_domain_authorization_precedes_payload_and_engine[actor3]",
+          "result": "PASS",
+          "time": "0.005"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_new_calendar_version_changes_candidate_without_rewriting_old_deadline",
+          "result": "PASS",
+          "time": "1.873"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_imported_rule_with_unknown_value_never_guesses_a_deadline",
+          "result": "PASS",
+          "time": "1.474"
+        },
+        {
+          "name": "tests.test_entry_deadlines::test_concurrent_deadline_writes_have_one_successor",
+          "result": "PASS",
+          "time": "1.361"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_explicit_enable_unknown_waiting_then_atomic_date_and_clear",
+          "result": "PASS",
+          "time": "1.889"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_atomic_date_change_reuses_task_and_repeated_old_job_consumes_latest",
+          "result": "PASS",
+          "time": "1.591"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_actions_durable_receipts_and_completed_history_never_reopens_on_owner_change",
+          "result": "PASS",
+          "time": "1.822"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_case_owner_change_and_missing_owner_waiting",
+          "result": "PASS",
+          "time": "1.638"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_claimed_unknown_outcome_never_blindly_cancelled_or_duplicated",
+          "result": "PASS",
+          "time": "1.780"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_manual_schedule_conflict_requires_explicit_current_token",
+          "result": "PASS",
+          "time": "1.732"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_actual_travel_hook_invalidates_task_in_same_transaction",
+          "result": "PASS",
+          "time": "1.721"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_cross_case_task_corruption_and_source_tamper_fail_closed",
+          "result": "PASS",
+          "time": "1.597"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_auth_before_engine_and_payload[None]",
+          "result": "PASS",
+          "time": "0.007"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_auth_before_engine_and_payload[actor1]",
+          "result": "PASS",
+          "time": "0.005"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_auth_before_engine_and_payload[actor2]",
+          "result": "PASS",
+          "time": "0.005"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_auth_before_engine_and_payload[actor3]",
+          "result": "PASS",
+          "time": "0.005"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_concurrent_enable_is_one_task_and_source_hook_rolls_back_atomically",
+          "result": "PASS",
+          "time": "1.573"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_lost_commit_ack_retry_action_uses_existing_receipt",
+          "result": "PASS",
+          "time": "1.624"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_batch_partial_failure_resume_and_cursor",
+          "result": "PASS",
+          "time": "1.801"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_new_submission_event_atomically_invalidates_bound_task",
+          "result": "PASS",
+          "time": "1.669"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_binding_audit_cannot_be_repointed_to_an_unrelated_same_case_task",
+          "result": "PASS",
+          "time": "1.598"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_generation_limit_does_not_discard_new_source_fact",
+          "result": "PASS",
+          "time": "1.654"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_lost_creation_ack_retry_does_not_duplicate_task",
+          "result": "PASS",
+          "time": "1.434"
+        },
+        {
+          "name": "tests.test_entry_deadline_tasks::test_two_rules_same_application_have_independent_dates_and_actions",
+          "result": "PASS",
+          "time": "1.831"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r23/runs/promoted-legacy-native-delta-r23.xml",
+      "sha256": "76c9fb14c7c1861d13b2ca50a72b6572bfcb6533f3b3bc2daf584673c1232ecc",
+      "suites": [
+        {
+          "tests": "2",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "14.549"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadline_legacy_upgrade::test_actual_pre_d_writer_receipts_read_retry_and_explicit_replay_drift",
+          "result": "PASS",
+          "time": "2.725"
+        },
+        {
+          "name": "tests.test_admin_actual_dates_visa_labels::test_new_visa_rule_choices_are_localized_unknown_and_write_free_without_authority",
+          "result": "PASS",
+          "time": "2.934"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r3/runs/actual-anchors-schema-r3.xml",
+      "sha256": "e974d3dd85b1acae1735caa4ff366f666384fc391598bb5bc3fd33a3e2f34fc3",
+      "suites": [
+        {
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "22.332"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_entry_anchors::test_four_actual_period_kinds_preserve_expired_dates_and_require_own_approval",
+          "result": "PASS",
+          "time": "5.607"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_correction_profile_currentness_withdrawal_and_exact_old_retry",
+          "result": "PASS",
+          "time": "2.136"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_repeated_effective_changes_remain_distinct_and_periods_cannot_compete",
+          "result": "PASS",
+          "time": "2.049"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_strict_dates_ids_approval_and_actual_visa_file",
+          "result": "PASS",
+          "time": "1.844"
+        },
+        {
+          "name": "tests.test_entry_anchor_migration::test_actual_anchor_empty_round_trip_preserves_old_schema_and_matches_metadata",
+          "result": "PASS",
+          "time": "2.711"
+        },
+        {
+          "name": "tests.test_entry_anchor_migration::test_actual_anchor_postgres_ddl_and_no_unchecked_offline_downgrade",
+          "result": "PASS",
+          "time": "0.068"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r4/runs/conditional-core-r4.xml",
+      "sha256": "887f7103f311b9f44ea42cd2016c4467e0bc9ebf9f57fd6b292c19822e20e56d",
+      "suites": [
+        {
+          "tests": "17",
+          "failures": "2",
+          "errors": "0",
+          "skipped": "0",
+          "time": "190.689"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_entry_anchors::test_four_actual_period_kinds_preserve_expired_dates_and_require_own_approval",
+          "result": "PASS",
+          "time": "5.241"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_correction_profile_currentness_withdrawal_and_exact_old_retry",
+          "result": "PASS",
+          "time": "2.174"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_repeated_effective_changes_remain_distinct_and_periods_cannot_compete",
+          "result": "PASS",
+          "time": "2.000"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_strict_dates_ids_approval_and_actual_visa_file",
+          "result": "PASS",
+          "time": "1.694"
+        },
+        {
+          "name": "tests.test_entry_anchor_migration::test_actual_anchor_empty_round_trip_preserves_old_schema_and_matches_metadata",
+          "result": "PASS",
+          "time": "2.949"
+        },
+        {
+          "name": "tests.test_entry_anchor_migration::test_actual_anchor_postgres_ddl_and_no_unchecked_offline_downgrade",
+          "result": "PASS",
+          "time": "0.075"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_actual_period_to_existing_receipt_task_withdrawal_and_old_retry",
+          "result": "PASS",
+          "time": "43.080"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_code_actual_meaning_and_source_authority_fail_closed",
+          "result": "FAIL",
+          "time": "16.401"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.VISA_EXTENSION-2026-10-23]",
+          "result": "PASS",
+          "time": "13.451"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.RC_BEFORE_EP_END-2026-10-16]",
+          "result": "PASS",
+          "time": "12.141"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.EP_BEFORE_RC_END-2026-10-21]",
+          "result": "PASS",
+          "time": "12.323"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.INTERNAL_RES_PREPARATION-2026-10-09]",
+          "result": "FAIL",
+          "time": "12.466"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.REGISTRATION_EXTENSION-2026-10-30]",
+          "result": "PASS",
+          "time": "11.826"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.DISMISSAL_NOTIFICATION-2026-11-02]",
+          "result": "PASS",
+          "time": "12.483"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.EXIT_AFTER_EP_END-2026-11-29]",
+          "result": "PASS",
+          "time": "11.079"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.INTERNAL_DISMISSAL_EXIT_PLAN-2026-11-29]",
+          "result": "PASS",
+          "time": "11.432"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_absence_29_30_31_is_trigger_not_filing_deadline",
+          "result": "PASS",
+          "time": "10.994"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r5/runs/code-r5.xml",
+      "sha256": "1137a11d9e3a95cc39183c425caafdfedb842a4dcf1b314ee1fcf9efb861ec56",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "25.032"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadlines::test_code_actual_meaning_and_source_authority_fail_closed",
+          "result": "FAIL",
+          "time": "16.578"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r6/runs/conditional-native-r6.xml",
+      "sha256": "c990053601ebf8e26b19874afe7627d4ebaf400b47385bb0feaf7cef1719559f",
+      "suites": [
+        {
+          "tests": "13",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "293.907"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadlines::test_actual_period_to_existing_receipt_task_withdrawal_and_old_retry",
+          "result": "PASS",
+          "time": "40.683"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_code_actual_meaning_and_source_authority_fail_closed",
+          "result": "PASS",
+          "time": "25.276"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.VISA_EXTENSION-2026-10-23]",
+          "result": "PASS",
+          "time": "10.852"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.RC_BEFORE_EP_END-2026-10-16]",
+          "result": "PASS",
+          "time": "11.052"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.EP_BEFORE_RC_END-2026-10-21]",
+          "result": "PASS",
+          "time": "11.081"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.INTERNAL_RES_PREPARATION-2026-10-07]",
+          "result": "PASS",
+          "time": "11.064"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.REGISTRATION_EXTENSION-2026-10-30]",
+          "result": "PASS",
+          "time": "11.244"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.DISMISSAL_NOTIFICATION-2026-11-02]",
+          "result": "PASS",
+          "time": "10.924"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.EXIT_AFTER_EP_END-2026-11-29]",
+          "result": "PASS",
+          "time": "11.378"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_offsets_use_explicit_counting[KG.DL.INTERNAL_DISMISSAL_EXIT_PLAN-2026-11-29]",
+          "result": "PASS",
+          "time": "12.265"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_source_absence_29_30_31_is_trigger_not_filing_deadline",
+          "result": "PASS",
+          "time": "12.296"
+        },
+        {
+          "name": "tests.test_admin_actual_dates::test_native_actual_correction_saved_review_reconcile_and_security",
+          "result": "PASS",
+          "time": "91.125"
+        },
+        {
+          "name": "tests.test_admin_actual_dates::test_native_original_retry_after_unknown_commit_and_authority_loss",
+          "result": "FAIL",
+          "time": "26.465"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r7/runs/source-branches-r7.xml",
+      "sha256": "9529f5c25bd15e3ead7394ea9384eea9c66a4e0e01737e2f334f8213b392bbe2",
+      "suites": [
+        {
+          "tests": "4",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "153.550"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_conditional_deadlines::test_real_visa_period_requires_renewal_premises_and_reconciles_identity",
+          "result": "PASS",
+          "time": "39.989"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_all_remaining_source_periods_and_events_connect_to_saved_receipts",
+          "result": "PASS",
+          "time": "101.249"
+        },
+        {
+          "name": "tests.test_entry_anchor_migration::test_actual_anchor_empty_round_trip_preserves_old_schema_and_matches_metadata",
+          "result": "PASS",
+          "time": "2.744"
+        },
+        {
+          "name": "tests.test_entry_anchor_migration::test_actual_anchor_postgres_ddl_and_no_unchecked_offline_downgrade",
+          "result": "PASS",
+          "time": "0.079"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-30d-r8/runs/native-anchors-r8.xml",
+      "sha256": "079b39ea838ad20c7b239746e6fc855ea673ceb05bebdc0f4b14e0284dc2c0f4",
+      "suites": [
+        {
+          "tests": "9",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "228.445"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_admin_actual_dates::test_native_actual_correction_saved_review_reconcile_and_security",
+          "result": "PASS",
+          "time": "100.011"
+        },
+        {
+          "name": "tests.test_admin_actual_dates::test_native_original_retry_after_unknown_commit_and_authority_loss",
+          "result": "PASS",
+          "time": "38.939"
+        },
+        {
+          "name": "tests.test_conditional_deadlines::test_actual_period_to_existing_receipt_task_withdrawal_and_old_retry",
+          "result": "PASS",
+          "time": "64.868"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_four_actual_period_kinds_preserve_expired_dates_and_require_own_approval",
+          "result": "PASS",
+          "time": "6.193"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_correction_profile_currentness_withdrawal_and_exact_old_retry",
+          "result": "PASS",
+          "time": "2.343"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_repeated_effective_changes_remain_distinct_and_periods_cannot_compete",
+          "result": "PASS",
+          "time": "2.098"
+        },
+        {
+          "name": "tests.test_entry_anchors::test_strict_dates_ids_approval_and_actual_visa_file",
+          "result": "PASS",
+          "time": "2.192"
+        },
+        {
+          "name": "tests.test_entry_anchor_migration::test_actual_anchor_empty_round_trip_preserves_old_schema_and_matches_metadata",
+          "result": "PASS",
+          "time": "3.088"
+        },
+        {
+          "name": "tests.test_entry_anchor_migration::test_actual_anchor_postgres_ddl_and_no_unchecked_offline_downgrade",
+          "result": "PASS",
+          "time": "0.070"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e630d-native-review-r14/runs/reviewer-native-r14.xml",
+      "sha256": "466bbb5bc2502f0ec553142ad0525534ddd58a4a42bb922c74d1f6cb3f1bcc63",
+      "suites": [
+        {
+          "tests": "4",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "256.753"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_actual_dates::test_lost_commit_healthy_reader_keeps_exact_original_retry[conditional_review]",
+          "result": "PASS",
+          "time": "51.801"
+        },
+        {
+          "name": "tests.test_reviewer_actual_dates::test_lost_commit_healthy_reader_keeps_exact_original_retry[record]",
+          "result": "PASS",
+          "time": "29.998"
+        },
+        {
+          "name": "tests.test_reviewer_actual_dates::test_current_signed_visa_context_save_and_cross_scope_refusals",
+          "result": "PASS",
+          "time": "79.139"
+        },
+        {
+          "name": "tests.test_reviewer_actual_browser::test_real_native_themes_nojs_print_and_withdrawn_authority",
+          "result": "PASS",
+          "time": "83.220"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e630d-native-review-r14/runs/reviewer-token-original-r14.xml",
+      "sha256": "4f5b4e36f45a6f537355ebddbf6099b25ab9a85397382c892828d1e09aaf1669",
+      "suites": [
+        {
+          "tests": "3",
+          "failures": "3",
+          "errors": "0",
+          "skipped": "0",
+          "time": "10.335"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_actual_tokens::test_nonascii_tokens_are_controlled_forbidden[csrf]",
+          "result": "FAIL",
+          "time": "1.519"
+        },
+        {
+          "name": "tests.test_reviewer_actual_tokens::test_nonascii_tokens_are_controlled_forbidden[signature]",
+          "result": "FAIL",
+          "time": "1.320"
+        },
+        {
+          "name": "tests.test_reviewer_actual_tokens::test_absent_and_foreign_subject_scope_returns_not_found",
+          "result": "FAIL",
+          "time": "1.516"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e630d-native-review-r16/runs/reviewer-corrective-r16.xml",
+      "sha256": "3804a753caf524bdf23ebbff6b41fddd23c96d754c0bc05afe95c121fc736497",
+      "suites": [
+        {
+          "tests": "4",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "51.293"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_actual_tokens::test_nonascii_tokens_are_controlled_forbidden[csrf]",
+          "result": "PASS",
+          "time": "1.917"
+        },
+        {
+          "name": "tests.test_reviewer_actual_tokens::test_nonascii_tokens_are_controlled_forbidden[signature]",
+          "result": "PASS",
+          "time": "1.494"
+        },
+        {
+          "name": "tests.test_reviewer_actual_tokens::test_absent_and_foreign_subject_scope_returns_not_found",
+          "result": "PASS",
+          "time": "1.713"
+        },
+        {
+          "name": "tests.test_reviewer_actual_overdue::test_real_overdue_report_and_known_invalid_form_are_distinct",
+          "result": "PASS",
+          "time": "37.565"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e630d-native-review-r20/runs/reviewer-new-visa-labels-r20.xml",
+      "sha256": "cfae1063a80391e649832724d211f1ff983118cc7d50bb166b1cd35f2bf16431",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "13.323"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_new_visa_rule_labels::test_new_visa_rule_choices_are_localized_unknown_and_write_free_without_authority",
+          "result": "PASS",
+          "time": "3.109"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e630d-native-review-r7/runs/reviewer-http-r7.xml",
+      "sha256": "0bfa8249b2582704dd2e2c8fad1627d23a7be49effa96bb22276151a2449bd3c",
+      "suites": [
+        {
+          "tests": "3",
+          "failures": "2",
+          "errors": "0",
+          "skipped": "0",
+          "time": "133.947"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_actual_dates::test_lost_commit_healthy_reader_keeps_exact_original_retry[conditional_review]",
+          "result": "FAIL",
+          "time": "40.996"
+        },
+        {
+          "name": "tests.test_reviewer_actual_dates::test_lost_commit_healthy_reader_keeps_exact_original_retry[record]",
+          "result": "FAIL",
+          "time": "28.465"
+        },
+        {
+          "name": "tests.test_reviewer_actual_dates::test_current_signed_visa_context_save_and_cross_scope_refusals",
+          "result": "PASS",
+          "time": "55.127"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e630d-native-review-r8/runs/reviewer-native-r8-collection.xml",
+      "sha256": "910f18a29ef00587569acec4205d3957b573f7ce08760990ba607a5af7abf0e4",
+      "suites": [
+        {
+          "tests": "1",
+          "failures": "0",
+          "errors": "1",
+          "skipped": "0",
+          "time": "9.699"
+        }
+      ],
+      "cases": [
+        {
+          "name": "::tests.test_reviewer_actual_browser",
+          "result": "ERROR",
+          "time": "0.000"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e630d-native-review-r8/runs/reviewer-native-r8.xml",
+      "sha256": "278ea4eb1c42707d09a061c94dc441cef2fa8fb58f0e0263c21edc96facafd84",
+      "suites": [
+        {
+          "tests": "4",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "233.647"
+        }
+      ],
+      "cases": [
+        {
+          "name": "tests.test_reviewer_actual_dates::test_lost_commit_healthy_reader_keeps_exact_original_retry[conditional_review]",
+          "result": "PASS",
+          "time": "39.165"
+        },
+        {
+          "name": "tests.test_reviewer_actual_dates::test_lost_commit_healthy_reader_keeps_exact_original_retry[record]",
+          "result": "PASS",
+          "time": "31.160"
+        },
+        {
+          "name": "tests.test_reviewer_actual_dates::test_current_signed_visa_context_save_and_cross_scope_refusals",
+          "result": "PASS",
+          "time": "55.920"
+        },
+        {
+          "name": "tests.test_reviewer_actual_browser::test_real_native_themes_nojs_print_and_withdrawn_authority",
+          "result": "FAIL",
+          "time": "98.256"
+        }
+      ]
+    }
+  ],
+  "promotions": {
+    "native": [
+      {
+        "source": "runs/e630d-native-review-r14/tests/test_reviewer_actual_dates.py",
+        "target": "tests/test_admin_actual_dates_review.py",
+        "source_lf": "1591279694f91f70f99b786b848268e08acec7b40347ea714c24b8f0cbf101d2",
+        "target_lf": "1591279694f91f70f99b786b848268e08acec7b40347ea714c24b8f0cbf101d2",
+        "import_rename_only": true
+      },
+      {
+        "source": "runs/e630d-native-review-r14/tests/test_reviewer_actual_browser.py",
+        "target": "tests/test_admin_actual_dates_browser.py",
+        "source_lf": "ed0180ad518711636c685187d6a1f755e32f570e57eba35082e60042fd5515a8",
+        "target_lf": "ed0180ad518711636c685187d6a1f755e32f570e57eba35082e60042fd5515a8",
+        "import_rename_only": true
+      },
+      {
+        "source": "runs/e630d-native-review-r16/tests/test_reviewer_actual_tokens.py",
+        "target": "tests/test_admin_actual_dates_tokens.py",
+        "source_lf": "b428b466f6da6680db3a4fb4d6e60f8cbe1a529f7018d145e6342a407faf4b91",
+        "target_lf": "b428b466f6da6680db3a4fb4d6e60f8cbe1a529f7018d145e6342a407faf4b91",
+        "import_rename_only": true
+      },
+      {
+        "source": "runs/e630d-native-review-r16/tests/test_reviewer_actual_overdue.py",
+        "target": "tests/test_admin_actual_dates_overdue.py",
+        "source_lf": "13ed29f01e814f823b3953d22dc972f36d8c0971dc37f6208d9540f9ea8ac766",
+        "target_lf": "86e85a48cdefeba3518a94177380473b2cd67b6c90b216a67c952e3d1d8dfdc5",
+        "import_rename_only": true
+      }
+    ],
+    "domain": [
+      {
+        "source": "runs/e6-30d-conditional-review-r6/tests/test_reviewer_conditional_boundaries.py",
+        "target": "tests/test_conditional_deadline_review_boundaries.py",
+        "source_lf": "14bbadd7e985bd503c54f2e72f5770314238f0aecf17c69759283c7962076323",
+        "target_lf": "14bbadd7e985bd503c54f2e72f5770314238f0aecf17c69759283c7962076323",
+        "byte_identical_lf": true
+      },
+      {
+        "source": "runs/e6-30d-conditional-review-r6/tests/test_reviewer_conditional_historical_selection.py",
+        "target": "tests/test_conditional_deadline_review_historical_selection.py",
+        "source_lf": "e55784fc459154565fe8c289631ffe67ebf7f04e4701fbdf9c66a09d9a925bad",
+        "target_lf": "e55784fc459154565fe8c289631ffe67ebf7f04e4701fbdf9c66a09d9a925bad",
+        "byte_identical_lf": true
+      },
+      {
+        "source": "runs/e6-30d-conditional-review-r6/tests/test_reviewer_conditional_atomicity.py",
+        "target": "tests/test_conditional_deadline_review_atomicity.py",
+        "source_lf": "c7d881e01ec0e592c3444a9536a5710d1a62cedd6fd5f38d44e1ebf87abb6fa4",
+        "target_lf": "c7d881e01ec0e592c3444a9536a5710d1a62cedd6fd5f38d44e1ebf87abb6fa4",
+        "byte_identical_lf": true
+      },
+      {
+        "source": "runs/e6-30d-conditional-review-r16/tests/test_reviewer_conditional_privacy.py",
+        "target": "tests/test_conditional_deadline_review_privacy.py",
+        "source_lf": "b0c6b2568a36c320feafa7f5ab9ce0c9f2ea41eb1582a2c140d3ec31e3268ddb",
+        "target_lf": "b0c6b2568a36c320feafa7f5ab9ce0c9f2ea41eb1582a2c140d3ec31e3268ddb",
+        "byte_identical_lf": true
+      },
+      {
+        "source": "runs/e6-30d-conditional-review-r16/tests/test_reviewer_conditional_renewal.py",
+        "target": "tests/test_conditional_deadline_review_renewal.py",
+        "source_lf": "ec6b03838583e12601c203de129e87299378d3e4362f782c72ecc765afb29601",
+        "target_lf": "ec6b03838583e12601c203de129e87299378d3e4362f782c72ecc765afb29601",
+        "byte_identical_lf": true
+      },
+      {
+        "source": "runs/e6-30d-conditional-review-r16/tests/test_reviewer_anchor_application_bound.py",
+        "target": "tests/test_conditional_deadline_review_anchor_application_bound.py",
+        "source_lf": "9f6e6f9b0a2e74a79b05f284b0cb55016cfe9c4c439b8e674f0956ad76303821",
+        "target_lf": "9f6e6f9b0a2e74a79b05f284b0cb55016cfe9c4c439b8e674f0956ad76303821",
+        "byte_identical_lf": true
+      },
+      {
+        "source": "runs/e6-30d-conditional-review-r16/tests/test_reviewer_conditional_cached_history.py",
+        "target": "tests/test_conditional_deadline_review_cached_history.py",
+        "source_lf": "d0e1a78b5c4088c0c34f359103a79ef63b29d9923a39f2f3608615e0deadd1a8",
+        "target_lf": "d0e1a78b5c4088c0c34f359103a79ef63b29d9923a39f2f3608615e0deadd1a8",
+        "byte_identical_lf": true
+      },
+      {
+        "source": "runs/e6-30d-conditional-review-r19/tests/test_reviewer_absence_presence.py",
+        "target": "tests/test_conditional_deadline_review_absence_presence.py",
+        "source_lf": "b3b1dd94da93b204084fb8074e4801a214b9af00da2c29455abff8a45af8fafe",
+        "target_lf": "b3b1dd94da93b204084fb8074e4801a214b9af00da2c29455abff8a45af8fafe",
+        "byte_identical_lf": true
+      },
+      {
+        "source": "runs/e6-30d-conditional-review-r20/tests/test_reviewer_visa_source_delta.py",
+        "target": "tests/test_conditional_deadline_review_visa_source_delta.py",
+        "source_lf": "138931cdc755d19bb95dca2d87d14df6307cdc256244a543e5da254f13af09a3",
+        "target_lf": "138931cdc755d19bb95dca2d87d14df6307cdc256244a543e5da254f13af09a3",
+        "byte_identical_lf": true
+      },
+      {
+        "source": "runs/e6-30d-conditional-review-r20/tests/test_reviewer_conditional_absence.py",
+        "target": "tests/test_conditional_deadline_review_absence.py",
+        "source_lf": "4aad315560bd13420730c97c5ce395665d7f50f21f0a26f7e21289746744655d",
+        "target_lf": "4aad315560bd13420730c97c5ce395665d7f50f21f0a26f7e21289746744655d",
+        "byte_identical_lf": true
+      },
+      {
+        "source": "runs/e6-30d-conditional-review-r20/tests/test_reviewer_conditional_absence_passport.py",
+        "target": "tests/test_conditional_deadline_review_absence_passport.py",
+        "source_lf": "bbeb05a567745f11cf7c524123323a359eca4a50da8f78890f3c4b74b2655506",
+        "target_lf": "bbeb05a567745f11cf7c524123323a359eca4a50da8f78890f3c4b74b2655506",
+        "byte_identical_lf": true
+      }
+    ],
+    "audit": [
+      {
+        "source": "runs/e6-30d-audit-r16/tests/test_reviewer_anchor_reserves.py",
+        "target": "tests/test_entry_anchor_reserves.py",
+        "source_lf": "9e6ed4a7c9343eab25afda834b0f9ddaa61ca03173de608eea16395d27b0c46b",
+        "target_lf": "9e6ed4a7c9343eab25afda834b0f9ddaa61ca03173de608eea16395d27b0c46b",
+        "import_rename_only": true
+      },
+      {
+        "source": "runs/e6-30d-audit-r16/tests/test_audit_conditional_postgres.py",
+        "target": "tests/test_conditional_deadline_audit_postgres.py",
+        "source_lf": "fdd95aca5bb807374538ab7eca89126911f5874ac61c7f3b89d00521a0dba107",
+        "target_lf": "0e9dcea696aaddcdef4370249f5c2bac3a0fe2589d8c6ae55000b24f156aba00",
+        "import_rename_only": true
+      },
+      {
+        "source": "runs/e6-30d-audit-r16/tests/test_audit_conditional_locks.py",
+        "target": "tests/test_conditional_deadline_locks_postgres.py",
+        "source_lf": "f198c8244d03767ff92500abce994ed7f5726e8861b613e397fe4f2983ef703e",
+        "target_lf": "f198c8244d03767ff92500abce994ed7f5726e8861b613e397fe4f2983ef703e",
+        "import_rename_only": true
+      },
+      {
+        "source": "runs/e6-30d-audit-r16/tests/test_audit_conditional_recovery.py",
+        "target": "tests/test_conditional_deadline_task_recovery_postgres.py",
+        "source_lf": "7ea99e119709427fe48f2c01279b8662cf27d2b60537e2bcbe453a4fd66ae03b",
+        "target_lf": "7ea99e119709427fe48f2c01279b8662cf27d2b60537e2bcbe453a4fd66ae03b",
+        "import_rename_only": true
+      },
+      {
+        "source": "runs/e6-30d-audit-r16/tests/test_audit_conditional_row_reserve.py",
+        "target": "tests/test_conditional_deadline_row_reserve.py",
+        "source_lf": "f0f55dcd35a7e64c8b222073e0e75fcf11508e2fa3b0c50832cbb9218a6bc56b",
+        "target_lf": "f0f55dcd35a7e64c8b222073e0e75fcf11508e2fa3b0c50832cbb9218a6bc56b",
+        "import_rename_only": true
+      }
+    ],
+    "extra": {
+      "legacy_fixture_sha256": "160d0c2aa3f2b334221c9f49df938b8dd6ef5ffcab26cc0a6b6612e5c116614a",
+      "legacy_fixture_commit": "5e91ddb2b85563c331f43f24351befd1a255d31a",
+      "legacy_test_change": "fixture path only",
+      "native_labels_change": "unchanged"
+    }
+  },
+  "reviews": {
+    "ai/reviews/2026-10-13-e6-30d-anchor-initial-review.md": "024d6a2637f2e38ffd450a3c0e82d0bbebc29c7691a7d57a7dfcbedc6c09143b",
+    "ai/reviews/2026-10-13-e6-30d-conditional-independent-review.md": "b7fc28530b8c05f2af6f812be71a194bcd5dfd8e97686cbd0300c887746aaa47",
+    "ai/reviews/2026-10-13-e6-30d-native-review.md": "c1de93878fb69df9c1bac4bbcca3ab0756a424c2edb3f0d2ca122d97629300c6",
+    "ai/reviews/2026-10-13-e6-30d-final-audit.md": "2bdc675923fddc78965430fd33720d1e58e3066a2ff1dcaeca7b7d87ad7cc52d"
+  },
+  "notes": [
+    "Independent executions and overlapping builder runs are separate, not one full-suite count.",
+    "Original genuine and harness failures are preserved; final correction mapping is in review/handoff.",
+    "No production/source/legal/calendar/owner approval or J01/J03 point is implied.",
+    "E operator-SOP prototype and unrelated UI/C documentation are excluded."
+  ]
+}

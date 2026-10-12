@@ -77,9 +77,11 @@ def _view(binding, task, desired=None):
         attention = 'claimed'
     elif task and task.status in ACTIVE and (task.scheduled_date != binding.expected_date or task.scheduled_at is not None):
         attention = 'schedule_conflict'
+    conditional_terminal = bool(task and task.status not in ACTIVE and desired and
+        desired['source'].snapshot.get('format')=='kg-conditional-deadline/2' and binding.deadline_revision_id==desired['source'].id)
     return dict(enabled=True, binding_id=binding.id, generation=binding.generation, revision=binding.revision,
         deadline_revision_id=binding.deadline_revision_id, attention=attention, task=state,
-        pending=bool(desired and desired['target_hash'] != binding.target_hash and
+        pending=bool(not conditional_terminal and desired and desired['target_hash'] != binding.target_hash and
             (not task or task.status in ACTIVE or binding.source_hash != desired['source_hash'] or binding.attention == 'missing_owner')),
         token=_hash(dict(binding_id=binding.id, revision=binding.revision, task=state,
                          desired_target=desired['target_hash'] if desired else None)))
@@ -91,6 +93,9 @@ async def _desired(session, case, application, rule):
         raise EntryStorageInvalid('deadline_task_source_required')
     source = rows[-1]
     due = deadlines._view(source, stale=stale[source.id])['summary']['operational_due_on']
+    from app.domain import conditional_deadlines
+    if conditional_deadlines.is_conditional(source):
+        due = (await conditional_deadlines.current(session, case, application, source))['review_due_on']
     owner = (case.owner_login or '').strip().lower()
     source_hash = _hash(dict(id=source.id, hash=source.snapshot_hash, due_on=due, stale=stale[source.id]))
     return dict(source=source, source_hash=source_hash, target_hash=_hash(dict(source=source_hash, owner=owner)),
@@ -114,6 +119,11 @@ async def _reconcile(session, case, application, rule, actor, *, enable=False, r
     if not binding and not enable:
         return _view(None, None)
     desired = await _desired(session, case, application, rule)
+    if enable or restore:
+        from app.domain.conditional_deadlines import task_authorize
+        await task_authorize(session, case, application, rule, actor)
+    if restore and desired['source'].snapshot.get('format') == 'kg-conditional-deadline/2' and (desired['due_on'] is None or not desired['owner']):
+        raise EntryStorageInvalid('conditional_deadline_restore_unavailable')
     task = await _task(session, case, binding, lock=True)
     if minimum_revision and desired['source'].revision < minimum_revision:
         return {**_view(binding, task, desired), 'waiting_for_revision': minimum_revision}
@@ -124,6 +134,8 @@ async def _reconcile(session, case, application, rule, actor, *, enable=False, r
         await _attention(session, binding, task, 'schedule_conflict', actor)
         return _view(binding, task, desired)
     if task and task.status not in ACTIVE:
+        if desired['source'].snapshot.get('format')=='kg-conditional-deadline/2' and binding.deadline_revision_id==desired['source'].id:
+            return _view(binding, task, desired)
         # A completed/cancelled task does not reopen on owner changes or retries.
         if binding.source_hash == desired['source_hash'] and not (binding.attention == 'missing_owner' and desired['owner'] and desired['due_on']):
             return _view(binding, task, desired)
@@ -146,7 +158,9 @@ async def _reconcile(session, case, application, rule, actor, *, enable=False, r
         if task is None:
             task = await CalendarTaskService.create(session, manager_id=desired['owner'], direction='visa', kind='followup',
                 scheduled_date=desired['due_on'], contact_id=case.contact_id, created_by=actor,
-                comment=f"Контроль срока: заявление №{application.id}, {rule}. Проверить подтверждённую дату в карточке.")
+                comment=(f"Условная дата внутренней проверки: заявление №{application.id}, {rule}. Сверить актуальные документы и основания."
+                    if desired['source'].snapshot.get('format') == 'kg-conditional-deadline/2' else
+                    f"Контроль срока: заявление №{application.id}, {rule}. Проверить подтверждённую дату в карточке."))
             task.service_case_id = case.id; binding.task_id = task.id
         else:
             if task.scheduled_date != desired['due_on'] or task.scheduled_at is not None:
@@ -211,8 +225,8 @@ async def reconcile_deadline_task(engine, *, actor, case_id, application_id, rul
 async def read_deadline_task(engine, *, actor, case_id, application_id, rule_unit_id):
     _validate(actor, case_id, application_id, rule_unit_id)
     async def read(session):
-        case = await applications._case(session, case_id)
-        application = await applications._application(session, case_id, application_id)
+        case = await applications._case(session, case_id, lock=True)
+        application = await applications._application(session, case_id, application_id, lock=True)
         desired = await _desired(session, case, application, rule_unit_id)
         bindings = await _bindings(session, application, rule_unit_id)
         result = []

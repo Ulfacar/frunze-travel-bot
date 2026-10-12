@@ -79,6 +79,9 @@ async def _history(session, case, application, rule):
         .order_by(EntryDeadlineRevision.revision).limit(MAX_REVISIONS+2))).all())
     if len(rows)>MAX_REVISIONS+1:
         raise EntryStorageInvalid('deadline_history_limit')
+    from app.domain import conditional_deadlines
+    if any(conditional_deadlines.is_conditional(r) for r in rows):
+        return await conditional_deadlines.history(session, case, application, rule, rows)
     size=0
     previous=None
     previous_size=0
@@ -119,6 +122,8 @@ async def _history(session, case, application, rule):
 
 
 def _view(row, *, stale=False):
+    from app.domain import conditional_deadlines
+    if conditional_deadlines.is_conditional(row): return conditional_deadlines.view(row)
     snapshot=_plain(row.snapshot)
     summary=sources.summary(snapshot)
     if stale:
@@ -140,6 +145,9 @@ async def record_deadline_operation(engine, *, actor, case_id, application_id, r
         case=await applications._case(session,case_id,lock=True)
         application=await applications._application(session,case_id,application_id,lock=True)
         rows,size,stale=await _history(session,case,application,rule_unit_id)
+        from app.domain import conditional_deadlines
+        if rows and conditional_deadlines.is_conditional(rows[-1]):
+            raise EntryStorageInvalid('conditional_deadline_separate_authority_required')
         old=next((r for r in rows if r.request_key==request_key),None)
         if old:
             if old.request_hash!=_hash(command):raise EntryStorageConflict('deadline_request_key_reused')
@@ -189,12 +197,15 @@ async def read_deadline_history(engine, *, actor, case_id, application_id, rule_
         raise EntryStorageInvalid('invalid_deadline_revision')
     if type(replay) is not bool:raise EntryStorageInvalid('invalid_deadline_replay')
     async def read(session):
-        case=await applications._case(session,case_id)
-        application=await applications._application(session,case_id,application_id)
+        case=await applications._case(session,case_id,lock=True)
+        application=await applications._application(session,case_id,application_id,lock=True)
         rows,size,stale=await _history(session,case,application,rule_unit_id)
         row=next((r for r in rows if r.revision==revision),None) if revision else rows[-1] if rows else None
         if revision and row is None:raise EntryStorageInvalid('deadline_revision_unavailable')
-        if row and replay:
+        from app.domain import conditional_deadlines
+        conditional = row is not None and conditional_deadlines.is_conditional(row)
+        current = await conditional_deadlines.current(session, case, application, row) if conditional else None
+        if row and replay and not conditional:
             snapshot=_plain(row.snapshot)
             if snapshot['runtime']!=_runtime():raise EntryStorageInvalid('deadline_replay_runtime_changed')
             data=snapshot['selection']
@@ -206,6 +217,7 @@ async def read_deadline_history(engine, *, actor, case_id, application_id, rule_
         return dict(application=applications._application_view(application),rule_unit_id=rule_unit_id,
             current_revision=len(rows),terminal=len(rows)>MAX_REVISIONS or size>MAX_BYTES,
             selected=_view(row,stale=stale[row.id]) if row else None,
+            conditional_current=current,
             history=[dict(revision=r.revision,created_by=r.created_by,created_at=applications._utc(r.created_at),
                           action=r.command['operation']['action']) for r in reversed(rows)])
     return await applications._run(engine,read)

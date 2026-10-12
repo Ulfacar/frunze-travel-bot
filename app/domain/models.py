@@ -2212,6 +2212,99 @@ class SpecialistDecisionEvent(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
+class EntryAnchorEvent(DomainBase):
+    """Typed actual observations; no inferred legal permission or due date."""
+    __tablename__ = 'entry_anchor_events'
+    __table_args__ = (
+        UniqueConstraint('id', 'application_id', 'case_id', 'applicant_id', name='uq_actual_anchor_scope'),
+        UniqueConstraint('application_id', 'revision', name='uq_actual_anchor_revision'),
+        UniqueConstraint('case_id', 'request_key', name='uq_actual_anchor_request'),
+        ForeignKeyConstraint(['application_id', 'case_id', 'applicant_id', 'procedure'],
+            ['entry_applications.id', 'entry_applications.case_id', 'entry_applications.applicant_id', 'entry_applications.procedure'], name='fk_actual_anchor_subject'),
+        ForeignKeyConstraint(['previous_id', 'application_id', 'case_id', 'applicant_id'],
+            ['entry_anchor_events.id', 'entry_anchor_events.application_id', 'entry_anchor_events.case_id', 'entry_anchor_events.applicant_id'], name='fk_actual_anchor_previous'),
+        CheckConstraint('revision BETWEEN 1 AND 80', name='ck_actual_anchor_revision'),
+        CheckConstraint("action IN ('record','withdraw')", name='ck_actual_anchor_action'),
+        CheckConstraint("(kind IN ('visa_period','visa_renewal_context') AND procedure='visa') OR (kind IN ('permit_period','employment_ended','permit_terminated') AND procedure='unified_permit') OR (kind='resident_period' AND procedure='resident_card') OR (kind IN ('registration_period','registration_payment_code','address_change','passport_change','purpose_change') AND procedure='registration')", name='ck_actual_anchor_kind'),
+        CheckConstraint('(revision=1 AND previous_id IS NULL) OR (revision>1 AND previous_id IS NOT NULL AND previous_id<id)', name='ck_actual_anchor_previous'),
+        CheckConstraint('length(request_hash)=64 AND length(snapshot_hash)=64', name='ck_actual_anchor_hashes'),
+        CheckConstraint('length(anchor_key) BETWEEN 1 AND 64', name='ck_actual_anchor_key'),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer)
+    applicant_id: Mapped[int] = mapped_column(Integer)
+    application_id: Mapped[int] = mapped_column(Integer)
+    procedure: Mapped[str] = mapped_column(String(32))
+    kind: Mapped[str] = mapped_column(String(40))
+    anchor_key: Mapped[str] = mapped_column(String(64))
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    action: Mapped[str] = mapped_column(String(20))
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    snapshot: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    @validates('command', 'snapshot')
+    def _freeze(self, key, value): return _ServiceJSON.freeze(value)
+
+
+class EntryAnchorPin(DomainBase):
+    """Independent immutable source identity for one actual anchor observation."""
+    __tablename__ = 'entry_anchor_pins'
+    __table_args__ = (
+        ForeignKeyConstraint(['anchor_id', 'application_id', 'case_id', 'applicant_id'],
+            ['entry_anchor_events.id', 'entry_anchor_events.application_id', 'entry_anchor_events.case_id', 'entry_anchor_events.applicant_id'], name='fk_actual_anchor_pin_receipt'),
+        ForeignKeyConstraint(['profile_id', 'applicant_id', 'case_id'],
+            ['entry_applicant_profiles.id', 'entry_applicant_profiles.applicant_id', 'entry_applicant_profiles.case_id'], name='fk_actual_anchor_pin_profile'),
+        ForeignKeyConstraint(['application_event_id', 'application_id'],
+            ['entry_application_events.id', 'entry_application_events.application_id'], name='fk_actual_anchor_pin_application'),
+        ForeignKeyConstraint(['issued_id', 'application_id', 'case_id'],
+            ['entry_issued_revisions.id', 'entry_issued_revisions.application_id', 'entry_issued_revisions.case_id'], name='fk_actual_anchor_pin_issued'),
+        CheckConstraint('length(receipt_hash)=64', name='ck_actual_anchor_pin_hash'),
+        Index('ix_actual_anchor_pin_application', 'application_id'),
+    )
+    anchor_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    application_id: Mapped[int] = mapped_column(Integer)
+    case_id: Mapped[int] = mapped_column(Integer)
+    applicant_id: Mapped[int] = mapped_column(Integer)
+    profile_id: Mapped[int] = mapped_column(Integer)
+    application_event_id: Mapped[int] = mapped_column(Integer)
+    issued_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    receipt_hash: Mapped[str] = mapped_column(String(64))
+
+
+class EntryConditionalEvidence(DomainBase):
+    """Independent immutable identity of one existing deadline receipt."""
+    __tablename__ = 'entry_conditional_evidence'
+    __table_args__ = (
+        ForeignKeyConstraint(['deadline_id', 'application_id', 'case_id', 'rule_unit_id'],
+            ['entry_deadline_revisions.id', 'entry_deadline_revisions.application_id', 'entry_deadline_revisions.case_id', 'entry_deadline_revisions.rule_unit_id'], name='fk_conditional_receipt'),
+        ForeignKeyConstraint(['profile_id', 'applicant_id', 'case_id'],
+            ['entry_applicant_profiles.id', 'entry_applicant_profiles.applicant_id', 'entry_applicant_profiles.case_id'], name='fk_conditional_profile'),
+        ForeignKeyConstraint(['application_event_id', 'application_id'],
+            ['entry_application_events.id', 'entry_application_events.application_id'], name='fk_conditional_application'),
+        ForeignKeyConstraint(['anchor_id', 'application_id', 'case_id', 'applicant_id'],
+            ['entry_anchor_events.id', 'entry_anchor_events.application_id', 'entry_anchor_events.case_id', 'entry_anchor_events.applicant_id'], name='fk_conditional_anchor'),
+        ForeignKeyConstraint(['history_id', 'applicant_id', 'case_id'],
+            ['entry_applicant_stay_history.id', 'entry_applicant_stay_history.applicant_id', 'entry_applicant_stay_history.case_id'], name='fk_conditional_stay'),
+        CheckConstraint('length(receipt_hash)=64', name='ck_conditional_receipt_hash'),
+    )
+    deadline_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    application_id: Mapped[int] = mapped_column(Integer)
+    case_id: Mapped[int] = mapped_column(Integer)
+    rule_unit_id: Mapped[str] = mapped_column(String(80))
+    applicant_id: Mapped[int] = mapped_column(Integer)
+    profile_id: Mapped[int] = mapped_column(Integer)
+    application_event_id: Mapped[int] = mapped_column(Integer)
+    anchor_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    history_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    receipt_hash: Mapped[str] = mapped_column(String(64))
+
+
 class EntryWorkReviewEvent(DomainBase):
     """Immutable conditional-review receipts; CalendarTask is only a projection."""
     __tablename__='entry_work_review_events'
@@ -2414,7 +2507,7 @@ class ServiceCaseOpening(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause, EntryDialogueSession, EntryDialogueEvent, ServiceCaseOpening, SpecialistDecisionEvent, EntryWorkReviewEvent)
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause, EntryDialogueSession, EntryDialogueEvent, ServiceCaseOpening, SpecialistDecisionEvent, EntryWorkReviewEvent, EntryAnchorEvent, EntryAnchorPin, EntryConditionalEvidence)
 
 
 def _entry_immutable(mapper, connection, target):

@@ -45,12 +45,13 @@ def clock(route_clock, monkeypatch):
         monkeypatch.setattr(mod, '_now', now)
 
 
-def source(env, tmp_path, *, additional=(), counting=None):
+def source(env, tmp_path, *, additional=(), counting=None, source_file=None):
     folder = tmp_path / 'full-source-shaped'; folder.mkdir()
     bundle = {k: yaml.safe_load((ROOT / 'knowledge/kg_entry/draft-v1.1' / (k + '.yaml')).read_text('utf-8'))
               for k in ('meta', 'countries', 'units')}
     original = validate_bundle(**bundle, source_hash=bundle['meta']['source_hash']).normalized_bundle['units']
-    bundle['meta'].update(source_hash=hashlib.sha256((FIX/'synthetic_source.txt').read_bytes()).hexdigest(),
+    source_file = FIX/'synthetic_source.txt' if source_file is None else source_file
+    bundle['meta'].update(source_hash=hashlib.sha256(source_file.read_bytes()).hexdigest(),
                           source_document='SYNTHETIC full source shape; NOT legal approval')
     ids = list(EXECUTABLE) + ['KG.REG.DEFAULT', 'KG.REG.EXEMPT.RUS', 'KG.REG.EXEMPT.USA',
         'KG.REG.EXEMPT.TJK', 'KG.REG.EXEMPT.MDA', 'KG.ESC.STOP_12', 'KG.RULE.REG_DOES_NOT_EXTEND_VF']
@@ -76,7 +77,7 @@ def source(env, tmp_path, *, additional=(), counting=None):
     async def seed():
         sid = await create_kg_entry_set(env['engine'], actor=ADMIN)
         return await import_bundle(env['engine'], actor=ADMIN, set_id=sid, directory=folder,
-                                   source=FIX/'synthetic_source.txt', catalog=tmp_path/'catalog.json')
+                                   source=source_file, catalog=tmp_path/'catalog.json')
     imported = asyncio.run(seed()); assert imported.accepted, json.dumps(imported.report)
     env.update(version=imported.version_id, release=imported.version_id, bundle=bundle, catalog=catalog, published=ids)
     for uid in ids:
