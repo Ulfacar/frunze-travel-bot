@@ -390,6 +390,8 @@ class Settings(BaseSettings):
     # Internal quotation recipes require explicit source/commercial authority.
     kg_quote_policy: dict = Field(default_factory=dict)
     kg_specialist_policy: dict = Field(default_factory=dict)
+    # Conditional review reminders require separate source/person/task authority.
+    kg_work_review_authorities: list[dict] = Field(default_factory=list)
     kg_notification_storage_policy: dict = Field(default_factory=dict)
     # Permanent stops are enrolled only under explicit authority, on activated Wappi profiles.
     kg_channel_guard_scopes: list[dict] = Field(default_factory=list)

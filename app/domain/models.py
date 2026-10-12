@@ -2212,6 +2212,42 @@ class SpecialistDecisionEvent(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
+class EntryWorkReviewEvent(DomainBase):
+    """Immutable conditional-review receipts; CalendarTask is only a projection."""
+    __tablename__='entry_work_review_events'
+    __table_args__=(
+        UniqueConstraint('id','application_id','case_id','applicant_id',name='uq_work_review_scope'),
+        UniqueConstraint('application_id','revision',name='uq_work_review_revision'),
+        UniqueConstraint('case_id','request_key',name='uq_work_review_request'),
+        ForeignKeyConstraint(['application_id','case_id','applicant_id','procedure'],
+            ['entry_applications.id','entry_applications.case_id','entry_applications.applicant_id','entry_applications.procedure'],name='fk_work_review_subject'),
+        ForeignKeyConstraint(['previous_id','application_id','case_id','applicant_id'],
+            ['entry_work_review_events.id','entry_work_review_events.application_id','entry_work_review_events.case_id','entry_work_review_events.applicant_id'],name='fk_work_review_previous'),
+        CheckConstraint("procedure='unified_permit'",name='ck_work_review_procedure'),
+        CheckConstraint('revision BETWEEN 1 AND 65',name='ck_work_review_revision'),
+        CheckConstraint("action IN ('refresh','restore','new_generation','complete','cancel')",name='ck_work_review_action'),
+        CheckConstraint('(revision=1 AND previous_id IS NULL) OR (revision>1 AND previous_id IS NOT NULL AND previous_id<id)',name='ck_work_review_previous'),
+        CheckConstraint('length(request_hash)=64 AND length(snapshot_hash)=64',name='ck_work_review_hashes'))
+    id:Mapped[int]=mapped_column(Integer,primary_key=True)
+    case_id:Mapped[int]=mapped_column(Integer)
+    applicant_id:Mapped[int]=mapped_column(Integer)
+    application_id:Mapped[int]=mapped_column(Integer)
+    procedure:Mapped[str]=mapped_column(String(32))
+    revision:Mapped[int]=mapped_column(Integer)
+    previous_id:Mapped[int|None]=mapped_column(Integer,nullable=True)
+    task_id:Mapped[int|None]=mapped_column(ForeignKey('calendar_tasks.id'),nullable=True,index=True)
+    action:Mapped[str]=mapped_column(String(20))
+    request_key:Mapped[str]=mapped_column(String(64))
+    request_hash:Mapped[str]=mapped_column(String(64))
+    snapshot_hash:Mapped[str]=mapped_column(String(64))
+    command:Mapped[dict]=mapped_column(_ServiceJSON)
+    snapshot:Mapped[dict]=mapped_column(_ServiceJSON)
+    created_by:Mapped[str]=mapped_column(String(64))
+    created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=_now)
+    @validates('command','snapshot')
+    def _freeze(self,key,value):return _ServiceJSON.freeze(value)
+
+
 class EntryNotificationDraft(DomainBase):
     """An immutable manually entered draft; never an outgoing message."""
     __tablename__='entry_notification_drafts'
@@ -2378,7 +2414,7 @@ class ServiceCaseOpening(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause, EntryDialogueSession, EntryDialogueEvent, ServiceCaseOpening, SpecialistDecisionEvent)
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause, EntryDialogueSession, EntryDialogueEvent, ServiceCaseOpening, SpecialistDecisionEvent, EntryWorkReviewEvent)
 
 
 def _entry_immutable(mapper, connection, target):

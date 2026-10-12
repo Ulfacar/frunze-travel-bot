@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Frunze · {{ text.title }}{% endblock %}
+{% block head %}<style>
+.work-review{max-width:920px;margin:auto;padding:24px 16px;line-height:1.55;font-family:Arial,Helvetica,sans-serif;overflow-wrap:anywhere}.work-review h1{font-size:clamp(25px,4vw,32px)}.work-review h2{font-size:21px}.work-review a{color:var(--text,#1d4ed8);text-decoration:underline;text-underline-offset:3px}.work-review .panel{padding:18px;margin:18px 0;border:1px solid var(--border,#cbd5e1);border-radius:10px;background:var(--surface,#fff)}.work-review label{display:block;margin:12px 0}.work-review button{font:inherit;font-weight:600;background:#1d4ed8;color:#fff;border:1px solid #1d4ed8;border-radius:6px;min-height:44px;padding:10px 16px;max-width:100%;white-space:normal;cursor:pointer}.work-review button:disabled{opacity:.6;cursor:default}.work-review :focus-visible{outline:3px solid #d97706;outline-offset:3px}.work-review .notice{border-left:4px solid #b7791f;padding-left:14px}.work-review ol{padding-left:22px}
+@media print{header,nav,.sidebar,.work-review form,.work-review .no-print{display:none!important}html,body{height:auto!important;overflow:visible!important}.work-review{max-width:none;padding:0}.work-review .panel{break-inside:avoid}@page{size:A4;margin:15mm}}
+</style>{% endblock %}
+{% block content %}<main class="work-review" lang="{{ language }}">
+<p class="no-print"><a href="/admin/case/{{ ids[0] }}/kg-entry/applications?application_id={{ ids[2] }}">← {{ text.back }}</a> · <a href="{{ alternate }}">{{ 'English' if language=='ru' else 'Русский' }}</a></p>
+<h1>{{ text.title }} · №{{ ids[2] }}</h1><p class="notice">{{ text.notice }}</p><p>{{ text.freshness }}</p>
+{% if error %}<p role="alert" class="panel notice">{{ text[error] }}</p>{% endif %}
+{% if retry %}<form method="post" action="{{ url }}" class="panel" id="work-review-retry">{% for name,value in retry.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}<button type="submit" {% if not write_on %}disabled{% endif %}>{{ text.retry }}</button></form>{% endif %}
+{% if state %}{% set c=state.current %}<section class="panel" id="work-review-current"><h2>{{ text.current }}</h2>
+<p>{{ text.date }}: <strong>{{ c.report.due_on if c.eligible else text.unknown }}</strong><br>{{ text.owner }}: <strong>{{ c.owner or text.unknown }}</strong></p>
+{% if c.task %}<p>{{ text.task }} №{{ c.task.id }} · <strong>{{ text[c.task.status] }}</strong> · {{ c.task.date }} · {{ c.task.owner }}</p>{% else %}<p>{{ text.none }}</p>{% endif %}
+{% if c.attention %}<p class="notice">{{ text[c.attention] }}</p>{% endif %}</section>
+{% if c.report and c.report.current_stay %}<section class="panel" id="work-review-stops"><h2>{{ text.stops }}</h2><ul>{% for name,check in c.report.current_stay.checks.items() %}<li>{{ text[name] }}: <strong>{{ text.get(check.status,text.unknown) }}</strong></li>{% endfor %}</ul>{% if c.report.within_filing_deadline is not none %}<p class="notice">{{ text.within if c.report.within_filing_deadline else text.past }}</p>{% endif %}</section>{% endif %}
+{% if not write_on %}<p class="panel notice">{{ text.off }}</p>{% endif %}
+{% for action,fields in forms.items() %}<form method="post" action="{{ url }}" class="panel" id="work-review-{{ action }}"><h2>{{ text[action] }}</h2>
+{% for name,value in fields.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+<label><input type="checkbox" name="confirmed" value="yes" required> {{ text.confirm }}</label><button type="submit">{{ text[action] }}</button></form>{% endfor %}
+{% if state.history %}<section class="panel" id="work-review-history"><h2>{{ text.history }}</h2><ol>{% for row in state.history %}<li>{{ text[row.action] }} · {{ row.created_at[:19]|replace('T',' ') }} UTC{% if row.snapshot.task %} · №{{ row.snapshot.task.id }}, {{ text[row.snapshot.task.status] }}, {{ row.snapshot.task.date }}{% endif %}</li>{% endfor %}</ol></section>{% endif %}
+{% endif %}</main>{% endblock %}

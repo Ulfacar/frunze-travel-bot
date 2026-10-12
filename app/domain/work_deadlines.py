@@ -69,6 +69,18 @@ async def evaluate(engine,*,actor,case_id,applicant_id,policy=None,current_polic
     _authorize(actor);_id(case_id);_id(applicant_id)
     if policy is not None and not isinstance(policy,WorkDeadlinePolicy):raise EntryStorageInvalid('invalid_work_deadline_policy')
     async def read(session):
+        return await evaluate_in_session(session,actor=actor,case_id=case_id,applicant_id=applicant_id,
+            policy=policy,current_policy=current_policy,fact=fact,qualification_policy=qualification_policy,
+            publication_policy=publication_policy,calendars=calendars)
+    return await apps._run(engine,read)
+
+
+async def evaluate_in_session(session,*,actor,case_id,applicant_id,policy=None,current_policy=None,fact=None,
+                              qualification_policy=None,publication_policy=None,calendars=None):
+    """Caller owns the transaction; calculation and a review receipt can be atomic."""
+    _authorize(actor);_id(case_id);_id(applicant_id)
+    if policy is not None and not isinstance(policy,WorkDeadlinePolicy):raise EntryStorageInvalid('invalid_work_deadline_policy')
+    async def read(session):
         result=dict(format=FORMAT,case_id=case_id,applicant_id=applicant_id,status='unknown',reason=None,
             due_on=None,within_filing_deadline=None,rule_id=RULE,scope='conditional_ep_filing_date_only',
             eligibility_evaluated=False,permission_to_remain=None,permission_to_work=None,may_quote=False,delivery='not_sent',
@@ -130,4 +142,4 @@ async def evaluate(engine,*,actor,case_id,applicant_id,policy=None,current_polic
             within_filing_deadline=(on<=calculation['due'] if policy.boundary_inclusive else on<calculation['due']),
             calendar=dict(hash=calendars.content_hash,reference=policy.calendar_reference))
         return finish('conditional_filing_deadline_only')
-    return await apps._run(engine,read)
+    return await read(session)

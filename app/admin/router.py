@@ -2298,15 +2298,15 @@ async def _calendar_task_for_action(session, task_id: int):
     """Refresh under the same row lock used by deadline hooks before authorizing."""
     from sqlalchemy import select
     from app.domain.calendar_tasks import CalendarTaskService
-    from app.domain.models import EntryDeadlineTask
+    from app.domain.models import EntryDeadlineTask, EntryWorkReviewEvent
     task = await CalendarTaskService.get(session, task_id)
     if task is None:
         return None
     await session.refresh(task, with_for_update=True)
-    if (task.claimed_at or task.claimed_by) and await session.scalar(
-        select(EntryDeadlineTask.id).where(EntryDeadlineTask.task_id == task.id).limit(1)
-    ):
-        return None
+    if task.claimed_at or task.claimed_by:
+        deadline_bound=await session.scalar(select(EntryDeadlineTask.id).where(EntryDeadlineTask.task_id==task.id).limit(1))
+        review_bound=await session.scalar(select(EntryWorkReviewEvent.id).where(EntryWorkReviewEvent.task_id==task.id).limit(1))
+        if deadline_bound or review_bound:return None
     return task
 
 
@@ -2659,6 +2659,7 @@ from app.admin import kg_portal  # noqa: E402,F401 — входящие свед
 from app.admin import kg_interviews  # noqa: E402,F401 — полная анкета и принятие карточки специалистом
 from app.admin import kg_quotes  # noqa: E402,F401 — внутренние версии расчёта стоимости
 from app.admin import kg_specialist  # noqa: E402,F401 — явное решение специалиста и связанный расчёт
+from app.admin import kg_work_review  # noqa: E402,F401 — отдельная условная проверка срока ЕР
 from app.admin import kg_notifications  # noqa: E402,F401 — внутренние черновики без отправки
 from app.admin import kg_channel_stops  # noqa: E402,F401 — постоянная остановка выбранного WhatsApp-диалога
 from app.admin import kg_documents  # noqa: E402,F401 — черновая матрица документов, без записи
