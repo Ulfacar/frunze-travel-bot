@@ -41,7 +41,8 @@ def test_terminal_251_and_metadata(release):
             def compare(sync):
                 assert compare_metadata(MigrationContext.configure(sync), DomainBase.metadata) == []
             await conn.run_sync(compare)
-            assert await conn.scalar(text("SELECT version_num FROM alembic_version")) == 'e6_publication_withdraw_0034'
+            from alembic.script import ScriptDirectory
+            assert await conn.scalar(text("SELECT version_num FROM alembic_version")) == ScriptDirectory.from_config(Config('alembic.ini')).get_current_head()
     asyncio.run(check())
 
 

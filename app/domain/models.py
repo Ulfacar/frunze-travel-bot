@@ -1631,6 +1631,42 @@ class EntryApplicantProfile(DomainBase):
         return _ServiceJSON.freeze(value)
 
 
+class EntryApplicantStayHistory(DomainBase):
+    """Personal stay evidence; no payer inheritance or raw passport number."""
+    __tablename__ = 'entry_applicant_stay_history'
+    __table_args__ = (
+        UniqueConstraint('id','applicant_id','case_id',name='uq_applicant_stay_scope'),
+        UniqueConstraint('applicant_id','revision',name='uq_applicant_stay_revision'),
+        UniqueConstraint('applicant_id','request_key',name='uq_applicant_stay_request'),
+        ForeignKeyConstraint(['applicant_id','case_id'],['entry_applicants.id','entry_applicants.case_id'],name='fk_applicant_stay_person'),
+        ForeignKeyConstraint(['profile_id','applicant_id','case_id'],
+            ['entry_applicant_profiles.id','entry_applicant_profiles.applicant_id','entry_applicant_profiles.case_id'],name='fk_applicant_stay_profile'),
+        ForeignKeyConstraint(['previous_id','applicant_id','case_id'],
+            ['entry_applicant_stay_history.id','entry_applicant_stay_history.applicant_id','entry_applicant_stay_history.case_id'],name='fk_applicant_stay_previous'),
+        CheckConstraint('revision BETWEEN 1 AND 250',name='ck_applicant_stay_revision'),
+        CheckConstraint("action IN ('save','withdraw')",name='ck_applicant_stay_action'),
+        CheckConstraint("(revision = 1 AND previous_id IS NULL AND action = 'save') OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id)",name='ck_applicant_stay_previous'),
+        CheckConstraint('length(request_hash) = 64 AND length(snapshot_hash) = 64',name='ck_applicant_stay_hashes'),
+    )
+    id: Mapped[int] = mapped_column(Integer,primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer)
+    applicant_id: Mapped[int] = mapped_column(Integer)
+    profile_id: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_id: Mapped[int | None] = mapped_column(Integer,nullable=True)
+    action: Mapped[str] = mapped_column(String(16))
+    request_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    command: Mapped[dict] = mapped_column(_ServiceJSON)
+    provenance: Mapped[dict] = mapped_column(_ServiceJSON)
+    created_by: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),default=_now)
+
+    @validates('command','provenance')
+    def _freeze(self,key,value):return _ServiceJSON.freeze(value)
+
+
 class EntryDeadlineRevision(DomainBase):
     """One source rule's deadline history within a particular application."""
     __tablename__ = "entry_deadline_revisions"
@@ -2198,7 +2234,7 @@ class EntryChannelStop(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft)
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft)
 
 
 def _entry_immutable(mapper, connection, target):
