@@ -45,7 +45,7 @@ def clock(route_clock, monkeypatch):
         monkeypatch.setattr(mod, '_now', now)
 
 
-def source(env, tmp_path):
+def source(env, tmp_path, *, additional=(), counting=None):
     folder = tmp_path / 'full-source-shaped'; folder.mkdir()
     bundle = {k: yaml.safe_load((ROOT / 'knowledge/kg_entry/draft-v1.1' / (k + '.yaml')).read_text('utf-8'))
               for k in ('meta', 'countries', 'units')}
@@ -55,7 +55,11 @@ def source(env, tmp_path):
     ids = list(EXECUTABLE) + ['KG.REG.DEFAULT', 'KG.REG.EXEMPT.RUS', 'KG.REG.EXEMPT.USA',
         'KG.REG.EXEMPT.TJK', 'KG.REG.EXEMPT.MDA', 'KG.ESC.STOP_12', 'KG.RULE.REG_DOES_NOT_EXTEND_VF']
     actual = {u['unit_id']: u for u in bundle['units']}
-    ids = [uid for uid in ids if uid in actual and actual[uid]['value'] is not None]
+    ids += list(additional)
+    if counting is not None:
+        for uid, value in counting.items():
+            actual[uid]['value'] = dict(value=value, unit='bool' if type(value) is bool else 'list')
+    ids = list(dict.fromkeys(uid for uid in ids if uid in actual and actual[uid]['value'] is not None))
     for uid in ids:
         actual[uid].update(effective_from='2026-01-01', verified_at='2026-09-01T00:00:00Z',
             verified_by='synthetic-reviewer', review_due_at='2027-01-01T00:00:00Z', owner='synthetic-owner',
@@ -79,8 +83,9 @@ def source(env, tmp_path):
         review(env, decision=review_data() | {'review_due_on': '2026-12-31'}, unit=uid, key='synthetic-' + uid)
     for action in ('review', 'approve', 'activate'):
         publish(env, action, ids=ids)
-    assert [(u['unit_id'], u['kind'], u['value']) for u in original] == [
-        (u['unit_id'], u['kind'], u['value']) for u in bundle['units']]
+    changed = set(counting or {})
+    assert [(u['unit_id'], u['kind'], u['value']) for u in original if u['unit_id'] not in changed] == [
+        (u['unit_id'], u['kind'], u['value']) for u in bundle['units'] if u['unit_id'] not in changed]
     assert {u['unit_id']: u.get('blocked_value') for u in original if u['unit_id'] not in ids} == {
         u['unit_id']: u.get('blocked_value') for u in bundle['units'] if u['unit_id'] not in ids}
     return env

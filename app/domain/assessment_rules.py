@@ -59,6 +59,27 @@ def validate_authority(document, qualification, bundle, catalog):
             return 'assessment_source_coverage_incomplete'
         if any(expected[p['unit_id']] is None or p['unit_hash'] != _hash(expected[p['unit_id']]) for p in pins):
             return 'assessment_source_interpretation_changed'
+    error = validate_regimes(document, qualification, bundle, catalog)
+    if error:
+        return error
+    expected_values = {'KG.RULE.COUNT_ENTRY_DAY': True, 'KG.RULE.COUNT_EXIT_DAY': True,
+                       'KG.RULE.WINDOW_ANCHOR': 'each_day_backward_inclusive', REG_RULE_ID: True}
+    for uid, expected in expected_values.items():
+        value = units[uid]['value']
+        if value is not None and (type(value.get('value')) is not type(expected) or value['value'] != expected):
+            return 'assessment_counting_source_conflict'
+    return None
+
+
+def validate_regimes(document, qualification, bundle, catalog):
+    """Full source-shaped applicability; no location or counting authority implied."""
+    regimes = {u['unit_id']: u for u in bundle['units'] if u['kind'] in REGIMES}
+    guards = {r['unit_id']: r for r in document['regimes']}
+    routes = {r['unit_id']: r for r in qualification['rules']}
+    if set(guards) != set(regimes) or set(routes) != set(regimes):
+        return 'assessment_regime_set_incomplete'
+    if any(guard['unit_hash'] != _hash(regimes[uid]) for uid, guard in guards.items()):
+        return 'assessment_source_interpretation_changed'
     known = set(bundle['countries'].values())
     conditional = {r['unit_id']: r for r in (catalog or {}).get('rules', [])}
     executable = []
@@ -81,21 +102,19 @@ def validate_authority(document, qualification, bundle, catalog):
                 clause = next((p for p in guard['all'] if p['type'] == 'passport_country_in'), None)
                 if clause is None or sorted(clause['countries']) != sorted(countries):
                     return 'assessment_manual_country_scope_changed'
+                if uid not in conditional and any(p['type'] not in ('passport_country_in', 'document_type_is') or
+                        p['type'] == 'document_type_is' and p['value'] != 'ordinary' for p in guard['all']):
+                    # A literal source country set has no extra residence/visa
+                    # condition. Do not hide a competing manual rule by adding
+                    # an unsupported false predicate to its interpretation.
+                    return 'assessment_manual_applicability_changed'
         else:
             if regimes[uid]['kind'] != 'visa_free_regime' or guard['all'] != routes[uid]['all']:
                 return 'assessment_executable_scope_unsupported'
             executable.append(uid)
     _, error = _policy_rules({'rules': [routes[k] for k in executable]},
                             {**bundle, 'units': [regimes[k] for k in executable]}, catalog)
-    if error:
-        return error
-    expected_values = {'KG.RULE.COUNT_ENTRY_DAY': True, 'KG.RULE.COUNT_EXIT_DAY': True,
-                       'KG.RULE.WINDOW_ANCHOR': 'each_day_backward_inclusive', REG_RULE_ID: True}
-    for uid, expected in expected_values.items():
-        value = units[uid]['value']
-        if value is not None and (type(value.get('value')) is not type(expected) or value['value'] != expected):
-            return 'assessment_counting_source_conflict'
-    return None
+    return error
 
 
 def applicability(document, facts):
