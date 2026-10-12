@@ -90,8 +90,8 @@ def stay(env,subject,profile,**kwargs):
     return histories.save(env,subject,profile,doc=doc,**kwargs)
 
 
-def at_permit(env):
-    subject,root,profile=setup(env)
+def at_permit(env,*,prepared=None):
+    subject,root,profile=setup(env) if prepared is None else prepared
     resident=application(env,subject,'resident',procedure='resident_card')
     registration=application(env,subject,'permit-registration',procedure='registration')
     for role,child in [('resident',resident),('registration',registration)]:link(env,root,child,role)
@@ -112,8 +112,8 @@ def at_permit(env):
     return subject,root,profile,resident,registration,allowed
 
 
-def complete_work_flow(env,monkeypatch,*,native_basis=None):
-    subject,root,profile,resident,registration,allowed=at_permit(env)
+def complete_work_flow(env,monkeypatch,*,native_basis=None,prepared=None):
+    subject,root,profile,resident,registration,allowed=at_permit(env,prepared=prepared)
     with pytest.raises(EntryStorageInvalid,match='prerequisites'):transition(env,root,'W15',package_policy=allowed)
     saved=stay(env,subject,profile)
     entered=transition(env,root,'W15',package_policy=allowed)

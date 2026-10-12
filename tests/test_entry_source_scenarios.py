@@ -6,7 +6,7 @@ No real policy, legal result, portal, payment or delivery is approved here.
 """
 import asyncio
 from copy import deepcopy
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -75,9 +75,22 @@ def portal_decision(env, app, *, kind='approval', key='decision'):
     return result
 
 
-def test_source_19_visa_same_subject_through_handoff_quote_rework_portal_and_aftercare(env):
-    # The current product requires an existing service case. Its real contract
-    # service was called by env; qualification-before-contract is NOT simulated.
+def visa_sop(env, *, preliminary=False):
+    opening=None
+    if preliminary:
+        from app.domain import precontract_cases
+        async def open_unsigned():
+            async with env['sm']() as session:
+                previous=await session.get(ServiceCase,env['cases']['visa'])
+                opened=await precontract_cases.open_preliminary(session,by=ADMIN,request_key='SOP-PRELIMINARY',
+                    contact_id=previous.contact_id,product_id=previous.product_id,
+                    workflow_version_id=previous.workflow_version_id,owner_login=previous.owner_login)
+                await session.commit()
+                current=await session.get(ServiceCase,opened['case_id'])
+                assert current.signed_at is None and current.agreed_amount is None
+                return opened
+        opening=asyncio.run(open_unsigned())
+        env['cases']['visa']=opening['case_id'];env['url']=f"/admin/case/{opening['case_id']}/kg-entry"
     async def contract():
         async with env['sm']() as session:
             case = await session.get(ServiceCase, env['cases']['visa'])
@@ -85,7 +98,7 @@ def test_source_19_visa_same_subject_through_handoff_quote_rework_portal_and_aft
                 ServiceEvent.case_id == case.id, ServiceEvent.event_type == 'contract_signed')))
             return case.contract_reference, events
     reference, contract_events = asyncio.run(contract())
-    assert reference and len(contract_events) == 1
+    assert (reference is None and not contract_events) if preliminary else (reference and len(contract_events)==1)
     subject = person(env, 'SOP-VISA')
     iv, stop = handoff(env, subject)
     app, profile = profile_and_process(env, subject)
@@ -111,6 +124,18 @@ def test_source_19_visa_same_subject_through_handoff_quote_rework_portal_and_aft
                          profile_id=profile['qualification_id'] if fact in ('eligibility', 'visa_required') else None)
     for stage in ('V02', 'V04', 'V06', 'V07', 'V08'):
         processes.transition(env, app, stage, package_policy=package_policy)
+    if preliminary:
+        with pytest.raises(EntryStorageInvalid,match='prerequisites'):
+            processes.transition(env,app,'V09',package_policy=package_policy)
+        async def sign_same_case():
+            async with env['sm']() as session:
+                signed=await precontract_cases.record_signed_contract(session,by=ADMIN,case_id=opening['case_id'],
+                    expected_revision=opening['revision'],request_key='SOP-SIGN',reference='SOP-CONTRACT',
+                    signed_at=datetime.now(timezone.utc),amount='100000',currency='KGS')
+                await session.commit();return signed
+        assert asyncio.run(sign_same_case())['case_id']==app['case_id']==opening['case_id']
+        with pytest.raises(EntryStorageInvalid,match='prerequisites'):
+            processes.transition(env,app,'V09',package_policy=package_policy)
     processes.money(env, amount='40000', currency='KGS', idempotency_key='SOP-PAY-1')
     with pytest.raises(EntryStorageInvalid, match='prerequisites'):
         processes.transition(env, app, 'V09', package_policy=package_policy)
@@ -161,6 +186,14 @@ def test_source_19_visa_same_subject_through_handoff_quote_rework_portal_and_aft
     assert interviews.read(env, iv)['state']['phase'] == 'acked'
     assert stops.send(env)[1] == []
     assert quotes.read(env, app)['history'][0]['receipt'] == quote['receipt']
+
+
+def test_source_19_visa_same_subject_through_handoff_quote_rework_portal_and_aftercare(env):
+    visa_sop(env)
+
+
+def test_source_19_1_preliminary_intake_quote_signature_payment_same_person_through_close(env):
+    visa_sop(env,preliminary=True)
 
 
 def test_source_registration_same_subject_certificate_requires_separate_decision(env):
