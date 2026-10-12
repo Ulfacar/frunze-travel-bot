@@ -1,0 +1,186 @@
+{
+  "format": "e627-snapshot-evidence/1",
+  "base": "803eacff8209007a66b6a877e37cfe845593ce00",
+  "snapshot": "runs/e6-27-r6",
+  "manifest_lf_sha256": "0476f1cdc4fa770a9199b153694ada30345ee0821537216b9b68c86057927fde",
+  "revision": "643c455bf690e14a4b8e48f557e3fe2f7541d77f",
+  "files": {
+    "alembic/versions/e6_applicant_stay_0035.py": {
+      "snapshot": "28dd92f514c3ddba3b22d382bc6bf434855653183d927d183d5f6031969611f5",
+      "working": "28dd92f514c3ddba3b22d382bc6bf434855653183d927d183d5f6031969611f5",
+      "staged": "28dd92f514c3ddba3b22d382bc6bf434855653183d927d183d5f6031969611f5",
+      "committed": "28dd92f514c3ddba3b22d382bc6bf434855653183d927d183d5f6031969611f5"
+    },
+    "app/admin/kg_applicant_history.py": {
+      "snapshot": "9f0160a5114a300b9605bae4bd550fb0353cdbd01184b9db34a34a26efba8afa",
+      "working": "9f0160a5114a300b9605bae4bd550fb0353cdbd01184b9db34a34a26efba8afa",
+      "staged": "9f0160a5114a300b9605bae4bd550fb0353cdbd01184b9db34a34a26efba8afa",
+      "committed": "9f0160a5114a300b9605bae4bd550fb0353cdbd01184b9db34a34a26efba8afa"
+    },
+    "app/admin/kg_applicant_history_form.py": {
+      "snapshot": "d085d0985dd48f593d02570a1e219a5692ba0c9fa81608d36a3cbfd7d9d9a426",
+      "working": "d085d0985dd48f593d02570a1e219a5692ba0c9fa81608d36a3cbfd7d9d9a426",
+      "staged": "d085d0985dd48f593d02570a1e219a5692ba0c9fa81608d36a3cbfd7d9d9a426",
+      "committed": "d085d0985dd48f593d02570a1e219a5692ba0c9fa81608d36a3cbfd7d9d9a426"
+    },
+    "app/admin/router.py": {
+      "snapshot": "09e81ac629316c292ffe8bf23d5836bf0ab6ca4f905e308223eff62e65f10e88",
+      "working": "09e81ac629316c292ffe8bf23d5836bf0ab6ca4f905e308223eff62e65f10e88",
+      "staged": "09e81ac629316c292ffe8bf23d5836bf0ab6ca4f905e308223eff62e65f10e88",
+      "committed": "09e81ac629316c292ffe8bf23d5836bf0ab6ca4f905e308223eff62e65f10e88"
+    },
+    "app/admin/templates/kg_applicant_history.html": {
+      "snapshot": "9a56dea91a59b5aac8477db96f22ddad234d382d5f1a46ff2e2608700be201ff",
+      "working": "9a56dea91a59b5aac8477db96f22ddad234d382d5f1a46ff2e2608700be201ff",
+      "staged": "9a56dea91a59b5aac8477db96f22ddad234d382d5f1a46ff2e2608700be201ff",
+      "committed": "9a56dea91a59b5aac8477db96f22ddad234d382d5f1a46ff2e2608700be201ff"
+    },
+    "app/admin/templates/kg_entry.html": {
+      "snapshot": "e45532de6831cabc0406178ad2f69d54f7441dbed4de85fe1b1d14dd6868121b",
+      "working": "e45532de6831cabc0406178ad2f69d54f7441dbed4de85fe1b1d14dd6868121b",
+      "staged": "e45532de6831cabc0406178ad2f69d54f7441dbed4de85fe1b1d14dd6868121b",
+      "committed": "e45532de6831cabc0406178ad2f69d54f7441dbed4de85fe1b1d14dd6868121b"
+    },
+    "app/domain/applicant_stay_history.py": {
+      "snapshot": "c00f1b5002572d527054e71e1626849876c41298ba234d4f800447a28c658111",
+      "working": "c00f1b5002572d527054e71e1626849876c41298ba234d4f800447a28c658111",
+      "staged": "c00f1b5002572d527054e71e1626849876c41298ba234d4f800447a28c658111",
+      "committed": "c00f1b5002572d527054e71e1626849876c41298ba234d4f800447a28c658111"
+    },
+    "app/domain/models.py": {
+      "snapshot": "9a806e3eb10b099084560b881d4e81bdc54e4384d909ab355ea86f7103d654ed",
+      "working": "9a806e3eb10b099084560b881d4e81bdc54e4384d909ab355ea86f7103d654ed",
+      "staged": "9a806e3eb10b099084560b881d4e81bdc54e4384d909ab355ea86f7103d654ed",
+      "committed": "9a806e3eb10b099084560b881d4e81bdc54e4384d909ab355ea86f7103d654ed"
+    },
+    "tests/browser_kg_applicant_history.py": {
+      "snapshot": "26fac5d7f71ddf2582f3ac49c1137f03d1338705f468c8f835b2082da394fd69",
+      "working": "26fac5d7f71ddf2582f3ac49c1137f03d1338705f468c8f835b2082da394fd69",
+      "staged": "26fac5d7f71ddf2582f3ac49c1137f03d1338705f468c8f835b2082da394fd69",
+      "committed": "26fac5d7f71ddf2582f3ac49c1137f03d1338705f468c8f835b2082da394fd69"
+    },
+    "tests/test_admin_kg_applicant_history.py": {
+      "snapshot": "b4a55c25de663ae789836987bff9df1edc063c3ca7bd634868a08f587d73cbc4",
+      "working": "b4a55c25de663ae789836987bff9df1edc063c3ca7bd634868a08f587d73cbc4",
+      "staged": "b4a55c25de663ae789836987bff9df1edc063c3ca7bd634868a08f587d73cbc4",
+      "committed": "b4a55c25de663ae789836987bff9df1edc063c3ca7bd634868a08f587d73cbc4"
+    },
+    "tests/test_alembic_domain_migration.py": {
+      "snapshot": "24c56da14d144378327639fe3090e60b636dbc0d24e3a9a41d388132a7f9979a",
+      "working": "24c56da14d144378327639fe3090e60b636dbc0d24e3a9a41d388132a7f9979a",
+      "staged": "24c56da14d144378327639fe3090e60b636dbc0d24e3a9a41d388132a7f9979a",
+      "committed": "24c56da14d144378327639fe3090e60b636dbc0d24e3a9a41d388132a7f9979a"
+    },
+    "tests/test_applicant_stay_history.py": {
+      "snapshot": "ef274f80fc88b2f3def4eeed4ddf485393b6496147a598a27d6f7d4550d514c4",
+      "working": "ef274f80fc88b2f3def4eeed4ddf485393b6496147a598a27d6f7d4550d514c4",
+      "staged": "ef274f80fc88b2f3def4eeed4ddf485393b6496147a598a27d6f7d4550d514c4",
+      "committed": "ef274f80fc88b2f3def4eeed4ddf485393b6496147a598a27d6f7d4550d514c4"
+    },
+    "tests/test_applicant_stay_history_migration.py": {
+      "snapshot": "edf5c277b31355aff597dc8aaae8aaaaacdc872d8867f7d9087775f09db9b394",
+      "working": "edf5c277b31355aff597dc8aaae8aaaaacdc872d8867f7d9087775f09db9b394",
+      "staged": "edf5c277b31355aff597dc8aaae8aaaaacdc872d8867f7d9087775f09db9b394",
+      "committed": "edf5c277b31355aff597dc8aaae8aaaaacdc872d8867f7d9087775f09db9b394"
+    },
+    "tests/test_applicant_stay_history_postgres.py": {
+      "snapshot": "54ae18a2adb003d730411ab0bcacb58609eba2625b02543bf5467cfd3ab408dd",
+      "working": "54ae18a2adb003d730411ab0bcacb58609eba2625b02543bf5467cfd3ab408dd",
+      "staged": "54ae18a2adb003d730411ab0bcacb58609eba2625b02543bf5467cfd3ab408dd",
+      "committed": "54ae18a2adb003d730411ab0bcacb58609eba2625b02543bf5467cfd3ab408dd"
+    },
+    "tests/test_publication_recovery_postgres.py": {
+      "snapshot": "53369242d91d7ee4a115d734cb1e60422c6fdddd359328776336a89081d8472c",
+      "working": "53369242d91d7ee4a115d734cb1e60422c6fdddd359328776336a89081d8472c",
+      "staged": "53369242d91d7ee4a115d734cb1e60422c6fdddd359328776336a89081d8472c",
+      "committed": "53369242d91d7ee4a115d734cb1e60422c6fdddd359328776336a89081d8472c"
+    },
+    "tests/test_service_cases.py": {
+      "snapshot": "be6fbaa74743d4b358946af700254ae17daae8fd732cc8492af16f1f6131ee11",
+      "working": "be6fbaa74743d4b358946af700254ae17daae8fd732cc8492af16f1f6131ee11",
+      "staged": "be6fbaa74743d4b358946af700254ae17daae8fd732cc8492af16f1f6131ee11",
+      "committed": "be6fbaa74743d4b358946af700254ae17daae8fd732cc8492af16f1f6131ee11"
+    }
+  },
+  "checks": {
+    "runs/e6-27-r2/runs/e627-r2.xml": {
+      "sha256": "0e1d7a8d376ad75d17bb68c2bc76780f4129aaa248fa9c19cf9f582a8bea2efe",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "46",
+        "time": "88.751",
+        "timestamp": "2026-10-12T20:55:07.146691+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    "runs/e6-27-r3/runs/e627-native-related-r3.xml": {
+      "sha256": "04a3bdf2268ad2d7009e0ccf0653feee31dc012700ad542bbee2d0d4af82414d",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "2",
+        "tests": "114",
+        "time": "122.859",
+        "timestamp": "2026-10-12T20:57:00.658785+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    "runs/e6-27-r4/runs/e627-native-final-r4.xml": {
+      "sha256": "f3bfcb9790505b720744db9e9b0d0d0ad6c2306a5fb7cbff2b169e719b89c308",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "15",
+        "time": "54.763",
+        "timestamp": "2026-10-12T20:58:21.544935+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    "runs/e6-27-r5/runs/e627-theme-browser-r5.xml": {
+      "sha256": "d499fb22bfa25a91431ea7fef2c5360f2334239981f6625b599c51f98d965b4d",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "2",
+        "skipped": "0",
+        "tests": "2",
+        "time": "21.485",
+        "timestamp": "2026-10-12T21:00:30.771965+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    "runs/e6-27-r6/runs/e627-theme-browser-r6.xml": {
+      "sha256": "3dd154875927b48ba37a1d65506f35e891fb8c444e01e5c53082fceaad6e151e",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "2",
+        "time": "23.325",
+        "timestamp": "2026-10-12T21:02:16.192562+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    "runs/e6-27-r6/runs/e627-existing-publication-head-r6.xml": {
+      "sha256": "fdf5511ef2f1e1cd25d0efa80f09ff26b355a5cb70ee651cca88edfdb6720593",
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "1",
+        "time": "15.326",
+        "timestamp": "2026-10-12T21:04:36.939624+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    }
+  },
+  "env_present": false
+}

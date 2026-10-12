@@ -49,4 +49,20 @@ Verify SQLite foreign keys, actual loopback PostgreSQL concurrency and migration
 old-data preservation, browser mobile/no-JS/print and relevant regression only.
 Independent requirement/code review and separate final audit are required.
 
-Status: PREPARED, not implemented. E6-25/E6-26 corrections finish first.
+Status: DONE for bounded reviewed local scope. Code
+`643c455bf690e14a4b8e48f557e3fe2f7541d77f`, exact16 files to frozenR6.
+Independent pre-audit, implementation APPROVE and separate final GO complete.
+Handoff `ai/handoffs/2026-10-12-2105-e6-27-personal-stay-history.md` records exact
+commands, original failures, snapshot mappings and limits. Builder46PASSincl11PG,
+112relatedPASS2optionalPGSKIP,15finalnative/browserPASS,2finalthemedbrowserPASS,
+1existingpublicationPGPASS are separate overlapping runs. Score92/100 unchanged;
+fullC05 and production/source/business gates remain open.
+
+Implementation decisions: each saved revision pins the exact latest individual
+profile ID/hash and an explicit nullable current32-hex passport reference; no
+identity is inferred from passport country. Old reads/retries resolve old pins.
+Newer profiles, older as-of dates, unconfirmed/incomplete/unknown facts remain
+explicit current findings. Save capacity reserves one revision and8192canonical
+bytes for a small withdrawal marker; old facts remain readable after withdrawal.
+Native editing preserves undisplayed intervals through server-side operations,
+not submit/truncate a whole1000-row form. No auto-copy from another person/contact.
