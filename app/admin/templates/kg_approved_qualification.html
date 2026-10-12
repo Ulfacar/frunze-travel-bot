@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block external_scripts %}{% endblock %}
+{% block external_fonts %}{% endblock %}
+{% block title %}Frunze — Проверка варианта въезда{% endblock %}
+{% block head %}<style>
+.kg-route{max-width:850px;margin:auto;padding:24px 16px;line-height:1.6;overflow-wrap:anywhere}.kg-route h1{font-size:clamp(24px,4vw,32px)}.kg-route h2{font-size:21px}.kg-route a{color:var(--accent,#2563eb)}.kg-route section{padding:20px;margin:20px 0;border:1px solid var(--border,#cbd5e1);border-radius:10px;background:var(--surface,#fff)}.kg-route .notice{border-left:4px solid #b7791f}.kg-route dl{margin:0}.kg-route dt{font-weight:600}.kg-route dd{margin:0 0 12px}.kg-route details{margin-top:16px}.kg-route summary{cursor:pointer}.kg-route :focus-visible{outline:3px solid #d97706;outline-offset:3px}
+@media(max-width:600px){.kg-route{padding:14px 10px}.kg-route section{padding:14px}}
+@media print{html,body{height:auto!important;overflow:visible!important}.topbar,.kg-route nav{display:none!important}.kg-route{padding:0;max-width:none;font-size:10pt;color:#111!important}.kg-route section{background:white!important;border-color:#aaa!important}.kg-route details{display:none}@page{size:A4;margin:14mm}}
+</style>{% endblock %}
+{% block content %}
+{% set en = report and report.language == 'en' %}
+<main class="kg-route" lang="{{ 'en' if en else 'ru' }}">
+<nav><a href="/admin/case/{{ case_id }}/kg-entry/applicants/{{ applicant_id }}/qualification">{{ 'Back to individual profile' if en else '← К анкете заявителя' }}</a></nav>
+<h1>{{ 'Entry route review' if en else 'Проверка варианта въезда' }}</h1>
+<p>{{ 'Applicant' if en else 'Заявитель' }} №{{ applicant_id }} · {{ 'Service' if en else 'Услуга' }} №{{ case_id }}</p>
+{% if not report %}<section class="notice" role="alert">Проверка временно недоступна. Повторите позже или передайте вопрос специалисту.</section>
+{% else %}
+<section class="notice" id="kg-route-limits"><h2>{{ 'Specialist review required' if en else 'Требуется проверка специалиста' }}</h2>
+<p>{{ 'The individual travel history, remaining allowance and registration still need checking. Visa requirements and eligibility to enter have not been determined.' if en else 'Нужно проверить личную историю поездок, остаток дней и регистрацию. Необходимость визы и возможность въезда пока не определены.' }}</p><ul id="kg-route-reasons">{% for reason in reason_labels %}<li>{{ reason }}</li>{% endfor %}</ul></section>
+{% if report.candidate %}<section id="kg-route-candidate"><h2>{{ 'Possible route for review' if en else 'Возможный вариант для проверки' }}</h2>
+<dl><dt>{{ 'Rule' if en else 'Правило' }}</dt><dd>{{ report.candidate.title }} · {{ report.candidate.unit_id }}</dd>
+<dt>{{ 'Route' if en else 'Вариант' }}</dt><dd>{{ ('Visa-free candidate' if en else 'Безвизовый вариант') if report.candidate.product == 'NO_VISA' else report.candidate.product }}</dd>
+<dt>{{ 'Source' if en else 'Источник' }}</dt><dd>{{ report.candidate.source_ref }} · {{ report.candidate.section }} · {{ 'page' if en else 'стр.' }} {{ report.candidate.page }}</dd></dl></section>
+{% else %}<section id="kg-route-fallback"><h2>{{ 'No route selected' if en else 'Вариант пока не выбран' }}</h2><p>{{ 'Confirm the latest individual answers and the approved rules with a specialist.' if en else 'Сверьте актуальные ответы заявителя и утверждённые правила со специалистом.' }}</p></section>{% endif %}
+{% if report.next_questions %}<section><h2>{{ 'Next questions' if en else 'Следующие вопросы' }}</h2><ol>{% for q in report.next_questions %}<li>{{ q.text }}</li>{% endfor %}</ol></section>{% endif %}
+{% if report.profile %}<p>{{ 'Profile revision' if en else 'Версия анкеты' }} №{{ report.profile.revision }} · ID {{ report.profile.id }}</p>{% endif %}
+{% if report.source %}<p>{{ 'Knowledge version' if en else 'Версия базы' }}: {{ report.source.version_label }} · {{ 'Publication revision' if en else 'Версия публикации' }} №{{ report.source.publication_revision }}</p>{% endif %}
+{% if report.checked_at %}<p>{{ 'Checked at' if en else 'Проверено' }}: {{ report.checked_at }}</p>{% endif %}
+<details><summary>{{ 'Source identity' if en else 'Проверка версии источника' }}</summary>
+{% if report.source %}<p>SHA-256: {{ report.source.manifest_hash }}</p>{% endif %}</details>
+{% endif %}</main>{% endblock %}

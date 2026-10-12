@@ -51,6 +51,7 @@
       {% if not individual_profile %}<a href="{{ form_url }}/review/{{ saved.qualification_id }}">Карточка для проверки</a> ·{% endif %}
       {% if saved.previous_id %}<a href="{{ form_url }}?qualification_id={{ saved.previous_id }}">Предыдущая версия</a> · {% endif %}
       <a href="{{ form_url }}">Последняя анкета</a>
+      {% if individual_profile and editable %} · <a href="/admin/case/{{ case.id }}/kg-entry/applicants/{{ applicant.id }}/route">Проверить возможный вариант въезда</a>{% endif %}
     </div>
   </section>
   {% endif %}

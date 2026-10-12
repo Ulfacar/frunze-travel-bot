@@ -2673,3 +2673,4 @@ from app.admin import kg_deadline_tasks  # noqa: E402,F401 — задачи ко
 from app.admin import kg_knowledge_decisions  # noqa: E402,F401 — журнал проверки знаний
 from app.admin import kg_knowledge_publication  # noqa: E402,F401 — публикация проверенных правил
 from app.admin import kg_answers  # noqa: E402,F401 — ответы по действующим утверждённым источникам
+from app.admin import kg_approved_qualification  # noqa: E402,F401 — возможный маршрут конкретного заявителя
