@@ -175,7 +175,7 @@ def _preview_payload(header,event,dialog,descriptor,policy,on):
         owner_login=header.owner_login,dialog=dialog,route=descriptor,policy_hash=policy.digest,on=on)
 
 
-async def _context(session,actor,case_id,applicant_id,interview_id,dialog_id,resolver,policy,*,lock=False):
+async def _context(session,actor,case_id,applicant_id,interview_id,dialog_id,resolver,policy,*,lock=False,at=None):
     case=await applications._case(session,case_id,lock=lock)
     person=await applications._applicant(session,case_id,applicant_id)
     header,pinned=await interviews._header(session,case,person,interview_id)
@@ -188,7 +188,7 @@ async def _context(session,actor,case_id,applicant_id,interview_id,dialog_id,res
     descriptor=rules.validate_route(resolver(dialog.channel,dialog.bot_id,dialog.channel_key))
     if descriptor['recipient']!=rules.recipient(dialog.channel_key):rules.fail('channel_dialog_identity_changed')
     # Case/Dialog waits may cross a policy boundary or the preview's local day.
-    at=_now()
+    at=_now() if at is None else at
     rules.authorize(actor,policy,descriptor,on=applications._local_day(at))
     identity=dict(id=dialog.id,contact_id=dialog.contact_id,channel=dialog.channel,bot_id=dialog.bot_id,channel_key=dialog.channel_key)
     return header,events,state,identity,descriptor,_preview_payload(header,events[-1],identity,descriptor,policy,applications._local_day(at).isoformat()),at
@@ -214,8 +214,10 @@ async def list_stops(engine,*,actor,case_id,applicant_id,interview_id):
     for value in (case_id,applicant_id,interview_id):_id(value)
     async def read(session):
         case=await applications._case(session,case_id);person=await applications._applicant(session,case_id,applicant_id)
-        await interviews._header(session,case,person,interview_id)
+        header,_=await interviews._header(session,case,person,interview_id)
         rows,_=await _registry(session)
+        from app.domain import dialogue_stops
+        causes,_=await dialogue_stops._registry(session,rows)
         dialogs=list((await session.scalars(select(Dialog).where(Dialog.contact_id==case.contact_id,Dialog.channel=='whatsapp').order_by(Dialog.id).limit(101))).all())
         if len(dialogs)>100:rules.fail('channel_dialog_limit')
         try:
@@ -223,6 +225,9 @@ async def list_stops(engine,*,actor,case_id,applicant_id,interview_id):
             activation={r.id:'active' if rules.route_scope(_plain(r.route)) in active else 'disabled' for r in rows}
         except Exception:activation={r.id:'invalid_fail_closed' for r in rows}
         return dict(stops=[_receipt(r) for r in rows if r.interview_id==interview_id],activation=activation,
+            language=header.command['language'],
+            causes=[dict(**dialogue_stops._result(r),created_at=applications._utc(r.created_at),
+                         source_rows=r.document['triage']['source_rows']) for r in causes if r.interview_id==interview_id],
             dialogs=[dict(id=d.id,bot_id=d.bot_id,channel_key=d.channel_key) for d in dialogs])
     return await applications._run(engine,read)
 
@@ -253,28 +258,41 @@ async def bind_stop(engine,*,actor,case_id,applicant_id,interview_id,dialog_id,r
         if not _same(current,descriptor):raise EntryStorageConflict('channel_dialog_identity_changed')
         if policy.digest!=expected_policy_hash or len(events)!=expected_revision or _hash(preview)!=expected_preview_hash:
             raise EntryStorageConflict('channel_preview_changed')
-        observed=events[-1]
-        if state['phase'] in ('active','paused'):
-            await interviews._record_action_in_session(session,actor=actor,case_id=case_id,applicant_id=applicant_id,
-                interview_id=interview_id,expected_revision=expected_revision,request_key='guard-'+_hash(command)[:58],
-                operation={'action':'handoff'},at=at)
-            events,state,_=await interviews._history(session,header,interviews.policy_from_document(_plain(header.policy)))
-        handoff=state.get('handoff')
-        if not handoff or state['phase'] not in ('pending','acked'):rules.fail('channel_handoff_required')
-        event=next(e for e in events if e.revision==handoff['card']['revision'])
-        row=EntryChannelStop(case_id=case_id,applicant_id=applicant_id,interview_id=interview_id,
-            handoff_event_id=event.id,contact_id=identity['contact_id'],dialog_id=dialog_id,transport_key=_hash(descriptor),
-            card_hash=handoff['hash'],request_key=request_key,request_hash=_hash(command),command=command,
-            policy=policy.document(),route=descriptor,source_pin=dict(dialog=identity,observed_event_id=observed.id,
-                observed_revision=observed.revision,observed_hash=observed.snapshot_hash,handoff_revision=event.revision,
-                handoff_hash=event.snapshot_hash,header_hash=header.snapshot_hash,preview=preview),
-            authority={'full_admins':sorted(rules.existing_full_admins())},created_by=actor.manager_id,created_at=at)
-        row.snapshot_hash=_hash(_payload(row))
-        amount=len(canonical(_payload(row)).encode())
-        if amount>MAX_ROW_BYTES or total+amount>MAX_REGISTRY_BYTES:rules.fail('channel_stop_registry_limit')
-        session.add(row);await session.flush();await _registry(session)
-        return _receipt(row)
+        return await _save_stop_in_session(session,actor=actor,header=header,events=events,state=state,
+            identity=identity,descriptor=descriptor,policy=policy,request_key=request_key,command=command,
+            preview=preview,at=at,total=total)
     return await _transaction(engine,write)
+
+
+async def _save_stop_in_session(session,*,actor,header,events,state,identity,descriptor,policy,
+                                request_key,command,preview,at,total):
+    """Internal composition point; caller owns locks, authorization and capacity.
+
+    A connected interrupt observes its resulting pending event. Old manual binds
+    still observe the preceding active/paused event and append generic handoff.
+    The existing v1 registry validator and receipt format are unchanged.
+    """
+    observed=events[-1]
+    if state['phase'] in ('active','paused'):
+        await interviews._record_action_in_session(session,actor=actor,case_id=header.case_id,
+            applicant_id=header.applicant_id,interview_id=header.id,expected_revision=len(events),
+            request_key='guard-'+_hash(command)[:58],operation={'action':'handoff'},at=at)
+        events,state,_=await interviews._history(session,header,interviews.policy_from_document(_plain(header.policy)))
+    handoff=state.get('handoff')
+    if not handoff or state['phase'] not in ('pending','acked'):rules.fail('channel_handoff_required')
+    event=next(e for e in events if e.revision==handoff['card']['revision'])
+    row=EntryChannelStop(case_id=header.case_id,applicant_id=header.applicant_id,interview_id=header.id,
+        handoff_event_id=event.id,contact_id=identity['contact_id'],dialog_id=identity['id'],transport_key=_hash(descriptor),
+        card_hash=handoff['hash'],request_key=request_key,request_hash=_hash(command),command=command,
+        policy=policy.document(),route=descriptor,source_pin=dict(dialog=identity,observed_event_id=observed.id,
+            observed_revision=observed.revision,observed_hash=observed.snapshot_hash,handoff_revision=event.revision,
+            handoff_hash=event.snapshot_hash,header_hash=header.snapshot_hash,preview=preview),
+        authority={'full_admins':sorted(rules.existing_full_admins())},created_by=actor.manager_id,created_at=at)
+    row.snapshot_hash=_hash(_payload(row))
+    amount=len(canonical(_payload(row)).encode())
+    if amount>MAX_ROW_BYTES or total+amount>MAX_REGISTRY_BYTES:rules.fail('channel_stop_registry_limit')
+    session.add(row);await session.flush();await _registry(session)
+    return _receipt(row)
 
 
 @dataclass(frozen=True)

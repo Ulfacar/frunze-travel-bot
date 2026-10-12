@@ -2234,7 +2234,37 @@ class EntryChannelStop(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft)
+class EntryDialogueStopCause(DomainBase):
+    """First connected stop and one reserved later collection stop; no raw text."""
+    __tablename__='entry_dialogue_stop_causes'
+    __table_args__=(
+        UniqueConstraint('transport_key','revision',name='uq_dialogue_cause_revision'),
+        UniqueConstraint('transport_key','message_key',name='uq_dialogue_cause_message'),
+        ForeignKeyConstraint(['interview_id','case_id','applicant_id'],['entry_interviews.id','entry_interviews.case_id','entry_interviews.applicant_id'],name='fk_dialogue_cause_subject'),
+        CheckConstraint('revision BETWEEN 1 AND 2',name='ck_dialogue_cause_revision'),
+        CheckConstraint('(revision=1 AND previous_id IS NULL) OR (revision=2 AND previous_id IS NOT NULL AND previous_id<id)',name='ck_dialogue_cause_previous'),
+        CheckConstraint('length(transport_key)=64 AND length(message_key)=64 AND length(input_hash)=64 AND length(snapshot_hash)=64',name='ck_dialogue_cause_hashes'),
+    )
+    id:Mapped[int]=mapped_column(Integer,primary_key=True)
+    transport_key:Mapped[str]=mapped_column(String(64))
+    revision:Mapped[int]=mapped_column(Integer)
+    previous_id:Mapped[int|None]=mapped_column(ForeignKey('entry_dialogue_stop_causes.id'))
+    case_id:Mapped[int]=mapped_column(Integer)
+    applicant_id:Mapped[int]=mapped_column(Integer)
+    interview_id:Mapped[int]=mapped_column(Integer)
+    stop_id:Mapped[int]=mapped_column(ForeignKey('entry_channel_stops.id'))
+    event_id:Mapped[int]=mapped_column(ForeignKey('entry_interview_events.id'))
+    message_key:Mapped[str]=mapped_column(String(64))
+    input_hash:Mapped[str]=mapped_column(String(64))
+    snapshot_hash:Mapped[str]=mapped_column(String(64))
+    document:Mapped[dict]=mapped_column(_ServiceJSON)
+    created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=_now)
+
+    @validates('document')
+    def _freeze(self,key,value):return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause)
 
 
 def _entry_immutable(mapper, connection, target):

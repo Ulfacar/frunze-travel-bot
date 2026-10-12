@@ -23,4 +23,10 @@
 {% if current %}<section id="stop-current"><h2>Сохранённые остановки этой анкеты</h2>{% for saved in current.stops %}<article class="box"><h3>{{ 'Автоответы остановлены' if current.activation[saved.id]=='active' else 'Запрет сохранён' }} · запись №{{ saved.id }}</h3>{{ route(saved.route) }}<p>Сохранил {{ saved.created_by }} · {{ saved.created_at }}</p>
 {% if current.activation[saved.id]=='disabled' %}<p class="notice">Защита этого профиля выключена в настройках сервера. Сохранённый запрет сейчас не проверяется при отправке. Требуется проверка администратора сервера.</p>{% elif current.activation[saved.id]=='invalid_fail_closed' %}<p class="notice">Настройки защиты некорректны. Автоответы WhatsApp блокируются до проверки администратора сервера.</p>{% endif %}
 <p>Принятие карточки ответственным сотрудником проверяется отдельно в анкете.</p><p class="muted">Карточка {{ saved.card_hash }}. Подтверждение записи {{ saved.snapshot_hash }}.</p></article>{% else %}<p>Для этой анкеты остановка диалога ещё не сохранена. Передача карточки сама по себе не связывает её с каналом.</p>{% endfor %}</section>{% endif %}
+{% if current and current.causes %}<section id="stop-causes"><h2>Причины остановки</h2>
+<p>Записи отражают темы для проверки специалистом. Они не подтверждают обстоятельства клиента и не означают, что сотрудник уже принял обращение.</p>
+{% for cause in current.causes %}<article class="box"><h3>{{ cause_labels[cause.reason] }}</h3><p>{{ cause.created_at }} · запись №{{ cause.id }}</p>
+{% if cause.interpretation=='possible_privacy_stop' %}<p class="notice">Возможное ограничение обработки данных. Формулировка требует проверки; сбор данных остановлен. Удаление данных не выполнялось.</p>{% elif cause.collection_blocked %}<p>Сбор данных остановлен. Удаление данных не выполнялось.</p>{% endif %}
+{% if cause.source_rows %}<p>Возможные связанные пункты раздела 17: {{ cause.source_rows | join(', ') }}.</p>{% endif %}
+<p class="muted">Подтверждение записи {{ cause.snapshot_hash }}.</p></article>{% endfor %}</section>{% endif %}
 </main>{% endblock %}

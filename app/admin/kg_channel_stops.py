@@ -87,9 +87,12 @@ async def _render(request,manager,actor,case,applicant_id,interview_id,*,preview
         error='История остановок не прошла проверку. Новые записи недоступны.';status=503
     except HTTPException:raise
     except Exception:error='Хранилище временно недоступно.';status=503
+    from app.admin.kg_interviews import INTERRUPTS
+    cause_labels=dict(INTERRUPTS)
+    cause_labels['consent_withdrawn']='Запрос на остановку сбора данных'
     return ar.templates.TemplateResponse(request,'kg_channel_stops.html',dict(request=request,manager=manager,case=case,
         applicant_id=applicant_id,interview_id=interview_id,current=current,form=form,preview=preview,save_form=save_form,
-        retry=retry,error=error,url=_url(*ids)),status_code=status,headers=HEADERS)
+        retry=retry,error=error,url=_url(*ids),cause_labels=cause_labels),status_code=status,headers=HEADERS)
 
 
 @ar.router.get(ROUTE,response_class=HTMLResponse)
