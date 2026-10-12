@@ -348,6 +348,8 @@ async def _case_context(request: Request, case_id: int, manager: dict, *,
                     if direction == "tickets" else [])
         attempts = (await attempts_of(session, case.id, by=actor)
                     if direction == "tours" else [])
+        from app.domain.models import ServiceCaseOpening
+        preliminary = direction == 'visa' and await session.scalar(select(ServiceCaseOpening.id).where(ServiceCaseOpening.case_id==case.id)) is not None
         return {
             "case": case, "d": digest, "tasks": tasks, "events": events,
             "segments": segments, "attempts": attempts, "tab": tab,
@@ -363,6 +365,7 @@ async def _case_context(request: Request, case_id: int, manager: dict, *,
             # «нет прав» и «реестр недоступен» — это разные вещи для менеджера.
             "outcome": outcome,
             "kg_entry_on": ar.settings.admin_kg_entry_enabled and actor.is_full_admin and direction == "visa",
+            "preliminary_case": preliminary,
         }
 
 

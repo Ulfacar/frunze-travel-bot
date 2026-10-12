@@ -78,6 +78,7 @@
         {% if busy_by %}<p class="chat-menu-note">Диалог уже ведёт менеджер {{ busy_by }}</p>{% endif %}
         <hr>
         {% if workday_on and cases_write_on %}
+        {% if c.funnel=='visa' %}<a class="chat-menu-action" href="/admin/conversation/{{ c.user_id|urlencode }}/preliminary">Открыть карточку до договора</a>{% endif %}
         <a class="chat-menu-action" href="/admin/conversation/{{ c.user_id|urlencode }}/contract">Договор подписан → создать услугу</a>
         {% endif %}{% if c.intercepted %}
         <button type="button" class="chat-menu-action" hx-post="/admin/conversation/{{ c.user_id }}/release" hx-target="#chat" hx-swap="innerHTML">{{ chat_icon('return') }}Вернуть боту</button>

@@ -2311,7 +2311,27 @@ class EntryDialogueEvent(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause, EntryDialogueSession, EntryDialogueEvent)
+class ServiceCaseOpening(DomainBase):
+    """One original preliminary opening receipt; signing keeps its own key."""
+    __tablename__='service_case_openings'
+    __table_args__=(
+        UniqueConstraint('request_key',name='uq_case_opening_request'),
+        UniqueConstraint('case_id',name='uq_case_opening_case'),
+        CheckConstraint('length(request_key) BETWEEN 1 AND 128',name='ck_case_opening_key'),
+        CheckConstraint('length(snapshot_hash)=64',name='ck_case_opening_hash'),
+    )
+    id:Mapped[int]=mapped_column(Integer,primary_key=True)
+    case_id:Mapped[int]=mapped_column(ForeignKey('service_cases.id'))
+    request_key:Mapped[str]=mapped_column(String(128))
+    document:Mapped[dict]=mapped_column(_ServiceJSON)
+    snapshot_hash:Mapped[str]=mapped_column(String(64))
+    created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=_now)
+
+    @validates('document')
+    def _freeze(self,key,value):return _ServiceJSON.freeze(value)
+
+
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause, EntryDialogueSession, EntryDialogueEvent, ServiceCaseOpening)
 
 
 def _entry_immutable(mapper, connection, target):

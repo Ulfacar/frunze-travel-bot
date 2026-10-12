@@ -2648,6 +2648,7 @@ async def _set_intercept(user_id: str, value: bool) -> None:
 # помощникам отсюда, и раньше этой строки они ещё не объявлены.
 from app.admin import workday  # noqa: E402,F401 — side-effect: регистрация маршрутов
 from app.admin import contracts  # noqa: E402,F401 — договор из переписки, за флагами E2-06
+from app.admin import precontract  # noqa: E402,F401 — предварительная визовая карточка и договор в ней
 from app.admin import kg_entry  # noqa: E402,F401 — пилот анкеты въезда, default OFF
 from app.admin import kg_knowledge  # noqa: E402,F401 — поиск источника за тем же пилотным флагом
 from app.admin import kg_history  # noqa: E402,F401 — версии фактических поездок, тот же full-admin gate

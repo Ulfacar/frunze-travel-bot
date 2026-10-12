@@ -234,7 +234,9 @@
     </details>
 
     {% elif ns.kind == 'contract' %}
+    {% if preliminary_case %}<p class="cs-note">Предварительная карточка. Договор ещё не записан.</p><a class="btn btn-brand" href="{{ post }}/contract">Записать подписанный договор</a>{% else %}
     <p class="cs-note"><b>{{ ns.label }}.</b> Без подписанного договора продажа не состоялась, остаток не считается и задачи не ставятся. Форма фиксации договора в этой карточке ещё не подключена.</p>
+    {% endif %}
 
     {% elif ns.kind == 'final' %}
     <p class="cs-note">{{ ns.label }}.</p>
