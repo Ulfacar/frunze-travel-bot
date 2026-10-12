@@ -1039,9 +1039,18 @@
       "weight": 1,
       "pdf": "Б.8",
       "acceptance": "Golden intake/qualification scenarios and adversarial uncertainty cases",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "ca789334af33ce6c42bdb6dfbeb4955d7e870ce9",
+          "command": "Independent exact-R44 original-source USA/UZ/India RU execution: 3 PASS / 152.498s; 42 overlays, 15 historical and 19 runtime identities verified; full command/hashes in final audit",
+          "environment": "Windows Python3.12; env-free Git archive; original pinned PDF; synthetic FK SQLite; no providers or production",
+          "scope": "Original B.8 connected typed intake/qualification and adversarial uncertainty; explicitly clarified synthetic dates, no raw-parser or real source approval claim; scoped review APPROVE and separate GO",
+          "artifact": "ai/handoffs/2026-10-12-2315-e6-30c-golden-acceptance.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "J03",
