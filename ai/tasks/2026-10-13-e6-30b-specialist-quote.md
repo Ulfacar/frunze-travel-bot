@@ -3,7 +3,19 @@
 CRITICAL / solo. Parent full local PDF/CRM completion; J01/J02 remain open.
 Completion target: independently reviewed local change, not release. Builder root;
 source-first independent pre-audit by publication_review is complete:
-`ai/reviews/2026-10-13-e6-30b-pre-audit.md`. Implementation has not started.
+`ai/reviews/2026-10-13-e6-30b-pre-audit.md`. DONE for the bounded reviewed-local target; code `14583342ff53c099d720af4e52e59071510bfde9`.
+
+Final checkpoint 2026-10-12 20:29 UTC: DONE reviewed local, exact36 code/test
+files committed as `14583342ff53c099d720af4e52e59071510bfde9` from approved R17.
+Independent domain/source and native APPROVEs plus separate whole-B GO; all36
+snapshot/root/index/commit identities match. Handoff
+`ai/handoffs/2026-10-12-2025-e6-30b-specialist-quote.md`; full mapped evidence
+`ai/reviews/2026-10-13-e6-30b-snapshot-evidence.json`. Root48 current core/native/
+browser/schema PASS; actualPG11core +3recovery/CAS +2finalclock PASS. Independent
+actual64-count and4MiB-reserve, old authority receipt, temporal rollback/recovery,
+current identity, late-stop and native error/large-recipe controls PASS. Original
+failures and harness mistakes retained, no full-project green or real approval.
+No active test/PG process. Parent96/100 unchanged; E630C is next.
 
 ## Observable outcome
 
