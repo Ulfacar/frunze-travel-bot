@@ -1,0 +1,2550 @@
+{
+  "format": "e629a-snapshot-evidence/1",
+  "base": "b10012e8b5a9f50989c725fc77c270b64b045dce",
+  "snapshot": "runs/e6-29-r6",
+  "manifest_lf_sha256": "536520f3b988b78976c7dcd4ccf5fc2f2803580fbda29ecb27c6cbcc76e3bfc4",
+  "revision": "d3f9464ff8b47b17cd9b405a4a09d1b6a35f5edf",
+  "files": {
+    "alembic/versions/e6_dialogue_cause_0036.py": {
+      "snapshot": "52b506aef51a4fdbf19cd777518cbd9cd147568d00a0f1ad915543176f6cc730",
+      "working": "52b506aef51a4fdbf19cd777518cbd9cd147568d00a0f1ad915543176f6cc730",
+      "staged": "52b506aef51a4fdbf19cd777518cbd9cd147568d00a0f1ad915543176f6cc730",
+      "committed": "52b506aef51a4fdbf19cd777518cbd9cd147568d00a0f1ad915543176f6cc730"
+    },
+    "app/domain/models.py": {
+      "snapshot": "a73dfd50ae8831a3b7bfdf75273f0de76cdc0b84c7ae39a1f3c2cea87f7891b6",
+      "working": "a73dfd50ae8831a3b7bfdf75273f0de76cdc0b84c7ae39a1f3c2cea87f7891b6",
+      "staged": "a73dfd50ae8831a3b7bfdf75273f0de76cdc0b84c7ae39a1f3c2cea87f7891b6",
+      "committed": "a73dfd50ae8831a3b7bfdf75273f0de76cdc0b84c7ae39a1f3c2cea87f7891b6"
+    },
+    "app/domain/entry_channel_stops.py": {
+      "snapshot": "3fbefafce4238df6e353c3ed133fa068e468a77b173fcde2ebb1debc5b0ebc66",
+      "working": "3fbefafce4238df6e353c3ed133fa068e468a77b173fcde2ebb1debc5b0ebc66",
+      "staged": "3fbefafce4238df6e353c3ed133fa068e468a77b173fcde2ebb1debc5b0ebc66",
+      "committed": "3fbefafce4238df6e353c3ed133fa068e468a77b173fcde2ebb1debc5b0ebc66"
+    },
+    "app/domain/dialogue_policy.py": {
+      "snapshot": "3506464f9bdbfb84012b6ec49f5829ee1a00c083fbb604cfb0309b882f7e1b87",
+      "working": "3506464f9bdbfb84012b6ec49f5829ee1a00c083fbb604cfb0309b882f7e1b87",
+      "staged": "3506464f9bdbfb84012b6ec49f5829ee1a00c083fbb604cfb0309b882f7e1b87",
+      "committed": "3506464f9bdbfb84012b6ec49f5829ee1a00c083fbb604cfb0309b882f7e1b87"
+    },
+    "app/domain/dialogue_stops.py": {
+      "snapshot": "36bcc150549502970ac1d83efdc1cfe6bfc7d125b49049215f35ded0f58ea82f",
+      "working": "36bcc150549502970ac1d83efdc1cfe6bfc7d125b49049215f35ded0f58ea82f",
+      "staged": "36bcc150549502970ac1d83efdc1cfe6bfc7d125b49049215f35ded0f58ea82f",
+      "committed": "36bcc150549502970ac1d83efdc1cfe6bfc7d125b49049215f35ded0f58ea82f"
+    },
+    "app/knowledge/dialogue_interrupts.py": {
+      "snapshot": "e14b0822845c42428d84ba7ed79224d8ca96174caf32d95e82d1854cee4067d5",
+      "working": "e14b0822845c42428d84ba7ed79224d8ca96174caf32d95e82d1854cee4067d5",
+      "staged": "e14b0822845c42428d84ba7ed79224d8ca96174caf32d95e82d1854cee4067d5",
+      "committed": "e14b0822845c42428d84ba7ed79224d8ca96174caf32d95e82d1854cee4067d5"
+    },
+    "app/admin/kg_channel_stops.py": {
+      "snapshot": "05f6a24dca5c75d2de4bb55752cd9cabf0e9d034ce647cbaba27c382a7e8a0f6",
+      "working": "05f6a24dca5c75d2de4bb55752cd9cabf0e9d034ce647cbaba27c382a7e8a0f6",
+      "staged": "05f6a24dca5c75d2de4bb55752cd9cabf0e9d034ce647cbaba27c382a7e8a0f6",
+      "committed": "05f6a24dca5c75d2de4bb55752cd9cabf0e9d034ce647cbaba27c382a7e8a0f6"
+    },
+    "app/admin/templates/kg_channel_stops.html": {
+      "snapshot": "7478cfe8fab193e653d884af15fade35826a0ec46a81b08cd5e1eb9479ddc78b",
+      "working": "7478cfe8fab193e653d884af15fade35826a0ec46a81b08cd5e1eb9479ddc78b",
+      "staged": "7478cfe8fab193e653d884af15fade35826a0ec46a81b08cd5e1eb9479ddc78b",
+      "committed": "7478cfe8fab193e653d884af15fade35826a0ec46a81b08cd5e1eb9479ddc78b"
+    },
+    "tests/test_alembic_domain_migration.py": {
+      "snapshot": "8ce44ce5b9a83c04e31961d8d192083fe988fc128f21ed6ef11ffff39e46abea",
+      "working": "8ce44ce5b9a83c04e31961d8d192083fe988fc128f21ed6ef11ffff39e46abea",
+      "staged": "8ce44ce5b9a83c04e31961d8d192083fe988fc128f21ed6ef11ffff39e46abea",
+      "committed": "8ce44ce5b9a83c04e31961d8d192083fe988fc128f21ed6ef11ffff39e46abea"
+    },
+    "tests/test_kg_dialogue_interrupts.py": {
+      "snapshot": "495247c2ab0b8398a2c0cf51b1f3fc0e7b16eb78d7c726e825081dbf6792312f",
+      "working": "495247c2ab0b8398a2c0cf51b1f3fc0e7b16eb78d7c726e825081dbf6792312f",
+      "staged": "495247c2ab0b8398a2c0cf51b1f3fc0e7b16eb78d7c726e825081dbf6792312f",
+      "committed": "495247c2ab0b8398a2c0cf51b1f3fc0e7b16eb78d7c726e825081dbf6792312f"
+    },
+    "tests/test_dialogue_stops.py": {
+      "snapshot": "0da7b605faa5fe1e66a6b1dc7608562e42406d4e054cdfcdaf5493fec9c11c74",
+      "working": "0da7b605faa5fe1e66a6b1dc7608562e42406d4e054cdfcdaf5493fec9c11c74",
+      "staged": "0da7b605faa5fe1e66a6b1dc7608562e42406d4e054cdfcdaf5493fec9c11c74",
+      "committed": "0da7b605faa5fe1e66a6b1dc7608562e42406d4e054cdfcdaf5493fec9c11c74"
+    },
+    "tests/test_dialogue_stops_postgres.py": {
+      "snapshot": "35601646a4ac83b6d1c8eed85755997439e389a23970f0c4a4f4eed9553d8ada",
+      "working": "35601646a4ac83b6d1c8eed85755997439e389a23970f0c4a4f4eed9553d8ada",
+      "staged": "35601646a4ac83b6d1c8eed85755997439e389a23970f0c4a4f4eed9553d8ada",
+      "committed": "35601646a4ac83b6d1c8eed85755997439e389a23970f0c4a4f4eed9553d8ada"
+    },
+    "tests/test_dialogue_stops_migration.py": {
+      "snapshot": "3bd40e71a4229ffa773d6a544515991fdc298bd7fcb1381ef3b0c3cd00797d3f",
+      "working": "3bd40e71a4229ffa773d6a544515991fdc298bd7fcb1381ef3b0c3cd00797d3f",
+      "staged": "3bd40e71a4229ffa773d6a544515991fdc298bd7fcb1381ef3b0c3cd00797d3f",
+      "committed": "3bd40e71a4229ffa773d6a544515991fdc298bd7fcb1381ef3b0c3cd00797d3f"
+    },
+    "tests/browser_kg_dialogue_stops.py": {
+      "snapshot": "cfd1ad5011b4d7ec05db96c5b3ed3b73c292e3923fcac45b1eb856a747beab15",
+      "working": "cfd1ad5011b4d7ec05db96c5b3ed3b73c292e3923fcac45b1eb856a747beab15",
+      "staged": "cfd1ad5011b4d7ec05db96c5b3ed3b73c292e3923fcac45b1eb856a747beab15",
+      "committed": "cfd1ad5011b4d7ec05db96c5b3ed3b73c292e3923fcac45b1eb856a747beab15"
+    }
+  },
+  "runs": [
+    {
+      "artifact": "runs/e6-29-r2/runs/e629-r2-domain.xml",
+      "sha256": "c6e40db9bc45d621f9de1acb1275c5e24d0ab89c25fbca72ca03094924a11af6",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "155",
+          "time": "89.016",
+          "timestamp": "2026-10-12T22:20:07.448323+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[1-messages0]",
+          "time": "0.042",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[2-messages1]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[3-messages2]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[4-messages3]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[5-messages4]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[6-messages5]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[7-messages6]",
+          "time": "0.003",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[8-messages7]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[9-messages8]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[10-messages9]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[11-messages10]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[12-messages11]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[13-messages12]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[14-messages13]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[15-messages14]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[16-messages15]",
+          "time": "0.003",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[17-messages16]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[18-messages17]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[19-messages18]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[20-messages19]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[21-messages20]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[22-messages21]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[23-messages22]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[24-messages23]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[25-messages24]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[26-messages25]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[27-messages26]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[28-messages27]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[29-messages28]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[30-messages29]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[31-messages30]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[32-messages31]",
+          "time": "0.004",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[33-messages32]",
+          "time": "0.003",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[34-messages33]",
+          "time": "0.003",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[35-messages34]",
+          "time": "0.003",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[36-messages35]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[37-messages36]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[38-messages37]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[39-messages38]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[40-messages39]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[41-messages40]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[42-messages41]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[43-messages42]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[44-messages43]",
+          "time": "0.003",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[45-messages44]",
+          "time": "0.003",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[46-messages45]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[47-messages46]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[48-messages47]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[49-messages48]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[50-messages49]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[51-messages50]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[52-messages51]",
+          "time": "0.003",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[53-messages52]",
+          "time": "0.005",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[54-messages53]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[55-messages54]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[56-messages55]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[57-messages56]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_source_rows_are_complete_and_unique",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[I no longer consent to storing my data]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[I refuse to let you collect my data]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[I revoke permission to process my data]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[\\u042f \\u0431\\u043e\\u043b\\u044c\\u0448\\u0435 \\u043d\\u0435 \\u0441\\u043e\\u0433\\u043b\\u0430\\u0441\\u0435\\u043d \\u043d\\u0430 \\u043e\\u0431\\u0440\\u0430\\u0431\\u043e\\u0442\\u043a\\u0443 \\u043c\\u043e\\u0438\\u0445 \\u0434\\u0430\\u043d\\u043d\\u044b\\u0445]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[\\u043d\\u0435 \\u0434\\u0430\\u044e \\u0441\\u043e\\u0433\\u043b\\u0430\\u0441\\u0438\\u044f]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[\\u041e\\u0442\\u0437\\u044b\\u0432\\u0430\\u044e \\u0441\\u0432\\u043e\\u0435 \\u0441\\u043e\\u0433\\u043b\\u0430\\u0441\\u0438\\u0435]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[Do not process my data]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[Stop collecting my data]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[\\u0423\\u0434\\u0430\\u043b\\u0438\\u0442\\u0435 \\u043c\\u043e\\u0438 \\u0434\\u0430\\u043d\\u043d\\u044b\\u0435]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_closed_acknowledgements_can_continue_only_after_context_checks[\\u0437\\u0434\\u0440\\u0430\\u0432\\u0441\\u0442\\u0432\\u0443\\u0439\\u0442\\u0435]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_closed_acknowledgements_can_continue_only_after_context_checks[\\u0421\\u043f\\u0430\\u0441\\u0438\\u0431\\u043e!]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_closed_acknowledgements_can_continue_only_after_context_checks[hello]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_closed_acknowledgements_can_continue_only_after_context_checks[Thank you.]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_closed_acknowledgements_can_continue_only_after_context_checks[ok]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[\\u0434\\u0430]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[no]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[2026-10-20]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[45]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[????????]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[I do not have an entry ban]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[\\u041e\\u043d \\u0441\\u043a\\u0430\\u0437\\u0430\\u043b \\xab\\u043f\\u043e\\u0434\\u0434\\u0435\\u043b\\u0430\\u0442\\u044c \\u043f\\u0430\\u0441\\u043f\\u043e\\u0440\\u0442\\xbb, \\u044f \\u043f\\u0440\\u043e\\u0442\\u0438\\u0432]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[Hello but I have a ban]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[hello\\u200b]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[None]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_consent_no_and_untrusted_media_never_enter_ordinary_answer_path",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[\\u0425\\u043e\\u0447\\u0443 \\u043c\\u0435\\u043d\\u0435\\u0434\\u0436\\u0435\\u0440\\u0430-manager_requested]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[I need a human-manager_requested]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[\\u041c\\u0435\\u043d\\u044f \\u0440\\u0430\\u0437\\u0434\\u0440\\u0430\\u0436\\u0430\\u044e\\u0442 \\u0432\\u0430\\u0448\\u0438 \\u0432\\u043e\\u043f\\u0440\\u043e\\u0441\\u044b-complaint]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[Too many questions-complaint]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[\\u0423 \\u043c\\u0435\\u043d\\u044f \\u0443\\u0433\\u043e\\u043b\\u043e\\u0432\\u043d\\u043e\\u0435 \\u0434\\u0435\\u043b\\u043e-criminal_mention]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[I was convicted-criminal_mention]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_atomic_cause_handoff_latch_and_exact_retry",
+          "time": "2.021",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_existing_handoff_and_later_privacy_stop_with_expired_policy[paused]",
+          "time": "2.413",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_existing_handoff_and_later_privacy_stop_with_expired_policy[pending]",
+          "time": "1.855",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_existing_handoff_and_later_privacy_stop_with_expired_policy[acked]",
+          "time": "1.977",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_failure_rolls_back_all_three_connected_writes[EntryDialogueStopCause]",
+          "time": "1.388",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_failure_rolls_back_all_three_connected_writes[EntryChannelStop]",
+          "time": "1.214",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_failure_rolls_back_all_three_connected_writes[EntryInterviewEvent]",
+          "time": "1.293",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_missing_policy_unbound_and_greeting_are_not_answer_admission",
+          "time": "1.223",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_cause_corruption_fails_closed_and_restores",
+          "time": "1.425",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_reserved_terminal_collection_stop_at_registry_capacity",
+          "time": "1.501",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_server_assignment_must_match_exact_existing_subject[actor-missing]",
+          "time": "1.220",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_server_assignment_must_match_exact_existing_subject[applicant_id-999999]",
+          "time": "1.393",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_server_assignment_must_match_exact_existing_subject[header_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "time": "1.167",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_server_assignment_must_match_exact_existing_subject[dialog_id-999999]",
+          "time": "1.153",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_atomic_handoff_stop_ack_policy_removal_and_exact_retry",
+          "time": "1.719",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_existing_card_or_paused_and_no_resumption[paused]",
+          "time": "1.369",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_existing_card_or_paused_and_no_resumption[pending]",
+          "time": "1.346",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_existing_card_or_paused_and_no_resumption[acked]",
+          "time": "1.786",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_wrong_dialog_provenance_rejected[change0]",
+          "time": "1.280",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_wrong_dialog_provenance_rejected[change1]",
+          "time": "1.136",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_wrong_dialog_provenance_rejected[change2]",
+          "time": "1.165",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_wrong_dialog_provenance_rejected[change3]",
+          "time": "1.114",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_wrong_dialog_provenance_rejected[change4]",
+          "time": "1.106",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_stale_preview_conflict_and_current_actor_before_retry",
+          "time": "1.455",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_injected_write_failure_rolls_back_handoff_and_stop[handoff]",
+          "time": "1.532",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_injected_write_failure_rolls_back_handoff_and_stop[binding]",
+          "time": "1.336",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_capacity_preserves_retry_and_block_and_unbound_read",
+          "time": "1.494",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_corrupt_registry_blocks_negative_lookup_too[transport_key-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "time": "1.389",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_corrupt_registry_blocks_negative_lookup_too[card_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "time": "1.465",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_corrupt_registry_blocks_negative_lookup_too[snapshot_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "time": "1.333",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_mutable_dialog_cannot_move_permanent_stop",
+          "time": "1.325",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_provider_callback_at_most_once_on_failure[exception]",
+          "time": "0.965",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_provider_callback_at_most_once_on_failure[timeout]",
+          "time": "1.004",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_provider_callback_at_most_once_on_failure[cancel]",
+          "time": "0.951",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_actual_adapter_alias_suffix_and_account_isolation",
+          "time": "1.268",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_installed_guard_failure_closed[config]",
+          "time": "0.955",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_installed_guard_failure_closed[recipient]",
+          "time": "1.025",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_installed_guard_failure_closed[schema]",
+          "time": "1.000",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[+996700000001]",
+          "time": "0.989",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[0996700000001]",
+          "time": "0.927",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[996700000001@s.whatsapp.net]",
+          "time": "0.939",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[123@g.us]",
+          "time": "0.935",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[ 996700000001]",
+          "time": "0.956",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[123]",
+          "time": "0.932",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[0]",
+          "time": "0.976",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_route_rejects_guessed_or_unsupported_recipients[True]",
+          "time": "1.065",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_account_metadata_cannot_contain_secrets[http://synthetic.invalid]",
+          "time": "1.005",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_account_metadata_cannot_contain_secrets[https://secret@synthetic.invalid]",
+          "time": "1.245",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_account_metadata_cannot_contain_secrets[https://synthetic.invalid?token=x]",
+          "time": "1.082",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_account_metadata_cannot_contain_secrets[https://synthetic.invalid/path]",
+          "time": "0.951",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_account_metadata_cannot_contain_secrets[https://synthetic.invalid:444]",
+          "time": "0.976",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_rehashed_invalid_pin_or_card_semantics_fails_closed[boolean_pin]",
+          "time": "1.254",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_rehashed_invalid_pin_or_card_semantics_fails_closed[card_fact]",
+          "time": "1.224",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_current_actor_denied_before_database_access",
+          "time": "0.958",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_actual_registry_aliases_and_global_profile_fallback_share_route",
+          "time": "1.237",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_adapter_identity_changed_while_waiting_is_not_sent",
+          "time": "0.992",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_expired_policy_cannot_resume_stop_or_prevent_exact_receipt_retry",
+          "time": "1.488",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_new_day_requires_fresh_preview_even_when_policy_remains_valid",
+          "time": "1.178",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_permanent_binding_rejects_orm_mutation[update]",
+          "time": "1.223",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_permanent_binding_rejects_orm_mutation[delete]",
+          "time": "1.287",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_permanent_binding_rejects_orm_mutation[bulk]",
+          "time": "1.666",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[expiry-case]",
+          "time": "1.185",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[expiry-dialog]",
+          "time": "1.134",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[day-case]",
+          "time": "1.189",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_entry_channel_stops",
+          "name": "test_policy_and_preview_clock_are_sampled_after_all_row_locks[day-dialog]",
+          "time": "1.294",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-29-r3/runs/e629-r3-pg.xml",
+      "sha256": "f6837688312b13ec5471fba298a65d1602fb05fefb511b912332624c4d1100bc",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "11",
+          "time": "45.486",
+          "timestamp": "2026-10-12T22:23:01.611743+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_connected_stop_retry",
+          "time": "6.467",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_retained_card_and_terminal_collection_stop[paused]",
+          "time": "4.560",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_retained_card_and_terminal_collection_stop[pending]",
+          "time": "3.713",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_retained_card_and_terminal_collection_stop[acked]",
+          "time": "3.892",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_atomic_failure[EntryDialogueStopCause]",
+          "time": "2.879",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_atomic_failure[EntryChannelStop]",
+          "time": "2.831",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_atomic_failure[EntryInterviewEvent]",
+          "time": "2.709",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_cause_corruption_restoration",
+          "time": "2.973",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_reserved_terminal_capacity",
+          "time": "2.832",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_send_first_finishes_once_then_atomic_trigger_blocks_next",
+          "time": "2.869",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_trigger_first_sender_waits_until_commit_and_is_suppressed",
+          "time": "2.954",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-29-r3/runs/e629-r3-migration-native.xml",
+      "sha256": "4048823327985bd2b3a6378d6531fdf4291c05d9ae5fed33450850c6f604dcc4",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "2",
+          "tests": "31",
+          "time": "46.101",
+          "timestamp": "2026-10-12T22:23:01.606224+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_dialogue_stops_migration",
+          "name": "test_additive_cycle_and_schema_parity",
+          "time": "1.751",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_migration",
+          "name": "test_postgres_ddl_and_offline_refusal",
+          "time": "0.067",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration",
+          "name": "test_target_metadata_is_limited_to_domain_base",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration",
+          "name": "test_upgrade_head_creates_all_six_domain_tables",
+          "time": "1.122",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration",
+          "name": "test_upgrade_does_not_create_any_legacy_table",
+          "time": "1.282",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration",
+          "name": "test_key_indexes_and_constraints_present",
+          "time": "1.155",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration",
+          "name": "test_downgrade_base_removes_only_domain_tables",
+          "time": "2.152",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration",
+          "name": "test_repeat_upgrade_after_downgrade_works",
+          "time": "3.314",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration",
+          "name": "test_reassignment_flushes_deactivation_before_insert",
+          "time": "1.218",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration",
+          "name": "test_dialog_unique_index_present_after_upgrade",
+          "time": "1.080",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration",
+          "name": "test_wp2_messaging_dedup_indexes_present_after_upgrade",
+          "time": "1.182",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration",
+          "name": "test_calendar_tasks_tables_and_indexes_present",
+          "time": "1.282",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration.TestPostgresTier",
+          "name": "test_upgrade_downgrade_reupgrade",
+          "time": "0.001",
+          "result": "SKIP"
+        },
+        {
+          "classname": "tests.test_alembic_domain_migration.TestPostgresTier",
+          "name": "test_db_level_partial_unique_and_types",
+          "time": "0.001",
+          "result": "SKIP"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_native_preview_confirmation_bound_card_ack_and_repeat",
+          "time": "2.225",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_signed_save_cannot_change_target_revision_or_request[dialog_id-9999]",
+          "time": "1.330",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_revision-2]",
+          "time": "1.302",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_preview-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "time": "1.303",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_policy-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "time": "1.323",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_key-forged]",
+          "time": "1.376",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_non_ascii_security_values_rejected[_cs_csrf]",
+          "time": "1.486",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_non_ascii_security_values_rejected[_cs_sig]",
+          "time": "1.299",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_missing_confirmation_session_extra_duplicates_and_body_bounds",
+          "time": "1.448",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_stale_card_and_policy_require_new_preview",
+          "time": "1.682",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_lost_commit_and_failed_read_keep_exact_retry_after_policy_removal",
+          "time": "1.566",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_full_admin_off_and_workday_write_gates",
+          "time": "1.207",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_deployment_deactivation_is_visible_and_different_from_policy_expiry",
+          "time": "1.790",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_stream_bounded_before_full_buffer[None]",
+          "time": "1.167",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_stream_bounded_before_full_buffer[262144]",
+          "time": "1.134",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_stream_bounded_before_full_buffer[-1]",
+          "time": "1.117",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_stream_bounded_before_full_buffer[wrong]",
+          "time": "1.108",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-29-r5/runs/e629-r5-domain-native.xml",
+      "sha256": "a98affab09098a856d395639f0d6bf73831e292bae821ab207ac54833d588477",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "134",
+          "time": "73.559",
+          "timestamp": "2026-10-12T22:27:23.721494+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[1-messages0]",
+          "time": "0.007",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[2-messages1]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[3-messages2]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[4-messages3]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[5-messages4]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[6-messages5]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[7-messages6]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[8-messages7]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[9-messages8]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[10-messages9]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[11-messages10]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[12-messages11]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[13-messages12]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[14-messages13]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[15-messages14]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[16-messages15]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[17-messages16]",
+          "time": "0.005",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[18-messages17]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[19-messages18]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[20-messages19]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[21-messages20]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[22-messages21]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[23-messages22]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[24-messages23]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[25-messages24]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[26-messages25]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[27-messages26]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[28-messages27]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[29-messages28]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[30-messages29]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[31-messages30]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[32-messages31]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[33-messages32]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[34-messages33]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[35-messages34]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[36-messages35]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[37-messages36]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[38-messages37]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[39-messages38]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[40-messages39]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[41-messages40]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[42-messages41]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[43-messages42]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[44-messages43]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[45-messages44]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[46-messages45]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[47-messages46]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[48-messages47]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[49-messages48]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[50-messages49]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[51-messages50]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[52-messages51]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[53-messages52]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[54-messages53]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[55-messages54]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[56-messages55]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_source_exception_interrupts_before_answer_parsing[57-messages56]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_source_rows_are_complete_and_unique",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[I no longer consent to storing my data]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[I refuse to let you collect my data]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[I revoke permission to process my data]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[\\u042f \\u0431\\u043e\\u043b\\u044c\\u0448\\u0435 \\u043d\\u0435 \\u0441\\u043e\\u0433\\u043b\\u0430\\u0441\\u0435\\u043d \\u043d\\u0430 \\u043e\\u0431\\u0440\\u0430\\u0431\\u043e\\u0442\\u043a\\u0443 \\u043c\\u043e\\u0438\\u0445 \\u0434\\u0430\\u043d\\u043d\\u044b\\u0445]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[\\u043d\\u0435 \\u0434\\u0430\\u044e \\u0441\\u043e\\u0433\\u043b\\u0430\\u0441\\u0438\\u044f]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[\\u041e\\u0442\\u0437\\u044b\\u0432\\u0430\\u044e \\u0441\\u0432\\u043e\\u0435 \\u0441\\u043e\\u0433\\u043b\\u0430\\u0441\\u0438\\u0435]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[Do not process my data]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[Stop collecting my data]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_privacy_stop_precedes_general_exception_classification[\\u0423\\u0434\\u0430\\u043b\\u0438\\u0442\\u0435 \\u043c\\u043e\\u0438 \\u0434\\u0430\\u043d\\u043d\\u044b\\u0435]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_collection_stop_detector_precedes_unsupported_input_guards[Do not store this]",
+          "time": "0.003",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_collection_stop_detector_precedes_unsupported_input_guards[Stop collecting information about me]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_collection_stop_detector_precedes_unsupported_input_guards[\\u041d\\u0435 \\u0445\\u0440\\u0430\\u043d\\u0438\\u0442\\u0435 \\u0438\\u043d\\u0444\\u043e\\u0440\\u043c\\u0430\\u0446\\u0438\\u044e \\u043e\\u0431\\u043e \\u043c\\u043d\\u0435]",
+          "time": "0.004",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_collection_stop_detector_precedes_unsupported_input_guards[\\u041d\\u0435 \\u0441\\u043e\\u0431\\u0438\\u0440\\u0430\\u0439\\u0442\\u0435 \\u043d\\u0438\\u0447\\u0435\\u0433\\u043e \\u0431\\u043e\\u043b\\u044c\\u0448\\u0435]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_every_collection_stop_detector_precedes_unsupported_input_guards[Revoke permission to process these records]",
+          "time": "0.003",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_closed_acknowledgements_can_continue_only_after_context_checks[\\u0437\\u0434\\u0440\\u0430\\u0432\\u0441\\u0442\\u0432\\u0443\\u0439\\u0442\\u0435]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_closed_acknowledgements_can_continue_only_after_context_checks[\\u0421\\u043f\\u0430\\u0441\\u0438\\u0431\\u043e!]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_closed_acknowledgements_can_continue_only_after_context_checks[hello]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_closed_acknowledgements_can_continue_only_after_context_checks[Thank you.]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_closed_acknowledgements_can_continue_only_after_context_checks[ok]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[\\u0434\\u0430]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[no]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[2026-10-20]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[45]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[????????]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[I do not have an entry ban]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[\\u041e\\u043d \\u0441\\u043a\\u0430\\u0437\\u0430\\u043b \\xab\\u043f\\u043e\\u0434\\u0434\\u0435\\u043b\\u0430\\u0442\\u044c \\u043f\\u0430\\u0441\\u043f\\u043e\\u0440\\u0442\\xbb, \\u044f \\u043f\\u0440\\u043e\\u0442\\u0438\\u0432]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[Hello but I have a ban]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[hello\\u200b]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_ambiguous_negated_quoted_mixed_and_malformed_never_become_safe_facts[None]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_consent_no_and_untrusted_media_never_enter_ordinary_answer_path",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[\\u0425\\u043e\\u0447\\u0443 \\u043c\\u0435\\u043d\\u0435\\u0434\\u0436\\u0435\\u0440\\u0430-manager_requested]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[I need a human-manager_requested]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[\\u041c\\u0435\\u043d\\u044f \\u0440\\u0430\\u0437\\u0434\\u0440\\u0430\\u0436\\u0430\\u044e\\u0442 \\u0432\\u0430\\u0448\\u0438 \\u0432\\u043e\\u043f\\u0440\\u043e\\u0441\\u044b-complaint]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[Too many questions-complaint]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[\\u0423 \\u043c\\u0435\\u043d\\u044f \\u0443\\u0433\\u043e\\u043b\\u043e\\u0432\\u043d\\u043e\\u0435 \\u0434\\u0435\\u043b\\u043e-criminal_mention]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_kg_dialogue_interrupts",
+          "name": "test_non_slot_interrupts_are_immediate[I was convicted-criminal_mention]",
+          "time": "0.001",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_atomic_cause_handoff_latch_and_exact_retry",
+          "time": "2.165",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_existing_handoff_and_later_privacy_stop_with_expired_policy[paused]",
+          "time": "2.389",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_existing_handoff_and_later_privacy_stop_with_expired_policy[pending]",
+          "time": "2.061",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_existing_handoff_and_later_privacy_stop_with_expired_policy[acked]",
+          "time": "2.342",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_failure_rolls_back_all_three_connected_writes[EntryDialogueStopCause]",
+          "time": "1.476",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_failure_rolls_back_all_three_connected_writes[EntryChannelStop]",
+          "time": "1.778",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_failure_rolls_back_all_three_connected_writes[EntryInterviewEvent]",
+          "time": "1.561",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_missing_policy_unbound_and_greeting_are_not_answer_admission",
+          "time": "1.611",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_cause_corruption_fails_closed_and_restores",
+          "time": "2.090",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_reserved_terminal_collection_stop_at_registry_capacity",
+          "time": "1.983",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_unparseable_privacy_instruction_still_blocks_collection_after_ack[changes0]",
+          "time": "1.797",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_unparseable_privacy_instruction_still_blocks_collection_after_ack[changes1]",
+          "time": "2.320",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_unparseable_privacy_instruction_still_blocks_collection_after_ack[changes2]",
+          "time": "1.922",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_unparseable_privacy_instruction_still_blocks_collection_after_ack[changes3]",
+          "time": "1.969",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_server_assignment_must_match_exact_existing_subject[actor-missing]",
+          "time": "1.482",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_server_assignment_must_match_exact_existing_subject[applicant_id-999999]",
+          "time": "1.789",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_server_assignment_must_match_exact_existing_subject[header_hash-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "time": "1.590",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_server_assignment_must_match_exact_existing_subject[dialog_id-999999]",
+          "time": "1.433",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_native_cause_and_uncertain_privacy_hold_are_readable_and_fail_closed",
+          "time": "2.313",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_assignment_identity_is_not_coerced[True]",
+          "time": "1.449",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_assignment_identity_is_not_coerced[1.0]",
+          "time": "1.479",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops",
+          "name": "test_assignment_identity_is_not_coerced[1]",
+          "time": "1.274",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_native_preview_confirmation_bound_card_ack_and_repeat",
+          "time": "2.534",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_signed_save_cannot_change_target_revision_or_request[dialog_id-9999]",
+          "time": "1.415",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_revision-2]",
+          "time": "1.547",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_preview-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "time": "1.651",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_policy-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]",
+          "time": "1.479",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_signed_save_cannot_change_target_revision_or_request[_cs_key-forged]",
+          "time": "1.604",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_non_ascii_security_values_rejected[_cs_csrf]",
+          "time": "1.716",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_non_ascii_security_values_rejected[_cs_sig]",
+          "time": "1.607",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_missing_confirmation_session_extra_duplicates_and_body_bounds",
+          "time": "1.783",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_stale_card_and_policy_require_new_preview",
+          "time": "1.903",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_lost_commit_and_failed_read_keep_exact_retry_after_policy_removal",
+          "time": "1.689",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_full_admin_off_and_workday_write_gates",
+          "time": "1.359",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_deployment_deactivation_is_visible_and_different_from_policy_expiry",
+          "time": "1.769",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_stream_bounded_before_full_buffer[None]",
+          "time": "1.209",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_stream_bounded_before_full_buffer[262144]",
+          "time": "1.068",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_stream_bounded_before_full_buffer[-1]",
+          "time": "1.059",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_channel_stops",
+          "name": "test_stream_bounded_before_full_buffer[wrong]",
+          "time": "1.106",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-29-r5/runs/e629-r5-pg.xml",
+      "sha256": "a2c4540bb7c92abd3061ff5df8ac69786d2f2ff2cf7114e40d76d696c298907f",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "14",
+          "time": "60.444",
+          "timestamp": "2026-10-12T22:27:23.719980+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_connected_stop_retry",
+          "time": "6.184",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_retained_card_and_terminal_collection_stop[paused]",
+          "time": "4.049",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_retained_card_and_terminal_collection_stop[pending]",
+          "time": "3.949",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_retained_card_and_terminal_collection_stop[acked]",
+          "time": "5.065",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_atomic_failure[EntryDialogueStopCause]",
+          "time": "2.783",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_atomic_failure[EntryChannelStop]",
+          "time": "2.985",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_atomic_failure[EntryInterviewEvent]",
+          "time": "2.876",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_cause_corruption_restoration",
+          "time": "3.502",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_reserved_terminal_capacity",
+          "time": "3.156",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_send_first_finishes_once_then_atomic_trigger_blocks_next",
+          "time": "3.174",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_trigger_first_sender_waits_until_commit_and_is_suppressed",
+          "time": "3.037",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_real_migration_parity_scope_and_populated_downgrade",
+          "time": "4.929",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_lost_commit_ack_retry_returns_one_immutable_connected_receipt[before_commit]",
+          "time": "4.035",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_dialogue_stops_postgres",
+          "name": "test_lost_commit_ack_retry_returns_one_immutable_connected_receipt[after_commit]",
+          "time": "4.117",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-29-r6/runs/e629-r6-browser.xml",
+      "sha256": "0d1f9c02d3d4737a9d3fd4fafeeafe1b09ede5091e4361d83dbbcd3e88aad212",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "2",
+          "time": "19.138",
+          "timestamp": "2026-10-12T22:29:19.364661+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.browser_kg_dialogue_stops",
+          "name": "test_causal_history_and_privacy_hold_render_without_raw_message[390-True]",
+          "time": "7.534",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.browser_kg_dialogue_stops",
+          "name": "test_causal_history_and_privacy_hold_render_without_raw_message[1365-False]",
+          "time": "4.682",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-29-review-r2/review-domain.xml",
+      "sha256": "88d262728839f03320927a699f3a97f879ff0af7a23badbb7eb2a4b1d3b9d527",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "3",
+          "skipped": "0",
+          "tests": "7",
+          "time": "17.645",
+          "timestamp": "2026-10-12T22:22:30.090743+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload0]",
+          "time": "2.294",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload1]",
+          "time": "1.495",
+          "result": "FAIL"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload2]",
+          "time": "1.454",
+          "result": "FAIL"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload3]",
+          "time": "1.480",
+          "result": "FAIL"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_corrupt_unrelated_cause_blocks_new_negative_lookup_then_recovers",
+          "time": "1.388",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_post_dialog_lock_time_controls_authority_and_rolls_back",
+          "time": "1.275",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_terminal_reserve_does_not_reopen_after_real_time_expiry",
+          "time": "1.977",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-29-review-r2/review-extra.xml",
+      "sha256": "0a195db889ca553f08b3f77829009d160f567e52b52297fa7a56ff633117f70b",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "2",
+          "time": "10.381",
+          "timestamp": "2026-10-12T22:23:42.834622+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_loss_allows_actual_owner_collection",
+          "time": "1.738",
+          "result": "FAIL"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_combined_interview_and_cause_terminal_capacity",
+          "time": "1.912",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-29-review-r5/review-corrected.xml",
+      "sha256": "29ee2536585b9febdae80cebb1f9bc75c814a0ceb2877abc7f9c453af9579ad2",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "17",
+          "time": "41.240",
+          "timestamp": "2026-10-12T22:28:07.535380+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload0]",
+          "time": "3.093",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload1]",
+          "time": "2.664",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload2]",
+          "time": "2.927",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload3]",
+          "time": "2.693",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload4]",
+          "time": "2.535",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload5]",
+          "time": "2.301",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_instruction_survives_input_guard_after_ack[payload6]",
+          "time": "2.558",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_corrupt_unrelated_cause_blocks_new_negative_lookup_then_recovers",
+          "time": "1.620",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_post_dialog_lock_time_controls_authority_and_rolls_back",
+          "time": "1.509",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_terminal_reserve_does_not_reopen_after_real_time_expiry",
+          "time": "2.217",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_privacy_loss_allows_actual_owner_collection",
+          "time": "1.714",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_combined_interview_and_cause_terminal_capacity",
+          "time": "1.805",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_full_withdrawal_detection_precedes_unsupported_guard[no!-changes0]",
+          "time": "1.029",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_full_withdrawal_detection_precedes_unsupported_guard[\\u043d\\u0435\\u0442-changes1]",
+          "time": "1.016",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_full_withdrawal_detection_precedes_unsupported_guard[Do not store this-changes2]",
+          "time": "1.069",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_full_withdrawal_detection_precedes_unsupported_guard[Revoke permission to process these records-changes3]",
+          "time": "1.097",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_dialogue_domain",
+          "name": "test_full_withdrawal_detection_precedes_unsupported_guard[\\u041d\\u0435 \\u0441\\u043e\\u0431\\u0438\\u0440\\u0430\\u0439\\u0442\\u0435 \\u043d\\u0438\\u0447\\u0435\\u0433\\u043e \\u0431\\u043e\\u043b\\u044c\\u0448\\u0435\\x00-changes4]",
+          "time": "1.056",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-29-audit-r5/runs/e629-audit-pg.xml",
+      "sha256": "92b547cbc27135f2de2deda4b29bae24e649030d8a7dd296adc73a0f8d946003",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "6",
+          "time": "30.813",
+          "timestamp": "2026-10-12T22:30:52.592250+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_auditor_dialogue_component",
+          "name": "test_real_old_manual_writer_receipt_retry_and_new_causal_privacy",
+          "time": "7.395",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_auditor_dialogue_component",
+          "name": "test_rehashed_causal_provenance_is_rejected_then_restored[actor]",
+          "time": "3.362",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_auditor_dialogue_component",
+          "name": "test_rehashed_causal_provenance_is_rejected_then_restored[effect]",
+          "time": "3.443",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_auditor_dialogue_component",
+          "name": "test_rehashed_causal_provenance_is_rejected_then_restored[reason]",
+          "time": "3.649",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_auditor_dialogue_component",
+          "name": "test_rehashed_causal_provenance_is_rejected_then_restored[previous_hash]",
+          "time": "3.610",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_auditor_dialogue_component",
+          "name": "test_sql_size_limit_precedes_cause_json_decode_then_original_retry",
+          "time": "2.692",
+          "result": "PASS"
+        }
+      ]
+    }
+  ],
+  "limitations": "Separate overlapping runs. R5 and R6 runtime identical; R6 adds browser test only. Original R2 privacy failures fixed and independently rechecked in R5. Component only: no incoming hook, normal typed turns or current calendar/STOP12. H02 UNKNOWN, score94 unchanged, no real authority or deployment."
+}
