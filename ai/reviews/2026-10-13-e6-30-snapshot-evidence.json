@@ -1,0 +1,3575 @@
+{
+  "status": "DONE_REVIEWED_LOCAL",
+  "base": "7b45f6c56c22adef80a3f4e79aa1aae8d7a3fe0d",
+  "snapshot": "UNCOMMITTED runs/e6-30-r12 (R11 plus test EOF whitespace only)",
+  "scope": {
+    "alembic/versions/e6_precontract_case_0038.py": "184bb0ebe81ae767ef2a943cfface866a1eaf659c14b47af89dc97c7c1f01f35",
+    "app/domain/models.py": "28992f927a83bf9ccbad053e3fa8c91fa8aa01135519bc56dda88f3e0617acc8",
+    "app/domain/precontract_cases.py": "3e4497507a5454fdba1a2594cd5cbf50420faf173b0a2b3c205065daa71317f5",
+    "app/admin/precontract.py": "e8bbc74ba8bebcb4143f881f9947ea2367c614f2fabeceffac1a4d40cf19cdb4",
+    "app/admin/router.py": "1164547448ca117fb086e68867db218e0c79dc4ed5da126bb057d3c897d80b4c",
+    "app/admin/workday.py": "bc63afd18aefd02949c01f145edfbbdb83e4ac24bad8f60b735ad64b68e25a4e",
+    "app/admin/templates/precontract.html": "38fa78887145846a1aa64411c1e1bea9f6350f63bf1dc62a7282ad7ef6c7057f",
+    "app/admin/templates/_case_panel.html": "d34896164245aa23ed8f9f940a9b06dfd8a935c74292fb63a3b913dd44f42db9",
+    "app/admin/templates/_conversation.html": "df3a370da991644f515310afeedfa9f68e71659a9a327ace96440a5ec2e9b200",
+    "tests/test_precontract_cases.py": "70791ba3c99d0d01cc89e23865b2c37ada4848b7c185e79e9a877e83ead8a754",
+    "tests/test_admin_precontract.py": "04e0177b450814b6c92a4f4eee2ac1449320bf729aee904adefbd3197b57a148",
+    "tests/test_precontract_postgres.py": "dc43d3db494827cced0fcc2d57777350a29a1de816d1bff03be979ae566e433d",
+    "tests/test_precontract_evidence.py": "e7e07a7a0bf5d466c31ab0faf0f4bed73b82e9f8ccf0e27873622262df46a7cf",
+    "tests/test_precontract_integrity.py": "ec7e79ce6721b25cdbad27570c0d34cedc33241bad32de829ecee8048b89a816",
+    "tests/browser_precontract.py": "396e27bb20f2a3f9a9de6b5485e202cd6c5edca5ced5e3b3d29810785422a87a",
+    "tests/test_service_cases.py": "775d735929a1d2d42195eba3f91f3e86e67a452a41894c93187aed4d67a8df0e"
+  },
+  "runs": [
+    {
+      "path": "runs/e6-30-r1/runs/e630-r1-domain.xml",
+      "sha256": "6a6cff24db24c90c225c408d84cd689c218447a5672110b550ac66ebb6f36218",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "17",
+        "time": "5.301",
+        "timestamp": "2026-10-13T00:47:36.258000+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_precontract_cases::test_open_then_sign_same_case_and_historical_retries_survive_new_workflow_price_and_owner",
+          "result": "PASS",
+          "seconds": "0.401"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change0]",
+          "result": "PASS",
+          "seconds": "0.211"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change1]",
+          "result": "PASS",
+          "seconds": "0.232"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change2]",
+          "result": "PASS",
+          "seconds": "0.243"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change3]",
+          "result": "PASS",
+          "seconds": "0.205"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change4]",
+          "result": "PASS",
+          "seconds": "0.245"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_current_access_and_scope_enforced_on_open_and_signed_retry",
+          "result": "PASS",
+          "seconds": "0.275"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change0]",
+          "result": "PASS",
+          "seconds": "0.201"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change1]",
+          "result": "PASS",
+          "seconds": "0.183"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change2]",
+          "result": "PASS",
+          "seconds": "0.187"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change3]",
+          "result": "PASS",
+          "seconds": "0.186"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change4]",
+          "result": "PASS",
+          "seconds": "0.199"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change5]",
+          "result": "PASS",
+          "seconds": "0.191"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change6]",
+          "result": "PASS",
+          "seconds": "0.184"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change7]",
+          "result": "PASS",
+          "seconds": "0.174"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_failed_initial_task_rolls_back_signature_but_keeps_callers_write",
+          "result": "PASS",
+          "seconds": "0.207"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_unknown_amount_and_existing_explicit_payment_stay_distinct",
+          "result": "FAILURE",
+          "seconds": "0.160"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r2/runs/e630-r2-domain.xml",
+      "sha256": "8ef9516de9741cfd686f1ffdc551d9030dbc3d2d7b6cb658ee3e9c94b636ceae",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "17",
+        "time": "4.934",
+        "timestamp": "2026-10-13T00:51:51.185567+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_precontract_cases::test_open_then_sign_same_case_and_historical_retries_survive_new_workflow_price_and_owner",
+          "result": "PASS",
+          "seconds": "0.374"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change0]",
+          "result": "PASS",
+          "seconds": "0.232"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change1]",
+          "result": "PASS",
+          "seconds": "0.194"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change2]",
+          "result": "PASS",
+          "seconds": "0.281"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change3]",
+          "result": "PASS",
+          "seconds": "0.177"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change4]",
+          "result": "PASS",
+          "seconds": "0.180"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_current_access_and_scope_enforced_on_open_and_signed_retry",
+          "result": "PASS",
+          "seconds": "0.284"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change0]",
+          "result": "PASS",
+          "seconds": "0.231"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change1]",
+          "result": "PASS",
+          "seconds": "0.177"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change2]",
+          "result": "PASS",
+          "seconds": "0.171"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change3]",
+          "result": "PASS",
+          "seconds": "0.174"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change4]",
+          "result": "PASS",
+          "seconds": "0.177"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change5]",
+          "result": "PASS",
+          "seconds": "0.191"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change6]",
+          "result": "PASS",
+          "seconds": "0.229"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change7]",
+          "result": "PASS",
+          "seconds": "0.201"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_failed_initial_task_rolls_back_signature_but_keeps_callers_write",
+          "result": "PASS",
+          "seconds": "0.245"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_unknown_amount_and_existing_explicit_payment_stay_distinct",
+          "result": "PASS",
+          "seconds": "0.199"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r3/runs/e630-r3-native.xml",
+      "sha256": "7a0bc39ce140bccbd54c78e42cbac8b8ac921e19c383820ad86c09c9ee100616",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "24",
+        "time": "16.465",
+        "timestamp": "2026-10-13T00:52:44.340662+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_admin_precontract::test_real_native_unsigned_case_readonly_get_and_same_case_signature_with_retries",
+          "result": "PASS",
+          "seconds": "1.389"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[original_owner-aisina]",
+          "result": "PASS",
+          "seconds": "0.844"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[request_key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "result": "PASS",
+          "seconds": "0.860"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[csrf_token-bad]",
+          "result": "PASS",
+          "seconds": "0.826"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[signature-bad]",
+          "result": "PASS",
+          "seconds": "0.760"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_signature_target_peer_and_unsigned_confirmation_are_server_checked",
+          "result": "PASS",
+          "seconds": "0.837"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_lost_signature_ack_keeps_exact_form_for_retry",
+          "result": "PASS",
+          "seconds": "0.923"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_open_then_sign_same_case_and_historical_retries_survive_new_workflow_price_and_owner",
+          "result": "PASS",
+          "seconds": "0.247"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change0]",
+          "result": "PASS",
+          "seconds": "0.211"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change1]",
+          "result": "PASS",
+          "seconds": "0.206"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change2]",
+          "result": "PASS",
+          "seconds": "0.198"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change3]",
+          "result": "PASS",
+          "seconds": "0.206"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change4]",
+          "result": "PASS",
+          "seconds": "0.203"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_current_access_and_scope_enforced_on_open_and_signed_retry",
+          "result": "PASS",
+          "seconds": "0.182"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change0]",
+          "result": "PASS",
+          "seconds": "0.179"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change1]",
+          "result": "PASS",
+          "seconds": "0.172"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change2]",
+          "result": "PASS",
+          "seconds": "0.178"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change3]",
+          "result": "PASS",
+          "seconds": "0.258"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change4]",
+          "result": "PASS",
+          "seconds": "0.241"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change5]",
+          "result": "PASS",
+          "seconds": "0.185"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change6]",
+          "result": "PASS",
+          "seconds": "0.260"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change7]",
+          "result": "PASS",
+          "seconds": "0.217"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_failed_initial_task_rolls_back_signature_but_keeps_callers_write",
+          "result": "PASS",
+          "seconds": "0.252"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_unknown_amount_and_existing_explicit_payment_stay_distinct",
+          "result": "PASS",
+          "seconds": "0.237"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r4/runs/e630-r4-core.xml",
+      "sha256": "c11455606a7bed1d317921a78f996b5530a65e9e10f7ee6914fe0b4a4e9d49dd",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "33",
+        "time": "33.569",
+        "timestamp": "2026-10-13T00:59:42.848210+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_open_preserves_distinct_command_keys[False]",
+          "result": "PASS",
+          "seconds": "3.664"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_open_preserves_distinct_command_keys[True]",
+          "result": "PASS",
+          "seconds": "1.348"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_signature_one_contract_and_task[False]",
+          "result": "PASS",
+          "seconds": "1.321"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_signature_one_contract_and_task[True]",
+          "result": "PASS",
+          "seconds": "1.385"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_signature_rechecks_committed_competing_writer[owner]",
+          "result": "PASS",
+          "seconds": "1.335"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_signature_rechecks_committed_competing_writer[stage]",
+          "result": "PASS",
+          "seconds": "1.456"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_signature_rechecks_committed_competing_writer[money]",
+          "result": "PASS",
+          "seconds": "1.308"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_open_unique_collision_and_rollback_leave_original_case",
+          "result": "PASS",
+          "seconds": "1.591"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_additive_migration_parity_and_populated_downgrade_guard",
+          "result": "PASS",
+          "seconds": "2.715"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_open_then_sign_same_case_and_historical_retries_survive_new_workflow_price_and_owner",
+          "result": "PASS",
+          "seconds": "0.290"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change0]",
+          "result": "PASS",
+          "seconds": "0.213"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change1]",
+          "result": "PASS",
+          "seconds": "0.226"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change2]",
+          "result": "PASS",
+          "seconds": "0.221"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change3]",
+          "result": "PASS",
+          "seconds": "0.229"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change4]",
+          "result": "PASS",
+          "seconds": "0.245"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_current_access_and_scope_enforced_on_open_and_signed_retry",
+          "result": "PASS",
+          "seconds": "0.220"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change0]",
+          "result": "PASS",
+          "seconds": "0.202"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change1]",
+          "result": "PASS",
+          "seconds": "0.185"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change2]",
+          "result": "PASS",
+          "seconds": "0.188"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change3]",
+          "result": "PASS",
+          "seconds": "0.183"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change4]",
+          "result": "PASS",
+          "seconds": "0.190"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change5]",
+          "result": "PASS",
+          "seconds": "0.178"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change6]",
+          "result": "PASS",
+          "seconds": "0.192"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change7]",
+          "result": "PASS",
+          "seconds": "0.207"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_failed_initial_task_rolls_back_signature_but_keeps_callers_write",
+          "result": "PASS",
+          "seconds": "0.298"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_unknown_amount_and_existing_explicit_payment_stay_distinct",
+          "result": "PASS",
+          "seconds": "0.210"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_real_native_unsigned_case_readonly_get_and_same_case_signature_with_retries",
+          "result": "PASS",
+          "seconds": "1.264"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[original_owner-aisina]",
+          "result": "PASS",
+          "seconds": "0.817"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[request_key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "result": "PASS",
+          "seconds": "0.819"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[csrf_token-bad]",
+          "result": "PASS",
+          "seconds": "0.841"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[signature-bad]",
+          "result": "PASS",
+          "seconds": "0.767"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_signature_target_peer_and_unsigned_confirmation_are_server_checked",
+          "result": "PASS",
+          "seconds": "0.823"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_lost_signature_ack_keeps_exact_form_for_retry",
+          "result": "PASS",
+          "seconds": "0.869"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r5/runs/e630-r5-native-compat.xml",
+      "sha256": "a49a9a03d4ea1f606297be8bf1d97b6b782f960a1edbe8ef2ddeb9552f676a49",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "4",
+        "tests": "310",
+        "time": "142.569",
+        "timestamp": "2026-10-13T01:01:48.559077+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_admin_precontract::test_real_native_unsigned_case_readonly_get_and_same_case_signature_with_retries",
+          "result": "PASS",
+          "seconds": "1.716"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[original_owner-aisina]",
+          "result": "PASS",
+          "seconds": "0.972"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[request_key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "result": "PASS",
+          "seconds": "1.147"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[csrf_token-bad]",
+          "result": "PASS",
+          "seconds": "0.919"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[signature-bad]",
+          "result": "PASS",
+          "seconds": "0.916"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_signature_target_peer_and_unsigned_confirmation_are_server_checked",
+          "result": "PASS",
+          "seconds": "0.953"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_lost_signature_ack_keeps_exact_form_for_retry",
+          "result": "PASS",
+          "seconds": "1.102"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[open]",
+          "result": "PASS",
+          "seconds": "0.930"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[sign]",
+          "result": "PASS",
+          "seconds": "0.921"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_native_own_applicant_intake_and_internal_quote_survive_same_case_signature",
+          "result": "PASS",
+          "seconds": "2.381"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_get_is_read_only_and_offers_only_active_published_product",
+          "result": "PASS",
+          "seconds": "0.874"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_real_form_creates_case_event_task_and_redirects_to_working_card",
+          "result": "PASS",
+          "seconds": "0.915"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_double_submit_and_retry_after_lost_response_have_one_result",
+          "result": "PASS",
+          "seconds": "0.896"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_unknown_price_is_not_zero",
+          "result": "PASS",
+          "seconds": "0.813"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes0]",
+          "result": "PASS",
+          "seconds": "0.843"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes1]",
+          "result": "PASS",
+          "seconds": "1.013"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes2]",
+          "result": "PASS",
+          "seconds": "0.943"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes3]",
+          "result": "PASS",
+          "seconds": "0.927"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes4]",
+          "result": "PASS",
+          "seconds": "0.905"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes5]",
+          "result": "PASS",
+          "seconds": "0.860"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes6]",
+          "result": "PASS",
+          "seconds": "0.871"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes7]",
+          "result": "PASS",
+          "seconds": "1.072"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes8]",
+          "result": "PASS",
+          "seconds": "0.899"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes9]",
+          "result": "PASS",
+          "seconds": "0.919"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes10]",
+          "result": "PASS",
+          "seconds": "0.878"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes11]",
+          "result": "PASS",
+          "seconds": "0.891"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes12]",
+          "result": "PASS",
+          "seconds": "0.964"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes13]",
+          "result": "PASS",
+          "seconds": "0.875"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_invalid_input_has_no_partial_contact_case_or_task_and_keeps_form[changes14]",
+          "result": "PASS",
+          "seconds": "0.889"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_forged_or_missing_form_tokens_fail_closed[-csrf_token]",
+          "result": "PASS",
+          "seconds": "0.889"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_forged_or_missing_form_tokens_fail_closed[-idempotency_key]",
+          "result": "PASS",
+          "seconds": "0.854"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_forged_or_missing_form_tokens_fail_closed[-key_signature]",
+          "result": "PASS",
+          "seconds": "0.806"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_forged_or_missing_form_tokens_fail_closed[forged-csrf_token]",
+          "result": "PASS",
+          "seconds": "0.807"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_forged_or_missing_form_tokens_fail_closed[forged-idempotency_key]",
+          "result": "PASS",
+          "seconds": "0.866"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_forged_or_missing_form_tokens_fail_closed[forged-key_signature]",
+          "result": "PASS",
+          "seconds": "0.808"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_forged_or_missing_form_tokens_fail_closed[\\u043f\\u043e\\u0434\\u0434\\u0435\\u043b\\u043a\\u0430-csrf_token]",
+          "result": "PASS",
+          "seconds": "0.827"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_forged_or_missing_form_tokens_fail_closed[\\u043f\\u043e\\u0434\\u0434\\u0435\\u043b\\u043a\\u0430-idempotency_key]",
+          "result": "PASS",
+          "seconds": "0.862"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_forged_or_missing_form_tokens_fail_closed[\\u043f\\u043e\\u0434\\u0434\\u0435\\u043b\\u043a\\u0430-key_signature]",
+          "result": "PASS",
+          "seconds": "0.910"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_form_key_cannot_be_replayed_for_another_conversation_or_session",
+          "result": "PASS",
+          "seconds": "0.848"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_visible_csrf_token_cannot_sign_an_arbitrary_idempotency_key",
+          "result": "PASS",
+          "seconds": "0.785"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_foreign_panel_owner_is_rejected_even_when_old_authz_flag_is_off[aisina]",
+          "result": "PASS",
+          "seconds": "0.856"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_foreign_panel_owner_is_rejected_even_when_old_authz_flag_is_off[medina]",
+          "result": "PASS",
+          "seconds": "0.813"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_foreign_direction_and_product_are_rejected",
+          "result": "PASS",
+          "seconds": "0.840"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_domain_owner_overrides_stale_panel_permission",
+          "result": "PASS",
+          "seconds": "0.867"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_unassigned_or_deleted_manager_cannot_create_contract[]",
+          "result": "PASS",
+          "seconds": "0.927"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_unassigned_or_deleted_manager_cannot_create_contract[deleted-manager]",
+          "result": "PASS",
+          "seconds": "0.900"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_admin_records_contract_for_current_owner_not_arbitrary_posted_owner",
+          "result": "PASS",
+          "seconds": "0.850"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_flags_rechecked_after_opening_form[admin_workday_enabled]",
+          "result": "PASS",
+          "seconds": "0.837"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_flags_rechecked_after_opening_form[service_cases_enabled]",
+          "result": "PASS",
+          "seconds": "0.874"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_unpublished_or_archived_product_cannot_be_selected_by_direct_post[draft]",
+          "result": "PASS",
+          "seconds": "0.888"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_unpublished_or_archived_product_cannot_be_selected_by_direct_post[archive]",
+          "result": "PASS",
+          "seconds": "0.894"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_identity_uses_channel_and_preserves_international_country_code[whatsapp-905078174386]",
+          "result": "PASS",
+          "seconds": "0.922"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_identity_uses_channel_and_preserves_international_country_code[telegram-123456789]",
+          "result": "PASS",
+          "seconds": "0.843"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_phone_key_mismatch_is_not_silently_merged",
+          "result": "PASS",
+          "seconds": "0.797"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_legacy_chat_phone_display_fallback_still_creates_correct_identity",
+          "result": "PASS",
+          "seconds": "1.079"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_initial_task_failure_rolls_back_contact_and_contract_then_same_form_retries",
+          "result": "PASS",
+          "seconds": "0.919"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_database_outage_shows_retry_form_without_claiming_success",
+          "result": "PASS",
+          "seconds": "0.844"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_both_chat_versions_offer_link_only_when_both_flags_on[False]",
+          "result": "PASS",
+          "seconds": "0.832"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_both_chat_versions_offer_link_only_when_both_flags_on[True]",
+          "result": "PASS",
+          "seconds": "0.821"
+        },
+        {
+          "id": "tests.test_admin_contracts::test_form_is_native_post_with_named_labels_and_escaped_input",
+          "result": "PASS",
+          "seconds": "0.821"
+        },
+        {
+          "id": "tests.test_contract_signing::test_ac01_replay_after_commit_has_one_contract_case_and_signed_event",
+          "result": "PASS",
+          "seconds": "0.203"
+        },
+        {
+          "id": "tests.test_contract_signing::test_ac01_replay_inside_same_uncommitted_transaction_is_also_idempotent",
+          "result": "PASS",
+          "seconds": "0.168"
+        },
+        {
+          "id": "tests.test_contract_signing::test_ac01_initial_tasks_exist_and_replay_does_not_duplicate_them",
+          "result": "PASS",
+          "seconds": "0.156"
+        },
+        {
+          "id": "tests.test_contract_signing::test_reused_key_with_different_contract_is_rejected[product]",
+          "result": "PASS",
+          "seconds": "0.204"
+        },
+        {
+          "id": "tests.test_contract_signing::test_reused_key_with_different_contract_is_rejected[amount]",
+          "result": "PASS",
+          "seconds": "0.219"
+        },
+        {
+          "id": "tests.test_contract_signing::test_reused_key_with_different_contract_is_rejected[contact]",
+          "result": "PASS",
+          "seconds": "0.184"
+        },
+        {
+          "id": "tests.test_contract_signing::test_reused_key_with_different_contract_is_rejected[reference]",
+          "result": "PASS",
+          "seconds": "0.182"
+        },
+        {
+          "id": "tests.test_contract_signing::test_reused_key_with_different_contract_is_rejected[currency]",
+          "result": "PASS",
+          "seconds": "0.228"
+        },
+        {
+          "id": "tests.test_contract_signing::test_absent_key_is_rejected_because_exactly_once_depends_on_it[null]",
+          "result": "PASS",
+          "seconds": "0.145"
+        },
+        {
+          "id": "tests.test_contract_signing::test_absent_key_is_rejected_because_exactly_once_depends_on_it[empty]",
+          "result": "PASS",
+          "seconds": "0.150"
+        },
+        {
+          "id": "tests.test_contract_signing::test_absent_key_is_rejected_because_exactly_once_depends_on_it[spaces]",
+          "result": "PASS",
+          "seconds": "0.144"
+        },
+        {
+          "id": "tests.test_contract_signing::test_oversized_key_is_domain_error_before_any_write[129-chars]",
+          "result": "PASS",
+          "seconds": "0.149"
+        },
+        {
+          "id": "tests.test_contract_signing::test_oversized_key_is_domain_error_before_any_write[4096-chars]",
+          "result": "PASS",
+          "seconds": "0.146"
+        },
+        {
+          "id": "tests.test_contract_signing::test_key_whitespace_normalization_and_128_character_boundary",
+          "result": "PASS",
+          "seconds": "0.149"
+        },
+        {
+          "id": "tests.test_contract_signing::test_key_does_not_grant_read_access_to_someone_elses_case[foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.167"
+        },
+        {
+          "id": "tests.test_contract_signing::test_key_does_not_grant_read_access_to_someone_elses_case[revoked]",
+          "result": "PASS",
+          "seconds": "0.161"
+        },
+        {
+          "id": "tests.test_contract_signing::test_key_does_not_grant_read_access_to_someone_elses_case[peer]",
+          "result": "PASS",
+          "seconds": "0.222"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[valid-foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.157"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[valid-no-directions]",
+          "result": "PASS",
+          "seconds": "0.146"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[bad-amount-foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.144"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[bad-amount-no-directions]",
+          "result": "PASS",
+          "seconds": "0.147"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[negative-foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.146"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[negative-no-directions]",
+          "result": "PASS",
+          "seconds": "0.146"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[missing-amount-foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.147"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[missing-amount-no-directions]",
+          "result": "PASS",
+          "seconds": "0.153"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[missing-currency-foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.144"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[missing-currency-no-directions]",
+          "result": "PASS",
+          "seconds": "0.144"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[missing-reference-foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.143"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[missing-reference-no-directions]",
+          "result": "PASS",
+          "seconds": "0.148"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[missing-owner-foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.148"
+        },
+        {
+          "id": "tests.test_contract_signing::test_authorization_precedes_payload_validation[missing-owner-no-directions]",
+          "result": "PASS",
+          "seconds": "0.149"
+        },
+        {
+          "id": "tests.test_contract_signing::test_system_actor_is_explicitly_recorded_as_system",
+          "result": "PASS",
+          "seconds": "0.196"
+        },
+        {
+          "id": "tests.test_contract_signing::test_actor_without_identity_cannot_attest_signature[empty]",
+          "result": "PASS",
+          "seconds": "0.168"
+        },
+        {
+          "id": "tests.test_contract_signing::test_actor_without_identity_cannot_attest_signature[spaces]",
+          "result": "PASS",
+          "seconds": "0.144"
+        },
+        {
+          "id": "tests.test_contract_signing::test_money_round_trip_is_decimal_without_lost_cents[amount0]",
+          "result": "PASS",
+          "seconds": "0.160"
+        },
+        {
+          "id": "tests.test_contract_signing::test_money_round_trip_is_decimal_without_lost_cents[amount1]",
+          "result": "PASS",
+          "seconds": "0.150"
+        },
+        {
+          "id": "tests.test_contract_signing::test_money_round_trip_is_decimal_without_lost_cents[amount2]",
+          "result": "PASS",
+          "seconds": "0.200"
+        },
+        {
+          "id": "tests.test_contract_signing::test_money_round_trip_is_decimal_without_lost_cents[amount3]",
+          "result": "PASS",
+          "seconds": "0.157"
+        },
+        {
+          "id": "tests.test_contract_signing::test_zero_amount_and_amount_with_unknown_reason_are_rejected",
+          "result": "PASS",
+          "seconds": "0.147"
+        },
+        {
+          "id": "tests.test_contract_signing::test_amount_column_is_numeric_14_2_not_float",
+          "result": "PASS",
+          "seconds": "0.001"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_money_is_rejected_without_writes[negative]",
+          "result": "PASS",
+          "seconds": "0.147"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_money_is_rejected_without_writes[invalid-number]",
+          "result": "PASS",
+          "seconds": "0.144"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_money_is_rejected_without_writes[currency-null]",
+          "result": "PASS",
+          "seconds": "0.213"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_money_is_rejected_without_writes[currency-empty]",
+          "result": "PASS",
+          "seconds": "0.152"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_money_is_rejected_without_writes[currency-spaces]",
+          "result": "PASS",
+          "seconds": "0.146"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_money_is_rejected_without_writes[unknown-without-reason]",
+          "result": "PASS",
+          "seconds": "0.147"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_money_is_rejected_without_writes[unknown-blank-reason]",
+          "result": "PASS",
+          "seconds": "0.143"
+        },
+        {
+          "id": "tests.test_contract_signing::test_nonfinite_or_out_of_numeric_range_is_clear_domain_error[NaN]",
+          "result": "PASS",
+          "seconds": "0.149"
+        },
+        {
+          "id": "tests.test_contract_signing::test_nonfinite_or_out_of_numeric_range_is_clear_domain_error[sNaN]",
+          "result": "PASS",
+          "seconds": "0.142"
+        },
+        {
+          "id": "tests.test_contract_signing::test_nonfinite_or_out_of_numeric_range_is_clear_domain_error[Infinity]",
+          "result": "PASS",
+          "seconds": "0.147"
+        },
+        {
+          "id": "tests.test_contract_signing::test_nonfinite_or_out_of_numeric_range_is_clear_domain_error[-Infinity]",
+          "result": "PASS",
+          "seconds": "0.164"
+        },
+        {
+          "id": "tests.test_contract_signing::test_nonfinite_or_out_of_numeric_range_is_clear_domain_error[1000000000000.00]",
+          "result": "PASS",
+          "seconds": "0.216"
+        },
+        {
+          "id": "tests.test_contract_signing::test_subcent_amount_is_rejected_or_normalized_consistently_with_history",
+          "result": "PASS",
+          "seconds": "0.145"
+        },
+        {
+          "id": "tests.test_contract_signing::test_unknown_amount_with_reason_remains_null_after_reload",
+          "result": "PASS",
+          "seconds": "0.157"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_contract_fields_do_not_leave_half_open_case[empty-reference]",
+          "result": "PASS",
+          "seconds": "0.166"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_contract_fields_do_not_leave_half_open_case[spaces-reference]",
+          "result": "PASS",
+          "seconds": "0.156"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_contract_fields_do_not_leave_half_open_case[long-reference]",
+          "result": "PASS",
+          "seconds": "0.151"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_contract_fields_do_not_leave_half_open_case[nontext-currency]",
+          "result": "PASS",
+          "seconds": "0.147"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_contract_fields_do_not_leave_half_open_case[nontext-reason]",
+          "result": "PASS",
+          "seconds": "0.144"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_contract_fields_do_not_leave_half_open_case[invalid-signed-at]",
+          "result": "PASS",
+          "seconds": "0.144"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_contract_fields_do_not_leave_half_open_case[long-currency]",
+          "result": "PASS",
+          "seconds": "0.146"
+        },
+        {
+          "id": "tests.test_contract_signing::test_invalid_contract_fields_do_not_leave_half_open_case[long-unknown-reason]",
+          "result": "PASS",
+          "seconds": "0.153"
+        },
+        {
+          "id": "tests.test_contract_signing::test_signed_by_comes_from_actor_not_requested_owner_and_cannot_be_injected",
+          "result": "PASS",
+          "seconds": "0.169"
+        },
+        {
+          "id": "tests.test_contract_signing::test_open_or_sent_contract_does_not_claim_signature",
+          "result": "PASS",
+          "seconds": "0.150"
+        },
+        {
+          "id": "tests.test_contract_signing::test_signing_is_rolled_back_with_callers_transaction",
+          "result": "PASS",
+          "seconds": "0.166"
+        },
+        {
+          "id": "tests.test_contract_signing::test_signed_event_revision_matches_committed_case_revision",
+          "result": "PASS",
+          "seconds": "0.206"
+        },
+        {
+          "id": "tests.test_contract_signing::test_database_rejects_amount_without_real_currency_even_bypassing_domain[null]",
+          "result": "PASS",
+          "seconds": "0.164"
+        },
+        {
+          "id": "tests.test_contract_signing::test_database_rejects_amount_without_real_currency_even_bypassing_domain[empty]",
+          "result": "PASS",
+          "seconds": "0.225"
+        },
+        {
+          "id": "tests.test_contract_signing::test_database_rejects_amount_without_real_currency_even_bypassing_domain[spaces]",
+          "result": "PASS",
+          "seconds": "0.347"
+        },
+        {
+          "id": "tests.test_contract_signing::test_unique_index_enforces_keys_but_allows_multiple_nulls",
+          "result": "PASS",
+          "seconds": "0.339"
+        },
+        {
+          "id": "tests.test_contract_signing::test_stale_lookup_conflict_uses_unique_index_without_duplicate_cases",
+          "result": "PASS",
+          "seconds": "0.324"
+        },
+        {
+          "id": "tests.test_contract_signing::test_stale_lookup_conflict_does_not_rollback_unrelated_callers_work",
+          "result": "PASS",
+          "seconds": "0.176"
+        },
+        {
+          "id": "tests.test_contract_signing::test_stale_lookup_conflict_rechecks_access_before_returning_twin[peer]",
+          "result": "PASS",
+          "seconds": "0.183"
+        },
+        {
+          "id": "tests.test_contract_signing::test_stale_lookup_conflict_rechecks_access_before_returning_twin[foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.176"
+        },
+        {
+          "id": "tests.test_contract_signing::test_ac16_bad_transition_does_not_damage_signed_contract[UNKNOWN]",
+          "result": "PASS",
+          "seconds": "0.164"
+        },
+        {
+          "id": "tests.test_contract_signing::test_ac16_bad_transition_does_not_damage_signed_contract[TOUR-03]",
+          "result": "PASS",
+          "seconds": "0.159"
+        },
+        {
+          "id": "tests.test_contract_signing::test_ac16_bad_transition_does_not_damage_signed_contract[ TOUR-02 ]",
+          "result": "PASS",
+          "seconds": "0.183"
+        },
+        {
+          "id": "tests.test_contract_signing::test_ac16_confirming_booking_requires_number_and_date",
+          "result": "PASS",
+          "seconds": "0.173"
+        },
+        {
+          "id": "tests.test_contract_signing::test_ac17_signed_cases_and_replay_keep_old_workflow_after_publication",
+          "result": "PASS",
+          "seconds": "0.240"
+        },
+        {
+          "id": "tests.test_contract_signing::test_archived_product_rejects_new_contract_but_preserves_existing_replay",
+          "result": "PASS",
+          "seconds": "0.178"
+        },
+        {
+          "id": "tests.test_contract_signing::test_migration_revision_chain_has_expected_parent_and_single_head",
+          "result": "PASS",
+          "seconds": "0.102"
+        },
+        {
+          "id": "tests.test_contract_signing::test_postgresql_migration_emits_seven_additions_index_check_and_reverse",
+          "result": "PASS",
+          "seconds": "0.058"
+        },
+        {
+          "id": "tests.test_contract_signing::test_sqlite_migration_is_additive_preserves_rows_and_is_reversible[legacy-fixture]",
+          "result": "PASS",
+          "seconds": "1.494"
+        },
+        {
+          "id": "tests.test_contract_signing::test_sqlite_migration_is_additive_preserves_rows_and_is_reversible[foreign-keys-on]",
+          "result": "PASS",
+          "seconds": "1.456"
+        },
+        {
+          "id": "tests.test_contract_signing::test_postgresql_parallel_sessions_never_duplicate_or_return_someone_elses_case[same-request]",
+          "result": "SKIPPED",
+          "seconds": "0.000"
+        },
+        {
+          "id": "tests.test_contract_signing::test_postgresql_parallel_sessions_never_duplicate_or_return_someone_elses_case[other-contact]",
+          "result": "SKIPPED",
+          "seconds": "0.000"
+        },
+        {
+          "id": "tests.test_contract_signing::test_postgresql_parallel_sessions_never_duplicate_or_return_someone_elses_case[foreign-direction]",
+          "result": "SKIPPED",
+          "seconds": "0.000"
+        },
+        {
+          "id": "tests.test_contract_signing::test_postgresql_applied_migration_constraints_and_roundtrip",
+          "result": "SKIPPED",
+          "seconds": "0.000"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac16_invalid_transition_changes_neither_case_nor_history[UNKNOWN-unknown stage]",
+          "result": "PASS",
+          "seconds": "0.240"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac16_invalid_transition_changes_neither_case_nor_history[TOUR-03-not allowed]",
+          "result": "PASS",
+          "seconds": "0.167"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac16_invalid_transition_changes_neither_case_nor_history[-must contain]",
+          "result": "PASS",
+          "seconds": "0.165"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac16_invalid_transition_changes_neither_case_nor_history[   -surrounding whitespace]",
+          "result": "PASS",
+          "seconds": "0.165"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac16_invalid_transition_changes_neither_case_nor_history[ TOUR-02 -surrounding whitespace]",
+          "result": "PASS",
+          "seconds": "0.161"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac16_invalid_transition_changes_neither_case_nor_history[TOUR-01-not allowed]",
+          "result": "PASS",
+          "seconds": "0.168"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac17_published_version_cannot_be_rewritten_even_after_reload[stages-value0]",
+          "result": "PASS",
+          "seconds": "0.165"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac17_published_version_cannot_be_rewritten_even_after_reload[transitions-value1]",
+          "result": "PASS",
+          "seconds": "0.206"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac17_published_version_cannot_be_rewritten_even_after_reload[published_at-None]",
+          "result": "PASS",
+          "seconds": "0.198"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac17_published_version_cannot_be_rewritten_even_after_reload[published_by-other]",
+          "result": "PASS",
+          "seconds": "0.164"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac17_published_version_cannot_be_rewritten_even_after_reload[version-99]",
+          "result": "PASS",
+          "seconds": "0.165"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac17_nested_json_mutations_are_rejected[<lambda>0]",
+          "result": "PASS",
+          "seconds": "0.170"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac17_nested_json_mutations_are_rejected[<lambda>1]",
+          "result": "PASS",
+          "seconds": "0.177"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac17_nested_json_mutations_are_rejected[<lambda>2]",
+          "result": "PASS",
+          "seconds": "0.165"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac17_nested_json_mutations_are_rejected[<lambda>3]",
+          "result": "PASS",
+          "seconds": "0.166"
+        },
+        {
+          "id": "tests.test_service_cases::test_ac17_new_version_does_not_migrate_existing_case_and_copies_inputs",
+          "result": "PASS",
+          "seconds": "0.193"
+        },
+        {
+          "id": "tests.test_service_cases::test_repeat_publication_of_same_version_is_rejected",
+          "result": "PASS",
+          "seconds": "0.202"
+        },
+        {
+          "id": "tests.test_service_cases::test_three_products_on_one_contact_are_independent_without_requests",
+          "result": "PASS",
+          "seconds": "0.243"
+        },
+        {
+          "id": "tests.test_service_cases::test_archiving_hides_product_but_keeps_existing_cases_usable",
+          "result": "PASS",
+          "seconds": "0.206"
+        },
+        {
+          "id": "tests.test_service_cases::test_stale_revision_does_not_change_stage_or_write_event",
+          "result": "PASS",
+          "seconds": "0.227"
+        },
+        {
+          "id": "tests.test_service_cases::test_history_keeps_actor_reason_and_every_successful_transition",
+          "result": "PASS",
+          "seconds": "0.233"
+        },
+        {
+          "id": "tests.test_service_cases::test_service_events_are_append_only[replace]",
+          "result": "PASS",
+          "seconds": "0.291"
+        },
+        {
+          "id": "tests.test_service_cases::test_service_events_are_append_only[nested]",
+          "result": "PASS",
+          "seconds": "0.205"
+        },
+        {
+          "id": "tests.test_service_cases::test_service_events_are_append_only[delete]",
+          "result": "PASS",
+          "seconds": "0.177"
+        },
+        {
+          "id": "tests.test_service_cases::test_service_events_are_append_only[bulk_update]",
+          "result": "PASS",
+          "seconds": "0.217"
+        },
+        {
+          "id": "tests.test_service_cases::test_service_events_are_append_only[bulk_delete]",
+          "result": "PASS",
+          "seconds": "0.183"
+        },
+        {
+          "id": "tests.test_service_cases::test_service_case_revision_also_increases_for_non_stage_changes",
+          "result": "PASS",
+          "seconds": "0.169"
+        },
+        {
+          "id": "tests.test_service_cases::test_invalid_workflow_is_not_published[stages0-transitions0]",
+          "result": "PASS",
+          "seconds": "0.134"
+        },
+        {
+          "id": "tests.test_service_cases::test_invalid_workflow_is_not_published[stages1-transitions1]",
+          "result": "PASS",
+          "seconds": "0.125"
+        },
+        {
+          "id": "tests.test_service_cases::test_invalid_workflow_is_not_published[stages2-transitions2]",
+          "result": "PASS",
+          "seconds": "0.125"
+        },
+        {
+          "id": "tests.test_service_cases::test_invalid_workflow_is_not_published[stages3-transitions3]",
+          "result": "PASS",
+          "seconds": "0.126"
+        },
+        {
+          "id": "tests.test_service_cases::test_invalid_workflow_is_not_published[stages4-transitions4]",
+          "result": "PASS",
+          "seconds": "0.129"
+        },
+        {
+          "id": "tests.test_service_cases::test_invalid_workflow_is_not_published[stages5-transitions5]",
+          "result": "PASS",
+          "seconds": "0.128"
+        },
+        {
+          "id": "tests.test_service_cases::test_seed_is_explicit_idempotent_and_only_tour_has_a_process",
+          "result": "PASS",
+          "seconds": "0.163"
+        },
+        {
+          "id": "tests.test_service_cases::test_missing_product_contact_or_published_version_is_a_domain_error",
+          "result": "PASS",
+          "seconds": "0.198"
+        },
+        {
+          "id": "tests.test_service_cases::test_optional_request_must_match_contact_and_direction",
+          "result": "PASS",
+          "seconds": "0.175"
+        },
+        {
+          "id": "tests.test_service_cases::test_unique_product_code_and_workflow_version_constraints",
+          "result": "PASS",
+          "seconds": "0.218"
+        },
+        {
+          "id": "tests.test_service_cases::test_case_and_event_roll_back_together_and_service_does_not_commit",
+          "result": "PASS",
+          "seconds": "0.179"
+        },
+        {
+          "id": "tests.test_service_cases::test_history_insert_failure_rolls_back_stage_and_revision",
+          "result": "PASS",
+          "seconds": "0.168"
+        },
+        {
+          "id": "tests.test_service_cases::test_concurrent_commit_after_read_returns_domain_conflict",
+          "result": "PASS",
+          "seconds": "0.177"
+        },
+        {
+          "id": "tests.test_service_cases::test_product_identity_and_published_history_are_protected[code]",
+          "result": "PASS",
+          "seconds": "0.160"
+        },
+        {
+          "id": "tests.test_service_cases::test_product_identity_and_published_history_are_protected[delete_product]",
+          "result": "PASS",
+          "seconds": "0.163"
+        },
+        {
+          "id": "tests.test_service_cases::test_product_identity_and_published_history_are_protected[delete_version]",
+          "result": "PASS",
+          "seconds": "0.163"
+        },
+        {
+          "id": "tests.test_service_cases::test_product_identity_and_published_history_are_protected[bulk_version]",
+          "result": "PASS",
+          "seconds": "0.163"
+        },
+        {
+          "id": "tests.test_service_cases::test_direct_orm_write_cannot_change_stage_at_all[unknown]",
+          "result": "PASS",
+          "seconds": "0.162"
+        },
+        {
+          "id": "tests.test_service_cases::test_direct_orm_write_cannot_change_stage_at_all[far-ahead]",
+          "result": "PASS",
+          "seconds": "0.164"
+        },
+        {
+          "id": "tests.test_service_cases::test_direct_orm_write_cannot_change_stage_at_all[next-but-no-event]",
+          "result": "PASS",
+          "seconds": "0.163"
+        },
+        {
+          "id": "tests.test_service_cases::test_workflow_without_product_is_rejected_by_domain",
+          "result": "PASS",
+          "seconds": "0.123"
+        },
+        {
+          "id": "tests.test_service_cases::test_infrastructure_flag_defaults_off",
+          "result": "PASS",
+          "seconds": "0.002"
+        },
+        {
+          "id": "tests.test_service_cases::test_migration_is_additive_empty_and_reversible",
+          "result": "FAILURE",
+          "seconds": "1.227"
+        },
+        {
+          "id": "tests.test_service_money::test_ac02_partial_payment_leaves_the_remainder_computed_separately",
+          "result": "PASS",
+          "seconds": "0.463"
+        },
+        {
+          "id": "tests.test_service_money::test_ac05_same_request_twice_does_not_double_the_amount",
+          "result": "PASS",
+          "seconds": "0.183"
+        },
+        {
+          "id": "tests.test_service_money::test_ac05_same_key_with_different_amount_is_an_explicit_conflict",
+          "result": "PASS",
+          "seconds": "0.176"
+        },
+        {
+          "id": "tests.test_service_money::test_ac05_stale_revision_is_an_explicit_conflict_not_a_lost_write",
+          "result": "PASS",
+          "seconds": "0.174"
+        },
+        {
+          "id": "tests.test_service_money::test_ac06_foreign_currency_without_a_rate_creates_no_false_remainder",
+          "result": "PASS",
+          "seconds": "0.180"
+        },
+        {
+          "id": "tests.test_service_money::test_ac06_foreign_currency_with_a_rate_is_credited",
+          "result": "PASS",
+          "seconds": "0.176"
+        },
+        {
+          "id": "tests.test_service_money::test_rate_for_the_contract_currency_is_rejected_as_meaningless",
+          "result": "PASS",
+          "seconds": "0.209"
+        },
+        {
+          "id": "tests.test_service_money::test_ac04_refund_decision_is_an_obligation_not_a_returned_payment",
+          "result": "PASS",
+          "seconds": "0.299"
+        },
+        {
+          "id": "tests.test_service_money::test_actual_refund_increases_the_outstanding_again",
+          "result": "PASS",
+          "seconds": "0.229"
+        },
+        {
+          "id": "tests.test_service_money::test_correction_replaces_the_entry_instead_of_adding_to_it",
+          "result": "PASS",
+          "seconds": "0.250"
+        },
+        {
+          "id": "tests.test_service_money::test_correction_without_a_reason_is_rejected",
+          "result": "PASS",
+          "seconds": "0.200"
+        },
+        {
+          "id": "tests.test_service_money::test_money_rows_are_append_only",
+          "result": "PASS",
+          "seconds": "0.193"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[1000.0]",
+          "result": "PASS",
+          "seconds": "0.209"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[0]",
+          "result": "PASS",
+          "seconds": "0.212"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[amount2]",
+          "result": "PASS",
+          "seconds": "0.269"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[amount3]",
+          "result": "PASS",
+          "seconds": "0.321"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[None]",
+          "result": "PASS",
+          "seconds": "0.334"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[]",
+          "result": "PASS",
+          "seconds": "0.438"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[\\u043c\\u043d\\u043e\\u0433\\u043e]",
+          "result": "PASS",
+          "seconds": "0.389"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[amount7]",
+          "result": "PASS",
+          "seconds": "0.229"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[amount8]",
+          "result": "PASS",
+          "seconds": "0.194"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[amount9]",
+          "result": "PASS",
+          "seconds": "0.228"
+        },
+        {
+          "id": "tests.test_service_money::test_only_sane_decimal_amounts_are_accepted[amount10]",
+          "result": "PASS",
+          "seconds": "0.229"
+        },
+        {
+          "id": "tests.test_service_money::test_money_cannot_be_recorded_by_someone_without_rights[peer]",
+          "result": "PASS",
+          "seconds": "0.195"
+        },
+        {
+          "id": "tests.test_service_money::test_money_cannot_be_recorded_by_someone_without_rights[foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.224"
+        },
+        {
+          "id": "tests.test_service_money::test_money_cannot_be_recorded_by_someone_without_rights[no-identity]",
+          "result": "PASS",
+          "seconds": "0.270"
+        },
+        {
+          "id": "tests.test_service_money::test_every_money_row_leaves_an_event_in_the_history",
+          "result": "PASS",
+          "seconds": "0.216"
+        },
+        {
+          "id": "tests.test_service_money::test_contract_without_an_amount_has_no_outstanding_and_credits_nothing",
+          "result": "PASS",
+          "seconds": "0.228"
+        },
+        {
+          "id": "tests.test_service_money::test_payment_rows_survive_a_failed_neighbour_without_half_records",
+          "result": "PASS",
+          "seconds": "0.199"
+        },
+        {
+          "id": "tests.test_service_money::test_prepayment_before_the_contract_amount_is_credited_later",
+          "result": "PASS",
+          "seconds": "0.206"
+        },
+        {
+          "id": "tests.test_service_money::test_correcting_a_refund_stays_a_refund",
+          "result": "PASS",
+          "seconds": "0.208"
+        },
+        {
+          "id": "tests.test_service_money::test_an_entry_can_be_corrected_only_once",
+          "result": "PASS",
+          "seconds": "0.204"
+        },
+        {
+          "id": "tests.test_service_money::test_foreign_refund_and_obligation_are_visible_separately",
+          "result": "PASS",
+          "seconds": "0.211"
+        },
+        {
+          "id": "tests.test_service_money::test_refunds_and_corrections_require_a_chief[owner]",
+          "result": "PASS",
+          "seconds": "0.196"
+        },
+        {
+          "id": "tests.test_service_money::test_refunds_and_corrections_require_a_chief[peer]",
+          "result": "PASS",
+          "seconds": "0.199"
+        },
+        {
+          "id": "tests.test_service_money::test_refunds_and_corrections_require_a_chief[foreign]",
+          "result": "PASS",
+          "seconds": "0.195"
+        },
+        {
+          "id": "tests.test_service_money::test_bulk_update_and_delete_cannot_erase_money",
+          "result": "PASS",
+          "seconds": "0.223"
+        },
+        {
+          "id": "tests.test_service_money::test_deleting_a_money_row_through_the_orm_is_rejected",
+          "result": "PASS",
+          "seconds": "0.209"
+        },
+        {
+          "id": "tests.test_service_money::test_reason_and_author_of_a_money_row_cannot_be_rewritten[reason-\\u043f\\u043e\\u0434\\u0434\\u0435\\u043b\\u043a\\u0430]",
+          "result": "PASS",
+          "seconds": "0.198"
+        },
+        {
+          "id": "tests.test_service_money::test_reason_and_author_of_a_money_row_cannot_be_rewritten[recorded_by-someone_else]",
+          "result": "PASS",
+          "seconds": "0.201"
+        },
+        {
+          "id": "tests.test_service_money::test_same_key_with_a_different_rate_is_a_conflict",
+          "result": "PASS",
+          "seconds": "0.195"
+        },
+        {
+          "id": "tests.test_service_money::test_unusable_rates_are_rejected_with_a_domain_error[rate0]",
+          "result": "PASS",
+          "seconds": "0.183"
+        },
+        {
+          "id": "tests.test_service_money::test_unusable_rates_are_rejected_with_a_domain_error[rate1]",
+          "result": "PASS",
+          "seconds": "0.186"
+        },
+        {
+          "id": "tests.test_service_money::test_unusable_rates_are_rejected_with_a_domain_error[rate2]",
+          "result": "PASS",
+          "seconds": "0.239"
+        },
+        {
+          "id": "tests.test_service_money::test_unusable_rates_are_rejected_with_a_domain_error[rate3]",
+          "result": "PASS",
+          "seconds": "0.173"
+        },
+        {
+          "id": "tests.test_service_money::test_unusable_rates_are_rejected_with_a_domain_error[89.5]",
+          "result": "PASS",
+          "seconds": "0.234"
+        },
+        {
+          "id": "tests.test_service_money::test_unusable_rates_are_rejected_with_a_domain_error[rate5]",
+          "result": "PASS",
+          "seconds": "0.301"
+        },
+        {
+          "id": "tests.test_service_money::test_currency_must_be_three_latin_letters[\\u041a\\u0413\\u0421]",
+          "result": "PASS",
+          "seconds": "0.220"
+        },
+        {
+          "id": "tests.test_service_money::test_currency_must_be_three_latin_letters[K S]",
+          "result": "PASS",
+          "seconds": "0.172"
+        },
+        {
+          "id": "tests.test_service_money::test_currency_must_be_three_latin_letters[12]",
+          "result": "PASS",
+          "seconds": "0.170"
+        },
+        {
+          "id": "tests.test_service_money::test_currency_must_be_three_latin_letters[KG]",
+          "result": "PASS",
+          "seconds": "0.217"
+        },
+        {
+          "id": "tests.test_service_money::test_currency_must_be_three_latin_letters[KGSX]",
+          "result": "PASS",
+          "seconds": "0.183"
+        },
+        {
+          "id": "tests.test_service_money::test_currency_must_be_three_latin_letters[]",
+          "result": "PASS",
+          "seconds": "0.180"
+        },
+        {
+          "id": "tests.test_service_money::test_repeat_after_a_successful_write_is_idempotent_even_with_a_stale_revision",
+          "result": "PASS",
+          "seconds": "0.248"
+        },
+        {
+          "id": "tests.test_service_money::test_overpayment_raises_the_attention_flag",
+          "result": "PASS",
+          "seconds": "0.185"
+        },
+        {
+          "id": "tests.test_service_money::test_correction_does_not_disclose_which_payments_exist[peer]",
+          "result": "PASS",
+          "seconds": "0.200"
+        },
+        {
+          "id": "tests.test_service_money::test_correction_does_not_disclose_which_payments_exist[foreign-direction]",
+          "result": "PASS",
+          "seconds": "0.196"
+        },
+        {
+          "id": "tests.test_service_money::test_rate_is_not_applied_when_the_contract_currency_changed",
+          "result": "PASS",
+          "seconds": "0.203"
+        },
+        {
+          "id": "tests.test_service_money::test_a_self_correcting_row_is_rejected_by_the_database",
+          "result": "PASS",
+          "seconds": "0.190"
+        },
+        {
+          "id": "tests.test_service_money::test_a_cycle_of_corrections_is_reported_not_silently_dropped",
+          "result": "PASS",
+          "seconds": "0.001"
+        },
+        {
+          "id": "tests.test_service_money::test_broken_entries_always_raise_the_attention_flag",
+          "result": "PASS",
+          "seconds": "0.001"
+        },
+        {
+          "id": "tests.test_service_money::test_migration_schema_matches_the_models_for_the_money_ledger",
+          "result": "PASS",
+          "seconds": "1.233"
+        },
+        {
+          "id": "tests.test_service_money::test_contract_amount_cannot_be_changed_by_direct_assignment",
+          "result": "PASS",
+          "seconds": "0.326"
+        },
+        {
+          "id": "tests.test_service_money::test_correcting_the_contract_amount_requires_a_chief_and_a_reason",
+          "result": "PASS",
+          "seconds": "0.474"
+        },
+        {
+          "id": "tests.test_service_money::test_correcting_the_contract_amount_leaves_the_previous_value_in_history",
+          "result": "PASS",
+          "seconds": "0.219"
+        },
+        {
+          "id": "tests.test_service_money::test_an_actual_refund_closes_the_obligation",
+          "result": "PASS",
+          "seconds": "0.228"
+        },
+        {
+          "id": "tests.test_service_money::test_only_an_obligation_can_be_settled",
+          "result": "PASS",
+          "seconds": "0.209"
+        },
+        {
+          "id": "tests.test_service_money::test_a_wrong_entry_can_be_voided_without_faking_a_refund",
+          "result": "PASS",
+          "seconds": "0.250"
+        },
+        {
+          "id": "tests.test_service_money::test_voiding_requires_a_chief_and_a_reason",
+          "result": "PASS",
+          "seconds": "0.216"
+        },
+        {
+          "id": "tests.test_service_money::test_a_void_cannot_itself_be_voided",
+          "result": "PASS",
+          "seconds": "0.220"
+        },
+        {
+          "id": "tests.test_service_money::test_refunding_more_than_was_paid_raises_the_attention_flag",
+          "result": "PASS",
+          "seconds": "0.224"
+        },
+        {
+          "id": "tests.test_service_money::test_a_chief_of_one_business_cannot_touch_the_money_of_the_other",
+          "result": "PASS",
+          "seconds": "0.214"
+        },
+        {
+          "id": "tests.test_service_money::test_the_system_owner_without_a_direction_list_is_not_limited",
+          "result": "PASS",
+          "seconds": "0.001"
+        },
+        {
+          "id": "tests.test_admin_workday::test_flag_off_hides_every_route_including_posts",
+          "result": "PASS",
+          "seconds": "0.852"
+        },
+        {
+          "id": "tests.test_admin_workday::test_flag_off_keeps_the_menu_unchanged",
+          "result": "PASS",
+          "seconds": "0.012"
+        },
+        {
+          "id": "tests.test_admin_workday::test_flag_on_shows_the_link_and_answers",
+          "result": "PASS",
+          "seconds": "0.806"
+        },
+        {
+          "id": "tests.test_admin_workday::test_every_flagged_path_answers_when_the_flag_is_on",
+          "result": "PASS",
+          "seconds": "0.804"
+        },
+        {
+          "id": "tests.test_admin_workday::test_the_flag_is_off_by_default",
+          "result": "PASS",
+          "seconds": "0.002"
+        },
+        {
+          "id": "tests.test_admin_workday::test_empty_day_is_not_reported_as_a_failure",
+          "result": "PASS",
+          "seconds": "0.827"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_broken_registry_shows_a_failure_and_not_an_empty_day",
+          "result": "PASS",
+          "seconds": "0.015"
+        },
+        {
+          "id": "tests.test_admin_workday::test_order_is_explainable_and_each_row_carries_its_reason",
+          "result": "PASS",
+          "seconds": "0.918"
+        },
+        {
+          "id": "tests.test_admin_workday::test_the_page_explains_how_the_order_is_computed",
+          "result": "PASS",
+          "seconds": "0.786"
+        },
+        {
+          "id": "tests.test_admin_workday::test_manager_sees_payment_but_not_refund_buttons",
+          "result": "PASS",
+          "seconds": "0.898"
+        },
+        {
+          "id": "tests.test_admin_workday::test_direct_post_of_a_financial_action_is_refused",
+          "result": "PASS",
+          "seconds": "0.887"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_scoped_manager_cannot_open_a_foreign_case",
+          "result": "PASS",
+          "seconds": "1.064"
+        },
+        {
+          "id": "tests.test_admin_workday::test_advancing_changes_the_next_step_and_writes_one_event",
+          "result": "PASS",
+          "seconds": "1.025"
+        },
+        {
+          "id": "tests.test_admin_workday::test_advancing_without_required_facts_keeps_the_stage",
+          "result": "PASS",
+          "seconds": "0.954"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_stale_revision_is_reported_and_adds_no_second_event",
+          "result": "PASS",
+          "seconds": "0.985"
+        },
+        {
+          "id": "tests.test_admin_workday::test_the_same_idempotency_key_records_one_payment",
+          "result": "PASS",
+          "seconds": "0.898"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_failed_save_returns_the_form_with_the_same_key",
+          "result": "PASS",
+          "seconds": "0.856"
+        },
+        {
+          "id": "tests.test_admin_workday::test_write_flag_off_blocks_actions_but_keeps_the_screen",
+          "result": "PASS",
+          "seconds": "0.866"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_stale_claim_is_visible_with_who_and_when",
+          "result": "PASS",
+          "seconds": "0.856"
+        },
+        {
+          "id": "tests.test_admin_workday::test_releasing_a_claim_requires_a_reason",
+          "result": "PASS",
+          "seconds": "0.935"
+        },
+        {
+          "id": "tests.test_admin_workday::test_confirming_a_settled_claim_completes_the_task",
+          "result": "PASS",
+          "seconds": "0.948"
+        },
+        {
+          "id": "tests.test_admin_workday::test_no_div_onclick_and_tabs_are_real_buttons",
+          "result": "PASS",
+          "seconds": "0.945"
+        },
+        {
+          "id": "tests.test_admin_workday::test_the_next_step_comes_before_the_tabs_in_the_dom",
+          "result": "PASS",
+          "seconds": "0.966"
+        },
+        {
+          "id": "tests.test_admin_workday::test_every_input_has_a_label",
+          "result": "PASS",
+          "seconds": "0.937"
+        },
+        {
+          "id": "tests.test_admin_workday::test_void_and_correct_use_the_field_names_the_form_sends",
+          "result": "PASS",
+          "seconds": "0.963"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_bad_record_number_is_a_clear_refusal_not_a_failure[]",
+          "result": "PASS",
+          "seconds": "0.885"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_bad_record_number_is_a_clear_refusal_not_a_failure[   ]",
+          "result": "PASS",
+          "seconds": "0.908"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_bad_record_number_is_a_clear_refusal_not_a_failure[abc]",
+          "result": "PASS",
+          "seconds": "0.967"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_bad_record_number_is_a_clear_refusal_not_a_failure[1.5]",
+          "result": "PASS",
+          "seconds": "0.980"
+        },
+        {
+          "id": "tests.test_admin_workday::test_every_action_is_written_to_the_audit_log",
+          "result": "PASS",
+          "seconds": "1.022"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_failed_action_tells_the_manager_what_happened",
+          "result": "PASS",
+          "seconds": "0.980"
+        },
+        {
+          "id": "tests.test_admin_workday::test_an_invalid_outcome_is_not_treated_as_success_in_the_browser",
+          "result": "PASS",
+          "seconds": "0.964"
+        },
+        {
+          "id": "tests.test_admin_workday::test_a_case_on_the_final_stage_is_not_reported_as_stuck",
+          "result": "PASS",
+          "seconds": "1.157"
+        },
+        {
+          "id": "tests.test_admin_workday::test_one_unreadable_case_does_not_break_the_whole_screen",
+          "result": "PASS",
+          "seconds": "0.983"
+        },
+        {
+          "id": "tests.test_admin_workday::test_every_financial_route_refuses_a_plain_manager[money/refund-due]",
+          "result": "PASS",
+          "seconds": "1.038"
+        },
+        {
+          "id": "tests.test_admin_workday::test_every_financial_route_refuses_a_plain_manager[money/refund-paid]",
+          "result": "PASS",
+          "seconds": "1.058"
+        },
+        {
+          "id": "tests.test_admin_workday::test_every_financial_route_refuses_a_plain_manager[money/void]",
+          "result": "PASS",
+          "seconds": "1.054"
+        },
+        {
+          "id": "tests.test_admin_workday::test_every_financial_route_refuses_a_plain_manager[money/correct-entry]",
+          "result": "PASS",
+          "seconds": "1.110"
+        },
+        {
+          "id": "tests.test_admin_workday::test_every_financial_route_refuses_a_plain_manager[money/contract-amount]",
+          "result": "PASS",
+          "seconds": "1.039"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r5/runs/e630-r5-browser.xml",
+      "sha256": "3d047525507f397cc7f12ec63129d3a8e1a4ad7c7496b994f2e2b20027b48a45",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "1",
+        "time": "18.563",
+        "timestamp": "2026-10-13T01:01:48.566601+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.browser_precontract::test_mobile_dark_and_desktop_nojs_same_case_contract",
+          "result": "PASS",
+          "seconds": "10.832"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r6/runs/e630-r6-core.xml",
+      "sha256": "bf699e90a5db2092dfe7880db8ac72570afbc07d70c4d5d1077e3f5a05ea27be",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "40",
+        "time": "48.724",
+        "timestamp": "2026-10-13T01:03:51.808037+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_open_preserves_distinct_command_keys[False]",
+          "result": "PASS",
+          "seconds": "4.654"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_open_preserves_distinct_command_keys[True]",
+          "result": "PASS",
+          "seconds": "1.544"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_signature_one_contract_and_task[False]",
+          "result": "PASS",
+          "seconds": "1.865"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_signature_one_contract_and_task[True]",
+          "result": "PASS",
+          "seconds": "1.962"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_signature_rechecks_committed_competing_writer[owner]",
+          "result": "PASS",
+          "seconds": "1.818"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_signature_rechecks_committed_competing_writer[stage]",
+          "result": "PASS",
+          "seconds": "1.594"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_signature_rechecks_committed_competing_writer[money]",
+          "result": "PASS",
+          "seconds": "1.464"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_open_unique_collision_and_rollback_leave_original_case",
+          "result": "PASS",
+          "seconds": "1.422"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_additive_migration_parity_and_populated_downgrade_guard",
+          "result": "PASS",
+          "seconds": "2.384"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_binary_copy_recovery_preserves_open_sign_and_legacy_records",
+          "result": "FAILURE",
+          "seconds": "4.319"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_open_then_sign_same_case_and_historical_retries_survive_new_workflow_price_and_owner",
+          "result": "PASS",
+          "seconds": "0.269"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change0]",
+          "result": "PASS",
+          "seconds": "0.221"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change1]",
+          "result": "PASS",
+          "seconds": "0.244"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change2]",
+          "result": "PASS",
+          "seconds": "0.262"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change3]",
+          "result": "PASS",
+          "seconds": "0.265"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change4]",
+          "result": "PASS",
+          "seconds": "0.191"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_current_access_and_scope_enforced_on_open_and_signed_retry",
+          "result": "PASS",
+          "seconds": "0.176"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change0]",
+          "result": "PASS",
+          "seconds": "0.269"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change1]",
+          "result": "PASS",
+          "seconds": "0.180"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change2]",
+          "result": "PASS",
+          "seconds": "0.188"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change3]",
+          "result": "PASS",
+          "seconds": "0.180"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change4]",
+          "result": "PASS",
+          "seconds": "0.187"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change5]",
+          "result": "PASS",
+          "seconds": "0.169"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change6]",
+          "result": "PASS",
+          "seconds": "0.174"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change7]",
+          "result": "PASS",
+          "seconds": "0.256"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_failed_initial_task_rolls_back_signature_but_keeps_callers_write",
+          "result": "PASS",
+          "seconds": "0.373"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_unknown_amount_and_existing_explicit_payment_stay_distinct",
+          "result": "PASS",
+          "seconds": "0.195"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_real_native_unsigned_case_readonly_get_and_same_case_signature_with_retries",
+          "result": "PASS",
+          "seconds": "1.247"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[original_owner-aisina]",
+          "result": "PASS",
+          "seconds": "0.881"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[request_key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "result": "PASS",
+          "seconds": "0.857"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[csrf_token-bad]",
+          "result": "PASS",
+          "seconds": "0.872"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[signature-bad]",
+          "result": "PASS",
+          "seconds": "0.901"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_signature_target_peer_and_unsigned_confirmation_are_server_checked",
+          "result": "PASS",
+          "seconds": "0.970"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_lost_signature_ack_keeps_exact_form_for_retry",
+          "result": "PASS",
+          "seconds": "1.000"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[open]",
+          "result": "PASS",
+          "seconds": "0.916"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[sign]",
+          "result": "PASS",
+          "seconds": "0.968"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_native_own_applicant_intake_and_internal_quote_survive_same_case_signature",
+          "result": "PASS",
+          "seconds": "2.245"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_exact_open_retry_after_assignment_disagreement_is_historical_not_fresh",
+          "result": "PASS",
+          "seconds": "0.976"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_malformed_signed_event_yields_controlled_failure_and_preserves_form",
+          "result": "PASS",
+          "seconds": "0.989"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_altered_signed_event_stage_cannot_be_replayed_as_valid_evidence",
+          "result": "PASS",
+          "seconds": "1.018"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r7/runs/e630-r7-delta.xml",
+      "sha256": "a46b915b0cd9f0528a6f91f0791c3e2b5bb32de976efe7de97e2331082ea89c3",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "16",
+        "time": "41.970",
+        "timestamp": "2026-10-13T01:05:13.660175+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_binary_copy_recovery_preserves_open_sign_and_legacy_records",
+          "result": "PASS",
+          "seconds": "6.947"
+        },
+        {
+          "id": "tests.test_service_cases::test_migration_is_additive_empty_and_reversible",
+          "result": "PASS",
+          "seconds": "3.929"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_real_native_unsigned_case_readonly_get_and_same_case_signature_with_retries",
+          "result": "PASS",
+          "seconds": "1.399"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[original_owner-aisina]",
+          "result": "PASS",
+          "seconds": "0.918"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[request_key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "result": "PASS",
+          "seconds": "0.926"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[csrf_token-bad]",
+          "result": "PASS",
+          "seconds": "0.867"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[signature-bad]",
+          "result": "PASS",
+          "seconds": "0.902"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_signature_target_peer_and_unsigned_confirmation_are_server_checked",
+          "result": "PASS",
+          "seconds": "1.022"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_lost_signature_ack_keeps_exact_form_for_retry",
+          "result": "PASS",
+          "seconds": "1.083"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[open]",
+          "result": "PASS",
+          "seconds": "0.910"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[sign]",
+          "result": "PASS",
+          "seconds": "0.973"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_native_own_applicant_intake_and_internal_quote_survive_same_case_signature",
+          "result": "PASS",
+          "seconds": "2.223"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_exact_open_retry_after_assignment_disagreement_is_historical_not_fresh",
+          "result": "PASS",
+          "seconds": "1.079"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_malformed_signed_event_yields_controlled_failure_and_preserves_form",
+          "result": "PASS",
+          "seconds": "1.081"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_altered_signed_event_stage_cannot_be_replayed_as_valid_evidence",
+          "result": "PASS",
+          "seconds": "1.021"
+        },
+        {
+          "id": "tests.browser_precontract::test_mobile_dark_and_desktop_nojs_same_case_contract",
+          "result": "PASS",
+          "seconds": "9.336"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r8/runs/e630-r8-final-core.xml",
+      "sha256": "18b2cb421e9b18e134b6b10be08146e10e2ab2dd437540a83352eb7b149aedef",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "33",
+        "time": "25.549",
+        "timestamp": "2026-10-13T01:06:39.395376+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_precontract_cases::test_open_then_sign_same_case_and_historical_retries_survive_new_workflow_price_and_owner",
+          "result": "PASS",
+          "seconds": "0.336"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change0]",
+          "result": "PASS",
+          "seconds": "0.210"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change1]",
+          "result": "PASS",
+          "seconds": "0.211"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change2]",
+          "result": "PASS",
+          "seconds": "0.204"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change3]",
+          "result": "PASS",
+          "seconds": "0.202"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change4]",
+          "result": "PASS",
+          "seconds": "0.209"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_current_access_and_scope_enforced_on_open_and_signed_retry",
+          "result": "PASS",
+          "seconds": "0.174"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change0]",
+          "result": "PASS",
+          "seconds": "0.185"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change1]",
+          "result": "PASS",
+          "seconds": "0.256"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change2]",
+          "result": "PASS",
+          "seconds": "0.189"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change3]",
+          "result": "PASS",
+          "seconds": "0.204"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change4]",
+          "result": "PASS",
+          "seconds": "0.208"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change5]",
+          "result": "PASS",
+          "seconds": "0.245"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change6]",
+          "result": "PASS",
+          "seconds": "0.281"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change7]",
+          "result": "PASS",
+          "seconds": "0.297"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_failed_initial_task_rolls_back_signature_but_keeps_callers_write",
+          "result": "PASS",
+          "seconds": "0.241"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_unknown_amount_and_existing_explicit_payment_stay_distinct",
+          "result": "PASS",
+          "seconds": "0.207"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_real_native_unsigned_case_readonly_get_and_same_case_signature_with_retries",
+          "result": "PASS",
+          "seconds": "1.363"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[original_owner-aisina]",
+          "result": "PASS",
+          "seconds": "0.861"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[request_key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "result": "PASS",
+          "seconds": "0.906"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[csrf_token-bad]",
+          "result": "PASS",
+          "seconds": "0.903"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[signature-bad]",
+          "result": "PASS",
+          "seconds": "0.865"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_signature_target_peer_and_unsigned_confirmation_are_server_checked",
+          "result": "PASS",
+          "seconds": "0.936"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_lost_signature_ack_keeps_exact_form_for_retry",
+          "result": "PASS",
+          "seconds": "0.923"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[open]",
+          "result": "PASS",
+          "seconds": "0.774"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[sign]",
+          "result": "PASS",
+          "seconds": "0.865"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_native_own_applicant_intake_and_internal_quote_survive_same_case_signature",
+          "result": "PASS",
+          "seconds": "2.159"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_exact_open_retry_after_assignment_disagreement_is_historical_not_fresh",
+          "result": "PASS",
+          "seconds": "0.987"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_malformed_signed_event_yields_controlled_failure_and_preserves_form",
+          "result": "PASS",
+          "seconds": "0.949"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_altered_signed_event_stage_cannot_be_replayed_as_valid_evidence",
+          "result": "PASS",
+          "seconds": "1.033"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[revision]",
+          "result": "PASS",
+          "seconds": "0.208"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[owner_shape]",
+          "result": "PASS",
+          "seconds": "0.206"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_cancelled_signature_rolls_back_own_changes_and_preserves_caller",
+          "result": "PASS",
+          "seconds": "0.293"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r9/runs/e630-r9-final-core.xml",
+      "sha256": "d4f8d2cda124eef1a97ff592f32b9ad00e26a5aa42f5e1c15bd803e017c652c3",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "20",
+        "skipped": "0",
+        "tests": "35",
+        "time": "28.076",
+        "timestamp": "2026-10-13T01:07:38.040680+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_precontract_cases::test_open_then_sign_same_case_and_historical_retries_survive_new_workflow_price_and_owner",
+          "result": "FAILURE",
+          "seconds": "0.284"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change0]",
+          "result": "FAILURE",
+          "seconds": "0.176"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change1]",
+          "result": "FAILURE",
+          "seconds": "0.184"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change2]",
+          "result": "FAILURE",
+          "seconds": "0.165"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change3]",
+          "result": "FAILURE",
+          "seconds": "0.165"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change4]",
+          "result": "FAILURE",
+          "seconds": "0.195"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_current_access_and_scope_enforced_on_open_and_signed_retry",
+          "result": "PASS",
+          "seconds": "0.178"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change0]",
+          "result": "PASS",
+          "seconds": "0.178"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change1]",
+          "result": "PASS",
+          "seconds": "0.217"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change2]",
+          "result": "PASS",
+          "seconds": "0.178"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change3]",
+          "result": "PASS",
+          "seconds": "0.207"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change4]",
+          "result": "PASS",
+          "seconds": "0.192"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change5]",
+          "result": "PASS",
+          "seconds": "0.191"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change6]",
+          "result": "PASS",
+          "seconds": "0.204"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change7]",
+          "result": "PASS",
+          "seconds": "0.180"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_failed_initial_task_rolls_back_signature_but_keeps_callers_write",
+          "result": "FAILURE",
+          "seconds": "0.181"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_unknown_amount_and_existing_explicit_payment_stay_distinct",
+          "result": "FAILURE",
+          "seconds": "0.186"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_real_native_unsigned_case_readonly_get_and_same_case_signature_with_retries",
+          "result": "FAILURE",
+          "seconds": "1.314"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[original_owner-aisina]",
+          "result": "PASS",
+          "seconds": "0.980"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[request_key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "result": "PASS",
+          "seconds": "1.006"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[csrf_token-bad]",
+          "result": "PASS",
+          "seconds": "1.075"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[signature-bad]",
+          "result": "PASS",
+          "seconds": "1.049"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_signature_target_peer_and_unsigned_confirmation_are_server_checked",
+          "result": "FAILURE",
+          "seconds": "0.923"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_lost_signature_ack_keeps_exact_form_for_retry",
+          "result": "FAILURE",
+          "seconds": "0.966"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[open]",
+          "result": "PASS",
+          "seconds": "0.885"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[sign]",
+          "result": "PASS",
+          "seconds": "0.979"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_native_own_applicant_intake_and_internal_quote_survive_same_case_signature",
+          "result": "FAILURE",
+          "seconds": "2.490"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_exact_open_retry_after_assignment_disagreement_is_historical_not_fresh",
+          "result": "FAILURE",
+          "seconds": "0.958"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_malformed_signed_event_yields_controlled_failure_and_preserves_form",
+          "result": "FAILURE",
+          "seconds": "1.037"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_altered_signed_event_stage_cannot_be_replayed_as_valid_evidence",
+          "result": "FAILURE",
+          "seconds": "1.075"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[revision]",
+          "result": "FAILURE",
+          "seconds": "0.446"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[owner_shape]",
+          "result": "FAILURE",
+          "seconds": "0.191"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_cancelled_signature_rolls_back_own_changes_and_preserves_caller",
+          "result": "FAILURE",
+          "seconds": "0.209"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_opening_must_describe_actual_first_workflow_stage_and_initial_revision[revision]",
+          "result": "FAILURE",
+          "seconds": "0.208"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_opening_must_describe_actual_first_workflow_stage_and_initial_revision[stage]",
+          "result": "FAILURE",
+          "seconds": "0.196"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r10/runs/e630-r10-final.xml",
+      "sha256": "e6de461d05d5ec9299091e4df5131752aa8f7b10cdd0d725d9e6e2e8dbfef786",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "45",
+        "time": "48.741",
+        "timestamp": "2026-10-13T01:08:10.762335+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_precontract_cases::test_open_then_sign_same_case_and_historical_retries_survive_new_workflow_price_and_owner",
+          "result": "PASS",
+          "seconds": "0.349"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change0]",
+          "result": "PASS",
+          "seconds": "0.204"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change1]",
+          "result": "PASS",
+          "seconds": "0.201"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change2]",
+          "result": "PASS",
+          "seconds": "0.186"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change3]",
+          "result": "PASS",
+          "seconds": "0.302"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_changed_signature_cannot_be_replayed_or_create_second_contract[change4]",
+          "result": "PASS",
+          "seconds": "0.229"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_current_access_and_scope_enforced_on_open_and_signed_retry",
+          "result": "PASS",
+          "seconds": "0.230"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change0]",
+          "result": "PASS",
+          "seconds": "0.274"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change1]",
+          "result": "PASS",
+          "seconds": "0.309"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change2]",
+          "result": "PASS",
+          "seconds": "0.235"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change3]",
+          "result": "PASS",
+          "seconds": "0.202"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change4]",
+          "result": "PASS",
+          "seconds": "0.240"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change5]",
+          "result": "PASS",
+          "seconds": "0.217"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change6]",
+          "result": "PASS",
+          "seconds": "0.209"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_invalid_or_stale_signature_does_not_mutate_preliminary_case[change7]",
+          "result": "PASS",
+          "seconds": "0.214"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_failed_initial_task_rolls_back_signature_but_keeps_callers_write",
+          "result": "PASS",
+          "seconds": "0.240"
+        },
+        {
+          "id": "tests.test_precontract_cases::test_unknown_amount_and_existing_explicit_payment_stay_distinct",
+          "result": "PASS",
+          "seconds": "0.318"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_real_native_unsigned_case_readonly_get_and_same_case_signature_with_retries",
+          "result": "PASS",
+          "seconds": "1.327"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[original_owner-aisina]",
+          "result": "PASS",
+          "seconds": "0.885"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[request_key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "result": "PASS",
+          "seconds": "0.868"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[csrf_token-bad]",
+          "result": "PASS",
+          "seconds": "0.883"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[signature-bad]",
+          "result": "PASS",
+          "seconds": "0.876"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_signature_target_peer_and_unsigned_confirmation_are_server_checked",
+          "result": "PASS",
+          "seconds": "1.012"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_lost_signature_ack_keeps_exact_form_for_retry",
+          "result": "PASS",
+          "seconds": "0.981"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[open]",
+          "result": "PASS",
+          "seconds": "0.923"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[sign]",
+          "result": "PASS",
+          "seconds": "0.976"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_native_own_applicant_intake_and_internal_quote_survive_same_case_signature",
+          "result": "PASS",
+          "seconds": "2.447"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_exact_open_retry_after_assignment_disagreement_is_historical_not_fresh",
+          "result": "PASS",
+          "seconds": "1.136"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_malformed_signed_event_yields_controlled_failure_and_preserves_form",
+          "result": "PASS",
+          "seconds": "1.013"
+        },
+        {
+          "id": "tests.test_precontract_evidence::test_altered_signed_event_stage_cannot_be_replayed_as_valid_evidence",
+          "result": "PASS",
+          "seconds": "1.028"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[revision]",
+          "result": "PASS",
+          "seconds": "0.216"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[owner_shape]",
+          "result": "PASS",
+          "seconds": "0.204"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_cancelled_signature_rolls_back_own_changes_and_preserves_caller",
+          "result": "PASS",
+          "seconds": "0.221"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_opening_must_describe_actual_first_workflow_stage_and_initial_revision[revision]",
+          "result": "PASS",
+          "seconds": "0.235"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_opening_must_describe_actual_first_workflow_stage_and_initial_revision[stage]",
+          "result": "PASS",
+          "seconds": "0.198"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_open_preserves_distinct_command_keys[False]",
+          "result": "PASS",
+          "seconds": "3.933"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_open_preserves_distinct_command_keys[True]",
+          "result": "PASS",
+          "seconds": "1.217"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_signature_one_contract_and_task[False]",
+          "result": "PASS",
+          "seconds": "1.762"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_concurrent_signature_one_contract_and_task[True]",
+          "result": "PASS",
+          "seconds": "1.507"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_signature_rechecks_committed_competing_writer[owner]",
+          "result": "PASS",
+          "seconds": "1.678"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_signature_rechecks_committed_competing_writer[stage]",
+          "result": "PASS",
+          "seconds": "1.325"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_signature_rechecks_committed_competing_writer[money]",
+          "result": "PASS",
+          "seconds": "1.492"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_open_unique_collision_and_rollback_leave_original_case",
+          "result": "PASS",
+          "seconds": "1.410"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_additive_migration_parity_and_populated_downgrade_guard",
+          "result": "PASS",
+          "seconds": "2.524"
+        },
+        {
+          "id": "tests.test_precontract_postgres::test_postgres_binary_copy_recovery_preserves_open_sign_and_legacy_records",
+          "result": "PASS",
+          "seconds": "4.884"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r11/runs/e630-r11-delta.xml",
+      "sha256": "03d6fa1cef001482e8e3ceffb0bdc7310ab8a2aca66ea96daa0ab8583f1efcb3",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "18",
+        "time": "20.268",
+        "timestamp": "2026-10-13T01:09:55.196886+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[revision]",
+          "result": "PASS",
+          "seconds": "0.367"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[owner_shape]",
+          "result": "PASS",
+          "seconds": "0.215"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_cancelled_signature_rolls_back_own_changes_and_preserves_caller",
+          "result": "PASS",
+          "seconds": "0.278"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_opening_must_describe_actual_first_workflow_stage_and_initial_revision[revision]",
+          "result": "PASS",
+          "seconds": "0.195"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_opening_must_describe_actual_first_workflow_stage_and_initial_revision[stage]",
+          "result": "PASS",
+          "seconds": "0.191"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_noncanonical_actor_refuses_before_committing_unusable_operation[ADMIN]",
+          "result": "PASS",
+          "seconds": "0.201"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_noncanonical_actor_refuses_before_committing_unusable_operation[ admin ]",
+          "result": "PASS",
+          "seconds": "0.205"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_noncanonical_actor_refuses_before_committing_unusable_operation[Admin]",
+          "result": "PASS",
+          "seconds": "0.252"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_real_native_unsigned_case_readonly_get_and_same_case_signature_with_retries",
+          "result": "PASS",
+          "seconds": "1.574"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[original_owner-aisina]",
+          "result": "PASS",
+          "seconds": "0.931"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[request_key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+          "result": "PASS",
+          "seconds": "0.903"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[csrf_token-bad]",
+          "result": "PASS",
+          "seconds": "0.892"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_forged_open_envelope_is_rejected_without_creation[signature-bad]",
+          "result": "PASS",
+          "seconds": "0.894"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_signature_target_peer_and_unsigned_confirmation_are_server_checked",
+          "result": "PASS",
+          "seconds": "0.986"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_lost_signature_ack_keeps_exact_form_for_retry",
+          "result": "PASS",
+          "seconds": "1.022"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[open]",
+          "result": "PASS",
+          "seconds": "0.861"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_failed_get_is_controlled_and_does_not_claim_saved_state[sign]",
+          "result": "PASS",
+          "seconds": "0.961"
+        },
+        {
+          "id": "tests.test_admin_precontract::test_native_own_applicant_intake_and_internal_quote_survive_same_case_signature",
+          "result": "PASS",
+          "seconds": "2.531"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-r11/runs/e630-r11-legacy-postgres.xml",
+      "sha256": "9cfda071986fd4c3ced3f4b620144eade1a26fdd8935cc2797dc84f11cd50811",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "4",
+        "time": "6.197",
+        "timestamp": "2026-10-13T01:12:47.080859+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_contract_signing::test_postgresql_parallel_sessions_never_duplicate_or_return_someone_elses_case[same-request]",
+          "result": "PASS",
+          "seconds": "1.597"
+        },
+        {
+          "id": "tests.test_contract_signing::test_postgresql_parallel_sessions_never_duplicate_or_return_someone_elses_case[other-contact]",
+          "result": "PASS",
+          "seconds": "1.417"
+        },
+        {
+          "id": "tests.test_contract_signing::test_postgresql_parallel_sessions_never_duplicate_or_return_someone_elses_case[foreign-direction]",
+          "result": "PASS",
+          "seconds": "1.427"
+        },
+        {
+          "id": "tests.test_contract_signing::test_postgresql_applied_migration_constraints_and_roundtrip",
+          "result": "PASS",
+          "seconds": "1.380"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-review-r4/review-precontract.xml",
+      "sha256": "a7048a7751bc826754a853856283d511e5c062d10e8641f9831e2b95c6c0b2ce",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "3",
+        "skipped": "0",
+        "tests": "3",
+        "time": "12.086",
+        "timestamp": "2026-10-13T01:01:46.774046+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_review_precontract::test_exact_open_retry_after_assignment_disagreement_is_historical_not_fresh",
+          "result": "FAILURE",
+          "seconds": "1.390"
+        },
+        {
+          "id": "tests.test_review_precontract::test_malformed_signed_event_yields_controlled_failure_and_preserves_form",
+          "result": "FAILURE",
+          "seconds": "1.148"
+        },
+        {
+          "id": "tests.test_review_precontract::test_altered_signed_event_stage_cannot_be_replayed_as_valid_evidence",
+          "result": "FAILURE",
+          "seconds": "1.127"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-review-r6/review-corrections.xml",
+      "sha256": "861bb57000cb6bf13d603452a6897a7dd9fd3670078e61263f09055c8ab08782",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "5",
+        "time": "12.075",
+        "timestamp": "2026-10-13T01:04:52.675314+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_review_precontract::test_exact_open_retry_after_assignment_disagreement_is_historical_not_fresh",
+          "result": "PASS",
+          "seconds": "1.196"
+        },
+        {
+          "id": "tests.test_review_precontract::test_malformed_signed_event_yields_controlled_failure_and_preserves_form",
+          "result": "PASS",
+          "seconds": "0.938"
+        },
+        {
+          "id": "tests.test_review_precontract::test_altered_signed_event_stage_cannot_be_replayed_as_valid_evidence",
+          "result": "PASS",
+          "seconds": "0.949"
+        },
+        {
+          "id": "tests.test_review_precontract_partial::test_partial_or_malformed_signature_evidence_fails_with_retained_form[missing_signed_time]",
+          "result": "PASS",
+          "seconds": "0.921"
+        },
+        {
+          "id": "tests.test_review_precontract_partial::test_partial_or_malformed_signature_evidence_fails_with_retained_form[invalid_retained_owner]",
+          "result": "FAILURE",
+          "seconds": "1.005"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-review-r8/review-final.xml",
+      "sha256": "c0ba7b3c42a6aeaa98963d3f088d6016bbed7c592a413c70d2436efdab314d3e",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "8",
+        "time": "14.265",
+        "timestamp": "2026-10-13T01:07:55.447664+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_review_precontract::test_exact_open_retry_after_assignment_disagreement_is_historical_not_fresh",
+          "result": "PASS",
+          "seconds": "1.434"
+        },
+        {
+          "id": "tests.test_review_precontract::test_malformed_signed_event_yields_controlled_failure_and_preserves_form",
+          "result": "PASS",
+          "seconds": "1.070"
+        },
+        {
+          "id": "tests.test_review_precontract::test_altered_signed_event_stage_cannot_be_replayed_as_valid_evidence",
+          "result": "PASS",
+          "seconds": "1.003"
+        },
+        {
+          "id": "tests.test_review_precontract_partial::test_partial_or_malformed_signature_evidence_fails_with_retained_form[missing_signed_time]",
+          "result": "PASS",
+          "seconds": "1.176"
+        },
+        {
+          "id": "tests.test_review_precontract_partial::test_partial_or_malformed_signature_evidence_fails_with_retained_form[invalid_retained_owner]",
+          "result": "PASS",
+          "seconds": "1.310"
+        },
+        {
+          "id": "tests.test_review_precontract_lifecycle::test_historical_open_and_signature_survive_archive_stage_owner_and_amount_changes",
+          "result": "PASS",
+          "seconds": "0.455"
+        },
+        {
+          "id": "tests.test_review_precontract_lifecycle::test_global_open_key_collision_never_grants_peer_case_access",
+          "result": "PASS",
+          "seconds": "0.311"
+        },
+        {
+          "id": "tests.test_review_precontract_lifecycle::test_failed_opening_receipt_rolls_back_new_case_only",
+          "result": "PASS",
+          "seconds": "0.263"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-audit-r6/audit-integrity.xml",
+      "sha256": "5e53deccf3e98fd67e01c8e48cbbd5ea5a54ea56cd19637d65f0885bb466afa6",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "2",
+        "skipped": "0",
+        "tests": "3",
+        "time": "2.365",
+        "timestamp": "2026-10-13T01:04:54.764606+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_audit_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[revision]",
+          "result": "FAILURE",
+          "seconds": "0.349"
+        },
+        {
+          "id": "tests.test_audit_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[owner_shape]",
+          "result": "FAILURE",
+          "seconds": "0.220"
+        },
+        {
+          "id": "tests.test_audit_precontract_integrity::test_cancelled_signature_rolls_back_own_changes_and_preserves_caller",
+          "result": "PASS",
+          "seconds": "0.287"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-audit-r8/audit-final-targeted.xml",
+      "sha256": "550f72e1b5fb8261f47406d939812fcdb2231052051689813f6ce3ca7dfb2beb",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "6",
+        "time": "14.675",
+        "timestamp": "2026-10-13T01:07:04.418199+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_audit_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[revision]",
+          "result": "PASS",
+          "seconds": "0.413"
+        },
+        {
+          "id": "tests.test_audit_precontract_integrity::test_rehashed_impossible_signature_receipt_is_refused[owner_shape]",
+          "result": "PASS",
+          "seconds": "0.213"
+        },
+        {
+          "id": "tests.test_audit_precontract_integrity::test_cancelled_signature_rolls_back_own_changes_and_preserves_caller",
+          "result": "PASS",
+          "seconds": "0.220"
+        },
+        {
+          "id": "tests.test_audit_precontract_postgres::test_archive_committed_during_actual_lock_wait_is_seen_then_historical_retries_survive",
+          "result": "PASS",
+          "seconds": "4.385"
+        },
+        {
+          "id": "tests.test_audit_precontract_postgres::test_actual_pg_cancelled_task_write_keeps_callers_write_and_allows_exact_retry",
+          "result": "PASS",
+          "seconds": "1.351"
+        },
+        {
+          "id": "tests.test_audit_precontract_postgres::test_old_contract_receipt_and_new_namespaces_coexist_without_cross_case_key_disclosure",
+          "result": "PASS",
+          "seconds": "1.415"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-audit-r8/audit-actor-first.xml",
+      "sha256": "2b346f382a220cc4f43d0d82a150752ca8f3f6a18d5e3cdf89e1b31ed56a5051",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "1",
+        "time": "1.627",
+        "timestamp": "2026-10-13T01:09:04.556089+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_audit_precontract_integrity::test_accepted_normalized_actor_can_immediately_retry_and_sign_own_opening",
+          "result": "FAILURE",
+          "seconds": "0.292"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-review-r11/review-final-r11.xml",
+      "sha256": "004904136b49e79a401d0690b79919b983c75ae44ab0f28f0a51f2deca8d2208",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "13",
+        "time": "13.659",
+        "timestamp": "2026-10-13T01:13:15.204013+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_review_precontract::test_exact_open_retry_after_assignment_disagreement_is_historical_not_fresh",
+          "result": "PASS",
+          "seconds": "1.090"
+        },
+        {
+          "id": "tests.test_review_precontract::test_malformed_signed_event_yields_controlled_failure_and_preserves_form",
+          "result": "PASS",
+          "seconds": "0.902"
+        },
+        {
+          "id": "tests.test_review_precontract::test_altered_signed_event_stage_cannot_be_replayed_as_valid_evidence",
+          "result": "PASS",
+          "seconds": "1.028"
+        },
+        {
+          "id": "tests.test_review_precontract_partial::test_partial_or_malformed_signature_evidence_fails_with_retained_form[missing_signed_time]",
+          "result": "PASS",
+          "seconds": "0.909"
+        },
+        {
+          "id": "tests.test_review_precontract_partial::test_partial_or_malformed_signature_evidence_fails_with_retained_form[invalid_retained_owner]",
+          "result": "PASS",
+          "seconds": "0.972"
+        },
+        {
+          "id": "tests.test_review_precontract_lifecycle::test_historical_open_and_signature_survive_archive_stage_owner_and_amount_changes",
+          "result": "PASS",
+          "seconds": "0.251"
+        },
+        {
+          "id": "tests.test_review_precontract_lifecycle::test_global_open_key_collision_never_grants_peer_case_access",
+          "result": "PASS",
+          "seconds": "0.311"
+        },
+        {
+          "id": "tests.test_review_precontract_lifecycle::test_failed_opening_receipt_rolls_back_new_case_only",
+          "result": "PASS",
+          "seconds": "0.232"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_opening_must_describe_actual_first_workflow_stage_and_initial_revision[revision]",
+          "result": "PASS",
+          "seconds": "0.192"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_opening_must_describe_actual_first_workflow_stage_and_initial_revision[stage]",
+          "result": "PASS",
+          "seconds": "0.196"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_noncanonical_actor_refuses_before_committing_unusable_operation[ADMIN]",
+          "result": "PASS",
+          "seconds": "0.260"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_noncanonical_actor_refuses_before_committing_unusable_operation[ admin ]",
+          "result": "PASS",
+          "seconds": "0.185"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_noncanonical_actor_refuses_before_committing_unusable_operation[Admin]",
+          "result": "PASS",
+          "seconds": "0.233"
+        }
+      ]
+    },
+    {
+      "path": "runs/e6-30-audit-r11/audit-last-delta.xml",
+      "sha256": "4ee0cd96537707ceb1fd0c56b24a67d32dc8d28cc73758ae43e5073066106e6d",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "5",
+        "time": "2.953",
+        "timestamp": "2026-10-13T01:11:15.996156+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      },
+      "cases": [
+        {
+          "id": "tests.test_audit_precontract_integrity::test_noncanonical_actor_is_rejected_before_acceptance_and_canonical_flow_still_recovers[ADMIN]",
+          "result": "PASS",
+          "seconds": "0.405"
+        },
+        {
+          "id": "tests.test_audit_precontract_integrity::test_noncanonical_actor_is_rejected_before_acceptance_and_canonical_flow_still_recovers[Admin]",
+          "result": "PASS",
+          "seconds": "0.313"
+        },
+        {
+          "id": "tests.test_audit_precontract_integrity::test_noncanonical_actor_is_rejected_before_acceptance_and_canonical_flow_still_recovers[ admin ]",
+          "result": "PASS",
+          "seconds": "0.270"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_opening_must_describe_actual_first_workflow_stage_and_initial_revision[revision]",
+          "result": "PASS",
+          "seconds": "0.248"
+        },
+        {
+          "id": "tests.test_precontract_integrity::test_opening_must_describe_actual_first_workflow_stage_and_initial_revision[stage]",
+          "result": "PASS",
+          "seconds": "0.226"
+        }
+      ]
+    }
+  ],
+  "artifacts": {
+    "runs/e6-30-r7/runs/e630-browser/open-1365.png": "96b81f02cb5428ea87bc81d1af9680c9b91551e7e127e1fd6d1121f7b15a607f",
+    "runs/e6-30-r7/runs/e630-browser/open-390.png": "27997a5024aaf9eaad16e1795057a30a6840954193b0d78ed06e02198b1f8ebb",
+    "runs/e6-30-r7/runs/e630-browser/recorded-1365.png": "eecb15a152d75cafaac57fc3ce78229d017e8485d4339b68224b036bf4897986",
+    "runs/e6-30-r7/runs/e630-browser/recorded-390.png": "437d9d222d4c93f94ae4d1d13b4bbef8920c1fa4343c0ba87809e847d9dc28ba",
+    "runs/e6-30-r7/runs/e630-browser/sign-1365.png": "9e3ac2d2cb50bfbda3fa1b8f949d0d8fcc22bdac3a9e926f398d75648154d26c",
+    "runs/e6-30-r7/runs/e630-browser/sign-390.png": "b93931a2e6944611657d8c7745cd544a14b09b8fed5487ba40808126389df8a2",
+    "runs/e6-30-r7/runs/e630-recovery.json": "bd9bfb7289cc23dc23ca84c20be2ce77a13e11149ef04339b37fabb4b8a6f413",
+    "runs/e6-30-r10/runs/e630-recovery.json": "aa827db3b3c8493462be4f12af1ab1eec9cbd85d81e61b004223bc8235c35c1b"
+  },
+  "visual_acceptance": "Root inspected all six R7 mobile-dark/desktop-light no-JS opening/signature/recorded screens; PASS. R5 empty signed form corrected.",
+  "limitations": [
+    "Local reviewed slice only; J01/J02/J03/J05 remain UNKNOWN and score96.",
+    "No source approvals, client offers, payments, production migrations, deployment or live messages.",
+    "Unrelated UI base/boards/readability changes excluded from commit; browser context includes those preserved user changes.",
+    "Runs overlap and are mapped by snapshot; not a single whole-project final suite."
+  ],
+  "code_revision": "d57cb059bbe78ca832478eee52cc83cc8738c597",
+  "verified_commit_files": 16,
+  "reviews": {
+    "ai/reviews/2026-10-13-e6-30-independent-review.md": {
+      "verdict": "APPROVE",
+      "sha256": "a7584c4ec55aa68a97d284a4f9f2e68f62aafdde2bfa20c89b969b642f9b6f06"
+    },
+    "ai/reviews/2026-10-13-e6-30-final-audit.md": {
+      "verdict": "GO",
+      "sha256": "91174341e0cc53a49f1a26f15a63f83aa8ae2a2a48af69e56898b8f7a7265744"
+    }
+  }
+}

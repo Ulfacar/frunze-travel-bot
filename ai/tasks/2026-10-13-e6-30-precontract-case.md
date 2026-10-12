@@ -74,3 +74,34 @@ which the established money API correctly rejects. Fixture changed to current
 owner; no permission weakened. R2domain17PASS4.94s, R3native/domain24PASS16.47s.
 All are synthetic SQLite in env-free archives. Real PostgreSQL races/recovery,
 browser and independent review/final audit still pending. No criterion awarded.
+
+## Final verification checkpoint — 12 October 19:12 UTC
+
+Exact R11 candidate,16 scoped files, independent final verdicts pending. Real
+native applicant/application creation, individual profile save/reload, internal
+quote save and same-case signature now exercised with preserved IDs and receipts.
+R10 core/native/10actualPG45PASS48.75s includes fresh-schema full-table binaryCOPY
+recovery with sequences, legacy records and later writes. Final R11 canonical
+identity/integrity/native18PASS20.27s. R7 mobile390dark/desktop1365light noJS and
+recorded-contract state have six root-inspected PASS screenshots.
+
+Reviewer and auditor reproduced historical retry, malformed evidence, impossible
+revision/owner and noncanonical actor defects. Fixes are mapped by exact snapshot;
+original failures remain evidence. After repeated evidence-validation findings,
+root reassessed the command/event contract as a whole: canonical actor is required
+before any write; original opening revision/workflow/stage and signature result
+revision are deterministic; current mutable owner/price remain separate. This
+avoids altering legacy signing or rejecting legitimate historical price changes.
+One builder NULL-versus-empty reason regression was caught and corrected; the
+original case_opened reason remains NULL. No stored history is rewritten.
+
+Handoff `ai/handoffs/2026-10-12-1910-e6-30-precontract-case.md`; evidence
+`ai/reviews/2026-10-13-e6-30-snapshot-evidence.json`. E630B pre-audit is separate.
+All four remaining PDF criteria and real owner/pilot gates remain open.
+
+## Final acceptance
+
+DONE for reviewed local E630A. Code `d57cb059bbe78ca832478eee52cc83cc8738c597`, exact16 R12/root/index/commit
+identities. Independent APPROVE and separate GO; final evidence/handoff above.
+R11 final18PASS and legacyactualPG4PASS; reviewer13PASS; auditor6+5PASS with
+separate run attribution. No criterion points awarded. Continue E630B task.
