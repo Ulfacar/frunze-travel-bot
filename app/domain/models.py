@@ -1745,7 +1745,7 @@ class KnowledgePublicationEvent(DomainBase):
         UniqueConstraint("set_id", "request_key", name="uq_knowledge_publication_request"),
         ForeignKeyConstraint(["version_id", "set_id"], ["knowledge_versions.id", "knowledge_versions.set_id"], name="fk_knowledge_publication_version"),
         ForeignKeyConstraint(["previous_id", "set_id"], ["knowledge_publication_events.id", "knowledge_publication_events.set_id"], name="fk_knowledge_publication_previous"),
-        CheckConstraint("revision BETWEEN 1 AND 250", name="ck_knowledge_publication_revision"),
+        CheckConstraint("revision BETWEEN 1 AND 251 AND (revision <= 250 OR action = 'withdraw')", name="ck_knowledge_publication_revision"),
         CheckConstraint("action IN ('review','approve','activate','rollback','withdraw')", name="ck_knowledge_publication_action"),
         CheckConstraint("(revision = 1 AND previous_id IS NULL) OR (revision > 1 AND previous_id IS NOT NULL AND previous_id < id)", name="ck_knowledge_publication_previous"),
         CheckConstraint("length(request_hash) = 64 AND length(snapshot_hash) = 64", name="ck_knowledge_publication_hashes"),

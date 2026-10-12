@@ -47,7 +47,10 @@ def _signature(request, actor, fields):
 
 def _envelope(request, actor, report, action, policy):
     manifest = report['lifecycle_manifest'] if action == 'withdraw' else report['manifest']
-    fields = dict(zip(META, (str(report['version']['id']), ','.join(u['unit_id'] for u in manifest['units']),
+    # A domain publication may contain 5,000 units. Keep native input bounded;
+    # the signed full-manifest hash and CAS pin the server-read withdrawal list.
+    selected = report['manifest'] if action == 'withdraw' else manifest
+    fields = dict(zip(META, (str(report['version']['id']), ','.join(u['unit_id'] for u in selected['units']),
         str(report['current_revision']), action, service._hash(manifest), service._hash(service._policy(policy)), secrets.token_hex(24))))
     fields['_kp_signature'] = _signature(request, actor, fields)
     fields['_kp_csrf'] = request.session['kg_publication_csrf']
@@ -89,8 +92,9 @@ async def _render(request, manager, actor, *, version=None, units='', status=200
             actions = ['withdraw'] if state == 'active' else ['review']
             if not any(item['reasons'] for item in report['availability']) and report['manifest'] == report['lifecycle_manifest']:
                 actions += {'review':['approve'], 'approved':['activate'], 'retired':['rollback']}.get(state, [])
-            if authority and retry is None and report['current_revision'] < service.MAX_REVISIONS:
-                forms = {action:_envelope(request, actor, report, action, policy) for action in actions}
+            if authority and retry is None:
+                forms = {action:_envelope(request, actor, report, action, policy) for action in actions
+                         if report['withdrawal_capacity_available' if action == 'withdraw' else 'normal_capacity_available']}
         else:
             catalog = await knowledge_decisions.review_catalog(entry._engine(), actor=actor, version_id=version)
             version = catalog['version_id']
@@ -127,9 +131,12 @@ async def publication_submit(request:Request, manager=Depends(ar.require_full_ad
     version = int(values['_kp_version']); units = values['_kp_units']
     try:
         if values['confirmed'] != 'yes': raise EntryStorageInvalid('confirmation_required')
+        ids = _ids(units)
+        if values['_kp_action'] == 'withdraw':
+            ids = None  # domain resolves original retry/current manifest under its set lock
         await service.publish_knowledge(entry._engine(), actor=actor, policy=policy, version_id=version,
             action=values['_kp_action'], expected_revision=int(values['_kp_revision']), request_key=values['_kp_key'],
-            unit_ids=_ids(units), manifest_hash=values['_kp_manifest'])
+            unit_ids=ids, manifest_hash=values['_kp_manifest'])
     except PermissionDenied: raise HTTPException(403, headers=HEADERS) from None
     except EntryStorageConflict:
         return await _render(request, manager, actor, version=version, units=units, status=409,

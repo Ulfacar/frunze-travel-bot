@@ -42,7 +42,9 @@ def test_migrated_decision_scope_and_populated_downgrade(config):
     from app.domain.knowledge_import import create_kg_entry_set,import_bundle
     from tests.test_admin_kg_entry import ADMIN,FIX
     from tests.test_knowledge_decisions import data
-    command.upgrade(config,CURRENT)
+    # Current domain code also guards against later publication events (0024+);
+    # write through the head schema, then check the 0023 constraints on its own.
+    command.upgrade(config,'head')
     engine=create_async_engine(config.get_main_option('sqlalchemy.url').replace('sqlite:','sqlite+aiosqlite:',1),poolclass=NullPool)
     def enable(dbapi,record):
         cursor=dbapi.cursor();cursor.execute('PRAGMA foreign_keys=ON');cursor.close()
@@ -55,14 +57,22 @@ def test_migrated_decision_scope_and_populated_downgrade(config):
             args=dict(actor=ADMIN,version_id=imported.version_id,unit_id='KG.DL.TEST')
             row=await reviews.record_knowledge_decision(engine,**args,expected_revision=0,request_key='review',decision=data())
             assert (await reviews.read_knowledge_decisions(engine,**args))['selected']==row
+            return imported.version_id,row['id']
+        finally:await engine.dispose()
+    version_id,row_id=asyncio.run(run())
+    command.downgrade(config,CURRENT)
+    engine=create_async_engine(config.get_main_option('sqlalchemy.url').replace('sqlite:','sqlite+aiosqlite:',1),poolclass=NullPool)
+    event.listen(engine.sync_engine,'connect',enable)
+    async def constraints():
+        try:
             sql="INSERT INTO knowledge_decisions(version_id,unit_id,revision,previous_id,unit_hash,bundle_hash,request_key,request_hash,snapshot_hash,command,created_by,created_at) SELECT :version,:unit,:revision,:previous,unit_hash,bundle_hash,:key,request_hash,snapshot_hash,command,created_by,created_at FROM knowledge_decisions WHERE id=:id"
-            defaults=dict(version=imported.version_id,unit='KG.DL.TEST',revision=2,previous=row['id'],key='second',id=row['id'])
+            defaults=dict(version=version_id,unit='KG.DL.TEST',revision=2,previous=row_id,key='second',id=row_id)
             for override in ({'version':999},{'unit':'KG.DL.OTHER'},{'previous':999},{'revision':1,'previous':None},
                              {'revision':251},{'key':'review'}):
                 async with engine.begin() as conn:
                     with pytest.raises(IntegrityError):await conn.execute(text(sql),{**defaults,**override})
         finally:await engine.dispose()
-    asyncio.run(run())
+    asyncio.run(constraints())
     with pytest.raises(RuntimeError,match='preserve populated'):command.downgrade(config,PREVIOUS)
     engine=create_engine(config.get_main_option('sqlalchemy.url'))
     try:

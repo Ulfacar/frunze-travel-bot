@@ -7,7 +7,7 @@ from sqlalchemy import select
 from app.domain import entry_applications as transactions
 from app.domain.entry_calculations import _bundle
 from app.domain.entry_storage import EntryStorageConflict, EntryStorageInvalid, _authorize, _hash, _id, _key, _plain
-from app.domain.models import KnowledgeDecision, KnowledgeImport, KnowledgeSet, KnowledgeVersion, _now
+from app.domain.models import KnowledgeDecision, KnowledgeImport, KnowledgePublicationEvent, KnowledgeSet, KnowledgeVersion, _now
 from app.knowledge.review import canonical
 
 MAX_REVISIONS = 250
@@ -33,7 +33,7 @@ def normalize(data, *, cutoff):
         raise EntryStorageInvalid('invalid_knowledge_reason')
     try:
         verified=date.fromisoformat(data['verified_on'])
-        if verified.isoformat()!=data['verified_on'] or verified>cutoff:raise ValueError
+        if verified.isoformat()!=data['verified_on'] or cutoff is not None and verified>cutoff:raise ValueError
         if data['verdict']=='confirmed':
             due=date.fromisoformat(data['review_due_on'])
             if due.isoformat()!=data['review_due_on'] or due<verified:raise ValueError
@@ -100,7 +100,8 @@ async def record_knowledge_decision(engine, *, actor, version_id, unit_id: str, 
     _authorize(actor);_id(version_id);_unit_id(unit_id);_key(request_key)
     if type(expected_revision) is not int or not 0<=expected_revision<MAX_REVISIONS:
         raise EntryStorageInvalid('invalid_knowledge_decision_revision')
-    decision=normalize(decision,cutoff=transactions._today())
+    # Validate shape before I/O; time validity follows the original-receipt lookup.
+    decision=normalize(decision,cutoff=None)
     command=_command(version_id,unit_id,expected_revision,decision,actor.manager_id)
     async def write(session):
         version,bundle=await _version(session,version_id,lock=True);unit=_unit(bundle,unit_id)
@@ -110,9 +111,20 @@ async def record_knowledge_decision(engine, *, actor, version_id, unit_id: str, 
             if old.request_hash!=_hash(command):raise EntryStorageConflict('knowledge_decision_request_reused')
             return _view(old)
         if len(rows)!=expected_revision:raise EntryStorageConflict('knowledge_decision_revision_changed')
+        occurred_at = _now()
+        # Publication replay uses <= timestamps. A later-inserted decision at
+        # the same instant would rewrite an already approved historical manifest.
+        latest_publication = await session.scalar(select(KnowledgePublicationEvent).where(
+            KnowledgePublicationEvent.set_id == version.set_id)
+            .order_by(KnowledgePublicationEvent.revision.desc()).limit(1))
+        stamp = transactions._utc(occurred_at)
+        if (rows and stamp < transactions._utc(rows[-1].created_at) or
+                latest_publication and stamp <= transactions._utc(latest_publication.created_at)):
+            raise EntryStorageInvalid('knowledge_review_clock_before_history')
+        normalize(decision, cutoff=transactions._local_day(occurred_at))
         row=KnowledgeDecision(version_id=version_id,unit_id=unit_id,revision=len(rows)+1,
             previous_id=rows[-1].id if rows else None,unit_hash=_hash(unit),bundle_hash=version.bundle_hash,
-            request_key=request_key,request_hash=_hash(command),command=command,created_by=actor.manager_id,created_at=_now())
+            request_key=request_key,request_hash=_hash(command),command=command,created_by=actor.manager_id,created_at=occurred_at)
         payload=_payload(row)
         if size+len(canonical(payload).encode())>MAX_BYTES:raise EntryStorageInvalid('knowledge_decision_history_limit')
         row.snapshot_hash=_hash(payload);session.add(row);await session.flush()

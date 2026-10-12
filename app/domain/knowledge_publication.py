@@ -15,6 +15,7 @@ from app.knowledge.review import canonical, compare_snapshots
 
 MAX_REVISIONS = 250
 MAX_BYTES = 16 * 1024 * 1024
+MAX_EVENT_BYTES = 4 * 1024 * 1024
 ACTIONS = ('review', 'approve', 'activate', 'rollback', 'withdraw')
 
 
@@ -140,8 +141,8 @@ async def _history(context):
     session, target = context.session, context.target
     rows = list((await session.scalars(select(KnowledgePublicationEvent).where(
         KnowledgePublicationEvent.set_id == target.id).order_by(KnowledgePublicationEvent.revision)
-        .limit(MAX_REVISIONS + 1))).all())
-    if len(rows) > MAX_REVISIONS:
+        .limit(MAX_REVISIONS + 2))).all())
+    if len(rows) > MAX_REVISIONS + 1:
         raise EntryStorageInvalid('publication_history_limit')
     states = {}; manifests = {}; releases = set(); policies = {}; active = None; previous = None; size = 0
     for revision, row in enumerate(rows, 1):
@@ -177,9 +178,15 @@ async def _history(context):
                 raise ValueError
         except (KeyError, TypeError, ValueError, EntryStorageConflict):
             raise EntryStorageInvalid('publication_history_integrity_failed') from None
-        size += len(canonical(_payload(row)).encode())
-        if size > MAX_BYTES:
-            raise EntryStorageInvalid('publication_history_limit')
+        event_size = len(canonical(_payload(row)).encode())
+        previous_size = size
+        size += event_size
+        if revision > MAX_REVISIONS or size > MAX_BYTES:
+            # One final withdrawal recovers formerly full histories. It cannot
+            # be used for another lifecycle action or followed by another event.
+            if (row.action != 'withdraw' or revision != len(rows) or
+                    previous_size > MAX_BYTES or event_size > MAX_EVENT_BYTES):
+                raise EntryStorageInvalid('publication_history_limit')
         previous = row
     versions = list((await session.scalars(select(KnowledgeVersion).where(KnowledgeVersion.set_id == target.id))).all())
     if target.active_version_id != active or any(v.status != states.get(v.id, 'draft') for v in versions):
@@ -214,6 +221,8 @@ async def publication_preview(engine, *, actor, version_id, unit_ids):
                     Product.direction == 'visa', ServiceCase.outcome.is_(None)))
         affected = list((await session.scalars(union(*queries).order_by('case_id').limit(51))).all())
         return dict(version=dict(id=version.id, number=version.version, status=version.status),
+            normal_capacity_available=len(history['rows']) < MAX_REVISIONS-1 and history['size'] < MAX_BYTES-MAX_EVENT_BYTES,
+            withdrawal_capacity_available=len(history['rows']) <= MAX_REVISIONS and history['size'] <= MAX_BYTES,
             current_revision=len(history['rows']), active_version_id=history['active'], manifest=manifest,
             manifest_hash=_hash(manifest), availability=availability, selected_count=len(ids),
             excluded_count=len(bundle['units'])-len(ids), affected_case_ids=affected[:50], affected_has_more=len(affected)>50,
@@ -227,29 +236,44 @@ async def publication_preview(engine, *, actor, version_id, unit_ids):
 
 async def publish_knowledge(engine, *, actor, policy, version_id, action, expected_revision, request_key,
                             unit_ids, manifest_hash):
-    authorize_publisher(actor, policy); _id(version_id); _key(request_key); ids = _identifiers(unit_ids)
-    if (action not in ACTIONS or type(expected_revision) is not int or not 0 <= expected_revision < MAX_REVISIONS or
+    authorize_publisher(actor, policy); _id(version_id); _key(request_key)
+    # Native withdrawal pins the full manifest hash while its visible selection
+    # stays bounded. Resolve the immutable original list before retry comparison.
+    ids = None if action == 'withdraw' and unit_ids is None else _identifiers(unit_ids)
+    if (action not in ACTIONS or type(expected_revision) is not int or not 0 <= expected_revision <= MAX_REVISIONS or
         not isinstance(manifest_hash, str) or len(manifest_hash) != 64):
         raise EntryStorageInvalid('invalid_publication_command')
-    command = dict(version_id=version_id, action=action, expected_revision=expected_revision, unit_ids=ids,
-                   manifest_hash=manifest_hash, actor=actor.manager_id, policy=_policy(policy))
     async def write(session):
         context = await _context(session, version_id, write=True)
         history = await _history(context)
         old = next((row for row in history['rows'] if row.request_key == request_key), None)
+        resolved_ids = ids
+        if resolved_ids is None:
+            pinned = old.command['unit_ids'] if old else [u['unit_id'] for u in history['manifests'].get(version_id, {}).get('units', [])]
+            resolved_ids = _identifiers(_plain(pinned))
+        command = dict(version_id=version_id, action=action, expected_revision=expected_revision, unit_ids=resolved_ids,
+                       manifest_hash=manifest_hash, actor=actor.manager_id, policy=_policy(policy))
         if old:
             if old.request_hash != _hash(command):
                 raise EntryStorageConflict('publication_request_reused')
             return _view(old)
         if len(history['rows']) != expected_revision:
             raise EntryStorageConflict('publication_revision_changed')
+        count_limit = MAX_REVISIONS+1 if action == 'withdraw' else MAX_REVISIONS-1
+        if len(history['rows']) >= count_limit or history['size'] > MAX_BYTES:
+            raise EntryStorageInvalid('publication_history_limit')
         manifest = (history['manifests'].get(version_id) if action == 'withdraw' else
-                    await context.manifest(version_id, ids))
-        if manifest is None or _hash(manifest) != manifest_hash or [u['unit_id'] for u in manifest['units']] != ids:
+                    await context.manifest(version_id, resolved_ids))
+        if manifest is None or _hash(manifest) != manifest_hash or [u['unit_id'] for u in manifest['units']] != resolved_ids:
             raise EntryStorageConflict('publication_manifest_changed')
         occurred_at = _now()
         if history['rows'] and _utc(occurred_at) < _utc(history['rows'][-1].created_at):
             raise EntryStorageInvalid('publication_clock_before_history')
+        if action != 'withdraw':
+            for identifier in resolved_ids:
+                reviews = await context.reviews(version_id, decisions._unit((await context.source(version_id))[1], identifier))
+                if any(_utc(review.created_at) > _utc(occurred_at) for review in reviews):
+                    raise EntryStorageInvalid('publication_clock_before_review')
         if action in ('approve', 'activate', 'rollback'):
             if history['policies'].get(version_id) != _policy(policy):
                 raise EntryStorageConflict('publication_policy_changed')
@@ -260,7 +284,9 @@ async def publish_knowledge(engine, *, actor, policy, version_id, action, expect
         row = KnowledgePublicationEvent(set_id=context.target.id, version_id=version_id, revision=expected_revision+1,
             previous_id=history['rows'][-1].id if history['rows'] else None, action=action, request_key=request_key,
             request_hash=_hash(command), command=command, snapshot=manifest, created_by=actor.manager_id, created_at=occurred_at)
-        if history['size'] + len(canonical(_payload(row)).encode()) > MAX_BYTES:
+        event_size = len(canonical(_payload(row)).encode())
+        size_limit = MAX_BYTES+MAX_EVENT_BYTES if action == 'withdraw' else MAX_BYTES-MAX_EVENT_BYTES
+        if event_size > MAX_EVENT_BYTES or history['size'] + event_size > size_limit:
             raise EntryStorageInvalid('publication_history_limit')
         row.snapshot_hash = _hash(_payload(row)); session.add(row); await session.flush()
         session.add_all(KnowledgePublicationUnit(event_id=row.id, version_id=version_id, **unit) for unit in manifest['units'])
@@ -277,49 +303,61 @@ async def publish_knowledge(engine, *, actor, policy, version_id, action, expect
     return await transactions._run(engine, write)
 
 
+async def _runtime_context(session):
+    """Hold the existing set read lock through a caller's enclosing transaction."""
+    target = await session.scalar(select(KnowledgeSet).where(KnowledgeSet.code == 'kg_entry')
+        .with_for_update(read=True, of=KnowledgeSet))
+    if target is None or (target.jurisdiction, target.domain) != ('KG', 'entry'):
+        raise EntryStorageInvalid('knowledge_set_unavailable')
+    context = _Context(session, target)
+    return context, await _history(context)
+
+
+async def _runtime_in_session(context, history, *, policy, ids):
+    """Internal composition only; the enclosing service must authorize its actor."""
+    session = context.session
+    active = history['active']
+    if active is None:
+        return dict(version_id=None, available=[], unavailable=[dict(unit_id=i, reasons=['no_active_publication']) for i in ids])
+    manifest = history['manifests'][active]
+    version, bundle, _ = await context.source(active)
+    checked_at = _now()
+    if _utc(history['rows'][-1].created_at) > _utc(checked_at):
+        raise EntryStorageInvalid('publication_clock_before_history')
+    projection = await session.get(KnowledgeProjection, active)
+    condition_rules = {rule['unit_id']: rule for rule in (_plain(projection.condition_catalog) or {}).get('rules', [])}
+    availability = {item['unit_id']: item['reasons'] for item in await context.availability(active, manifest, at=checked_at)}
+    available = []; unavailable = []
+    policy_matches = isinstance(policy, PublicationPolicy) and history['policies'][active] == _policy(policy)
+    for identifier in ids:
+        reasons = list(availability.get(identifier, ['unit_not_published']))
+        if identifier in availability:
+            reviews = await context.reviews(active, decisions._unit(bundle, identifier))
+            if any(_utc(row.created_at) > _utc(checked_at) for row in reviews):
+                reasons.append('review_record_in_future')
+            if any(_utc(b.created_at) < _utc(a.created_at) for a, b in zip(reviews, reviews[1:])):
+                reasons.append('review_clock_order_invalid')
+        if not policy_matches:
+            reasons.append('publication_policy_unavailable_or_changed')
+        if reasons:
+            unavailable.append(dict(unit_id=identifier, reasons=reasons))
+        else:
+            unit = decisions._unit(bundle, identifier)
+            available.append(dict(unit_id=identifier, kind=unit['kind'], value=unit['value'], title=unit['title'], source_ref=unit['source_ref'],
+                page=unit['page'], section=unit['section'], unit_hash=_hash(unit), bundle_hash=version.bundle_hash,
+                manifest_hash=_hash(manifest), version_id=active, version_number=version.version,
+                version_label=bundle['meta']['version_label'], source_document=bundle['meta']['source_document'],
+                source_hash=version.source_hash, source_text=unit.get('source_text'),
+                condition_rule=condition_rules.get(identifier),
+                effective_from=unit.get('effective_from'), effective_to=unit.get('effective_to'),
+                checked_at=transactions._utc(checked_at)))
+    return dict(version_id=active, available=available, unavailable=unavailable)
+
+
 async def runtime_knowledge(engine, *, actor, policy, unit_ids):
     """Trusted internal adapter. Every caller still needs its existing admin authorization."""
     _authorize(actor); ids = _identifiers(unit_ids, maximum=100)
     async def read(session):
-        target = await session.scalar(select(KnowledgeSet).where(KnowledgeSet.code == 'kg_entry')
-            .with_for_update(read=True, of=KnowledgeSet))
-        if target is None or (target.jurisdiction, target.domain) != ('KG', 'entry'):
-            raise EntryStorageInvalid('knowledge_set_unavailable')
-        context = _Context(session, target); history = await _history(context)
-        active = history['active']
-        if active is None:
-            return dict(version_id=None, available=[], unavailable=[dict(unit_id=i, reasons=['no_active_publication']) for i in ids])
-        manifest = history['manifests'][active]
-        version, bundle, _ = await context.source(active)
-        checked_at = _now()
-        if _utc(history['rows'][-1].created_at) > _utc(checked_at):
-            raise EntryStorageInvalid('publication_clock_before_history')
-        projection = await session.get(KnowledgeProjection, active)
-        condition_rules = {rule['unit_id']: rule for rule in (_plain(projection.condition_catalog) or {}).get('rules', [])}
-        availability = {item['unit_id']: item['reasons'] for item in await context.availability(active, manifest, at=checked_at)}
-        available = []; unavailable = []
-        policy_matches = isinstance(policy, PublicationPolicy) and history['policies'][active] == _policy(policy)
-        for identifier in ids:
-            reasons = list(availability.get(identifier, ['unit_not_published']))
-            if identifier in availability:
-                reviews = await context.reviews(active, decisions._unit(bundle, identifier))
-                if any(_utc(row.created_at) > _utc(checked_at) for row in reviews):
-                    reasons.append('review_record_in_future')
-                if any(_utc(b.created_at) < _utc(a.created_at) for a, b in zip(reviews, reviews[1:])):
-                    reasons.append('review_clock_order_invalid')
-            if not policy_matches:
-                reasons.append('publication_policy_unavailable_or_changed')
-            if reasons:
-                unavailable.append(dict(unit_id=identifier, reasons=reasons))
-            else:
-                unit = decisions._unit(bundle, identifier)
-                available.append(dict(unit_id=identifier, kind=unit['kind'], value=unit['value'], title=unit['title'], source_ref=unit['source_ref'],
-                    page=unit['page'], section=unit['section'], unit_hash=_hash(unit), bundle_hash=version.bundle_hash,
-                    manifest_hash=_hash(manifest), version_id=active, version_number=version.version,
-                    version_label=bundle['meta']['version_label'], source_document=bundle['meta']['source_document'],
-                    source_hash=version.source_hash, source_text=unit.get('source_text'),
-                    condition_rule=condition_rules.get(identifier),
-                    effective_from=unit.get('effective_from'), effective_to=unit.get('effective_to'),
-                    checked_at=transactions._utc(checked_at)))
-        return dict(version_id=active, available=available, unavailable=unavailable)
+        context, history = await _runtime_context(session)
+        return await _runtime_in_session(context, history, policy=policy, ids=ids)
     return await transactions._run(engine, read)
