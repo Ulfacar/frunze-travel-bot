@@ -1,0 +1,894 @@
+{
+  "format": "e628-snapshot-evidence/1",
+  "base": "30b12b1097ddbd8c74a2d54bf38cec1a98647553",
+  "snapshot": "runs\\e6-28-r9",
+  "manifest_lf_sha256": "a73c351149923f3f03a4ad7424aece68e5ba30be00dbe0a0cf9d6e35658f3e26",
+  "revision": "9bd6e926d4649b4d57152e0ce07491353767bc7f",
+  "files": {
+    "app/domain/assessment_policy.py": {
+      "snapshot": "260b5943e3472762d7519efa53fef69cbf7dfc37d62af775d1d1896cd5976235",
+      "working": "260b5943e3472762d7519efa53fef69cbf7dfc37d62af775d1d1896cd5976235",
+      "staged": "260b5943e3472762d7519efa53fef69cbf7dfc37d62af775d1d1896cd5976235",
+      "committed": "260b5943e3472762d7519efa53fef69cbf7dfc37d62af775d1d1896cd5976235"
+    },
+    "app/domain/assessment_interview.py": {
+      "snapshot": "4d8cb4653e80b8957709f24bea10cb10e8e74a73357c2881d6d08f412e651b2b",
+      "working": "4d8cb4653e80b8957709f24bea10cb10e8e74a73357c2881d6d08f412e651b2b",
+      "staged": "4d8cb4653e80b8957709f24bea10cb10e8e74a73357c2881d6d08f412e651b2b",
+      "committed": "4d8cb4653e80b8957709f24bea10cb10e8e74a73357c2881d6d08f412e651b2b"
+    },
+    "app/domain/assessment_rules.py": {
+      "snapshot": "885dbf8166b00ec8f0a445f41ec13b2687dc797878b8dba692ee3a95ffeba8ae",
+      "working": "885dbf8166b00ec8f0a445f41ec13b2687dc797878b8dba692ee3a95ffeba8ae",
+      "staged": "885dbf8166b00ec8f0a445f41ec13b2687dc797878b8dba692ee3a95ffeba8ae",
+      "committed": "885dbf8166b00ec8f0a445f41ec13b2687dc797878b8dba692ee3a95ffeba8ae"
+    },
+    "app/domain/connected_qualification.py": {
+      "snapshot": "eb5d723d777fb56ef8df48eb11d596f29c2b5e453022761521b8333e1c51ff9c",
+      "working": "eb5d723d777fb56ef8df48eb11d596f29c2b5e453022761521b8333e1c51ff9c",
+      "staged": "eb5d723d777fb56ef8df48eb11d596f29c2b5e453022761521b8333e1c51ff9c",
+      "committed": "eb5d723d777fb56ef8df48eb11d596f29c2b5e453022761521b8333e1c51ff9c"
+    },
+    "app/domain/knowledge_publication.py": {
+      "snapshot": "8afad5371b94d431136675ec7206c9a927559c1a91126bb9501f0d7024b0d811",
+      "working": "8afad5371b94d431136675ec7206c9a927559c1a91126bb9501f0d7024b0d811",
+      "staged": "8afad5371b94d431136675ec7206c9a927559c1a91126bb9501f0d7024b0d811",
+      "committed": "8afad5371b94d431136675ec7206c9a927559c1a91126bb9501f0d7024b0d811"
+    },
+    "app/config.py": {
+      "snapshot": "36bd0b8dab2e5bcdec78d6fcca45775edfcb4b9f2da30a7e8857422b0d8c317c",
+      "working": "36bd0b8dab2e5bcdec78d6fcca45775edfcb4b9f2da30a7e8857422b0d8c317c",
+      "staged": "36bd0b8dab2e5bcdec78d6fcca45775edfcb4b9f2da30a7e8857422b0d8c317c",
+      "committed": "36bd0b8dab2e5bcdec78d6fcca45775edfcb4b9f2da30a7e8857422b0d8c317c"
+    },
+    "app/admin/assessment_copy.py": {
+      "snapshot": "1afcfdc48bdede837adabad60e549c484775079486a9a22e7d91fa8f8ea14586",
+      "working": "1afcfdc48bdede837adabad60e549c484775079486a9a22e7d91fa8f8ea14586",
+      "staged": "1afcfdc48bdede837adabad60e549c484775079486a9a22e7d91fa8f8ea14586",
+      "committed": "1afcfdc48bdede837adabad60e549c484775079486a9a22e7d91fa8f8ea14586"
+    },
+    "app/admin/kg_assessment.py": {
+      "snapshot": "786b75eaab85021dc53d466f9e4029572d72dcefbc5bffaecfa93cd77b3a2a0f",
+      "working": "786b75eaab85021dc53d466f9e4029572d72dcefbc5bffaecfa93cd77b3a2a0f",
+      "staged": "786b75eaab85021dc53d466f9e4029572d72dcefbc5bffaecfa93cd77b3a2a0f",
+      "committed": "786b75eaab85021dc53d466f9e4029572d72dcefbc5bffaecfa93cd77b3a2a0f"
+    },
+    "app/admin/templates/kg_assessment.html": {
+      "snapshot": "833c2b87390e6593a66235fb12c979b849db56932ec94484c470fe802047f6c1",
+      "working": "833c2b87390e6593a66235fb12c979b849db56932ec94484c470fe802047f6c1",
+      "staged": "833c2b87390e6593a66235fb12c979b849db56932ec94484c470fe802047f6c1",
+      "committed": "833c2b87390e6593a66235fb12c979b849db56932ec94484c470fe802047f6c1"
+    },
+    "app/admin/router.py": {
+      "snapshot": "2236adab9ef5b0f778bf294cbf46404471198271221289951c379189e8763234",
+      "working": "2236adab9ef5b0f778bf294cbf46404471198271221289951c379189e8763234",
+      "staged": "2236adab9ef5b0f778bf294cbf46404471198271221289951c379189e8763234",
+      "committed": "2236adab9ef5b0f778bf294cbf46404471198271221289951c379189e8763234"
+    },
+    "app/admin/templates/kg_entry.html": {
+      "snapshot": "930e0327d5c93b4dded436231fb90092e212fe15c8116270aec0792244b6a114",
+      "working": "930e0327d5c93b4dded436231fb90092e212fe15c8116270aec0792244b6a114",
+      "staged": "930e0327d5c93b4dded436231fb90092e212fe15c8116270aec0792244b6a114",
+      "committed": "930e0327d5c93b4dded436231fb90092e212fe15c8116270aec0792244b6a114"
+    },
+    "tests/test_connected_qualification.py": {
+      "snapshot": "9749b5fd92267b42bee6d69db34dab4ad217afc37db862b377492413290ec978",
+      "working": "9749b5fd92267b42bee6d69db34dab4ad217afc37db862b377492413290ec978",
+      "staged": "9749b5fd92267b42bee6d69db34dab4ad217afc37db862b377492413290ec978",
+      "committed": "9749b5fd92267b42bee6d69db34dab4ad217afc37db862b377492413290ec978"
+    },
+    "tests/test_connected_qualification_postgres.py": {
+      "snapshot": "30b405a3ac6c77b9da4ad0f255d7e26f72aa3af1af85941349d9270553202260",
+      "working": "30b405a3ac6c77b9da4ad0f255d7e26f72aa3af1af85941349d9270553202260",
+      "staged": "30b405a3ac6c77b9da4ad0f255d7e26f72aa3af1af85941349d9270553202260",
+      "committed": "30b405a3ac6c77b9da4ad0f255d7e26f72aa3af1af85941349d9270553202260"
+    },
+    "tests/test_admin_kg_assessment.py": {
+      "snapshot": "49c305bfc1c799e732601edf0d6d87fb9d1e3606c6a153db6a5de8672330766a",
+      "working": "49c305bfc1c799e732601edf0d6d87fb9d1e3606c6a153db6a5de8672330766a",
+      "staged": "49c305bfc1c799e732601edf0d6d87fb9d1e3606c6a153db6a5de8672330766a",
+      "committed": "49c305bfc1c799e732601edf0d6d87fb9d1e3606c6a153db6a5de8672330766a"
+    },
+    "tests/browser_kg_assessment.py": {
+      "snapshot": "e60bd1e42b01ce85cdcdab9b89234de7b11c455f0c1a674ba15330eed02ee045",
+      "working": "e60bd1e42b01ce85cdcdab9b89234de7b11c455f0c1a674ba15330eed02ee045",
+      "staged": "e60bd1e42b01ce85cdcdab9b89234de7b11c455f0c1a674ba15330eed02ee045",
+      "committed": "e60bd1e42b01ce85cdcdab9b89234de7b11c455f0c1a674ba15330eed02ee045"
+    }
+  },
+  "runs": [
+    {
+      "artifact": "runs/e6-28-r5/runs/e628-r5.xml",
+      "sha256": "56492b28537f87007b956df44781da7d8cfd5e39f14f2deebbeed3bc7f4224c5",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "10",
+          "time": "288.448",
+          "timestamp": "2026-10-12T21:35:58.177493+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_full_source_empty_history_positive_without_writes",
+          "time": "31.113",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits0-2026-11-10-None-180]",
+          "time": "31.041",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[USA-visits1-2026-11-10-None-60]",
+          "time": "26.685",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[USA-visits2-2026-12-15-assessment_authority_does_not_cover_trip-None]",
+          "time": "24.559",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits3-2026-11-10-planned_stay_exceeds_allowance-180]",
+          "time": "32.398",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits4-2026-11-10-stay_margin_requires_specialist-180]",
+          "time": "32.088",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_missing_authority_never_selects[assessment_policy]",
+          "time": "26.669",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_missing_authority_never_selects[qualification_policy]",
+          "time": "25.726",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_missing_authority_never_selects[interview_policy]",
+          "time": "25.981",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_missing_authority_never_selects[publication_policy]",
+          "time": "25.942",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-28-r6/runs/e628-r6.xml",
+      "sha256": "cdf8dd0adfb326d8ef020d64484c14c168d798acb034cfe4fc1b5aa400c7d6c9",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "10",
+          "time": "339.974",
+          "timestamp": "2026-10-12T21:41:16.181392+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_full_source_empty_history_positive_without_writes",
+          "time": "30.369",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits0-2026-11-10-None-180]",
+          "time": "31.283",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[USA-visits1-2026-11-10-None-60]",
+          "time": "26.971",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[USA-visits2-2026-12-15-planned_stay_exceeds_allowance-60]",
+          "time": "28.314",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits3-2026-11-10-planned_stay_exceeds_allowance-180]",
+          "time": "28.562",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits4-2026-11-10-stay_margin_requires_specialist-180]",
+          "time": "28.394",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_authority_boundaries_never_select",
+          "time": "38.368",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_gates_and_withdrawal",
+          "time": "55.716",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_interview_correction_consent_and_profile_change",
+          "time": "52.300",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_registration_distinctions_and_manual_unknowns",
+          "time": "12.873",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-28-r7/runs/e628-r7-native-pg.xml",
+      "sha256": "4e2d03fb03486c59bfd150cb5934ec4e0ceeea80134c809f2e46007737a53afe",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "6",
+          "time": "233.043",
+          "timestamp": "2026-10-12T21:45:25.283643+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_connected_qualification_postgres",
+          "name": "test_assessment_retains_all_locks_through_result[profile]",
+          "time": "45.392",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification_postgres",
+          "name": "test_assessment_retains_all_locks_through_result[history]",
+          "time": "42.129",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification_postgres",
+          "name": "test_assessment_retains_all_locks_through_result[interview]",
+          "time": "37.194",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification_postgres",
+          "name": "test_assessment_retains_all_locks_through_result[withdraw]",
+          "time": "35.140",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification_postgres",
+          "name": "test_assessment_retains_all_locks_through_result[review]",
+          "time": "36.745",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_assessment",
+          "name": "test_positive_native_no_browser_supplied_authority_and_withdrawal",
+          "time": "28.577",
+          "result": "FAIL"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-28-r8/runs/e628-r8-core-compat.xml",
+      "sha256": "7952f4c18e742036e4c9b027fffe9293caa819eeb762288a91fc158d8971579b",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "54",
+          "time": "601.332",
+          "timestamp": "2026-10-12T21:50:07.857943+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_full_source_empty_history_positive_without_writes",
+          "time": "28.998",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits0-2026-11-10-None-180]",
+          "time": "28.827",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[USA-visits1-2026-11-10-None-60]",
+          "time": "29.414",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[USA-visits2-2026-12-15-planned_stay_exceeds_allowance-60]",
+          "time": "34.315",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[TJK-visits3-2026-11-10-None-120]",
+          "time": "33.671",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits4-2026-11-10-None-180]",
+          "time": "37.744",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits5-2026-12-02-registration_trip_exceeds_exemption-180]",
+          "time": "29.541",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[UZB-visits6-2026-11-10-registration_submission_requires_review-120]",
+          "time": "25.708",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[MDA-visits7-2026-11-10-registration_exemption_unavailable-None]",
+          "time": "25.824",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits8-2026-11-10-planned_stay_exceeds_allowance-180]",
+          "time": "31.898",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_changes_result_and_other_window[RUS-visits9-2026-11-10-stay_margin_requires_specialist-180]",
+          "time": "31.518",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_authority_boundaries_never_select",
+          "time": "39.356",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_personal_history_gates_and_withdrawal",
+          "time": "53.237",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_interview_correction_consent_and_profile_change",
+          "time": "41.943",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_registration_distinctions_and_manual_unknowns",
+          "time": "10.185",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_source_matrix_business_work_family_special_and_material_details",
+          "time": "29.927",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_connected_qualification",
+          "name": "test_case_person_payer_isolation_and_profile_corruption",
+          "time": "16.357",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_candidate_has_current_exact_identity_but_no_eligibility_or_writes",
+          "time": "1.961",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_policy_binding_and_both_date_boundaries[source_hash-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-qualification_policy_source_changed]",
+          "time": "1.803",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_policy_binding_and_both_date_boundaries[projection_hash-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-qualification_policy_source_changed]",
+          "time": "1.971",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_policy_binding_and_both_date_boundaries[review_due_on-2026-10-11-qualification_policy_outside_validity]",
+          "time": "1.770",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_policy_binding_and_both_date_boundaries[review_due_on-2026-11-05-qualification_policy_does_not_cover_trip]",
+          "time": "1.637",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_policy_binding_and_both_date_boundaries[valid_from-2026-11-01-qualification_policy_outside_validity]",
+          "time": "1.762",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_no_executable_authority_or_publication_authority",
+          "time": "1.921",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_stops_expiry_and_unknown_are_never_negative_answers[change0-passport_expires_before_departure]",
+          "time": "1.956",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_stops_expiry_and_unknown_are_never_negative_answers[change1-profile_stop_requires_specialist]",
+          "time": "1.740",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_stops_expiry_and_unknown_are_never_negative_answers[change2-profile_stop_requires_specialist]",
+          "time": "1.722",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_stops_expiry_and_unknown_are_never_negative_answers[change3-profile_stop_requires_specialist]",
+          "time": "1.719",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_stops_expiry_and_unknown_are_never_negative_answers[change4-individual_route_scope_requires_specialist]",
+          "time": "1.865",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_stops_expiry_and_unknown_are_never_negative_answers[change5-individual_route_scope_requires_specialist]",
+          "time": "1.895",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_stops_expiry_and_unknown_are_never_negative_answers[change6-individual_route_scope_requires_specialist]",
+          "time": "1.819",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_stops_expiry_and_unknown_are_never_negative_answers[change7-individual_profile_incomplete]",
+          "time": "1.886",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_latest_personal_scope_and_current_confirmation",
+          "time": "1.874",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_access_before_engine_or_data[None]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_access_before_engine_or_data[actor1]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_access_before_engine_or_data[actor2]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_access_before_engine_or_data[actor3]",
+          "time": "0.002",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_complete_competing_set_and_partial_publication",
+          "time": "2.505",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_overlapping_visa_and_visa_free_routes_require_specialist",
+          "time": "2.201",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_predicate_cannot_silently_remove_source_country_guard",
+          "time": "1.939",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_future_source_expiry_and_review_change",
+          "time": "1.843",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_missing_questions_bounded_in_both_languages",
+          "time": "1.891",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_native_page_defaults_approval_gates_query_scope_and_safe_print",
+          "time": "2.056",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_existing_typed_interview_cannot_be_silently_bypassed",
+          "time": "2.106",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_policy_keeps_immutable_copy_and_rejects_ambiguous_shapes",
+          "time": "1.807",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification",
+          "name": "test_route_product_cannot_change_literal_visa_requirement",
+          "time": "1.661",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification_conditions",
+          "name": "test_conditional_visa_type_must_agree_with_candidate_product[B]",
+          "time": "2.551",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification_conditions",
+          "name": "test_conditional_visa_type_must_agree_with_candidate_product[TS]",
+          "time": "2.587",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification_conditions",
+          "name": "test_conditional_visa_type_must_agree_with_candidate_product[unchecked_month]",
+          "time": "2.457",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification_source_integrity",
+          "name": "test_catalog_cannot_erase_source_restrictions[country_guard]",
+          "time": "1.926",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification_source_integrity",
+          "name": "test_catalog_cannot_erase_source_restrictions[outcome]",
+          "time": "1.947",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification_source_integrity",
+          "name": "test_country_only_policy_cannot_erase_gcc_residence_requirement",
+          "time": "2.332",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification_legacy",
+          "name": "test_current_semantic_conflict_returns_explanation_without_changing_history[ru]",
+          "time": "1.818",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_approved_qualification_legacy",
+          "name": "test_current_semantic_conflict_returns_explanation_without_changing_history[en]",
+          "time": "1.736",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-28-r9/runs/e628-r9-native-browser.xml",
+      "sha256": "b915d43c6b6c724e61f339d581d540f435551f735854196677597e3d7771b164",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "5",
+          "time": "127.266",
+          "timestamp": "2026-10-12T21:51:33.028727+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_admin_kg_assessment",
+          "name": "test_positive_native_no_browser_supplied_authority_and_withdrawal",
+          "time": "35.636",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_assessment",
+          "name": "test_native_service_failure_and_bad_authority_are_no_store",
+          "time": "1.037",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_admin_kg_assessment",
+          "name": "test_profile_field_map_covers_current_schema_and_extra_material_facts",
+          "time": "0.983",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.browser_kg_assessment",
+          "name": "test_actual_assessment_and_withdrawal[390-True-dark-ru]",
+          "time": "41.352",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.browser_kg_assessment",
+          "name": "test_actual_assessment_and_withdrawal[1365-False-light-en]",
+          "time": "40.617",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-28-review-r7/review-r7-controls.xml",
+      "sha256": "40d78641b3b763b3ae919e8598d3125622dada6ff6ae7b495db78b07ae46be3b",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "7",
+          "time": "246.476",
+          "timestamp": "2026-10-12T21:46:11.399678+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_review_assessment_negatives",
+          "name": "test_profile_urgency_is_reconciled_with_interview[None]",
+          "time": "34.443",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_assessment_negatives",
+          "name": "test_profile_urgency_is_reconciled_with_interview[2026-10-20]",
+          "time": "28.891",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_assessment_negatives",
+          "name": "test_profile_urgency_is_reconciled_with_interview[2026-10-01]",
+          "time": "29.173",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_assessment_negatives",
+          "name": "test_personal_history_adversarial_heads_and_recovery",
+          "time": "52.661",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_assessment_negatives",
+          "name": "test_ack_correction_current_policy_and_consent_latch",
+          "time": "39.091",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_assessment_negatives",
+          "name": "test_unmapped_profile_purpose_detail_cannot_be_ignored",
+          "time": "25.509",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_assessment_negatives",
+          "name": "test_unmapped_nested_ban_date_cannot_be_ignored",
+          "time": "28.946",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-28-review-r8/review-r8-in-kg.xml",
+      "sha256": "467f5f6cb1531b3190471ef9d76c8cf694d39812a01f3d523e018a0a9d12cb68",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "1",
+          "time": "20.851",
+          "timestamp": "2026-10-12T21:58:48.094812+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_review_registration_delta",
+          "name": "test_complete_in_kg_profile_has_explicit_scope_referral",
+          "time": "15.170",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-28-review-r8/review-r8-registration.xml",
+      "sha256": "3ebd9aed8a8f30378ea2a7255e3aaacc8df07832b91deaedcfe7d8a526ee9e6f",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "3",
+          "time": "108.838",
+          "timestamp": "2026-10-12T21:52:00.232415+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_review_registration_delta",
+          "name": "test_full_source_registration_semantics[RUS-None]",
+          "time": "34.641",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_registration_delta",
+          "name": "test_full_source_registration_semantics[MDA-registration_exemption_unavailable]",
+          "time": "34.603",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_review_registration_delta",
+          "name": "test_full_source_registration_semantics[UZB-registration_submission_requires_review]",
+          "time": "31.803",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-28-audit-r8/runs/e628-audit-r8-followup.xml",
+      "sha256": "bdc46ef615022478a0583bdda4ee628fc323528762a9c0fb2ee2a4c9a4408922",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "2",
+          "time": "124.439",
+          "timestamp": "2026-10-12T21:58:35.528365+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_auditor_connected_assessment",
+          "name": "test_exact_margin_pair_uses_person_history_and_unmodified_arithmetic",
+          "time": "66.215",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_auditor_assessment_corruption",
+          "name": "test_current_source_history_and_interview_corruption_error_and_recovery",
+          "time": "52.992",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "artifact": "runs/e6-28-audit-r8/runs/e628-audit-r8.xml",
+      "sha256": "155dc27d6b33b647c51415772d35e5c94f6cf8119aa1aa8d83f96f28a5da6fa0",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "4",
+          "time": "160.525",
+          "timestamp": "2026-10-12T21:55:03.874731+06:00",
+          "hostname": "DESKTOP-HKH1EJ7"
+        }
+      ],
+      "cases": [
+        {
+          "classname": "tests.test_auditor_connected_assessment",
+          "name": "test_complete_regime_manual_default_and_registration_authority_guards",
+          "time": "47.318",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_auditor_connected_assessment",
+          "name": "test_exact_margin_pair_uses_person_history_and_unmodified_arithmetic",
+          "time": "37.965",
+          "result": "FAIL"
+        },
+        {
+          "classname": "tests.test_auditor_connected_assessment",
+          "name": "test_single_explicit_time_no_hidden_publication_clock_and_old_default",
+          "time": "33.845",
+          "result": "PASS"
+        },
+        {
+          "classname": "tests.test_auditor_connected_assessment",
+          "name": "test_current_review_that_expires_mid_trip_cannot_qualify",
+          "time": "33.284",
+          "result": "PASS"
+        }
+      ]
+    }
+  ],
+  "limitations": "Separate overlapping runs; R8 and R9 runtime identical; R7-to-R8 early-registration refusal mapped explicitly in independent reports. Real authority empty; no production or all-product approval."
+}

@@ -20,7 +20,7 @@ algorithms readable. Preserve source/profile stop conditions and unsupported
 routes as a clear specialist fallback rather than guessing policy.
 
 The intended positive path is a complete current ordinary-passport individual
-tourism/transit profile, explicitly complete current same-passport stay evidence,
+adult tourism profile, explicitly complete current same-passport stay evidence,
 an unambiguous approved route and sufficient explicit server-owned authority for
 counting and registration interpretation. Evaluate the entire planned trip, not
 only its first day. Report internal route/product, source references, history
@@ -47,7 +47,7 @@ supported path with visible fallback to an invented broad interpretation.
 
 ## Risk pre-audit and acceptance
 
-Pre-audit pending before implementation. Review actual source schemas,
+Pre-audit completed in `ai/reviews/2026-10-12-e6-28-pre-audit.md`. Review actual source schemas,
 qualification/publication policies, arithmetic and interview reducers and propose
 the smallest coherent contract, including whether a separate approval document
 is necessary and which original source concepts remain unsupported. Any final
@@ -62,6 +62,20 @@ authority only. Include real loopback PostgreSQL writer/read locks and protected
 native RU/EN/mobile/no-JS/print behavior. Old profile/route/replay behavior is a
 compatibility requirement. Independent review and separate final audit required.
 
-Status: DESIGN. E6-27 final review/audit complete, code
-`643c455bf690e14a4b8e48f557e3fe2f7541d77f`, mapped to frozenR6. E6-28 independent
-pre-audit in progress; no runtime code exists and no fixed point has been claimed.
+Status: DONE for reviewed local C05. Code
+`9bd6e926d4649b4d57152e0ce07491353767bc7f`, exact15 R9/root/index/commit identities.
+Independent APPROVE and separate GO explicitly evaluated the unchanged fixed
+C05 matrix. Handoff `ai/handoffs/2026-10-12-2212-e6-28-connected-qualification.md`.
+54 core/compatibility PASS, five actual PG locks PASS, five native/browser PASS;
+11 reviewer controls and five distinct auditor actualPG scenarios PASS, scoped
+and mapped separately. Source/business/production approvals remain absent.
+
+Chosen C05 matrix: substantive internal NO_VISA regime selection for a current,
+adult, ordinary-passport, single-entry, individual tourism plan abroad, with
+complete ACKed interview, current same-passport personal history, whole-trip
+counting and registration exemption. Empty and nonempty histories and another
+window require positives against the full 18-regime source structure. USA
+45-day overflow, <=3-day margin, registration obligations/conflicts, business,
+work, family, in-KG and special regimes need explicit justified referral.
+Business B selection is not implemented by this matrix and remains part of
+later all-product/golden-scenario coverage; no business automation claim follows.

@@ -300,9 +300,18 @@
       "weight": 2,
       "pdf": "1/2/4/8",
       "acceptance": "Product/regime qualification using approved versioned rules and explicit uncertainty",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "9bd6e926d4649b4d57152e0ce07491353767bc7f",
+          "command": "E6-28 R8 core+compatibility54PASS, R7 actualPG5PASS, R9 native/browser5PASS; independent11controlsPASS and separate auditor5actualPGscenariosPASS; exact commands/mapping in handoff",
+          "environment": "Windows Python3.12 env-free archives, synthetic full18-regime source structure, SQLite, actual loopback PostgreSQL16.15 and Chromium",
+          "scope": "Substantive NO_VISA selection using approved versioned full-regime applicability, personal history, whole-trip arithmetic, registration and reconciled interview; explicit specialist uncertainty. Independent APPROVE and separate GO. Business B, all-product J01/J02 and real approval remain open.",
+          "artifact": "ai/handoffs/2026-10-12-2212-e6-28-connected-qualification.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "D01",
