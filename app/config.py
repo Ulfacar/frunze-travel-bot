@@ -389,6 +389,7 @@ class Settings(BaseSettings):
     kg_assessment_policy: dict = Field(default_factory=dict)
     # Internal quotation recipes require explicit source/commercial authority.
     kg_quote_policy: dict = Field(default_factory=dict)
+    kg_specialist_policy: dict = Field(default_factory=dict)
     kg_notification_storage_policy: dict = Field(default_factory=dict)
     # Permanent stops are enrolled only under explicit authority, on activated Wappi profiles.
     kg_channel_guard_scopes: list[dict] = Field(default_factory=list)

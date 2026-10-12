@@ -298,15 +298,21 @@ def reduce(state, row, header):
     return state
 
 
-async def history(session, header, *, interview=None, events=None):
+async def history(session, header, *, interview=None, events=None, through_revision=None, legacy_subject=None):
     validate_header(header)
+    scope=[EntryDialogueEvent.session_id == header.id]
+    if through_revision is not None:
+        if type(through_revision) is not int or not 0<=through_revision<=MAX_EVENTS:fail()
+        scope.append(EntryDialogueEvent.revision<=through_revision)
+    if legacy_subject is not None and legacy_subject!=(header.case_id,header.applicant_id):fail()
     sizes = list((await session.execute(select(EntryDialogueEvent.id,
-        func.length(cast(EntryDialogueEvent.document, Text))).where(EntryDialogueEvent.session_id == header.id)
+        func.length(cast(EntryDialogueEvent.document, Text))).where(*scope)
         .order_by(EntryDialogueEvent.revision).limit(MAX_EVENTS+1))).all())
     if (len(sizes) > MAX_EVENTS or any(n is None or n > MAX_EVENT_BYTES for _, n in sizes) or
             sum(n for _, n in sizes) > MAX_JOURNAL_BYTES): fail('dialogue_event_capacity')
-    rows = list((await session.scalars(select(EntryDialogueEvent).where(EntryDialogueEvent.session_id == header.id)
+    rows = list((await session.scalars(select(EntryDialogueEvent).where(*scope)
         .order_by(EntryDialogueEvent.revision).limit(MAX_EVENTS+1))).all())
+    if through_revision is not None and len(rows)!=through_revision:fail()
     if interview is None:
         interview = await session.get(EntryInterview, header.interview_id)
     if interview is None or interview.snapshot_hash != _hash(interviews._header_payload(interview)): fail()
@@ -362,12 +368,12 @@ async def history(session, header, *, interview=None, events=None):
             elif target.id != observed.id: fail()
             if doc['reason'] == 'consent_withdrawn' and not doc['collection_blocked']: fail()
             if doc['stop_id'] is not None or doc['cause_id'] is not None:
-                old_stops, _ = await stops._registry(session)
+                old_stops, _ = await stops._registry(session,subject=legacy_subject)
                 old = next((s for s in old_stops if s.id == doc['stop_id']), None)
                 if old is None or old.transport_key != header.transport_key or old.interview_id != header.interview_id: fail()
                 if doc['cause_id'] is not None:
                     from app.domain import dialogue_stops
-                    causes, _ = await dialogue_stops._registry(session, old_stops)
+                    causes, _ = await dialogue_stops._registry(session, old_stops,subject=legacy_subject)
                     cause = next((c for c in causes if c.id == doc['cause_id']), None)
                     if cause is None or cause.stop_id != old.id or cause.interview_id != header.interview_id: fail()
         observed = by_head.get(state['head']['hash'])

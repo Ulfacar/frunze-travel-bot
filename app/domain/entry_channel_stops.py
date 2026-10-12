@@ -80,13 +80,17 @@ async def _anchor(session,model,identifier,names,limit):
     return await session.get(model,identifier)
 
 
-async def _registry(session):
+async def _registry(session,*,subject=None):
+    scope=[]
+    if subject is not None:
+        _id(subject[0]);_id(subject[1])
+        scope=[EntryChannelStop.case_id==subject[0],EntryChannelStop.applicant_id==subject[1]]
     # Check raw JSON sizes in SQL before decoding or fetching corrupt large blobs.
     sizes=list((await session.execute(select(EntryChannelStop.id,_json_size(EntryChannelStop,
-        ('command','policy','route','source_pin','authority'))).order_by(EntryChannelStop.id).limit(MAX_STOPS+1))).all())
+        ('command','policy','route','source_pin','authority'))).where(*scope).order_by(EntryChannelStop.id).limit(MAX_STOPS+1))).all())
     if len(sizes)>MAX_STOPS or any(s is None or s>MAX_ROW_BYTES for _,s in sizes) or sum(s for _,s in sizes)>MAX_REGISTRY_BYTES:
         rules.fail('channel_stop_registry_limit')
-    rows=list((await session.scalars(select(EntryChannelStop).order_by(EntryChannelStop.id).limit(MAX_STOPS+1))).all())
+    rows=list((await session.scalars(select(EntryChannelStop).where(*scope).order_by(EntryChannelStop.id).limit(MAX_STOPS+1))).all())
     if len(rows)>MAX_STOPS:rules.fail('channel_stop_registry_limit')
     total=0;routes=set();requests=set()
     for row in rows:

@@ -64,6 +64,7 @@
     <p><a href="/admin/case/{{ case.id }}/kg-entry/applicants/{{ selected.applicant_id }}/qualification">Анкета заявителя №{{ selected.applicant_id }}</a></p>
     <p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/deadlines">Сроки заявки</a></p>
     <p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/quotes">Расчёт стоимости и история версий</a></p>
+    {% if selected.procedure=='visa' %}<p><a href="/admin/case/{{ case.id }}/kg-entry/applicants/{{ selected.applicant_id }}/applications/{{ selected.id }}/specialist">Решение специалиста и связанный расчёт</a></p>{% endif %}
     <p><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ selected.id }}/notification-drafts">Черновики уведомлений и история</a></p>
     <p id="kg-application-status"><strong>{{ statuses[selected.current.status] }}</strong> · запись {{ selected.current.revision }}</p>
     {% if selected.current.reference %}<p id="kg-application-reference">Reference портала: <strong>{{ selected.current.reference }}</strong></p>{% endif %}

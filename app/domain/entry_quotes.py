@@ -157,7 +157,7 @@ async def preview_quote(engine,*,actor,case_id,application_id,parameters,policy)
     return await _run(engine,read)
 
 
-async def save_quote(engine,*,actor,case_id,application_id,parameters,expected_revision,request_key,
+async def _save_in_session(session,*,actor,case_id,application_id,parameters,expected_revision,request_key,
                      expected_policy_hash,expected_preview_hash,calculator_version,policy=None):
     access(actor);_id(case_id);_id(application_id);_revision(expected_revision);_key(request_key);parameters=_request(parameters)
     try:rules.proof(expected_policy_hash);rules.proof(expected_preview_hash)
@@ -165,30 +165,44 @@ async def save_quote(engine,*,actor,case_id,application_id,parameters,expected_r
     if type(calculator_version) is not str or len(calculator_version)>64:fail('unsupported_quote_calculator')
     command=_command(case_id,application_id,expected_revision,actor.manager_id,parameters,expected_policy_hash,
         expected_preview_hash,calculator_version)
+    application,person,events,successor=await _scope(session,case_id,application_id,lock=True)
+    rows,total=await _history(session,application,person,events)
+    old=await session.scalar(select(EntryQuoteRevision).where(EntryQuoteRevision.case_id==case_id,EntryQuoteRevision.request_key==request_key))
+    if old:
+        if old.application_id!=application_id or old.request_hash!=_hash(command):raise EntryStorageConflict('quote_request_conflict')
+        return dict(receipt=_receipt(old),current=_overlay(old,rows[-1],application,person,events,successor,actor,policy))
+    _live_scope(events,successor)
+    if len(rows)!=expected_revision:raise EntryStorageConflict('quote_revision_changed')
+    at=_now();authorize(actor,policy,on=applications._local_day(at))
+    if policy.digest!=expected_policy_hash:raise EntryStorageConflict('quote_policy_changed')
+    if calculator_version!=rules.VERSION:fail('unsupported_quote_calculator')
+    if rows and applications._utc(at)<applications._utc(rows[-1].created_at):fail('quote_clock_moved_backwards')
+    if applications._utc(at)<applications._utc(events[-1].created_at):fail('quote_clock_moved_backwards')
+    preview=_preview_data(application,person,events[-1],revision=len(rows),policy=policy,request=parameters,
+        on=applications._local_day(at).isoformat(),version=calculator_version)
+    if _hash(preview)!=expected_preview_hash:raise EntryStorageConflict('quote_preview_changed')
+    row=EntryQuoteRevision(case_id=case_id,application_id=application_id,applicant_id=person.id,procedure=application.procedure,
+        revision=len(rows)+1,previous_id=rows[-1].id if rows else None,request_key=request_key,request_hash=_hash(command),command=command,
+        policy=policy.document(),source_pin=preview['source_pin'],result=preview['result'],authority={'full_admins':sorted(existing_full_admins())},
+        created_by=actor.manager_id,created_at=at)
+    row.snapshot_hash=_hash(_payload(row));size=len(canonical(_payload(row)).encode());_capacity(row.revision,size,total+size)
+    session.add(row);await session.flush()
+    return dict(receipt=_receipt(row),current=_overlay(row,row,application,person,events,successor,actor,policy))
+
+
+async def save_quote(engine,*,actor,case_id,application_id,parameters,expected_revision,request_key,
+                     expected_policy_hash,expected_preview_hash,calculator_version,policy=None):
+    # Preserve the public preflight before acquiring any transaction. The private
+    # seam validates too, since it can be composed by another authorized service.
+    access(actor);_id(case_id);_id(application_id);_revision(expected_revision);_key(request_key);parameters=_request(parameters)
+    try:rules.proof(expected_policy_hash);rules.proof(expected_preview_hash)
+    except rules.QuoteInvalid as exc:raise EntryStorageInvalid(str(exc)) from None
+    if type(calculator_version) is not str or len(calculator_version)>64:fail('unsupported_quote_calculator')
     async def write(session):
-        application,person,events,successor=await _scope(session,case_id,application_id,lock=True)
-        rows,total=await _history(session,application,person,events)
-        old=await session.scalar(select(EntryQuoteRevision).where(EntryQuoteRevision.case_id==case_id,EntryQuoteRevision.request_key==request_key))
-        if old:
-            if old.application_id!=application_id or old.request_hash!=_hash(command):raise EntryStorageConflict('quote_request_conflict')
-            return dict(receipt=_receipt(old),current=_overlay(old,rows[-1],application,person,events,successor,actor,policy))
-        _live_scope(events,successor)
-        if len(rows)!=expected_revision:raise EntryStorageConflict('quote_revision_changed')
-        at=_now();authorize(actor,policy,on=applications._local_day(at))
-        if policy.digest!=expected_policy_hash:raise EntryStorageConflict('quote_policy_changed')
-        if calculator_version!=rules.VERSION:fail('unsupported_quote_calculator')
-        if rows and applications._utc(at)<applications._utc(rows[-1].created_at):fail('quote_clock_moved_backwards')
-        if applications._utc(at)<applications._utc(events[-1].created_at):fail('quote_clock_moved_backwards')
-        preview=_preview_data(application,person,events[-1],revision=len(rows),policy=policy,request=parameters,
-            on=applications._local_day(at).isoformat(),version=calculator_version)
-        if _hash(preview)!=expected_preview_hash:raise EntryStorageConflict('quote_preview_changed')
-        row=EntryQuoteRevision(case_id=case_id,application_id=application_id,applicant_id=person.id,procedure=application.procedure,
-            revision=len(rows)+1,previous_id=rows[-1].id if rows else None,request_key=request_key,request_hash=_hash(command),command=command,
-            policy=policy.document(),source_pin=preview['source_pin'],result=preview['result'],authority={'full_admins':sorted(existing_full_admins())},
-            created_by=actor.manager_id,created_at=at)
-        row.snapshot_hash=_hash(_payload(row));size=len(canonical(_payload(row)).encode());_capacity(row.revision,size,total+size)
-        session.add(row);await session.flush()
-        return dict(receipt=_receipt(row),current=_overlay(row,row,application,person,events,successor,actor,policy))
+        return await _save_in_session(session,actor=actor,case_id=case_id,application_id=application_id,
+            parameters=parameters,expected_revision=expected_revision,request_key=request_key,
+            expected_policy_hash=expected_policy_hash,expected_preview_hash=expected_preview_hash,
+            calculator_version=calculator_version,policy=policy)
     return await _run(engine,write)
 
 

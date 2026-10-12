@@ -44,13 +44,17 @@ def _result(row):
         suppressed=True, delivery='not_sent', manager_acknowledgement='not_changed')
 
 
-async def _registry(session, stop_rows):
+async def _registry(session, stop_rows, *, subject=None):
+    scope=[]
+    if subject is not None:
+        stops._id(subject[0]);stops._id(subject[1])
+        scope=[EntryDialogueStopCause.case_id==subject[0],EntryDialogueStopCause.applicant_id==subject[1]]
     sizes=list((await session.execute(select(EntryDialogueStopCause.id,
-        func.length(cast(EntryDialogueStopCause.document, Text))).order_by(EntryDialogueStopCause.id)
+        func.length(cast(EntryDialogueStopCause.document, Text))).where(*scope).order_by(EntryDialogueStopCause.id)
         .limit(MAX_CAUSES+1))).all())
     if len(sizes)>MAX_CAUSES or any(n is None or n>MAX_CAUSE_BYTES for _,n in sizes) or sum(n for _,n in sizes)>MAX_REGISTRY_BYTES:
         _fail('dialogue_cause_registry_limit')
-    rows=list((await session.scalars(select(EntryDialogueStopCause).order_by(EntryDialogueStopCause.id).limit(MAX_CAUSES+1))).all())
+    rows=list((await session.scalars(select(EntryDialogueStopCause).where(*scope).order_by(EntryDialogueStopCause.id).limit(MAX_CAUSES+1))).all())
     by_stop={r.id:r for r in stop_rows};latest={};requests=set();total=0;validated={}
     for row in rows:
         doc=_plain(row.document);total+=len(canonical(_payload(row)).encode())

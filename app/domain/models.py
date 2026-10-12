@@ -2165,6 +2165,50 @@ class EntryQuoteRevision(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
+class SpecialistDecisionEvent(DomainBase):
+    """Recorded specialist planning and its quote links, never a client offer."""
+    __tablename__='specialist_decision_events'
+    __table_args__=(
+        UniqueConstraint('id','case_id','applicant_id',name='uq_specialist_scope'),
+        UniqueConstraint('applicant_id','revision',name='uq_specialist_revision'),
+        UniqueConstraint('case_id','request_key',name='uq_specialist_request'),
+        UniqueConstraint('quote_id',name='uq_specialist_quote'),
+        ForeignKeyConstraint(['applicant_id','case_id'],['entry_applicants.id','entry_applicants.case_id'],name='fk_specialist_person'),
+        ForeignKeyConstraint(['application_id','case_id','applicant_id','procedure'],['entry_applications.id','entry_applications.case_id','entry_applications.applicant_id','entry_applications.procedure'],name='fk_specialist_application'),
+        ForeignKeyConstraint(['previous_id','case_id','applicant_id'],['specialist_decision_events.id','specialist_decision_events.case_id','specialist_decision_events.applicant_id'],name='fk_specialist_previous'),
+        ForeignKeyConstraint(['decision_id','case_id','applicant_id'],['specialist_decision_events.id','specialist_decision_events.case_id','specialist_decision_events.applicant_id'],name='fk_specialist_decision'),
+        ForeignKeyConstraint(['quote_id','application_id','case_id'],['entry_quote_revisions.id','entry_quote_revisions.application_id','entry_quote_revisions.case_id'],name='fk_specialist_quote'),
+        CheckConstraint('revision BETWEEN 1 AND 64',name='ck_specialist_revision'),
+        CheckConstraint("(application_id IS NULL AND procedure IS NULL) OR (application_id IS NOT NULL AND procedure IS NOT NULL AND procedure='visa')",name='ck_specialist_procedure'),
+        CheckConstraint("action IN ('record','quote','withdraw')",name='ck_specialist_action'),
+        CheckConstraint('(revision=1 AND previous_id IS NULL) OR (revision>1 AND previous_id IS NOT NULL AND previous_id<id)',name='ck_specialist_previous'),
+        CheckConstraint("(action='record' AND decision_id IS NULL) OR (action IN ('quote','withdraw') AND decision_id IS NOT NULL AND decision_id<id)",name='ck_specialist_decision'),
+        CheckConstraint("(action='quote' AND quote_id IS NOT NULL AND application_id IS NOT NULL) OR (action!='quote' AND quote_id IS NULL)",name='ck_specialist_quote'),
+        CheckConstraint('length(request_hash)=64 AND length(snapshot_hash)=64',name='ck_specialist_hashes'),
+    )
+    id:Mapped[int]=mapped_column(Integer,primary_key=True)
+    case_id:Mapped[int]=mapped_column(Integer)
+    applicant_id:Mapped[int]=mapped_column(Integer)
+    application_id:Mapped[int|None]=mapped_column(Integer,nullable=True)
+    procedure:Mapped[str|None]=mapped_column(String(32),nullable=True)
+    revision:Mapped[int]=mapped_column(Integer)
+    previous_id:Mapped[int|None]=mapped_column(Integer,nullable=True)
+    decision_id:Mapped[int|None]=mapped_column(Integer,nullable=True)
+    quote_id:Mapped[int|None]=mapped_column(Integer,nullable=True)
+    action:Mapped[str]=mapped_column(String(16))
+    request_key:Mapped[str]=mapped_column(String(64))
+    request_hash:Mapped[str]=mapped_column(String(64))
+    snapshot_hash:Mapped[str]=mapped_column(String(64))
+    command:Mapped[dict]=mapped_column(_ServiceJSON)
+    provenance:Mapped[dict]=mapped_column(_ServiceJSON)
+    result:Mapped[dict]=mapped_column(_ServiceJSON)
+    created_by:Mapped[str]=mapped_column(String(64))
+    created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=_now)
+
+    @validates('command','provenance','result')
+    def _freeze(self,key,value):return _ServiceJSON.freeze(value)
+
+
 class EntryNotificationDraft(DomainBase):
     """An immutable manually entered draft; never an outgoing message."""
     __tablename__='entry_notification_drafts'
@@ -2331,7 +2375,7 @@ class ServiceCaseOpening(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause, EntryDialogueSession, EntryDialogueEvent, ServiceCaseOpening)
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause, EntryDialogueSession, EntryDialogueEvent, ServiceCaseOpening, SpecialistDecisionEvent)
 
 
 def _entry_immutable(mapper, connection, target):
