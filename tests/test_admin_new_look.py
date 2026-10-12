@@ -74,7 +74,9 @@ def _login():
 FLAGGED_PATHS = {"/admin/focus", "/admin/work", "/admin/work/list",
                  "/admin/work/claims", "/admin/kg-entry/knowledge",
                  "/admin/kg-entry/processes", "/admin/kg-entry/documents",
-                 "/admin/kg-entry/templates", "/admin/kg-entry/publication", "/admin/kg-entry/reviews"}
+                 "/admin/kg-entry/templates", "/admin/kg-entry/publication", "/admin/kg-entry/reviews",
+                 "/admin/kg-entry/answers"}
+# Answer-page OFF/ON, workday and role gates: test_admin_kg_answers.py.
 # Knowledge review/publication OFF/ON and role gates have dedicated HTTP coverage
 # in test_admin_kg_knowledge_decisions.py and test_admin_kg_knowledge_publication.py.
 # E6 previews: explicit OFF/ON coverage in test_admin_kg_preview_gates.py.

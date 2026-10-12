@@ -2672,3 +2672,4 @@ from app.admin import kg_deadlines  # noqa: E402,F401 — сроки конкр�
 from app.admin import kg_deadline_tasks  # noqa: E402,F401 — задачи контроля срока
 from app.admin import kg_knowledge_decisions  # noqa: E402,F401 — журнал проверки знаний
 from app.admin import kg_knowledge_publication  # noqa: E402,F401 — публикация проверенных правил
+from app.admin import kg_answers  # noqa: E402,F401 — ответы по действующим утверждённым источникам

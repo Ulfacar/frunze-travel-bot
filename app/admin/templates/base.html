@@ -16,7 +16,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Frunze — панель{% endblock %}</title>
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  {% block external_scripts %}<script src="https://unpkg.com/htmx.org@1.9.12"></script>{% endblock %}
   {% if new_look %}
   <script>
     // Тему ставим ДО первой отрисовки: иначе ночью экран успевает мигнуть белым.
@@ -28,13 +28,14 @@
     })();
   </script>
   {% endif %}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  {% block external_fonts %}<link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   {% if new_look %}
   <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   {% else %}
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% endif %}
+  {% endblock %}
   <style>
     /* Светлая профессиональная тема: синий #2563EB + сделочный зелёный #059669,
        Fira Sans (интерфейс) + Fira Code (числа/ID). Чистый минимализм, мягкие тени. */

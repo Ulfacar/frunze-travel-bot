@@ -1,0 +1,75 @@
+{
+  "format": "e6-21-evidence/1",
+  "base": "f06f5eacef734bfde625813c663bc91815fe01bc",
+  "revision": "UNCOMMITTED runs/e6-21-r5",
+  "manifest": "ai/reviews/2026-10-12-e6-21-snapshot-r5.json",
+  "manifest_sha256": "450c3bec58e0ed88664815b899da364594b577840794af3bd66a11cbc3e3a44c",
+  "environment": "Windows Python3.12; env-free immutable archives; synthetic SQLite/PostgreSQL16.15/Chromium",
+  "changed_source_identity": {
+    "app/domain/knowledge_publication.py": true,
+    "app/domain/knowledge_answers.py": true,
+    "app/admin/kg_answers.py": true,
+    "app/admin/router.py": true,
+    "app/admin/templates/kg_answers.html": true,
+    "app/admin/templates/kg_knowledge.html": true,
+    "app/admin/templates/base.html": true,
+    "tests/test_knowledge_answers.py": true,
+    "tests/test_admin_kg_answers.py": true,
+    "tests/test_knowledge_answers_postgres.py": true,
+    "tests/browser_kg_answers.py": true,
+    "tests/test_admin_shell_and_direction_split.py": true,
+    "tests/test_admin_new_look.py": true
+  },
+  "all_app_tests_migrations_identity": {
+    "result": "PASS",
+    "files": 620
+  },
+  "primary": {
+    "artifact": "runs/e6-21-r4/runs/answers.xml",
+    "sha256": "a8c76e8e416dc71b6b39e53d64338bf85bf0669b6b37fb11f6834a1d454278e6",
+    "tests": 43,
+    "passed": 43,
+    "failure": 0,
+    "error": 0,
+    "skipped": 0,
+    "filter": [
+      "tests.browser_kg_answers",
+      "tests.test_admin_kg_answers",
+      "tests.test_knowledge_answers",
+      "tests.test_knowledge_answers_postgres"
+    ]
+  },
+  "shell": {
+    "artifact": "runs/e6-21-r5/runs/shell.xml",
+    "sha256": "9c2cd0cad5188ab4a31383ed3221eba74d50772af7e94c353d9a14afb205d8d4",
+    "tests": 42,
+    "passed": 42,
+    "failure": 0,
+    "error": 0,
+    "skipped": 0,
+    "filter": null
+  },
+  "earlier_supporting_regression": {
+    "artifact": "runs/e6-21-r2/runs/related.xml",
+    "sha256": "14023ccf57878110224e732d15362e17c7477ae1ba28443d6eb1fafab0f8ee53",
+    "tests": 165,
+    "passed": 165,
+    "failure": 0,
+    "error": 0,
+    "skipped": 0,
+    "filter": null
+  },
+  "primary_command": "python -m pytest tests/test_knowledge_answers.py tests/test_admin_kg_answers.py tests/test_knowledge_answers_postgres.py tests/browser_kg_answers.py tests/test_admin_shell_and_direction_split.py tests/test_admin_new_look.py -q --junitxml=runs/answers.xml",
+  "primary_limit": "r4 whole command:83PASS/2FAIL; both failures were legacy pilot-OFF route expectations. Primary43 all passed; r5 changes only the two legacy test lists, then all42 shell checks passed.",
+  "database_checks": "7 actual isolated PostgreSQL tests in primary43; no skips",
+  "browser": "2 Chromium cases in primary43; 390mobile/1365noJS; zero attempted external answer-page requests; both screen sizes and all2 print pages visually inspected",
+  "review": "ai/reviews/2026-10-12-e6-21-independent-review.md",
+  "audit": "ai/reviews/2026-10-12-e6-21-final-audit.md",
+  "limitations": [
+    "No new whole-repository full-suite run",
+    "165 supporting checks use r2, with identical publication runtime; not a final-r5 whole-suite claim",
+    "Only exact-rule internal source answers; no automatic delivery or personal eligibility",
+    "208 real units remain draft; no source or business approval",
+    "No production access/deployment/migration/client message"
+  ]
+}

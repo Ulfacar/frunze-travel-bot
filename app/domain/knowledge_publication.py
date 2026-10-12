@@ -291,19 +291,35 @@ async def runtime_knowledge(engine, *, actor, policy, unit_ids):
             return dict(version_id=None, available=[], unavailable=[dict(unit_id=i, reasons=['no_active_publication']) for i in ids])
         manifest = history['manifests'][active]
         version, bundle, _ = await context.source(active)
-        availability = {item['unit_id']: item['reasons'] for item in await context.availability(active, manifest, at=_now())}
+        checked_at = _now()
+        if _utc(history['rows'][-1].created_at) > _utc(checked_at):
+            raise EntryStorageInvalid('publication_clock_before_history')
+        projection = await session.get(KnowledgeProjection, active)
+        condition_rules = {rule['unit_id']: rule for rule in (_plain(projection.condition_catalog) or {}).get('rules', [])}
+        availability = {item['unit_id']: item['reasons'] for item in await context.availability(active, manifest, at=checked_at)}
         available = []; unavailable = []
         policy_matches = isinstance(policy, PublicationPolicy) and history['policies'][active] == _policy(policy)
         for identifier in ids:
             reasons = list(availability.get(identifier, ['unit_not_published']))
+            if identifier in availability:
+                reviews = await context.reviews(active, decisions._unit(bundle, identifier))
+                if any(_utc(row.created_at) > _utc(checked_at) for row in reviews):
+                    reasons.append('review_record_in_future')
+                if any(_utc(b.created_at) < _utc(a.created_at) for a, b in zip(reviews, reviews[1:])):
+                    reasons.append('review_clock_order_invalid')
             if not policy_matches:
                 reasons.append('publication_policy_unavailable_or_changed')
             if reasons:
                 unavailable.append(dict(unit_id=identifier, reasons=reasons))
             else:
                 unit = decisions._unit(bundle, identifier)
-                available.append(dict(unit_id=identifier, value=unit['value'], title=unit['title'], source_ref=unit['source_ref'],
+                available.append(dict(unit_id=identifier, kind=unit['kind'], value=unit['value'], title=unit['title'], source_ref=unit['source_ref'],
                     page=unit['page'], section=unit['section'], unit_hash=_hash(unit), bundle_hash=version.bundle_hash,
-                    manifest_hash=_hash(manifest), version_id=active))
+                    manifest_hash=_hash(manifest), version_id=active, version_number=version.version,
+                    version_label=bundle['meta']['version_label'], source_document=bundle['meta']['source_document'],
+                    source_hash=version.source_hash, source_text=unit.get('source_text'),
+                    condition_rule=condition_rules.get(identifier),
+                    effective_from=unit.get('effective_from'), effective_to=unit.get('effective_to'),
+                    checked_at=transactions._utc(checked_at)))
         return dict(version_id=active, available=available, unavailable=unavailable)
     return await transactions._run(engine, read)
