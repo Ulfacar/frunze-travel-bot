@@ -1959,10 +1959,12 @@ class EntryProcessPin(DomainBase):
             ["entry_applicant_profiles.id", "entry_applicant_profiles.applicant_id", "entry_applicant_profiles.case_id"], name="fk_entry_process_pin_profile"),
         ForeignKeyConstraint(["attestation_id", "root_id", "case_id", "applicant_id"],
             ["entry_process_events.id", "entry_process_events.application_id", "entry_process_events.case_id", "entry_process_events.applicant_id"], name="fk_entry_process_pin_attestation"),
+        ForeignKeyConstraint(["stay_history_id", "applicant_id", "case_id"],
+            ["entry_applicant_stay_history.id", "entry_applicant_stay_history.applicant_id", "entry_applicant_stay_history.case_id"], name="fk_entry_process_pin_stay"),
         CheckConstraint("ordinal BETWEEN 1 AND 160", name="ck_entry_process_pin_ordinal"),
-        CheckConstraint("kind IN ('application','application_event','package','issued','profile','attestation','payment','contract')", name="ck_entry_process_pin_kind"),
-        CheckConstraint("(CASE WHEN application_event_id IS NULL THEN 0 ELSE 1 END + CASE WHEN package_event_id IS NULL THEN 0 ELSE 1 END + CASE WHEN issued_id IS NULL THEN 0 ELSE 1 END + CASE WHEN profile_id IS NULL THEN 0 ELSE 1 END + CASE WHEN attestation_id IS NULL THEN 0 ELSE 1 END + CASE WHEN payment_id IS NULL THEN 0 ELSE 1 END + CASE WHEN contract_event_id IS NULL THEN 0 ELSE 1 END) = CASE WHEN kind = 'application' THEN 0 ELSE 1 END", name="ck_entry_process_pin_one_source"),
-        CheckConstraint("kind = 'application' OR (kind = 'application_event' AND application_event_id IS NOT NULL) OR (kind = 'package' AND package_event_id IS NOT NULL) OR (kind = 'issued' AND issued_id IS NOT NULL) OR (kind = 'profile' AND profile_id IS NOT NULL) OR (kind = 'attestation' AND attestation_id IS NOT NULL AND attestation_id < event_id) OR (kind = 'payment' AND payment_id IS NOT NULL) OR (kind = 'contract' AND contract_event_id IS NOT NULL)", name="ck_entry_process_pin_source_kind"),
+        CheckConstraint("kind IN ('application','application_event','package','issued','profile','attestation','payment','contract','stay')", name="ck_entry_process_pin_kind"),
+        CheckConstraint("(CASE WHEN application_event_id IS NULL THEN 0 ELSE 1 END + CASE WHEN package_event_id IS NULL THEN 0 ELSE 1 END + CASE WHEN issued_id IS NULL THEN 0 ELSE 1 END + CASE WHEN profile_id IS NULL THEN 0 ELSE 1 END + CASE WHEN attestation_id IS NULL THEN 0 ELSE 1 END + CASE WHEN payment_id IS NULL THEN 0 ELSE 1 END + CASE WHEN contract_event_id IS NULL THEN 0 ELSE 1 END + CASE WHEN stay_history_id IS NULL THEN 0 ELSE 1 END) = CASE WHEN kind = 'application' THEN 0 ELSE 1 END", name="ck_entry_process_pin_one_source"),
+        CheckConstraint("kind = 'application' OR (kind = 'application_event' AND application_event_id IS NOT NULL) OR (kind = 'package' AND package_event_id IS NOT NULL) OR (kind = 'issued' AND issued_id IS NOT NULL) OR (kind = 'profile' AND profile_id IS NOT NULL) OR (kind = 'attestation' AND attestation_id IS NOT NULL AND attestation_id < event_id) OR (kind = 'payment' AND payment_id IS NOT NULL) OR (kind = 'contract' AND contract_event_id IS NOT NULL) OR (kind = 'stay' AND stay_history_id IS NOT NULL)", name="ck_entry_process_pin_source_kind"),
         CheckConstraint("length(source_hash) = 64", name="ck_entry_process_pin_hash"),
     )
     event_id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -1978,6 +1980,7 @@ class EntryProcessPin(DomainBase):
     application_event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     package_event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     issued_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    stay_history_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     profile_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     attestation_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     payment_id: Mapped[int | None] = mapped_column(ForeignKey("service_payments.id"), nullable=True)

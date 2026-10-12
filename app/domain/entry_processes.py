@@ -15,7 +15,7 @@ from app.domain.knowledge_review import _plain
 from app.domain.models import EntryApplication, EntryProcessEvent, EntryProcessPin, _now
 from app.domain.permissions import Actor
 from app.domain.service_authz import PermissionDenied
-from app.knowledge.process_preview import CATALOG_SHA256
+from app.knowledge.process_preview import CATALOG_SHA256, WORK_CATALOG_SHA256
 from app.knowledge.review import canonical
 
 
@@ -66,8 +66,9 @@ def _authorize_operation(actor, policy, operation, state, rows, day):
         return None
     authorize(actor, policy, day=day)
     action, data = operation['action'], operation['data']
+    if state and state['catalog_digest']!=policy.catalog_digest:invalid('process_catalog_changed')
     if action == 'initialize':
-        if data['catalog_digest'] != CATALOG_SHA256: invalid('process_catalog_changed')
+        if data['catalog_digest'] != policy.catalog_digest: invalid('process_catalog_changed')
     elif action == 'transition':
         if data['edge_id'] not in policy.allowed_edges: invalid('process_edge_not_authorized')
     elif action == 'attest':
@@ -127,7 +128,8 @@ async def _history(sources):
     for p in stored_pins: by_event.setdefault(p.event_id, []).append(p)
     if set(by_event) - {r.id for r in rows}: invalid('process_integrity_failed')
     for revision, row in enumerate(rows, 1):
-        operation = normalize(_plain(row.command).get('operation'), cutoff=applications._local_day(row.created_at))
+        operation = normalize(_plain(row.command).get('operation'), cutoff=applications._local_day(row.created_at),
+            digest=_plain(row.snapshot).get('catalog_digest'))
         expected_policy_hash = row.command.get('expected_policy_hash')
         request = _command(root.case_id, root.id, revision-1, operation, row.created_by, expected_policy_hash)
         _key(row.request_key)
@@ -185,17 +187,17 @@ async def _readiness(sources, state, rows, actor, policy, package_policy, at):
             'satisfied':type(value['value']) is type(expected) and value['value'] == expected}
     changed = any(not p['satisfied'] for p in result['retained'].values())
     last_policy = next((_policy(r) for r in reversed(rows) if r.policy is not None), None)
-    policy_changed = last_policy is None or last_policy.digest != policy.digest
+    policy_changed = last_policy is None or last_policy.digest != policy.digest or policy.catalog_digest!=state['catalog_digest']
     active = await context.app(state['active_role'])
     usable = active is not None and await context.usable(active)
     result.update(ready=not changed and not policy_changed and usable,
         reason='process_application_terminal' if not usable else 'process_policy_changed' if policy_changed else
             'process_prerequisites_changed' if changed else 'current_evidence')
-    for edge in catalog()['edges']:
+    for edge in catalog(state['catalog_digest'])['edges']:
         if edge['from'] != state['stage']: continue
         digest = edge_id(edge)
         item = dict(edge=deepcopy(edge), edge_id=digest, ready=False, reason='process_edge_not_authorized', evidence_digest=None, facts={})
-        if digest in policy.allowed_edges:
+        if digest in policy.allowed_edges and policy.catalog_digest==state['catalog_digest']:
             operation = dict(action='transition', confirmed=True,
                 data=dict(edge_id=digest, on=applications._local_day(at).isoformat(), evidence_digest='0'*64))
             try:
@@ -219,7 +221,9 @@ async def record_process_operation(engine, *, actor, case_id, application_id, ex
                                    operation, policy=None, package_policy=None, expected_policy_hash=None):
     _authorize(actor); _id(case_id); _id(application_id); _key(request_key)
     if type(expected_revision) is not int or not 0 <= expected_revision < MAX_EVENTS: invalid('invalid_process_revision')
-    operation = normalize(operation, cutoff=applications._today())
+    # The superset validates syntax before reading storage. The locked original
+    # catalogue below determines authority; exact retries need no current policy.
+    operation = normalize(operation, cutoff=applications._today(),digest=WORK_CATALOG_SHA256)
     if expected_policy_hash is not None and (type(expected_policy_hash) is not str or not re.fullmatch('[a-f0-9]{64}', expected_policy_hash)):
         invalid('invalid_process_policy')
     request = _command(case_id, application_id, expected_revision, operation, actor.manager_id, expected_policy_hash)
@@ -246,7 +250,7 @@ async def record_process_operation(engine, *, actor, case_id, application_id, ex
                 'readiness':await _readiness(sources, state, rows, actor, policy, package_policy, at)}
         if len(rows) != expected_revision: raise EntryStorageConflict('process_revision_changed')
         if rows and applications._utc(at) < applications._utc(rows[-1].created_at): invalid('process_clock_reversed')
-        normalize(operation, cutoff=day)
+        normalize(operation, cutoff=day,digest=state['catalog_digest'] if state else operation['data'].get('catalog_digest',CATALOG_SHA256))
         used_policy = _authorize_operation(actor, policy, operation, state, rows, day)
         if expected_policy_hash is not None and (used_policy is None or expected_policy_hash != used_policy.digest):
             raise EntryStorageConflict('process_policy_changed')
@@ -297,7 +301,15 @@ async def read_process_history(engine, *, actor, case_id, application_id, revisi
             EntryApplication.case_id == case_id, EntryApplication.applicant_id == root.applicant_id)
             .order_by(EntryApplication.id).limit(101))).all())
         profile_rows = await sources.profile_history()
+        resident_basis=None
+        if state and state['catalog_digest']==WORK_CATALOG_SHA256 and 'resident' in state['links']:
+            resident=await sources.app(state['links']['resident'],'resident')
+            events=await sources.application_events(resident)
+            if events[-1].status=='approved':
+                resident_basis=dict(application_id=resident.id,approval_id=events[-1].id,
+                    reference=events[-1].reference,occurred_on=events[-1].occurred_on.isoformat())
         return dict(application=applications._application_view(root), current_revision=len(rows),
+            resident_basis=resident_basis,
             profile_id=profile_rows[-1].id if profile_rows else None,
             link_candidates=[applications._application_view(r) for r in candidates[:100]],
             link_candidates_truncated=len(candidates) > 100,

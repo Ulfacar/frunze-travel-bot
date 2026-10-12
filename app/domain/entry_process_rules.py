@@ -5,7 +5,7 @@ import re
 
 from app.domain.entry_process_policy import ROOTS,ROOT_ROLES,ROLES,REFERENCE,HASH,AUTHORITATIVE,ATTESTATION_SOURCES,edge_id
 from app.domain.entry_storage import EntryStorageInvalid,_id
-from app.knowledge.process_preview import load_process_catalog
+from app.knowledge.process_preview import CATALOG_SHA256, WORK_CATALOG_SHA256, catalog_by_digest
 
 MAX_EVENTS=250
 MAX_BYTES=8*1024*1024
@@ -24,17 +24,17 @@ LIVE_FACTS={'consent_confirmed','documents_accepted','documents_current',
     'receiving_party_docs_accepted','issued_document_checked','exit_visa_issued','delivered_to_client','receipt_confirmed',
     'service_payment_confirmed','profile_complete','eligibility','product_defined',
     'employer_qualified','employer_authorization_confirmed','quota_approved','regularization_route'}
-CORRECTIVE_TARGETS={'V13','V18','W13','X01','X08','WX2','RX1','UX2'}
+CORRECTIVE_TARGETS={'V13','V18','W13','X01','X08','WX1','WX2','RX1','UX2'}
 
 
 def invalid(code='invalid_process_operation'):raise EntryStorageInvalid(code)
 
 
-def catalog():return load_process_catalog().document()
+def catalog(digest=CATALOG_SHA256):return catalog_by_digest(digest).document()
 
 
-def value_for(fact,value):
-    spec={'type':'boolean'} if fact=='profile_review_complete' else catalog()['facts'].get(fact)
+def value_for(fact,value,*,digest=CATALOG_SHA256):
+    spec={'type':'boolean'} if fact=='profile_review_complete' else catalog(digest)['facts'].get(fact)
     if spec is None:invalid()
     if value is None:return
     if spec['type']=='boolean':
@@ -42,10 +42,23 @@ def value_for(fact,value):
     elif type(value) is not str or value not in spec['values']:invalid()
 
 
-def normalize(operation,*,cutoff):
+def normalize(operation,*,cutoff,digest=CATALOG_SHA256):
     if type(operation) is not dict or operation.keys()!={'action','data','confirmed'} or operation['confirmed'] is not True:invalid()
     action=operation['action'];data=operation['data']
-    if type(action) is not str or action not in FIELDS or type(data) is not dict or data.keys()!=FIELDS[action]:invalid()
+    if type(action) is not str or action not in FIELDS or type(data) is not dict:invalid()
+    fields=FIELDS[action]
+    registration_basis=(action=='attest' and data.get('fact')=='resident_registration_basis_reviewed' and digest==WORK_CATALOG_SHA256)
+    if registration_basis: fields=fields|{'basis'}
+    if data.keys()!=fields:invalid()
+    if registration_basis:
+        basis=data['basis']
+        if type(basis) is not dict or basis.keys()!={'application_id','approval_id','valid_from','valid_until','registration_from','registration_until'}:invalid()
+        for name in ('application_id','approval_id'):_id(basis[name])
+        try:
+            days={key:date.fromisoformat(basis[key]) for key in ('valid_from','valid_until','registration_from','registration_until')}
+            if any(day.isoformat()!=basis[key] for key,day in days.items()):raise ValueError
+            if not days['valid_from']<=days['registration_from']<=days['registration_until']<=days['valid_until']:raise ValueError
+        except (ValueError,TypeError):invalid('invalid_registration_period')
     for key in ('on','valid_through'):
         if key not in data:continue
         try:
@@ -59,11 +72,12 @@ def normalize(operation,*,cutoff):
         if key in data and not (key=='employer_reference' and data[key] is None):
             if type(data[key]) is not str or not re.fullmatch(REFERENCE,data[key]):invalid()
     if 'role' in data and (type(data['role']) is not str or data['role'] not in ROLES):invalid()
+    if data.get('role')=='resident_registration' and digest!=WORK_CATALOG_SHA256:invalid('process_role_unavailable')
     if 'fact' in data:
         if type(data['fact']) is not str or data['fact'] in AUTHORITATIVE:invalid('process_authoritative_fact')
-        value_for(data['fact'],data.get('value'))
+        value_for(data['fact'],data.get('value'),digest=digest)
     if action=='attest':
-        value_for(data['fact'],data['value'])
+        value_for(data['fact'],data['value'],digest=digest)
         if type(data['source']) is not str or data['source'] not in ATTESTATION_SOURCES:invalid()
         if data['profile_id'] is not None:_id(data['profile_id'])
         if (data['fact'] in ('profile_review_complete','eligibility','visa_required'))!=(data['profile_id'] is not None):
@@ -84,9 +98,10 @@ def initial_state(root,data):
 
 
 def edge_for(state,digest):
-    edge=next((edge for edge in catalog()['edges'] if edge_id(edge)==digest),None)
+    current=catalog(state['catalog_digest'])
+    edge=next((edge for edge in current['edges'] if edge_id(edge)==digest),None)
     if not edge or edge['from']!=state['stage']:invalid('process_edge_unavailable')
-    stages={s['code']:s for s in catalog()['stages']}
+    stages={s['code']:s for s in current['stages']}
     if stages[edge['to']]['kind']=='flag' or stages[edge['to']]['process']!=state['process']:invalid('process_edge_unavailable')
     return edge
 
@@ -95,6 +110,8 @@ def focus(state,edge):
     target=edge['to'];role=state['active_role'];branch=state['branch']
     if state['process']=='work' and target.startswith('W') and target[1:].isdigit():
         number=int(target[1:]);role='registration' if number>=20 else 'resident' if number>=16 else 'permit'
+        if number>=20 and state['catalog_digest']==WORK_CATALOG_SHA256:role='resident_registration'
+    if state['process']=='work' and target=='WX1':role='permit'
     if state['process']=='regularization' and edge['from']=='U05' and target=='U06':
         branch=edge['requires']['regularization_route'];role='exit_visa' if branch=='exit_visa' else 'registration'
     if state['process']=='regularization' and edge['from']=='U06' and branch!='exit_visa':
@@ -107,7 +124,9 @@ def fact_role(state,edge,fact):
     role,_=focus(state,edge)
     if fact in {'permit_issued','employer_qualified','employer_authorization_confirmed','account_activated','quota_applied','quota_approved'}:return 'permit'
     if fact in {'resident_package_received','resident_issued_and_collected'}:return 'resident'
-    if fact in {'registration_confirmed','registration_certificate_received'}:return 'registration'
+    if fact in {'registration_confirmed','registration_certificate_received'}:
+        return 'resident_registration' if role=='resident_registration' else 'registration'
+    if fact=='actual_presence_confirmed':return 'permit'
     if fact in {'protocol_received','police_letter_received','fine_payment_confirmed','overstay_assessed','regularization_route'}:return 'protocol'
     if fact=='decision':return state['active_role']
     if fact in ('actual_entry_confirmed','actual_exit_or_end_confirmed','departure_confirmed') and state['process']=='work':return 'visa'

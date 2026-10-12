@@ -32,6 +32,17 @@ def test_additive_empty_cycle_and_model_parity(config):
             with engine.connect() as conn: assert schema(conn)==before
         with engine.connect() as conn:
             ctx=MigrationContext.configure(conn,opts={'compare_type':True,'include_object':lambda obj,name,kind,reflected,other:kind!='table' or name in TABLES})
+            # 0027 is retained verbatim. Current code adds exactly the 0040
+            # nullable stay pin; verify that delta before comparing at head.
+            delta=compare_metadata(ctx,DomainBase.metadata)
+            assert len(delta)==2 and {item[0] for item in delta}=={'add_column','add_fk'}
+            column=next(item for item in delta if item[0]=='add_column')
+            assert column[2]=='entry_process_pins' and column[3].name=='stay_history_id' and column[3].nullable
+            fk=next(item for item in delta if item[0]=='add_fk')[1]
+            assert fk.name=='fk_entry_process_pin_stay' and fk.referred_table.name=='entry_applicant_stay_history'
+        command.upgrade(config,'head')
+        with engine.connect() as conn:
+            ctx=MigrationContext.configure(conn,opts={'compare_type':True,'include_object':lambda obj,name,kind,reflected,other:kind!='table' or name in TABLES})
             assert compare_metadata(ctx,DomainBase.metadata)==[]
     finally: engine.dispose()
 
@@ -39,7 +50,9 @@ def test_additive_empty_cycle_and_model_parity(config):
 def test_migrated_scoped_pins_and_populated_downgrade(config):
     from tests.test_admin_workday import _seed_case
     from tests.test_entry_processes import setup,attest,transition,read
-    command.upgrade(config,CURRENT)
+    # The current writer runs on its current schema. The old populated
+    # downgrade guard is still tested after removing unused later additions.
+    command.upgrade(config,'head')
     engine=create_async_engine(config.get_main_option('sqlalchemy.url').replace('sqlite:','sqlite+aiosqlite:',1),poolclass=NullPool)
     def enable(dbapi,record):
         cursor=dbapi.cursor();cursor.execute('PRAGMA foreign_keys=ON');cursor.close()
@@ -60,6 +73,7 @@ def test_migrated_scoped_pins_and_populated_downgrade(config):
                     with pytest.raises(IntegrityError): await conn.execute(text(f'UPDATE {table} SET {column}=:value'),dict(value=value))
         asyncio.run(invalid())
     finally: asyncio.run(engine.dispose())
+    command.downgrade(config,CURRENT)
     with pytest.raises(RuntimeError,match='preserve populated'): command.downgrade(config,PREVIOUS)
     sync=create_engine(config.get_main_option('sqlalchemy.url'))
     try:

@@ -6,6 +6,9 @@ from pathlib import Path
 
 CATALOG_SHA256 = 'cc17f508dee484534b9667a0235402630db8848618450109f9bcd746b2d78a6c'
 CATALOG_PATH = Path(__file__).resolve().parents[2] / 'knowledge/kg_entry/processes_v1_1/catalog.json'
+WORK_CATALOG_SHA256 = '31a9bd02864b62621f2968139a6b90bc128889febfebe657001c959d96d09ee2'
+WORK_CATALOG_PATH = CATALOG_PATH.parents[1] / 'processes_work_v2/catalog.json'
+CATALOG_PATHS = {CATALOG_SHA256: CATALOG_PATH, WORK_CATALOG_SHA256: WORK_CATALOG_PATH}
 EFFECTS = {'same_process': 'Следующий этап того же процесса',
            'same_attempt_resubmission': 'Доработка и повторная отправка в той же попытке',
            'separate_resident_application': 'Отдельная заявка на резидент-карту',
@@ -61,7 +64,7 @@ class ProcessCatalog:
             raise ProcessPreviewError('process_catalog_integrity_failed')
         # Git may check text out as CRLF on Windows. Pin LF on both platforms.
         object.__setattr__(self,'_raw',self._raw.replace(b'\r\n',b'\n'))
-        if hashlib.sha256(self._raw).hexdigest()!=CATALOG_SHA256:
+        if hashlib.sha256(self._raw).hexdigest() not in CATALOG_PATHS:
             raise ProcessPreviewError('process_catalog_integrity_failed')
         try: _validate(json.loads(self._raw))
         except (KeyError, TypeError, ValueError): raise ProcessPreviewError('invalid_process_catalog') from None
@@ -80,6 +83,14 @@ def load_process_catalog(path=CATALOG_PATH):
         with Path(path).open('rb') as source: raw=source.read(524289)
         return ProcessCatalog(raw)
     except OSError: raise ProcessPreviewError('process_catalog_unavailable') from None
+
+
+def catalog_by_digest(digest):
+    if type(digest) is not str or digest not in CATALOG_PATHS:
+        raise ProcessPreviewError('process_catalog_unavailable')
+    result = load_process_catalog(CATALOG_PATHS[digest])
+    if result.digest != digest: raise ProcessPreviewError('process_catalog_integrity_failed')
+    return result
 
 
 def evaluate_transition(catalog, *, process, current, target, facts, expected_digest):

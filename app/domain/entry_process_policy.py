@@ -5,13 +5,15 @@ import re
 
 from app.domain.entry_storage import EntryStorageInvalid, _authorize, _hash
 from app.domain.service_authz import PermissionDenied
-from app.knowledge.process_preview import CATALOG_SHA256, load_process_catalog
+from app.knowledge.process_preview import CATALOG_SHA256, WORK_CATALOG_SHA256, CATALOG_PATHS, catalog_by_digest
 
 ROOTS={'visa':('visa','V01'), 'unified_permit':('work','W01'),
        'registration':('stay','R01'), 'violation_protocol':('regularization','U01')}
 ROLES={'visa':'visa','permit':'unified_permit','resident':'resident_card',
-       'registration':'registration','protocol':'violation_protocol','exit_visa':'exit_visa'}
+       'registration':'registration','protocol':'violation_protocol','exit_visa':'exit_visa',
+       'resident_registration':'registration'}
 ROOT_ROLES={procedure:role for role,procedure in ROLES.items()}
+ROOT_ROLES['registration']='registration'
 AUTHORITATIVE={
     'consent_confirmed','documents_accepted','documents_current','documents_received',
     'receiving_party_docs_accepted','resident_package_received','corrections_needed','corrections_completed',
@@ -19,6 +21,7 @@ AUTHORITATIVE={
     'issued_document_downloaded','issued_document_checked','delivered_to_client','receipt_confirmed',
     'actual_entry_confirmed','actual_exit_or_end_confirmed','departure_confirmed','exit_visa_issued',
     'service_payment_confirmed','profile_complete','product_defined',
+    'actual_presence_confirmed',
 }
 ATTESTATION_SOURCES={'client_statement','operator_check','official_document','portal','contract','payment_receipt'}
 REFERENCE=r'[A-Z][A-Z0-9._/-]{0,79}'
@@ -46,7 +49,7 @@ class ProcessPolicy:
     def __post_init__(self):
         if (any(type(v) is not str or not re.fullmatch(REFERENCE,v) for v in (self.reference,self.source_reference)) or
             any(type(v) is not str or not re.fullmatch(HASH,v) for v in (self.proof,self.source_proof,self.catalog_digest)) or
-            self.catalog_digest!=CATALOG_SHA256):
+            self.catalog_digest not in CATALOG_PATHS):
             raise EntryStorageInvalid('invalid_process_policy')
         for values,allowed in ((self.initial_procedures,set(ROOTS)),(self.full_case_payment_procedures,set(ROLES.values()))):
             if type(values) is not tuple or len(values)>6 or any(type(v) is not str or v not in allowed for v in values) or len(set(values))!=len(values):
@@ -55,7 +58,7 @@ class ProcessPolicy:
             any(type(v) is not str or not re.fullmatch(r'[a-z0-9_.-]{1,64}',v) or v in ('system','bot') for v in self.operators) or
             len(set(self.operators))!=len(self.operators)):
             raise EntryStorageInvalid('invalid_process_policy')
-        catalog=load_process_catalog().document();edges={edge_id(e) for e in catalog['edges']}
+        catalog=catalog_by_digest(self.catalog_digest).document();edges={edge_id(e) for e in catalog['edges']}
         if (type(self.allowed_edges) is not tuple or not 1<=len(self.allowed_edges)<=len(edges) or
             any(type(v) is not str or v not in edges for v in self.allowed_edges) or len(set(self.allowed_edges))!=len(self.allowed_edges)):
             raise EntryStorageInvalid('invalid_process_policy')

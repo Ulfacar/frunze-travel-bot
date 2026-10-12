@@ -22,6 +22,7 @@
 {% if current and current.revision!=history.current_revision %}<p class="box notice" id="kg-pj-historical">Историческая версия {{ current.revision }}. Готовность ниже рассчитана для текущего состояния. <a href="{{ url }}">Открыть текущую версию</a>.</p>{% endif %}
 {% if state %}<section class="box" id="kg-pj-summary"><h2>{{ state.stage }} · {{ stages[state.stage].name }}</h2><p>{% if state.stopped %}<strong>Процесс остановлен.</strong>{% else %}Текущая процедура: <strong>{{ roles[state.active_role] }}</strong>, заявка №{{ state.active_application_id }}.{% endif %}</p>
 {% if state.employer_reference %}<p>Работодатель: {{ state.employer_reference }}.</p>{% endif %}
+{% if notices.get(state.stage) %}<p class="notice" id="kg-pj-stage-notice">{{ notices[state.stage] }}</p>{% endif %}
 <p class="muted">Записал {{ current.created_by }} · {{ current.created_at }}.</p>
 <h3>Связанные заявки</h3><ul>{% for role,id in state.links.items() %}<li>{{ roles[role] }} — <a href="/admin/case/{{ case.id }}/kg-entry/applications?application_id={{ id }}">№{{ id }}</a></li>{% endfor %}</ul></section>{% endif %}
 <section class="box" id="kg-pj-readiness"><h2>Текущая готовность</h2><p>{{ reasons.get(history.readiness.reason,'Подтверждения недоступны или требуют проверки') }}.</p>
@@ -37,6 +38,11 @@
 <label for="pj-{{ name }}-source">Источник подтверждения</label><select id="pj-{{ name }}-source" name="source">{% for source in allowed_sources[fact] %}<option value="{{ source }}">{{ sources[source] }}</option>{% endfor %}</select><label for="pj-{{ name }}-valid">Проверить заново не позднее</label><input id="pj-{{ name }}-valid" name="valid_through" type="date" min="{{ today }}" required>
 {% if fact in ('profile_review_complete','eligibility','visa_required') %}<p>{% if history.profile_id %}Подтверждение относится к текущей индивидуальной анкете №{{ history.profile_id }}. Проверьте её полноту и основания.{% else %}Сначала сохраните индивидуальную анкету заявителя.{% endif %}</p>{% endif %}
 {% endif %}
+{% if action=='attest' and fact=='resident_registration_basis_reviewed' %}
+<p>Основание: резидент-карта по решению {{ history.resident_basis.reference if history.resident_basis else 'пока не подтверждена' }}. Укажите срок карты и новой регистрации. Код подтверждения ниже должен совпадать с номером этого решения.</p>
+{% for key,label in [('valid_from','Резидент-карта действует с'),('valid_until','Резидент-карта действует до'),('registration_from','Новая регистрация действует с'),('registration_until','Новая регистрация действует до')] %}
+<label for="pj-{{ name }}-{{ key }}">{{ label }}</label><input id="pj-{{ name }}-{{ key }}" name="basis_{{ key }}" type="date" required>
+{% endfor %}{% endif %}
 {% if action in ('attest','withdraw','stop') %}<label for="pj-{{ name }}-reference">Код подтверждающего документа / записи</label><input id="pj-{{ name }}-reference" name="reference" maxlength="80" pattern="[A-Z][A-Z0-9._/-]*" required><label for="pj-{{ name }}-proof">Контрольная сумма подтверждения · SHA256</label><input id="pj-{{ name }}-proof" name="proof" minlength="64" maxlength="64" pattern="[a-f0-9]{64}" required>{% endif %}
 {% if action=='stop' %}<p>Остановка сохраняет историю и запрещает дальнейшие переходы этого процесса.</p>{% endif %}
 <label for="pj-{{ name }}-confirm"><input id="pj-{{ name }}-confirm" name="confirmed" type="checkbox" value="yes" required>Подтверждаю данные этой записи.</label><button type="submit">Сохранить запись</button></fieldset></form></details>{% endfor %}

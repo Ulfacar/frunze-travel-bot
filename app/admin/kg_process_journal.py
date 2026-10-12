@@ -18,18 +18,20 @@ from app.domain.entry_process_rules import catalog, fact_role, MAX_EVENTS
 from app.domain.entry_package_policy import configured_policy as package_policy
 from app.domain.entry_storage import EntryStorageInvalid, EntryStorageConflict, EntryStorageUnavailable
 from app.domain.service_authz import PermissionDenied
-from app.knowledge.process_preview import CATALOG_SHA256
+from app.knowledge.process_preview import CATALOG_SHA256, WORK_CATALOG_SHA256
 
 META = ('_pj_action', '_pj_revision', '_pj_key', '_pj_role', '_pj_fact', '_pj_edge', '_pj_evidence',
-    '_pj_active', '_pj_profile', '_pj_policy')
+    '_pj_active', '_pj_profile', '_pj_policy', '_pj_catalog', '_pj_basis_app', '_pj_basis_approval')
 SECURITY = {'_pj_csrf', '_pj_signature'}
 FIELDS = {'initialize':{'on','employer_reference','confirmed'}, 'link':{'on','application_id','confirmed'},
-    'attest':{'on','valid_through','value','source','reference','proof','confirmed'},
+    'attest':{'on','valid_through','value','source','reference','proof','confirmed',
+        'basis_valid_from','basis_valid_until','basis_registration_from','basis_registration_until'},
     'withdraw':{'on','reference','proof','confirmed'}, 'transition':{'on','confirmed'}, 'stop':{'on','reference','proof','confirmed'}}
 ACTIONS = {'initialize':'Начало журнала', 'link':'Связь с отдельной заявкой', 'attest':'Подтверждение факта',
     'withdraw':'Отзыв подтверждения', 'transition':'Переход этапа', 'stop':'Остановка процесса'}
 ROLE_LABELS = {'visa':'Виза', 'permit':'Разрешение на работу', 'resident':'Резидент-карта',
-    'registration':'Регистрация', 'protocol':'Протокол нарушения', 'exit_visa':'Выездная виза L'}
+    'registration':'Регистрация', 'protocol':'Протокол нарушения', 'exit_visa':'Выездная виза L',
+    'resident_registration':'Регистрация по резидент-карте'}
 SOURCE_LABELS = {'operator_check':'Проверка сотрудником', 'official_document':'Официальный документ',
     'portal':'Запись портала', 'client_statement':'Подтверждение клиента', 'contract':'Договор', 'payment_receipt':'Платёжный документ'}
 REASONS = {'current_evidence':'Подтверждения актуальны', 'process_not_initialized':'Журнал ещё не начат',
@@ -42,6 +44,13 @@ REASONS = {'current_evidence':'Подтверждения актуальны', '
     'process_evidence_limit':'Слишком много связанных подтверждений для одного перехода',
     'process_money_evidence_limit':'Платёжный журнал слишком большой для этой проверки',
     'document_in_quarantine':'Документ находится в карантине', 'package_not_approved':'Комплект ещё не принят'}
+REASONS.update(personal_stay_not_current='Обновите личную историю пребывания заявителя',
+    personal_location_not_current='Подтвердите текущее местонахождение заявителя',
+    personal_open_stay_unresolved='Дата или основание въезда не совпадают с анкетой',
+    personal_stay_overlaps='В истории пребывания пересекаются поездки',
+    resident_basis_changed='Основание регистрации по резидент-карте изменилось',
+    resident_registration_not_confirmed='Новая регистрация после выдачи карты пока не подтверждена',
+    resident_registration_period_not_current='Указанный срок регистрации ещё не начался или уже закончился')
 
 
 def _policies():
@@ -59,16 +68,19 @@ def _csrf(request):
 
 def _signature(request, actor, case_id, application_id, values):
     body = json.dumps(['kg-process-journal/1', actor.manager_id, case_id, application_id, _csrf(request),
-        [values.get(key, '') for key in META]], separators=(',', ':')).encode()
+        [values.get(key, '') for key in META if key not in ('_pj_catalog','_pj_basis_app','_pj_basis_approval') or key in values]], separators=(',', ':')).encode()
     return hmac.new(ar.settings.session_secret.encode(), body, hashlib.sha256).hexdigest()
 
 
 def _envelope(request, actor, case_id, application_id, action, history, policy, *, role='', fact='', edge=None):
     state = history['selected']['snapshot'] if history['selected'] else {}
+    basis = (history.get('resident_basis') or {}) if fact=='resident_registration_basis_reviewed' else {}
     values = dict(zip(META, (action, str(history['current_revision']), secrets.token_hex(24), role, fact,
         edge['edge_id'] if edge else '', edge['evidence_digest'] or '' if edge else '',
         str(state.get('active_application_id', application_id)), str(history['profile_id'] or ''),
-        policy.digest if policy and action not in ('stop','withdraw') else '')))
+        policy.digest if policy and action not in ('stop','withdraw') else '',
+        state.get('catalog_digest',policy.catalog_digest if policy else CATALOG_SHA256),
+        str(basis.get('application_id','')),str(basis.get('approval_id','')))))
     return {**values, '_pj_csrf':_csrf(request), '_pj_signature':_signature(request, actor, case_id, application_id, values)}
 
 
@@ -80,7 +92,7 @@ async def _form(request, actor, case_id, application_id):
         if len(body) + len(chunk) > 8192: raise HTTPException(413, 'Форма слишком большая.', headers=HEADERS)
         body.extend(chunk)
     try:
-        pairs = parse_qsl(body.decode('utf-8'), keep_blank_values=True, max_num_fields=30, encoding='utf-8', errors='strict')
+        pairs = parse_qsl(body.decode('utf-8'), keep_blank_values=True, max_num_fields=40, encoding='utf-8', errors='strict')
         if len({k for k,v in pairs}) != len(pairs) or any(len(k)>64 or len(v)>128 for k,v in pairs): raise ValueError
         values = dict(pairs); action = values.get('_pj_action')
         if action not in FIELDS or not values.keys() <= set(META)|SECURITY|FIELDS[action]: raise ValueError
@@ -94,14 +106,15 @@ async def _form(request, actor, case_id, application_id):
 
 def _operation(values):
     action = values['_pj_action']; data = dict(on=values.get('on',''))
-    if action == 'initialize': data.update(catalog_digest=CATALOG_SHA256, employer_reference=values.get('employer_reference') or None)
+    digest = values.get('_pj_catalog',CATALOG_SHA256)
+    if action == 'initialize': data.update(catalog_digest=digest, employer_reference=values.get('employer_reference') or None)
     elif action == 'link': data.update(role=values['_pj_role'], application_id=int(values.get('application_id','')))
     elif action == 'transition': data.update(edge_id=values['_pj_edge'], evidence_digest=values['_pj_evidence'])
     elif action in ('attest', 'withdraw', 'stop'):
         data.update(reference=values.get('reference',''), proof=values.get('proof',''))
         if action != 'stop': data.update(role=values['_pj_role'], fact=values['_pj_fact'])
         if action == 'attest':
-            spec = catalog()['facts'].get(data['fact'], {'type':'boolean'})
+            spec = catalog(digest)['facts'].get(data['fact'], {'type':'boolean'})
             raw = values.get('value','')
             if spec['type'] == 'boolean':
                 if raw not in ('', 'true', 'false'): raise EntryStorageInvalid('invalid_process_operation')
@@ -110,6 +123,10 @@ def _operation(values):
             profile_bound = data['fact'] in ('profile_review_complete', 'eligibility', 'visa_required')
             data.update(value=value, source=values.get('source',''), valid_through=values.get('valid_through',''),
                 profile_id=int(values['_pj_profile']) if profile_bound and values['_pj_profile'] else None)
+            if data['fact']=='resident_registration_basis_reviewed':
+                data['basis']=dict(application_id=int(values.get('_pj_basis_app','')),
+                    approval_id=int(values.get('_pj_basis_approval','')),
+                    **{key:values.get('basis_'+key,'') for key in ('valid_from','valid_until','registration_from','registration_until')})
     return dict(action=action, data=data, confirmed=values.get('confirmed')=='yes')
 
 
@@ -135,8 +152,12 @@ async def _render(request, manager, actor, case, application_id, *, revision=Non
                     add('initialize','initialize')
                 elif state and not state['stopped']:
                     for role in ROLES:
+                        if role=='resident_registration' and state['catalog_digest']!=WORK_CATALOG_SHA256:continue
                         if role not in state['used_roles']: add('link-'+role, 'link', role=role)
                     needed = set(state['attestations'])
+                    if state['catalog_digest']==WORK_CATALOG_SHA256 and state['stage']=='WX1':
+                        needed.update('permit.'+fact for fact in ('termination_notice_recorded',
+                            'cancellation_request_recorded','departure_plan_recorded'))
                     for key in state['retained']:
                         role,fact=key.split('.',1)
                         needed.add(role+'.'+('profile_review_complete' if fact=='profile_complete' else fact))
@@ -157,11 +178,13 @@ async def _render(request, manager, actor, case, application_id, *, revision=Non
         history=None; forms={}; error='История не прошла проверку. Изменения недоступны.'; status=503
     except Exception:
         history=None; forms={}; error='Хранилище временно недоступно.'; status=503
-    document = catalog()
+    document = catalog(history['selected']['snapshot']['catalog_digest'] if history and history['selected'] else
+        policy.catalog_digest if policy else CATALOG_SHA256)
     facts = {**document['facts'], 'profile_review_complete':{'label':'Полнота индивидуальной анкеты проверена', 'type':'boolean'}}
     return ar.templates.TemplateResponse(request, 'kg_process_journal.html', dict(request=request, manager=manager, case=case,
         application_id=application_id, history=history, forms=forms, actions=ACTIONS, roles=ROLE_LABELS, role_procedures=ROLES,
         reasons=REASONS, facts=facts, stages={s['code']:s for s in document['stages']}, sources=SOURCE_LABELS,
+        notices=document['notices'],
         allowed_sources=dict(policy.manual_sources) if policy else {}, allowed=allowed, error=error, retry=retry, url=url,
         write_on=_write_on(request), meta=META, security=SECURITY, today=service.applications._today().isoformat()),
         status_code=status, headers=HEADERS)

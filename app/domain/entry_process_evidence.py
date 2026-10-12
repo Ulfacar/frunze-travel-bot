@@ -13,6 +13,7 @@ from app.domain import entry_applications as applications
 from app.domain import entry_document_packages as packages
 from app.domain import entry_issued as issued
 from app.domain import applicant_profiles as profiles
+from app.domain import applicant_stay_history as stays
 from app.domain.entry_package_rules import summarize
 from app.domain.entry_process_policy import AUTHORITATIVE, ROLES
 from app.domain.entry_process_rules import fact_role, invalid
@@ -20,10 +21,11 @@ from app.domain.entry_storage import _hash
 from app.domain.knowledge_review import _plain
 from app.domain.models import EntryApplicant, EntryApplication, EntryDocumentPackageEvent, ServiceEvent, ServicePayment
 from app.domain.service_money import balance_from_rows
+from app.knowledge.process_preview import WORK_CATALOG_SHA256
 
 SOURCE_COLUMNS = dict(application_event='application_event_id', package='package_event_id',
     issued='issued_id', profile='profile_id', attestation='attestation_id',
-    payment='payment_id', contract='contract_event_id')
+    payment='payment_id', contract='contract_event_id', stay='stay_history_id')
 PACKAGE_FACTS = {'consent_confirmed', 'documents_accepted', 'documents_current', 'documents_received',
     'receiving_party_docs_accepted', 'resident_package_received', 'corrections_needed',
     'corrections_completed', 'product_defined'}
@@ -66,6 +68,7 @@ class Sources:
         self.events, self.packages, self.issued = {}, {}, {}
         self.documents = {}
         self.profile_rows = None
+        self.stay_rows = None
         self.ledgers = {}
         self.successors = {}
 
@@ -115,6 +118,12 @@ class Sources:
             person = await applications._applicant(self.session, self.case.id, self.root.applicant_id)
             self.profile_rows = (await profiles._history(self.session, self.case, person))[0]
         return self.profile_rows
+
+    async def stay_history(self):
+        if self.stay_rows is None:
+            person = await applications._applicant(self.session, self.case.id, self.root.applicant_id)
+            self.stay_rows, _, _ = await stays._history(self.session, self.case, person)
+        return self.stay_rows
 
     async def ledger(self, observed=None):
         # A later unbounded money journal must not erase bounded historical
@@ -171,11 +180,14 @@ class Evidence:
             if [r.id for r in selected] != ids: invalid('process_observed_source_missing')
             # These journals serialize revisions under their parent lock. An
             # observation may end before today's head, but cannot skip a revision.
-            if (stream == 'profiles' or stream.startswith(('events:', 'packages:', 'issued:', 'documents:'))) and \
+            if (stream in ('profiles','stay_history') or stream.startswith(('events:', 'packages:', 'issued:', 'documents:'))) and \
                     ids != [r.id for r in rows[:len(ids)]]:
                 invalid('process_observed_prefix_invalid')
             if any(applications._utc(getattr(r,field)) > applications._utc(self.at) for r in selected):
                 invalid('process_source_from_future')
+            if self.state['catalog_digest']==WORK_CATALOG_SHA256 and stream in ('stay_history','profiles'):
+                expected=[r.id for r in rows if applications._utc(getattr(r,field))<=applications._utc(self.at)]
+                if ids!=expected:invalid('process_observed_head_omitted')
         else:
             if any(applications._utc(getattr(r,field)) > applications._utc(self.at) for r in rows):
                 invalid('process_source_from_future')
@@ -239,7 +251,55 @@ class Evidence:
             events = await self.events(app)
             pins.append(pin('application_event', events[-1], app))
             if events[-1].status != 'approved': return packet(False, 'official_approval_missing', pins)
+        if fact == 'resident_registration_basis_reviewed':
+            if role != 'resident_registration': return packet(None,'registration_basis_role_mismatch',pins)
+            resident = await self.app('resident')
+            if resident is None: return packet(None,'process_dependency_missing',pins)
+            basis = record['basis']
+            if not basis['registration_from']<=self.day.isoformat()<=basis['registration_until']:
+                return packet(None,'resident_registration_period_not_current',pins)
+            pins.append(pin('application',resident,resident))
+            events = await self.events(resident)
+            approval = events[-1]
+            pins.append(pin('application_event',approval,resident))
+            if (basis['application_id']!=resident.id or basis['approval_id']!=approval.id or
+                    approval.status!='approved' or not await self.usable(resident) or
+                    record['reference']!=approval.reference or record['source'] not in ('official_document','portal')):
+                return packet(None,'resident_basis_changed',pins)
+            registration = (await self.events(app))[-1]
+            pins.append(pin('application_event',registration,app))
+            if (registration.status!='approved' or registration.source not in ('official_document','portal') or
+                    registration.occurred_on<approval.occurred_on or
+                    applications._utc(registration.created_at)<applications._utc(approval.created_at) or
+                    applications._utc(row.created_at)<applications._utc(registration.created_at) or
+                    record['on']<registration.occurred_on.isoformat() or
+                    basis['valid_from']<approval.occurred_on.isoformat()):
+                return packet(None,'resident_registration_not_confirmed',pins)
         return packet(record['value'], 'recorded_attestation', pins)
+
+    async def presence(self, app):
+        rows = self.prefix(await self.sources.stay_history(),'stay_history')
+        profile_rows = self.prefix(await self.sources.profile_history(),'profiles')
+        pins = ([pin('stay',rows[-1],app)] if rows else []) + ([pin('profile',profile_rows[-1],app)] if profile_rows else [])
+        evidence = stays._evidence(rows,profile_rows,self.at)
+        if evidence['status']!='recorded_inputs': return packet(None,'personal_stay_not_current',pins)
+        profile = _plain(profile_rows[-1].input_snapshot)
+        facts = profile['profile']
+        if profile['as_of']!=self.day.isoformat() or facts.get('current_location')!='in_kg':
+            return packet(None,'personal_location_not_current',pins)
+        intervals = evidence['document']['intervals']
+        current = [item for item in intervals if item['exit_date'] is None]
+        if (len(current)!=1 or current[0]['entry_date']>self.day.isoformat() or
+                current[0]['passport_country']!=facts.get('entry_passport_country') or
+                current[0]['entry_date']!=facts.get('in_kg_since') or
+                current[0]['basis']!=facts.get('current_basis_in_kg')):
+            return packet(None,'personal_open_stay_unresolved',pins)
+        ordered=sorted(intervals,key=lambda item:item['entry_date'])
+        if any(b['entry_date']<=(a['exit_date'] or self.day.isoformat()) for a,b in zip(ordered,ordered[1:])):
+            return packet(None,'personal_stay_overlaps',pins)
+        # Recorded actual presence only. Neither basis legality nor permission
+        # to remain/work is inferred from this observation.
+        return packet(True,'recorded_personal_presence_only',pins)
 
     async def package(self, app, fact, *, edge=None):
         rows, states, definitions, _ = await self.sources.package_history(app)
@@ -335,7 +395,8 @@ class Evidence:
         events = await self.events(app)
         if fact != 'decision' and not await self.usable(app):
             return packet(None, 'application_attempt_terminal', base + [pin('application_event', events[-1], app)])
-        if fact in PACKAGE_FACTS: result = await self.package(app, fact, edge=edge)
+        if fact=='actual_presence_confirmed': result = await self.presence(app)
+        elif fact in PACKAGE_FACTS: result = await self.package(app, fact, edge=edge)
         elif fact in ISSUED_FACTS: result = await self.issued_fact(app, fact)
         elif fact == 'service_payment_confirmed': result = await self.payment(app)
         elif fact == 'profile_complete': result = await self.manual(role, 'profile_review_complete', app)
