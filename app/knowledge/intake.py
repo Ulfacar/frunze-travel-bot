@@ -25,7 +25,7 @@ def review_intake(profile):
     inviter = p.get("inviting_party", {})
     count = p.get("applicants_count")
     if isinstance(family, list):
-        if type(count) is int and count < len(family) + 1:
+        if type(count) in (int, float) and count < len(family) + 1:
             raise ValueError("family_exceeds_applicants")
         if any(r.get("travels_together") is True and r.get("arrives_later") is True for r in family):
             raise ValueError("family_travel_conflict")
@@ -81,7 +81,7 @@ def review_intake(profile):
     stops = []
     if p.get("violations", {}).get("fines") is True:
         stops.append("reported_fines")
-    if type(count) is int and count > 5:
+    if type(count) in (int, float) and count > 5:
         stops.append("large_group_review")
     if p.get("requested_process") in ("unified_permit", "resident_card", "residence_permit", "regularization"):
         stops.append("special_process_requested")

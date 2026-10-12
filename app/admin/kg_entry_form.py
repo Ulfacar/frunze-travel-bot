@@ -127,6 +127,10 @@ def values_from_request(request):
         if f["kind"] in ("date", "integer"):
             state = "value" if value is not None and value not in ("unknown", "not_applicable", "") else value or ""
             values[path + "_state"] = state
+            # JSON Schema permits 6.0 as an integer. Display its canonical integer
+            # spelling so the unchanged strict native parser can round-trip it.
+            if f["kind"] == "integer" and type(value) is float and value.is_integer():
+                value = int(value)
             values[path] = str(value) if state == "value" else ""
         elif f["kind"] == "countries":
             values[path] = list(value) if isinstance(value, list) else [value] if value else []
