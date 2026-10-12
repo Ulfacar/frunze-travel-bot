@@ -26,7 +26,8 @@ final audit are evidenced. J01/J02/J03 and real J05 remain separate.
 
 Status: IMPLEMENTING. Independent source-first pre-audit completed in
 `ai/reviews/2026-10-12-e6-29-pre-audit.md`, covering all57 section17 rows and
-4.1/Б.6 stops. Initial pure RU/EN conservative triage is an unconnected draft;
-it does not close H02. Explicit route/person authority, atomic cause/handoff/
-permanent suppression, current calendar/history stops and positive normal-turn
-handling still need implementation and evidence. Source policy remains empty.
+4.1/Б.6 stops. E6-29A atomic interruption/cause/permanent stop and E6-29B current
+expiry/calendar/observed-headroom components are reviewed and committed locally.
+E6-29C incoming integration and positive normal turns remain open; its task and
+pre-audit define prompt receipts, original-attestation reconciliation and durable
+single-send admission. H02 remains UNKNOWN. Source policy remains empty.
