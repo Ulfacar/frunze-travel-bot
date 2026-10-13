@@ -282,6 +282,8 @@ async def record_process_operation(engine, *, actor, case_id, application_id, ex
                 case_id=case_id, applicant_id=root.applicant_id, **data))
         await session.flush()
         rows.append(row)
+        from app.domain.entry_deadline_tasks import sync_enabled
+        await sync_enabled(session, case, root, actor.manager_id, operator_admission=True)
         return {**_view(row), 'current_revision':len(rows),
             'readiness':await _readiness(sources, next_state, rows, actor, policy, package_policy, at)}
     return await applications._run(engine, write)

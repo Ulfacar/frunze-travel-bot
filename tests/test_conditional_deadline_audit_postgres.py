@@ -9,6 +9,7 @@ from sqlalchemy import select, func
 
 from tests.test_entry_process_postgres import template, env
 from tests.test_conditional_deadlines import clock
+from tests.test_entry_anchor_migration import metadata_options
 from tests import test_conditional_deadlines as core
 from tests.test_specialist_postgres import waiting
 from app.domain import conditional_deadlines as service, conditional_deadline_sources as sources
@@ -77,7 +78,7 @@ def test_actual_pg_migration_scope_and_populated_inverse_guard(env):
     command.downgrade(cfg,'e6_work_review_events_0041');command.upgrade(cfg,'head')
     async def metadata():
         async with env['engine'].connect() as conn:
-            return await conn.run_sync(lambda c:compare_metadata(MigrationContext.configure(c,opts={'compare_type':True}),DomainBase.metadata))
+            return await conn.run_sync(lambda c:compare_metadata(MigrationContext.configure(c,opts=metadata_options()),DomainBase.metadata))
     assert asyncio.run(metadata())==[]
     own=actual.setup(env);other=actual.setup(env,key='OTHER')
     request=actual.args(env,own);saved=actual.write(env,request)

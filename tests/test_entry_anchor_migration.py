@@ -14,6 +14,13 @@ PREVIOUS = 'e6_work_review_events_0041'
 CURRENT = 'e6_actual_anchor_events_0042'
 
 
+def metadata_options():
+    # 0043 additions are excluded only while comparing the exact 0042 boundary.
+    return dict(compare_type=True,include_object=lambda obj,name,kind,reflected,compare_to:
+        not (kind=='table' and name=='entry_sop_review_evidence' or
+             kind=='column' and obj.table.name=='entry_deadline_tasks' and name=='expected_at'))
+
+
 def test_actual_anchor_empty_round_trip_preserves_old_schema_and_matches_metadata(config):
     command.upgrade(config, PREVIOUS); engine = create_engine(config.get_main_option('sqlalchemy.url'))
     def old_schema(conn):
@@ -23,7 +30,7 @@ def test_actual_anchor_empty_round_trip_preserves_old_schema_and_matches_metadat
         command.upgrade(config, CURRENT)
         with engine.connect() as conn:
             assert old_schema(conn) == before
-            assert compare_metadata(MigrationContext.configure(conn, opts={'compare_type':True}), DomainBase.metadata) == []
+            assert compare_metadata(MigrationContext.configure(conn, opts=metadata_options()), DomainBase.metadata) == []
             assert conn.scalar(text('SELECT count(*) FROM entry_anchor_events')) == 0
             assert conn.scalar(text('SELECT count(*) FROM entry_anchor_pins')) == 0
         command.downgrade(config, PREVIOUS)
@@ -33,7 +40,7 @@ def test_actual_anchor_empty_round_trip_preserves_old_schema_and_matches_metadat
             assert old_schema(conn) == before
         command.upgrade(config, CURRENT)
         with engine.connect() as conn:
-            assert compare_metadata(MigrationContext.configure(conn, opts={'compare_type':True}), DomainBase.metadata) == []
+            assert compare_metadata(MigrationContext.configure(conn, opts=metadata_options()), DomainBase.metadata) == []
     finally: engine.dispose()
 
 

@@ -2661,6 +2661,7 @@ from app.admin import kg_quotes  # noqa: E402,F401 — внутренние ве
 from app.admin import kg_specialist  # noqa: E402,F401 — явное решение специалиста и связанный расчёт
 from app.admin import kg_work_review  # noqa: E402,F401 — отдельная условная проверка срока ЕР
 from app.admin import kg_actual_dates  # noqa: E402,F401 — фактические даты и условные напоминания
+from app.admin import kg_sop_reviews  # noqa: E402,F401
 from app.admin import kg_notifications  # noqa: E402,F401 — внутренние черновики без отправки
 from app.admin import kg_channel_stops  # noqa: E402,F401 — постоянная остановка выбранного WhatsApp-диалога
 from app.admin import kg_documents  # noqa: E402,F401 — черновая матрица документов, без записи

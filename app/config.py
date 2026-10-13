@@ -394,6 +394,7 @@ class Settings(BaseSettings):
     kg_work_review_authorities: list[dict] = Field(default_factory=list)
     kg_actual_anchor_policy: dict | None = None
     kg_conditional_deadline_authorities: list[dict] = Field(default_factory=list)
+    kg_operator_sop_authorities: list[dict] = []
     kg_notification_storage_policy: dict = Field(default_factory=dict)
     # Permanent stops are enrolled only under explicit authority, on activated Wappi profiles.
     kg_channel_guard_scopes: list[dict] = Field(default_factory=list)

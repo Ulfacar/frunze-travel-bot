@@ -79,7 +79,9 @@ async def _history(session, case, application, rule):
         .order_by(EntryDeadlineRevision.revision).limit(MAX_REVISIONS+2))).all())
     if len(rows)>MAX_REVISIONS+1:
         raise EntryStorageInvalid('deadline_history_limit')
-    from app.domain import conditional_deadlines
+    from app.domain import conditional_deadlines, operator_sop_reviews
+    if any(operator_sop_reviews.is_operator(r) for r in rows):
+        return await operator_sop_reviews.history(session, case, application, rule, rows)
     if any(conditional_deadlines.is_conditional(r) for r in rows):
         return await conditional_deadlines.history(session, case, application, rule, rows)
     size=0
@@ -122,7 +124,8 @@ async def _history(session, case, application, rule):
 
 
 def _view(row, *, stale=False):
-    from app.domain import conditional_deadlines
+    from app.domain import conditional_deadlines, operator_sop_reviews
+    if operator_sop_reviews.is_operator(row): return operator_sop_reviews.view(row)
     if conditional_deadlines.is_conditional(row): return conditional_deadlines.view(row)
     snapshot=_plain(row.snapshot)
     summary=sources.summary(snapshot)
@@ -145,7 +148,9 @@ async def record_deadline_operation(engine, *, actor, case_id, application_id, r
         case=await applications._case(session,case_id,lock=True)
         application=await applications._application(session,case_id,application_id,lock=True)
         rows,size,stale=await _history(session,case,application,rule_unit_id)
-        from app.domain import conditional_deadlines
+        from app.domain import conditional_deadlines, operator_sop_reviews
+        if rows and operator_sop_reviews.is_operator(rows[-1]):
+            raise EntryStorageInvalid("operator_sop_separate_authority_required")
         if rows and conditional_deadlines.is_conditional(rows[-1]):
             raise EntryStorageInvalid('conditional_deadline_separate_authority_required')
         old=next((r for r in rows if r.request_key==request_key),None)
@@ -197,15 +202,20 @@ async def read_deadline_history(engine, *, actor, case_id, application_id, rule_
         raise EntryStorageInvalid('invalid_deadline_revision')
     if type(replay) is not bool:raise EntryStorageInvalid('invalid_deadline_replay')
     async def read(session):
+        if rule_unit_id.startswith('KG.DL.INTERNAL_SOP_'):
+            from app.domain.operator_sop_sources import lock_admission
+            await lock_admission(session)
         case=await applications._case(session,case_id,lock=True)
         application=await applications._application(session,case_id,application_id,lock=True)
         rows,size,stale=await _history(session,case,application,rule_unit_id)
         row=next((r for r in rows if r.revision==revision),None) if revision else rows[-1] if rows else None
         if revision and row is None:raise EntryStorageInvalid('deadline_revision_unavailable')
-        from app.domain import conditional_deadlines
+        from app.domain import conditional_deadlines, operator_sop_reviews
+        operator = row is not None and operator_sop_reviews.is_operator(row)
+        operator_current = await operator_sop_reviews.current(session,case,application,row) if operator else None
         conditional = row is not None and conditional_deadlines.is_conditional(row)
         current = await conditional_deadlines.current(session, case, application, row) if conditional else None
-        if row and replay and not conditional:
+        if row and replay and not conditional and not operator:
             snapshot=_plain(row.snapshot)
             if snapshot['runtime']!=_runtime():raise EntryStorageInvalid('deadline_replay_runtime_changed')
             data=snapshot['selection']
@@ -217,7 +227,7 @@ async def read_deadline_history(engine, *, actor, case_id, application_id, rule_
         return dict(application=applications._application_view(application),rule_unit_id=rule_unit_id,
             current_revision=len(rows),terminal=len(rows)>MAX_REVISIONS or size>MAX_BYTES,
             selected=_view(row,stale=stale[row.id]) if row else None,
-            conditional_current=current,
+            conditional_current=current, operator_current=operator_current,
             history=[dict(revision=r.revision,created_by=r.created_by,created_at=applications._utc(r.created_at),
                           action=r.command['operation']['action']) for r in reversed(rows)])
     return await applications._run(engine,read)

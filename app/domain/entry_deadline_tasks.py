@@ -1,10 +1,10 @@
-"""Internal date-only CRM tasks. No messages, legal decisions or scheduler identity.
+"""Internal CRM tasks with optional explicitly selected time. No messages, legal decisions or scheduler identity.
 
 The immutable deadline journal is the source; CalendarTaskEvent remains the task
 audit. Transactions lock case, application, then task. Hooks share their caller's
 transaction and only process tracks explicitly enabled by an operator.
 """
-from datetime import date
+from datetime import date, datetime
 import json
 
 from sqlalchemy import inspect, select
@@ -18,6 +18,21 @@ from app.knowledge.review import canonical
 MAX_GENERATIONS = 250
 MAX_ACTIONS = 250
 ACTIVE = ('planned', 'rescheduled')
+INTERNAL_FORMATS = ('kg-conditional-deadline/2','kg-operator-sop-review/1')
+
+
+def _instant(value):
+    return applications._utc(value) if value is not None else None
+
+
+def _schedule_conflict(task,binding):
+    return task.scheduled_date!=binding.expected_date or _instant(task.scheduled_at)!=_instant(binding.expected_at)
+
+
+async def _lock_observation(session,rule):
+    if rule.startswith('KG.DL.INTERNAL_SOP_'):
+        from app.domain.operator_sop_sources import lock_admission
+        await lock_admission(session)
 
 
 def _validate(actor, case_id, application_id, rule):
@@ -53,7 +68,8 @@ async def _task(session, case, binding, *, lock=False):
         expected = evidence['after']
         if (canonical(evidence['binding']) != canonical(binding.id) or expected['source'] != binding.source_hash or
             expected['target'] != binding.target_hash or canonical(expected['deadline']) != canonical(binding.deadline_revision_id) or
-            canonical(expected['task']['id']) != canonical(task.id) or expected['task']['date'] != binding.expected_date.isoformat()):
+            canonical(expected['task']['id']) != canonical(task.id) or expected['task']['date'] != binding.expected_date.isoformat() or
+            expected['task'].get('at') != _instant(binding.expected_at)):
             raise ValueError
     except (AttributeError, KeyError, TypeError, ValueError):
         raise EntryStorageInvalid('deadline_task_binding_audit_invalid') from None
@@ -75,10 +91,10 @@ def _view(binding, task, desired=None):
     attention = binding.attention
     if task and state['claimed']:
         attention = 'claimed'
-    elif task and task.status in ACTIVE and (task.scheduled_date != binding.expected_date or task.scheduled_at is not None):
+    elif task and task.status in ACTIVE and _schedule_conflict(task,binding):
         attention = 'schedule_conflict'
     conditional_terminal = bool(task and task.status not in ACTIVE and desired and
-        desired['source'].snapshot.get('format')=='kg-conditional-deadline/2' and binding.deadline_revision_id==desired['source'].id)
+        desired['source'].snapshot.get('format') in INTERNAL_FORMATS and binding.deadline_revision_id==desired['source'].id)
     return dict(enabled=True, binding_id=binding.id, generation=binding.generation, revision=binding.revision,
         deadline_revision_id=binding.deadline_revision_id, attention=attention, task=state,
         pending=bool(not conditional_terminal and desired and desired['target_hash'] != binding.target_hash and
@@ -93,13 +109,18 @@ async def _desired(session, case, application, rule):
         raise EntryStorageInvalid('deadline_task_source_required')
     source = rows[-1]
     due = deadlines._view(source, stale=stale[source.id])['summary']['operational_due_on']
-    from app.domain import conditional_deadlines
+    from app.domain import conditional_deadlines, operator_sop_reviews
+    due_at=None
+    if operator_sop_reviews.is_operator(source):
+        current=await operator_sop_reviews.current(session,case,application,source)
+        due=current["review_due_on"]; due_at=current["review_at"]
     if conditional_deadlines.is_conditional(source):
         due = (await conditional_deadlines.current(session, case, application, source))['review_due_on']
     owner = (case.owner_login or '').strip().lower()
     source_hash = _hash(dict(id=source.id, hash=source.snapshot_hash, due_on=due, stale=stale[source.id]))
+    if operator_sop_reviews.is_operator(source): source_hash=_hash(dict(source=source_hash,at=due_at))
     return dict(source=source, source_hash=source_hash, target_hash=_hash(dict(source=source_hash, owner=owner)),
-                due_on=date.fromisoformat(due) if due else None, owner=owner)
+                due_on=date.fromisoformat(due) if due else None, due_at=datetime.fromisoformat(due_at) if due_at else None, owner=owner)
 
 
 async def _attention(session, binding, task, value, actor):
@@ -113,7 +134,7 @@ async def _attention(session, binding, task, value, actor):
         await session.flush()
 
 
-async def _reconcile(session, case, application, rule, actor, *, enable=False, restore=False, minimum_revision=None):
+async def _reconcile(session, case, application, rule, actor, *, enable=False, restore=False, minimum_revision=None, operator_admission=True):
     bindings = await _bindings(session, application, rule)
     binding = bindings[-1] if bindings else None
     if not binding and not enable:
@@ -122,7 +143,9 @@ async def _reconcile(session, case, application, rule, actor, *, enable=False, r
     if enable or restore:
         from app.domain.conditional_deadlines import task_authorize
         await task_authorize(session, case, application, rule, actor)
-    if restore and desired['source'].snapshot.get('format') == 'kg-conditional-deadline/2' and (desired['due_on'] is None or not desired['owner']):
+        from app.domain.operator_sop_reviews import task_authorize as operator_authorize
+        await operator_authorize(session,case,application,rule,actor)
+    if restore and desired['source'].snapshot.get('format') in INTERNAL_FORMATS and (desired['due_on'] is None or not desired['owner']):
         raise EntryStorageInvalid('conditional_deadline_restore_unavailable')
     task = await _task(session, case, binding, lock=True)
     if minimum_revision and desired['source'].revision < minimum_revision:
@@ -130,11 +153,16 @@ async def _reconcile(session, case, application, rule, actor, *, enable=False, r
     if task and (task.claimed_at or task.claimed_by):
         await _attention(session, binding, task, 'claimed', actor)
         return _view(binding, task, desired)
-    if task and task.status in ACTIVE and (task.scheduled_date != binding.expected_date or task.scheduled_at is not None) and not restore:
+    if task and task.status in ACTIVE and _schedule_conflict(task,binding) and not restore:
         await _attention(session, binding, task, 'schedule_conflict', actor)
         return _view(binding, task, desired)
+    if desired['source'].snapshot.get('format')=='kg-operator-sop-review/1' and not operator_admission and desired['due_on'] is not None:
+        # This source hook already owns case locks and cannot wait for the
+        # earlier global quarantine lock. It may only cancel stale work.
+        # Creation, rescheduling and reassignment require explicit admission.
+        return _view(binding,task,desired)
     if task and task.status not in ACTIVE:
-        if desired['source'].snapshot.get('format')=='kg-conditional-deadline/2' and binding.deadline_revision_id==desired['source'].id:
+        if desired['source'].snapshot.get('format') in INTERNAL_FORMATS and binding.deadline_revision_id==desired['source'].id:
             return _view(binding, task, desired)
         # A completed/cancelled task does not reopen on owner changes or retries.
         if binding.source_hash == desired['source_hash'] and not (binding.attention == 'missing_owner' and desired['owner'] and desired['due_on']):
@@ -157,14 +185,15 @@ async def _reconcile(session, case, application, rule, actor, *, enable=False, r
     elif not attention:
         if task is None:
             task = await CalendarTaskService.create(session, manager_id=desired['owner'], direction='visa', kind='followup',
-                scheduled_date=desired['due_on'], contact_id=case.contact_id, created_by=actor,
-                comment=(f"Условная дата внутренней проверки: заявление №{application.id}, {rule}. Сверить актуальные документы и основания."
+                scheduled_date=desired['due_on'], scheduled_at=desired['due_at'], contact_id=case.contact_id, created_by=actor,
+                comment=(f"Internal review selected by operator: application #{application.id}."
+                    if desired['source'].snapshot.get('format') == 'kg-operator-sop-review/1' else f"Условная дата внутренней проверки: заявление №{application.id}, {rule}. Сверить актуальные документы и основания."
                     if desired['source'].snapshot.get('format') == 'kg-conditional-deadline/2' else
                     f"Контроль срока: заявление №{application.id}, {rule}. Проверить подтверждённую дату в карточке."))
             task.service_case_id = case.id; binding.task_id = task.id
         else:
-            if task.scheduled_date != desired['due_on'] or task.scheduled_at is not None:
-                await CalendarTaskService.reschedule(session, task, new_date=desired['due_on'], actor=actor)
+            if task.scheduled_date != desired['due_on'] or _instant(task.scheduled_at)!=_instant(desired['due_at']):
+                await CalendarTaskService.reschedule(session, task, new_date=desired['due_on'], new_at=desired['due_at'], actor=actor)
             if task.manager_id != desired['owner']:
                 old_owner = task.manager_id; task.manager_id = desired['owner']
                 await _log_event(session, task, 'reassigned', actor=actor,
@@ -172,6 +201,7 @@ async def _reconcile(session, case, application, rule, actor, *, enable=False, r
     binding.source_hash = desired['source_hash']; binding.target_hash = desired['target_hash']
     binding.deadline_revision_id = desired['source'].id
     binding.expected_date = task.scheduled_date if task else None
+    binding.expected_at = task.scheduled_at if task else None
     binding.attention = attention
     after = dict(source=binding.source_hash, target=binding.target_hash, deadline=binding.deadline_revision_id,
                  task=_task_state(task), attention=attention)
@@ -184,7 +214,7 @@ async def _reconcile(session, case, application, rule, actor, *, enable=False, r
     return _view(binding, task, desired)
 
 
-async def sync_enabled(session, case, application, actor):
+async def sync_enabled(session, case, application, actor, *, operator_admission=False):
     """Atomic source hook; caller already holds case/application write locks."""
     # Older journal migrations remain usable before this additive capability is
     # installed. With no binding table, no track can have been enabled. Explicit
@@ -197,7 +227,7 @@ async def sync_enabled(session, case, application, actor):
     if len(rules) > deadlines.MAX_TRACKS:
         raise EntryStorageInvalid('deadline_task_track_limit')
     for rule in rules:
-        await _reconcile(session, case, application, rule, actor)
+        await _reconcile(session, case, application, rule, actor, operator_admission=operator_admission)
 
 
 async def reconcile_deadline_task(engine, *, actor, case_id, application_id, rule_unit_id,
@@ -208,6 +238,7 @@ async def reconcile_deadline_task(engine, *, actor, case_id, application_id, rul
     if minimum_revision is not None and (type(minimum_revision) is not int or not 1 <= minimum_revision <= deadlines.MAX_REVISIONS+1):
         raise EntryStorageInvalid('invalid_deadline_revision')
     async def write(session):
+        await _lock_observation(session,rule_unit_id)
         case = await applications._case(session, case_id, lock=True)
         application = await applications._application(session, case_id, application_id, lock=True)
         if restore:
@@ -225,6 +256,7 @@ async def reconcile_deadline_task(engine, *, actor, case_id, application_id, rul
 async def read_deadline_task(engine, *, actor, case_id, application_id, rule_unit_id):
     _validate(actor, case_id, application_id, rule_unit_id)
     async def read(session):
+        await _lock_observation(session,rule_unit_id)
         case = await applications._case(session, case_id, lock=True)
         application = await applications._application(session, case_id, application_id, lock=True)
         desired = await _desired(session, case, application, rule_unit_id)
@@ -243,7 +275,7 @@ async def read_deadline_task(engine, *, actor, case_id, application_id, rule_uni
                     item.update(action=json.loads(event.detail)['command']['action'], reason=json.loads(event.detail)['command']['reason'])
                 events.append(item)
         return dict(current=result[0] if result else _view(None, None), history=result,
-                    owner=desired['owner'], due_on=desired['due_on'].isoformat() if desired['due_on'] else None, events=events)
+                    owner=desired['owner'], due_on=desired['due_on'].isoformat() if desired['due_on'] else None, due_at=_instant(desired['due_at']), events=events)
     return await applications._run(engine, read)
 
 
@@ -256,6 +288,7 @@ async def act_on_deadline_task(engine, *, actor, case_id, application_id, rule_u
         raise EntryStorageInvalid('invalid_deadline_task_token')
     command = dict(binding=binding_id, token=expected_token, request_key=request_key, action=action, reason=reason, actor=actor.manager_id)
     async def write(session):
+        await _lock_observation(session,rule_unit_id)
         case = await applications._case(session, case_id, lock=True)
         application = await applications._application(session, case_id, application_id, lock=True)
         desired = await _desired(session, case, application, rule_unit_id)
@@ -289,7 +322,7 @@ async def act_on_deadline_task(engine, *, actor, case_id, application_id, rule_u
             raise EntryStorageConflict('deadline_task_claimed')
         if task.status not in ACTIVE:
             raise EntryStorageConflict('deadline_task_terminal')
-        if task.scheduled_date != binding.expected_date or task.scheduled_at is not None:
+        if _schedule_conflict(task,binding):
             raise EntryStorageConflict('deadline_task_schedule_conflict')
         before = _task_state(task)
         if action == 'complete': await CalendarTaskService.complete(session, task, actor=actor.manager_id)

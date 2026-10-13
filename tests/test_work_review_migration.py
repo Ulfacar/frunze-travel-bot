@@ -16,8 +16,9 @@ CURRENT='e6_work_review_events_0041'
 
 def metadata_options():
     # 0042 adds these tables; this test continues to verify the exact 0041 schema.
-    later={'entry_anchor_events','entry_anchor_pins','entry_conditional_evidence'}
-    return dict(compare_type=True,include_object=lambda obj,name,kind,reflected,compare_to:kind!='table' or name not in later)
+    later={'entry_anchor_events','entry_anchor_pins','entry_conditional_evidence','entry_sop_review_evidence'}
+    return dict(compare_type=True,include_object=lambda obj,name,kind,reflected,compare_to:
+        not (kind=='table' and name in later or kind=='column' and obj.table.name=='entry_deadline_tasks' and name=='expected_at'))
 
 
 def test_review_additive_empty_cycle_and_full_metadata(config):

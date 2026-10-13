@@ -1732,6 +1732,7 @@ class EntryDeadlineTask(DomainBase):
     source_hash: Mapped[str] = mapped_column(String(64))
     target_hash: Mapped[str] = mapped_column(String(64))
     expected_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    expected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     attention: Mapped[str] = mapped_column(String(32), default="")
     created_by: Mapped[str] = mapped_column(String(64))
     updated_by: Mapped[str] = mapped_column(String(64))
@@ -2305,6 +2306,35 @@ class EntryConditionalEvidence(DomainBase):
     receipt_hash: Mapped[str] = mapped_column(String(64))
 
 
+class EntrySopReviewEvidence(DomainBase):
+    """Independent own-process/profile pins for a selected internal review."""
+    __tablename__ = 'entry_sop_review_evidence'
+    __table_args__ = (
+        ForeignKeyConstraint(['deadline_id','application_id','case_id','rule_unit_id'],
+            ['entry_deadline_revisions.id','entry_deadline_revisions.application_id','entry_deadline_revisions.case_id','entry_deadline_revisions.rule_unit_id'], name='fk_sop_review_receipt'),
+        ForeignKeyConstraint(['process_event_id','application_id','case_id','applicant_id'],
+            ['entry_process_events.id','entry_process_events.application_id','entry_process_events.case_id','entry_process_events.applicant_id'], name='fk_sop_review_process'),
+        ForeignKeyConstraint(['profile_id','applicant_id','case_id'],
+            ['entry_applicant_profiles.id','entry_applicant_profiles.applicant_id','entry_applicant_profiles.case_id'], name='fk_sop_review_profile'),
+        ForeignKeyConstraint(['active_application_id','case_id','applicant_id','active_procedure'],
+            ['entry_applications.id','entry_applications.case_id','entry_applications.applicant_id','entry_applications.procedure'], name='fk_sop_review_active'),
+        ForeignKeyConstraint(['application_event_id','active_application_id'],
+            ['entry_application_events.id','entry_application_events.application_id'], name='fk_sop_review_event'),
+        CheckConstraint('length(receipt_hash)=64', name='ck_sop_review_receipt_hash'),
+    )
+    deadline_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    application_id: Mapped[int] = mapped_column(Integer)
+    case_id: Mapped[int] = mapped_column(Integer)
+    rule_unit_id: Mapped[str] = mapped_column(String(80))
+    applicant_id: Mapped[int] = mapped_column(Integer)
+    process_event_id: Mapped[int] = mapped_column(Integer)
+    profile_id: Mapped[int] = mapped_column(Integer)
+    active_application_id: Mapped[int] = mapped_column(Integer)
+    active_procedure: Mapped[str] = mapped_column(String(24))
+    application_event_id: Mapped[int] = mapped_column(Integer)
+    receipt_hash: Mapped[str] = mapped_column(String(64))
+
+
 class EntryWorkReviewEvent(DomainBase):
     """Immutable conditional-review receipts; CalendarTask is only a projection."""
     __tablename__='entry_work_review_events'
@@ -2507,7 +2537,7 @@ class ServiceCaseOpening(DomainBase):
     def _freeze(self,key,value):return _ServiceJSON.freeze(value)
 
 
-ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause, EntryDialogueSession, EntryDialogueEvent, ServiceCaseOpening, SpecialistDecisionEvent, EntryWorkReviewEvent, EntryAnchorEvent, EntryAnchorPin, EntryConditionalEvidence)
+ENTRY_IMMUTABLE_MODELS = (*ENTRY_STORAGE_MODELS, EntryQualification, *ENTRY_APPLICATION_MODELS, EntryDocumentRevision, EntryIssuedRevision, EntryApplicantProfile, EntryApplicantStayHistory, EntryDeadlineRevision, KnowledgeDecision, KnowledgePublicationEvent, KnowledgePublicationUnit, EntryDocumentPackageEvent, EntryQuarantinedFile, EntryProcessEvent, EntryProcessPin, EntryPortalReceipt, EntryPortalAction, EntryInterview, EntryInterviewEvent, EntryQuoteRevision, EntryChannelStop, EntryNotificationDraft, EntryDialogueStopCause, EntryDialogueSession, EntryDialogueEvent, ServiceCaseOpening, SpecialistDecisionEvent, EntryWorkReviewEvent, EntryAnchorEvent, EntryAnchorPin, EntryConditionalEvidence, EntrySopReviewEvidence)
 
 
 def _entry_immutable(mapper, connection, target):

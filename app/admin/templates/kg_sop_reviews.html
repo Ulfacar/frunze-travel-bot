@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ text.title }}{% endblock %}
+{% block content %}
+<style>
+.sop-review{max-width:850px;margin:24px auto;font:16px/1.55 Arial,sans-serif;color:var(--text);padding:0 16px}.sop-review h1{font-size:26px}.sop-review h2{font-size:19px;margin-top:24px}.sop-review label{display:block;margin:14px 0 6px}.sop-review input,.sop-review select{box-sizing:border-box;width:100%;min-height:44px;font:inherit;padding:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:5px}.sop-review button{font:600 16px Arial,sans-serif;min-height:44px;padding:10px 18px;background:#1558b0!important;color:#fff!important;border:1px solid #1558b0;border-radius:5px;margin-top:14px}.sop-review input[type=checkbox]{width:22px;min-height:22px;vertical-align:middle}.sop-review form{padding:0 0 20px;border-bottom:1px solid var(--border)}.sop-review a{color:var(--text);text-decoration:underline}.sop-review :focus-visible{outline:3px solid #df9517;outline-offset:3px}.sop-review .message{padding:12px;border:1px solid var(--border)}.sop-review dl{display:grid;grid-template-columns:1fr 2fr;gap:8px}.sop-review dt{font-weight:bold}.sop-review dd{margin:0;overflow-wrap:anywhere}.sop-review .error{border-left:4px solid #ad2323;padding:12px}.sop-review .actions{margin-bottom:20px}
+@media(max-width:600px){.sop-review{margin:16px auto}.sop-review dl{grid-template-columns:1fr}.sop-review button{width:100%}}
+@media print{html,body,main,.sop-review{height:auto!important;min-height:0!important;overflow:visible!important;color-scheme:light!important}html,body,.app-shell,.workspace,.main,.sop-review{background:#fff!important;color:#000!important}header,nav,.sidebar,.topbar,.sop-review form,.sop-review .actions,.floating-tools{display:none!important}.sop-review{font:11pt/1.4 Arial,sans-serif;margin:0;max-width:none}.sop-review *{color:#000!important;background:#fff!important;box-shadow:none!important}main,.main-content,.workspace{margin:0!important;padding:0!important}.sop-review h1{font-size:20pt}}
+</style>
+<main class="sop-review" lang="{{ language }}">
+<div class="actions"><a href="/admin/case/{{ ids[0] }}/kg-entry/applications?application_id={{ ids[2] }}">{{ text.back }}</a> · <a href="{{ alternate }}">{{ 'English' if language=='ru' else 'Русский' }}</a></div>
+<h1>{{ text.title }}</h1><p>{{ text.case_label }} #{{ ids[0] }} &middot; {{ text.person_label }} #{{ ids[1] }} &middot; {{ text.application_label }} #{{ ids[2] }}</p><p>{{ text.notice }}</p><p>{{ text.freshness }}</p>
+{% if error %}<p class="error" role="alert">{{ text[error] }}</p>{% endif %}
+<form method="get"><input type="hidden" name="language" value="{{ language }}"><label for="sop-rule">{{ text.duty }}</label><select id="sop-rule" name="rule">{% for key,duty in duties.items() %}<option value="{{ key }}" {% if key==rule %}selected{% endif %}>{{ duty.labels[language] }}</option>{% endfor %}</select><button>{{ text.choose }}</button></form>
+{% if review %}
+<h2>{{ duties[rule].labels[language] }}</h2>
+{% if review.report.evidence %}<p>{{ text.stage }}: <strong>{{ review.report.evidence.stage }}</strong> &middot; {{ text.active_label }} #{{ review.report.evidence.active_application_id }}</p>{% endif %}
+{% if review.report.status!='available' %}<p class="message">{{ unavailable_reason }}</p>{% endif %}
+{% if review.report.evidence %}{% for ref in duties[rule].source_refs if ref.stage==review.report.evidence.stage %}<p>{{ text.source }}: §{{ ref.section }}, {{ ref.printed_page }} — {{ ref.clause }}</p>{% endfor %}{% endif %}
+{% if review.selected %}{% set saved=review.selected %}<h2>{{ text.history }}</h2><dl><dt>{{ text.schedule }}</dt><dd>{{ saved.snapshot.schedule.on }} · {{ saved.snapshot.schedule.time or text.date_only }}{% if saved.snapshot.schedule.time %} (Asia/Bishkek){% endif %}</dd><dt>{{ text.reason }}</dt><dd>{{ text[saved.snapshot.schedule.reason] }}</dd><dt>{{ text.current }}</dt><dd>{{ text.get(current.status if current and current.status!='unknown' else 'unknown_status',text.unknown_status) }}</dd></dl>{% endif %}
+<h2>{{ text.task }}</h2>{% if task and task.current.task %}<dl><dt>{{ text.task }}</dt><dd>#{{ task.current.task.id }} · {{ text[task.current.task.status] }}</dd><dt>{{ text.owner }}</dt><dd>{{ task.current.task.owner }}</dd><dt>{{ text.schedule }}</dt><dd>{{ task.current.task.date }}{% if task.current.task.at %} · {{ task_local_time }} (Asia/Bishkek){% endif %}</dd></dl>{% if task.current.attention %}<p class="message">{{ text[task.current.attention] }}</p>{% endif %}{% else %}<p>{{ text.no_task }}</p>{% endif %}
+{% endif %}
+{% for data in forms %}<form method="post" action="{{ url }}" id="sop-{{ data.action }}" data-action="{{ data.action }}">{% for key,value in data.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+{% if data.action=='operator_review' %}
+<label for="sop-on">{{ text.on }}</label><input id="sop-on" type="date" name="on" required>
+<label for="sop-time">{{ text.time }}</label><input id="sop-time" type="time" name="time" step="60">
+<label for="sop-reason">{{ text.reason }}</label><select id="sop-reason" name="reason">{% for reason in ('source_followup','verify_missing_facts','review_changed_facts') %}<option value="{{ reason }}">{{ text[reason] }}</option>{% endfor %}</select>
+{% endif %}<label><input type="checkbox" name="confirmed" value="yes" required> {{ text.confirmed if data.action=="operator_review" else text.confirm_clear if data.action=="operator_review_clear" else text.confirm_reconcile }}</label><button type="submit">{{ text[data.action] }}</button></form>{% endfor %}
+{% if retry %}<form method="post" action="{{ url }}" id="sop-retry" data-action="retry">{% for key,value in retry.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}<button type="submit">{{ text.retry }}</button></form>{% endif %}
+</main>
+{% endblock %}
