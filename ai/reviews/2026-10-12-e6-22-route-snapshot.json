@@ -1,0 +1,29 @@
+{
+  "code_commit": "d847a254acfd54ec8aeecef529c2885f6ba39bbe",
+  "base": "87ad9e759aae223258742d286310aba2155f112d",
+  "target": "reviewed local bounded candidate only",
+  "snapshot": "runs/e6-22-r6/snapshot.json",
+  "snapshot_sha256": "f0b2cef7a09a7f347d5bb6628b637d6cbb293b3a5993198b4924ac69f58b61a5",
+  "scope_files": {
+    "app/config.py": "3f7ef97da723362b96dbd9c9dd012395336a84f36a48270265a4b998d6cd1158",
+    "app/admin/router.py": "945a6f6d9626823cf7a3cc53c1db274e9eb57d55476ec53eb643c9aec4a118b0",
+    "app/admin/templates/kg_entry.html": "8231b7d16a6b696d0bce97ddd52e0041cd76d5e7e716cfe8d4c16ac182641014",
+    "app/domain/qualification_policy.py": "ee0f6b475ff112fd0f0c329577e47fd2382a1c7b154322bc107601a77573e5ed",
+    "app/domain/approved_qualification.py": "c1b10162ccface8b5245ee2e508747ec6732a8b9aa4314541aa058ef2b42a9c7",
+    "app/admin/kg_approved_qualification.py": "42f1869cfc8e1aef740341104a0858ef05005cc6f82a4a3fbc71cc5f24726712",
+    "app/admin/qualification_copy.py": "9910107b7c5348a45e3b49675e824bd961d75fca25010eebb1e661fdaa954e70",
+    "app/admin/templates/kg_approved_qualification.html": "a1078eaeda5832c0faf980f418db6309b11ca689920a0cba78fba6052443bc20",
+    "tests/test_approved_qualification.py": "2dbe6e905518355d0e58ad247ff0caa3951cc70bda860db62e07062ff2528c9c",
+    "tests/test_approved_qualification_postgres.py": "9b536d8cfd3464509d4e179b3216db05c86100c7bc2800af957df6d98fbfdeb6",
+    "tests/browser_approved_qualification.py": "8f95d98f9fe25973ab5cd7865a025e04d542a28a4c50f7ab486bf75f360f22cc",
+    "tests/test_approved_qualification_conditions.py": "e9c3e67db3c8fd163b1f3b273cde6e31a19af2732e130e9295130d9b5ed7d437",
+    "tests/test_approved_qualification_source_integrity.py": "e861db5df0a291e831458ffdfe922c07081b5b7de02e9d5837d734a111bb9cc4"
+  },
+  "identity": "PASS",
+  "limitations": [
+    "Full C05 remains open.",
+    "Preserved UI is uncommitted.",
+    "Later E6-24 intake fix excluded.",
+    "No production release, actual source approval or full-repository suite."
+  ]
+}

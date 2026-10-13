@@ -1,0 +1,53 @@
+{# Подвисшие захваты. Стоят ВЫШЕ списка услуг: это единственное состояние, где система
+   не знает, получил клиент сообщение или нет. Пока не разобрано, остальной порядок
+   менее достоверен. Если захватов нет — блок пуст, но обёртка остаётся,
+   чтобы htmx-свопу было что заменять. #}
+<section id="work-claims" aria-label="Подвисшие захваты">
+{% if claims %}
+  <div class="wk-claims" role="alert">
+    <h2 class="wk-claims-h">Подвисшие захваты <span class="wk-n">{{ claims|length }}</span></h2>
+    <p class="wk-claims-lead">
+      Эти задачи взяли в работу и не завершили. Система не знает, получил клиент сообщение
+      или нет. Пока вы не сверите, порядок услуг ниже менее достоверен.
+    </p>
+    {% for c in claims %}
+    <article class="wk-claim" data-task-id="{{ c.task.id }}">
+      <div class="wk-claim-top">
+        <div class="wk-claim-who">
+          <div class="wk-claim-client">{{ c.ui.title }}</div>
+          {% if c.ui.phone_display and c.ui.phone_display != c.ui.title %}
+          <div class="wk-claim-phone">{{ c.ui.phone_display }}</div>
+          {% endif %}
+        </div>
+        <span class="tag">{{ c.ui.kind_label }}</span>
+      </div>
+      <dl class="wk-claim-facts">
+        <div><dt>Взял</dt><dd>{{ c.task.claimed_by or "неизвестно кто" }}</dd></div>
+        <div><dt>Когда</dt><dd>{% if c.task.claimed_at %}{{ c.task.claimed_at.strftime("%d.%m %H:%M") }} UTC{% else %}неизвестно{% endif %}</dd></div>
+        <div><dt>Услуга</dt><dd>{% if c.case_id %}<a href="/admin/case/{{ c.case_id }}">{{ c.case_title or ("услуга №" ~ c.case_id) }}</a>{% else %}не привязана к услуге{% endif %}</dd></div>
+        {% if c.ui.waiting %}<div><dt>Клиент ждёт</dt><dd>{{ c.ui.waiting }}</dd></div>{% endif %}
+        {% if c.ui.comment %}<div><dt>Задача</dt><dd>{{ c.ui.comment }}</dd></div>{% endif %}
+      </dl>
+      <p class="wk-claim-q"><b>Было ли отправлено сообщение или сделан звонок?</b>
+        Повторять слепо нельзя — уйдёт дубль. Проверьте переписку и журнал звонков.</p>
+      <div class="wk-claim-acts">
+        {% for act, label, cls in [("release", "Сверено — действие НЕ состоялось", "btn-ghost"),
+                                   ("confirm", "Сверено — действие состоялось", "btn-brand")] %}
+        <form class="wk-claim-form" method="post"
+              action="/admin/work/claim/{{ c.task.id }}/{{ act }}"
+              hx-post="/admin/work/claim/{{ c.task.id }}/{{ act }}" hx-swap="none">
+          <label class="wk-lbl" for="wk-reason-{{ act }}-{{ c.task.id }}">Что именно вы сверили</label>
+          <input class="wk-input" id="wk-reason-{{ act }}-{{ c.task.id }}" name="reason" type="text"
+                 required minlength="3" maxlength="300" autocomplete="off"
+                 placeholder="Например: в чате сообщения нет">
+          <button class="btn {{ cls }} wk-btn" type="submit"{% if not write_on %} disabled{% endif %}>{{ label }}</button>
+          <div class="wk-say" role="status" aria-live="polite"></div>
+        </form>
+        {% endfor %}
+      </div>
+      {% if not write_on %}<p class="wk-off">Запись в реестр услуг выключена</p>{% endif %}
+    </article>
+    {% endfor %}
+  </div>
+{% endif %}
+</section>

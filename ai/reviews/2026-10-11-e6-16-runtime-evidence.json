@@ -1,0 +1,43 @@
+{
+  "revision": "4fcf694d8d7586ec969126e411359d43c345c63d",
+  "snapshot": "runs/e6-16-review-r3",
+  "file_identity": "PASS root/frozen/commit LF normalized",
+  "files": 23,
+  "checks": [
+    {
+      "artifact": "runs/e6-16-review-r3/runs/notification-r3.xml",
+      "sha256": "91510fb473c7ee36ad20057463146deb81bd0db46645be7445884a1d7dbcfa3f",
+      "tests": "137",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "456.815"
+    },
+    {
+      "artifact": "runs/e6-16-review-r3/runs/notification-r3-regression2.xml",
+      "sha256": "cd52a1df41effb140989a4dd930c83c55043eb2dde6c247e1179f4d9a1991051",
+      "tests": "254",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "2",
+      "time": "591.332"
+    }
+  ],
+  "review": "APPROVE",
+  "final_audit": "GO",
+  "environment": "Env-free Windows Python3.12 / synthetic FK SQLite, Chromium and isolated loopback PostgreSQL16.15",
+  "scope": "local synthetic; no production or actual policy approval",
+  "overlapping_independent_counts": true,
+  "cosmetic_delta": {
+    "revision": "b8114c3c50519c2e952ee8188f489f15051d86d7",
+    "scope": "one-line existing template title display",
+    "artifact": "runs/e616-label-polish/runs/label.xml",
+    "sha256": "10d085a6b548f3280958546fd74d4bd5f674de608202225b0e531a2afbbc6707",
+    "tests": "2",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "35.010",
+    "mobile_visual": "PASS"
+  }
+}

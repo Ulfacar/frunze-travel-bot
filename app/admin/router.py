@@ -31,13 +31,125 @@ from app.integrations.panel.store import get_conversation_store
 
 log = logging.getLogger("admin")
 
-router = APIRouter(prefix="/admin", tags=["admin"])
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+# Кэш тумблеров вида. Без него каждый запрос панели — включая `/stats` каждые 10 секунд
+# с каждой открытой вкладки и каждый htmx-партиал — открывал в PG отдельные сессии. Вид меняется
+# раз в месяц, пять секунд задержки на переключение тумблера никто не заметит.
+# В ключ кэша входят дефолты из настроек: поменялись они — кэш недействителен. Иначе
+# переключение тумблера в env (и подмена настроек в тестах) пять секунд не замечалось бы.
+_LOOK_TTL = 5.0
+_look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
+                                  "focus_on": None, "chat_redesign": None,
+                                  "workday_on": None, "cases_write_on": None}
+
+
+async def _load_new_look(request: Request) -> None:
+    """Прочитать тумблер вида и положить в `request.state`.
+
+    Зависимость роутера, а не десять правок в обработчиках: `_chrome` синхронный и
+    `await` не умеет, а флаг живёт в базе и обязан переключаться без выкатки. Висит на
+    уровне APIRouter — выполняется для каждой страницы панели ровно один раз.
+    """
+    import time
+
+    from app.core import flags as _flags
+    now = time.monotonic()
+    key = (bool(settings.admin_new_look_enabled), bool(settings.admin_focus_enabled),
+           bool(settings.admin_chat_redesign_enabled),
+           # Четвёртым — иначе подмена флага в тестах не видна весь TTL, и гейт флапает.
+           bool(settings.admin_workday_enabled), bool(settings.service_cases_enabled))
+    if (_look_cache["key"] == key and _look_cache["new_look"] is not None
+            and now - float(_look_cache["at"]) < _LOOK_TTL):
+        request.state.new_look = bool(_look_cache["new_look"])
+        request.state.focus_on = bool(_look_cache["focus_on"])
+        request.state.chat_redesign = bool(_look_cache["chat_redesign"])
+        request.state.workday_on = bool(_look_cache["workday_on"])
+        request.state.cases_write_on = bool(_look_cache["cases_write_on"])
+        return
+    try:
+        new_look = await _flags.get_flag("admin_new_look_enabled",
+                                        settings.admin_new_look_enabled)
+        focus_on = await _flags.get_flag("admin_focus_enabled", settings.admin_focus_enabled)
+        chat_redesign = await _flags.get_flag("admin_chat_redesign_enabled",
+                                            settings.admin_chat_redesign_enabled)
+        workday_on = await _flags.get_flag("admin_workday_enabled",
+                                           settings.admin_workday_enabled)
+        cases_write_on = await _flags.get_flag("service_cases_enabled",
+                                               settings.service_cases_enabled)
+        _look_cache.update({"at": now, "key": key, "new_look": new_look,
+                            "focus_on": focus_on, "chat_redesign": chat_redesign,
+                            "workday_on": workday_on,
+                            "cases_write_on": cases_write_on})
+    except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
+        new_look, focus_on = (bool(settings.admin_new_look_enabled),
+                              bool(settings.admin_focus_enabled))
+        chat_redesign = bool(settings.admin_chat_redesign_enabled)
+        workday_on = bool(settings.admin_workday_enabled)
+        cases_write_on = bool(settings.service_cases_enabled)
+    request.state.new_look = bool(new_look)
+    request.state.focus_on = bool(focus_on)
+    request.state.chat_redesign = bool(chat_redesign)
+    request.state.workday_on = bool(workday_on)
+    request.state.cases_write_on = bool(cases_write_on)
+
+
+router = APIRouter(prefix="/admin", tags=["admin"],
+                   dependencies=[Depends(_load_new_look)])
+def _chrome(request: Request) -> dict:
+    """Общий контекст шапки для КАЖДОГО шаблона: кто вошёл, админ ли, направление.
+
+    Через context_processor, а не десятью правками в обработчиках: именно расхождение
+    шапки от страницы к странице и дало десять самостоятельных документов, пять
+    вариантов плитки-числа и шесть вариантов кнопки.
+    """
+    manager = current_manager(request)
+    is_admin = manager is not None and _manager_bot_scope(manager) is None
+    direction = current_direction(request, manager) if manager else DEFAULT_DIRECTION
+    # `directions` (переключатель) здесь НЕ отдаём: он зависит от рантайм-флага, а
+    # context_processor синхронный и `await` не умеет. Его передаёт `index()`.
+    return {"manager": manager, "is_admin": is_admin, "direction": direction,
+            "standalone_crm": settings.crm_standalone_enabled,
+            "direction_label": dict(DIRECTIONS).get(direction, direction),
+            # Тумблеры кладёт сюда `_load_new_look` (зависимость роутера).
+            "new_look": bool(getattr(request.state, "new_look",
+                                     settings.admin_new_look_enabled)),
+            "focus_on": bool(getattr(request.state, "focus_on",
+                                     settings.admin_focus_enabled)),
+            "chat_redesign": bool(getattr(request.state, "chat_redesign",
+                                          settings.admin_chat_redesign_enabled)),
+            "workday_on": bool(getattr(request.state, "workday_on",
+                                       settings.admin_workday_enabled)),
+            # Гейт ЗАПИСИ, отдельный от показа экрана: можно включить просмотр на
+            # реальных данных, не открывая операции над услугами и деньгами.
+            "cases_write_on": bool(getattr(request.state, "cases_write_on",
+                                           settings.service_cases_enabled))}
+
+
+# Лямбда, а не ссылка: `_chrome` и его зависимости объявлены ниже в файле, а
+# процессор вызывается на каждый ответ, то есть уже после загрузки модуля.
+templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"),
+                            context_processors=[lambda r: _chrome(r)])
 
 # Доски (вкладки) — по воронкам. Визы и Туры основные, Билеты — третья.
 FUNNELS = [("visa", "Визы"), ("tours", "Туры"), ("tickets", "Билеты")]
+
+# Направление = рабочее пространство бренда. Требование Алана 01.10.2026: «лучше
+# разделить туры и визы, невозможно читать» — держать два потока в одном списке
+# нельзя. Менеджер направление НЕ выбирает: оно выводится из его бота
+# (`manager_scope.BOT_SCOPE_BY_MANAGER`). Полный админ переключает явно, выбор живёт
+# в сессии. Новых правил доступа это не вводит — фильтрация по-прежнему на скоупе.
+DIRECTIONS = [("visa", "GetVisa · визы"), ("tours", "Frunze Travel · туры"),
+              ("tickets", "Билеты")]
+DIRECTION_KEYS = {key for key, _ in DIRECTIONS}
+DEFAULT_DIRECTION = "visa"
 # Короткие ярлыки воронок для бейджа в инбоксе/поиске (где смешаны все воронки).
 FUNNEL_LABELS = {"visa": "Визы", "tours": "Туры", "tickets": "Билеты"}
+# Человеческие названия этапов для строки контекста в шапке чата. Менеджер должен
+# понимать, где клиент, не открывая меню: «Визы · квалификация» читается, а
+# «visa · qualification» — нет.
+STAGE_LABELS = {"greeting": "первый контакт", "qualification": "квалификация",
+                "progress": "подбор", "office": "визит в офис",
+                "manager": "у менеджера", "follow_up": "дожим",
+                "new": "новый", "done": "завершён"}
 FAQ_TABS = FUNNELS + [("common", "Общие")]
 
 # Колонки канбана и маппинг внутренних стадий диалога в колонку.
@@ -185,18 +297,25 @@ def _check_credentials(login: str, password: str) -> dict | None:
     login = (login or "").strip()
     password = (password or "").strip()
     for mgr in settings.manager_list():
-        if (secrets.compare_digest(login, (mgr.login or "").strip())
-                and secrets.compare_digest(password, (mgr.password or "").strip())):
+        if (secrets.compare_digest(login.encode(), (mgr.login or "").strip().encode())
+                and secrets.compare_digest(password.encode(), (mgr.password or "").strip().encode())):
             return {"login": mgr.login, "name": mgr.name or mgr.login, "admin": bool(mgr.admin)}
     return None
 
 
 def _manager_bot_scope(manager: dict | None) -> set[str] | None:
     """Return bot ids visible to this manager. None means unrestricted admin view."""
-    return bot_scope_for(manager, admin_user=settings.admin_user)
+    return bot_scope_for(manager, admin_user=settings.admin_user,
+                         strict=settings.crm_standalone_enabled)
 
 
 def _can_view_conversation(conv, manager: dict | None) -> bool:
+    if settings.crm_standalone_enabled and getattr(conv, 'channel', '') == 'manual':
+        from app.core.live_authz import actor_for
+        actor = actor_for(manager)
+        return (actor.is_full_admin or (
+            getattr(conv, 'funnel', '') in actor.allowed_directions and
+            getattr(conv, 'assigned_to', '') == actor.manager_id))
     scope = _manager_bot_scope(manager)
     if scope is None:
         return True
@@ -208,7 +327,74 @@ def _can_view_conversation(conv, manager: dict | None) -> bool:
 
 
 def _filter_conversations(convs: list, manager: dict | None) -> list:
+    if settings.crm_standalone_enabled:
+        return [c for c in convs if _can_view_conversation(c, manager)]
     return [c for c in convs if _can_view_conversation(c, manager)]
+
+
+def _direction_from_scope(scope: set[str] | None) -> str | None:
+    """Направление менеджера по его ботам. None — полный админ, выбирает сам."""
+    if scope is None:
+        return None
+    if any(bot.startswith("getvisa") for bot in scope):
+        return "visa"
+    if any(bot.startswith("frunze_tours") for bot in scope):
+        return "tours"
+    # Логина нет в карте скоупов: он и так не видит ни одного диалога
+    # (`_can_view_conversation` на пустом скоупе отдаёт False). Отдаём дефолт,
+    # чтобы страница отрисовалась пустой, а не упала.
+    return DEFAULT_DIRECTION
+
+
+def current_direction(request: Request, manager: dict | None = None) -> str:
+    """Текущее рабочее пространство: своё у менеджера, выбранное у полного админа."""
+    manager = manager if manager is not None else current_manager(request)
+    own = _direction_from_scope(_manager_bot_scope(manager))
+    if own:
+        return own
+    chosen = str(request.session.get("direction") or "").strip().lower()
+    return chosen if chosen in DIRECTION_KEYS else DEFAULT_DIRECTION
+
+
+async def _split_on() -> bool:
+    from app.core import flags as _flags           # локально, как и остальные обращения
+    return await _flags.get_flag("admin_direction_split_enabled",
+                                 settings.admin_direction_split_enabled)
+
+
+async def _visible_models(request: Request, manager: dict | None) -> list[dict]:
+    """Карточки для этого человека: скоуп всегда, направление — только полному админу.
+
+    Менеджеру со скоупом по направлению НЕ фильтруем. Его боты уже дают разделение, а
+    фильтр по воронке прятал бы лид, у которого воронка разошлась с ботом: находка
+    независимого ревью 01.10 — такой лид исчезал сразу из инбокса, поиска и доски, то
+    есть найти его было нельзя вообще. На проде сейчас расхождений нет (1909 визовых на
+    визовом боте, 1048 туровых на туровом), но в M3 появятся продукты и билетная воронка.
+
+    Один источник правды для инбокса, поиска и счётчиков: иначе бейдж считает одно, а
+    список показывает другое (вторая находка того же ревью).
+    """
+    models = await _all_models(_now(), manager)
+    if _manager_bot_scope(manager) is not None:
+        return models
+    if not await _split_on():
+        return models
+    direction = current_direction(request, manager)
+    return [m for m in models if _model_direction(m) == direction]
+
+
+def _model_direction(model: dict) -> str:
+    """Направление карточки. Воронка главнее, но у нового лида её ещё нет —
+    тогда берём бота, иначе неклассифицированный лид исчез бы из инбокса."""
+    funnel = (model.get("funnel") or "").strip()
+    if funnel in DIRECTION_KEYS:
+        return funnel
+    bot_id = (model.get("bot_id") or "").strip()
+    if bot_id.startswith("getvisa"):
+        return "visa"
+    if bot_id.startswith("frunze_tours"):
+        return "tours"
+    return DEFAULT_DIRECTION
 
 
 def _demo_profiles() -> list[dict]:
@@ -339,10 +525,33 @@ async def index(request: Request):
         # этого менеджер после входа оказывался на общей доске, теряя нужный диалог.
         target = request.url.path + (f"?{request.url.query}" if request.url.query else "")
         return RedirectResponse(f"/admin/login?next={quote(target, safe='')}", status_code=303)
-    return templates.TemplateResponse(request, "boards.html",
-                                      {"funnels": FUNNELS, "manager": manager,
-                                       "is_admin": _manager_bot_scope(manager) is None},
-                                      headers={"Cache-Control": "no-store"})
+    # manager / is_admin / direction приходят из `_chrome` (context_processor) и одинаковы
+    # на всех страницах. Переключатель зависит от рантайм-флага, поэтому только здесь:
+    # он нужен там, где работают с лидами, и появляется лишь когда разделение включено.
+    split_on = await _split_on()
+    is_admin = _manager_bot_scope(manager) is None
+    return templates.TemplateResponse(
+        request, "boards.html",
+        {"funnels": FUNNELS, "split_on": split_on,
+         "directions": DIRECTIONS if (is_admin and split_on) else []},
+        headers={"Cache-Control": "no-store"})
+
+
+@router.post("/direction")
+async def set_direction(request: Request, direction: str = Form(""),
+                        manager: dict = Depends(require_full_admin)):
+    """Переключить рабочее пространство (визы / туры / билеты). Только полный админ.
+
+    Менеджеру со скоупом здесь 403 (зависимость): его направление выведено из бота,
+    и права выбирать чужой поток переключатель не даёт — фильтрация всё равно идёт
+    по скоупу, а не по этому значению.
+    """
+    value = (direction or "").strip().lower()
+    if value not in DIRECTION_KEYS:
+        raise HTTPException(status_code=400, detail="unknown direction")
+    request.session["direction"] = value
+    await get_conversation_store().add_audit(manager["login"], "direction", value)
+    return RedirectResponse("/admin", status_code=303)
 
 
 @router.get("/analytics", response_class=HTMLResponse)
@@ -551,6 +760,19 @@ def _sale_check_note() -> str:
 
 
 # Тумблеры фич для менеджера: ключ → заголовок, описание, дефолт (из env), примечание.
+def _workday_note() -> str:
+    """Сказать правду о предпосылке: включать экран рано, если запись выключена.
+
+    «Рабочий день» может оказаться пуст не потому, что работы нет, а потому что
+    запись в реестр выключена или у продуктов нет опубликованного процесса — тогда
+    `sign_contract` отказывает и услуг не появится. Тумблер обязан это сказать,
+    иначе экран выглядит сломанным.
+    """
+    if not settings.service_cases_enabled:
+        return "Запись в реестр услуг выключена отдельным тумблером — действия недоступны."
+    return ""
+
+
 FEATURE_FLAGS = {
     "bitrix_pipeline_enabled": {
         "title": "Конвейер лидов Bitrix",
@@ -686,6 +908,16 @@ FEATURE_FLAGS = {
         "note": lambda: ("адресат WhatsApp не задан — работает Telegram"
                          if not (settings.alert_whatsapp_to and settings.alert_bot_id) else ""),
     },
+    "watchdog_silence_enabled": {
+        "title": "Сторож сбоев тревожит при тишине всех каналов",
+        "desc": ("Алерт «Бот не получал сообщений ~N мин» по затишью всех каналов разом. "
+                 "Замер 23.09: за 14 дней 45 дневных пауз клиентов дольше 30 минут — "
+                 "обычное затишье, а совет «проверьте Wappi/вебхуки» ложный. Упавший "
+                 "канал ловит сторож Wappi по статусу профиля. Сбои LLM и отправки "
+                 "сторож шлёт независимо от этого тумблера."),
+        "default": lambda: settings.watchdog_silence_enabled,
+        "note": lambda: "",
+    },
     "llm_fallback_handoff_enabled": {
         "title": "При сбое бот зовёт менеджера, а не обещает вернуться",
         "desc": ("Когда ход не удался (у LLM кончились деньги, упал инструмент), бот "
@@ -720,6 +952,28 @@ FEATURE_FLAGS = {
                  "это настоящая поломка. «Тихо и там, и у нас» — отсутствие клиентов, "
                  "а не авария."),
         "default": lambda: settings.silence_alert_only_on_gap,
+        "note": lambda: "",
+    },
+    "silence_webhook_proof_enabled": {
+        "title": "Не винить вебхук, когда он доказанно жив",
+        "desc": ("Сторож говорил «сообщения в Wappi приходят, а до нас не доходят — смотри "
+                 "адрес вебхука» по живому каналу: счётчик сообщений у Wappi один на всё, "
+                 "и ответ менеджера с телефона растит его так же, как письмо клиента. "
+                 "С тумблером такой вывод снимается, если служебные события Wappi "
+                 "(статусы доставки, эхо ответов) до нас в это время доезжали: значит "
+                 "труба работает, а клиентов просто нет."),
+        "default": lambda: settings.silence_webhook_proof_enabled,
+        "note": lambda: "",
+    },
+    "wappi_reconnecting_advice_enabled": {
+        "title": "Не советовать QR, когда профиль переподключается",
+        "desc": ("Wappi отвечает «авторизован», но приложение в состоянии connecting — это "
+                 "переподключение, а не потеря авторизации: 27.09 такая серия шла 64 минуты, "
+                 "и канал в это время принимал от клиентов голосовые и документы. Без "
+                 "тумблера сторож тишины в этом случае советует сканировать QR и уводит "
+                 "чинить работающее. С тумблером совет говорит правду и подсказывает, когда "
+                 "перестать ждать."),
+        "default": lambda: settings.wappi_reconnecting_advice_enabled,
         "note": lambda: "",
     },
     "bitrix_health_enabled": {
@@ -812,6 +1066,79 @@ FEATURE_FLAGS = {
         "default": lambda: settings.tours_cards_enabled,
         "note": lambda: ("" if settings.public_base_url
                          else "не задан PUBLIC_BASE_URL — карточки уйдут без ссылки на подборку"),
+    },
+    "admin_workday_enabled": {
+        "title": "«Рабочий день» и карточка услуги",
+        "desc": ("Экран, где видно договоры, остаток денег, брони, билеты и задачи — всё, "
+                 "что система уже знает об услуге. Услуги выстроены по срочности, и рядом "
+                 "с каждой написано, ПОЧЕМУ она выше: просроченная задача, неоплаченный "
+                 "остаток, бронь без подтверждения. Отдельно сверху — задачи, взятые в "
+                 "работу и не завершённые: по ним неизвестно, ушло ли сообщение клиенту. "
+                 "OFF: маршрутов нет, ссылки в меню нет, панель прежняя."),
+        "default": lambda: settings.admin_workday_enabled,
+        "note": lambda: _workday_note(),
+    },
+    "service_cases_enabled": {
+        "title": "Запись в реестр услуг",
+        "desc": ("Разрешает ДЕЙСТВИЯ над услугами: двигать этапы, вносить оплаты, "
+                 "фиксировать возвраты, закрывать задачи. Отдельно от показа — можно "
+                 "включить «Рабочий день» и посмотреть на реальных данных, ничего не "
+                 "меняя. OFF: экран виден, кнопки действий заблокированы, и любая "
+                 "попытка записи честно отвечает «запись выключена»."),
+        "default": lambda: settings.service_cases_enabled,
+        "note": lambda: "",
+    },
+    "admin_focus_enabled": {
+        "title": "Экран «Фокус» — кому ответить сейчас",
+        "desc": ("Один экран вместо трёх. Сейчас на вопрос «с кем работать прямо сейчас» "
+                 "отвечают доска, «Покупатели сегодня» и «Горячий лист» — менеджер сам "
+                 "решает, какому верить. «Фокус» показывает следующего клиента крупно: что "
+                 "спросил, сколько ждёт, бриф от ИИ и поле ответа. Рекламный мусор в начало "
+                 "очереди не ставится. Действия те же, что на доске."),
+        "default": lambda: settings.admin_focus_enabled,
+        "note": lambda: "",
+    },
+    "admin_new_look_enabled": {
+        "title": "Новый вид панели",
+        "desc": ("Новый визуальный язык: бирюзовая палитра вместо синей, шрифт Onest, "
+                 "спокойная шапка и полноценная тёмная тема с кнопкой переключения — "
+                 "панель открывают и ночью. Разметка, кнопки и действия те же самые: "
+                 "выключили тумблер — вернулся прежний вид, без выкатки."),
+        "default": lambda: settings.admin_new_look_enabled,
+        "note": lambda: "меняется только внешний вид, функционал не трогается",
+    },
+    "admin_chat_redesign_enabled": {
+        "title": "Новый вид переписки",
+        "desc": ("Экран диалога «Пальма»: читаемые пузыри вместо прежних — в тёмной теме "
+                 "старые давали контраст 1.52:1 при норме 4.5, то есть переписку бота и "
+                 "менеджера было физически не прочитать. Шапка в одну строку с контекстом "
+                 "«продукт · этап · сколько ждёт клиент · кто ведёт», телефон и остальное — "
+                 "в меню, быстрые ответы лентой вместо семи кнопок столбиком, досье "
+                 "свёрнуто под перепиской. Действия и эндпоинты те же: выключили тумблер — "
+                 "вернулся прежний экран, без выкатки."),
+        "default": lambda: settings.admin_chat_redesign_enabled,
+        "note": lambda: "меняется только вид переписки, отправка и перехват не трогаются",
+    },
+    "admin_inbox_limit_enabled": {
+        "title": "Инбокс страницей, а не всей базой",
+        "desc": ("Сейчас список «Ждут ответа» отдаётся целиком — на проде это 1.95 МБ и 1012 "
+                 "карточек в одном ответе, и он перезагружает себя каждые 10 секунд, то есть "
+                 "около 12 МБ в минуту на телефон менеджера. Замер: с тумблером тот же список "
+                 "весит 0.11 МБ. Показываются первые "
+                 "60, остальные — по кнопке «Показать все»; счётчики, поиск и массовый архив "
+                 "по-прежнему работают по всей базе."),
+        "default": lambda: settings.admin_inbox_limit_enabled,
+        "note": lambda: f"на странице {settings.admin_inbox_page_size} карточек",
+    },
+    "tour_flights_enabled": {
+        "title": "Рейсы в карточке тура",
+        "desc": ("В каждую карточку добавляются две строки перелёта — дата, время вылета и "
+                 "прилёта, авиакомпания и багаж, как в подборках туроператоров (просьба "
+                 "Гриши 02.10). Цена замерена на проде: подбор идёт 22–26 секунд вместо "
+                 "четырёх, потому что рейсы приходится спрашивать по каждому отелю "
+                 "отдельно. Не пришли вовремя — карточка печатается без них."),
+        "default": lambda: settings.tour_flights_enabled,
+        "note": lambda: "подбор станет дольше на 18–22 секунды",
     },
     "bitrix_prefer_openline_lead": {
         "title": "Бот пишет в карточку менеджера (Bitrix)",
@@ -908,6 +1235,17 @@ FEATURE_FLAGS = {
                  "попадают в панель и утренний бриф. Не включает выключенного кнопкой "
                  "бота — только сужает окно уже включённого."),
         "default": lambda: settings.night_mode_enabled,
+        "note": lambda: "",
+    },
+    "admin_direction_split_enabled": {
+        "title": "Разделить туры и визы (рабочие пространства)",
+        "desc": ("Инбокс, поиск и счётчики показывают одно направление, а не смешанный "
+                 "список: туры и визы перестают наезжать друг на друга. Полный админ "
+                 "переключает направление в шапке, выбор запоминается. У менеджера "
+                 "направление одно — его бота, переключателя нет и видимость не растёт: "
+                 "разделение только сужает показ, права по-прежнему на скоупе. "
+                 "Выключено — как раньше: все воронки в одном списке."),
+        "default": lambda: settings.admin_direction_split_enabled,
         "note": lambda: "",
     },
     "authz_enforce_enabled": {
@@ -1244,11 +1582,17 @@ def _waiting_sorted(models: list[dict]) -> list[dict]:
     return cards
 
 
-async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query: str = ""):
-    models = await _all_models(_now(), current_manager(request))
+async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query: str = "",
+                                show_all: bool = False):
+    manager = current_manager(request)
+    # Инбокс и поиск живут в пределах направления, когда тумблер включён: смешанный
+    # список и был тем, что «невозможно читать».
+    models = await _visible_models(request, manager)
     query = query.strip()
     if mode == "search" and query:
         ql = query.lower()
+        # Поиск идёт по ВСЕМ моделям и не ограничивается страницей инбокса: лид,
+        # написавший месяц назад, обязан находиться по номеру, иначе он ненаходим вообще.
         cards = [m for m in models
                  if ql in (m["name"] or "").lower() or ql in (m["phone"] or "").lower()
                  or ql in (m["last_text"] or "").lower()]
@@ -1257,15 +1601,117 @@ async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query:
         cards = _waiting_sorted(models)
         mode = "inbox"
         query = ""
+
+    # Числа считаем по ПОЛНОМУ списку и только потом режем. Счётчик рекламы уходит в
+    # `data-noise-count`, откуда его берёт подтверждение массового архива, а чистит тот
+    # архив на сервере — посчитай его по странице, и диалог спросит про двенадцать,
+    # а снесёт двести.
+    total = len(cards)
+    noise_count = sum(1 for c in cards if c["is_noise"])
+    from app.core import flags as _flags           # локально, как и остальные обращения
+    page_size = max(1, int(settings.admin_inbox_page_size or 1))
+    limit_on = await _flags.get_flag("admin_inbox_limit_enabled",
+                                     settings.admin_inbox_limit_enabled)
+    truncated = bool(limit_on) and not show_all and total > page_size
+    if truncated:
+        cards = cards[:page_size]
     return templates.TemplateResponse(request, "_attention.html",
                                       {"mode": mode, "cards": cards, "query": query,
-                                       "noise_count": sum(1 for c in cards if c["is_noise"])})
+                                       "noise_count": noise_count, "total": total,
+                                       "truncated": truncated, "show_all": show_all,
+                                       "page_size": page_size})
+
+
+FOCUS_QUEUE_LIMIT = 8      # один в фокусе + семь в очереди: больше за раз не удержать
+FOCUS_HISTORY_LIMIT = 10   # хвост переписки рядом с лидом: последний разговор, не весь диалог
+
+
+def _as_utc_iso(dt: datetime | None) -> str:
+    """ISO-строка со смещением. Naive-время (SQLite в тестах) считаем UTC: без пояса
+    браузер примет его за местное, и живой таймер уедет на часовой пояс Бишкека."""
+    if dt is None:
+        return ""
+    return (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).isoformat()
+
+
+def _focus_sorted(models: list[dict]) -> list[dict]:
+    """Очередь «кому ответить сейчас»: дольше ждёт — выше, но мусор не возглавляет.
+
+    Простая сортировка по времени ожидания ставит первым рекламный лид со ссылкой из
+    инстаграма: он «ждёт» десять часов, потому что ему никто и не собирался отвечать.
+    Менеджер открывает экран и первым делом видит «Можно узнать об этом подробнее?».
+    Поэтому шум уходит в конец, а внутри каждой группы порядок прежний — по ожиданию.
+    """
+    waiting = [m for m in models if m["wait_level"] != "none"]
+    # «Спасибо, подумаем и напишем» — это не вопрос, а прощание: такой клиент ждёт дольше
+    # всех именно потому, что отвечать ему нечего. Пропускаем его вперёд только когда
+    # живых вопросов не осталось. Замер на демо-данных: иначе первым в фокусе оказывался
+    # именно он, а человек с вопросом про визу стоял четвёртым.
+    waiting.sort(key=lambda m: (m["is_noise"], m["is_silent"], -m["sort_key"]))
+    return waiting
+
+
+@router.get("/focus", response_class=HTMLResponse)
+async def focus(request: Request, lead: str = "", manager: dict = Depends(require_admin)):
+    """Экран «Фокус»: следующий клиент крупно, очередь за ним, ответ не открывая чат.
+
+    Зачем отдельный экран. На вопрос «с кем работать сейчас» сегодня отвечают доска,
+    «Покупатели сегодня» и «Горячий лист» — три места с тремя разными порядками. Здесь
+    ответ один, и он тот же, что у инбокса: `_visible_models` + ожидание клиента.
+
+    Действий своих не завозим: отправка, перехват и архив — существующие эндпоинты
+    карточки. Новый путь к сообщению клиенту означал бы второй набор проверок доступа.
+    """
+    if not bool(getattr(request.state, "focus_on", settings.admin_focus_enabled)):
+        raise HTTPException(status_code=404, detail="not found")
+    models = await _visible_models(request, manager)
+    ranked = _focus_sorted(models)
+    # `lead` — «Позже» и клик по очереди: менеджер выбирает, с кем говорить сейчас.
+    # Ищем ТОЛЬКО среди видимых ему: чужой или устаревший id молча падает в начало
+    # очереди, а не показывает лид за границей скоупа.
+    picked = next((i for i, m in enumerate(ranked) if m["user_id"] == lead), 0) if lead else 0
+    # Ротация сохраняет следующего по ранжиру: иначе «Позже» зацикливается на первых двух.
+    rotated = ranked[picked:] + ranked[:picked]
+    queue = rotated[:FOCUS_QUEUE_LIMIT]
+    store = get_conversation_store()
+    current = queue[0] if queue else None
+    brief, history = {}, []
+    if current is not None:
+        conv = await store.get(current["user_id"])
+        if conv is not None:
+            # Хвост переписки: отвечая, менеджер должен видеть, о чём уже говорили. Весь
+            # диалог тащить незачем — он бывает на сотни реплик, а на экран всё равно
+            # помещается последний разговор.
+            history = [{"sender": m.sender, "text": m.text, "at": _as_utc_iso(m.created_at)}
+                       for m in conv.messages[-FOCUS_HISTORY_LIMIT:] if m.text]
+            brief = {"ai_summary": conv.ai_summary or "",
+                     "manager_next_step": conv.manager_next_step or "",
+                     # Точка отсчёта для живого таймера на клиенте: сервер отдаёт момент,
+                     # браузер сам тикает — иначе время «застывает» между обновлениями.
+                     # Обязательно с часовым поясом: naive-строку браузер разберёт как
+                     # местное время, и в Бишкеке таймер соврёт на шесть часов.
+                     "wait_since": _as_utc_iso(conv.last_message_at)}
+
+    return templates.TemplateResponse(request, "focus.html",
+                                      {"current": current, "brief": brief,
+                                       "queue": queue[1:], "history": history,
+                                       # Числа считаем на сервере: до первого ответа `/stats`
+                                       # экран показывал «0 ваш ход» при восьми ждущих и
+                                       # выглядел сломанным.
+                                       "pulse": {"needs_reply": sum(1 for m in models if m["needs_reply"]),
+                                                 "waiting": len(ranked),
+                                                 "total": len(models)}})
 
 
 @router.get("/inbox", response_class=HTMLResponse)
-async def inbox(request: Request, _: dict = Depends(require_admin)):
-    """Единый инбокс: все ждущие ответа диалоги по всем воронкам в одном списке."""
-    return await _render_inbox_partial(request)
+async def inbox(request: Request, all: str = "", _: dict = Depends(require_admin)):
+    """Единый инбокс: ждущие ответа диалоги по всем воронкам.
+
+    `all=1` — отдать весь список вместо страницы. Этот же параметр уходит в `hx-get`
+    развёрнутого списка: без него автообновление через десять секунд свернуло бы его
+    обратно, и менеджер решил бы, что панель живёт своей жизнью.
+    """
+    return await _render_inbox_partial(request, show_all=all in ("1", "true", "yes"))
 
 
 @router.get("/search", response_class=HTMLResponse)
@@ -1279,9 +1725,13 @@ async def search(request: Request, q: str = "", _: dict = Depends(require_admin)
 
 
 @router.get("/stats", response_class=JSONResponse)
-async def stats(manager: dict = Depends(require_admin)):
-    """Лёгкий счётчик для звуковых уведомлений и бейджа в заголовке вкладки."""
-    models = await _all_models(_now(), manager)
+async def stats(request: Request, manager: dict = Depends(require_admin)):
+    """Лёгкий счётчик для звуковых уведомлений и бейджа в заголовке вкладки.
+
+    Считает РОВНО то, что показывает инбокс: иначе бейдж и звук срабатывают на лид,
+    которого в списке нет (находка независимого ревью 01.10).
+    """
+    models = await _visible_models(request, manager)
     return JSONResponse({
         "waiting": sum(1 for m in models if m["wait_level"] != "none"),
         "needs_reply": sum(1 for m in models if m["needs_reply"]),
@@ -1319,6 +1769,15 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
         "reassign_targets": reassign_targets,
         "outcomes": OUTCOMES,
         "quick_replies": quick_replies_for(conv.funnel),
+        "funnel_label": FUNNEL_LABELS.get(conv.funnel or "", conv.funnel or "—"),
+        # Неизвестный этап лучше не показывать вовсе, чем показывать сырой
+        # английский ключ: «silent» в шапке менеджеру ничего не говорит.
+        "stage_label": STAGE_LABELS.get(conv.stage or "", ""),
+        # Время ожидания считает браузер: сервер отдаёт момент, а не число минут.
+        # Иначе между обновлениями раз в 4 секунды «ждёт 1 ч» застывает и врёт.
+        # Обязательно со смещением: naive-строку браузер примет за местное время,
+        # и в Бишкеке (UTC+6) таймер уедет на шесть часов.
+        "wait_since": _as_utc_iso(conv.last_message_at) if conv.last_sender == "client" else "",
         "tasks": tasks,
         "active_tasks": active_tasks,
         "task_kinds": TASK_KIND_LABELS,
@@ -1498,11 +1957,15 @@ async def takeover(user_id: str, request: Request, manager: dict = Depends(requi
     conv = await _require_visible_conversation(user_id, manager)
     allowed, deny_notice = await _ownership_guard(conv, manager, "claim")
     if not allowed:
-        return await _render_conversation(user_id, request, manager, notice=deny_notice)
+        resp = await _render_conversation(user_id, request, manager, notice=deny_notice)
+        resp.headers["X-Action-Outcome"] = "denied"
+        return resp
     await _set_intercept(user_id, True)
     await get_conversation_store().update_meta(user_id, assigned_to=manager["login"])
     await get_conversation_store().add_audit(manager["login"], "takeover", user_id)
-    return await _render_conversation(user_id, request, manager)
+    resp = await _render_conversation(user_id, request, manager)
+    resp.headers["X-Action-Outcome"] = "claimed"
+    return resp
 
 
 @router.post("/conversation/{user_id}/release", response_class=HTMLResponse)
@@ -1564,10 +2027,13 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
     conv = await panel.get(user_id)
     if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
+    outcome = "empty"
     if text:
         allowed, deny_notice = await _ownership_guard(conv, manager, "send")
         if not allowed:
-            return await _render_conversation(user_id, request, manager, notice=deny_notice)
+            resp = await _render_conversation(user_id, request, manager, notice=deny_notice)
+            resp.headers["X-Action-Outcome"] = "denied"
+            return resp
         await _set_intercept(user_id, True)  # отвечает человек → бот молчит
         await panel.update_meta(user_id, assigned_to=manager["login"])
         msg_id = await panel.add_message(user_id, "manager", text, status="pending")
@@ -1577,11 +2043,16 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
             mark_own(provider)
             await panel.mark_message_status(message_id=msg_id, status="sent",
                                             set_provider_msg_id=(provider or None))
+            outcome = "sent"
         except Exception:  # noqa: BLE001 — не теряем сообщение в логе при сбое канала
             await panel.mark_message_status(message_id=msg_id, status="failed")
+            outcome = "failed"
             log.warning("manager send failed (channel=%s)", conv.channel, exc_info=True)
         await panel.add_audit(manager["login"], "send", user_id, text[:120])
-    return await _render_conversation(user_id, request, manager)
+    # HTTP 200 нужен обычной карточке даже при отказе; «Фокус» сверяет именно исход действия.
+    resp = await _render_conversation(user_id, request, manager)
+    resp.headers["X-Action-Outcome"] = outcome
+    return resp
 
 
 @router.post("/conversation/{user_id}/resend/{message_id}", response_class=HTMLResponse)
@@ -1679,6 +2150,10 @@ async def set_outcome(user_id: str, request: Request, manager: dict = Depends(re
 
 TASK_KIND_LABELS = [("call", "📞 Звонок"), ("meeting", "🤝 Встреча"),
                     ("office_visit", "🏢 Визит в офис"), ("followup", "🔁 Повторное касание"),
+                    # Заводятся операциями по билетам и турам (E2-01, E2-02).
+                    # Без подписи в календаре отображался сырой код вида.
+                    ("checkin", "🛂 Регистрация на рейс"), ("departure", "✈️ Вылет"),
+                    ("review_request", "⭐ Попросить отзыв"), ("complaint", "🔴 Жалоба"),
                     ("other", "📋 Другое")]
 TASK_PRIORITY_LABELS = [("low", "Низкий"), ("normal", "Обычный"), ("high", "Высокий")]
 _KIND_LABEL_MAP = dict(TASK_KIND_LABELS)
@@ -1793,6 +2268,11 @@ def _parse_task_when(scheduled_date: str, scheduled_time: str) -> tuple[date, da
 
 
 def _manager_can_touch_task(manager: dict, task) -> bool:
+    if settings.crm_standalone_enabled:
+        from app.core.live_authz import actor_for
+        actor = actor_for(manager)
+        return actor.is_full_admin or (task.manager_id == actor.manager_id and
+                                       task.direction in actor.allowed_directions)
     if _manager_bot_scope(manager) is None:          # full-admin
         return True
     return (task.manager_id or "") == str(manager.get("login") or "").strip().lower()
@@ -1807,6 +2287,17 @@ async def task_create(user_id: str, request: Request, manager: dict = Depends(re
     action — does NOT enable shadow or touch Bitrix)."""
     conv = await _require_visible_conversation(user_id, manager)
     direction = (direction or getattr(conv, "funnel", "") or "visa").strip()
+    phone_identity = conv.phone or conv.user_id
+    if settings.crm_standalone_enabled:
+        from app.admin.contracts import _identity
+        from app.core.live_authz import actor_for
+        actor = actor_for(manager)
+        if direction != conv.funnel or (not actor.is_full_admin and direction not in actor.allowed_directions):
+            raise HTTPException(403)
+        identity_type, canonical = _identity(conv)
+        if identity_type != 'phone':
+            raise HTTPException(422)
+        phone_identity = '+' + canonical
     try:
         d, at = _parse_task_when(scheduled_date, scheduled_time)
     except Exception:
@@ -1816,7 +2307,7 @@ async def task_create(user_id: str, request: Request, manager: dict = Depends(re
         from app.domain.services import ContactService
         async with _domain_sessionmaker()() as s:
             contact = await ContactService.find_or_create_by_identity(
-                s, "phone", conv.phone or conv.user_id)
+                s, "phone", phone_identity)
             await CalendarTaskService.create(
                 s, manager_id=manager["login"], direction=direction, kind=kind,
                 scheduled_date=d, scheduled_at=at, contact_id=contact.id, user_id=user_id,
@@ -1825,8 +2316,26 @@ async def task_create(user_id: str, request: Request, manager: dict = Depends(re
         await get_conversation_store().add_audit(
             manager["login"], "task_create", user_id, f"{kind} {d.isoformat()}")
     except Exception:  # noqa: BLE001 — never break the card on a domain error
+        if settings.crm_standalone_enabled:
+            raise HTTPException(503, 'Задача не подтверждена. Проверьте календарь перед повтором.')
         log.warning("calendar: task create failed", exc_info=True)
     return await _render_conversation(user_id, request, manager)
+
+
+async def _calendar_task_for_action(session, task_id: int):
+    """Refresh under the same row lock used by deadline hooks before authorizing."""
+    from sqlalchemy import select
+    from app.domain.calendar_tasks import CalendarTaskService
+    from app.domain.models import EntryDeadlineTask, EntryWorkReviewEvent
+    task = await CalendarTaskService.get(session, task_id)
+    if task is None:
+        return None
+    await session.refresh(task, with_for_update=True)
+    if task.claimed_at or task.claimed_by:
+        deadline_bound=await session.scalar(select(EntryDeadlineTask.id).where(EntryDeadlineTask.task_id==task.id).limit(1))
+        review_bound=await session.scalar(select(EntryWorkReviewEvent.id).where(EntryWorkReviewEvent.task_id==task.id).limit(1))
+        if deadline_bound or review_bound:return None
+    return task
 
 
 async def _apply_task_action(user_id: str, task_id: int, manager: dict, action: str, *,
@@ -1834,7 +2343,7 @@ async def _apply_task_action(user_id: str, task_id: int, manager: dict, action: 
     try:
         from app.domain.calendar_tasks import CalendarTaskService
         async with _domain_sessionmaker()() as s:
-            task = await CalendarTaskService.get(s, task_id)
+            task = await _calendar_task_for_action(s, task_id)
             if (task is None or (task.user_id or "") != user_id
                     or not _manager_can_touch_task(manager, task)):
                 return
@@ -1850,6 +2359,8 @@ async def _apply_task_action(user_id: str, task_id: int, manager: dict, action: 
             manager["login"], f"task_{action}", user_id, str(task_id))
     except Exception:  # noqa: BLE001
         log.warning("calendar: task %s failed", action, exc_info=True)
+        if settings.crm_standalone_enabled:
+            raise HTTPException(503, 'Изменение задачи не подтверждено. Проверьте её состояние перед повтором.')
 
 
 @router.post("/conversation/{user_id}/task/{task_id}/complete", response_class=HTMLResponse)
@@ -1902,6 +2413,8 @@ async def _fetch_calendar_tasks(manager: dict, date_from: date, date_to: date, *
             if include_terminal:
                 seen = {t.id for t in rows}
                 rows = rows + [t for t in await _q(date_from, True) if t.id not in seen]
+            if settings.crm_standalone_enabled:
+                rows = [t for t in rows if _manager_can_touch_task(manager, t)]
             return rows
     except Exception:  # noqa: BLE001
         log.debug("calendar: fetch failed", exc_info=True)
@@ -2039,7 +2552,7 @@ async def _apply_calendar_action(task_id: int, manager: dict, action: str, *, mo
     try:
         from app.domain.calendar_tasks import CalendarTaskService
         async with _domain_sessionmaker()() as s:
-            task = await CalendarTaskService.get(s, task_id)
+            task = await _calendar_task_for_action(s, task_id)
             if task is None or not _manager_can_touch_task(manager, task):
                 return
             uid = task.user_id or ""
@@ -2059,6 +2572,8 @@ async def _apply_calendar_action(task_id: int, manager: dict, action: str, *, mo
             manager["login"], f"task_{action}", uid, str(task_id))
     except Exception:  # noqa: BLE001
         log.warning("calendar: %s from calendar failed task=%s", action, task_id, exc_info=True)
+        if settings.crm_standalone_enabled:
+            raise HTTPException(503, 'Изменение задачи не подтверждено. Проверьте её состояние перед повтором.')
 
 
 @router.post("/calendar/task/{task_id}/complete")
@@ -2096,6 +2611,8 @@ async def calendar_task_reschedule(task_id: int, manager: dict = Depends(require
 
 
 def _default_direction(manager: dict) -> str:
+    if settings.crm_standalone_enabled:
+        return 'visa'
     scope = _manager_bot_scope(manager) or set()
     return "visa" if any("getvisa" in b for b in scope) else "tours"
 
@@ -2131,10 +2648,37 @@ async def calendar_task_quick_create(manager: dict = Depends(require_admin),
         d, at = _parse_task_when(scheduled_date, scheduled_time)
     except Exception:
         raise HTTPException(status_code=400, detail="bad date/time")
-    digits = "".join(ch for ch in (phone or "") if ch.isdigit())
-    if not digits:
-        return _calendar_redirect(view, day)
-    conv = await _find_conv_by_phone(digits, manager)
+    if settings.crm_standalone_enabled:
+        import re
+        from app.core.live_authz import actor_for
+        from app.domain.phones import normalize_phone
+        from app.domain.models import DomainError
+        from app.integrations.crm.db import Conversation, get_sessionmaker
+        from sqlalchemy import select
+        actor = actor_for(manager)
+        if not actor.is_full_admin and 'visa' not in actor.allowed_directions:
+            raise HTTPException(403)
+        try:
+            if not re.fullmatch(r'\+[1-9][0-9 ()-]{7,30}', phone.strip()):
+                raise DomainError('explicit international phone required')
+            digits = normalize_phone(phone)
+        except DomainError:
+            raise HTTPException(422, 'Укажите международный номер с кодом страны.')
+        async with get_sessionmaker()() as session:
+            conv = await session.scalar(select(Conversation).where(Conversation.user_id == 'manual_visa:'+digits))
+        if conv is not None:
+            from app.admin.contracts import _identity
+            if not _can_view_conversation(conv, manager):
+                raise HTTPException(404)
+            if _identity(conv) != ('phone', digits):
+                raise HTTPException(409)
+        phone_identity = '+' + digits
+    else:
+        digits = "".join(ch for ch in (phone or "") if ch.isdigit())
+        if not digits:
+            return _calendar_redirect(view, day)
+        conv = await _find_conv_by_phone(digits, manager)
+        phone_identity = digits
     try:
         from app.domain.calendar_tasks import CalendarTaskService
         from app.domain.models import DIRECTIONS
@@ -2143,7 +2687,7 @@ async def calendar_task_quick_create(manager: dict = Depends(require_admin),
         if direction not in DIRECTIONS:
             direction = _default_direction(manager)
         async with _domain_sessionmaker()() as s:
-            contact = await ContactService.find_or_create_by_identity(s, "phone", digits)
+            contact = await ContactService.find_or_create_by_identity(s, "phone", phone_identity)
             await CalendarTaskService.create(
                 s, manager_id=manager["login"], direction=direction, kind=kind,
                 scheduled_date=d, scheduled_at=at, contact_id=contact.id,
@@ -2154,9 +2698,51 @@ async def calendar_task_quick_create(manager: dict = Depends(require_admin),
             manager["login"], "task_create", (conv.user_id if conv is not None else ""),
             f"{kind} {d.isoformat()} {digits}")
     except Exception:  # noqa: BLE001 — bad number / domain down must not break the page
+        if settings.crm_standalone_enabled:
+            raise HTTPException(503, 'Задача не подтверждена. Проверьте календарь перед повтором.')
         log.warning("calendar: quick task create failed", exc_info=True)
     return _calendar_redirect(view, day)
 
 
 async def _set_intercept(user_id: str, value: bool) -> None:
     await set_intercept(user_id, value)
+
+# Маршруты «Рабочего дня» и карточки услуги (E2-06) живут в своём модуле, но
+# регистрируются на ЭТОМ роутере — так им достаются зависимость `_load_new_look`
+# и context_processor `_chrome`. Импорт внизу файла: модуль обращается к
+# помощникам отсюда, и раньше этой строки они ещё не объявлены.
+from app.admin import workday  # noqa: E402,F401 — side-effect: регистрация маршрутов
+from app.admin import contracts  # noqa: E402,F401 — договор из переписки, за флагами E2-06
+from app.admin import precontract  # noqa: E402,F401 — предварительная визовая карточка и договор в ней
+from app.admin import kg_entry  # noqa: E402,F401 — пилот анкеты въезда, default OFF
+from app.admin import kg_knowledge  # noqa: E402,F401 — поиск источника за тем же пилотным флагом
+from app.admin import kg_history  # noqa: E402,F401 — версии фактических поездок, тот же full-admin gate
+from app.admin import kg_applications  # noqa: E402,F401 — заявители и подачи, тот же full-admin gate
+from app.admin import kg_processes  # noqa: E402,F401 — проверка черновых переходов, без записи
+from app.admin import kg_process_journal  # noqa: E402,F401 — этапы с подтверждениями, политика default OFF
+from app.admin import kg_portal  # noqa: E402,F401 — входящие сведения и проверка оператором, default OFF
+from app.admin import kg_interviews  # noqa: E402,F401 — полная анкета и принятие карточки специалистом
+from app.admin import kg_quotes  # noqa: E402,F401 — внутренние версии расчёта стоимости
+from app.admin import kg_specialist  # noqa: E402,F401 — явное решение специалиста и связанный расчёт
+from app.admin import kg_work_review  # noqa: E402,F401 — отдельная условная проверка срока ЕР
+from app.admin import kg_actual_dates  # noqa: E402,F401 — фактические даты и условные напоминания
+from app.admin import kg_sop_reviews  # noqa: E402,F401
+from app.admin import kg_notifications  # noqa: E402,F401 — внутренние черновики без отправки
+from app.admin import kg_channel_stops  # noqa: E402,F401 — постоянная остановка выбранного WhatsApp-диалога
+from app.admin import kg_documents  # noqa: E402,F401 — черновая матрица документов, без записи
+from app.admin import kg_document_inventory  # noqa: E402,F401 — версии документов отдельных заявок
+from app.admin import kg_document_packages  # noqa: E402,F401 — полные комплекты и их приёмка
+from app.admin import kg_document_quarantine  # noqa: E402,F401 — файлы только в карантин
+
+from app.admin import kg_templates  # noqa: E402,F401
+
+from app.admin import kg_issued  # noqa: E402,F401 — проверки после выдачи
+from app.admin import kg_applicant_profiles  # noqa: E402,F401 — отдельные анкеты заявителей
+from app.admin import kg_applicant_history  # noqa: E402,F401 — личная история пребывания
+from app.admin import kg_deadlines  # noqa: E402,F401 — сроки конкретной заявки
+from app.admin import kg_deadline_tasks  # noqa: E402,F401 — задачи контроля срока
+from app.admin import kg_knowledge_decisions  # noqa: E402,F401 — журнал проверки знаний
+from app.admin import kg_knowledge_publication  # noqa: E402,F401 — публикация проверенных правил
+from app.admin import kg_answers  # noqa: E402,F401 — ответы по действующим утверждённым источникам
+from app.admin import kg_approved_qualification  # noqa: E402,F401 — возможный маршрут конкретного заявителя
+from app.admin import kg_assessment  # noqa: E402,F401 — полная проверка личной поездки

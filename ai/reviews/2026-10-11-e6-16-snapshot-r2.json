@@ -1,0 +1,31 @@
+{
+  "base": "fca93ad8ed7d6a5fcdf53b741b254ba1241ad03e",
+  "snapshot": "E6-16 r2 uncommitted local synthetic",
+  "archive": "runs/e6-16-review-r2",
+  "normalization": "LF",
+  "files": {
+    "Dockerfile": "519f5a70bf1ab7c1d98e7241141e8e8dca5dafdddc3ac58ee93d01910088acef",
+    "app/config.py": "538497a3dd40133ee46684f5f9bb433664295e9e7e65b2c8a2ee3b68096157d8",
+    "app/domain/models.py": "9e1d4f480e6cbf0ff98529bf67f709a458906efc2177f495200335e0d89fd493",
+    "alembic/versions/e6_notification_drafts_0032.py": "9719c209198c150ca4bb56295437f3a8bddaba21e9d5d1cb235faa387faa249a",
+    "app/domain/entry_notifications.py": "2ab3df1737ac11c80805851157fa24f09d8da48d03768698ddd9b73260fb6327",
+    "app/domain/entry_notification_policy.py": "4ceda6cdc255db017ea99ca0b8c1d9b363b0613a03877d14dd7b64311a5a7dcb",
+    "app/knowledge/notification_rules.py": "4bf988708368d1786e55afef1ed539ac812de55e4afec4aa8d40d0cd63fff928",
+    "app/knowledge/template_renderer_v1.py": "4347ff911eab52d9a4abaaca37439bd8408b3dda0b9d6f657f6771553b4908d7",
+    "knowledge/kg_entry/template_renderers/v1/catalog.json": "38c503d27135736d1fb3990a0626fc12be8a364fcc6bfa6d98108ba824dcf2b8",
+    "app/admin/kg_notifications.py": "82bc7667fd06e24d519873578d32274365c4a87a8fa3764fbf340e7703ecd649",
+    "app/admin/templates/kg_notifications.html": "82cac5bfe38af56308b979f458e7d23b4b8d169e39d177ed5f11de7e549900b7",
+    "app/admin/router.py": "c5c52722501d4b11e2235b2211b82a72b6fa5132e46dae6280e8cba11128c5d6",
+    "app/admin/templates/kg_applications.html": "6a2a07dad238a9c7b2ea8955c5bd1ca84cb30cec967ea0a505e753e0dffc4b38",
+    "tests/test_entry_notifications.py": "7678bc69c0048b08abf987a54e86cdb547f9b81cff99586871c8a86090da65be",
+    "tests/test_admin_kg_notifications.py": "dbd3ddae04d29b3c5beb67da44badfa7b9434d62316b953997af0c8688adce4a",
+    "tests/test_entry_notification_migration.py": "758978067e607be89bd245de0183617dfb2258122e0ae4f83eef1df314892fd8",
+    "tests/test_alembic_domain_migration.py": "f5c3025a75a93e43cddef57443309294a5e63c22a6dc9fb817fe6fa5a62b45e6",
+    "tests/test_service_cases.py": "c0231d97f7578903d32c75406983570b1e06b0263e9313a169107302ada6f488",
+    "ai/tasks/2026-10-11-e6-16-notification-drafts.md": "bd45f54a39a107dd00ca52033f5f613afd884b7fe9fcd5b17ead596d6f9572f3",
+    "tests/test_entry_notification_postgres.py": "7e07c894a94803db1079410cd008b57a6ae0bbd1cae69d25cd7f8a7110b2ec0b",
+    "tests/browser_kg_notifications.py": "00c6b7e489e31aecbf87a8070cf1507848b07c915537194bfc154e7f57af2241",
+    "docs/e6-16-notification-drafts.md": "0707481585e7e8e379bf298fd6dcbc1cd56726ac01e86a79a3953d5fe87da476",
+    "ai/reviews/2026-10-11-e6-16-pre-audit.md": "754229ca780b2821187c73abbc39bf4960f0b1abd59112db1343d0a04b6f16a0"
+  }
+}

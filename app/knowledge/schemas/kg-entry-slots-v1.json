@@ -1,0 +1,1298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frunzetravel.kg/schemas/kg-entry-slots/1",
+  "title": "Слоты квалификации въезда в КР",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version"
+  ],
+  "$defs": {
+    "unk": {
+      "enum": [
+        "unknown",
+        "not_applicable"
+      ]
+    },
+    "tri_bool": {
+      "enum": [
+        true,
+        false,
+        "unknown",
+        "not_applicable"
+      ]
+    },
+    "opt_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        {
+          "$ref": "#/$defs/unk"
+        }
+      ]
+    },
+    "opt_str": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        {
+          "$ref": "#/$defs/unk"
+        }
+      ]
+    },
+    "opt_int": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "$ref": "#/$defs/unk"
+        }
+      ]
+    },
+    "iso3": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "opt_iso3": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/iso3"
+        },
+        {
+          "$ref": "#/$defs/unk"
+        }
+      ]
+    },
+    "visa_type": {
+      "enum": [
+        "TS",
+        "B",
+        "TR",
+        "RL",
+        "FF",
+        "S",
+        "SW1",
+        "SW2",
+        "DN",
+        "J",
+        "M",
+        "I",
+        "R",
+        "T",
+        "A",
+        "L",
+        "D",
+        "O"
+      ]
+    },
+    "purpose": {
+      "enum": [
+        "tourism",
+        "private_visit",
+        "relatives_kg_citizen",
+        "family_of_foreigner",
+        "business_meeting",
+        "event",
+        "sport",
+        "medical",
+        "study",
+        "work_hire",
+        "work_individual_employer",
+        "entrepreneur",
+        "investor",
+        "it_remote",
+        "journalism",
+        "volunteer",
+        "equipment_installation",
+        "transit",
+        "religious",
+        "driver",
+        "accompanying_gcc",
+        "official"
+      ]
+    },
+    "stay_basis": {
+      "enum": [
+        "visa_free",
+        "visa",
+        "ep",
+        "resident_card",
+        "residence_permit",
+        "registration_contract",
+        "unknown"
+      ]
+    },
+    "interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry_date",
+        "exit_date"
+      ],
+      "properties": {
+        "entry_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "exit_date": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "const": "open"
+            },
+            {
+              "const": "unknown"
+            }
+          ]
+        },
+        "basis": {
+          "$ref": "#/$defs/stay_basis"
+        },
+        "visa_type": {
+          "$ref": "#/$defs/visa_type"
+        },
+        "passport_country": {
+          "$ref": "#/$defs/iso3"
+        },
+        "evidence": {
+          "enum": [
+            "client_statement",
+            "passport_stamp",
+            "boarding_pass",
+            "visa_document",
+            "esuvm",
+            "crm_record"
+          ]
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": "kg-entry-slots/1"
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}$",
+      "x-question-code": "A2"
+    },
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-question-code": "A1,A3,A4",
+      "x-persist": "dropped; contact_id is authoritative",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "phone": {
+          "type": "string",
+          "pattern": "^\\+?[0-9]{7,15}$"
+        },
+        "messenger": {
+          "enum": [
+            "whatsapp",
+            "telegram",
+            "other"
+          ]
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        }
+      }
+    },
+    "client_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "b2c",
+            "b2b"
+          ]
+        },
+        {
+          "const": "unknown"
+        }
+      ],
+      "x-question-code": "A5"
+    },
+    "applicants_count": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        {
+          "const": "unknown"
+        }
+      ],
+      "x-question-code": "A5"
+    },
+    "pd_consent": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-question-code": "A6",
+      "required": [
+        "given"
+      ],
+      "properties": {
+        "given": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "date": {
+          "$ref": "#/$defs/opt_date"
+        },
+        "policy_version": {
+          "type": "string",
+          "maxLength": 32
+        }
+      }
+    },
+    "citizenship": {
+      "anyOf": [
+        {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/iso3"
+          }
+        },
+        {
+          "const": "unknown"
+        }
+      ],
+      "x-question-code": "B1"
+    },
+    "entry_passport_country": {
+      "$ref": "#/$defs/opt_iso3",
+      "x-question-code": "B2"
+    },
+    "document_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "ordinary",
+            "diplomatic",
+            "service",
+            "un_lp",
+            "stateless",
+            "refugee",
+            "other",
+            "id_card",
+            "internal",
+            "unrecognized"
+          ]
+        },
+        {
+          "const": "unknown"
+        }
+      ],
+      "x-question-code": "B3"
+    },
+    "passport_expiry": {
+      "$ref": "#/$defs/opt_date",
+      "x-question-code": "B4"
+    },
+    "passport_pages_ok": {
+      "$ref": "#/$defs/tri_bool",
+      "x-question-code": "B5"
+    },
+    "residence_country": {
+      "$ref": "#/$defs/opt_iso3",
+      "x-question-code": "B6"
+    },
+    "gcc_or_brunei_residence": {
+      "$ref": "#/$defs/tri_bool",
+      "x-question-code": "B6"
+    },
+    "longterm_us_uk_schengen_visa": {
+      "$ref": "#/$defs/tri_bool",
+      "x-question-code": "B7"
+    },
+    "current_location": {
+      "anyOf": [
+        {
+          "enum": [
+            "abroad",
+            "in_kg"
+          ]
+        },
+        {
+          "const": "unknown"
+        }
+      ],
+      "x-question-code": "B8"
+    },
+    "in_kg_since": {
+      "$ref": "#/$defs/opt_date",
+      "x-question-code": "B8"
+    },
+    "in_kg_entry_point": {
+      "anyOf": [
+        {
+          "enum": [
+            "manas",
+            "osh",
+            "ak_jol",
+            "other_land"
+          ]
+        },
+        {
+          "$ref": "#/$defs/unk"
+        }
+      ],
+      "x-question-code": "B8"
+    },
+    "current_basis_in_kg": {
+      "anyOf": [
+        {
+          "enum": [
+            "visa_free",
+            "visa",
+            "ep",
+            "resident_card",
+            "residence_permit",
+            "registration_contract",
+            "none"
+          ]
+        },
+        {
+          "$ref": "#/$defs/unk"
+        }
+      ],
+      "x-question-code": "E1"
+    },
+    "current_visa_type": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/visa_type"
+        },
+        {
+          "$ref": "#/$defs/unk"
+        }
+      ],
+      "x-question-code": "E1"
+    },
+    "current_basis_until": {
+      "$ref": "#/$defs/opt_date",
+      "x-question-code": "E4"
+    },
+    "current_visa_inviting_party": {
+      "$ref": "#/$defs/opt_str",
+      "x-question-code": "E3"
+    },
+    "registration_until": {
+      "$ref": "#/$defs/opt_date",
+      "x-question-code": "E2"
+    },
+    "registration_address": {
+      "$ref": "#/$defs/opt_str",
+      "x-question-code": "E2"
+    },
+    "residence_or_citizenship_petition_filed": {
+      "$ref": "#/$defs/tri_bool",
+      "x-question-code": "E5"
+    },
+    "purpose_declared_at_border": {
+      "$ref": "#/$defs/opt_str",
+      "x-question-code": "E6"
+    },
+    "purpose": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/purpose"
+        },
+        {
+          "const": "unknown"
+        }
+      ],
+      "x-question-code": "C1"
+    },
+    "purpose_details": {
+      "type": "string",
+      "maxLength": 1000,
+      "x-question-code": "C2"
+    },
+    "entry_date": {
+      "$ref": "#/$defs/opt_date",
+      "x-question-code": "C3"
+    },
+    "exit_date": {
+      "$ref": "#/$defs/opt_date",
+      "x-question-code": "C4"
+    },
+    "multiple_entries_needed": {
+      "$ref": "#/$defs/tri_bool",
+      "x-question-code": "C5"
+    },
+    "entry_point": {
+      "anyOf": [
+        {
+          "enum": [
+            "manas",
+            "osh",
+            "ak_jol",
+            "other_land"
+          ]
+        },
+        {
+          "$ref": "#/$defs/unk"
+        }
+      ],
+      "x-question-code": "C6"
+    },
+    "entry_point_other": {
+      "type": "string",
+      "maxLength": 100,
+      "x-question-code": "C6",
+      "minLength": 1
+    },
+    "tickets_bought": {
+      "$ref": "#/$defs/tri_bool",
+      "x-question-code": "C7"
+    },
+    "accommodation_address": {
+      "$ref": "#/$defs/opt_str",
+      "x-question-code": "C8"
+    },
+    "urgency_deadline": {
+      "$ref": "#/$defs/opt_date",
+      "x-question-code": "C9"
+    },
+    "organized_group": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-question-code": "C10",
+      "properties": {
+        "is_group": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "size": {
+          "$ref": "#/$defs/opt_int"
+        },
+        "operator": {
+          "$ref": "#/$defs/opt_str"
+        }
+      }
+    },
+    "event_dates": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-question-code": "C11",
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/opt_date"
+        },
+        "to": {
+          "$ref": "#/$defs/opt_date"
+        }
+      }
+    },
+    "previous_visits": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-question-code": "D1,D2,D5",
+      "required": [
+        "was_in_kg"
+      ],
+      "properties": {
+        "was_in_kg": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "history_complete": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "intervals": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/interval"
+          },
+          "x-persist": "upsert into stay_intervals (confirmed=false unless evidence from manager)"
+        },
+        "previous_kg_visas": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "visa_type": {
+                "$ref": "#/$defs/visa_type"
+              },
+              "valid_from": {
+                "$ref": "#/$defs/opt_date"
+              },
+              "valid_to": {
+                "$ref": "#/$defs/opt_date"
+              }
+            }
+          }
+        }
+      }
+    },
+    "violations": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-question-code": "D3",
+      "required": [
+        "overstay",
+        "deportation_or_ban"
+      ],
+      "properties": {
+        "overstay": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "deportation_or_ban": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "ban_until": {
+          "$ref": "#/$defs/opt_date"
+        },
+        "fines": {
+          "$ref": "#/$defs/tri_bool"
+        }
+      }
+    },
+    "previous_refusals_kg": {
+      "$ref": "#/$defs/tri_bool",
+      "x-question-code": "D4"
+    },
+    "previous_refusals_details": {
+      "type": "string",
+      "maxLength": 500,
+      "x-question-code": "D4"
+    },
+    "inviting_party": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-question-code": "F1-F4",
+      "required": [
+        "exists"
+      ],
+      "properties": {
+        "exists": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "enum": [
+                "company",
+                "university",
+                "clinic",
+                "relative_kg_citizen",
+                "state_body",
+                "individual",
+                "tour_organization",
+                "other"
+              ]
+            },
+            {
+              "$ref": "#/$defs/unk"
+            }
+          ]
+        },
+        "name": {
+          "$ref": "#/$defs/opt_str"
+        },
+        "inn": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]{14}$"
+            },
+            {
+              "$ref": "#/$defs/unk"
+            }
+          ]
+        },
+        "contact": {
+          "$ref": "#/$defs/opt_str"
+        },
+        "has_portal_cabinet": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "can_issue_letter": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "tax_debts_absent": {
+          "$ref": "#/$defs/tri_bool"
+        }
+      }
+    },
+    "employment": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-question-code": "F5-F9",
+      "properties": {
+        "position": {
+          "$ref": "#/$defs/opt_str"
+        },
+        "salary_kgs": {
+          "$ref": "#/$defs/opt_int"
+        },
+        "contract_months": {
+          "$ref": "#/$defs/opt_int"
+        },
+        "employment_form": {
+          "anyOf": [
+            {
+              "enum": [
+                "hire",
+                "individual_entrepreneur",
+                "company_head",
+                "other"
+              ]
+            },
+            {
+              "$ref": "#/$defs/unk"
+            }
+          ]
+        },
+        "sector": {
+          "$ref": "#/$defs/opt_str"
+        },
+        "tpp_member": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "employer_issued_ep_before": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "has_quota": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "existing_ep": {
+          "$ref": "#/$defs/tri_bool"
+        },
+        "existing_ep_until": {
+          "$ref": "#/$defs/opt_date"
+        }
+      }
+    },
+    "investment": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-question-code": "F10",
+      "properties": {
+        "amount_kgs": {
+          "$ref": "#/$defs/opt_int"
+        },
+        "authority_letter": {
+          "$ref": "#/$defs/tri_bool"
+        }
+      }
+    },
+    "family": {
+      "anyOf": [
+        {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "relation"
+            ],
+            "properties": {
+              "relation": {
+                "enum": [
+                  "spouse",
+                  "child",
+                  "parent",
+                  "other"
+                ]
+              },
+              "age": {
+                "$ref": "#/$defs/opt_int"
+              },
+              "travels_together": {
+                "$ref": "#/$defs/tri_bool"
+              },
+              "arrives_later": {
+                "$ref": "#/$defs/tri_bool"
+              },
+              "both_parents_travel": {
+                "$ref": "#/$defs/tri_bool"
+              },
+              "born_in_kg": {
+                "$ref": "#/$defs/tri_bool"
+              },
+              "kg_status_of_principal": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "ep",
+                      "resident_card",
+                      "residence_permit",
+                      "visa",
+                      "citizen",
+                      "none"
+                    ]
+                  },
+                  {
+                    "$ref": "#/$defs/unk"
+                  }
+                ]
+              },
+              "documents_apostilled": {
+                "$ref": "#/$defs/tri_bool"
+              }
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/unk"
+        }
+      ],
+      "x-question-code": "G1-G7"
+    },
+    "payer": {
+      "anyOf": [
+        {
+          "enum": [
+            "self",
+            "company"
+          ]
+        },
+        {
+          "const": "unknown"
+        }
+      ],
+      "x-question-code": "H1"
+    },
+    "extra_services": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "hotel",
+          "transfer",
+          "tour",
+          "tickets",
+          "insurance",
+          "registration"
+        ]
+      },
+      "x-question-code": "H3"
+    },
+    "referral_source": {
+      "type": "string",
+      "maxLength": 200,
+      "x-question-code": "H4"
+    },
+    "stop_factors": {
+      "type": "array",
+      "uniqueItems": true,
+      "readOnly": true,
+      "items": {
+        "enum": [
+          "diplomatic_or_service_passport",
+          "stateless_refugee_other_document",
+          "unrecognized_passport",
+          "overstayed_in_kg",
+          "less_than_5_wd_left",
+          "deportation_ban_or_refusal",
+          "criminal_mention",
+          "work_purpose_with_ts_b",
+          "minor_without_parents",
+          "illegal_request",
+          "group_over_5_or_b2b_or_ep",
+          "residence_or_citizenship",
+          "limit_margin_3_days_or_less",
+          "passport_expired"
+        ]
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "readOnly": true,
+      "x-writer": "calculator only (E5-03); LLM path rejected if present",
+      "required": [
+        "regime",
+        "rule_ids",
+        "knowledge_version",
+        "calculation_id"
+      ],
+      "properties": {
+        "regime": {
+          "enum": [
+            "visa_free",
+            "visa_simplified",
+            "visa_general",
+            "special",
+            "escalate",
+            "insufficient_data"
+          ]
+        },
+        "visa_free_limit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "days": {
+              "type": "integer"
+            },
+            "window_days": {
+              "type": "integer"
+            }
+          }
+        },
+        "days_remaining": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "const": "unknown"
+            }
+          ]
+        },
+        "recommended_product": {
+          "type": "string"
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "registration_needed_by": {
+          "$ref": "#/$defs/opt_date"
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "escalation_reason": {
+          "type": "string"
+        },
+        "price_quote_usd": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "government": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "const": "unknown"
+                }
+              ]
+            },
+            "service": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "const": "unknown"
+                }
+              ]
+            }
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "rule_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^KG\\.[A-Z0-9_.]+$"
+          }
+        },
+        "knowledge_version": {
+          "type": "integer"
+        },
+        "calendar_version": {
+          "type": "integer"
+        },
+        "calculation_id": {
+          "type": "integer"
+        },
+        "not_quotable_units": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "citizenship": {
+            "type": "array",
+            "minItems": 2
+          }
+        },
+        "required": [
+          "citizenship"
+        ]
+      },
+      "then": {
+        "required": [
+          "entry_passport_country"
+        ],
+        "properties": {
+          "entry_passport_country": {
+            "$ref": "#/$defs/iso3"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "citizenship": {
+            "type": "array",
+            "maxItems": 1
+          }
+        },
+        "required": [
+          "citizenship",
+          "entry_passport_country"
+        ]
+      },
+      "then": {
+        "properties": {
+          "entry_passport_country": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/iso3"
+              },
+              {
+                "const": "not_applicable"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "current_location": {
+            "const": "in_kg"
+          }
+        },
+        "required": [
+          "current_location"
+        ]
+      },
+      "then": {
+        "required": [
+          "in_kg_since",
+          "current_basis_in_kg"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "current_location": {
+            "const": "abroad"
+          }
+        },
+        "required": [
+          "current_location"
+        ]
+      },
+      "then": {
+        "properties": {
+          "in_kg_since": {
+            "const": "not_applicable"
+          },
+          "current_basis_in_kg": {
+            "const": "not_applicable"
+          },
+          "current_basis_until": {
+            "const": "not_applicable"
+          },
+          "registration_until": {
+            "const": "not_applicable"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "current_basis_in_kg": {
+            "const": "visa"
+          }
+        },
+        "required": [
+          "current_basis_in_kg"
+        ]
+      },
+      "then": {
+        "required": [
+          "current_visa_type"
+        ],
+        "properties": {
+          "current_visa_type": {
+            "$ref": "#/$defs/visa_type"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "current_basis_in_kg": {
+            "not": {
+              "const": "visa"
+            }
+          }
+        },
+        "required": [
+          "current_basis_in_kg",
+          "current_visa_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "current_visa_type": {
+            "const": "not_applicable"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "entry_point": {
+            "const": "other_land"
+          }
+        },
+        "required": [
+          "entry_point"
+        ]
+      },
+      "then": {
+        "required": [
+          "entry_point_other"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "previous_visits": {
+            "properties": {
+              "was_in_kg": {
+                "const": true
+              }
+            },
+            "required": [
+              "was_in_kg"
+            ]
+          }
+        },
+        "required": [
+          "previous_visits"
+        ]
+      },
+      "then": {
+        "properties": {
+          "previous_visits": {
+            "required": [
+              "history_complete"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "previous_visits": {
+            "properties": {
+              "was_in_kg": {
+                "const": false
+              }
+            },
+            "required": [
+              "was_in_kg"
+            ]
+          }
+        },
+        "required": [
+          "previous_visits"
+        ]
+      },
+      "then": {
+        "properties": {
+          "previous_visits": {
+            "properties": {
+              "intervals": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "violations": {
+            "properties": {
+              "deportation_or_ban": {
+                "const": true
+              }
+            },
+            "required": [
+              "deportation_or_ban"
+            ]
+          }
+        },
+        "required": [
+          "violations"
+        ]
+      },
+      "then": {
+        "properties": {
+          "violations": {
+            "required": [
+              "ban_until"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "inviting_party": {
+            "properties": {
+              "exists": {
+                "const": true
+              }
+            },
+            "required": [
+              "exists"
+            ]
+          }
+        },
+        "required": [
+          "inviting_party"
+        ]
+      },
+      "then": {
+        "properties": {
+          "inviting_party": {
+            "required": [
+              "type",
+              "name"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "inviting_party": {
+            "properties": {
+              "exists": {
+                "enum": [
+                  false,
+                  "not_applicable"
+                ]
+              }
+            },
+            "required": [
+              "exists"
+            ]
+          }
+        },
+        "required": [
+          "inviting_party"
+        ]
+      },
+      "then": {
+        "properties": {
+          "inviting_party": {
+            "properties": {
+              "type": {
+                "const": "not_applicable"
+              },
+              "name": {
+                "const": "not_applicable"
+              },
+              "inn": {
+                "const": "not_applicable"
+              },
+              "has_portal_cabinet": {
+                "const": "not_applicable"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "purpose": {
+            "enum": [
+              "work_hire",
+              "work_individual_employer",
+              "entrepreneur"
+            ]
+          }
+        },
+        "required": [
+          "purpose"
+        ]
+      },
+      "then": {
+        "required": [
+          "employment"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "purpose": {
+            "const": "investor"
+          }
+        },
+        "required": [
+          "purpose"
+        ]
+      },
+      "then": {
+        "required": [
+          "investment"
+        ]
+      }
+    }
+  ]
+}

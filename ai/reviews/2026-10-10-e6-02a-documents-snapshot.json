@@ -1,0 +1,89 @@
+{
+  "revision": "1d3372ed7116d99a13b1ef989c9d0c31c5d248a5",
+  "base": "1747d0c",
+  "isolated_copy": "runs/e6-02a-documents-committed",
+  "identity": "PASS Git/workspace/archive after LF normalization",
+  "env_files_absent": true,
+  "files": [
+    {
+      "path": "Dockerfile",
+      "sha256_lf": "e5538ac5c26f56c4a8c375609c1741f6cd08792e4a44f76480627c4712771b7b"
+    },
+    {
+      "path": "ai/reviews/2026-10-10-e6-02a-documents-self-review.md",
+      "sha256_lf": "6362fedee14918f4a68f170ce77b6d17635a1a94b1b79351e185f33d63c9d6fb"
+    },
+    {
+      "path": "ai/tasks/2026-10-10-e6-02a-document-checklists.md",
+      "sha256_lf": "e40ef6a10b6a14e8af51a4072ca8d8420bd42ceca0df97a749465defe63a9921"
+    },
+    {
+      "path": "app/admin/kg_documents.py",
+      "sha256_lf": "712884aab37082f61d5d2163f017567a1576d49c76aff7feb00ca305b5515345"
+    },
+    {
+      "path": "app/admin/router.py",
+      "sha256_lf": "2ce185aec9fbac44c322b91bcd90a97e7c1aba07c7f8a97bce668c92bfcbfbe2"
+    },
+    {
+      "path": "app/admin/templates/kg_documents.html",
+      "sha256_lf": "7ab599f7ed1b63da8e2575295f65877542a4dcfb1bd9822143988357ca532b30"
+    },
+    {
+      "path": "app/admin/templates/kg_entry.html",
+      "sha256_lf": "4bd00f423b2d49491e8732f9b12aa34608c7e7a65916a572da5cf0b5c6c62fa5"
+    },
+    {
+      "path": "app/admin/templates/kg_processes.html",
+      "sha256_lf": "d692eaf9d5b379b5580c6a08efebfb107e9c9e884eef5084b765e44e1755cd88"
+    },
+    {
+      "path": "app/knowledge/document_checklist.py",
+      "sha256_lf": "2e41a62a0c9c50230103cfa73ed18dd8e01543a2486c5e97670174ff96c27388"
+    },
+    {
+      "path": "docs/crm-delivery/backlog.json",
+      "sha256_lf": "484020aa14e41d3809b0f7d400d61abe4525fc4f38f4c15310a322bdc2452b16"
+    },
+    {
+      "path": "docs/crm-delivery/backlog.md",
+      "sha256_lf": "4e72789f027ca4b897197dd3f7430208b9b5df73a963a5a9a6c96b1c8c51a25d"
+    },
+    {
+      "path": "docs/e5-pdf-progress.md",
+      "sha256_lf": "e2fe4bf401eb0fd2851b3e34401222bb2a9be8af7fd0f8c9f173d842136589fd"
+    },
+    {
+      "path": "docs/e5-pdf-section-coverage.md",
+      "sha256_lf": "0876d76f99c6a4a8179ce29c75090af7d9d0fe63745bb6a2707359c83e4b093d"
+    },
+    {
+      "path": "docs/e6-02a-document-checklists.md",
+      "sha256_lf": "32e5054757267549c6602574bfc4c2e15acd5e4f928d51c06eab9d55b4dc426b"
+    },
+    {
+      "path": "knowledge/kg_entry/documents_v1_1/catalog.json",
+      "sha256_lf": "81ebf0f41aec18ebe8ada37d3d709fd73114eea250718fc4b66abb63e22b1c6f"
+    },
+    {
+      "path": "scripts/build_kg_document_catalog.py",
+      "sha256_lf": "5d7ae67d423cb73a1992e106081b12c22b22a4c76bbc11526e99c67843c60c78"
+    },
+    {
+      "path": "scripts/build_kg_progress_report.py",
+      "sha256_lf": "baff214ca62e3d4bff3166d3a570ceab7de8c2a3dca9f96f1ae73e01d7860871"
+    },
+    {
+      "path": "tests/browser_kg_documents.py",
+      "sha256_lf": "38acf0575c58f775e4939f36eae164c8602f69ccc4ce6238aa879f37478f3732"
+    },
+    {
+      "path": "tests/test_admin_kg_documents.py",
+      "sha256_lf": "be78b0489c042894b928175cde3d7675ef95e91b299b985ab4d5f28a0a5fc676"
+    },
+    {
+      "path": "tests/test_kg_document_checklist.py",
+      "sha256_lf": "d9ea4771452b301a4d29056848948a3796735d6c36e4f323609465e764e86e26"
+    }
+  ]
+}

@@ -10,10 +10,11 @@ __pycache__
 *.pyc
 .pytest_cache
 tests
-docs
+docs/*
 design-artifacts
 _bmad
 _bmad-output
 *.md
+!docs/kb-visa-inbound-v1.1-derived.md
 HANDOVER.md
 plans

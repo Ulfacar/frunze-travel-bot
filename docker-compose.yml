@@ -35,6 +35,7 @@ services:
       BITRIX_LEAD_FIELDS_ENABLED: ${BITRIX_LEAD_FIELDS_ENABLED:-false}
       DOSSIER_SHARED_CARDS_ENABLED: ${DOSSIER_SHARED_CARDS_ENABLED:-false}
       WATCHDOG_TELEGRAM_ENABLED: ${WATCHDOG_TELEGRAM_ENABLED:-false}
+      WATCHDOG_SILENCE_ENABLED: ${WATCHDOG_SILENCE_ENABLED:-false}
       ALERT_FAIL_THRESHOLD: ${ALERT_FAIL_THRESHOLD:-5}
       ALERT_FAIL_WINDOW_MINUTES: ${ALERT_FAIL_WINDOW_MINUTES:-60}
       ALERT_FAIL_WINDOW_THRESHOLD: ${ALERT_FAIL_WINDOW_THRESHOLD:-6}
@@ -47,6 +48,7 @@ services:
       BITRIX_HEALTH_COOLDOWN_HOURS: ${BITRIX_HEALTH_COOLDOWN_HOURS:-24}
       OWNER_REMINDER_HOURS: ${OWNER_REMINDER_HOURS:-72}
       SILENCE_ALERT_ONLY_ON_GAP: ${SILENCE_ALERT_ONLY_ON_GAP:-false}
+      SILENCE_WEBHOOK_PROOF_ENABLED: ${SILENCE_WEBHOOK_PROOF_ENABLED:-false}
       BITRIX_DEAL_CATEGORY_ID: ${BITRIX_DEAL_CATEGORY_ID:-27}
       BITRIX_DEAL_STAGE_ID: ${BITRIX_DEAL_STAGE_ID:-C27:NEW}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
@@ -98,8 +100,20 @@ services:
       WAPPI_HEALTH_COOLDOWN_MINUTES: ${WAPPI_HEALTH_COOLDOWN_MINUTES:-1440}
       WAPPI_HEALTH_CONFIRM_TICKS: ${WAPPI_HEALTH_CONFIRM_TICKS:-3}
       WAPPI_HEALTH_TIMEOUT_SECONDS: ${WAPPI_HEALTH_TIMEOUT_SECONDS:-15}
+      # Чтение истории чата: планировщик последователен, длинное ожидание крадёт время
+      # у сторожей, стоящих в очереди за manager_sync (29.09 — 39 таймаутов за 12 часов).
+      WAPPI_MESSAGES_TIMEOUT_SECONDS: ${WAPPI_MESSAGES_TIMEOUT_SECONDS:-12}
       WAPPI_PAYMENT_WARN_DAYS: ${WAPPI_PAYMENT_WARN_DAYS:-5}
+      # Грация на переподключение: `connecting`/`close` при живой авторизации — не разлогин
+      # (27.09.2026 такая серия шла 64 мин и дала три ложных «сканируйте QR»). Default OFF.
+      WAPPI_CONNECTING_GRACE_ENABLED: ${WAPPI_CONNECTING_GRACE_ENABLED:-false}
+      WAPPI_CONNECTING_GRACE_MINUTES: ${WAPPI_CONNECTING_GRACE_MINUTES:-90}
+      # Совет сторожа тишины: «переподключается» вместо «сканируй QR». Default OFF.
+      WAPPI_RECONNECTING_ADVICE_ENABLED: ${WAPPI_RECONNECTING_ADVICE_ENABLED:-false}
       CHANNEL_ALERT_COOLDOWN_MINUTES: ${CHANNEL_ALERT_COOLDOWN_MINUTES:-1440}
+      # Не пересуживать «active» без новых сообщений: 2837 диалогов крутились по кругу
+      # и давали ~480 вызовов LLM в сутки впустую. Default OFF.
+      OUTCOME_INFER_SKIP_UNCHANGED_ENABLED: ${OUTCOME_INFER_SKIP_UNCHANGED_ENABLED:-false}
       # Напоминание владельцу о ждущем клиенте. Default OFF — щёлкается в админке.
       AWAITING_TELEGRAM_ENABLED: ${AWAITING_TELEGRAM_ENABLED:-false}
       AWAITING_MAX_AGE_HOURS: ${AWAITING_MAX_AGE_HOURS:-24}
@@ -145,6 +159,21 @@ services:
       BITRIX_ASSIGNEE_BY_MANAGER: ${BITRIX_ASSIGNEE_BY_MANAGER:-{}}
       # Подборка туров карточками + публичный адрес для ссылки «Подробнее здесь».
       TOURS_CARDS_ENABLED: ${TOURS_CARDS_ENABLED:-false}
+      # Рейсы в карточке тура (actdetail.php). Default OFF: +18–22 с к ответу.
+      TOUR_FLIGHTS_ENABLED: ${TOUR_FLIGHTS_ENABLED:-false}
+      SERVICE_CASES_ENABLED: ${SERVICE_CASES_ENABLED:-false}
+      # Инбокс страницей вместо всей базы (1.95 МБ каждые 10 с → 0.11 МБ). Default OFF.
+      ADMIN_INBOX_LIMIT_ENABLED: ${ADMIN_INBOX_LIMIT_ENABLED:-false}
+      # Новый вид панели (палитра, шрифты, тёмная тема). Default OFF.
+      ADMIN_NEW_LOOK_ENABLED: ${ADMIN_NEW_LOOK_ENABLED:-false}
+      ADMIN_CHAT_REDESIGN_ENABLED: ${ADMIN_CHAT_REDESIGN_ENABLED:-false}
+      # Экран «Фокус» — кому ответить сейчас. Default OFF.
+      ADMIN_FOCUS_ENABLED: ${ADMIN_FOCUS_ENABLED:-false}
+      ADMIN_WORKDAY_ENABLED: ${ADMIN_WORKDAY_ENABLED:-false}
+      ADMIN_KG_ENTRY_ENABLED: ${ADMIN_KG_ENTRY_ENABLED:-false}
+      # Secure-флаг cookie сессии. На проде только true (TLS на nginx).
+      SESSION_HTTPS_ONLY: ${SESSION_HTTPS_ONLY:-true}
+      ADMIN_INBOX_PAGE_SIZE: ${ADMIN_INBOX_PAGE_SIZE:-60}
       TOUR_FACTS_ENABLED: ${TOUR_FACTS_ENABLED:-false}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
       STATE_BACKEND: ${STATE_BACKEND:-redis}
@@ -154,6 +183,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       MANAGERS: ${MANAGERS:-[]}
       SESSION_SECRET: ${SESSION_SECRET:-change-me-frunze-session-secret}
+      ADMIN_DIRECTION_SPLIT_ENABLED: ${ADMIN_DIRECTION_SPLIT_ENABLED:-false}
       DEMO_LOGIN: ${DEMO_LOGIN:-false}
       # Утренний бриф менеджеру: без этого токена джоба «отправляет» в пустоту (контейнер
       # видит ТОЛЬКО перечисленные здесь переменные — в prod.env их держать мало).

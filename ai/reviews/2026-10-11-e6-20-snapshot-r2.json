@@ -1,0 +1,16 @@
+{
+  "base": "996059e393cb434fee4df84f5a8bb5896f9425d3",
+  "archive": "runs/e6-20-review-r2",
+  "normalization": "LF",
+  "files": {
+    "app/domain/entry_deadlines.py": "160d0c2aa3f2b334221c9f49df938b8dd6ef5ffcab26cc0a6b6612e5c116614a",
+    "app/domain/models.py": "761d0367604f696ea7e6df1d8ae00a630a1fae41f69bc04c25be95ea7e3af551",
+    "app/admin/kg_deadlines.py": "51c9410e337f6cfa01d5e1ce8ebdd1eeb4efc1fe199cbeea51680bacf257f0e7",
+    "app/admin/templates/kg_deadlines.html": "4bf024af8eeef3b4b29744d8ebce64c61acf6caefcff7aa4414a58751e30c332",
+    "alembic/versions/e6_deadline_clear_0033.py": "7eb73a899804ad415dc05cecd9b5d02f7ce2e7bec6adbd218c082401cfccf707",
+    "tests/test_entry_deadline_clear_capacity.py": "cf4bcb22806c7e249ed06df9fe5129ca185d72ac35e6cef1a35344a42360dbb5",
+    "tests/test_entry_deadline_clear_postgres.py": "2d3255a5f9bdd33a61411f8988ae652ecd63b93de251dd6c77130a8ce6edb6b8",
+    "tests/test_entry_deadline_clear_migration.py": "51976359ad911db7aad627e8352e5d15861d08528705e41e1a14e189ee4e7b32",
+    "ai/tasks/2026-10-11-e6-20-deadline-review.md": "927eec071bd42ea67fdb9441ffaefb7196780befb8a634ad58e054f8926eb615"
+  }
+}

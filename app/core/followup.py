@@ -136,8 +136,11 @@ async def _send_followups(now: datetime, cfg, allowed: set[str] | None = None) -
         post_consult = STAGE_TO_COLUMN.get(getattr(c, "stage", ""), "") == "office"
         text = followup_ping_for(c.funnel, post_consult=post_consult, count=followup_pings(c))
         try:
-            provider = await outbound.send_to_client(
+            outcome = await outbound.send_automated_to_client(
                 c.channel, c.bot_id, c.chat_id or c.user_id, text)
+            if not outcome.invoked:
+                continue
+            provider = outcome.value
             mark_own(provider)
             await store.add_message(c.user_id, "bot", text, status="sent",
                                     provider_msg_id=provider or "")

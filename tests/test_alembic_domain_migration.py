@@ -40,6 +40,31 @@ DOMAIN_TABLES = {
     "canonical_messages", "inbox_events", "outbox_jobs",
     # Sprint 1 calendar tasks.
     "calendar_tasks", "calendar_task_events",
+    # E1-01 из ТЗ CRM: продукты, версии процессов, услуга и её история.
+    # Услуга висит на contacts, а не на requests: замер прода 04.10 показал
+    # requests = 0 строк при 2662 контактах.
+    "products", "workflow_versions", "service_cases", "service_events",
+    # E2-03: журнал денег по услуге. Остаток в нём НЕ хранится — считается по
+    # строкам, поэтому колонки «итого» здесь нет и быть не должно.
+    "service_payments",
+    # E2-02: сегменты билета.
+    "ticket_segments",
+    # E2-01: попытки бронирования тура.
+    "booking_attempts",
+    # E5-02B: draft storage only; calculators/publication are separate work.
+    "knowledge_sets", "knowledge_versions", "knowledge_units", "knowledge_imports",
+    "knowledge_projections", "knowledge_country_links", "knowledge_condition_links",
+    "stay_histories", "stay_intervals", "work_calendars", "work_calendar_days",
+    "entry_calculations", "entry_calculation_intervals", "entry_calculation_calendars",
+    "entry_qualifications",
+    # E6-01A: separate people, attempts, processing facts and unique portal refs.
+    "entry_applicants", "entry_applications", "entry_application_events", "entry_application_references",
+    "entry_document_revisions", "entry_issued_revisions", "entry_applicant_profiles", "entry_applicant_stay_history", "entry_deadline_revisions", "entry_deadline_tasks", "knowledge_decisions", "knowledge_publication_events", "knowledge_publication_units", "entry_document_package_events", "entry_quarantined_files",
+    # E6-10: immutable procedural stages and their relational evidence pins.
+    "entry_process_events", "entry_process_pins",
+    "entry_portal_receipts", "entry_portal_actions",
+    "entry_interviews", "entry_interview_events",
+    "entry_quote_revisions", "entry_channel_stops", "entry_notification_drafts", "entry_dialogue_stop_causes",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",

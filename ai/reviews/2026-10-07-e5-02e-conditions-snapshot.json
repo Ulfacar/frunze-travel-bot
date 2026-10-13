@@ -1,0 +1,59 @@
+{
+  "task": "E5-02E",
+  "base": "e410078",
+  "target": "UNCOMMITTED; final commit in handoff/STATE",
+  "files": {
+    "app/knowledge/condition_schema.py": {
+      "sha256_raw": "41d801b305be3e5be1b4f841bac95b547e49f7512b102c25a62b7ca164ef1ecf",
+      "sha256_lf": "41d801b305be3e5be1b4f841bac95b547e49f7512b102c25a62b7ca164ef1ecf"
+    },
+    "app/knowledge/conditions.py": {
+      "sha256_raw": "25c82d6d9b7bdbc485c3f30730c219eddea8c705a8d6de5d1ead9222a6ea8bda",
+      "sha256_lf": "25c82d6d9b7bdbc485c3f30730c219eddea8c705a8d6de5d1ead9222a6ea8bda"
+    },
+    "scripts/build_kg_entry_conditions.py": {
+      "sha256_raw": "a5cfc5b5f5dbe76505da06798f1e76697f002a600be0c94a33c906ab07f5b03b",
+      "sha256_lf": "a5cfc5b5f5dbe76505da06798f1e76697f002a600be0c94a33c906ab07f5b03b"
+    },
+    "scripts/review_kg_conditions.py": {
+      "sha256_raw": "76aa5daf74db681e2d85cdba9fb7d4ec5915185a1b07333fa66a70e60aa59b82",
+      "sha256_lf": "76aa5daf74db681e2d85cdba9fb7d4ec5915185a1b07333fa66a70e60aa59b82"
+    },
+    "knowledge/kg_entry/conditions_v1_1/catalog.json": {
+      "sha256_raw": "3e499dd29aa7c0dba1d338d48b7d0ca64c4ca98277509c2506f706d32a9b890c",
+      "sha256_lf": "3e499dd29aa7c0dba1d338d48b7d0ca64c4ca98277509c2506f706d32a9b890c"
+    },
+    "tests/test_kg_conditions.py": {
+      "sha256_raw": "7f32e9503eef1ebaa281acfaba0fc84fccb39d7e008f6b19ff55e5957b9ee5fd",
+      "sha256_lf": "7f32e9503eef1ebaa281acfaba0fc84fccb39d7e008f6b19ff55e5957b9ee5fd"
+    },
+    "tests/fixtures/kg_entry/synthetic_condition_facts.json": {
+      "sha256_raw": "8fe122dd1741fe1894333269a2760c7425a8895e34b5e6b59543fab12b56556f",
+      "sha256_lf": "8fe122dd1741fe1894333269a2760c7425a8895e34b5e6b59543fab12b56556f"
+    },
+    "ai/tasks/2026-10-07-e5-02e-conditions.md": {
+      "sha256_raw": "37d0a8df717145407cff7b9702e525f8d2a832debc3ee045085967888ccd4c56",
+      "sha256_lf": "37d0a8df717145407cff7b9702e525f8d2a832debc3ee045085967888ccd4c56"
+    },
+    "docs/e5-02e-conditions.md": {
+      "sha256_raw": "1453a428a24009b2ab2b5d8cd78c00381cf9570703ba31584e569075f0c1a65d",
+      "sha256_lf": "1453a428a24009b2ab2b5d8cd78c00381cf9570703ba31584e569075f0c1a65d"
+    },
+    "docs/e5-02-slots-schema.md": {
+      "sha256_raw": "b4327001f4092a65e8c80c5961411a54c82ab9c77c513e7244ef2cabd2e63f4b",
+      "sha256_lf": "dc501e40ccce29ca2b6a7948172bfbdbdb49a5f9064f54c96eb1500843fca2b3"
+    },
+    "docs/crm-delivery/backlog.md": {
+      "sha256_raw": "afdec78fb1dd34985874504a495e738f401ae5985a04f54a308fb25a070ec3eb",
+      "sha256_lf": "ffaec08236775e40f906363495226f1d3c1ecbfcfb93c5e4082236611499e6eb"
+    },
+    "docs/crm-delivery/backlog.json": {
+      "sha256_raw": "b96a8a14dcd3b44665589c4b51914cf5ed2e9cbe7e9ea1972251c26700dfce1d",
+      "sha256_lf": "42faacd6c30e28a31bdbab721bca319f184cb3df0175ad00f29ae3948333c71a"
+    },
+    "docs/e5-pdf-progress.md": {
+      "sha256_raw": "d01ede46d0b2bc389c9b7787630bdefd455bfe40ede4495033759d6fcfd89883",
+      "sha256_lf": "d01ede46d0b2bc389c9b7787630bdefd455bfe40ede4495033759d6fcfd89883"
+    }
+  }
+}

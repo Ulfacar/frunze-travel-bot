@@ -1,0 +1,54 @@
+{
+  "revision": "d9ecb11348360609cc231dfe5ceb8e752c23aa80",
+  "comparison": "CRLF to LF normalized; raw hashes retained",
+  "files": [
+    {
+      "path": "Dockerfile",
+      "git_sha256": "d9a819f8f91f875c724458c0c10fcbfea4605d2c11f292878cd2b9d60f00d6f6",
+      "workspace_sha256": "64357f21d798047f8a9320cfa2a32e55e8299487ba6ceea3f1b2ebad88098d07",
+      "archive_sha256": "64357f21d798047f8a9320cfa2a32e55e8299487ba6ceea3f1b2ebad88098d07",
+      "normalized_sha256": "d9a819f8f91f875c724458c0c10fcbfea4605d2c11f292878cd2b9d60f00d6f6",
+      "result": "PASS"
+    },
+    {
+      "path": "ai/tasks/2026-10-10-e6-08-complete-document-packages.md",
+      "git_sha256": "0e3fce2f88ca9fe8dde7a357627d16abfbdb50c6213cecd9e0f37822f3d6568e",
+      "workspace_sha256": "4f0808808cc91f51e0fbd0efd885e6ec342c5b91699cf50b5d67ce68a50bd3b2",
+      "archive_sha256": "4f0808808cc91f51e0fbd0efd885e6ec342c5b91699cf50b5d67ce68a50bd3b2",
+      "normalized_sha256": "0e3fce2f88ca9fe8dde7a357627d16abfbdb50c6213cecd9e0f37822f3d6568e",
+      "result": "PASS"
+    },
+    {
+      "path": "app/knowledge/complete_document_checklist.py",
+      "git_sha256": "23206c25a406d05bd8522e408acce81bdbe827b9917bd2d35546116e478d0960",
+      "workspace_sha256": "4c88a3c75de4c8b1ca03254e62ae90d8a4568a261a3f1fa3959c0c5f14535ade",
+      "archive_sha256": "4c88a3c75de4c8b1ca03254e62ae90d8a4568a261a3f1fa3959c0c5f14535ade",
+      "normalized_sha256": "23206c25a406d05bd8522e408acce81bdbe827b9917bd2d35546116e478d0960",
+      "result": "PASS"
+    },
+    {
+      "path": "knowledge/kg_entry/complete_documents_v1_1/catalog.json",
+      "git_sha256": "5014a02c362964d74f0c55915dd2045c040ea513f9d9488585f745c0a67401d0",
+      "workspace_sha256": "0ca1eebea3deb5a3217e3305b6445f3e3780857bbee93858c44f47e170d47b51",
+      "archive_sha256": "5014a02c362964d74f0c55915dd2045c040ea513f9d9488585f745c0a67401d0",
+      "normalized_sha256": "5014a02c362964d74f0c55915dd2045c040ea513f9d9488585f745c0a67401d0",
+      "result": "PASS"
+    },
+    {
+      "path": "scripts/build_kg_complete_document_catalog.py",
+      "git_sha256": "4941bd366c43387982ef9b813bd1ea4b351bdc4d2998685612d3757cbea25a03",
+      "workspace_sha256": "4941bd366c43387982ef9b813bd1ea4b351bdc4d2998685612d3757cbea25a03",
+      "archive_sha256": "4dfa8e425eda58f731e7b0c9c5b2878da1822179a1676bb41c830cee2b712969",
+      "normalized_sha256": "4941bd366c43387982ef9b813bd1ea4b351bdc4d2998685612d3757cbea25a03",
+      "result": "PASS"
+    },
+    {
+      "path": "tests/test_kg_complete_document_checklist.py",
+      "git_sha256": "b953233a7b2cecbca964b2e65c0e1f9328dfe5b7cf0150b792e0bebfb2ba0db6",
+      "workspace_sha256": "b953233a7b2cecbca964b2e65c0e1f9328dfe5b7cf0150b792e0bebfb2ba0db6",
+      "archive_sha256": "fe721483103059306be1a4ce4aa48162ddc4e717455924107b0d23c2b7d2de03",
+      "normalized_sha256": "b953233a7b2cecbca964b2e65c0e1f9328dfe5b7cf0150b792e0bebfb2ba0db6",
+      "result": "PASS"
+    }
+  ]
+}

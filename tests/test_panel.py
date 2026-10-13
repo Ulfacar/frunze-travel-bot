@@ -663,19 +663,47 @@ def test_analytics_period_and_by_manager():
     assert "sezim" in resp.text
 
 
-def test_inbox_lists_waiting_across_funnels():
-    """Инбокс показывает ждущих ответа клиентов из разных воронок в одном списке."""
+def test_inbox_is_scoped_to_the_current_direction():
+    """Инбокс показывает ждущих ответа — но только по текущему направлению.
+
+    ТРЕБОВАНИЕ ИЗМЕНИЛОСЬ 01.10.2026. Раньше тест назывался
+    `test_inbox_lists_waiting_across_funnels` и требовал обратного: все воронки в одном
+    списке. Алан дословно: «лучше разделить туры и визы, невозможно читать» — смешанный
+    инбокс и был той нечитаемостью. Старое поведение доступно переключателем направления,
+    а не одновременным показом обоих потоков.
+
+    Разделение живёт за тумблером `admin_direction_split_enabled` (дефолт OFF — требование
+    независимого ревью 01.10: меняется рабочая реальность менеджеров, откат должен быть
+    мгновенным, без деплоя). Поэтому тест включает его явно и возвращает как было.
+    """
+    from app.config import settings as _s
     _clear_memory()
+    was = _s.admin_direction_split_enabled
+    _s.admin_direction_split_enabled = True
+    try:
+        _run_inbox_direction_checks()
+    finally:
+        _s.admin_direction_split_enabled = was
+
+
+def _run_inbox_direction_checks():
     store = panel_store.get_conversation_store()
     asyncio.run(store.add_message("getvisa:996700111", "client", "нужна виза", channel="whatsapp"))
     asyncio.run(store.update_meta("getvisa:996700111", funnel="visa", stage="qualification"))
     asyncio.run(store.add_message("frunze:996700222", "client", "хочу тур", channel="whatsapp"))
     asyncio.run(store.update_meta("frunze:996700222", funnel="tours", stage="qualification"))
     client = _auth_client()
-    resp = client.get("/admin/inbox")
+
+    resp = client.get("/admin/inbox")                      # дефолтное направление — визы
     assert resp.status_code == 200
     assert "Ждут ответа" in resp.text
-    assert "996700111" in resp.text and "996700222" in resp.text
+    assert "996700111" in resp.text, "визовый лид пропал из своего же направления"
+    assert "996700222" not in resp.text, "туровый лид протёк в визовый инбокс"
+
+    assert client.post("/admin/direction", data={"direction": "tours"},
+                       follow_redirects=False).status_code == 303
+    resp = client.get("/admin/inbox")
+    assert "996700222" in resp.text and "996700111" not in resp.text
 
 
 def test_search_finds_by_phone_and_empty_returns_inbox():

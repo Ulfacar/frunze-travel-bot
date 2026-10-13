@@ -1,0 +1,2095 @@
+{
+  "bundle_hash": "bf9faa537ae600c433a064ab21b8d5969aa63ba99fc39ead224dc6fa5256dea5",
+  "by_kind": {
+    "deadline": 22,
+    "escalation_trigger": 13,
+    "processing_time": 10,
+    "registration_default": 1,
+    "registration_exemption": 93,
+    "registration_term": 2,
+    "rule_param": 14,
+    "special_regime": 4,
+    "tariff": 22,
+    "template": 13,
+    "visa_free_regime": 10,
+    "visa_required_regime": 4
+  },
+  "by_status": {
+    "blocked": 3,
+    "decision_pending": 22,
+    "needs_verification": 183
+  },
+  "conversion_comparison": {
+    "b5": "PASS_WITH_DOCUMENTED_SRC04_SRC05",
+    "legal_review": "UNKNOWN",
+    "scope": "selected generator inputs only",
+    "tables": [
+      {
+        "result": "PASS",
+        "rows": 9,
+        "table": "registration"
+      },
+      {
+        "result": "PASS",
+        "rows": 11,
+        "table": "service_fees"
+      },
+      {
+        "result": "PASS",
+        "rows": 10,
+        "table": "processing_times"
+      },
+      {
+        "result": "PASS",
+        "rows": 22,
+        "table": "deadlines"
+      },
+      {
+        "result": "PASS",
+        "rows": 12,
+        "table": "escalation"
+      }
+    ],
+    "templates": {
+      "count": 13,
+      "result": "PASS"
+    }
+  },
+  "derived_sha256": "642cecf9d2bcf0368da31f8fe30fe65a3c0c0dbef0039ac8c5e551340067a5f5",
+  "format": "kg-entry-source-audit/1",
+  "legal_review": "UNKNOWN",
+  "notes": [
+    "All rules await review; no publication approval is inferred from the PDF",
+    "Korea in 2.10 mapped to KOR; DPRK is separately PRK and absent from list",
+    "Macedonia in 2.10 mapped to MKD, matching North Macedonia in B.5",
+    "No deadline, review period or pricing policy invented",
+    "All source exceptions/proposals retained under blocked_value"
+  ],
+  "pdf_sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
+  "provenance": [
+    {
+      "capture_selector": "tables/deadlines/8",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.DISMISSAL_NOTIFICATION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/0",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.EMAIL_VERIFICATION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/7",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.EP_BEFORE_RC_END",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/5",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.EP_BEFORE_VISA_FREE_END",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/2",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.EP_RC_CORRECTION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/9",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.EXIT_AFTER_EP_END",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/12",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.EXIT_L_VALIDITY",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/20",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.MEKEN_REGISTRATION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/18",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.NEWBORN_REGISTRATION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/19",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.NEWBORN_VISA",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/21",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.PASSPORT_VALIDITY",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/10",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.QUOTA_USE",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/6",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.RC_BEFORE_EP_END",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/13",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.REGISTRATION_CODE_PAYMENT",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/16",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.REGISTRATION_EXTENSION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/15",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.REGISTRATION_OUTSIDE_LIST",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/17",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.REREGISTRATION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/1",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.VISA_CORRECTION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/4",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.VISA_EXTENSION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/3",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [
+        "[ПРОВЕРИТЬ]"
+      ],
+      "unit_id": "KG.DL.VISA_FEE_REFUND_REQUEST",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/14",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.VISA_FREE_REGISTRATION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/deadlines/11",
+      "pdf_pages": [
+        62
+      ],
+      "source_labels": [],
+      "unit_id": "KG.DL.VISA_SUPPORT_VALIDITY",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "pages/89/B.6",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.ADDITIONAL_B6",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/escalation/0",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_01",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/1",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_02",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/2",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_03",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/3",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_04",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/4",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_05",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/5",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_06",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/6",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_07",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/7",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_08",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/8",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_09",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/9",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_10",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/10",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_11",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/escalation/11",
+      "pdf_pages": [
+        30
+      ],
+      "source_labels": [],
+      "unit_id": "KG.ESC.STOP_12",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/service_fees/0",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.A",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "pages/59/approved_fees",
+      "pdf_pages": [
+        9,
+        59
+      ],
+      "source_labels": [],
+      "unit_id": "KG.FEE.SERVICE.B",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/service_fees/0",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.DN",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "pages/59/approved_fees",
+      "pdf_pages": [
+        9,
+        59
+      ],
+      "source_labels": [],
+      "unit_id": "KG.FEE.SERVICE.EP",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/service_fees/4",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.EXTENSION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/0",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.FF",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/9",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.GROUP",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/0",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.J",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/0",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.M",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/7",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.OVERSTAY",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/3",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.RC_STUDY_FAMILY",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/2",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[ПРОВЕРИТЬ]",
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.RC_WORK",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/6",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.REGISTRATION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/8",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.RESIDENCE_PERMIT",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/10",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.RESUBMISSION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/0",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.RL",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/0",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.S",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/1",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[ПРОВЕРИТЬ]",
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.SW1",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/1",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[ПРОВЕРИТЬ]",
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.SW2",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/service_fees/0",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.TR",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "pages/59/approved_fees",
+      "pdf_pages": [
+        9,
+        59
+      ],
+      "source_labels": [],
+      "unit_id": "KG.FEE.SERVICE.TS",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/service_fees/5",
+      "pdf_pages": [
+        59
+      ],
+      "source_labels": [
+        "[РЕШЕНИЕ]"
+      ],
+      "unit_id": "KG.FEE.SERVICE.URGENT",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/processing_times/4",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [
+        "[ПРОВЕРИТЬ]"
+      ],
+      "unit_id": "KG.PT.EP",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/processing_times/0",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.PT.EVISA",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/processing_times/7",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.PT.EXIT_L",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/processing_times/1",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.PT.GKNB",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/processing_times/2",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.PT.PAPER_VISA",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/processing_times/9",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.PT.PERMANENT_RESIDENCE",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/processing_times/6",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.PT.REGISTRATION",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/processing_times/5",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.PT.RESIDENT_CARD",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/processing_times/8",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.PT.TEMPORARY_RESIDENCE",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/processing_times/3",
+      "pdf_pages": [
+        61
+      ],
+      "source_labels": [],
+      "unit_id": "KG.PT.VISA_SUPPORT",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/registration/8 + B.5/registration_default",
+      "pdf_pages": [
+        25,
+        88
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.DEFAULT",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ALB",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.AND",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ARE",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ARG",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ARM",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.AUS",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.AUT",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/2",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.AZE",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.BEL",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.BGR",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.BHR",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/7",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.BHS",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.BIH",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.BLR",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.BRA",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/4",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.BRB",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.BRN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.CAN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.CHE",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.CHL",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.CRI",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.CUB",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.CYP",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.CZE",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.DEU",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/3",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.DMA",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.DNK",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ECU",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ESP",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.EST",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.FIN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.FRA",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.GBR",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/7",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.GEO",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/7",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.GRC",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.HRV",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.HUN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.IDN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.IND",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.IRL",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/0",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.IRN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ISL",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ISR",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ITA",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.JPN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.KAZ",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.KOR",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.KWT",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.LAO",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.LIE",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.LKA",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.LTU",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.LUX",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.LVA",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.MCO",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/8 + pages/88",
+      "pdf_pages": [
+        25,
+        88
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.MDA",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.MDV",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.MEX",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.MKD",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.MLT",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.MNE",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.MNG",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.MYS",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/7",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.NIC",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.NLD",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.NOR",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.NZL",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.OMN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/7",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.PER",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.PHL",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.POL",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.PRT",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.QAT",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ROU",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.RUS",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.SAU",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.SGP",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/7",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.SLV",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.SMR",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.SRB",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.SVK",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.SVN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.SWE",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.THA",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.TJK",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/1",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.TKM",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/7",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.TUR",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/7",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.UKR",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.USA",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.VAT",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/7",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.VEN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/5",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.VNM",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/6",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.EXEMPT.ZAF",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/8",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.TERM.MDA",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "tables/registration/8",
+      "pdf_pages": [
+        25
+      ],
+      "source_labels": [],
+      "unit_id": "KG.REG.TERM.UZB",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "pages/24/2.9",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [
+        "[ПРАКТИКА]"
+      ],
+      "unit_id": "KG.RULE.COUNT_ENTRY_DAY",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "pages/24/2.9",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [
+        "[ПРАКТИКА]"
+      ],
+      "unit_id": "KG.RULE.COUNT_EXIT_DAY",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/rules/unified_permit_min_working_days_before_visa_free_end",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.RULE.EP_MIN_WD_BEFORE_VF_END",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/rules/e_visa_entry_points_official",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.RULE.EVISA_ENTRY_POINTS",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/rules/extension_petition_min_working_days_before_end",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.RULE.EXTENSION_MIN_WD",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/rules/multiple_entry_required_if_days_over",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.RULE.MULTIPLE_ENTRY_OVER_DAYS",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/rules/new_ep_min_working_days_before_resident_card_end",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.RULE.NEW_EP_MIN_WD_BEFORE_RC_END",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/rules/no_registration_in_last_days_of_60_90_limit",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.RULE.NO_REG_LAST_DAYS",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/rules/overstay_entry_ban",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.RULE.OVERSTAY_BAN",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/rules/resident_card_min_working_days_before_ep_end",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.RULE.RC_MIN_WD_BEFORE_EP_END",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/rules/registration_does_not_extend_visa_free",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.RULE.REG_DOES_NOT_EXTEND_VF",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/rules/visa_inside_kg_forbidden",
+      "pdf_pages": [
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.RULE.VISA_INSIDE_KG_FORBIDDEN",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "pages/24/2.9",
+      "pdf_pages": [
+        24
+      ],
+      "source_labels": [
+        "[ПРАКТИКА]"
+      ],
+      "unit_id": "KG.RULE.WINDOW_ANCHOR",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/special/china_india_with_longterm_us_uk_schengen_visa",
+      "pdf_pages": [
+        23,
+        89
+      ],
+      "source_labels": [
+        "[ПРАКТИКА]",
+        "[ПРОВЕРИТЬ на портале по конкретной стране — «Do\\nI need visa?» показывает режим отдельно для обычного, служебного и дипломатического паспорта]"
+      ],
+      "unit_id": "KG.SP.CHN_IND_LONGTERM_VISA",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/special/china_organized_tour_group_5_25",
+      "pdf_pages": [
+        23,
+        89
+      ],
+      "source_labels": [
+        "[ПРАКТИКА]",
+        "[ПРОВЕРИТЬ на портале по конкретной стране — «Do\\nI need visa?» показывает режим отдельно для обычного, служебного и дипломатического паспорта]"
+      ],
+      "unit_id": "KG.SP.CHN_TOUR_GROUP",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/special/hong_kong_macao_permanent_residents",
+      "pdf_pages": [
+        23,
+        89
+      ],
+      "source_labels": [
+        "[ПРАКТИКА]",
+        "[ПРОВЕРИТЬ на портале по конкретной стране — «Do\\nI need visa?» показывает режим отдельно для обычного, служебного и дипломатического паспорта]"
+      ],
+      "unit_id": "KG.SP.HK_MACAO",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/special/un_laissez_passer",
+      "pdf_pages": [
+        23,
+        89
+      ],
+      "source_labels": [
+        "[ПРАКТИКА]",
+        "[ПРОВЕРИТЬ на портале по конкретной стране — «Do\\nI need visa?» показывает режим отдельно для обычного, служебного и дипломатического паспорта]"
+      ],
+      "unit_id": "KG.SP.UN_LP",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.1",
+      "pdf_pages": [
+        85
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A01",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.2",
+      "pdf_pages": [
+        85
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A02",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.3",
+      "pdf_pages": [
+        85
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A03",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.4",
+      "pdf_pages": [
+        85
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A04",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.5",
+      "pdf_pages": [
+        85
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A05",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.6",
+      "pdf_pages": [
+        85
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A06",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.7",
+      "pdf_pages": [
+        85,
+        86
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A07",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.8",
+      "pdf_pages": [
+        86
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A08",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.9",
+      "pdf_pages": [
+        86
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A09",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.10",
+      "pdf_pages": [
+        86
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A10",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.11",
+      "pdf_pages": [
+        86
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A11",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.12",
+      "pdf_pages": [
+        86
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A12",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "templates/A.13",
+      "pdf_pages": [
+        86
+      ],
+      "source_labels": [],
+      "unit_id": "KG.TPL.A13",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/visa_free/annex1_30_60",
+      "pdf_pages": [
+        19,
+        20,
+        21,
+        22,
+        88,
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.VF.ANNEX1_30_60",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/visa_free/cis_bilateral",
+      "pdf_pages": [
+        19,
+        20,
+        21,
+        22,
+        88,
+        89
+      ],
+      "source_labels": [
+        "[ПРОВЕРИТЬ]"
+      ],
+      "unit_id": "KG.VF.CIS_BILATERAL",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/visa_free/other_check_portal",
+      "pdf_pages": [
+        22,
+        89
+      ],
+      "source_labels": [
+        "[ПРОВЕРИТЬ]"
+      ],
+      "unit_id": "KG.VF.CUB",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/visa_free/eaeu",
+      "pdf_pages": [
+        19,
+        20,
+        21,
+        22,
+        88,
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.VF.EAEU",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/visa_free/gcc",
+      "pdf_pages": [
+        19,
+        20,
+        21,
+        22,
+        88,
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.VF.GCC",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/visa_free/other_check_portal",
+      "pdf_pages": [
+        22,
+        89
+      ],
+      "source_labels": [
+        "[ПРОВЕРИТЬ]"
+      ],
+      "unit_id": "KG.VF.MDV",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/visa_free/other_check_portal",
+      "pdf_pages": [
+        22,
+        89
+      ],
+      "source_labels": [
+        "[ПРОВЕРИТЬ]"
+      ],
+      "unit_id": "KG.VF.MYS",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/visa_free/ninety_180",
+      "pdf_pages": [
+        19,
+        20,
+        21,
+        22,
+        88,
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.VF.NINETY_180",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/visa_free/other_check_portal",
+      "pdf_pages": [
+        22,
+        89
+      ],
+      "source_labels": [
+        "[ПРОВЕРИТЬ]"
+      ],
+      "unit_id": "KG.VF.PRK",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/visa_free/uzbekistan",
+      "pdf_pages": [
+        19,
+        20,
+        21,
+        22,
+        88,
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.VF.UZB",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/visa_required/general_procedure_with_gknb",
+      "pdf_pages": [
+        23,
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.VR.GENERAL",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/visa_required/simplified_annex2_no_gknb/all_types",
+      "pdf_pages": [
+        22,
+        23,
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.VR.SIMPLIFIED_ALL",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/visa_required/simplified_annex2_no_gknb/only_tourist_up_to_1_month_if_gcc_or_brunei_residence",
+      "pdf_pages": [
+        22,
+        23,
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.VR.SIMPLIFIED_GCC_RESIDENT_TS",
+      "value_typed": false
+    },
+    {
+      "capture_selector": "B.5/visa_required/simplified_annex2_no_gknb/only_business_and_tourist",
+      "pdf_pages": [
+        22,
+        23,
+        89
+      ],
+      "source_labels": [],
+      "unit_id": "KG.VR.SIMPLIFIED_IRN_B_TS",
+      "value_typed": true
+    },
+    {
+      "capture_selector": "B.5/visa_free/uzbekistan/watch",
+      "pdf_pages": [
+        88
+      ],
+      "source_labels": [],
+      "unit_id": "KG.WATCH.UZB_15DAYS",
+      "value_typed": false
+    }
+  ],
+  "publication_approved": false,
+  "source_coverage": {
+    "deadline_rows": 22,
+    "exemption_countries": 92,
+    "government_tariffs_12_1_to_12_5": "NOT_CONVERTED",
+    "other_pdf_sections": "NOT_FULLY_CONVERTED",
+    "processing_rows": 10,
+    "registration_rows": 9,
+    "service_fee_proposals": 11,
+    "stop_factors": 12,
+    "templates": 13
+  },
+  "source_lock": {
+    "files": {
+      "aliases.json": "eb90745733128425ae311a70e32f216b2c9e203ca0a8e1edb07cc260e9bf696d",
+      "capture.json": "c4b08c7c577aeec1cf6d182d18e294b41ebcbdc458abbc2fef4ef50bca04bf89",
+      "iso3166.json": "f56f08c44c47636682f2512de72d41b1f2d2542dadce0fc54dbbd9a197e8a6ba"
+    },
+    "format": "kg-entry-source-lock/1",
+    "prepared_at": "2026-10-06T18:33:58+00:00",
+    "prepared_by": "Codex",
+    "tools": {
+      "PyMuPDF": "1.27.2.3",
+      "pycountry": "24.6.1"
+    }
+  },
+  "typed_values": 126,
+  "units": 208
+}

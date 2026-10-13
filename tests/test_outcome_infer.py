@@ -166,3 +166,57 @@ def test_candidates_skip_conversation_without_any_reply_of_ours():
     picked = [c.user_id for c in outcome_infer._candidates(convs, now, stale_hours=24, limit=10)]
 
     assert picked == ["we_replied"]
+
+
+# ---------- экономия: не пересуживать неизменившийся «active» ----------
+
+def test_candidates_skip_active_without_new_messages():
+    """28.09.2026: 2837 диалогов в `active` крутились по кругу — 480 вызовов LLM в сутки.
+
+    Если с прошлого суда сообщений не появилось, переписка та же и вердикт будет тот же.
+    """
+    now = datetime.now(timezone.utc)
+    conv = _cv("stale_active", inferred="active", hours_stale=30)
+    judged = {"stale_active": outcome_infer._message_stamp(conv)}
+
+    picked = [c.user_id for c in outcome_infer._candidates(
+        convs=[conv], now=now, stale_hours=24, limit=10, judged=judged)]
+
+    assert picked == []
+
+
+def test_candidates_rejudge_active_when_new_message_arrived():
+    """Пришло новое сообщение — судим заново: отметка стоит на другом времени."""
+    now = datetime.now(timezone.utc)
+    conv = _cv("spoke_again", inferred="active", hours_stale=30)
+    judged = {"spoke_again": outcome_infer._message_stamp(conv) - 3600}
+
+    picked = [c.user_id for c in outcome_infer._candidates(
+        convs=[conv], now=now, stale_hours=24, limit=10, judged=judged)]
+
+    assert picked == ["spoke_again"]
+
+
+def test_candidates_never_judged_and_terminal_ignore_economy():
+    """Экономия не смеет проглотить ни разу не размеченный диалог и не оживить терминальный."""
+    now = datetime.now(timezone.utc)
+    fresh = _cv("never_judged", inferred="", hours_stale=40)
+    frozen = _cv("frozen_lost", inferred="lost", hours_stale=99)
+    judged = {"never_judged": outcome_infer._message_stamp(fresh),
+              "frozen_lost": outcome_infer._message_stamp(frozen)}
+
+    picked = [c.user_id for c in outcome_infer._candidates(
+        convs=[fresh, frozen], now=now, stale_hours=24, limit=10, judged=judged)]
+
+    assert picked == ["never_judged"]
+
+
+def test_candidates_without_judged_map_keep_old_behaviour():
+    """Флаг OFF (judged=None) — поведение ровно прежнее, пересуживаем."""
+    now = datetime.now(timezone.utc)
+    conv = _cv("stale_active", inferred="active", hours_stale=30)
+
+    picked = [c.user_id for c in outcome_infer._candidates(
+        convs=[conv], now=now, stale_hours=24, limit=10)]
+
+    assert picked == ["stale_active"]

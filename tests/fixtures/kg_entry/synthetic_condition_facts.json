@@ -1,0 +1,16 @@
+{
+  "schema_version": "kg-entry-condition-facts/1",
+  "entry_passport_country": "CHN",
+  "document_type": "ordinary",
+  "tour_group": {
+    "organized": true,
+    "participants_count": 25,
+    "all_members_country": "CHN",
+    "tourism_authority_petition": true
+  },
+  "foreign_visas": {
+    "items": [{"issuer": "USA", "over_three_years_verified": null}],
+    "complete": true
+  },
+  "residence_documents": {"items": [], "complete": true}
+}

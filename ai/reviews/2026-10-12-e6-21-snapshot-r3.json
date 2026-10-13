@@ -1,0 +1,19 @@
+{
+  "base": "f06f5eacef734bfde625813c663bc91815fe01bc",
+  "snapshot": "runs/e6-21-r3",
+  "files": {
+    "app/domain/knowledge_publication.py": "310728c6062d722233ba3768efc4e033d28836faacb84dfa3711505e3ecd1cf1",
+    "app/domain/knowledge_answers.py": "d882bae8b69853085d079d746fe6a171d81b7cee89716858a6a1d9e71281d301",
+    "app/admin/kg_answers.py": "3b427f692036de94fac65f542950ea9d21906b0d041fd31521158cdfd73bbc1d",
+    "app/admin/router.py": "5335962cb7cef895f2d4c1df2b0a0cf080a4ab2f16dffccf25492d741ba5a5e1",
+    "app/admin/templates/kg_answers.html": "ba4ea2b043abc7503c9c84d2f6eeb7839ea37c843f33c38a9b82ff594859749e",
+    "app/admin/templates/kg_knowledge.html": "401c3ddfc1570d5629db71d4b4d6fc79f0d28c41e305dc5c5feeb27fba36c18d",
+    "app/admin/templates/base.html": "13dca9eee20498cbe6c9667eb4c33471db8e1d9db4efa3d492b54e1ab1f66ee9",
+    "tests/test_knowledge_answers.py": "3b5a62cd08488c76cc5218747c1580a3332bdaa5277d3475ef552731e9aec9a2",
+    "tests/test_admin_kg_answers.py": "c48567ed9730a8c42977ab13cdea2db5c29cd1cfb8fb6f97116c34eb03a00bb3",
+    "tests/test_knowledge_answers_postgres.py": "a5c7e9ad5ba9190cf909d392573e22513d5b0d5c9339526ee11a780493557403",
+    "tests/browser_kg_answers.py": "f0ffad6deede3f1b96d1f3959600e302d2ff85d778d264a726c32b9129ddc95a",
+    "ai/tasks/2026-10-12-e6-21-grounded-answers.md": "7cde3a17aed17210ae3e4e01f915a1c07158aa9b501ef5f744ec91f396f3483b"
+  },
+  "environment": "env-free git archive plus allowlisted overlay"
+}

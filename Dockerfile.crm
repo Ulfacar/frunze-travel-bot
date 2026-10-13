@@ -1,0 +1,18 @@
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app ./app
+COPY alembic.ini ./
+COPY alembic ./alembic
+COPY knowledge/kg_entry ./knowledge/kg_entry
+COPY docs/kb-visa-inbound-v1.1-derived.md ./docs/kb-visa-inbound-v1.1-derived.md
+COPY scripts/crm_initialize.py ./scripts/crm_initialize.py
+COPY release-source.pdf ./release-source.pdf
+RUN useradd --uid 10001 --create-home crm
+USER 10001:10001
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD /usr/bin/setpriv --no-new-privs -- python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)"
+ENTRYPOINT ["/usr/bin/setpriv","--no-new-privs","--"]
+CMD ["uvicorn","app.crm_main:create_app","--factory","--host","0.0.0.0","--port","8000","--workers","1","--limit-concurrency","16","--proxy-headers","--forwarded-allow-ips","172.30.78.1"]

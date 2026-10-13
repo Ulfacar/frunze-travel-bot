@@ -32,7 +32,8 @@ def _window_total(window: list, now: float, span: float) -> float:
 
 
 def decide(now: float, last_inbound_ago: float | None, snapshot: dict,
-           state: dict, cfg, *, night: bool = False) -> list[tuple[str, str]]:
+           state: dict, cfg, *, night: bool = False,
+           silence: bool = True) -> list[tuple[str, str]]:
     """Чистое решение: какие алерты пора слать. Мутирует state (cooldown/база сбоев).
 
     `night` глушит только тишину вебхуков. Порог тишины — 30 минут, cooldown — час, а
@@ -41,13 +42,17 @@ def decide(now: float, last_inbound_ago: float | None, snapshot: dict,
     он хуже отсутствующего. Ночную смерть канала ловит сторож v3 (`wappi_health`): он
     спрашивает у Wappi статус профиля, а не считает молчание, и потому в темноте точнее.
     Всплеск сбоев ночью не глушим — это реальные ошибки, а не отсутствие трафика.
+
+    `silence=False` выключает тишину целиком (тумблер `watchdog_silence_enabled`): днём
+    клиенты тоже молчат по 30+ минут, ~3 раза в день по замеру 23.09.
     """
     alerts: list[tuple[str, str]] = []
     cooldown = cfg.alert_cooldown_minutes * 60
 
     # 1) Тишина вебхуков: давно не было входящих.
     silence_limit = cfg.alert_silence_minutes * 60
-    if not night and last_inbound_ago is not None and last_inbound_ago >= silence_limit:
+    if (silence and not night and last_inbound_ago is not None
+            and last_inbound_ago >= silence_limit):
         if now - state.get("alert_silence_ts", 0.0) >= cooldown:
             mins = int(last_inbound_ago // 60)
             alerts.append(("silence",
@@ -114,8 +119,9 @@ async def run() -> None:
     if not to_whatsapp and not to_telegram:
         return  # адресата нет ни там, ни там — молчим, как и раньше
     hour = (datetime.now(timezone.utc) + timedelta(hours=BISHKEK_UTC_OFFSET)).hour
+    silence = await flags.get_flag("watchdog_silence_enabled", settings.watchdog_silence_enabled)
     alerts = decide(time.time(), observ.last_inbound_ago(), observ.snapshot(), _state,
-                    settings, night=_is_night(hour, settings))
+                    settings, night=_is_night(hour, settings), silence=silence)
     for reason, text in alerts:
         try:
             if to_whatsapp:

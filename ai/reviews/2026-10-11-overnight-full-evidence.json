@@ -1,0 +1,18 @@
+{
+  "revision": "dc474d858aff9c399d37b8cf0c84ba5e5e803aed",
+  "scope": "PRE-E620 full suite; excludes final deadline-clear correction",
+  "artifact": "runs/e6-19-review-r2/runs/overnight-full-r2.xml",
+  "sha256": "988da6f62e330cb50a3785351c5c9e0ed991efcb4efbf3f2c4ff64e280b625e9",
+  "tests": 4933,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 231,
+  "passed": 4702,
+  "time_seconds": 3459.891,
+  "skip_reasons": {
+    "POSTGRESQL VALIDATION SKIPPED \u2014 REQUIRED BEFORE PRODUCTION ROLLOUT (set TEST_POSTGRES_DSN to a dedicated, non-production test database)": 3,
+    "isolated localhost PostgreSQL runtime not configured": 223,
+    "\u041d\u0435\u0442 TEST_POSTGRES_DSN: PostgreSQL migration/race \u043d\u0435 \u043f\u0440\u043e\u0432\u0435\u0440\u0435\u043d\u044b": 4,
+    "needs --allow-external-network": 1
+  }
+}

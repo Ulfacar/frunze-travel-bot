@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Новое обращение — Frunze CRM{% endblock %}
+{% block head %}
+<style>
+.intake{max-width:620px;margin:32px auto;padding:28px;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.intake h1{font-size:24px;margin:0 0 12px}.intake p{line-height:1.5;color:var(--muted)}
+.intake label{display:block;margin:20px 0 8px}.intake input{width:100%;box-sizing:border-box;padding:12px;font:inherit;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px}
+.intake button{margin-top:24px;padding:12px 18px;background:#1d4ed8;color:#fff;font:inherit;border:0;border-radius:6px;cursor:pointer}.intake .error{color:var(--hot)}
+@media(max-width:680px){.intake{margin:16px;padding:20px}}
+</style>
+{% endblock %}
+{% block content %}
+<main class="intake"><h1>Новое обращение</h1>
+<p>Въезд в Кыргызстан. После сохранения можно открыть предварительное дело, заполнить анкету и выбрать услугу.</p>
+<form method="post" action="/admin/intake">
+{% for key in ('request_key','signature','csrf_token') %}<input type="hidden" name="{{ key }}" value="{{ values[key] }}">{% endfor %}
+<label for="name">Имя для карточки</label><input id="name" name="name" value="{{ values.name }}" maxlength="120" autocomplete="name" required>
+<label for="phone">Телефон с кодом страны</label><input id="phone" name="phone" type="tel" value="{{ values.phone }}" maxlength="32" placeholder="+996 …" autocomplete="tel" required>
+{% if error %}<p role="alert" class="error">{{ error }}</p>{% endif %}
+<button type="submit">Сохранить обращение</button>
+</form></main>
+{% endblock %}

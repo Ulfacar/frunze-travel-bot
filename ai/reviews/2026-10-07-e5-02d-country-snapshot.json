@@ -1,0 +1,43 @@
+{
+  "task": "E5-02D",
+  "base": "a6b2f3c",
+  "target": "UNCOMMITTED; final commit in handoff/STATE",
+  "files": {
+    "app/knowledge/country_index.py": {
+      "sha256_raw": "1eadb68dd120570951cd0e7d288ecf418aec25fc0c941ce59e284570445a0c6f",
+      "sha256_lf": "1eadb68dd120570951cd0e7d288ecf418aec25fc0c941ce59e284570445a0c6f"
+    },
+    "scripts/review_kg_country.py": {
+      "sha256_raw": "142c566f1ed752effac52b256d6135c0e33683df3c9a9be84d88808856ac2808",
+      "sha256_lf": "142c566f1ed752effac52b256d6135c0e33683df3c9a9be84d88808856ac2808"
+    },
+    "tests/test_kg_country_index.py": {
+      "sha256_raw": "1178c4737bc7490b52987eb4daa03d04633d9414e80adb4ea0ef38cb0586dffc",
+      "sha256_lf": "1178c4737bc7490b52987eb4daa03d04633d9414e80adb4ea0ef38cb0586dffc"
+    },
+    "ai/tasks/2026-10-07-e5-02d-country-index.md": {
+      "sha256_raw": "ab3df9f7607eb346a2dc5b3aa2b9a9a9973e00b4e7a9a2812599b45d5e1f71c0",
+      "sha256_lf": "ab3df9f7607eb346a2dc5b3aa2b9a9a9973e00b4e7a9a2812599b45d5e1f71c0"
+    },
+    "docs/e5-02d-country-index.md": {
+      "sha256_raw": "8329e0b2df739c31109218c84f29f1d62370e9bd73906648bd647e6091d03d3a",
+      "sha256_lf": "8329e0b2df739c31109218c84f29f1d62370e9bd73906648bd647e6091d03d3a"
+    },
+    "docs/e5-02-slots-schema.md": {
+      "sha256_raw": "df9fd6b1b20397c30671a48559986275d96a86eb2125ea70b5f1e83384f48a4b",
+      "sha256_lf": "6b95132ec07483079fd04fd2989ad55f4df27e16dbc433e029a5099c68bf3c55"
+    },
+    "docs/crm-delivery/backlog.md": {
+      "sha256_raw": "e49052e603e1a81b55d8ad072fbd1787fc73d91432278d5254d3ad9cbd42e7a2",
+      "sha256_lf": "7717a5f380f36f15d71094d9cd376e5423bd81e594cb71d8c54dc7cebc3acfe8"
+    },
+    "docs/crm-delivery/backlog.json": {
+      "sha256_raw": "21ce148934a1d8c9977c06f16cca33b6396b06757b34aeda98b28623076fa7b9",
+      "sha256_lf": "4fba4fe0b61cded0d654f19ad0d5b018914a233f4264cb45cf5be2ae8c7ae01b"
+    },
+    "docs/e5-pdf-progress.md": {
+      "sha256_raw": "a0b424dd99e5792b494b855ad3d1048f949b6f57c0ed14531ce897ec964c2b28",
+      "sha256_lf": "a0b424dd99e5792b494b855ad3d1048f949b6f57c0ed14531ce897ec964c2b28"
+    }
+  }
+}

@@ -145,6 +145,12 @@ class Settings(BaseSettings):
     # 23-24.08: четыре красные тревоги за трое суток по ЗДОРОВЫМ каналам, три из них
     # сразу после ночи (порог 12 ч стоит впритык к обычной ночной паузе). Дефолт OFF.
     silence_alert_only_on_gap: bool = False
+    # Не обвинять вебхук, когда он доказанно жив. Счётчик `message_count` у Wappi один на
+    # всё: ответ менеджера с телефона растит его так же, как клиентское сообщение, — и
+    # 24-26.09 по живому getvisa трижды ушло «сообщения приходят, а до нас не доходят».
+    # Служебные события Wappi (статусы доставки, эхо) до нас в это время доезжали.
+    # Дефолт OFF: пока выключен, вердикт прежний, а расхождение пишется в лог.
+    silence_webhook_proof_enabled: bool = False
     # Тишина — ПРЕДОХРАНИТЕЛЬ, а не основной детектор: основной спрашивает Wappi напрямую
     # (app/core/wappi_health.py). Честная симуляция на 21 сутках (тик 5 мин, как в проде):
     # 90/300 → 5.3 ложных инцидента в сутки, 180/420 → 2.5, 720/720 → 0.8, и все 16
@@ -172,6 +178,11 @@ class Settings(BaseSettings):
     # Настоящий разлогин (03.08 — 12 часов) это переживает с запасом.
     wappi_health_confirm_ticks: int = 3
     wappi_health_timeout_seconds: float = 15.0   # джоба планировщика не имеет права висеть
+    # Чтение истории чата у Wappi. Было 25 с хардкодом, и 29.09.2026 это дало 39 таймаутов
+    # за 12 часов: планировщик выполняет джобы последовательно, поэтому каждое ожидание
+    # отнималось у сторожей, стоящих в очереди за manager_sync. Не ответил за 12 с —
+    # вернёмся следующим тиком, он через пять минут.
+    wappi_messages_timeout_seconds: float = 12.0
     wappi_payment_warn_days: int = 5             # подписка кончается → предупредить заранее
     stt_media_host_allowlist: list[str] = []
     stt_cost_per_minute_usd: float = 0.003
@@ -282,6 +293,12 @@ class Settings(BaseSettings):
     # первой строкой и молчал — при живом Telegram-канале с двумя получателями. Дефолт OFF:
     # оживший сторож начинает писать людям, это включают решением, а не деплоем.
     watchdog_telegram_enabled: bool = False
+    # Тревога «бот не получал сообщений ~N мин» по тишине ВСЕХ каналов разом. Замер 23.09:
+    # за 14 дней 45 дневных пауз клиентов дольше 30 мин (~3 в день) — обычное затишье, а
+    # алерт советует «проверить Wappi/вебхуки». 23.09 в 20:34 так и вышло: вебхуки живы
+    # (эхо менеджеров шло), клиенты просто молчали. Мёртвый канал ловит сторож v3 по
+    # статусу профиля Wappi. Дефолт OFF: сторож сбоев работает, тишина — только по решению.
+    watchdog_silence_enabled: bool = False
     tour_facts_enabled: bool = False
     bitrix_autodeal_enabled: bool = False
     # Привязывать ли к сделке контакт клиента. В Битриксе телефон живёт у контакта, а не
@@ -323,12 +340,87 @@ class Settings(BaseSettings):
     tours_cards_enabled: bool = False
     public_base_url: str = ""
 
+    # Рейсы в карточке (просьба Гриши 02.10.2026: шаблон, как шлют туроператоры). Данные
+    # из `actdetail.php` — время туда-обратно, авиакомпания, багаж. Дефолт OFF, потому что
+    # это не бесплатно: замер на проде 02.10 — пять туров 18–22 с против 4 с на весь
+    # нынешний подбор. Владелец выбрал полную карточку, зная цену ожидания; тумблер
+    # оставляет откат мгновенным, если клиенты начнут отваливаться на ожидании.
+    tour_flights_enabled: bool = False
+
+    # Инбокс панели страницей, а не всей базой. Замер на проде 02.10.2026: `/admin/inbox`
+    # отдавал 1.95 МБ HTML и 1012 карточек одним ответом, и этот же список перезагружает себя
+    # каждые 10 секунд — порядка 12 МБ в минуту на телефон менеджера. Дефолт OFF: список
+    # диалогов — рабочая реальность менеджеров, откат должен быть тумблером.
+    # Новый визуальный язык панели (требование Алана 02.10.2026: «всё менять, но чтобы
+    # функционал тот же»). Дефолт OFF — вид это рабочая реальность менеджеров, и откат
+    # обязан быть тумблером, а не выкаткой. ON → бирюзовая палитра, Onest вместо Fira,
+    # полноценная тёмная тема. Разметка и классы в обоих режимах одни и те же.
+    admin_new_look_enabled: bool = False
+    # Чат включается отдельно от оболочки панели, чтобы их можно было откатывать
+    # независимо. ON включает «Пальму»: читаемые пузыри, компактную шапку и досье.
+    admin_chat_redesign_enabled: bool = False
+    # Экран «Фокус»: один следующий клиент вместо трёх экранов, отвечающих на один и тот
+    # же вопрос «с кем работать сейчас» (доска, «Покупатели сегодня», «Горячий лист»).
+    # Дефолт OFF: выключили — маршрута нет, меню прежнее.
+    admin_focus_enabled: bool = False
+    # «Рабочий день» и карточка услуги (E2-06). Дефолт OFF: выключили — маршрутов нет,
+    # ссылки в меню нет, панель прежняя. Отдельно от `service_cases_enabled`, который
+    # гейтит ЗАПИСЬ: можно включить показ на реальных данных, не открывая операции.
+    admin_workday_enabled: bool = False
+    # Пилот анкеты въезда из визовой услуги: прежний full-admin scope, default OFF.
+    admin_kg_entry_enabled: bool = False
+    # DEC-07 authority must be explicitly configured after an owner decision.
+    # Empty defaults deny publication; these values are never editable in forms.
+    kg_knowledge_publishers: list[str] = Field(default_factory=list)
+    kg_knowledge_policy_ref: str = ""
+    kg_knowledge_policy_sha256: str = ""
+    # No document/privacy/source approval or reviewer identity is implied by default.
+    kg_document_package_policy: dict = Field(default_factory=dict)
+    # Empty until storage/privacy/retention and named uploaders are authorized.
+    kg_document_quarantine_policy: dict = Field(default_factory=dict)
+    # Explicit named-operator authority for selected procedural source edges.
+    kg_process_execution_policy: dict = Field(default_factory=dict)
+    # Explicit portal observation storage/mapping/manual verification authority.
+    kg_portal_observation_policy: dict = Field(default_factory=dict)
+    # Explicit source/privacy/operator authority for the local applicant interview.
+    kg_interview_policy: dict = Field(default_factory=dict)
+    # Executable qualification predicates/product routes need separate source approval.
+    kg_qualification_policy: dict = Field(default_factory=dict)
+    kg_assessment_policy: dict = Field(default_factory=dict)
+    # Internal quotation recipes require explicit source/commercial authority.
+    kg_quote_policy: dict = Field(default_factory=dict)
+    kg_specialist_policy: dict = Field(default_factory=dict)
+    # Conditional review reminders require separate source/person/task authority.
+    kg_work_review_authorities: list[dict] = Field(default_factory=list)
+    kg_actual_anchor_policy: dict | None = None
+    kg_conditional_deadline_authorities: list[dict] = Field(default_factory=list)
+    kg_operator_sop_authorities: list[dict] = []
+    kg_notification_storage_policy: dict = Field(default_factory=dict)
+    # Permanent stops are enrolled only under explicit authority, on activated Wappi profiles.
+    kg_channel_guard_scopes: list[dict] = Field(default_factory=list)
+    kg_channel_stop_policy: dict = Field(default_factory=dict)
+    # Exact managed routes remain denied when the separate typed authority is absent.
+    kg_dialogue_managed_routes: list[dict] = Field(default_factory=list)
+    kg_typed_dialogue_authority: dict = Field(default_factory=dict)
+    # Secure-флаг на cookie сессии. На проде ОБЯЗАТЕЛЕН (TLS терминирует nginx) и потому
+    # True по умолчанию. Выключается только для локального просмотра панели по http —
+    # иначе браузер не сохранит cookie и войти в панель на localhost нельзя.
+    session_https_only: bool = True
+    admin_inbox_limit_enabled: bool = False
+    # Сколько карточек на странице. 60 — это около десяти экранов телефона; живых диалогов
+    # за неделю на проде 213 из 3757, так что страница покрывает работу целиком.
+    admin_inbox_page_size: int = 60
+
     # Реестр ботов. Переопределяется JSON-строкой в env BOTS='[{...}, ...]'.
     bots: list[BotConfig] = DEFAULT_BOTS
 
     # Админ-панель (канбан + чат + перехват). Бэкенд лога диалогов и доступ.
     panel_backend: Literal["memory", "postgres"] = "memory"  # прод: PANEL_BACKEND=postgres
     admin_enabled: bool = True
+    crm_standalone_enabled: bool = False
+    crm_public_origin: str = ""
+    crm_database_name: str = "frunze_crm"
+    crm_release_revision: str = ""
     admin_user: str = "admin"
     admin_password: str = "frunze"  # ПРОД: переопределить ADMIN_PASSWORD!
     # Аккаунты менеджеров: JSON в env MANAGERS='[{"login":"sezim","name":"Сезим","password":"..."}]'.
@@ -384,6 +476,22 @@ class Settings(BaseSettings):
     outcome_infer_enabled: bool = False
     outcome_infer_stale_hours: int = 24      # диалог без активности дольше → кандидат на классификацию
     outcome_infer_max_per_run: int = 20      # потолок вызовов LLM за прогон (бюджет)
+    # Не пересуживать «active», если с прошлого раза в диалоге не появилось сообщений.
+    # 28.09.2026: 2837 диалогов висят в `active`, sweep берёт по 20 в час — и крутит одни и
+    # те же мёртвые диалоги по кругу (полный обход ~6 суток, потом заново). 27.09 это дало
+    # 499 вызовов LLM на $0.60 при шести ответах живым клиентам. Флаг OFF: включаем решением.
+    outcome_infer_skip_unchanged_enabled: bool = False
+    # «Профиль авторизован, но приложение не `open`» — переподключение Wappi, а не разлогин:
+    # QR тут не при чём. 27.09.2026 такая серия держалась 64 минуты синхронно по трём
+    # профилям, и сторож отправил три тревоги «сканируйте QR» — при том что канал
+    # frunze_tours_sezim в эти же минуты принимал голосовые и документы от клиентов.
+    # Порог 90 мин взят от замера (64 мин + запас), настоящий разлогин 03.08 держался 12 часов.
+    wappi_connecting_grace_enabled: bool = False
+    # Та же правда — во второй двери: сторож ТИШИНЫ советует сканировать QR, когда
+    # `profile_health` видит не-`open`. При живой авторизации это переподключение, и
+    # совет уводит владельца чинить работающее (так уже было 01.09.2026).
+    wappi_reconnecting_advice_enabled: bool = False
+    wappi_connecting_grace_minutes: int = 90
     followup_enabled: bool = False
     # Гейт блока дожима и ценовой вилки в системном промпте.
     dozhim_enabled: bool = False
@@ -485,6 +593,8 @@ class Settings(BaseSettings):
     # Default OFF; can be flipped at runtime via app_flags key `domain_shadow_enabled`.
     # Shadow writes NEVER change bot answers, webhooks, outbound, or the source of truth.
     domain_shadow_enabled: bool = False
+    # Реестр услуг подключается отдельно: создание схемы не включает новый рабочий процесс.
+    service_cases_enabled: bool = False
     # Visa round-robin ELIGIBILITY: explicit roster of visa-team manager logins (each
     # has its own Bitrix account). Temporary AVAILABILITY is a SEPARATE axis, toggled
     # per manager via app_flags key `manager_off:<login>`. The team is defined here —
@@ -501,6 +611,13 @@ class Settings(BaseSettings):
     # (ничей закрепляется за первым ответившим); чужой лид передаёт только полный
     # админ через «Переназначить». OFF → прежнее мягкое предупреждение «уже ведёт X».
     authz_enforce_enabled: bool = False
+    # M1 (01.10.2026): разделение рабочих пространств по направлениям. Требование Даулета
+    # и Алана — «невозможно читать», когда туры и визы в одном списке. Default OFF;
+    # runtime key `admin_direction_split_enabled`. ON → инбокс, поиск и счётчики живут в
+    # пределах одного направления, полный админ переключает его в шапке. OFF → прежний
+    # смешанный список. Меняет рабочую реальность менеджеров, поэтому тумблером, а не
+    # деплоем: откат мгновенный. Скоуп по ботам работает всегда и от флага не зависит.
+    admin_direction_split_enabled: bool = False
     # Sprint 2: авто-назначение нового ВИЗОВОГО лида по round-robin (least-recently-
     # assigned по visa_manager_roster). Default OFF; runtime key `visa_autoassign_enabled`.
     # Назначение НЕ перехватывает бота — фиксирует владельца + опц. личный TG-пуш.

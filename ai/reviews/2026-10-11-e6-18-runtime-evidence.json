@@ -1,0 +1,43 @@
+{
+  "revision": "d1c9a38737e600d6508a6e2e1f38c0ca3a9932be",
+  "frozen_r2_identity": "11 root/archive/commit PASS",
+  "merged_full_snapshot": "runs/overnight-final-r1",
+  "merged_runtime_test_asset_files_matching_commit": 689,
+  "checks": [
+    {
+      "scenario": "final-r2",
+      "artifact": "runs/e6-18-review-r2/runs/typed-final-r2.xml",
+      "sha256": "89b8531dbcb0aca0411f3a986c7698689ac5ec5a4bcad3217d3a5ff4e5881884",
+      "tests": "84",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "309.005"
+    },
+    {
+      "scenario": "original20negative",
+      "artifact": "runs/e6-18-baseline/runs/typed-baseline.xml",
+      "sha256": "98e23cad4be771ab841dd111ffa7048a6689d709676d74e0bff2a71ee610023f",
+      "tests": "20",
+      "failures": "20",
+      "errors": "0",
+      "skipped": "0",
+      "time": "41.159"
+    },
+    {
+      "scenario": "original3columnpositive",
+      "artifact": "runs/e6-18-baseline-columns/runs/columns.xml",
+      "sha256": "75c3047fd0c93766ec4397d769dc978c39554b2cb111bb8e2f5e96daf91d4148",
+      "tests": "3",
+      "failures": "3",
+      "errors": "0",
+      "skipped": "0",
+      "time": "18.881"
+    }
+  ],
+  "independent_review": "APPROVE82PASS",
+  "separate_final_audit": "GO60PASS",
+  "scope": "16 demonstrated typed boundaries and three INTEGER FK representations; synthetic local only",
+  "overlapping_counts": true,
+  "full_suite_status": "Initial merged overnight-final-r1 deliberately INTERRUPTED after E619 findings; no PASS claim. New merged full must include corrected E619 runtime."
+}

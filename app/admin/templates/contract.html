@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Frunze — договор подписан{% endblock %}
+{% block brand_sub %}новая услуга{% endblock %}
+{% block head %}
+<style>
+.contract-wrap { max-width:680px; margin:0 auto; padding:20px 16px 48px; min-width:0; }
+.contract-wrap h1 { font-size:24px; margin:12px 0; }
+.contract-wrap p { overflow-wrap:anywhere; }
+.contract-form { display:grid; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px; min-width:0; }
+.contract-form fieldset { display:grid; gap:16px; border:0; padding:0; margin:0; min-width:0; }
+.contract-field { display:grid; gap:6px; font-size:14px; min-width:0; }
+.contract-field input,.contract-field select,.contract-field textarea { width:100%; min-width:0; max-width:100%; box-sizing:border-box; min-height:44px; padding:10px; font:inherit; color:var(--text); background:var(--surface-2); border:1px solid var(--border-2); border-radius:var(--r); }
+.contract-field input:focus-visible,.contract-field select:focus-visible,.contract-field textarea:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.contract-money { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:12px; }
+.contract-confirm { display:flex; gap:10px; align-items:flex-start; font-size:14px; line-height:1.5; }
+.contract-confirm input { flex-shrink:0; width:20px; height:20px; margin:0; }
+.contract-notice { padding:12px; border:1px solid var(--border-2); border-radius:var(--r); background:var(--surface-2); overflow-wrap:anywhere; }
+.contract-error { border-color:var(--hot); color:var(--hot); }
+.contract-form .btn { min-height:44px; white-space:normal; }
+.contract-form fieldset:disabled { opacity:.65; }
+@media(max-width:400px) { .contract-form { padding:14px; } .contract-money { grid-template-columns:minmax(0,1fr); } }
+</style>
+{% endblock %}
+{% block content %}
+<main class="contract-wrap">
+  <a href="/admin/work">← Рабочий день</a>
+  <h1>Договор подписан</h1>
+  <p>Клиент: <strong>{{ c.qualification.get('name') or 'Имя не указано' }}</strong> · {{ c.phone or c.user_id }}</p>
+  {% if owner %}<p>Услугу ведёт <strong>{{ owner }}</strong>.</p>{% endif %}
+  <p class="muted">Зафиксируйте уже подписанный договор. После сохранения откроется карточка услуги с её этапами и задачами.</p>
+  {% if error %}<p class="contract-notice contract-error" role="alert">{{ error }}</p>{% endif %}
+  {% if not write_on %}<p class="contract-notice" role="status">Запись услуг выключена. Договор пока нельзя сохранить.</p>{% endif %}
+  {% if not products and not error %}<p class="contract-notice" role="status">Нет доступных продуктов с опубликованным процессом. Обратитесь к администратору.</p>{% endif %}
+  <form class="contract-form" action="{{ form_url }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ values.idempotency_key }}">
+    <input type="hidden" name="key_signature" value="{{ values.key_signature }}">
+    <fieldset {% if not write_on or not products or not owner %}disabled{% endif %}>
+      <label class="contract-field" for="contract-product">Продукт
+        <select id="contract-product" name="product_id" required>
+          <option value="">Выберите продукт</option>
+          {% for product in products %}<option value="{{ product.id }}" {% if values.product_id == product.id|string %}selected{% endif %}>{{ product.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="contract-field" for="contract-reference">Номер или идентификатор договора
+        <input id="contract-reference" name="reference" maxlength="128" value="{{ values.reference }}" required autocomplete="off">
+      </label>
+      <label class="contract-field" for="contract-signed">Дата и время подписания · Бишкек (UTC+6)
+        <input id="contract-signed" name="signed_at" type="datetime-local" value="{{ values.signed_at }}" required>
+      </label>
+      <div class="contract-money">
+        <label class="contract-field" for="contract-amount">Согласованная сумма
+          <input id="contract-amount" name="amount" inputmode="decimal" type="number" min="0.01" step="0.01" max="999999999999.99" value="{{ values.amount }}" aria-describedby="amount-help">
+        </label>
+        <label class="contract-field" for="contract-currency">Валюта
+          <input id="contract-currency" name="currency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="KGS, USD…" value="{{ values.currency }}">
+        </label>
+      </div>
+      <p id="amount-help" class="muted">Введите сумму из договора и валюту. Если сумма ещё уточняется, оставьте её пустой и укажите причину ниже. Оплаты вносятся отдельно в карточке услуги.</p>
+      <label class="contract-field" for="contract-reason">Почему сумма уточняется
+        <textarea id="contract-reason" name="amount_unknown_reason" maxlength="255" rows="2">{{ values.amount_unknown_reason }}</textarea>
+      </label>
+      <label class="contract-confirm" for="contract-confirmed">
+        <input id="contract-confirmed" type="checkbox" name="confirmed" value="yes" required {% if values.confirmed == 'yes' %}checked{% endif %}>
+        <span>Подтверждаю, что клиент подписал договор и введённые данные ему соответствуют.</span>
+      </label>
+      <button class="btn btn-brand" type="submit">Зафиксировать договор и открыть услугу</button>
+    </fieldset>
+  </form>
+</main>
+{% endblock %}

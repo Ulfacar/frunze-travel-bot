@@ -1,0 +1,12 @@
+{
+  "base": "d1c9a38737e600d6508a6e2e1f38c0ca3a9932be",
+  "archive": "runs/e6-19-review-r2",
+  "normalization": "LF",
+  "files": {
+    "app/domain/entry_deadline_tasks.py": "00e0d431d51ef08ee36645dd660e00f647e4343782c3dd85e76e859473f4e41d",
+    "app/admin/router.py": "669fa9e6c528f26b176c37308e807f8fe089c0bf7b0e8c18aed946d8294c5046",
+    "tests/test_entry_deadline_task_integrity.py": "016fea1db0876735e6fbe0a08e2ad6de007beb49e80348473b6a35d000d04c6f",
+    "tests/test_entry_deadline_task_integrity_postgres.py": "4b838f708cdf387029309e5d76ce5a599ad135e8d758876a682745439af15071",
+    "ai/tasks/2026-10-11-e6-19-deadline-task-review.md": "bf455c06aa21e2b4090982080852a598524123fb65d165585bc35b18aad2ccaf"
+  }
+}

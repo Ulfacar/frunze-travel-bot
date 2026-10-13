@@ -1,0 +1,174 @@
+{
+  "status": "DONE_REVIEWED_LOCAL",
+  "full_pdf_status": "PARTIALLY_READY_J05_UNKNOWN",
+  "code_revision": "ce335c740748affdb3ec07ace202e37e1c74d16e",
+  "branch": "fix/tours-search-quality",
+  "definition_sha256": "3a26373ae606cb6bba64adf1bd41fd8efb7a767663523d328cbd166aca219f4a",
+  "original_pdf_sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
+  "score": {
+    "engineering_points": 99,
+    "remaining_points": 1,
+    "target_points": 100,
+    "total_points": 100,
+    "independently_reviewed": null,
+    "review_not_pass": [],
+    "production_readiness": "UNKNOWN"
+  },
+  "pending_criteria": [
+    "J05"
+  ],
+  "reviews": {
+    "J01": "independent APPROVE",
+    "J03": "separate GO",
+    "reporting": "SELF_REVIEW"
+  },
+  "code_files_lf_sha256": {
+    "alembic/versions/e6_sop_review_evidence_0043.py": "2bc259efb845736934ebbcf508b96ff34fd50f5e05f65ab8daa3abe71c62b3e6",
+    "app/admin/kg_sop_reviews.py": "dc29695a809a810445c9ead7ebd78a4f2f8e069759bf092bb50fc693edb75b6d",
+    "app/admin/router.py": "d63fbe0312b3f68697d9301decdfd8d5bfc7cc1a0ab1135853534d66778ef8f7",
+    "app/admin/templates/kg_applications.html": "ba8fd15beebe7f61005becb80a5a7166ec6a15102b087d668ce162b1ab38d6a0",
+    "app/admin/templates/kg_sop_reviews.html": "5809f9c6a5b7f6e427afbb13a232d84cc9cbd4b7b84269481d36d221d557018f",
+    "app/config.py": "2a5226ebd42fc0934f9f3d42e5c0ba2dc1262d2d354ddb4b9befa1d1a2bf4afa",
+    "app/domain/entry_deadline_tasks.py": "d4a7a8d9c78170e97af6c225a199dc37c08cdadba03e7f0c7e04ca9796c4204e",
+    "app/domain/entry_deadlines.py": "188dc6bf2ffe42e19304f91e46569a7d125ed97f35d2ad6212c717b6a343bc77",
+    "app/domain/entry_processes.py": "80be897808af9f05d8c0fe94e34c78a38f7764765c0d4e38ad76a49b5a4b4896",
+    "app/domain/models.py": "649f3ab939715a129605683e49711b64e749243b0a869380edad5e5fd4847337",
+    "app/domain/operator_sop_evidence.py": "5e2e0f031fd2f94b6618e094acf40784b5c698d69edea30d088956c1d6ba5240",
+    "app/domain/operator_sop_policy.py": "ee2ce149441596c280cf2b15d789e7a6da10f1f39e094517206532771d46aeb3",
+    "app/domain/operator_sop_reviews.py": "7ef4c8b9a2f18ef9687fe7172078b08cab28419c72c55ced0a0eb611c00b46a7",
+    "app/domain/operator_sop_rules.py": "61eea1626e61b7813e1230eadf57fad8644ac9a912041caf176c96b6cb8d5e69",
+    "app/domain/operator_sop_sources.py": "68e8265a6571125c6aa9f054f1a24939ea832fa6c7f6ddb53fa315aadeacd450",
+    "tests/operator_sop_legacy_fixtures/entry_deadline_tasks.py": "7dfbc5ae4417b394542bcd31482085818b1826ac2ea18e329779d5a69b97381f",
+    "tests/operator_sop_legacy_fixtures/entry_deadlines.py": "97e828e1c831a08e11dbcc0baa75031d16e5a1d3fc7239ed06990ab4987a4c9f",
+    "tests/test_admin_operator_sop.py": "7e73fa629a82567dc76168325c5623522f6a69a7869bbd28883e4a2e6ee548d7",
+    "tests/test_conditional_deadline_audit_postgres.py": "4cebcbe4abbba1a4f961bd10cb5d07a987bad0a95b3e7a2caf346b3708ce992d",
+    "tests/test_entry_anchor_migration.py": "2f25ef152ebbe53375a094ce7589271189ac70eb46def1d8dd4890e0a384d9de",
+    "tests/test_operator_sop_audit_legacy.py": "c53e70809d548c70810a06b17a79884a352107315cda7c7c4b6db37cf819ac3e",
+    "tests/test_operator_sop_audit_postgres.py": "5efb398214590942d6474161736cf7eea4098af5ea9dff11f8dac0572988859c",
+    "tests/test_operator_sop_audit_process_expiry.py": "0b7eba3784338b75e2f452056ca95584600d8229b68bc4cebc176e5ce81f89b2",
+    "tests/test_operator_sop_audit_quarantine.py": "eaaeb9d9b8acb60a90fba5a5edd79cc6c87780af10cd78e70dcb4a4ab68fd0e7",
+    "tests/test_operator_sop_audit_recovery.py": "8c19799e66383d48c6af0186d2a8064d8c96424b6829d17680273e5919fd7bac",
+    "tests/test_operator_sop_migration.py": "8c0aa6320a8146df7f18c2dc15d95938d33a15857a958eff0acd14a8ce8c3b2c",
+    "tests/test_operator_sop_native_authority_recovery.py": "51ea79bb4e2a077176a76892be0981ffffccb72ce84728b4c42ddbe73dede580",
+    "tests/test_operator_sop_native_browser.py": "e43f1a6a54132089d8377275a7991f98ddcc8a484ad7f685f4684f93c814d343",
+    "tests/test_operator_sop_native_expiry.py": "9e5409487a4e6c138562d816524560836f0366c12c1e9593db76f672825a50d7",
+    "tests/test_operator_sop_native_http.py": "ac49cc312027fd8e19733b6412e79f82939110300fc0ba0ed26485ba67e7c8f7",
+    "tests/test_operator_sop_review_completed.py": "c62a99a17283863037637d36f62b8b3d4fd567018e618eac8677b5d190bec6f0",
+    "tests/test_operator_sop_review_currentness.py": "ce3ae74985dd8ef388db02896aa1fc1d70ea3912d1469337f2301e196297b46c",
+    "tests/test_operator_sop_review_integrity.py": "e5a0bcdbd4347c61f71ffb2d7bb2086523f3098c5ad0cdc1692ea50daa7162ec",
+    "tests/test_operator_sop_review_package_privacy.py": "1b935df2c185af5e634141a4a096a755662c2c9c2026ec38b9c77abba5b3f520",
+    "tests/test_operator_sop_review_registry.py": "583b08abe881c93a165114208924b8ece375558e2f6d333a08ae602d98543551",
+    "tests/test_operator_sop_review_terminal.py": "9f3fcf040b9a73c598ef6ca0037ca82d962d914e2231b6463afcdf8c931ecf04",
+    "tests/test_operator_sop_review_work_commercial.py": "32450e8025181d98baf5c688064f07bc1700642ffc36659e6344e94d9769c3d2",
+    "tests/test_operator_sop_reviews.py": "b23a673baff80cdfda03dc964d9cf0a572ac67f4d274b55ca98a59a7c0997875",
+    "tests/test_operator_sop_schedule.py": "8d4c4f55cad1d1cb7bdc9123c46e333b7404427215494541d41716d6f02d2fb4",
+    "tests/test_operator_sop_source_flows.py": "3334adb668ac7102f936c0dc67f48f399a6dfb6a716129cbd8e492fb78ceeccb",
+    "tests/test_operator_sop_wall_time.py": "7c1ef7e6898aa21ce1185b075d65db60812b960c6276185cf62bf2d427a2fe3e",
+    "tests/test_work_review_migration.py": "44c1919cc5737b3e55dedf8cf047feb3f3bfc40b0804a73a116acfabd3d7c52b"
+  },
+  "preserved_ui_lf_sha256": {
+    "app/admin/templates/base.html": "65b70c196c2736f2f89b5a8994dc02da71f07373b06ba3c3e36407e207a1b727",
+    "app/admin/templates/boards.html": "9ce80ed0684efa123641dbb71ea171439b48da259572b30b0b24a0652a26b377",
+    "tests/test_admin_new_look.py": "5d7c15dd618e65524bb9f8769dece5636db872749c723a1d144eab97c6d5e9cf"
+  },
+  "identity_check": "PASS: 42 root/frozen/saved commit identities; 3 unrelated UI files preserved",
+  "final_report": {
+    "pdf": "docs/reports/frunze-pdf-progress-2026-10-13-source-sop.pdf",
+    "sha256": "0f818e3b5213135d38634d4071ae4834818e0cab31b7fa0638f2ecd67d6f939b",
+    "pages": 5,
+    "coverage_rows": 26,
+    "engineering_points": 99,
+    "remaining": [
+      "J05"
+    ],
+    "render": "PASS",
+    "text_and_26_rows": "PASS",
+    "visual_review": "PASS: root personally viewed all five final rendered pages; no clipping or unreadable text"
+  },
+  "artifacts": {
+    "ai/reviews/2026-10-13-e6-30c-source-acceptance-review.md": {
+      "sha256_raw": "f8ce9bc96de90ee0afaa5d85732a5addb4ad143acb221b114cef2dddebed94ea",
+      "sha256_lf": "f8ce9bc96de90ee0afaa5d85732a5addb4ad143acb221b114cef2dddebed94ea"
+    },
+    "ai/reviews/2026-10-13-pdf-affected-final-audit.md": {
+      "sha256_raw": "9fa0aed38fcb7c5c0586a47a3ff28331a13d870e97265623f70cc41ca0be5ae6",
+      "sha256_lf": "9fa0aed38fcb7c5c0586a47a3ff28331a13d870e97265623f70cc41ca0be5ae6"
+    },
+    "ai/reviews/2026-10-13-e6-30e-final-audit.md": {
+      "sha256_raw": "416f88528fe9ddd1403933e0edf088a44835000a1cf3ec7a830574faf0060ca1",
+      "sha256_lf": "416f88528fe9ddd1403933e0edf088a44835000a1cf3ec7a830574faf0060ca1"
+    },
+    "ai/reviews/2026-10-13-e6-30c-source-final-evidence.json": {
+      "sha256_raw": "75d9b6718b2d5c9a46febc962a8704ce698f49a4b7c09e349ac6cd67ca4a21a5",
+      "sha256_lf": "26789f69527795806fd1162ae263e6234df07c8edba7f50e646e75dab696396a"
+    },
+    "ai/reviews/2026-10-13-e6-30d-snapshot-evidence.json": {
+      "sha256_raw": "c17b71bdcc566d1099ea49b9bd049ffb50055968a56399a445627dcc3c77c25b",
+      "sha256_lf": "88346bcfd0b67a1c261cace723ba91fd184b6afdea667fc014ea5b655d0c8ea7"
+    },
+    "ai/reviews/2026-10-13-e6-30e-snapshot-evidence.json": {
+      "sha256_raw": "259327dd331af57c87f7d55a0088255bc338d3ace994b55258a835bac94ed2e4",
+      "sha256_lf": "259327dd331af57c87f7d55a0088255bc338d3ace994b55258a835bac94ed2e4"
+    },
+    "ai/reviews/2026-10-13-e6-30e-independent-review.md": {
+      "sha256_raw": "5e1946917e042068584fea3d2f97fc4ebeb452b31129a405932abe18b3e912cf",
+      "sha256_lf": "5e1946917e042068584fea3d2f97fc4ebeb452b31129a405932abe18b3e912cf"
+    },
+    "ai/reviews/2026-10-13-e6-30e-native-review.md": {
+      "sha256_raw": "958d8eeb39425ee3dc6505c13f210e09c0ec9d94939ef7cec4708f9a93691272",
+      "sha256_lf": "958d8eeb39425ee3dc6505c13f210e09c0ec9d94939ef7cec4708f9a93691272"
+    },
+    "runs/e630e-j01-evidence.json": {
+      "sha256_raw": "be14479df24bb216788d737bdc9140da8da5b25be68d7cb03c32cdd45727b40b",
+      "sha256_lf": "c2a499a0eabce4c86ddb8c4339a0510196ff85f5796464b57883efe9886eee2d"
+    },
+    "runs/e630e-j03-evidence.json": {
+      "sha256_raw": "3daaa5a78feaa036b1b451a86d3e5955be02e2ee2b63adf5419da6c6b5677764",
+      "sha256_lf": "76e45a07cd25f2c83ab01be30a75560e02f41547299f0f4f2b9605b6ff2347ad"
+    },
+    "runs/e630e-j03-final-identity.json": {
+      "sha256_raw": "33b3964574608569c1cecc453330363bac63d52521d0fb20dd431e6b88f6f8fe",
+      "sha256_lf": "0db4bcdde832fcfcf5e3a8a87715ffcefd043e2a229429079cb3a5ab6f7ac0c9"
+    },
+    "runs/e630e-report-final/evidence.json": {
+      "sha256_raw": "d8d7acd6409b1413aa44f1d34dd2d4570ffd23126a9810e0f37bc52f8d66dc65",
+      "sha256_lf": "25a25ba6b96f5a6be739fe51d02b1403ace09fb151a57ab5636cfe788ba6d910"
+    },
+    "docs/pdf-engineering-criteria.json": {
+      "sha256_raw": "63628fe58d97f3545cbd0399537ec450f7d20aefd0b25545262a4b30b673a527",
+      "sha256_lf": "1d73f74ed466460284862ae1456057317a985bf762cc8350258232b76861360e"
+    },
+    "docs/e5-pdf-progress.md": {
+      "sha256_raw": "5afb85d229c7353577337c0325dd93dbd97e38eb35af6c90297a93658dfaed5c",
+      "sha256_lf": "3b9b6d672dfd184b3c52fb6ab893d1c7d444140aae0566e4c2c7fdbb3cc7d5d8"
+    },
+    "docs/e5-pdf-section-coverage.md": {
+      "sha256_raw": "116e5159c041b29b90e4ff89c237c18bbf6ac2fbe42e734268a10050949173af",
+      "sha256_lf": "3ab15a89ea866ae048f0ff9a64319371047cf24545321004bbd013f6973647dd"
+    },
+    "docs/pdf-owner-acceptance.md": {
+      "sha256_raw": "2cd349c30bb61a0e9a08585aac444100f888726888d010bb1ba8acde76fd85b8",
+      "sha256_lf": "2cd349c30bb61a0e9a08585aac444100f888726888d010bb1ba8acde76fd85b8"
+    },
+    "scripts/build_kg_progress_report.py": {
+      "sha256_raw": "3a8af49e9e25bf0f941047ad0acb10974afda6021f2ef5f170df03327168716d",
+      "sha256_lf": "3a8af49e9e25bf0f941047ad0acb10974afda6021f2ef5f170df03327168716d"
+    },
+    "docs/reports/frunze-pdf-progress-2026-10-13-source-sop.pdf": {
+      "sha256_raw": "0f818e3b5213135d38634d4071ae4834818e0cab31b7fa0638f2ecd67d6f939b",
+      "sha256_lf": "e820cfb99de5407359ef0e9681e8a24de723d0b38021c5fa4ab02912c0cb3584"
+    }
+  },
+  "cleanup": {
+    "synthetic_postgres_55971": "STOPPED: verified temporary data path/PID22544/loopback and normal pg_ctl fast stop, exit0",
+    "old_crm_8765": "preserved earlier preview; listener verified",
+    "active_tests": "none"
+  },
+  "limits": [
+    "No final whole-project suite claim; distinct revisions/overlapping runs retained",
+    "All source/business policies in positive tests are synthetic",
+    "J05 packet is prepared, not approved; no live pilot",
+    "Local binary COPY recovery passed; native pg_dump and production recovery not proved",
+    "No push, deployment, live data/message changes or source approval"
+  ]
+}

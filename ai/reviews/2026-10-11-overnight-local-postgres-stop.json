@@ -1,0 +1,11 @@
+{
+  "stopped_utc": "2026-10-11T02:21:30.2205923Z",
+  "environment": "isolated local PostgreSQL16.15",
+  "data_directory": "C:\\Users\\alanb\\AppData\\Local\\Temp\\frunze-pg16-20261011\\data",
+  "stopped": true,
+  "final_status_exit_code": 3,
+  "production_changed": false,
+  "command": "pg_ctl -D <verified isolated data directory> -m fast -w -t 20 stop; status",
+  "status": "PASS",
+  "endpoint": "127.0.0.1:55971"
+}

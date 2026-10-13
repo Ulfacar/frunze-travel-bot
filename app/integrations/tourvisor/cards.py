@@ -117,6 +117,49 @@ def _for_whom(tour: dict) -> str:
     return "за " + people.replace(" ", "+")
 
 
+def _leg(segments: list) -> str:
+    """Одна строка перелёта: «29 окт, 06:30 - 10:00, Pegasus Airlines - 20кг».
+
+    Формат — дословно из образца, который операторы шлют клиентам (просьба Гриши 02.10).
+    Данные из `actdetail.php`: `departure.time`, `arrival.time`, `company.name`, `baggage`.
+    «+1» для ночного прилёта шлюз проставляет сам внутри времени («06:05 +1») — своего
+    вычисления даты не делаем, иначе разойдёмся с оператором на часовых поясах.
+
+    Пересадка: берём вылет первого сегмента и прилёт последнего — это и есть маршрут
+    целиком. Про саму пересадку говорим фактом, а не умолчанием: клиент, купивший
+    «прямой» рейс с пересадкой в Стамбуле, вернётся к менеджеру с претензией.
+    """
+    legs = [s for s in _as_list(segments) if isinstance(s, dict)]
+    if not legs:
+        return ""
+    first, last = legs[0], legs[-1]
+    out = first.get("departure") or {}
+    back = last.get("arrival") or {}
+    date = _date(str(out.get("date") or "").strip())
+    depart = str(out.get("time") or "").strip()
+    arrive = str(back.get("time") or "").strip()
+    if not (date and depart and arrive):
+        return ""
+
+    line = f"{date}, {depart} - {arrive}"
+    company = _clean_name((first.get("company") or {}).get("name"))
+    if company:
+        line += f", {company}"
+    baggage = str(first.get("baggage") or "").strip()
+    if baggage and baggage not in ("0", "None"):
+        line += f" - {baggage}кг"
+    if len(legs) > 1:
+        line += f", {len(legs) - 1} пересадка" if len(legs) == 2 else f", пересадок: {len(legs) - 1}"
+    return f"✈️ {line}"
+
+
+def _flight_lines(flight: dict) -> list[str]:
+    """Две строки: туда и обратно. Нет данных по одной стороне — печатаем вторую."""
+    if not isinstance(flight, dict):
+        return []
+    return [line for line in (_leg(flight.get("forward")), _leg(flight.get("backward"))) if line]
+
+
 def _sea(hotel: dict) -> str:
     """Расстояние до моря — единственный различитель в подборке одинаковых троек.
 
@@ -147,8 +190,12 @@ def _best_tour(hotel: dict) -> tuple[dict, int] | None:
     return best
 
 
-def render_card(hotel: dict, *, departure: str = "") -> str:
-    """Одна карточка. Пустая строка — отель показывать нельзя."""
+def render_card(hotel: dict, *, departure: str = "", flights: dict | None = None) -> str:
+    """Одна карточка. Пустая строка — отель показывать нельзя.
+
+    `flights` — перелёты этого тура из `actdetail.php` (см. `client.flights_for`). Пусто
+    или не пришло — карточка печатается как прежде: рейсы необязательны.
+    """
     name = _clean_name(hotel.get("hotelname"))
     picked = _best_tour(hotel)
     if not name or picked is None:
@@ -164,6 +211,10 @@ def render_card(hotel: dict, *, departure: str = "") -> str:
                                   str(hotel.get("regionname") or "").strip()) if x)
     if where:
         lines.append(f"✈️ {departure} ➡️ {where}" if departure else f"✈️ {where}")
+
+    # Рейсы идут сразу за направлением — так в образце операторов: сначала куда летим,
+    # потом чем и когда.
+    lines += _flight_lines(flights or {})
 
     when = [x for x in (_date(tour.get("flydate")),) if x]
     nights = str(tour.get("nights") or "").strip()
@@ -210,11 +261,32 @@ def pick(hotels: list[dict], *, limit: int = TOUR_CARDS_LIMIT) -> list[tuple[dic
     return chosen[:limit]
 
 
+def picked_tour_ids(hotels: list[dict], *, limit: int = TOUR_CARDS_LIMIT) -> list[str]:
+    """`tourid` тех самых туров, что попали в карточки.
+
+    Берём их из `pick`, а не из всех найденных: актуализация стоит 12 с за тур, и
+    спрашивать рейсы по отелям, которых клиент не увидит, — чистая трата времени его
+    ожидания.
+    """
+    out: list[str] = []
+    for _hotel, tour, _price in pick(hotels, limit=limit):
+        tour_id = str(tour.get("tourid") or "").strip()
+        if tour_id and tour_id not in out:
+            out.append(tour_id)
+    return out
+
+
 def render_cards(hotels: list[dict], *, departure: str = "",
-                 limit: int = TOUR_CARDS_LIMIT) -> list[str]:
-    """Подборка карточками для мессенджера."""
-    cards = [render_card(hotel, departure=departure)
-             for hotel, _, _ in pick(hotels, limit=limit)]
+                 limit: int = TOUR_CARDS_LIMIT,
+                 flights: dict[str, dict] | None = None) -> list[str]:
+    """Подборка карточками для мессенджера.
+
+    `flights` — `{tourid: перелёты}`; чего нет в словаре, то печатается без рейсов.
+    """
+    by_tour = flights or {}
+    cards = [render_card(hotel, departure=departure,
+                         flights=by_tour.get(str(tour.get("tourid") or "").strip()))
+             for hotel, tour, _ in pick(hotels, limit=limit)]
     return [card for card in cards if card]
 
 

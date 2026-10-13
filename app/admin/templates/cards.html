@@ -1,20 +1,8 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Frunze — карточки Битрикса</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root { --bg:#F1F5F9; --surface:#FFFFFF; --border:#E2E8F0; --text:#0F172A;
-            --muted:#64748B; --accent:#2563EB; --warm:#D97706; --hot:#DC2626; --green:#059669;
-            --mono:'Fira Code', ui-monospace, monospace; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:'Fira Sans',system-ui,sans-serif; font-size:14px; }
-    .topbar { display:flex; align-items:center; gap:16px; padding:0 20px; height:58px;
-              background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; }
-    .topbar a { color:var(--accent); text-decoration:none; font-weight:600; }
-    .wrap { padding:22px; max-width:980px; margin:0 auto; }
+{% extends "base.html" %}
+{% block title %}Frunze — карточки Битрикса{% endblock %}
+{% block head %}
+<style>
+.wrap { padding:22px; max-width:980px; margin:0 auto; }
     h1 { font-size:20px; margin:0 0 6px; }
     .sub { color:var(--muted); margin:0 0 18px; }
     .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
@@ -36,15 +24,9 @@
     .empty { color:var(--muted); padding:10px 4px; }
     .pill { display:inline-block; padding:1px 8px; border-radius:20px; font-size:12px;
             background:var(--elev,#F1F5F9); border:1px solid var(--border); color:var(--muted); }
-  </style>
-</head>
-<body>
-  <div class="topbar">
-    <a href="/admin/boards">← Диалоги</a>
-    <a href="/admin/system">Система</a>
-    <span class="muted">Карточки Битрикса</span>
-  </div>
-
+</style>
+{% endblock %}
+{% block content %}
   <div class="wrap">
     <h1>Состояние карточек</h1>
     <p class="sub">Что контроллер сделал за сутки и что осталось. Данные — из нашей базы,
@@ -91,6 +73,7 @@
     <div class="panel">
       <h2>Воронка — куда бот довёл карточки</h2>
       {% if rows %}
+      <div class="table-wrap">
       <table>
         <tr><th>Стадия</th><th style="width:90px">Карточек</th><th>Доля</th></tr>
         {% for r in rows %}
@@ -102,6 +85,7 @@
         </tr>
         {% endfor %}
       </table>
+      </div>
       <p class="muted" style="margin:12px 0 0">
         Диалогов за окно: {{ totals.dialogs }} · с карточкой: {{ totals.with_lead }} ·
         с клиентом начали работать: {{ totals.work_started }}
@@ -114,6 +98,7 @@
     <div class="panel">
       <h2>Требуют человека — расхождения</h2>
       {% if conflicts %}
+      <div class="table-wrap">
       <table>
         <tr><th>Что</th><th>Диалог</th><th>Подробности</th></tr>
         {% for c in conflicts %}
@@ -124,6 +109,7 @@
         </tr>
         {% endfor %}
       </table>
+      </div>
       <p class="muted" style="margin:12px 0 0">Такое бот не чинит сам: воронка назад не ходит,
         значит карточку вернули руками или подменили лид.</p>
       {% else %}
@@ -134,6 +120,7 @@
     <div class="panel">
       <h2>Очередь — карточки, ждущие движения</h2>
       {% if stuck %}
+      <div class="table-wrap">
       <table>
         <tr><th>Диалог</th><th>Лид</th><th>Куда поедет</th><th></th></tr>
         {% for s in stuck %}
@@ -145,6 +132,7 @@
         </tr>
         {% endfor %}
       </table>
+      </div>
       <p class="muted" style="margin:12px 0 0">Показаны первые 30. Разбираются порциями
         по {{ 25 }} каждые десять минут.</p>
       {% else %}
@@ -152,5 +140,4 @@
       {% endif %}
     </div>
   </div>
-</body>
-</html>
+{% endblock %}

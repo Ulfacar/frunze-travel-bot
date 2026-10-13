@@ -1,0 +1,101 @@
+{
+  "revision": "91a43fa0202fbacfe62ee337c188bb156276a4df",
+  "base": "208a04d95a54ca0da9535bdeab5a81fdfcc7b15f",
+  "copy": "runs/e6-01a-applications-committed",
+  "env_files_absent": true,
+  "files": [
+    {
+      "path": "ai/reviews/2026-10-10-e6-01a-applications-packet.md",
+      "sha256_lf": "e6c4af411e602b43ed9521a0feb605ae9c8b705d08a8157f0222f11e55e6f3a0"
+    },
+    {
+      "path": "ai/tasks/2026-10-09-e6-01a-applications.md",
+      "sha256_lf": "eb93f050dde2857db64942276f88deb900ec1667fde5d44baa375f3a01da2795"
+    },
+    {
+      "path": "alembic/versions/e6_applications_0017.py",
+      "sha256_lf": "6809107826c6a7384a3fe8f15a5a21fbb05ddabe8cef2666714679e5905f660a"
+    },
+    {
+      "path": "app/admin/kg_applications.py",
+      "sha256_lf": "730e115ad9050406ebb7cd15ffccb89edcb1e381ea5bd4f923ee9ea9bdebbfda"
+    },
+    {
+      "path": "app/admin/router.py",
+      "sha256_lf": "c48e8881576b9649016e095ab994ae836638f87604d5fa4ad1ae26a90d96d983"
+    },
+    {
+      "path": "app/admin/templates/kg_applications.html",
+      "sha256_lf": "851143fb7034ee65e1e8393421e22723efbf78f06f204686b5cc97f01a37438f"
+    },
+    {
+      "path": "app/admin/templates/kg_entry.html",
+      "sha256_lf": "e7a8bc93e411a076bcb8a454fc930f5f20ae28381df49995c68714aca19af1b0"
+    },
+    {
+      "path": "app/domain/entry_application_rules.py",
+      "sha256_lf": "ea577882cc525aa57380dc13bb337db0f0b154731976a69162baa78e586010e3"
+    },
+    {
+      "path": "app/domain/entry_applications.py",
+      "sha256_lf": "dfb08236d9cf995b378925897c8e5e10e991d6d7c294b43f8e8aa63075e39b9b"
+    },
+    {
+      "path": "app/domain/models.py",
+      "sha256_lf": "8f1b865d7bdf135af4ffc0cba36d9dad9fb22b2daec0bf6ff45625a227165963"
+    },
+    {
+      "path": "docs/crm-delivery/backlog.json",
+      "sha256_lf": "35746b5c10332cf83451a589b942c7378491e121e1e5bf4f64e9f9e002780968"
+    },
+    {
+      "path": "docs/crm-delivery/backlog.md",
+      "sha256_lf": "3fedf604eb93c8a2c7af5211225f381cb22edcdb93449eff4df0c48f5f98f804"
+    },
+    {
+      "path": "docs/e5-pdf-progress.md",
+      "sha256_lf": "e9309a97ccc0b8b17e584f0a2bd2fd29986cc724ffb9d52d74c57843ccc3bac1"
+    },
+    {
+      "path": "docs/e5-pdf-section-coverage.md",
+      "sha256_lf": "d24ca2a081acf9ca75e948ed4aa0ea76d5466817e482a97aaa4484ca31ff7aea"
+    },
+    {
+      "path": "docs/e6-01a-applications.md",
+      "sha256_lf": "372ff0b19b69ed713f98859187fdcfb8f4e8998c5c3ebd508318cdb8edc2a247"
+    },
+    {
+      "path": "scripts/build_kg_progress_report.py",
+      "sha256_lf": "e05ec3dce251d2b53c35e86d4adf8ba1427852772cd241a6c1a1909758f3443c"
+    },
+    {
+      "path": "tests/browser_kg_applications.py",
+      "sha256_lf": "c8348631b630a95d791ef74f5ff393d02fd416a36b955018ff9e2add7e012f08"
+    },
+    {
+      "path": "tests/test_admin_kg_applications.py",
+      "sha256_lf": "ddfca311fccb82e12c54e381750bd6ab8cf8a8e7c004eb9943adaef5fb553285"
+    },
+    {
+      "path": "tests/test_alembic_domain_migration.py",
+      "sha256_lf": "b060b4273eaff529e4dd4b2085b3b8d73b6b7cf1ba83b9c37e9c81492dcfd19d"
+    },
+    {
+      "path": "tests/test_entry_applications.py",
+      "sha256_lf": "a22ba04d0a8f5eab21eb2771143698606b7de9d0e4aceb4771db1093b0e8c195"
+    },
+    {
+      "path": "tests/test_entry_applications_migration.py",
+      "sha256_lf": "db8f69bfef8cbc2cd71526e060e0f7e2077bc23713e74cfeb567f47ae35ecd35"
+    }
+  ],
+  "scope": "Code checkpoint only; later evidence/report docs excluded",
+  "followup": {
+    "revision": "478598a819c63d317451a932dc6ee68da1c528e1",
+    "change": "Only the exact-table migration test; application code unchanged",
+    "path": "tests/test_service_cases.py",
+    "sha256_lf": "d41298fa40bdd04b5f5df46e5d68e2131ad9d70a82fdd96c6dfe52052a3b0afb",
+    "prior_21_files_unchanged": true,
+    "env_files_absent": true
+  }
+}

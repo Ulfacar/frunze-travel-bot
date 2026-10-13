@@ -40,6 +40,12 @@ POLL_ENOUGH_AFTER = 15.0
 NETWORK_RETRIES = 2
 NETWORK_BACKOFF = 0.7
 
+# Актуализация рейсов (`actdetail.php`). Замер на проде 02.10.2026: один тур 12 с, пять
+# параллельно 18–22 с. Потолок выбран с запасом к замеру, но конечный: не пришло за это
+# время — карточки уходят без рейсов, потому что молчащий бот хуже неполной подборки.
+FLIGHTS_CALL_TIMEOUT = 30.0
+FLIGHTS_TIMEOUT = 32.0
+
 # Города вылета Frunze Travel. Из Бишкека TourVisor продаёт малую часть направлений,
 # из Алматы — практически всё; правило «нет из Бишкека → предложи Алматы» идёт от менеджеров
 # (см. branding.FRUNZE_DESTINATIONS).
@@ -129,6 +135,57 @@ class TourVisorClient:
             msg = (data["error"] or {}).get("errormessage", "").strip()
             raise TourVisorError(msg or "Unknown TourVisor error")
         return data
+
+    # ---------- рейсы ----------
+    async def flights_for(self, tour_ids: list[str]) -> dict[str, dict]:
+        """Перелёты по турам: `{tourid: {forward: [...], backward: [...]}}`.
+
+        Зачем отдельным заходом. В поисковой выдаче рейсов нет вообще (разведка 11.08), а
+        в `actdetail.php` есть всё, что менеджеры шлют клиенту: время вылета и прилёта,
+        авиакомпания, багаж и «+1» для ночного прилёта — шлюз проставляет его сам.
+
+        Чем это оплачено, замер на проде 02.10.2026: один тур — 12 с, пять параллельно —
+        18–22 с, повтор того же тура так же медленный (шлюз НЕ кэширует). Против 4 с на
+        весь нынешний подбор. Владелец выбрал полную карточку, зная цену ожидания.
+
+        Никогда не поднимает исключение и никогда не ждёт дольше `FLIGHTS_TIMEOUT`:
+        подборка без рейсов лучше, чем молчание бота. Не успевший тур просто не попадает
+        в результат, и его карточка печатается как прежде.
+        """
+        wanted = [str(t).strip() for t in tour_ids if str(t or "").strip()]
+        if not wanted:
+            return {}
+
+        async def one(client: httpx.AsyncClient, tour_id: str) -> tuple[str, dict]:
+            data = await self._call(client, "actdetail.php", {"tourid": tour_id})
+            flights = _as_list(data.get("flights"))
+            return tour_id, (flights[0] if flights and isinstance(flights[0], dict) else {})
+
+        out: dict[str, dict] = {}
+        try:
+            async with httpx.AsyncClient(timeout=FLIGHTS_CALL_TIMEOUT) as client:
+                tasks = [asyncio.ensure_future(one(client, t)) for t in wanted]
+                # Ждём ПО ОТДЕЛЬНОСТИ, а не одним `gather`: на общем таймауте тот отдал бы
+                # ноль рейсов, хотя четыре из пяти туров уже ответили. Берём успевших,
+                # опоздавших отменяем — их карточки просто напечатаются без перелёта.
+                done, pending = await asyncio.wait(tasks, timeout=FLIGHTS_TIMEOUT)
+                for task in pending:
+                    task.cancel()
+                if pending:
+                    logger.warning("TourVisor: рейсы не успели по %d турам из %d",
+                                   len(pending), len(wanted))
+                for task in done:
+                    if task.cancelled() or task.exception() is not None:
+                        logger.info("TourVisor: рейсы по туру не пришли (%s)",
+                                    type(task.exception()).__name__ if not task.cancelled() else "cancelled")
+                        continue
+                    tour_id, flight = task.result()
+                    if flight:
+                        out[tour_id] = flight
+        except Exception:  # noqa: BLE001 — рейсы необязательны, подборка важнее
+            logger.warning("TourVisor: рейсы не получены", exc_info=True)
+            return out
+        return out
 
     # ---------- справочники ----------
     async def _ref(self, client: httpx.AsyncClient, list_type: str, plural: str, singular: str) -> list[dict]:

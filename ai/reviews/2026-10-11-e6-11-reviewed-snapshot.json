@@ -1,0 +1,29 @@
+{
+  "base": "e9e7c351b493aeb5d78e09f3ccf907107c73a919",
+  "snapshot": "uncommitted E6-11 complete source r2",
+  "archive": "runs/e6-11-review-r2",
+  "normalization": "LF",
+  "files": {
+    "app/domain/entry_applications.py": "91c8fc50d7fa363e436cd12361e2a7fb74aea2cccf22042d60b893f4b985161e",
+    "app/domain/models.py": "b32c4607d0f4cea7606be5bf0f8f83318e8391fa2a4f7fe95fc9308d4c6b1d6b",
+    "app/domain/entry_portal.py": "49710849a438979ca4198939b2fdc8c56710e01282317fd565bb7305311ea7b7",
+    "app/domain/entry_portal_policy.py": "6399ccd2570d99488342003e35f8a6fb6f00380fa1c83a7a12ff44edd3af9cb1",
+    "app/domain/entry_portal_parser.py": "54299b92afc2df352aa9e667eb2de8d8a746a1b1bde785edf27283b645286e9b",
+    "alembic/versions/e6_portal_observations_0028.py": "301a707026befba7b72221f802334a7b96f6e2db658697bbc125d329cb783a0e",
+    "app/admin/kg_portal.py": "ad4794aafc82518a4acbc315272e1b63cf671955760278001e7795b578a74ae2",
+    "app/admin/router.py": "7826b5e3f9cef912c51e40665e1be843e372968b2459ed63cbda4b8390240f7d",
+    "app/admin/templates/kg_portal.html": "6a8825d0652fe56123f9c55f0a6d7a7ce2d58cc42c106fb463c1cf650d96808d",
+    "app/admin/templates/kg_applications.html": "62428ff1627ed01a937b4a2da4d486c6f65a975255b8cc5ff058f118a106868a",
+    "app/config.py": "d52e80349128374e3bf0d6daed4ee91ba559ee95302e6439dcd034996116d63e",
+    "tests/test_entry_portal.py": "10022294a64ff9d53541872c8e8d3f30f625d401245d7e9f09418cabaee20c0e",
+    "tests/test_entry_portal_parser.py": "bd5dc25a605c373bad1afc92d717b19bf9bf5853410cc933ecfce56cd45cfe08",
+    "tests/test_alembic_domain_migration.py": "9c7d92cca34ed64045599ff0614903ea4f3a261ddfba49435a017b1212cf17cd",
+    "tests/test_admin_kg_portal.py": "9d25f0c6dceeb52a10bd8befda8942d980573c4ede5f0b8530a801956791d851",
+    "tests/test_entry_portal_migration.py": "2f6e1ecc0fd7224662761d26adef57b260c1bab3abfdc8c8de33a6bb85f84c00",
+    "tests/browser_kg_portal.py": "5e9d5b97bbb748edff41bebefb080ca8415560f64fec13c2d1459a98ead06748",
+    "tests/test_entry_portal_postgres.py": "6352b8edbc515dd7ecec0b72190d1848a1aee29169089c4862ef29ae4cea496d",
+    "tests/test_service_cases.py": "8e1d50188a77de55f75bdeaadad3e8599b38d6210b9c53fee539bb27c8f94ed5"
+  },
+  "code_revision": "8ad7b78a80e8e71f6204ce7e91820857263c7d8e",
+  "identity": "PASS root/archive/commit LF normalized 19/19"
+}

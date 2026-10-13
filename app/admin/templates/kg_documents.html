@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Frunze — Черновой чек-лист документов{% endblock %}
+{% block brand_sub %}въезд в Кыргызстан{% endblock %}
+{% block head %}<style>
+.kg-docs{max-width:1000px;margin:auto;padding:24px 16px;line-height:1.5;overflow-wrap:anywhere}
+.kg-docs h1{font-size:clamp(23px,4vw,30px)}.kg-docs h2{font-size:21px}.kg-docs h3{font-size:17px}
+.kg-docs a{color:var(--accent)}.kg-docs :focus{outline:2px solid var(--accent);outline-offset:3px}
+.kg-docs .box{padding:16px;margin:16px 0;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+.kg-docs .notice{border-left:4px solid #b7791f}.kg-docs .muted{color:var(--muted);font-size:14px}
+.kg-docs label{display:block;font-weight:600;margin:8px 0 4px}.kg-docs select{width:100%;max-width:100%;box-sizing:border-box}
+.kg-docs select,.kg-docs button{font:inherit;padding:9px;min-height:44px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px}
+.kg-docs button{margin-top:12px}.kg-docs .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.kg-docs .grid>div{min-width:0}
+.kg-docs .source{white-space:pre-wrap;font-size:14px}.kg-docs summary{cursor:pointer;padding:10px 0}.kg-docs .summary{font-weight:600}
+@media(max-width:600px){.kg-docs{padding:14px 10px}.kg-docs .grid{grid-template-columns:1fr}}
+@page{size:A4;margin:12mm}
+@media print{.topbar,.kg-docs nav,.kg-docs .no-print,.kg-docs .has-result,.kg-docs .controls{display:none!important}.kg-docs{max-width:none;padding:0;font-size:10pt;line-height:1.3;color:black}.kg-docs h1{font-size:20pt}.kg-docs h2{font-size:14pt}.kg-docs h3{font-size:11pt;margin:5px 0}.kg-docs p{margin:4px 0}.kg-docs .box{padding:9px;margin:8px 0;background:white;border-color:#aaa}.kg-docs .item{padding:6px;margin:6px 0;break-inside:avoid}.kg-docs .muted{font-size:8pt}.kg-docs h2{break-after:avoid}}
+</style>{% endblock %}
+{% block content %}<main class="kg-docs">
+<nav><a href="/admin/kg-entry/processes">Проверка процессов</a> · <a href="/admin/kg-entry/knowledge">Поиск по исходной базе</a></nav>
+<h1>Черновой чек-лист документов</h1>
+<p class="box notice" id="kg-doc-boundary">Условный сценарий по исходной матрице PDF. Ответы не сохраняются и не относятся к документам клиента. При смене типа услуги ответы сбрасываются. Проверка не принимает комплект и не разрешает подачу.</p>
+{% if error %}<section class="box notice" role="alert"><p>{{ error }}</p><a href="/admin/kg-entry/documents">Открыть свежую форму</a></section>{% endif %}
+{% if data %}
+<p class="muted">Версия {{ data.version }} · SHA-256 {{ digest }} · не опубликовано</p>
+<form method="get" action="/admin/kg-entry/documents" class="box no-print" id="kg-doc-select"><label for="kg-doc-product">Тип услуги из матрицы</label><select id="kg-doc-product" name="product">{% for key,name in data.products.items() %}<option value="{{ key }}" {% if key==product %}selected{% endif %}>{{ name }}</option>{% endfor %}</select><button type="submit">Открыть чек-лист</button></form>
+<h2 id="kg-doc-product-title">{{ data.products[product] }}</h2>
+<p class="notice" id="kg-doc-supplement-boundary"><strong>Это только матрица §5.2, страницы 36–37.</strong> Общие требования §5.1, подробные чек-листы §5.3, медицинское дополнение на странице 38, письма §5.4, качество файлов §5.5 и документы §11.4 проверяются отдельно. Знак «—» не отменяет дополнений. Полнота комплекта не подтверждается даже при всех отметках «проверен».</p>
+{% if result %}<section class="box" id="kg-doc-result" aria-live="polite">
+<h2>{% if result.status=='needs_attention' %}В сценарии остались вопросы{% else %}Обязательные строки матрицы отмечены проверенными{% endif %}</h2>
+<p><strong>Комплект не принят. Подача не разрешена.</strong> Дополнительные требования не оценивались автоматически.</p>
+<p class="summary">Обязательных проверено: {{ result.counts.required_checked }}; требуют действия: {{ result.counts.required_pending }}; применимость неизвестна: {{ result.counts.applicability_unknown }}; желательных не проверено: {{ result.counts.recommended_pending }}; источник требует подтверждения: {{ result.counts.source_review }}.</p>
+<p>Актуальность всех отмеченных проверок: {% if result.current_version is sameas true %}подтверждена только в условном сценарии{% elif result.current_version is sameas false %}версия документов изменилась{% else %}неизвестна{% endif %}.</p>
+<p class="muted">Версия {{ result.version }} · SHA-256 сценария {{ result.input_sha256 }}</p>
+{% for item in result.rows %}<article class="box item" data-result="{{ item.id }}" data-outcome="{{ item.outcome }}"><h3>{{ item.name }} · {{ kinds[item.kind] }}</h3>
+<p>{{ item.note or 'Требование отмечено символом в матрице.' }}</p><p><strong>{{ outcomes[item.outcome] }}</strong></p>
+<p class="muted">Введено: {{ states[item.state] }}. §5.2 · стр. {{ item.page }} · строка {{ item.number }}. Ячейка источника: {{ item.source_cell }}</p></article>{% endfor %}
+</section>{% endif %}
+<form method="post" action="/admin/kg-entry/documents" id="kg-doc-check" class="{% if result %}has-result{% endif %}">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="catalog_digest" value="{{ digest }}"><input type="hidden" name="product" value="{{ product }}">
+<div class="box controls"><label for="kg-doc-current">Все отметки «проверен» относятся к актуальным версиям документов и паспорта?</label><select id="kg-doc-current" name="current_version"><option value="">Неизвестно</option><option value="true" {% if values.get('current_version')=='true' %}selected{% endif %}>Да — условный сценарий</option><option value="false" {% if values.get('current_version')=='false' %}selected{% endif %}>Нет — версия изменилась</option></select><p class="muted">Сам факт получения файла не подтверждает качество, срок действия, перевод или проверку содержания.</p></div>
+{% for item in items if item.kind!='not_listed' %}<article class="box item"><h3>{{ item.name }} · {{ kinds[item.kind] }}</h3><p>{{ item.note or 'Требование отмечено символом в матрице.' }}</p>
+{% if item.source_review %}<p class="notice">В источнике стоит [ПРОВЕРИТЬ]. Ответы формы не подтверждают эту норму.</p>{% endif %}
+<p class="muted">§5.2 · стр. {{ item.page }} · строка {{ item.number }}. Ячейка источника: {{ item.source_cell }}</p>
+<div class="grid controls"><div><label for="kg-state-{{ item.id }}">Состояние в сценарии</label><select id="kg-state-{{ item.id }}" name="state_{{ item.id }}">{% for value,label in states.items() %}<option value="{{ value }}" {% if values.get('state_'+item.id,'unknown')==value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+{% if item.kind=='conditional' %}<div><label for="kg-applies-{{ item.id }}">Условие применимо в сценарии?</label><select id="kg-applies-{{ item.id }}" name="applies_{{ item.id }}"><option value="">Неизвестно</option><option value="true" {% if values.get('applies_'+item.id)=='true' %}selected{% endif %}>Да</option><option value="false" {% if values.get('applies_'+item.id)=='false' %}selected{% endif %}>Нет</option></select></div>{% endif %}</div></article>{% endfor %}
+<button class="controls" type="submit">Проверить матрицу</button></form>
+<section class="box no-print"><details><summary>Строки со знаком «—» и их пояснения</summary>{% for item in items if item.kind=='not_listed' %}<p><strong>{{ item.name }}</strong>: {{ item.source_cell }} · стр. {{ item.page }}.</p>{% endfor %}</details></section>
+<section class="box no-print" id="kg-doc-sources"><h2>Дополнительные требования из PDF</h2><p>Текст для сверки, без подтверждения актуальности норм. Чек-листы типов, которых нет в девяти столбцах матрицы, доступны в §5.3 ниже.</p>
+{% for number,source in data.sections.items() %}<details><summary>§{{ number }} · страницы {{ source.pages|join(', ') }}</summary><p class="source">{{ source.text }}</p></details>{% endfor %}</section>
+{% endif %}</main>{% endblock %}

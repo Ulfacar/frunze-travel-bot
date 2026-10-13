@@ -1,0 +1,21 @@
+{
+  "code_commit": "693d683b9a0adcb8f76d5551bf0f121ca6824fec",
+  "base": "d847a254acfd54ec8aeecef529c2885f6ba39bbe",
+  "snapshot": "runs/e6-24-r2/snapshot.json",
+  "snapshot_sha256": "4ad8d6174f4509c1fa2a13c6c5d8cca473c40d9247f25e1a1afd26a072ef158e",
+  "scope_files": {
+    "app/knowledge/intake.py": "cd1b155f69fa15600e56f12ba585b83dc2b8b820b157ed6bc281a47a68e20873",
+    "app/admin/kg_entry_form.py": "a4021f5d3042021646e389dc52de6dd50a1fff3253f1b4f4b176a6e35592c0b0",
+    "scripts/build_kg_full_source_archive.py": "0c714ccc226138e31a0a7e931379329b368c96e096ab04b83963bd2e9774b5fa",
+    "knowledge/kg_entry/source_v1_1/full-text-archive.json": "a0ef99ebaf87bb980b59a1481ede20a6f1b5c75ff79826f2186b8d387afac58c",
+    "tests/test_intake_numeric_semantics.py": "cbbd6c93620cbf4a35982619bd40f1baadd68eb21c8bb8bac99b11b02aec58eb",
+    "tests/test_kg_full_source_archive.py": "664dd6b4b5d1a2b86e8fa8ca3e5b704af105cfbebf88cad8708419d13181ebc2"
+  },
+  "identity": "PASS",
+  "target": "reviewed local A01/A02/A03/A04/B01",
+  "limitations": [
+    "Source evidence remains unapproved.",
+    "C05 and full project remain incomplete.",
+    "No production release."
+  ]
+}

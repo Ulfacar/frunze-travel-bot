@@ -1,0 +1,203 @@
+- unit_id: KG.VF.TEST
+  kind: visa_free_regime
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    days: 10
+    window_days: 30
+    work_needs_unified_permit: true
+    countries:
+    - RUS
+    - GRC
+    - CHL
+    - MDA
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.REG.DEFAULT
+  kind: registration_default
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    deadline_working_days_from_border: 4
+    not_in_list:
+    - RUS
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.REG.EXEMPT.GRC
+  kind: registration_exemption
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    days: 17
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.REG.EXEMPT.CHL
+  kind: registration_exemption
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    days: 12
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.REG.EXEMPT.MDA
+  kind: registration_exemption
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: blocked
+  value: null
+  value_schema_version: 1
+  owner: test-author
+  blocked_value:
+    source_value:
+      days: 99
+    note: Synthetic conflict
+  conflict_ref: TEST-SRC-04
+- unit_id: KG.REG.TERM.MDA
+  kind: registration_term
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    days: 21
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.SP.TEST
+  kind: special_regime
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    days: 8
+    applies_to:
+      countries:
+      - CHN
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.VR.GENERAL
+  kind: visa_required_regime
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    procedure: general
+    scope: null
+    gknb_approval: true
+    countries: all_others
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.RULE.TEST
+  kind: rule_param
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    value: false
+    unit: bool
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.DL.TEST
+  kind: deadline
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    value: 3
+    unit: working_days
+    anchor: entry_date
+    direction: before
+    timezone: Asia/Bishkek
+    boundary_inclusive: true
+    shift_from_nonworking: none
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.PT.TEST
+  kind: processing_time
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    standard_wd: 7
+    anchor: full_package
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.FEE.SERVICE.TEST
+  kind: tariff
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: decision
+  confirmation_status: decision_pending
+  value: null
+  value_schema_version: 1
+  owner: test-author
+  blocked_value:
+    amount: 123
+    source_locations:
+    - TEST-A
+    - TEST-B
+- unit_id: KG.TPL.TEST
+  kind: template
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    lang: ru
+    text: 'Stay: {days}'
+    placeholders:
+    - days
+  value_schema_version: 1
+  owner: test-author
+- unit_id: KG.ESC.TEST
+  kind: escalation_trigger
+  title: Synthetic test rule
+  section: TEST
+  page: '1'
+  source_ref: Synthetic fixture, unverified
+  label: none
+  confirmation_status: confirmed
+  value:
+    condition: passport_expired
+    action: manager_review
+  value_schema_version: 1
+  owner: test-author

@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "review": "SELF_REVIEW for documentation/report only; application has separate independent review and audit",
+  "code_revision": "c73745744b46f5b3b8029baba201c2506e4c4a06",
+  "report": "docs/reports/frunze-pdf-progress-2026-10-12-grounded-answers.pdf",
+  "sha256": "2c79cdd0b9e7be3a3942dfce9102cfc44ef396b311795f6194e3145d0121b19b",
+  "bytes": 79237,
+  "pages": 5,
+  "source_section_headings_matched": 26,
+  "all_pages_visually_inspected": true,
+  "engineering_points": 92,
+  "remaining_points": 8,
+  "frozen_definitions_check": "PASS via python scripts/check_pdf_engineering_progress.py",
+  "build_command": "python scripts/build_kg_progress_report.py --revision c73745744b46f5b3b8029baba201c2506e4c4a06 --checks <recorded 43focused/42shell, earlier165 limits, independent APPROVE/GO> --date 2026-10-12 --checkpoint grounded-answers",
+  "rendered_preview": "runs/e6-21-report/page-1.png through page-5.png",
+  "scope": "Internal exact-rule RU/EN source answers only; no full-project or production completion",
+  "sent": false,
+  "deployment": false
+}

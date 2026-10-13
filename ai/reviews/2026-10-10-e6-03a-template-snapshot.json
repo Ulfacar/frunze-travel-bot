@@ -1,0 +1,80 @@
+{
+  "revision": "1d4a73cd09cf5124dcfa10492607df9a02724fbc",
+  "archive": "runs\\e6-03a-templates-final",
+  "env_files_absent": true,
+  "identity": "PASS after explicit CRLF/LF normalization",
+  "files": [
+    {
+      "path": "ai/reviews/2026-10-10-e6-03a-template-self-review.md",
+      "git_sha256": "dd11c293278f7bf9f3198aeb1572f09cbc4e73932ea659ca77b133227fc53e0a",
+      "archive_sha256": "f9486a2bc58c0c5b4d5a4a10c991dc41afb88dd8893aaaa2a43517f975451d53",
+      "lf_sha256": "dd11c293278f7bf9f3198aeb1572f09cbc4e73932ea659ca77b133227fc53e0a"
+    },
+    {
+      "path": "ai/tasks/2026-10-10-e6-03a-template-preview.md",
+      "git_sha256": "f7e0bcb2c8d524eda88e3e39794c67c5c55cfc468fa6fdde8a1dd8d067cca221",
+      "archive_sha256": "571fd6d92229ed9cf23b76c21fb59b32eb0dfbd1b6bdadf234b042a79ff3f567",
+      "lf_sha256": "f7e0bcb2c8d524eda88e3e39794c67c5c55cfc468fa6fdde8a1dd8d067cca221"
+    },
+    {
+      "path": "app/admin/kg_templates.py",
+      "git_sha256": "800f294e55a994b075320b42752c8386dee85f77b4cc030c792fd7627f244670",
+      "archive_sha256": "d1150aafa2eef91a7b0b1ea2a0f96dded636d81140032492d7eb9cdb9ff625c0",
+      "lf_sha256": "800f294e55a994b075320b42752c8386dee85f77b4cc030c792fd7627f244670"
+    },
+    {
+      "path": "app/admin/router.py",
+      "git_sha256": "9aa580d6fb1eb915c57cd8790cd16ad66317937274920ae3bb14b3351bd81177",
+      "archive_sha256": "bc20c52e24d2acccdc480b2012980512539e4a7fc5dc1bfbadb4b01e085aeda0",
+      "lf_sha256": "9aa580d6fb1eb915c57cd8790cd16ad66317937274920ae3bb14b3351bd81177"
+    },
+    {
+      "path": "app/admin/templates/kg_entry.html",
+      "git_sha256": "18194f9f3f2e6dcc4ab9c2d06e30c63c887ae914a099034fa2d843d9ca3b79e8",
+      "archive_sha256": "e5b85cb370d52e11e5f6fa7c1b17073c6d577d491aea570857a450ff11044e21",
+      "lf_sha256": "18194f9f3f2e6dcc4ab9c2d06e30c63c887ae914a099034fa2d843d9ca3b79e8"
+    },
+    {
+      "path": "app/admin/templates/kg_templates.html",
+      "git_sha256": "bb1484ea91f0330b59a314a881ac9db133d5a1e3c219f1c2563209715e0b0b51",
+      "archive_sha256": "fa90023419ba337af4158d92f29d300e20ef49261dfb4c0ad486018081e499d6",
+      "lf_sha256": "bb1484ea91f0330b59a314a881ac9db133d5a1e3c219f1c2563209715e0b0b51"
+    },
+    {
+      "path": "app/knowledge/template_preview.py",
+      "git_sha256": "a5a76f2104dfae363312c965162b00b19196e1aa7c03b7da07191c963f34edb2",
+      "archive_sha256": "23374e76e79653157247a3a32ae6e8459a9185aee9d684d33de7022d843594f6",
+      "lf_sha256": "a5a76f2104dfae363312c965162b00b19196e1aa7c03b7da07191c963f34edb2"
+    },
+    {
+      "path": "knowledge/kg_entry/templates_v1_1/catalog.json",
+      "git_sha256": "38c503d27135736d1fb3990a0626fc12be8a364fcc6bfa6d98108ba824dcf2b8",
+      "archive_sha256": "38c503d27135736d1fb3990a0626fc12be8a364fcc6bfa6d98108ba824dcf2b8",
+      "lf_sha256": "38c503d27135736d1fb3990a0626fc12be8a364fcc6bfa6d98108ba824dcf2b8"
+    },
+    {
+      "path": "scripts/build_kg_template_catalog.py",
+      "git_sha256": "5a5ae78b64a07247e5cc96df6a1feb518b79e3f7ea7916828b1d07c04eaf1560",
+      "archive_sha256": "057c3993464352467d9e03b90df10868c4e7248d8aa6aaacd4ec4cfdf8927092",
+      "lf_sha256": "5a5ae78b64a07247e5cc96df6a1feb518b79e3f7ea7916828b1d07c04eaf1560"
+    },
+    {
+      "path": "tests/browser_kg_templates.py",
+      "git_sha256": "8276e433f5893870f7b934dbab8e9bbcb0872fcffffebd8a16d34a9c8622ac86",
+      "archive_sha256": "325dadd0fa2da40cea686f8797d8e0d51ad207b633e0c42cf012ece5e05ca926",
+      "lf_sha256": "8276e433f5893870f7b934dbab8e9bbcb0872fcffffebd8a16d34a9c8622ac86"
+    },
+    {
+      "path": "tests/test_admin_kg_templates.py",
+      "git_sha256": "cb4688eaf11ebf95edd3a7748b693851a65efc73997941a6aa0555c8b14c3172",
+      "archive_sha256": "737e790492a6456fd4b22d2cd94d8868da7f114b5789efd143c9c5c2cd2d0f5d",
+      "lf_sha256": "cb4688eaf11ebf95edd3a7748b693851a65efc73997941a6aa0555c8b14c3172"
+    },
+    {
+      "path": "tests/test_kg_template_preview.py",
+      "git_sha256": "8a6ca24de213828756f476549df3cdb79d5e1bf073c475a97592ec98327185b6",
+      "archive_sha256": "83deb11bf564a2a95c56e6e3552125133ab90862a964fed778ea756ab1831a79",
+      "lf_sha256": "8a6ca24de213828756f476549df3cdb79d5e1bf073c475a97592ec98327185b6"
+    }
+  ]
+}

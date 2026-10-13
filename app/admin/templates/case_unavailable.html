@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Услуга недоступна · Frunze Travel{% endblock %}
+{% block brand_sub %}услуга {{ case_id }}{% endblock %}
+{% block head %}
+<style>
+  .cu-wrap{max-width:720px;margin:0 auto;padding:28px 16px}
+  .cu-card{background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r);padding:18px 16px;box-shadow:var(--shadow)}
+  .cu-card h1{margin:0 0 8px;font-size:19px;line-height:1.3}
+  .cu-card p{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
+  .cu-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .cu-acts .btn{min-height:44px;display:inline-flex;align-items:center}
+</style>
+{% endblock %}
+{% block content %}
+<div class="cu-wrap">
+  <div class="cu-card" role="alert">
+    <h1>Услугу {{ case_id }} открыть не удалось</h1>
+    {# Честно говорим, что это СБОЙ чтения, а не отсутствие услуги: иначе
+       менеджер решит, что услуга пропала, и заведёт вторую. #}
+    <p>Это сбой чтения реестра, а не отсутствие услуги. Ничего не потеряно:
+      задачи, оплаты и история на месте.</p>
+    <p>Повторите через минуту. Если не помогло — сообщите Алану и назовите
+      номер услуги: <b>{{ case_id }}</b>.</p>
+    <div class="cu-acts">
+      <a class="btn btn-brand" href="/admin/case/{{ case_id }}">Попробовать снова</a>
+      <a class="btn btn-ghost" href="/admin/work">К рабочему дню</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

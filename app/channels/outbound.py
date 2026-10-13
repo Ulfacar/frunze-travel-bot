@@ -37,3 +37,16 @@ async def send_to_client(channel: str, bot_id: str, chat_id: str, text: str) -> 
     mark_own(provider_msg_id)
     logger.info("manager->client channel=%s chat=%s", channel, chat_id)
     return provider_msg_id
+
+
+async def send_automated_to_client(channel: str, bot_id: str, chat_id: str, text: str):
+    """Autonomous batch path; suppression is distinct from a provider's None."""
+    from app.core.kg_channel_guard import send,capture_adapter
+    bot=registry.by_id(bot_id) if bot_id else None
+    adapter=_adapter_for(channel,bot)
+    if adapter is None:raise ValueError('unsupported autonomous channel')
+    adapter=capture_adapter(adapter)
+    async def deliver():return await adapter.send(chat_id,text)
+    result=await send(adapter,chat_id,deliver)
+    if result.invoked:mark_own(result.value)
+    return result

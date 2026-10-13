@@ -67,19 +67,61 @@ def _name(bot_id: str) -> str:
     return ""
 
 
-def classify_gap(counter_now, counter_prev, our_inbound_moved: bool) -> str:
+def classify_gap(counter_now, counter_prev, our_inbound_moved: bool, *,
+                 service_event_moved: bool = False,
+                 incoming_subscribed: bool = True) -> str:
     """Почему по каналу тихо: «webhook» | «no_traffic» | «» (не знаем).
 
     Различие видно из того же ответа Wappi, что мы и так читаем. 08.08 уведомление по
     каналу Айсины советовало «проверь QR и вебхук», хотя и авторизация, и вебхук были
     в порядке: на номер просто перестали писать. Счётчик Wappi вырос за 19 часов на 9 —
     значит сообщения не терялись по дороге, их не было. Совет уводил в сторону.
+
+    26.09 тот же вывод оказался ложным уже на выросшем счётчике: `message_count` в ответе
+    Wappi ОДИН на всё — разбивки по направлению в этом ответе нет ни в каком поле, —
+    а в подписке профиля стоят `outgoing_message_phone` и `outgoing_message_api`
+    (`webhook_types`, проверено на всех трёх живых профилях). Менеджер дописал в диалог —
+    счётчик вырос, клиентских входящих нет, и сторож обвинил наш вебхук по живому каналу
+    (getvisa, тишина 21 ч, через три минуты после тревоги прошло клиентское входящее).
+
+    `service_event_moved` — доказательство обратного, и прямое: после последнего
+    клиентского входящего до нашего `/webhook/wappi` дошло служебное событие по этому же
+    профилю (статус доставки, эхо ответа менеджера). Труба жива, адрес верен — значит
+    повод тот же, что у `no_traffic`: клиентов нет.
+
+    `incoming_subscribed` закрывает дыру, которую доказательство открывает: если из
+    подписки профиля пропал сам тип `incoming_message`, Wappi клиентские сообщения нам и
+    не пошлёт — это настоящая поломка, и статусы доставки её маскировать не имеют права.
     """
     if our_inbound_moved:
         return ""                       # до нас доходит — диагностировать нечего
     if counter_now is None or counter_prev is None:
         return ""                       # нет данных — молчим о причине, а не выдумываем
-    return "webhook" if counter_now > counter_prev else "no_traffic"
+    if counter_now <= counter_prev:
+        return "no_traffic"
+    if service_event_moved and incoming_subscribed:
+        return "no_traffic"
+    return "webhook"
+
+
+def incoming_subscribed(status) -> bool:
+    """Подписан ли профиль на клиентские входящие — по `webhook_types` из ответа Wappi.
+
+    Поле живое: 26.09 у всех трёх профилей в нём лежит
+    `[delivery_status, incoming_message, authorization_status, outgoing_message_phone,
+    outgoing_message_api]`.
+
+    Нет поля или Wappi не ответил → **False**, то есть fail-closed. Это не «профиль
+    отписан», это «подтвердить не смогли», и такой ответ не должен работать пропуском для
+    глушилки: цена ошибки здесь несимметрична. Лишнее уведомление по живому каналу читают
+    и морщатся, а промолчавший сторож стоил нам 12 часов 03.08 и шести дней 17-22.09.
+    """
+    if not isinstance(status, dict):
+        return False
+    types = status.get("webhook_types")
+    if not isinstance(types, (list, tuple)) or not types:
+        return False
+    return "incoming_message" in {str(item) for item in types}
 
 
 def _logout_text(bot_id: str, status: dict, *, reminder: bool = False) -> str:
@@ -154,6 +196,11 @@ def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> li
     # профилей меняется по нескольку раз в сутки, то есть короткие провалы — штатное
     # поведение Wappi. Настоящий разлогин держится часами (03.08 — двенадцать).
     confirm = max(1, int(getattr(cfg, "wappi_health_confirm_ticks", 1)))
+    # Грация на переподключение. Wappi отвечает `authorized=true`, но `app_status` моргает
+    # `connecting`/`close` — это состояние СОЕДИНЕНИЯ приложения, а не потеря авторизации,
+    # и QR в этом случае советовать нельзя. Флаг OFF → поведение прежнее.
+    grace_on = bool(getattr(cfg, "wappi_connecting_grace_enabled", False))
+    grace = float(getattr(cfg, "wappi_connecting_grace_minutes", 0)) * 60
     alerts: list[tuple[str, str]] = []
 
     for bot_id, status in sorted(statuses.items()):
@@ -162,14 +209,35 @@ def decide(now: float, statuses: dict[str, dict | None], state: dict, cfg) -> li
 
         reasons: dict[str, str] = {}
         streak_key = f"streak:{bot_id}"
+        since_key = f"since:{bot_id}"
+        ok_key = f"ok:{bot_id}"
         if not status.get("authorized") or str(status.get("app_status") or "") != "open":
             streak = state.get(streak_key, 0) + 1
             state[streak_key] = streak
-            if streak >= confirm:
+            state.pop(ok_key, None)         # серия здоровых проб прервалась
+            since = float(state.setdefault(since_key, now))
+            # Авторизация жива → это переподключение: ждём грацию, прежде чем будить людей.
+            # Слетевшая авторизация (`authorized=false`) грации не получает: вот это и есть
+            # разлогин, ради которого сторож существует.
+            reconnecting = (grace_on and bool(status.get("authorized"))
+                            and now - since < grace)
+            if streak >= confirm and not reconnecting:
                 reasons["logout"] = _logout_text(
                     bot_id, status, reminder=state.get(f"logout:{bot_id}") is not None)
         else:
             state.pop(streak_key, None)     # одна здоровая проба обнуляет счётчик
+            # А вот окно грации одна проба НЕ снимает, и это не симметрия ради симметрии.
+            # 27.09 в середине 64-минутной серии у frunze_tours одна проба вышла здоровой
+            # (12:47), а в 12:55 канал упал снова. Снимай окно по одной пробе — и канал,
+            # моргающий чаще раза в грацию, не дождётся тревоги НИКОГДА: отсчёт каждый раз
+            # начинался бы заново. Поэтому «вернулся» = `confirm` здоровых проб подряд,
+            # той же мерой, какой мы признаём аварию.
+            if since_key in state:          # счётчик ведём только внутри инцидента
+                healthy_streak = int(state.get(ok_key, 0)) + 1
+                state[ok_key] = healthy_streak
+                if healthy_streak >= confirm:
+                    state.pop(since_key, None)
+                    state.pop(ok_key, None)
         expires_at = parse_wappi_time(status.get("payment_expired_at"))
         if expires_at is not None and expires_at - now <= warn_ahead:
             reasons["payment"] = _payment_text(bot_id, expires_at, now)
@@ -213,12 +281,40 @@ def profile_health(status) -> bool | None:
     return bool(status.get("authorized")) and str(status.get("app_status") or "") == "open"
 
 
+RECONNECTING = "reconnecting"
+
+
+def profile_condition(status) -> str | None:
+    """Состояние профиля словом: `ok` / `reconnecting` / `logged_out`, либо None.
+
+    Отличается от `profile_health` тем, что различает ДВЕ разные беды вместо одной.
+    27.09.2026 серия `app_status=connecting` держалась 64 минуты при `authorized=true`, и
+    канал `frunze_tours_sezim` в эти же минуты принимал от клиентов голосовые и документы —
+    то есть переподключение приложения и потеря авторизации выглядят одинаково «нездорово»,
+    а лечатся по-разному: QR нужен только во втором случае.
+    """
+    if not isinstance(status, dict):
+        return None
+    authorized = status.get("authorized")
+    if not isinstance(authorized, bool):
+        # Строка "false" истинна в Python, и на ней разлогин превратился бы в
+        # «переподключается», а совет — в «QR не нужен» (находка финального аудита 29.09).
+        # Чужой формат — повод молчать, а не делать вывод о чужом канале.
+        return None
+    if not authorized:
+        return "logged_out"
+    app_status = str(status.get("app_status") or "")
+    if not app_status:
+        return None          # поля нет — это мусорный ответ, а не «переподключается»
+    return "ok" if app_status == "open" else RECONNECTING
+
+
 async def diagnoses() -> dict[str, str]:
     """Почему по каждому каналу тихо — для текста алерта сторожа тишины."""
     return (await diagnoses_and_health())[0]
 
 
-async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool]]:
+async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool | str]]:
     """Диагноз тишины и здоровье профиля — из ОДНОГО ответа Wappi, за один проход.
 
     Снимок счётчика Wappi храним между тиками и сравниваем заодно с нашей отметкой
@@ -231,9 +327,17 @@ async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool]]:
     out: dict[str, str] = {}
     health: dict[str, bool] = {}
     try:
-        from app.core.bots import registry
-        from app.core.channel_heartbeat import _load_last_seen
-        last_seen = await _load_last_seen()
+        from app.core import bots, channel_heartbeat
+        registry = bots.registry
+        last_seen = await channel_heartbeat._load_last_seen()
+        # Доказательство живости вебхука. Пока флаг OFF, вердикт остаётся прежним, но
+        # расхождение пишется в лог: так видно на настоящем трафике, сколько ложных
+        # «webhook» снимет тумблер, — не подменяя поведение до решения.
+        proof_on = await flags.get_flag("silence_webhook_proof_enabled",
+                                        settings.silence_webhook_proof_enabled)
+        advice_on = await flags.get_flag("wappi_reconnecting_advice_enabled",
+                                         settings.wappi_reconnecting_advice_enabled)
+        service_seen = await channel_heartbeat.last_service_events()
         for bot in registry.all():
             if not bot.wappi_profile_id:
                 continue
@@ -241,6 +345,10 @@ async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool]]:
             verdict_health = profile_health(status)
             if verdict_health is not None:
                 health[bot.id] = verdict_health
+                # «Переподключается» — это не «разлогинен»: советовать QR тут не за что.
+                # Отдаём третьим значением, а не False, чтобы совет мог сказать правду.
+                if advice_on and profile_condition(status) == RECONNECTING:
+                    health[bot.id] = RECONNECTING
             counter = status.get("message_count") if isinstance(status, dict) else None
             base_counter, base_seen = await _counter_snapshot(bot.id)
             our_seen = last_seen.get(bot.id)
@@ -252,7 +360,23 @@ async def diagnoses_and_health() -> tuple[dict[str, str], dict[str, bool]]:
             if moved or base_counter is None:
                 await _remember_counter(bot.id, counter, our_seen)
 
+            # Точка отсчёта для доказательства — та же, что и у счётчика: последнее
+            # клиентское входящее. Служебное событие ПОСЛЕ него и есть свидетельство,
+            # что от Wappi до нас всё доезжает.
+            reference = our_seen or base_seen
+            service_at = service_seen.get(bot.id)
+            service_moved = bool(service_at and reference and service_at > reference)
+
             verdict = classify_gap(counter, base_counter, moved)
+            honest = classify_gap(counter, base_counter, moved,
+                                  service_event_moved=service_moved,
+                                  incoming_subscribed=incoming_subscribed(status))
+            if honest != verdict:
+                log.warning("диагноз %s: %s → %s (служебное событие дошло, вебхук жив); "
+                            "тумблер silence_webhook_proof_enabled=%s",
+                            bot.id, verdict or "неизвестен", honest or "неизвестен", proof_on)
+            if proof_on:
+                verdict = honest
             if verdict:
                 out[bot.id] = verdict
     except Exception:  # noqa: BLE001 — без диагноза алерт уйдёт с нейтральным текстом

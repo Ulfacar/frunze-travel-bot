@@ -41,7 +41,8 @@ def direction_for_bot(bot_id: str) -> str:
 
 def actor_for(manager: dict | None) -> Actor:
     """Actor для WP3-проверок из cookie-сессии менеджера панели."""
-    scope = bot_scope_for(manager, admin_user=settings.admin_user)
+    scope = bot_scope_for(manager, admin_user=settings.admin_user,
+                         strict=settings.crm_standalone_enabled)
     login = str((manager or {}).get("login") or "").strip().lower()
     if scope is None:                                     # полный админ
         return Actor(manager_id=login, is_full_admin=True)

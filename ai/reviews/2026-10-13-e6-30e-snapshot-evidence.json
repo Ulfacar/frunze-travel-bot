@@ -1,0 +1,646 @@
+{
+  "collected_at": "2026-10-13T00:52:57.421304+00:00",
+  "status": "DONE_REVIEWED_LOCAL",
+  "scope": {
+    "base": "d1d5138c15e9101b3ef73d1f38126c98e2f716a0",
+    "candidate": "runs/e6-30e-r18",
+    "files": {
+      "alembic/versions/e6_sop_review_evidence_0043.py": "2bc259efb845736934ebbcf508b96ff34fd50f5e05f65ab8daa3abe71c62b3e6",
+      "app/admin/kg_sop_reviews.py": "dc29695a809a810445c9ead7ebd78a4f2f8e069759bf092bb50fc693edb75b6d",
+      "app/admin/router.py": "d63fbe0312b3f68697d9301decdfd8d5bfc7cc1a0ab1135853534d66778ef8f7",
+      "app/admin/templates/kg_applications.html": "ba8fd15beebe7f61005becb80a5a7166ec6a15102b087d668ce162b1ab38d6a0",
+      "app/admin/templates/kg_sop_reviews.html": "5809f9c6a5b7f6e427afbb13a232d84cc9cbd4b7b84269481d36d221d557018f",
+      "app/config.py": "2a5226ebd42fc0934f9f3d42e5c0ba2dc1262d2d354ddb4b9befa1d1a2bf4afa",
+      "app/domain/entry_deadline_tasks.py": "d4a7a8d9c78170e97af6c225a199dc37c08cdadba03e7f0c7e04ca9796c4204e",
+      "app/domain/entry_deadlines.py": "188dc6bf2ffe42e19304f91e46569a7d125ed97f35d2ad6212c717b6a343bc77",
+      "app/domain/entry_processes.py": "80be897808af9f05d8c0fe94e34c78a38f7764765c0d4e38ad76a49b5a4b4896",
+      "app/domain/models.py": "649f3ab939715a129605683e49711b64e749243b0a869380edad5e5fd4847337",
+      "app/domain/operator_sop_evidence.py": "5e2e0f031fd2f94b6618e094acf40784b5c698d69edea30d088956c1d6ba5240",
+      "app/domain/operator_sop_policy.py": "ee2ce149441596c280cf2b15d789e7a6da10f1f39e094517206532771d46aeb3",
+      "app/domain/operator_sop_reviews.py": "7ef4c8b9a2f18ef9687fe7172078b08cab28419c72c55ced0a0eb611c00b46a7",
+      "app/domain/operator_sop_rules.py": "61eea1626e61b7813e1230eadf57fad8644ac9a912041caf176c96b6cb8d5e69",
+      "app/domain/operator_sop_sources.py": "68e8265a6571125c6aa9f054f1a24939ea832fa6c7f6ddb53fa315aadeacd450",
+      "tests/operator_sop_legacy_fixtures/entry_deadline_tasks.py": "7dfbc5ae4417b394542bcd31482085818b1826ac2ea18e329779d5a69b97381f",
+      "tests/operator_sop_legacy_fixtures/entry_deadlines.py": "97e828e1c831a08e11dbcc0baa75031d16e5a1d3fc7239ed06990ab4987a4c9f",
+      "tests/test_admin_operator_sop.py": "7e73fa629a82567dc76168325c5623522f6a69a7869bbd28883e4a2e6ee548d7",
+      "tests/test_conditional_deadline_audit_postgres.py": "4cebcbe4abbba1a4f961bd10cb5d07a987bad0a95b3e7a2caf346b3708ce992d",
+      "tests/test_entry_anchor_migration.py": "2f25ef152ebbe53375a094ce7589271189ac70eb46def1d8dd4890e0a384d9de",
+      "tests/test_operator_sop_audit_legacy.py": "c53e70809d548c70810a06b17a79884a352107315cda7c7c4b6db37cf819ac3e",
+      "tests/test_operator_sop_audit_postgres.py": "5efb398214590942d6474161736cf7eea4098af5ea9dff11f8dac0572988859c",
+      "tests/test_operator_sop_audit_process_expiry.py": "0b7eba3784338b75e2f452056ca95584600d8229b68bc4cebc176e5ce81f89b2",
+      "tests/test_operator_sop_audit_quarantine.py": "eaaeb9d9b8acb60a90fba5a5edd79cc6c87780af10cd78e70dcb4a4ab68fd0e7",
+      "tests/test_operator_sop_audit_recovery.py": "8c19799e66383d48c6af0186d2a8064d8c96424b6829d17680273e5919fd7bac",
+      "tests/test_operator_sop_migration.py": "8c0aa6320a8146df7f18c2dc15d95938d33a15857a958eff0acd14a8ce8c3b2c",
+      "tests/test_operator_sop_native_authority_recovery.py": "51ea79bb4e2a077176a76892be0981ffffccb72ce84728b4c42ddbe73dede580",
+      "tests/test_operator_sop_native_browser.py": "e43f1a6a54132089d8377275a7991f98ddcc8a484ad7f685f4684f93c814d343",
+      "tests/test_operator_sop_native_expiry.py": "9e5409487a4e6c138562d816524560836f0366c12c1e9593db76f672825a50d7",
+      "tests/test_operator_sop_native_http.py": "ac49cc312027fd8e19733b6412e79f82939110300fc0ba0ed26485ba67e7c8f7",
+      "tests/test_operator_sop_review_completed.py": "c62a99a17283863037637d36f62b8b3d4fd567018e618eac8677b5d190bec6f0",
+      "tests/test_operator_sop_review_currentness.py": "ce3ae74985dd8ef388db02896aa1fc1d70ea3912d1469337f2301e196297b46c",
+      "tests/test_operator_sop_review_integrity.py": "e5a0bcdbd4347c61f71ffb2d7bb2086523f3098c5ad0cdc1692ea50daa7162ec",
+      "tests/test_operator_sop_review_package_privacy.py": "1b935df2c185af5e634141a4a096a755662c2c9c2026ec38b9c77abba5b3f520",
+      "tests/test_operator_sop_review_registry.py": "583b08abe881c93a165114208924b8ece375558e2f6d333a08ae602d98543551",
+      "tests/test_operator_sop_review_terminal.py": "9f3fcf040b9a73c598ef6ca0037ca82d962d914e2231b6463afcdf8c931ecf04",
+      "tests/test_operator_sop_review_work_commercial.py": "32450e8025181d98baf5c688064f07bc1700642ffc36659e6344e94d9769c3d2",
+      "tests/test_operator_sop_reviews.py": "b23a673baff80cdfda03dc964d9cf0a572ac67f4d274b55ca98a59a7c0997875",
+      "tests/test_operator_sop_schedule.py": "8d4c4f55cad1d1cb7bdc9123c46e333b7404427215494541d41716d6f02d2fb4",
+      "tests/test_operator_sop_source_flows.py": "3334adb668ac7102f936c0dc67f48f399a6dfb6a716129cbd8e492fb78ceeccb",
+      "tests/test_operator_sop_wall_time.py": "7c1ef7e6898aa21ce1185b075d65db60812b960c6276185cf62bf2d427a2fe3e",
+      "tests/test_work_review_migration.py": "44c1919cc5737b3e55dedf8cf047feb3f3bfc40b0804a73a116acfabd3d7c52b"
+    },
+    "preserved_ui": {
+      "app/admin/templates/base.html": "65b70c196c2736f2f89b5a8994dc02da71f07373b06ba3c3e36407e207a1b727",
+      "app/admin/templates/boards.html": "9ce80ed0684efa123641dbb71ea171439b48da259572b30b0b24a0652a26b377",
+      "tests/test_admin_new_look.py": "5d7c15dd618e65524bb9f8769dece5636db872749c723a1d144eab97c6d5e9cf"
+    },
+    "status": "ROOT_FROZEN_INDEX_MATCHED"
+  },
+  "artifacts": [
+    {
+      "path": "runs/e6-30e-audit-r14/runs/audit-sop-process-expiry-r14.xml",
+      "sha256": "7413880f4cbea934266b5e2e7c5f537cc6c0f4d96cf7a8f245dd1bb5d9aea08e",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 50.787
+    },
+    {
+      "path": "runs/e6-30e-audit-r18/runs/audit-j03-package-boundaries-r18.xml",
+      "sha256": "968c086646bce3cf08912c712ef2b57b0bfe9c9ce926cbba77448fb2aaf829b9",
+      "tests": 6,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 45.506
+    },
+    {
+      "path": "runs/e6-30e-audit-r2/runs/audit-sop-pg-r2.xml",
+      "sha256": "c09de2a797a9552c4caaa4df6f43f82784183a029af745150acbd66e948e9b33",
+      "tests": 5,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 174.374
+    },
+    {
+      "path": "runs/e6-30e-audit-r5/runs/audit-sop-pg-r5.xml",
+      "sha256": "d40b5b544af995a72589ed03e966ddf84fc7d221f2b8e61ade828b4759886d80",
+      "tests": 3,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 205.437
+    },
+    {
+      "path": "runs/e6-30e-audit-r7/runs/audit-sop-capacity-r7.xml",
+      "sha256": "0566ac5033d3a8e772afcb26984d5ea4a00f9d144abf4c5840d0a7ebc142e4a0",
+      "tests": 2,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2027.077
+    },
+    {
+      "path": "runs/e6-30e-audit-r7/runs/audit-sop-correction-recovery-r7.xml",
+      "sha256": "9184d2f9247421e9388e41d191b7ebb09e9e319db8fc5c29b609fe3d147e6453",
+      "tests": 3,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 280.325
+    },
+    {
+      "path": "runs/e6-30e-audit-r7/runs/audit-sop-hook-r7.xml",
+      "sha256": "19ce05a10fcefceec4d5c3ec5f3e86f621224e117e6987508e66dfa0dfc5a476",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 51.195
+    },
+    {
+      "path": "runs/e6-30e-audit-r7/runs/audit-sop-legacy-r7.xml",
+      "sha256": "fcb6ef8d7b8fa749112e682414af08f02361c25a890ebf24599718bea17b041b",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 9.515
+    },
+    {
+      "path": "runs/e6-30e-audit-r7/runs/audit-sop-process-expiry-r7.xml",
+      "sha256": "4937a2815bb8c6edd4d62aac4454aab83a749dae89bd90aa36fa5a642f5af60f",
+      "tests": 1,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 51.058
+    },
+    {
+      "path": "runs/e6-30e-domain-review-r1/runs/reviewer-currentness-r1.xml",
+      "sha256": "0f0c0d1a6e6b76b519e8743a7a330e2883d0429b720f0a4f456c4b214d872f32",
+      "tests": 2,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 53.26
+    },
+    {
+      "path": "runs/e6-30e-domain-review-r1/runs/reviewer-integrity-r1.xml",
+      "sha256": "c1c3775b52e38ed41c384aacc02a3d90a812dbd431dcefc46b17d1ff7822b435",
+      "tests": 1,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 32.912
+    },
+    {
+      "path": "runs/e6-30e-domain-review-r10/runs/reviewer-registry-r10.xml",
+      "sha256": "d30cde189d86b226e556f29c34197e851c6befa2bb040300b32412feffcc35a5",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 44.33
+    },
+    {
+      "path": "runs/e6-30e-domain-review-r11/runs/reviewer-work-commercial-r11.xml",
+      "sha256": "8693b5586473b4f7570c5340e0ffa9b3d8b18a1bd20c9f8926b369591bf3f2c4",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 133.783
+    },
+    {
+      "path": "runs/e6-30e-domain-review-r4/runs/reviewer-connected-r4-second.xml",
+      "sha256": "7bbe59c6459b69f0762a69e1555d2fd01254ff92fc2a0a2cf02ac445b90f3eb5",
+      "tests": 3,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 136.219
+    },
+    {
+      "path": "runs/e6-30e-domain-review-r4/runs/reviewer-connected-r4.xml",
+      "sha256": "983353af5be0e5a37437f6f22c698a44bfa0c7a0f576fc91f21a4025f78a6c6d",
+      "tests": 4,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 114.368
+    },
+    {
+      "path": "runs/e6-30e-domain-review-r4/runs/reviewer-terminal-r4.xml",
+      "sha256": "12be313322ea27fc16aa6f367e956e2f1374cd5624a2c8811dda25517a86a5a3",
+      "tests": 1,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 61.666
+    },
+    {
+      "path": "runs/e6-30e-domain-review-r7/runs/reviewer-completed-corrected-r7.xml",
+      "sha256": "18a0d8baf2c4216e91feb194507d8f593ef40d1a74344ac5f235acca160b72c8",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 134.973
+    },
+    {
+      "path": "runs/e6-30e-domain-review-r7/runs/reviewer-connected-r7.xml",
+      "sha256": "04c386b9bc4813ded2a9a4b485e927bc381b06d41b200f223071a1d6b71a8388",
+      "tests": 6,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 416.974
+    },
+    {
+      "path": "runs/e6-30e-r1/runs/operator-core-r1.xml",
+      "sha256": "9adaaba4cea7507e96c3f41ef0117088c0467931e9f6b95530b75c2b134c4195",
+      "tests": 2,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 82.808
+    },
+    {
+      "path": "runs/e6-30e-r10/runs/pure-core-r10.xml",
+      "sha256": "0b3cc1b750d0a02cec249114a98c712c71cf0c7ea295ac60d82588dcbf442e83",
+      "tests": 24,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 153.97
+    },
+    {
+      "path": "runs/e6-30e-r11/runs/compatibility-r11.xml",
+      "sha256": "0cd29572cb15fb001d185b8b7ada590202b6773ce13eeb12014f90c644006e51",
+      "tests": 76,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 746.976
+    },
+    {
+      "path": "runs/e6-30e-r11/runs/source-flows-r11.xml",
+      "sha256": "a8af7e1fcdd4f36cb3cd87102a4286bfd8df74ebb7782042f20482b7c5f9ae08",
+      "tests": 4,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1032.933
+    },
+    {
+      "path": "runs/e6-30e-r12/runs/promoted-native-legacy-r12.xml",
+      "sha256": "7ba0c5b2060af89dc879a5fdbd1f5b75e2f6658086ed25fce2df3b9665e9dbf5",
+      "tests": 5,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 341.468
+    },
+    {
+      "path": "runs/e6-30e-r15/runs/promoted-expiry-r15.xml",
+      "sha256": "40153c7e3d04d30b95f5acdb50b199a65abbcfed2168ff5f3485bd50a29187bc",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 52.9
+    },
+    {
+      "path": "runs/e6-30e-r2/runs/native-schema-legacy-r2.xml",
+      "sha256": "bc873c8c210a132d4b69f258bea3dc7db29dcf112e79b99474268a981fe04399",
+      "tests": 36,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 123.68
+    },
+    {
+      "path": "runs/e6-30e-r3/runs/source-flows-r3.xml",
+      "sha256": "3bd05a924d5389d5ac234f62683458c46000515afe828fdc689bd429141f0a39",
+      "tests": 4,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1026.573
+    },
+    {
+      "path": "runs/e6-30e-r4/runs/core-schema-r4.xml",
+      "sha256": "853c405ac0cf24f6c2d2edfc1d50197f03b97571f9c7ac3108da2158625e2139",
+      "tests": 8,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 119.577
+    },
+    {
+      "path": "runs/e6-30e-r6/runs/native-r6.xml",
+      "sha256": "36c880e6c5180b447a724119a777d31e7db299ecfe19cca989ba491b9125e3f2",
+      "tests": 2,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 106.213
+    },
+    {
+      "path": "runs/e6-30e-review-pure-r0/runs/reviewer-operator-pure-r0-correct-harness.xml",
+      "sha256": "b332c343a61048f51efe309b4f129498110c5d1bbbc76459dad476462aa4937e",
+      "tests": 19,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.275
+    },
+    {
+      "path": "runs/e6-30e-review-pure-r0/runs/reviewer-operator-pure-r0.xml",
+      "sha256": "bb0599faf2f73b0d4aac0d92d01815ae2ef6fc3a0667db26c0135be4a9eb0c8b",
+      "tests": 19,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.587
+    },
+    {
+      "path": "runs/e6-30e-review-pure-r1/runs/reviewer-operator-pure-r1.xml",
+      "sha256": "b80dd922a61443c87558e33811fb7566fd56660765fedb5d7d81d495532d5443",
+      "tests": 19,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.201
+    },
+    {
+      "path": "runs/e6-30e-review-pure-r1/runs/reviewer-operator-wall-time-r1.xml",
+      "sha256": "9786f53769086978914136709088c5a8ad9dc4f10bdee5255a0e541ac2ba2118",
+      "tests": 2,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.222
+    },
+    {
+      "path": "runs/e6-30e-review-pure-r2/runs/reviewer-operator-pure-r2-pinned.xml",
+      "sha256": "f18d559ce0537306984368e8190901e454efbf0052a72000c5e4bd61a53976f1",
+      "tests": 22,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.253
+    },
+    {
+      "path": "runs/e6-30e-review-pure-r2/runs/reviewer-operator-pure-r2.xml",
+      "sha256": "9d570e090cc51cce09b08499f7fdc3eceaaee790196668593626fc511622b346",
+      "tests": 22,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.402
+    },
+    {
+      "path": "runs/e6-30e-review-pure-r3/runs/reviewer-operator-pure-r3.xml",
+      "sha256": "f58f28b02b3df85deb0db1951f6ea703f7841ef9cc338967e87b733a5c337abf",
+      "tests": 22,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.312
+    },
+    {
+      "path": "runs/e630e-native-review-r10/runs/reviewer-browser-r10.xml",
+      "sha256": "c9ac1a00f270ef9f28423269d686d26a50971fe9e025d6f8e81d1bb27704ad7c",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 85.038
+    },
+    {
+      "path": "runs/e630e-native-review-r14/runs/reviewer-expiry-r14-correct-harness.xml",
+      "sha256": "13136c4a9eee0e152d513e3a286af02dda0aaf9004b0d4cc3ab1e9a72b60e368",
+      "tests": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 86.929
+    },
+    {
+      "path": "runs/e630e-native-review-r14/runs/reviewer-expiry-r14.xml",
+      "sha256": "5a7148163d8f57b1e6dc6e14959a673ab7a093b7da439d001a9f9f4639e30794",
+      "tests": 1,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 106.514
+    },
+    {
+      "path": "runs/e630e-native-review-r2/runs/reviewer-authority-r2.xml",
+      "sha256": "8ed8cfb3c60fb83f15df4f3fc9e18e38a0b0079d607554f299832a6d5088ca99",
+      "tests": 1,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 39.539
+    },
+    {
+      "path": "runs/e630e-native-review-r2/runs/reviewer-http-r2.xml",
+      "sha256": "cc31346e6a303c18fcd11c4cab67e40ca2af707b1460e2737b54b0e0a68ec402",
+      "tests": 2,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 58.312
+    },
+    {
+      "path": "runs/e630e-native-review-r2/runs/reviewer-native-r2.xml",
+      "sha256": "b9272abb3bd11843e494552235fb437a0f1490d3ed46a867a631b3c04a108a93",
+      "tests": 2,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 182.503
+    },
+    {
+      "path": "runs/e630e-native-review-r6/runs/reviewer-http-r6.xml",
+      "sha256": "670128c9929a15666e30a57921d6a4d514016ed6269dd9427d5e01f400ac3262",
+      "tests": 2,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 140.235
+    },
+    {
+      "path": "runs/e630e-native-review-r9/runs/reviewer-corrective-r9.xml",
+      "sha256": "13e64cb4d58a910b7f6511dea7e2c87d84e4473d8bb992fecb2c1fbaa141dc27",
+      "tests": 3,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 270.071
+    }
+  ],
+  "reports": {
+    "ai/reviews/2026-10-13-e6-30e-catalog-independent-review.md": "25064f8038d5a1ff22de546acb6cb698c95cae661c09d997aa2c2212e5a4d3aa",
+    "ai/reviews/2026-10-13-e6-30e-final-audit.md": "416f88528fe9ddd1403933e0edf088a44835000a1cf3ec7a830574faf0060ca1",
+    "ai/reviews/2026-10-13-e6-30e-independent-review.md": "5e1946917e042068584fea3d2f97fc4ebeb452b31129a405932abe18b3e912cf",
+    "ai/reviews/2026-10-13-e6-30e-native-review.md": "958d8eeb39425ee3dc6505c13f210e09c0ec9d94939ef7cec4708f9a93691272",
+    "ai/reviews/2026-10-13-e6-30e-sop-review-pre-audit.md": "7ce125e83f0ec1b6b671645b0a0b628591fc5379a1725267e9dddddf5edca8e6"
+  },
+  "promotions": {
+    "runs/e630e-domain-promoted.json": {
+      "files": [
+        {
+          "source": "runs/e6-30e-domain-review-r7/tests/test_reviewer_sop_currentness.py",
+          "destination": "tests/test_operator_sop_review_currentness.py",
+          "lf_sha256": "ce3ae74985dd8ef388db02896aa1fc1d70ea3912d1469337f2301e196297b46c",
+          "cases": [
+            "test_answered_lead_cannot_get_new_unanswered_lead_review_while_stage_lags",
+            "test_native_privacy_preserves_old_receipt_but_refuses_fresh_review"
+          ]
+        },
+        {
+          "source": "runs/e6-30e-domain-review-r7/tests/test_reviewer_sop_integrity.py",
+          "destination": "tests/test_operator_sop_review_integrity.py",
+          "lf_sha256": "e5a0bcdbd4347c61f71ffb2d7bb2086523f3098c5ad0cdc1692ea50daa7162ec",
+          "cases": [
+            "test_rehashed_schedule_and_pin_failure_preserve_original_claimed_task"
+          ]
+        },
+        {
+          "source": "runs/e6-30e-domain-review-r7/tests/test_reviewer_sop_completed.py",
+          "destination": "tests/test_operator_sop_review_completed.py",
+          "lf_sha256": "c62a99a17283863037637d36f62b8b3d4fd567018e618eac8677b5d190bec6f0",
+          "cases": [
+            "test_completed_payment_documents_and_approved_attempt_are_stale_waits"
+          ]
+        },
+        {
+          "source": "runs/e6-30e-domain-review-r7/tests/test_reviewer_sop_package_privacy.py",
+          "destination": "tests/test_operator_sop_review_package_privacy.py",
+          "lf_sha256": "1b935df2c185af5e634141a4a096a755662c2c9c2026ec38b9c77abba5b3f520",
+          "cases": [
+            "test_actual_package_privacy_blocks_new_review_but_preserves_original"
+          ]
+        },
+        {
+          "source": "runs/e6-30e-domain-review-r7/tests/test_reviewer_sop_terminal.py",
+          "destination": "tests/test_operator_sop_review_terminal.py",
+          "lf_sha256": "9f3fcf040b9a73c598ef6ca0037ca82d962d914e2231b6463afcdf8c931ecf04",
+          "cases": [
+            "test_u09_approved_own_attempt_ignores_unrelated_new_root"
+          ]
+        },
+        {
+          "source": "runs/e6-30e-domain-review-r10/tests/test_reviewer_sop_registry.py",
+          "destination": "tests/test_operator_sop_review_registry.py",
+          "lf_sha256": "583b08abe881c93a165114208924b8ece375558e2f6d333a08ae602d98543551",
+          "cases": [
+            "test_malformed_registry_allows_retained_retry_cancel_but_does_not_mask_integrity"
+          ]
+        },
+        {
+          "source": "runs/e6-30e-domain-review-r11/tests/test_reviewer_sop_work_commercial.py",
+          "destination": "tests/test_operator_sop_review_work_commercial.py",
+          "lf_sha256": "32450e8025181d98baf5c688064f07bc1700642ffc36659e6344e94d9769c3d2",
+          "cases": [
+            "test_work_quote_contract_payment_is_combined_and_old_receipts_survive_signing"
+          ]
+        },
+        {
+          "source": "runs/e6-30e-audit-r14/tests/test_audit_sop_process_expiry.py",
+          "destination": "tests/test_operator_sop_audit_process_expiry.py",
+          "lf_sha256": "0b7eba3784338b75e2f452056ca95584600d8229b68bc4cebc176e5ce81f89b2"
+        }
+      ],
+      "change": "none, exact LF copies"
+    },
+    "runs/e630e-review-promotions.json": [
+      {
+        "source": "runs/e630e-native-review-r10/tests/test_reviewer_sop_http.py",
+        "target": "tests/test_operator_sop_native_http.py",
+        "source_lf_sha256": "ac49cc312027fd8e19733b6412e79f82939110300fc0ba0ed26485ba67e7c8f7",
+        "target_lf_sha256": "ac49cc312027fd8e19733b6412e79f82939110300fc0ba0ed26485ba67e7c8f7",
+        "replacements": []
+      },
+      {
+        "source": "runs/e630e-native-review-r10/tests/test_reviewer_sop_authority_recovery.py",
+        "target": "tests/test_operator_sop_native_authority_recovery.py",
+        "source_lf_sha256": "756af71be0cceeed06e76ee9ba29c78d00361eb188e90c2f3ef07e2b8172bbb7",
+        "target_lf_sha256": "51ea79bb4e2a077176a76892be0981ffffccb72ce84728b4c42ddbe73dede580",
+        "replacements": [
+          [
+            "tests.test_reviewer_sop_http",
+            "tests.test_operator_sop_native_http"
+          ]
+        ]
+      },
+      {
+        "source": "runs/e630e-native-review-r10/tests/test_reviewer_sop_browser.py",
+        "target": "tests/test_operator_sop_native_browser.py",
+        "source_lf_sha256": "e43f1a6a54132089d8377275a7991f98ddcc8a484ad7f685f4684f93c814d343",
+        "target_lf_sha256": "e43f1a6a54132089d8377275a7991f98ddcc8a484ad7f685f4684f93c814d343",
+        "replacements": []
+      },
+      {
+        "source": "runs/e6-30e-audit-r7/tests/test_audit_sop_postgres.py",
+        "target": "tests/test_operator_sop_audit_postgres.py",
+        "source_lf_sha256": "5efb398214590942d6474161736cf7eea4098af5ea9dff11f8dac0572988859c",
+        "target_lf_sha256": "5efb398214590942d6474161736cf7eea4098af5ea9dff11f8dac0572988859c",
+        "replacements": []
+      },
+      {
+        "source": "runs/e6-30e-audit-r7/tests/test_audit_sop_quarantine.py",
+        "target": "tests/test_operator_sop_audit_quarantine.py",
+        "source_lf_sha256": "eaaeb9d9b8acb60a90fba5a5edd79cc6c87780af10cd78e70dcb4a4ab68fd0e7",
+        "target_lf_sha256": "eaaeb9d9b8acb60a90fba5a5edd79cc6c87780af10cd78e70dcb4a4ab68fd0e7",
+        "replacements": []
+      },
+      {
+        "source": "runs/e6-30e-audit-r7/tests/test_audit_sop_recovery.py",
+        "target": "tests/test_operator_sop_audit_recovery.py",
+        "source_lf_sha256": "4155d12de31e04fbf7d07f75b31171d9ac13bcd2bb2d4570a6d3c516e7c298fe",
+        "target_lf_sha256": "8c19799e66383d48c6af0186d2a8064d8c96424b6829d17680273e5919fd7bac",
+        "replacements": [],
+        "post_promotion_cleanup": "remove extra blank EOF line only; AST identical, original BOM preserved"
+      },
+      {
+        "source": "runs/e6-30e-audit-r7/tests/test_audit_sop_legacy.py",
+        "target": "tests/test_operator_sop_audit_legacy.py",
+        "source_lf_sha256": "1f0a53d8a83396b1a799d9507d73eb1157bcd49c201a71dc6dd62e9a902bf775",
+        "target_lf_sha256": "c53e70809d548c70810a06b17a79884a352107315cda7c7c4b6db37cf819ac3e",
+        "replacements": [
+          [
+            "with_name('audit_legacy')",
+            "with_name('operator_sop_legacy_fixtures')"
+          ]
+        ]
+      },
+      {
+        "source": "runs/e6-30e-audit-r7/tests/audit_legacy/entry_deadlines.py",
+        "target": "tests/operator_sop_legacy_fixtures/entry_deadlines.py",
+        "source_lf_sha256": "97e828e1c831a08e11dbcc0baa75031d16e5a1d3fc7239ed06990ab4987a4c9f",
+        "target_lf_sha256": "97e828e1c831a08e11dbcc0baa75031d16e5a1d3fc7239ed06990ab4987a4c9f",
+        "replacements": []
+      },
+      {
+        "source": "runs/e6-30e-audit-r7/tests/audit_legacy/entry_deadline_tasks.py",
+        "target": "tests/operator_sop_legacy_fixtures/entry_deadline_tasks.py",
+        "source_lf_sha256": "7dfbc5ae4417b394542bcd31482085818b1826ac2ea18e329779d5a69b97381f",
+        "target_lf_sha256": "7dfbc5ae4417b394542bcd31482085818b1826ac2ea18e329779d5a69b97381f",
+        "replacements": []
+      },
+      {
+        "source": "runs/e630e-native-review-r14/tests/test_reviewer_sop_native_expiry.py",
+        "target": "tests/test_operator_sop_native_expiry.py",
+        "source_lf_sha256": "9e5409487a4e6c138562d816524560836f0366c12c1e9593db76f672825a50d7",
+        "target_lf_sha256": "9e5409487a4e6c138562d816524560836f0366c12c1e9593db76f672825a50d7",
+        "replacements": []
+      }
+    ],
+    "runs/e630e-pure-promotions.json": [
+      {
+        "source": "runs/e6-30e-review-pure-r3/tests/test_reviewer_operator_schedule.py",
+        "destination": "tests/test_operator_sop_schedule.py",
+        "source_sha256": "3971e9b9c222729b835d60952ff149f53d8e5872c0ebba9f96a2ce6e45eb1508",
+        "destination_sha256": "3971e9b9c222729b835d60952ff149f53d8e5872c0ebba9f96a2ce6e45eb1508",
+        "changes": "factual comment only for wall-time oracle; executable source identical"
+      },
+      {
+        "source": "runs/e6-30e-review-pure-r3/tests/test_reviewer_operator_wall_time_pinned.py",
+        "destination": "tests/test_operator_sop_wall_time.py",
+        "source_sha256": "2953e30751d146ee7fae7f4573ea262c60ec25e3b72708ec9910b52d04ca99ea",
+        "destination_sha256": "7c1ef7e6898aa21ce1185b075d65db60812b960c6276185cf62bf2d427a2fe3e",
+        "changes": "factual comment only for wall-time oracle; executable source identical"
+      }
+    ]
+  },
+  "pending": [],
+  "interpretation": "Distinct scopes and explicit runtime delta mappings; do not sum overlapping checks. Original genuine failures and harness failures retained.",
+  "boundaries": [
+    "env-free archives",
+    "synthetic data and policy only",
+    "no root environment import",
+    "no production or remote push",
+    "no messages",
+    "no real source or owner acceptance"
+  ],
+  "review_verdicts": {
+    "domain": "APPROVE",
+    "native": "APPROVE",
+    "separate_audit": "GO",
+    "target": "reviewed local change only"
+  },
+  "supplemental_artifacts": {
+    "runs/e630e-independent-domain-final.json": "a76336741772bbb75c7c3775487c26a84774f776f0aeab4607daff5df71e2d46",
+    "runs/e630e-native-evidence.json": "20fec42deb063e24ce7ef612ef72be84abc03e741ab45c9ae1a08b258a6f78d6",
+    "runs/e630e-audit-index-r18.json": "ed448eda8784bf0d20a9bab3b83291eee14cba778b9dc886fb6c8bc47c751cda",
+    "runs/e6-30e-audit-r7/runs/audit-sop-capacity-count.json": "08fe7da5796aef466634aef28b1d3b439a0aa5c114a879d13250a474200a40ac",
+    "runs/e6-30e-audit-r7/runs/audit-sop-capacity-bytes.json": "085a7f7a05880e77b5430849ea4539c96fa5ab4a24d183ff126497fe30aca186",
+    "runs/e6-30e-audit-r7/runs/audit-sop-recovery.json": "ab5321527cd6259a36cb81af73b16091056e5e394d944a36bc735d34dae73de6"
+  }
+}

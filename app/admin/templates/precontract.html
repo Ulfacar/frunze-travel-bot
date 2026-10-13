@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Предварительная карточка' if action=='open' else 'Договор в этой карточке' }}{% endblock %}
+{% block head %}<style>
+.precontract{max-width:700px;margin:0 auto;padding:24px 16px;line-height:1.5;overflow-wrap:anywhere}.precontract h1{font-size:26px}.precontract form{display:grid;gap:16px;padding:20px;border:1px solid var(--border);background:var(--surface);border-radius:10px}.precontract label{display:grid;gap:6px;font-weight:600}.precontract input,.precontract select,.precontract textarea,.precontract button{box-sizing:border-box;width:100%;min-height:44px;padding:10px;font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:6px}.precontract button{background:var(--accent);color:var(--on-accent,#fff);font-weight:600}.precontract .confirm{display:flex;align-items:flex-start}.precontract .confirm input{width:20px;min-height:20px;flex:none;margin:3px 8px 0 0}.precontract :focus-visible{outline:2px solid var(--accent);outline-offset:3px}.precontract .error{padding:12px;border-left:3px solid #b54708;background:var(--surface)}.precontract a{color:var(--accent)}.precontract fieldset{display:grid;gap:16px;border:0;padding:0;margin:0;min-width:0}
+</style>{% endblock %}
+{% block content %}<main class="precontract">
+{% if action=='open' %}
+<a href="/admin?chat={{ target|urlencode }}">← Переписка</a><h1>Открыть предварительную карточку</h1>
+<p>Карточка объединит анкету заявителя, документы и внутренний расчёт. Подписание договора будет отдельным действием в этой же карточке.</p>
+<p>Выберите коммерческую услугу. Это не утверждение типа визы или права на въезд.</p>
+{% else %}<a href="/admin/case/{{ target }}">← Карточка услуги №{{ target }}</a><h1>{{ 'Договор записан' if case and case.signed_at else 'Записать подписанный договор' }}</h1>
+<p>{{ 'Договор связан' if case and case.signed_at else 'Договор будет связан' }} с услугой №{{ target }}. Заявители, анкеты, документы и расчёты {{ 'сохранены' if case and case.signed_at else 'останутся' }} в этой карточке.</p>{% endif %}
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+{% if case and case.signed_at %}
+<dl><dt>Номер договора</dt><dd>{{ case.contract_reference }}</dd>
+<dt>Запись внёс</dt><dd>{{ case.signed_by }}</dd>
+<dt>Текущая согласованная сумма</dt><dd>{% if case.agreed_amount is not none %}{{ case.agreed_amount }} {{ case.currency }}{% else %}Уточняется: {{ case.amount_unknown_reason }}{% endif %}</dd></dl>
+<p>История договора и платежей доступна в <a href="/admin/case/{{ target }}">карточке услуги</a>.</p>
+{% else %}
+{% if not write_on %}<p>Сохранение услуг выключено администратором.</p>{% endif %}
+<form action="{{ form_url }}" method="post">
+{% for key in ('csrf_token','signature','request_key','expected_revision','original_owner') %}<input type="hidden" name="{{ key }}" value="{{ values[key] }}">{% endfor %}
+<fieldset {% if not write_on or case and case.signed_at %}disabled{% endif %}>
+{% if action=='open' %}
+<label for="pre-product">Коммерческая услуга<select id="pre-product" name="product_choice" required>
+<option value="">Выберите услугу</option>{% for product in products %}{% set choice=product.id|string ~ ':' ~ product.current_version_id|string %}<option value="{{ choice }}" {% if values.product_choice==choice %}selected{% endif %}>{{ product.name }}</option>{% endfor %}
+{% if values.product_choice and not products %}<option value="{{ values.product_choice }}" selected>Ранее выбранная услуга — {{ values.product_choice }}</option>{% endif %}</select></label>
+<p>Ответственный: {{ values.original_owner or 'требуется проверка назначения' }}. Договор и оплата пока не фиксируются.</p>
+<button type="submit">Открыть карточку до договора</button>
+{% else %}
+<label for="pre-reference">Номер договора<input id="pre-reference" name="reference" value="{{ values.reference }}" maxlength="128" required></label>
+<label for="pre-signed">Подписан · Бишкек (UTC+6)<input id="pre-signed" type="datetime-local" name="signed_at" value="{{ values.signed_at }}" required></label>
+<label for="pre-amount">Согласованная сумма<input id="pre-amount" name="amount" value="{{ values.amount }}" inputmode="decimal" type="number" min="0.01" step="0.01" max="999999999999.99"></label>
+<label for="pre-currency">Валюта<input id="pre-currency" name="currency" value="{{ values.currency }}" maxlength="3" placeholder="KGS, USD…"></label>
+<label for="pre-unknown">Если сумма неизвестна, укажите причину<textarea id="pre-unknown" name="amount_unknown_reason" rows="2" maxlength="255">{{ values.amount_unknown_reason }}</textarea></label>
+<label class="confirm" for="pre-confirmed"><input id="pre-confirmed" type="checkbox" name="confirmed" value="yes" required {% if values.confirmed=='yes' %}checked{% endif %}>Подтверждаю, что клиент уже подписал этот договор</label>
+<p>Запись договора не подтверждает оплату. Полученные платежи учитываются отдельно.</p>
+<button type="submit">Сохранить договор в этой карточке</button>
+{% endif %}</fieldset></form>{% endif %}</main>{% endblock %}

@@ -1,0 +1,25 @@
+{
+  "schema_version": "kg-entry-slots/1",
+  "citizenship": [
+    "RUS"
+  ],
+  "document_type": "ordinary",
+  "current_location": "abroad",
+  "purpose": "tourism",
+  "entry_date": "2026-11-01",
+  "exit_date": "2026-11-10",
+  "client_type": "b2c",
+  "violations": {
+    "overstay": false,
+    "deportation_or_ban": false
+  },
+  "previous_refusals_kg": "unknown",
+  "family": "not_applicable",
+  "previous_visits": {
+    "was_in_kg": false,
+    "intervals": []
+  },
+  "inviting_party": {
+    "exists": "not_applicable"
+  }
+}

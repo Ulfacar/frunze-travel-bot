@@ -1,0 +1,30 @@
+{
+  "base": "f227e38ca17402d6a9350d3c28a5ee9b0171fa77",
+  "snapshot": "uncommitted E6-10 review r5",
+  "files": {
+    "alembic/versions/e6_process_journal_0027.py": "b5f3357067f8e5089c304e23d5ac59f23a9c01554924bcc5a39cdf32bac10a5e",
+    "app/admin/kg_process_journal.py": "21d2e40f4d48d7d0fe1875ce39d6866adeb447d95c35f0632facd0f99a91cf3e",
+    "app/admin/router.py": "3a127f2c4bed0ce47a23c4adcc2bc6b6ef2144cb3b07e120448fe04809a05d8b",
+    "app/admin/templates/kg_applications.html": "3330b3375482b98832fc30f5f657c5ff9d69e17321b80d574ee233d0b0ababb3",
+    "app/admin/templates/kg_process_journal.html": "75509fa3c695adaa1b87b10a695038c744e6d9bfc08e5a30aaa09ca3389b7565",
+    "app/config.py": "9fb44a5f6a6f40144ea71b26f9cc5c103e707f1df3f88b4aec5f2d6b489a05bf",
+    "app/domain/entry_process_evidence.py": "9ef4bb3c70d890253250638606c46c19e06e17c6dedcd02be6709e85e19dfb49",
+    "app/domain/entry_process_policy.py": "8cab2ae2bbe6e8637ee1b56c4a0a5fb03d5f546f2ac5323883f950747135388c",
+    "app/domain/entry_process_rules.py": "232931ace1be9876eb800b11f96d749b63493740f02f3360c86bb818f0418a87",
+    "app/domain/entry_processes.py": "738ad78b88ea1d711b695555fdd6926b9b699217b4f507e292598ebf02af7b17",
+    "app/domain/entry_quarantine.py": "5367e41bc7fc35dc2929e886acd472909b27c8666b52a4fcc38fc395c212daee",
+    "app/domain/models.py": "630b3e4cfdbbeb3c03f5a6305a6c35d6032afc82359e923a7490b78cadee84a9",
+    "app/domain/service_money.py": "d85631026b52bd6b97e73f4cb543420af896283f88485752d236acd7982b9aee",
+    "tests/browser_kg_process_journal.py": "9bde4309f59608382d0b5c718ab0bc6bff155e829a212cf0d32620478de9d05b",
+    "tests/test_admin_kg_process_journal.py": "ce05029725f2952e10afa5937ebb514c74cda0a463d8db0322abf998328b7eb7",
+    "tests/test_admin_new_look.py": "db9a4f93972419cb8ab33d9c232814f25b5a4723cc8a62dda37f0fc2834d469f",
+    "tests/test_admin_shell_and_direction_split.py": "47d6aa7474ab424f369a5e31971b3e79f4bb4b395c2f8f53f7833aa1d478a1be",
+    "tests/test_alembic_domain_migration.py": "31845ea11fb639c91c4f6ffe5c888cc40d0ccf6a17201d5afd36a38383f307dc",
+    "tests/test_contract_signing.py": "4bb4846c6cb44556868ed350c8c79449653195881d8a38820f524324ed671a00",
+    "tests/test_entry_process_dependencies.py": "6d3e8c95bf0521830877039bf279b32cd64f36b75cdef3f9094718555896d130",
+    "tests/test_entry_process_migration.py": "0da95ccc66d0ec0512edc6cf1fd5953dbc1ca52199eb1279b2b5af9c05ce91bb",
+    "tests/test_entry_process_postgres.py": "d12878033452708cec02224829d252f5dff2e7a510bf6c5d0ad4d91516ab1c44",
+    "tests/test_entry_processes.py": "d8047fccd712d9e96055ecbbd932b84ba49e6275087766d06b2ce4a5f2c5c474",
+    "tests/test_facts_live_errors.py": "ba3579f7477cc888977cdd4a7a17f0656596cd80e189d92a0543c36a2c66ade8"
+  }
+}

@@ -14,3 +14,5 @@ jinja2==3.*             # шаблоны админ-панели (канбан +
 python-multipart==0.0.* # парсинг форм: ответ менеджера из панели + form-urlencoded вебхук Bitrix
 itsdangerous==2.*       # подпись cookie-сессии (Starlette SessionMiddleware, логин менеджеров)
 aiosqlite==0.20.*       # dev/тесты: async SQLite вместо сетевого Postgres
+jsonschema>=4.26,<5     # E5: JSON Schema 2020-12, локальный preflight
+PyYAML>=6.0.3,<7        # E5: строгий разбор пакетов знаний

@@ -1,0 +1,1763 @@
+{
+  "decisions": [
+    "DEC-02",
+    "DEC-06",
+    "DEC-07",
+    "DEC-08",
+    "DEC-11",
+    "DEC-12"
+  ],
+  "edges": [
+    {
+      "basis": "source_sequence",
+      "from": "V01",
+      "proposed_effect": "same_process",
+      "requires": {
+        "conversation_started": true
+      },
+      "to": "V02"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V02",
+      "proposed_effect": "same_process",
+      "requires": {
+        "manager_review_required": true
+      },
+      "to": "V03"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V02",
+      "proposed_effect": "same_process",
+      "requires": {
+        "eligibility": "eligible",
+        "manager_review_required": false,
+        "product_defined": true,
+        "profile_complete": true
+      },
+      "to": "V04"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V03",
+      "proposed_effect": "same_process",
+      "requires": {
+        "eligibility": "eligible",
+        "product_defined": true,
+        "profile_complete": true
+      },
+      "to": "V04"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V03",
+      "proposed_effect": "same_process",
+      "requires": {
+        "eligibility": "ineligible"
+      },
+      "to": "X08"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V04",
+      "proposed_effect": "same_process",
+      "requires": {
+        "eligibility": "eligible",
+        "visa_required": false
+      },
+      "to": "V05"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V04",
+      "proposed_effect": "same_process",
+      "requires": {
+        "eligibility": "eligible",
+        "quote_sent": true,
+        "visa_required": true
+      },
+      "to": "V06"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V06",
+      "proposed_effect": "same_process",
+      "requires": {
+        "consent_confirmed": true,
+        "offer_accepted": true
+      },
+      "to": "V07"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V07",
+      "proposed_effect": "same_process",
+      "requires": {
+        "consent_confirmed": true,
+        "invoice_issued": true,
+        "offer_accepted": true
+      },
+      "to": "V08"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V08",
+      "proposed_effect": "same_process",
+      "requires": {
+        "service_payment_confirmed": true
+      },
+      "to": "V09"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V09",
+      "proposed_effect": "same_process",
+      "requires": {
+        "checklist_sent": true,
+        "consent_confirmed": true,
+        "service_payment_confirmed": true
+      },
+      "to": "V10"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V10",
+      "proposed_effect": "same_process",
+      "requires": {
+        "consent_confirmed": true,
+        "documents_received": true
+      },
+      "to": "V12"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V12",
+      "proposed_effect": "same_process",
+      "requires": {
+        "corrections_needed": true
+      },
+      "to": "V13"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V13",
+      "proposed_effect": "same_process",
+      "requires": {
+        "corrections_completed": true,
+        "documents_received": true
+      },
+      "to": "V12"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V12",
+      "proposed_effect": "same_process",
+      "requires": {
+        "corrections_needed": false,
+        "documents_accepted": true,
+        "documents_current": true
+      },
+      "to": "V14"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V14",
+      "proposed_effect": "same_process",
+      "requires": {
+        "consent_confirmed": true,
+        "documents_accepted": true,
+        "documents_current": true,
+        "portal_draft_created": true
+      },
+      "to": "V15"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V15",
+      "proposed_effect": "same_process",
+      "requires": {
+        "application_reference_recorded": true,
+        "consent_confirmed": true,
+        "documents_accepted": true,
+        "documents_current": true,
+        "email_verified": true,
+        "portal_payment_confirmed": true,
+        "submission_recorded": true
+      },
+      "to": "V16"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V16",
+      "proposed_effect": "same_process",
+      "requires": {
+        "application_reference_recorded": true,
+        "submission_recorded": true
+      },
+      "to": "V17"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V17",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "revision_requested"
+      },
+      "to": "V18"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V17",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "approved"
+      },
+      "to": "V20"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V17",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "refused"
+      },
+      "to": "X01"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V18",
+      "proposed_effect": "same_attempt_resubmission",
+      "requires": {
+        "corrections_completed": true,
+        "documents_accepted": true,
+        "documents_current": true,
+        "submission_recorded": true
+      },
+      "to": "V19"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V19",
+      "proposed_effect": "same_process",
+      "requires": {
+        "application_reference_recorded": true,
+        "submission_recorded": true
+      },
+      "to": "V17"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V20",
+      "proposed_effect": "same_process",
+      "requires": {
+        "issued_document_downloaded": true
+      },
+      "to": "V21"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V21",
+      "proposed_effect": "same_process",
+      "requires": {
+        "delivered_to_client": true,
+        "issued_document_checked": true
+      },
+      "to": "V22"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V22",
+      "proposed_effect": "same_process",
+      "requires": {
+        "receipt_confirmed": true
+      },
+      "to": "V23"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V23",
+      "proposed_effect": "same_process",
+      "requires": {
+        "actual_entry_confirmed": true
+      },
+      "to": "V24"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "V24",
+      "proposed_effect": "same_process",
+      "requires": {
+        "actual_exit_or_end_confirmed": true,
+        "followup_completed": true
+      },
+      "to": "V25"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W01",
+      "proposed_effect": "same_process",
+      "requires": {
+        "profile_complete": true
+      },
+      "to": "W02"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W02",
+      "proposed_effect": "same_process",
+      "requires": {
+        "employer_qualified": true,
+        "offer_accepted": true,
+        "quote_sent": true
+      },
+      "to": "W03"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W03",
+      "proposed_effect": "same_process",
+      "requires": {
+        "service_payment_confirmed": true
+      },
+      "to": "W04"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W04",
+      "proposed_effect": "same_process",
+      "requires": {
+        "employer_authorization_confirmed": true
+      },
+      "to": "W05"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W05",
+      "proposed_effect": "same_process",
+      "requires": {
+        "account_activated": true
+      },
+      "to": "W06"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W06",
+      "proposed_effect": "same_process",
+      "requires": {
+        "quota_applied": true
+      },
+      "to": "W07"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W07",
+      "proposed_effect": "same_process",
+      "requires": {
+        "quota_approved": true
+      },
+      "to": "W08"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W08",
+      "proposed_effect": "same_process",
+      "requires": {
+        "checklist_sent": true,
+        "consent_confirmed": true,
+        "quota_approved": true
+      },
+      "to": "W09"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W09",
+      "proposed_effect": "same_process",
+      "requires": {
+        "documents_received": true
+      },
+      "to": "W10"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W10",
+      "proposed_effect": "same_process",
+      "requires": {
+        "application_reference_recorded": true,
+        "consent_confirmed": true,
+        "documents_accepted": true,
+        "documents_current": true,
+        "submission_recorded": true
+      },
+      "to": "W11"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W11",
+      "proposed_effect": "same_process",
+      "requires": {
+        "application_reference_recorded": true,
+        "submission_recorded": true
+      },
+      "to": "W12"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W14",
+      "proposed_effect": "same_process",
+      "requires": {
+        "actual_entry_confirmed": true,
+        "permit_issued": true,
+        "registration_confirmed": true
+      },
+      "to": "W15"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W16",
+      "proposed_effect": "same_process",
+      "requires": {
+        "application_reference_recorded": true,
+        "documents_accepted": true,
+        "documents_current": true,
+        "resident_package_received": true,
+        "submission_recorded": true
+      },
+      "to": "W17"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W17",
+      "proposed_effect": "same_process",
+      "requires": {
+        "application_reference_recorded": true,
+        "submission_recorded": true
+      },
+      "to": "W18"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W19",
+      "proposed_effect": "separate_registration_application",
+      "requires": {
+        "registration_confirmed": true,
+        "resident_issued_and_collected": true
+      },
+      "to": "W20"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W20",
+      "proposed_effect": "same_process",
+      "requires": {
+        "registration_confirmed": true
+      },
+      "to": "W21"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W21",
+      "proposed_effect": "same_process",
+      "requires": {
+        "completion_reviewed": true,
+        "followup_completed": true
+      },
+      "to": "W22"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W12",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "revision_requested"
+      },
+      "to": "W13"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W13",
+      "proposed_effect": "same_attempt_resubmission",
+      "requires": {
+        "corrections_completed": true,
+        "documents_accepted": true,
+        "documents_current": true,
+        "submission_recorded": true
+      },
+      "to": "W12"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W12",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "approved",
+        "permit_issued": true
+      },
+      "to": "W14"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W12",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "refused"
+      },
+      "to": "WX2"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W15",
+      "proposed_effect": "separate_resident_application",
+      "requires": {
+        "permit_issued": true,
+        "resident_package_received": true
+      },
+      "to": "W16"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W18",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "approved",
+        "resident_issued_and_collected": true
+      },
+      "to": "W19"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "W18",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "refused"
+      },
+      "to": "WX2"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "R01",
+      "proposed_effect": "same_process",
+      "requires": {
+        "profile_complete": true
+      },
+      "to": "R02"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "R02",
+      "proposed_effect": "same_process",
+      "requires": {
+        "consent_confirmed": true,
+        "stay_basis_checked": true
+      },
+      "to": "R03"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "R03",
+      "proposed_effect": "same_process",
+      "requires": {
+        "documents_current": true,
+        "payment_code_received": true,
+        "receiving_party_docs_accepted": true,
+        "submission_recorded": true
+      },
+      "to": "R04"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "R04",
+      "proposed_effect": "same_process",
+      "requires": {
+        "registration_payment_confirmed": true
+      },
+      "to": "R05"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "R05",
+      "proposed_effect": "same_process",
+      "requires": {
+        "registration_certificate_received": true
+      },
+      "to": "R06"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "R06",
+      "proposed_effect": "same_process",
+      "requires": {
+        "registration_certificate_received": true
+      },
+      "to": "R07"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "R07",
+      "proposed_effect": "same_process",
+      "requires": {
+        "completion_reviewed": true,
+        "followup_completed": true
+      },
+      "to": "R08"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "R04",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "refused"
+      },
+      "to": "RX1"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "R05",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "refused"
+      },
+      "to": "RX1"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "U01",
+      "proposed_effect": "same_process",
+      "requires": {
+        "profile_complete": true
+      },
+      "to": "U02"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "U02",
+      "proposed_effect": "same_process",
+      "requires": {
+        "overstay_assessed": true,
+        "protocol_received": true
+      },
+      "to": "U03"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "U03",
+      "proposed_effect": "same_process",
+      "requires": {
+        "fine_payment_confirmed": true
+      },
+      "to": "U04"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "U04",
+      "proposed_effect": "same_process",
+      "requires": {
+        "police_letter_received": true
+      },
+      "to": "U05"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "U05",
+      "proposed_effect": "same_process",
+      "requires": {
+        "documents_accepted": true,
+        "documents_current": true,
+        "police_letter_received": true,
+        "regularization_route": "exit_visa",
+        "submission_recorded": true
+      },
+      "to": "U06"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "U05",
+      "proposed_effect": "separate_registration_application",
+      "requires": {
+        "documents_current": true,
+        "receiving_party_docs_accepted": true,
+        "regularization_route": "registration",
+        "stay_basis_checked": true,
+        "submission_recorded": true
+      },
+      "to": "U06"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "U06",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "approved",
+        "exit_visa_issued": true,
+        "regularization_route": "exit_visa"
+      },
+      "to": "U07"
+    },
+    {
+      "basis": "draft_proposal",
+      "from": "U06",
+      "proposed_effect": "same_process",
+      "requires": {
+        "decision": "refused",
+        "regularization_route": "exit_visa"
+      },
+      "to": "UX2"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "U07",
+      "proposed_effect": "same_process",
+      "requires": {
+        "departure_confirmed": true
+      },
+      "to": "U08"
+    },
+    {
+      "basis": "source_sequence",
+      "from": "U08",
+      "proposed_effect": "same_process",
+      "requires": {
+        "completion_reviewed": true,
+        "departure_confirmed": true
+      },
+      "to": "U09"
+    }
+  ],
+  "facts": {
+    "account_activated": {
+      "label": "Кабинет работодателя активирован",
+      "type": "boolean"
+    },
+    "actual_entry_confirmed": {
+      "label": "Подтверждён фактический въезд, а не плановая дата",
+      "type": "boolean"
+    },
+    "actual_exit_or_end_confirmed": {
+      "label": "Подтверждён выезд или проверено основание завершения сопровождения",
+      "type": "boolean"
+    },
+    "application_reference_recorded": {
+      "label": "Номер подачи записан и проверен",
+      "type": "boolean"
+    },
+    "checklist_sent": {
+      "label": "Чек-лист документов передан",
+      "type": "boolean"
+    },
+    "completion_reviewed": {
+      "label": "Основание завершения или продления проверено",
+      "type": "boolean"
+    },
+    "consent_confirmed": {
+      "label": "Согласие на обработку данных подтверждено",
+      "type": "boolean"
+    },
+    "conversation_started": {
+      "label": "Диалог начат или обращение взял менеджер",
+      "type": "boolean"
+    },
+    "corrections_completed": {
+      "label": "Замечания устранены",
+      "type": "boolean"
+    },
+    "corrections_needed": {
+      "label": "Есть замечания к комплекту",
+      "type": "boolean"
+    },
+    "decision": {
+      "label": "Результат рассмотрения",
+      "type": "enum",
+      "values": {
+        "approved": "Одобрено",
+        "pending": "Ещё рассматривается",
+        "refused": "Отказ",
+        "revision_requested": "Доработка"
+      }
+    },
+    "delivered_to_client": {
+      "label": "Документ и памятка переданы клиенту",
+      "type": "boolean"
+    },
+    "departure_confirmed": {
+      "label": "Фактический выезд подтверждён",
+      "type": "boolean"
+    },
+    "documents_accepted": {
+      "label": "Комплект принят после проверки",
+      "type": "boolean"
+    },
+    "documents_current": {
+      "label": "Принятие относится к актуальной версии документов и паспорта",
+      "type": "boolean"
+    },
+    "documents_received": {
+      "label": "Комплект документов получен",
+      "type": "boolean"
+    },
+    "eligibility": {
+      "label": "Вывод специалиста о возможности выбранного продукта",
+      "type": "enum",
+      "values": {
+        "eligible": "Основания проверены, продукт возможен",
+        "ineligible": "Выбранный продукт невозможен",
+        "needs_review": "Решение ещё не принято"
+      }
+    },
+    "email_verified": {
+      "label": "E-mail портала подтверждён",
+      "type": "boolean"
+    },
+    "employer_authorization_confirmed": {
+      "label": "Полномочия для работы с кабинетом работодателя подтверждены",
+      "type": "boolean"
+    },
+    "employer_qualified": {
+      "label": "Квалификация работодателя выполнена",
+      "type": "boolean"
+    },
+    "exit_visa_issued": {
+      "label": "Выездная виза L выдана и проверена",
+      "type": "boolean"
+    },
+    "fine_payment_confirmed": {
+      "label": "Оплата штрафа подтверждена квитанцией",
+      "type": "boolean"
+    },
+    "followup_completed": {
+      "label": "Сопровождение выполнено и проверено",
+      "type": "boolean"
+    },
+    "invoice_issued": {
+      "label": "Счёт выставлен",
+      "type": "boolean"
+    },
+    "issued_document_checked": {
+      "label": "Данные выданного документа проверены",
+      "type": "boolean"
+    },
+    "issued_document_downloaded": {
+      "label": "Выданный документ получен для проверки",
+      "type": "boolean"
+    },
+    "manager_review_required": {
+      "label": "Нужна квалификация менеджером",
+      "type": "boolean"
+    },
+    "offer_accepted": {
+      "label": "Оферта или договор принят",
+      "type": "boolean"
+    },
+    "overstay_assessed": {
+      "label": "Обстоятельства нарушения и допустимый путь проверены специалистом",
+      "type": "boolean"
+    },
+    "payment_code_received": {
+      "label": "Код оплаты регистрации получен",
+      "type": "boolean"
+    },
+    "permit_issued": {
+      "label": "Единое разрешение выдано",
+      "type": "boolean"
+    },
+    "police_letter_received": {
+      "label": "Письмо ОВД получено",
+      "type": "boolean"
+    },
+    "portal_draft_created": {
+      "label": "Черновик на портале создан",
+      "type": "boolean"
+    },
+    "portal_payment_confirmed": {
+      "label": "Факт оплаты на портале подтверждён",
+      "type": "boolean"
+    },
+    "product_defined": {
+      "label": "Тип услуги и продукт определены",
+      "type": "boolean"
+    },
+    "profile_complete": {
+      "label": "Карточка квалификации заполнена",
+      "type": "boolean"
+    },
+    "protocol_received": {
+      "label": "Протокол ОВД получен",
+      "type": "boolean"
+    },
+    "quota_applied": {
+      "label": "Заявка на квоту подана",
+      "type": "boolean"
+    },
+    "quota_approved": {
+      "label": "Квота одобрена и её применимость проверена",
+      "type": "boolean"
+    },
+    "quote_sent": {
+      "label": "Предложение с составом услуг направлено",
+      "type": "boolean"
+    },
+    "receipt_confirmed": {
+      "label": "Клиент подтвердил получение",
+      "type": "boolean"
+    },
+    "receiving_party_docs_accepted": {
+      "label": "Документы принимающей стороны приняты",
+      "type": "boolean"
+    },
+    "registration_certificate_received": {
+      "label": "Талон регистрации получен и срок проверен",
+      "type": "boolean"
+    },
+    "registration_confirmed": {
+      "label": "Требуемая регистрация подтверждена",
+      "type": "boolean"
+    },
+    "registration_payment_confirmed": {
+      "label": "Оплата регистрации подтверждена",
+      "type": "boolean"
+    },
+    "regularization_route": {
+      "label": "Проверенный путь урегулирования",
+      "type": "enum",
+      "values": {
+        "exit_visa": "Выездная виза L",
+        "registration": "Регистрация"
+      }
+    },
+    "resident_issued_and_collected": {
+      "label": "Резидент-карта выдана, получение пластика подтверждено",
+      "type": "boolean"
+    },
+    "resident_package_received": {
+      "label": "Комплект на резидент-карту получен",
+      "type": "boolean"
+    },
+    "service_payment_confirmed": {
+      "label": "Факт оплаты услуг подтверждён",
+      "type": "boolean"
+    },
+    "stay_basis_checked": {
+      "label": "Основание и срок регистрации проверены специалистом",
+      "type": "boolean"
+    },
+    "submission_recorded": {
+      "label": "Фактическая отправка заявления подтверждена",
+      "type": "boolean"
+    },
+    "visa_required": {
+      "label": "По проверенному сценарию нужна виза",
+      "type": "boolean"
+    }
+  },
+  "format": "kg-entry-process-draft/1",
+  "notices": {
+    "RX2": "Просрочка требует отдельной процедуры урегулирования; регистрация автоматически не становится визой L.",
+    "U06": "При выборе регистрации продолжение относится к отдельной регистрационной заявке. U07 доступен только для пути L.",
+    "V11": "Параллельный флаг/подстатус ожидания приглашающей стороны, не обязательный последовательный этап.",
+    "WX2": "Отказ требует анализа; новая попытка и решения о деньгах оформляются отдельно.",
+    "X01": "После анализа отказа повтор оформляется новой связанной заявкой. Старую попытку нельзя переводить обратно на рассмотрение.",
+    "X10": "Параллельный флаг риска срока; автоматическое вычисление и эскалация здесь не включены.",
+    "X12": "Параллельный флаг задержки; автоматическое вычисление и задача здесь не включены."
+  },
+  "processes": {
+    "regularization": "Урегулирование",
+    "stay": "Пребывание",
+    "visa": "Визы",
+    "work": "Работа"
+  },
+  "publication_approved": false,
+  "scope": "source_process_preview_only",
+  "section_sha256": {
+    "14.2": "d23f500ddd6be5bb86700ede1586b1e3f0295129836a2fece0027bf8abe5a322",
+    "14.3": "2cc33d7625abc8e48ea2d3ec22d48b9b1deb2e0e59e05c6e6f6fcb32fd244a60",
+    "14.4": "bb595563c259d60ace2f7759b359ce1e1b8829815f38fd651e5be681b836f7ce",
+    "14.5": "a8980e52e0927869ab1642c1f331471b42ad4347728d1cf6fa6fbd8ba9efe4e4",
+    "14.6": "7b22ae6de4ecb0e6b9af0e8e7a4755b28a9e3126a7eb30592dffbdf2fc573828"
+  },
+  "source_sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
+  "stages": [
+    {
+      "code": "V01",
+      "kind": "stage",
+      "name": "Новый лид",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V01 | Новый лид | Сообщение, звонок, форма | Бот начал диалог / менеджер взял | Бот | Ответ бота ≤ 1 мин; менеджера ≤ 15 мин в рабочее время | Нет ответа 15 мин → алерт старшему |"
+    },
+    {
+      "code": "V02",
+      "kind": "stage",
+      "name": "Квалификация (бот)",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V02 | Квалификация (бот) | Бот задаёт вопросы 3.2–3.3 | Карточка заполнена → V04; стоп-фактор → V03 | Бот | Ожидание клиента 24 ч | Напоминание клиенту через 2 ч и 24 ч; 72 ч тишины → X07 |"
+    },
+    {
+      "code": "V03",
+      "kind": "stage",
+      "name": "Квалификация (менеджер)",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V03 | Квалификация (менеджер) | Эскалация (4.1) или передача от бота | Продукт определён → V04; нельзя → X08 | Менеджер | Взять ≤ 2 р.ч.; решение ≤ 1 р.д. | Таймер «эскалация не взята» |"
+    },
+    {
+      "code": "V04",
+      "kind": "stage",
+      "name": "Продукт определён",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V04 | Продукт определён | Выбран тип/услуга, режим, альтернативы | КП → V06; виза не нужна → V05 | Менеджер | ≤ 2 р.ч. | — |"
+    },
+    {
+      "code": "V05",
+      "kind": "stage",
+      "name": "Виза не нужна (консультация)",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V05 | Виза не нужна (консультация) | Безвиз в пределах лимита | Кросс-продажа (тур, отель, трансфер, регистрация) или закрытие | Бот/менеджер | — | Напоминание клиенту о лимите и регистрации за 5 дней до срока |"
+    },
+    {
+      "code": "V06",
+      "kind": "stage",
+      "name": "КП отправлено",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V06 | КП отправлено | Расчёт: госплатёж + наш сбор + сроки | Принято → V07; отказ → X07 | Менеджер | — | 24 ч, 72 ч; если дата въезда ≤ 10 р.д. — звонок |"
+    },
+    {
+      "code": "V07",
+      "kind": "stage",
+      "name": "Оферта/договор принят",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V07 | Оферта/договор принят | Акцепт оферты / подписание + согласие на обработку ПДн | → V08 | Менеджер | — | Без согласия на ПДн документы не запрашивать |"
+    },
+    {
+      "code": "V08",
+      "kind": "stage",
+      "name": "Счёт выставлен",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V08 | Счёт выставлен | Счёт / ссылка на оплату | Оплата → V09 | Менеджер | — | 24 ч, 48 ч; срочным — через 4 ч |"
+    },
+    {
+      "code": "V09",
+      "kind": "stage",
+      "name": "Оплачено",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V09 | Оплачено | 100% предоплата | → V10 | Бухгалтерия/ менеджер | — | Автоотправка чек-листа документов |"
+    },
+    {
+      "code": "V10",
+      "kind": "stage",
+      "name": "Сбор документов",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V10 | Сбор документов | Чек-лист отправлен | Всё получено → V12 | Клиент | — | Напоминания Д+1, Д+3, Д+7; Д+14 → X06; при дате въезда ≤ 10 р.д. — ежедневно |"
+    },
+    {
+      "code": "V11",
+      "kind": "flag",
+      "name": "Ждём приглашающую сторону (флаг/ подстатус)",
+      "page": 63,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V11 | Ждём приглашающую сторону (флаг/ подстатус) | Нужны письмо, учредительные, ЛК | Получено → V12 | Менеджер | — | Напоминание стороне каждые 2 р.д. |"
+    },
+    {
+      "code": "V12",
+      "kind": "stage",
+      "name": "Проверка документов",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V12 | Проверка документов | Пакет получен | ОК → V14; замечания → V13 | Менеджер | ≤ 4 р.ч. | — |"
+    },
+    {
+      "code": "V13",
+      "kind": "stage",
+      "name": "Нужно исправить / дособрать",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V13 | Нужно исправить / дособрать | Список замечаний клиенту | Исправлено → V12 | Клиент | — | Как V10 |"
+    },
+    {
+      "code": "V14",
+      "kind": "stage",
+      "name": "Готово к подаче",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V14 | Готово к подаче | Пакет принят | → V15 | Менеджер | В тот же р.д.; срочно ≤ 2 ч | — |"
+    },
+    {
+      "code": "V15",
+      "kind": "stage",
+      "name": "Черновик на портале / ждём верификацию e-mail",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V15 | Черновик на портале / ждём верификацию e-mail | Шаг 1 портала пройден | Подтверждено → заполнение → оплата → V16 | Менеджер | 72 ч на верификацию | Напоминание через 24 ч и 48 ч |"
+    },
+    {
+      "code": "V16",
+      "kind": "stage",
+      "name": "Подано (оплачено)",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V16 | Подано (оплачено) | Оплата прошла | → V17 автоматически | Менеджер | — | Записать reference number, дату/время, тариф; рассчитать ожидаемую дату решения (+5 р.д. / +2 р.д.) |"
+    },
+    {
+      "code": "V17",
+      "kind": "stage",
+      "name": "На рассмотрении",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V17 | На рассмотрении | — | Одобрено → V20; возврат → V18; отказ → X01 | Менеджер | До ожидаемой даты | Проверка статуса 10:00 и 16:00; срочные — каждые 2–3 ч; просрочка ожидаемой даты → флаг «Задержка» + задача «звонок на горячую линию КД МИД» |"
+    },
+    {
+      "code": "V18",
+      "kind": "stage",
+      "name": "Возвращено на доработку",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V18 | Возвращено на доработку | Письмо портала / статус | Исправлено → V19; 30 к.д. без исправления → X09 | Менеджер | Исправить в тот же р.д. | Дедлайн = дата возврата + 30 к.д.; напоминания клиенту, если нужен новый документ |"
+    },
+    {
+      "code": "V19",
+      "kind": "stage",
+      "name": "Исправлено, повторно отправлено",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V19 | Исправлено, повторно отправлено | Submit после исправления | → V17 | Менеджер | — | Пересчёт ожидаемой даты (+5 р.д. от исправления) |"
+    },
+    {
+      "code": "V20",
+      "kind": "stage",
+      "name": "Одобрено",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V20 | Одобрено | e-Visa выдана | → V21 | Менеджер | Скачать ≤ 1 р.ч. | — |"
+    },
+    {
+      "code": "V21",
+      "kind": "stage",
+      "name": "Проверка выданного документа",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V21 | Проверка выданного документа | Чек-лист блока 16 | ОК → V22; ошибка → X13/X14 | Менеджер (+ второй взгляд для B2B) | ≤ 1 р.ч. | — |"
+    },
+    {
+      "code": "V22",
+      "kind": "stage",
+      "name": "Передано клиенту",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V22 | Передано клиенту | PDF + памятка | Клиент подтвердил получение → V23 | Менеджер | — | Нет подтверждения 24 ч → звонок |"
+    },
+    {
+      "code": "V23",
+      "kind": "stage",
+      "name": "Ожидаем въезд",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V23 | Ожидаем въезд | Дата въезда в будущем | Въехал → V24 | Бот | — | Накануне въезда — памятка; на следующий день — «Вы въехали?» |"
+    },
+    {
+      "code": "V24",
+      "kind": "stage",
+      "name": "Клиент в КР (сопровождение)",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V24 | Клиент в КР (сопровождение) | Подтверждён въезд | Выехал / срок закончился → V25 | Бот/менеджер | — | Дедлайны: регистрация (за 5 дн до окончания освобождения), продление (за 15 р.д. до окончания визы), выезд (за 5 дн) — с предложением услуг |"
+    },
+    {
+      "code": "V25",
+      "kind": "stage",
+      "name": "Завершено (успех)",
+      "page": 64,
+      "process": "visa",
+      "section": "14.2",
+      "source_text": "| V25 | Завершено (успех) | — | — | — | — | Запрос отзыва; напоминание о повторной поездке |"
+    },
+    {
+      "code": "X01",
+      "kind": "exception",
+      "name": "Отказ",
+      "page": 64,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X01 | Отказ | Портал/КД МИД сообщил об отказе | Подстатусы: «Анализ» → «Повторная подача» (новая связанная заявка) / «Предложена альтернатива» / «Закрыт». Блок 15 |"
+    },
+    {
+      "code": "X02",
+      "kind": "exception",
+      "name": "Отмена клиентом до подачи",
+      "page": 64,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X02 | Отмена клиентом до подачи | Клиент отказался до оплаты на портале | Возврат нашего сбора по оферте [РЕШЕНИЕ]; причина отказа |"
+    },
+    {
+      "code": "X03",
+      "kind": "exception",
+      "name": "Отмена клиентом после подачи",
+      "page": 64,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X03 | Отмена клиентом после подачи | Заявка уже оплачена на портале | Госсбор не возвращается (кроме п.118); закрыть |"
+    },
+    {
+      "code": "X04",
+      "kind": "exception",
+      "name": "Возврат средств",
+      "page": 64,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X04 | Возврат средств | Основание п.118–119 или наша политика | Подстатусы: «Запрос в КД МИД», «Госпошлина/ гарантийный взнос ЕР», «Наш сбор», «Возвращено» |"
+    },
+    {
+      "code": "X05",
+      "kind": "exception",
+      "name": "Техническая ошибка",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X05 | Техническая ошибка | Портал не работает, оплата не прошла, двойное списание, не приходят письма, файл не грузится | Задача по блоку 17; при двойном списании → X04 |"
+    },
+    {
+      "code": "X06",
+      "kind": "exception",
+      "name": "Клиент не предоставил документы",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X06 | Клиент не предоставил документы | 14 дней без документов (или срыв дедлайна) | Закрыть / перевести в «дожим» |"
+    },
+    {
+      "code": "X07",
+      "kind": "exception",
+      "name": "Клиент передумал / не отвечает",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X07 | Клиент передумал / не отвечает | Причина обязательна: дорого, долго, оформил сам, конкурент, отменил поездку, нет ответа | Аналитика |"
+    },
+    {
+      "code": "X08",
+      "kind": "exception",
+      "name": "Невозможно оформить данный тип",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X08 | Невозможно оформить данный тип | Нарушение правил (4.7) | Подстатус «Предложена альтернатива» → V04 или закрыть |"
+    },
+    {
+      "code": "X09",
+      "kind": "exception",
+      "name": "Заявка аннулирована",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X09 | Заявка аннулирована | Не исправлена за 30/60 дней, не подтверждён e-mail за 72 ч | Новая заявка или закрыть |"
+    },
+    {
+      "code": "X10",
+      "kind": "flag",
+      "name": "Истекает статус клиента (флаг)",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X10 | Истекает статус клиента (флаг) | Клиент в КР, до окончания срока ≤ 7 р.д., решения нет | Эскалация старшему; план Б (срочно / выезд) |"
+    },
+    {
+      "code": "X11",
+      "kind": "exception",
+      "name": "Просрочка пребывания",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X11 | Просрочка пребывания | Срок уже истёк | Перенос в воронку «Урегулирование» |"
+    },
+    {
+      "code": "X12",
+      "kind": "flag",
+      "name": "Задержка рассмотрения (флаг)",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X12 | Задержка рассмотрения (флаг) | Ожидаемая дата решения прошла | Звонок/письмо в КД МИД, ускорение |"
+    },
+    {
+      "code": "X13",
+      "kind": "exception",
+      "name": "Ошибка в документе по вине госоргана",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X13 | Ошибка в документе по вине госоргана | Данные визы не совпадают с паспортом/ заявкой | Обращение в КД МИД (блок 16.3) |"
+    },
+    {
+      "code": "X14",
+      "kind": "exception",
+      "name": "Ошибка по нашей вине",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X14 | Ошибка по нашей вине | Ошибка в анкете после оплаты | Новая заявка за наш счёт [РЕШЕНИЕ]; разбор |"
+    },
+    {
+      "code": "X15",
+      "kind": "exception",
+      "name": "Дубль / спам / не наш продукт",
+      "page": 65,
+      "process": "visa",
+      "section": "14.3",
+      "source_text": "| X15 | Дубль / спам / не наш продукт | — | Закрыть без аналитики продаж |"
+    },
+    {
+      "code": "W01",
+      "kind": "stage",
+      "name": "Лид B2B",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W01 | Лид B2B | Компания, ИНН, контакт, количество работников, гражданства |"
+    },
+    {
+      "code": "W02",
+      "kind": "stage",
+      "name": "Квалификация работодателя",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W02 | Квалификация работодателя | ЕАЭС? SW? ВКС? Отрасль (швейная — ТПП)? Налоги за 3 мес.? Реестр? |"
+    },
+    {
+      "code": "W03",
+      "kind": "stage",
+      "name": "КП и договор с работодателем",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W03 | КП и договор с работодателем | Наш сбор $100 × человек + госплатежи |"
+    },
+    {
+      "code": "W04",
+      "kind": "stage",
+      "name": "Оплата",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W04 | Оплата | — |"
+    },
+    {
+      "code": "W05",
+      "kind": "stage",
+      "name": "ЛК работодателя: регистрация / доверенность",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W05 | ЛК работодателя: регистрация / доверенность | Логин хранится в менеджере паролей, не в CRM [ПРАКТИКА] |"
+    },
+    {
+      "code": "W06",
+      "kind": "stage",
+      "name": "ЛК активирован",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W06 | ЛК активирован | Дата активации |"
+    },
+    {
+      "code": "W07",
+      "kind": "stage",
+      "name": "Квота: заявка подана",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W07 | Квота: заявка подана | — |"
+    },
+    {
+      "code": "W08",
+      "kind": "stage",
+      "name": "Квота одобрена",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W08 | Квота одобрена | Дедлайн использования = +3 месяца |"
+    },
+    {
+      "code": "W09",
+      "kind": "stage",
+      "name": "Сбор документов по работнику",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W09 | Сбор документов по работнику | Чек-лист 11.4 |"
+    },
+    {
+      "code": "W10",
+      "kind": "stage",
+      "name": "Проверка документов",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W10 | Проверка документов | — |"
+    },
+    {
+      "code": "W11",
+      "kind": "stage",
+      "name": "ЕР подано",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W11 | ЕР подано | Номер заявки, тариф (7/5/2 р.д.), ожидаемая дата |"
+    },
+    {
+      "code": "W12",
+      "kind": "stage",
+      "name": "ЕР на рассмотрении (ГКНБ 6 р.д.)",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W12 | ЕР на рассмотрении (ГКНБ 6 р.д.) | Проверка 2 раза в день |"
+    },
+    {
+      "code": "W13",
+      "kind": "stage",
+      "name": "ЕР возвращено на доработку",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W13 | ЕР возвращено на доработку | Дедлайн исправления 60 дней |"
+    },
+    {
+      "code": "W14",
+      "kind": "stage",
+      "name": "ЕР выдано",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W14 | ЕР выдано | Срок ЕР (до 60 дн); дедлайн резидент-карты = окончание ЕР − 10 р.д. |"
+    },
+    {
+      "code": "W15",
+      "kind": "stage",
+      "name": "Въезд / регистрация на срок ЕР",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W15 | Въезд / регистрация на срок ЕР | Дата въезда; номер талона |"
+    },
+    {
+      "code": "W16",
+      "kind": "stage",
+      "name": "Резидент-карта: сбор (медосмотр ВИЧ/086У, договор, сим-карта на имя работника, согласие на спецсчёт, адрес)",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W16 | Резидент-карта: сбор (медосмотр ВИЧ/086У, договор, сим-карта на имя работника, согласие на спецсчёт, адрес) | Дедлайн = окончание ЕР − 10 р.д. |"
+    },
+    {
+      "code": "W17",
+      "kind": "stage",
+      "name": "Резидент-карта подана",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W17 | Резидент-карта подана | Номер, ожидаемая дата (+10 р.д.) |"
+    },
+    {
+      "code": "W18",
+      "kind": "stage",
+      "name": "Резидент-карта на рассмотрении",
+      "page": 65,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W18 | Резидент-карта на рассмотрении | — |"
+    },
+    {
+      "code": "W19",
+      "kind": "stage",
+      "name": "Резидент-карта выдана, пластик получен",
+      "page": 66,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W19 | Резидент-карта выдана, пластик получен | Срок карты |"
+    },
+    {
+      "code": "W20",
+      "kind": "stage",
+      "name": "Регистрация на срок резидент-карты",
+      "page": 66,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W20 | Регистрация на срок резидент-карты | — |"
+    },
+    {
+      "code": "W21",
+      "kind": "stage",
+      "name": "Сопровождение",
+      "page": 66,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W21 | Сопровождение | Напоминания: новая ЕР за 7 р.д. до окончания карты; ежеквартально — налоги работодателя; смена адреса — уведомить МИД |"
+    },
+    {
+      "code": "W22",
+      "kind": "stage",
+      "name": "Завершено / продлено",
+      "page": 66,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| W22 | Завершено / продлено | — |"
+    },
+    {
+      "code": "WX1",
+      "kind": "exception",
+      "name": "Увольнение / ликвидация",
+      "page": 66,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| WX1 | Увольнение / ликвидация | 3 к.д. — уведомление МИД и заявка на аннулирование; 30 дней — выезд работника; работодатель оплачивает выезд |"
+    },
+    {
+      "code": "WX2",
+      "kind": "exception",
+      "name": "Отказ в ЕР / резидент-карте",
+      "page": 66,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| WX2 | Отказ в ЕР / резидент-карте | Возврат госпошлины, гарантийного взноса, эл. разрешения (п.119); обжалование в суде |"
+    },
+    {
+      "code": "WX3",
+      "kind": "exception",
+      "name": "Работодатель в Реестре недобросовестных",
+      "page": 66,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| WX3 | Работодатель в Реестре недобросовестных | ЛК может быть закрыт на 1 год |"
+    },
+    {
+      "code": "WX4",
+      "kind": "exception",
+      "name": "Квота аннулирована (3 мес.)",
+      "page": 66,
+      "process": "work",
+      "section": "14.4",
+      "source_text": "| WX4 | Квота аннулирована (3 мес.) | Новая заявка на квоту |"
+    },
+    {
+      "code": "R01",
+      "kind": "stage",
+      "name": "Запрос",
+      "page": 66,
+      "process": "stay",
+      "section": "14.5",
+      "source_text": "R01 Запрос → R02 Проверка основания и дедлайна (Перечень ПР-600; не в последние 3 дня лимита) → R03 Документы принимающей стороны (ходатайство, согласие собственника, 12 м²/чел.) → R04 Заявление подано (онлайн/ЦОН), получен код оплаты → R05 Оплачено (**≤ 3 р.д.**) → R06 Талон получен (срок регистрации в CRM) → R07 Сопровождение: продление (до последнего дня), перерегистрация (10 р.д. при смене адреса/паспорта/цели), аннулирование при выезде на 30+ дней → R08 Завершено. Исключения: RX1 Отказ (оплата не возвращается), RX2 Просрочка регистрации → воронка «Урегулирование»."
+    },
+    {
+      "code": "R02",
+      "kind": "stage",
+      "name": "Проверка основания и дедлайна",
+      "page": 66,
+      "process": "stay",
+      "section": "14.5",
+      "source_text": "R01 Запрос → R02 Проверка основания и дедлайна (Перечень ПР-600; не в последние 3 дня лимита) → R03 Документы принимающей стороны (ходатайство, согласие собственника, 12 м²/чел.) → R04 Заявление подано (онлайн/ЦОН), получен код оплаты → R05 Оплачено (**≤ 3 р.д.**) → R06 Талон получен (срок регистрации в CRM) → R07 Сопровождение: продление (до последнего дня), перерегистрация (10 р.д. при смене адреса/паспорта/цели), аннулирование при выезде на 30+ дней → R08 Завершено. Исключения: RX1 Отказ (оплата не возвращается), RX2 Просрочка регистрации → воронка «Урегулирование»."
+    },
+    {
+      "code": "R03",
+      "kind": "stage",
+      "name": "Документы принимающей стороны",
+      "page": 66,
+      "process": "stay",
+      "section": "14.5",
+      "source_text": "R01 Запрос → R02 Проверка основания и дедлайна (Перечень ПР-600; не в последние 3 дня лимита) → R03 Документы принимающей стороны (ходатайство, согласие собственника, 12 м²/чел.) → R04 Заявление подано (онлайн/ЦОН), получен код оплаты → R05 Оплачено (**≤ 3 р.д.**) → R06 Талон получен (срок регистрации в CRM) → R07 Сопровождение: продление (до последнего дня), перерегистрация (10 р.д. при смене адреса/паспорта/цели), аннулирование при выезде на 30+ дней → R08 Завершено. Исключения: RX1 Отказ (оплата не возвращается), RX2 Просрочка регистрации → воронка «Урегулирование»."
+    },
+    {
+      "code": "R04",
+      "kind": "stage",
+      "name": "Заявление подано, получен код оплаты",
+      "page": 66,
+      "process": "stay",
+      "section": "14.5",
+      "source_text": "R01 Запрос → R02 Проверка основания и дедлайна (Перечень ПР-600; не в последние 3 дня лимита) → R03 Документы принимающей стороны (ходатайство, согласие собственника, 12 м²/чел.) → R04 Заявление подано (онлайн/ЦОН), получен код оплаты → R05 Оплачено (**≤ 3 р.д.**) → R06 Талон получен (срок регистрации в CRM) → R07 Сопровождение: продление (до последнего дня), перерегистрация (10 р.д. при смене адреса/паспорта/цели), аннулирование при выезде на 30+ дней → R08 Завершено. Исключения: RX1 Отказ (оплата не возвращается), RX2 Просрочка регистрации → воронка «Урегулирование»."
+    },
+    {
+      "code": "R05",
+      "kind": "stage",
+      "name": "Оплачено",
+      "page": 66,
+      "process": "stay",
+      "section": "14.5",
+      "source_text": "R01 Запрос → R02 Проверка основания и дедлайна (Перечень ПР-600; не в последние 3 дня лимита) → R03 Документы принимающей стороны (ходатайство, согласие собственника, 12 м²/чел.) → R04 Заявление подано (онлайн/ЦОН), получен код оплаты → R05 Оплачено (**≤ 3 р.д.**) → R06 Талон получен (срок регистрации в CRM) → R07 Сопровождение: продление (до последнего дня), перерегистрация (10 р.д. при смене адреса/паспорта/цели), аннулирование при выезде на 30+ дней → R08 Завершено. Исключения: RX1 Отказ (оплата не возвращается), RX2 Просрочка регистрации → воронка «Урегулирование»."
+    },
+    {
+      "code": "R06",
+      "kind": "stage",
+      "name": "Талон получен",
+      "page": 66,
+      "process": "stay",
+      "section": "14.5",
+      "source_text": "R01 Запрос → R02 Проверка основания и дедлайна (Перечень ПР-600; не в последние 3 дня лимита) → R03 Документы принимающей стороны (ходатайство, согласие собственника, 12 м²/чел.) → R04 Заявление подано (онлайн/ЦОН), получен код оплаты → R05 Оплачено (**≤ 3 р.д.**) → R06 Талон получен (срок регистрации в CRM) → R07 Сопровождение: продление (до последнего дня), перерегистрация (10 р.д. при смене адреса/паспорта/цели), аннулирование при выезде на 30+ дней → R08 Завершено. Исключения: RX1 Отказ (оплата не возвращается), RX2 Просрочка регистрации → воронка «Урегулирование»."
+    },
+    {
+      "code": "R07",
+      "kind": "stage",
+      "name": "Сопровождение",
+      "page": 66,
+      "process": "stay",
+      "section": "14.5",
+      "source_text": "R01 Запрос → R02 Проверка основания и дедлайна (Перечень ПР-600; не в последние 3 дня лимита) → R03 Документы принимающей стороны (ходатайство, согласие собственника, 12 м²/чел.) → R04 Заявление подано (онлайн/ЦОН), получен код оплаты → R05 Оплачено (**≤ 3 р.д.**) → R06 Талон получен (срок регистрации в CRM) → R07 Сопровождение: продление (до последнего дня), перерегистрация (10 р.д. при смене адреса/паспорта/цели), аннулирование при выезде на 30+ дней → R08 Завершено. Исключения: RX1 Отказ (оплата не возвращается), RX2 Просрочка регистрации → воронка «Урегулирование»."
+    },
+    {
+      "code": "R08",
+      "kind": "stage",
+      "name": "Завершено",
+      "page": 66,
+      "process": "stay",
+      "section": "14.5",
+      "source_text": "R01 Запрос → R02 Проверка основания и дедлайна (Перечень ПР-600; не в последние 3 дня лимита) → R03 Документы принимающей стороны (ходатайство, согласие собственника, 12 м²/чел.) → R04 Заявление подано (онлайн/ЦОН), получен код оплаты → R05 Оплачено (**≤ 3 р.д.**) → R06 Талон получен (срок регистрации в CRM) → R07 Сопровождение: продление (до последнего дня), перерегистрация (10 р.д. при смене адреса/паспорта/цели), аннулирование при выезде на 30+ дней → R08 Завершено. Исключения: RX1 Отказ (оплата не возвращается), RX2 Просрочка регистрации → воронка «Урегулирование»."
+    },
+    {
+      "code": "RX1",
+      "kind": "exception",
+      "name": "Отказ",
+      "page": 66,
+      "process": "stay",
+      "section": "14.5",
+      "source_text": "R01 Запрос → R02 Проверка основания и дедлайна (Перечень ПР-600; не в последние 3 дня лимита) → R03 Документы принимающей стороны (ходатайство, согласие собственника, 12 м²/чел.) → R04 Заявление подано (онлайн/ЦОН), получен код оплаты → R05 Оплачено (**≤ 3 р.д.**) → R06 Талон получен (срок регистрации в CRM) → R07 Сопровождение: продление (до последнего дня), перерегистрация (10 р.д. при смене адреса/паспорта/цели), аннулирование при выезде на 30+ дней → R08 Завершено. Исключения: RX1 Отказ (оплата не возвращается), RX2 Просрочка регистрации → воронка «Урегулирование»."
+    },
+    {
+      "code": "RX2",
+      "kind": "exception",
+      "name": "Просрочка регистрации",
+      "page": 66,
+      "process": "stay",
+      "section": "14.5",
+      "source_text": "R01 Запрос → R02 Проверка основания и дедлайна (Перечень ПР-600; не в последние 3 дня лимита) → R03 Документы принимающей стороны (ходатайство, согласие собственника, 12 м²/чел.) → R04 Заявление подано (онлайн/ЦОН), получен код оплаты → R05 Оплачено (**≤ 3 р.д.**) → R06 Талон получен (срок регистрации в CRM) → R07 Сопровождение: продление (до последнего дня), перерегистрация (10 р.д. при смене адреса/паспорта/цели), аннулирование при выезде на 30+ дней → R08 Завершено. Исключения: RX1 Отказ (оплата не возвращается), RX2 Просрочка регистрации → воронка «Урегулирование»."
+    },
+    {
+      "code": "U01",
+      "kind": "stage",
+      "name": "Обращение",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    },
+    {
+      "code": "U02",
+      "kind": "stage",
+      "name": "Оценка",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    },
+    {
+      "code": "U03",
+      "kind": "stage",
+      "name": "ОВД: протокол",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    },
+    {
+      "code": "U04",
+      "kind": "stage",
+      "name": "Штраф оплачен",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    },
+    {
+      "code": "U05",
+      "kind": "stage",
+      "name": "Письмо ОВД",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    },
+    {
+      "code": "U06",
+      "kind": "stage",
+      "name": "L подано или регистрация до 30 дней",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    },
+    {
+      "code": "U07",
+      "kind": "stage",
+      "name": "L выдана",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    },
+    {
+      "code": "U08",
+      "kind": "stage",
+      "name": "Выезд подтверждён",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    },
+    {
+      "code": "U09",
+      "kind": "stage",
+      "name": "Закрыто",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    },
+    {
+      "code": "UX1",
+      "kind": "exception",
+      "name": "Экстренная ситуация",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    },
+    {
+      "code": "UX2",
+      "kind": "exception",
+      "name": "Отказ в L",
+      "page": 66,
+      "process": "regularization",
+      "section": "14.6",
+      "source_text": "U01 Обращение → U02 Оценка (дни просрочки, гражданство, путь: регистрация до 30 дн или L) → U03 ОВД: протокол → U04 Штраф оплачен (квитанция) → U05 Письмо ОВД → U06 L подано (стандарт / срочно) **или** регистрация до 30 дн → U07 L выдана (**действует 10 дней**) → U08 Выезд подтверждён → U09 Закрыто + напоминание о дате окончания запрета въезда (для повторной продажи). Исключения: UX1 Экстренная ситуация (болезнь → E; утеря паспорта → посольство); UX2 Отказ в L (неполная оплата срочного тарифа, нет документов)."
+    }
+  ],
+  "version": "pdf-1.1-review-1"
+}

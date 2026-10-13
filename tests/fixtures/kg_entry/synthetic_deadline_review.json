@@ -1,0 +1,6 @@
+{
+  "format": "kg-deadline-review-input/1",
+  "rule_unit_id": "KG.DL.TEST",
+  "anchor": {"name": "entry_date", "value": "2026-10-15"},
+  "policy": {"status":"proposed","timezone":"Asia/Bishkek","count_anchor_day":false,"month_end":null,"hours_mode":null}
+}

@@ -1,0 +1,29 @@
+{
+  "base": "e37749a07023aabfa1134602ee6c384254eafcfd",
+  "snapshot": "uncommitted E6-13 r3: test EOF whitespace only after r2",
+  "archive": "runs/e6-13-review-r3",
+  "normalization": "LF",
+  "files": {
+    "app/config.py": "5c9f4695d9359f1e243a426a46c32b1d593c560f7f00dd8496a6be8abe1b675d",
+    "app/domain/models.py": "141a2a10aae76c94ee0fcc9c6bac5e19e808ac08c2d8f4899c68f8f795068f19",
+    "app/domain/entry_quote_policy.py": "baf17de7039821ac062f91e614b9aa65ea7aecd1d42bca15cd8d7f58f33b3529",
+    "app/domain/entry_quotes.py": "b39389490b4ab54696a49fc6c6b78c95d5ab9128f16b9157959dc64c239e03b2",
+    "app/knowledge/quote_rules.py": "eb24510444181162613fbe061d545554d56f48f8d1ac8fa806e24b2c893a3a7e",
+    "alembic/versions/e6_quote_revisions_0030.py": "c4103d06251b62b76c59c0547d5b5419088f1fc88bd412c85bda1fc25ef37347",
+    "app/admin/kg_quotes.py": "8bd7efee7a6e316041a1f289efcdd36bc2de12123a5659f1a25aec178ce8cc6a",
+    "app/admin/router.py": "2ceeea7866db098eea5604a2869b95541c0f9ffda320ec32ad7ac68584f24e85",
+    "app/admin/templates/kg_quotes.html": "a6b3bead3dd977bb36324627f60ab5231f8ccac37bb413685347f98894652d49",
+    "app/admin/templates/kg_applications.html": "6697f90a079945d7b0e7ceb0ba1278e78d8dd879827ec29f6e5c4424bb87cf01",
+    "tests/test_quote_rules.py": "1aaaa93264ea4a2ba2661f890df173b9e25d6628f3d8fa4046417ab594db0a9a",
+    "tests/test_entry_quotes.py": "91501ced030a2f5ee94da249741af592bb3c0eda2fba18d9799ae02dfc039ba0",
+    "tests/test_admin_kg_quotes.py": "e34eeaa92fbbe36461969e4dec348b7d95727ed9f7494381a67ec6ec7de54930",
+    "tests/test_entry_quote_migration.py": "0109b4535cb1a80aa4e0f2e2a77d5b8b8ce67492af392b4218c6614ef0f059f7",
+    "tests/test_entry_quote_postgres.py": "9481ae4802108872ea5de35b955c2d586b3fd79ee1cb7c7b04a4f5a24441d0f3",
+    "tests/browser_kg_quotes.py": "ceecd8a70698d34f84f8a7cfcf4b5f6828ef1ef1b38633616098a35a1fee8502",
+    "tests/test_alembic_domain_migration.py": "a13300536b5f426e96c17e2307d68210d3dceda14c4d3d8431c7dbc8221b4f1d",
+    "tests/test_service_cases.py": "5b5f075e139d06be9d7201032d372589a02e79eceb34803dc9df47eacbdfad0a",
+    "docs/e6-13-versioned-quotes.md": "4ce4a3a4c54845d3bbe93bf4ab73ce82cb8c340e627877723365acb760abbee4"
+  },
+  "revision": "c611b86d23d622c64bb9056e4e855c6e93437370",
+  "identity": "PASS root/archive/commit 19/19"
+}

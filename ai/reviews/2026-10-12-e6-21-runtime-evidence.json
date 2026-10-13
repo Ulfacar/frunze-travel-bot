@@ -1,0 +1,97 @@
+{
+  "format": "e6-21-evidence/1",
+  "base": "f06f5eacef734bfde625813c663bc91815fe01bc",
+  "revision": "c73745744b46f5b3b8029baba201c2506e4c4a06",
+  "manifest": "ai/reviews/2026-10-12-e6-21-snapshot-r5.json",
+  "manifest_sha256": "450c3bec58e0ed88664815b899da364594b577840794af3bd66a11cbc3e3a44c",
+  "environment": "Windows Python3.12; env-free immutable archives; synthetic SQLite/PostgreSQL16.15/Chromium",
+  "changed_source_identity": {
+    "app/domain/knowledge_publication.py": true,
+    "app/domain/knowledge_answers.py": true,
+    "app/admin/kg_answers.py": true,
+    "app/admin/router.py": true,
+    "app/admin/templates/kg_answers.html": true,
+    "app/admin/templates/kg_knowledge.html": true,
+    "app/admin/templates/base.html": true,
+    "tests/test_knowledge_answers.py": true,
+    "tests/test_admin_kg_answers.py": true,
+    "tests/test_knowledge_answers_postgres.py": true,
+    "tests/browser_kg_answers.py": true,
+    "tests/test_admin_shell_and_direction_split.py": true,
+    "tests/test_admin_new_look.py": true
+  },
+  "all_app_tests_migrations_identity": {
+    "result": "PASS",
+    "files": 620
+  },
+  "primary": {
+    "artifact": "runs/e6-21-r4/runs/answers.xml",
+    "sha256": "a8c76e8e416dc71b6b39e53d64338bf85bf0669b6b37fb11f6834a1d454278e6",
+    "tests": 43,
+    "passed": 43,
+    "failure": 0,
+    "error": 0,
+    "skipped": 0,
+    "filter": [
+      "tests.browser_kg_answers",
+      "tests.test_admin_kg_answers",
+      "tests.test_knowledge_answers",
+      "tests.test_knowledge_answers_postgres"
+    ]
+  },
+  "shell": {
+    "artifact": "runs/e6-21-r5/runs/shell.xml",
+    "sha256": "9c2cd0cad5188ab4a31383ed3221eba74d50772af7e94c353d9a14afb205d8d4",
+    "tests": 42,
+    "passed": 42,
+    "failure": 0,
+    "error": 0,
+    "skipped": 0,
+    "filter": null
+  },
+  "earlier_supporting_regression": {
+    "artifact": "runs/e6-21-r2/runs/related.xml",
+    "sha256": "14023ccf57878110224e732d15362e17c7477ae1ba28443d6eb1fafab0f8ee53",
+    "tests": 165,
+    "passed": 165,
+    "failure": 0,
+    "error": 0,
+    "skipped": 0,
+    "filter": null
+  },
+  "primary_command": "python -m pytest tests/test_knowledge_answers.py tests/test_admin_kg_answers.py tests/test_knowledge_answers_postgres.py tests/browser_kg_answers.py tests/test_admin_shell_and_direction_split.py tests/test_admin_new_look.py -q --junitxml=runs/answers.xml",
+  "primary_limit": "r4 whole command:83PASS/2FAIL; both failures were legacy pilot-OFF route expectations. Primary43 all passed; r5 changes only the two legacy test lists, then all42 shell checks passed.",
+  "database_checks": "7 actual isolated PostgreSQL tests in primary43; no skips",
+  "browser": "2 Chromium cases in primary43; 390mobile/1365noJS; zero attempted external answer-page requests; both screen sizes and all2 print pages visually inspected",
+  "review": "ai/reviews/2026-10-12-e6-21-independent-review.md",
+  "audit": "ai/reviews/2026-10-12-e6-21-final-audit.md",
+  "limitations": [
+    "No new whole-repository full-suite run",
+    "165 supporting checks use r2, with identical publication runtime; not a final-r5 whole-suite claim",
+    "Only exact-rule internal source answers; no automatic delivery or personal eligibility",
+    "208 real units remain draft; no source or business approval",
+    "No production access/deployment/migration/client message"
+  ],
+  "committed_source_identity": {
+    "app/domain/knowledge_publication.py": "310728c6062d722233ba3768efc4e033d28836faacb84dfa3711505e3ecd1cf1",
+    "app/domain/knowledge_answers.py": "d882bae8b69853085d079d746fe6a171d81b7cee89716858a6a1d9e71281d301",
+    "app/admin/kg_answers.py": "3b427f692036de94fac65f542950ea9d21906b0d041fd31521158cdfd73bbc1d",
+    "app/admin/router.py": "5335962cb7cef895f2d4c1df2b0a0cf080a4ab2f16dffccf25492d741ba5a5e1",
+    "app/admin/templates/kg_answers.html": "ba4ea2b043abc7503c9c84d2f6eeb7839ea37c843f33c38a9b82ff594859749e",
+    "app/admin/templates/kg_knowledge.html": "401c3ddfc1570d5629db71d4b4d6fc79f0d28c41e305dc5c5feeb27fba36c18d",
+    "app/admin/templates/base.html": "13dca9eee20498cbe6c9667eb4c33471db8e1d9db4efa3d492b54e1ab1f66ee9",
+    "tests/test_knowledge_answers.py": "edc2f3e5c7a916421f9e6e7d92cec1e3d7aa6bcf3d2bd0919a9ac6966ca87702",
+    "tests/test_admin_kg_answers.py": "c48567ed9730a8c42977ab13cdea2db5c29cd1cfb8fb6f97116c34eb03a00bb3",
+    "tests/test_knowledge_answers_postgres.py": "a5c7e9ad5ba9190cf909d392573e22513d5b0d5c9339526ee11a780493557403",
+    "tests/browser_kg_answers.py": "f0ffad6deede3f1b96d1f3959600e302d2ff85d778d264a726c32b9129ddc95a",
+    "tests/test_admin_shell_and_direction_split.py": "a62962bbf041405cf9c7cc2eb2ac0205375652110fccab44dc8f3792c220835a",
+    "tests/test_admin_new_look.py": "7900816aca677fcf1892f3a366f62e69acbe06a999bf55096e4b51e83e0331d5"
+  },
+  "local_postgres_stop": {
+    "result": "PASS",
+    "endpoint": "127.0.0.1:55971",
+    "command": "pg_ctl -D <isolated Temp/frunze-pg16-20261011/data> -m fast -w -t20 stop; status",
+    "output": "server stopped; pg_ctl: no server running",
+    "production_changed": false
+  }
+}

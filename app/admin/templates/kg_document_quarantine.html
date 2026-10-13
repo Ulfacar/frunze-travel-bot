@@ -1,0 +1,28 @@
+{% extends "kg_document_inventory.html" %}
+{% block title %}Frunze — Файлы заявки{% endblock %}
+{% block head %}{{ super() }}<style>@media print{html,body{height:auto;min-height:0;background:white}}</style>{% endblock %}
+{% block content %}<main class="kg-inventory">
+<nav><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/document-package">К комплекту документов</a></nav>
+<h1>Файлы заявки</h1><p>Услуга №{{ case.id }} · заявка №{{ application_id }}.</p>
+<p class="box notice">Файл после загрузки остаётся в карантине. Он ещё не проверен на безопасность, недоступен для открытия и не подтверждает готовность комплекта.</p>
+{% if error %}<p class="box error" role="alert">{{ error }}</p>{% endif %}
+{% if saved %}<p class="box" role="status" id="kg-q-saved">Файл сохранён в карантин. Приёмка комплекта не подтверждена.</p>{% endif %}
+{% if not enabled %}<p class="box notice" id="kg-q-disabled">Загрузка недоступна: нужны действующие правила хранения, доступ на загрузку и открытый комплект документов.</p>{% endif %}
+{% if inventory and inventory.selected %}
+<form method="get" action="{{ url }}" class="box no-print" id="kg-q-select"><label for="kg-q-item">Документ</label><select id="kg-q-item" name="item">{% for row in inventory.selected.summary.rows %}<option value="{{ row.id }}" {% if item and item.id==row.id %}selected{% endif %}>{{ row.name }}</option>{% endfor %}</select><button type="submit">Выбрать документ</button></form>
+{% endif %}
+{% if values %}<section class="box no-print"><h2>{% if item %}{{ item.name }}{% else %}Повтор исходной загрузки{% endif %}</h2>
+{% if policy %}<p>Разрешены {% for type in policy.allowed_types %}{{ 'PDF' if type=='application/pdf' else 'JPEG' }}{% if not loop.last %}, {% endif %}{% endfor %}; до {{ policy.max_file_bytes }} байт на файл. Правила хранения: {{ policy.retention_reference }}.</p>{% endif %}
+<form method="post" enctype="multipart/form-data" action="{{ url }}" id="kg-q-upload">
+{% for name in meta %}<input type="hidden" name="{{ name }}" value="{{ values[name] }}">{% endfor %}
+<input type="hidden" name="_q_csrf" value="{{ values['_q_csrf'] }}"><input type="hidden" name="_q_signature" value="{{ values['_q_signature'] }}">
+{% if values.get('_q_sha256') %}<input type="hidden" name="_q_sha256" value="{{ values['_q_sha256'] }}">{% endif %}
+<fieldset {% if not write_on or not policy %}disabled{% endif %}>
+<label for="kg-q-on">Дата получения</label><input id="kg-q-on" type="date" name="received_on" value="{{ values.get('received_on',today) }}" max="{{ today }}" required>
+<label for="kg-q-source">Откуда получен документ</label><select id="kg-q-source" name="source">{% for key,label in sources.items() %}<option value="{{ key }}" {% if values.get('source')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+<label for="kg-q-file">Файл{% if values.get('_q_sha256') %} — выберите тот же файл для повтора{% endif %}</label><input id="kg-q-file" name="file" type="file" accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg" required>
+<label for="kg-q-confirm"><input id="kg-q-confirm" name="confirmed" type="checkbox" value="yes" required {% if values.get('confirmed')=='yes' %}checked{% endif %}> Подтверждаю загрузку в карантин для указанного документа</label>
+<button type="submit">{% if values.get('_q_sha256') %}Повторить исходную загрузку{% else %}Загрузить в карантин{% endif %}</button></fieldset></form></section>{% endif %}
+{% if inventory %}<section class="box"><h2>История загрузок</h2>
+{% for file in inventory.quarantine %}<article class="entry" data-file-id="{{ file.id }}"><h3>Файл №{{ file.id }} · версия документа {{ file.document_version }}</h3><p><strong>В карантине</strong> · {{ file.media_type }} · {{ file.byte_size }} байт.</p><p>{{ file.created_at }} · {{ file.created_by }} · требование {{ file.item_id }}.</p></article>{% else %}<p>Загруженных файлов пока нет.</p>{% endfor %}
+</section>{% endif %}</main>{% endblock %}

@@ -1,0 +1,140 @@
+{
+  "revision": "9f26aece903a65e585f622eadea38d4215f932cd",
+  "note": "Counts overlap. r3 supporting; r4 runtime blobs identical in r6. Exact24-file identity in reviewed-snapshot. No full-suite-green claim.",
+  "junit": [
+    {
+      "path": "runs/e6-10-review-r4/runs/process-final-r4-core.xml",
+      "sha256": "a8f6cfe4c6135b2bfc3145636524b4caaf44945d0f15601ceb3b9649bbb329a1",
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "84",
+        "time": "613.393",
+        "timestamp": "2026-10-11T02:37:49.164014+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    {
+      "path": "runs/e6-10-review-r6/runs/legacy-pg-final.xml",
+      "sha256": "11ce7d93c9027a2f5eba4447b115fa3225e0fb51e37aa88f7c45ee0e5e24eb96",
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "100",
+        "time": "40.155",
+        "timestamp": "2026-10-11T02:45:51.484527+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    {
+      "path": "runs/e6-10-review-r3/runs/process-final-r3-valid-regression.xml",
+      "sha256": "81771e415d3fecbc5a7381d4aa7d2c8fa3e5f1e04deb023d74a1f35936836b66",
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "277",
+        "time": "880.068",
+        "timestamp": "2026-10-11T02:30:48.860730+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    {
+      "path": "runs/e6-10-review-r4/runs/auditor-process-r4-pg.xml",
+      "sha256": "9b6c79fc05afeaaac14a11b0504c4543a25746bf20199d2efb80d1010c9b7bfd",
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "8",
+        "time": "361.338",
+        "timestamp": "2026-10-11T02:38:47.668129+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    },
+    {
+      "path": "runs/e6-10-review-r6/runs/auditor-process-r6-pg.xml",
+      "sha256": "8a08329310679f88f6c52a61a6d3c527dc61a85ca12ab38e136234961a40a158",
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "7",
+        "time": "89.399",
+        "timestamp": "2026-10-11T02:50:24.550682+06:00",
+        "hostname": "DESKTOP-HKH1EJ7"
+      }
+    }
+  ],
+  "recovery": {
+    "server": "PostgreSQL16 local loopback55971",
+    "migration": "e6_process_journal_0027",
+    "method": "all public table data via binary COPY; schema rebuilt by Alembic; FK checks enabled; sequences restored",
+    "native_pg_dump": "UNKNOWN: Windows App Control 4551; no security setting changed",
+    "backup_bytes": 28587,
+    "backup_sha256": "fe7bb01dd907eb3a1e398795bbe516eec1ca4f68081e87802b0c18d2f6702fb6",
+    "table_counts": {
+      "assignments": 0,
+      "booking_attempts": 0,
+      "calendar_task_events": 0,
+      "calendar_tasks": 1,
+      "canonical_messages": 0,
+      "contact_identities": 0,
+      "contacts": 3,
+      "dialogs": 0,
+      "entry_applicant_profiles": 0,
+      "entry_applicants": 2,
+      "entry_application_events": 2,
+      "entry_application_references": 0,
+      "entry_applications": 2,
+      "entry_calculation_calendars": 0,
+      "entry_calculation_intervals": 0,
+      "entry_calculations": 0,
+      "entry_deadline_revisions": 0,
+      "entry_deadline_tasks": 0,
+      "entry_document_package_events": 2,
+      "entry_document_revisions": 0,
+      "entry_issued_revisions": 0,
+      "entry_process_events": 3,
+      "entry_process_pins": 5,
+      "entry_qualifications": 0,
+      "entry_quarantined_files": 1,
+      "external_references": 0,
+      "inbox_events": 0,
+      "knowledge_condition_links": 0,
+      "knowledge_country_links": 10,
+      "knowledge_decisions": 0,
+      "knowledge_imports": 1,
+      "knowledge_projections": 1,
+      "knowledge_publication_events": 0,
+      "knowledge_publication_units": 0,
+      "knowledge_sets": 1,
+      "knowledge_units": 14,
+      "knowledge_versions": 1,
+      "outbox_jobs": 0,
+      "products": 9,
+      "requests": 0,
+      "service_cases": 3,
+      "service_events": 7,
+      "service_payments": 1,
+      "stay_histories": 0,
+      "stay_intervals": 0,
+      "ticket_segments": 0,
+      "work_calendar_days": 0,
+      "work_calendars": 0,
+      "workflow_versions": 2
+    },
+    "process_revision": 3,
+    "quarantine_sha256_verified": true,
+    "native_read_status": 200,
+    "restored_into_fresh_database": true,
+    "write_after_recovery": true
+  }
+}

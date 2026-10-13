@@ -1,0 +1,25 @@
+{
+  "revision": "944bb41d136bc85f585e5fc4d0848bdfe45cf67a",
+  "completion": "DONE bounded tests; PARTIALLY_READY whole source-SOP",
+  "score_points_added": 0,
+  "manifest": "ai/reviews/2026-10-11-e6-15-snapshot.json",
+  "identity": "PASS three root/archive/commit paths; final EOF-only delta has identical executed test ASTs",
+  "run": {
+    "environment": "Windows Python3.12; env-free synthetic FK SQLite plus actual isolated PostgreSQL16.15 loopback55971",
+    "command": "pytest tests/test_entry_source_scenarios.py tests/test_entry_source_postgres.py -q --tb=short --basetemp=runs/source-final-tmp --junitxml=runs/source-final.xml; wrapper sets private loopback connection and tests import path",
+    "runtime_snapshot": "runs/e6-15-final",
+    "xml_sha256": "1f07e027d75bdf50ef9d0bd4a90ea5da5d8b64fedfe5db6d3690dbc32cdd1f1a",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 305.769
+  },
+  "review": "SELF_REVIEW PASS; not independent critical review",
+  "limitations": [
+    "Existing contract prerequisite; no precontract intake-to-case bridge",
+    "Interview does not persist approved qualification",
+    "Synthetic manual attestations, no real external sends/payments/portal",
+    "No J01/J02 points, no deploy"
+  ]
+}

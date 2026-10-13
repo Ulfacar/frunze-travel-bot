@@ -1,0 +1,32 @@
+{
+  "base": "8575f1f278659cc0d92c8342dbf25262afce5dc7",
+  "snapshot": "uncommitted E6-12 complete source r3",
+  "archive": "runs/e6-12-review-r3",
+  "normalization": "LF",
+  "files": {
+    "app/config.py": "24ab61c55e520438933aeb62790daae87bbfb2a88868ee43b365801ad15b7fa0",
+    "app/domain/models.py": "6ae4485e2c2124eca77b34eb0afa4f54bc476eb059df56834e156dee0954ea1c",
+    "app/domain/entry_interview_policy.py": "b96d79816ae30a6ad3d062964d04df6146120a121a096d110b77c984ce3aa49c",
+    "app/domain/entry_interviews.py": "6204fd2931f65926aa0bbc3f56b2d9d8b8b442502def601037d6981c34a3ede7",
+    "app/knowledge/interview_catalog.py": "93e5c678e538a7fcabdfe1de78fe768f79eb4453abd2fbce695572deba93d940",
+    "app/knowledge/interview_rules.py": "b89dfc8634fd5e984a9373a56ba95e220aba82a25e5f71836b34c18631ae8ca4",
+    "alembic/versions/e6_interview_handoff_0029.py": "ab058244968d2dea509f7968dcfe88972f7747cdc4a61c63ea157fc9e6960ee4",
+    "app/admin/kg_interviews.py": "e4e219a4407ce912ee5bd828f50a913eeaeb437895c97bdc73d4c43ded0629f2",
+    "app/admin/router.py": "e709fda5ca579388919e9f20639b4466e79801feb01cb8e46277fd9ce5daf47a",
+    "app/admin/templates/kg_interviews.html": "7fed6f1ec1f9df0cde741a30dd3204c855118d2e33fcc4f9da90b44bd4213d49",
+    "app/admin/templates/kg_applications.html": "2e2371e366a77a1010898f99d592337d57e974bf77e02b209981f5560a751042",
+    "tests/test_kg_interview_rules.py": "3c9179abd30148404a094c9237a61f93fa6f7f26f9bdced26c7e37992011aea2",
+    "tests/test_entry_interviews.py": "ae3c930d320054d4e44e8277006f984d4f4d4bc6472036f770bc254820893358",
+    "tests/test_admin_kg_interviews.py": "11d71774496bf5d8c59bbb90417f5a6b30dee833c79f4ed8c339ba15c2348b1d",
+    "tests/test_entry_interview_migration.py": "627c695e7e982d347bbf47bf92efbc479849ec8a336e75b68650925e5aafdebe",
+    "tests/test_entry_interview_postgres.py": "638bf4750e0d61e2ecf28fa13d4ff8646e606e4491367a71777aaadf0c5e39b2",
+    "tests/browser_kg_interviews.py": "5d993a7f6bd950029bdddcbf9e22ee8e49989c6b7555a54297eb335b914c4a21",
+    "tests/test_alembic_domain_migration.py": "b5fcb0adb7d54ffb6e4c3442aa0c23bf7e2e98fdfe6e5e029a20df90bf928f48",
+    "tests/test_service_cases.py": "381fb25e9605180b95a377bb9bc6c3a13bf1c74fcaceb426f4f1e89b391cf180",
+    "Dockerfile": "aaadd6875b1d38e71cff3df73fc339ec6af6649767f29c6c3ec3f5ffc4809cc3",
+    "knowledge/kg_entry/interview_catalog_v3_1.json": "0eac1b25b81bf2b61ad591ce6e30fed1b8702f37703f185b768da8af342c48e8",
+    "docs/e6-12-interview-handoff.md": "8da6c07005c725f957ee974afe1baa63ec5e4a0c56d4aff834772532152253c1"
+  },
+  "revision": "594a9f3c28be2d2b44986c6eed583b805e0c677b",
+  "identity": "PASS root/archive/commit 22/22"
+}

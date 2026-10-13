@@ -42,6 +42,16 @@ _LAST_SEEN_TTL = 14 * 24 * 3600
 # отметка пережила рестарт: иначе каждый деплой обнулял бы историю.
 _memory_last_seen: dict[str, float] = {}
 
+# Отметка «по каналу дошло СЛУЖЕБНОЕ событие Wappi» — статус доставки или эхо ответа
+# менеджера. Живёт отдельно от клиентской: она отвечает на другой вопрос — не «есть ли
+# клиенты», а «доходят ли вообще события от Wappi до нашего вебхука». Подробнее о том,
+# зачем это понадобилось, — в `wappi_health.classify_gap`.
+_memory_last_service: dict[str, float] = {}
+# Записывать в Redis каждое служебное событие незачем: статусов доставки идут десятки на
+# одно сообщение, а точность нужна в минутах, не в миллисекундах.
+_SERVICE_WRITE_EVERY_SECONDS = 60
+_service_written_at: dict[str, float] = {}
+
 # Состояние между тиками планировщика: защёлка и время последнего алерта по каналу.
 # Здесь оно только зеркалится: источник правды — Redis (см. _state_load/_state_save),
 # иначе деплой посреди длящейся аварии давал бы владельцу дубль по тому же инциденту.
@@ -70,7 +80,7 @@ def _human(minutes: float) -> str:
 def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
            *, bishkek_hour: int, reported=frozenset(),
            diagnoses: dict[str, str] | None = None,
-           healthy: dict[str, bool] | None = None) -> list[tuple[str, str]]:
+           healthy: dict[str, bool | str] | None = None) -> list[tuple[str, str]]:
     """Чистое решение: по каким каналам пора бить тревогу. Мутирует state.
 
     Возвращает список `(bot_id, текст)`. Пустой список — всё в порядке.
@@ -131,7 +141,7 @@ def decide(now: float, last_seen: dict[str, float | None], state: dict, cfg,
     return alerts
 
 
-def _advice(diagnosis: str, healthy: bool | None = None) -> str:
+def _advice(diagnosis: str, healthy: bool | str | None = None) -> str:
     """Совет по факту, а не один на все случаи.
 
     08.08 по каналу Айсины ушло «проверь профиль в Wappi: авторизация (QR) и адрес
@@ -150,6 +160,16 @@ def _advice(diagnosis: str, healthy: bool | None = None) -> str:
     if diagnosis == "no_traffic":
         return ("В Wappi по этому номеру тоже тихо — значит дело не в технике. "
                 "Проверь, куда ведёт реклама, и не ограничен ли сам номер в WhatsApp.")
+    if healthy == "reconnecting":
+        # Авторизация жива, Wappi сообщает, что приложение переподключается — QR не при чём.
+        # 27.09 такая серия шла 64 минуты, и канал в это время принимал голосовые и документы.
+        # Формулировка намеренно осторожная: `authorized=true` держится по семантике сессии
+        # даже при выключенном телефоне, поэтому мы не обещаем, что всё в порядке, и говорим,
+        # когда перестать ждать.
+        return ("Wappi сообщает, что профиль авторизован, а приложение переподключается — "
+                "QR сканировать не нужно. Сначала смотри адрес вебхука у этого профиля. "
+                "Если это держится дольше полутора часов, считай канал потерянным: "
+                "проверь телефон и авторизацию в кабинете.")
     if healthy is True:
         return ("Профиль в Wappi авторизован и на связи — QR сканировать не нужно. "
                 "Почему тихо, определить не вышло: смотри адрес вебхука у этого профиля.")
@@ -159,19 +179,22 @@ def _advice(diagnosis: str, healthy: bool | None = None) -> str:
 
 
 def down_log_line(bot_id: str, silent_minutes: float, *, diagnosis: str = "",
-                  healthy: bool | None = None) -> str:
+                  healthy: bool | str | None = None) -> str:
     """Строка в лог рядом с тревогой: почему она поднята.
 
     01.09 в логе стояло только «CHANNEL DOWN: getvisa», и разбирать ложное уведомление
     пришлось по скриншоту из Telegram. Повод обязан лежать рядом с фактом.
     """
-    health = {True: "здоров", False: "нездоров", None: "неизвестен"}[healthy]
+    # .get, а не [] — иначе новое состояние роняет джобу ПОСЛЕ записи защёлки, и канал
+    # остаётся без алерта на весь cooldown (нашли оба независимых ревьюера 29.09).
+    health = {True: "здоров", False: "нездоров", None: "неизвестен",
+              "reconnecting": "переподключается"}.get(healthy, "неизвестен")
     return (f"CHANNEL DOWN: {bot_id} (тишина {silent_minutes:.0f} мин, "
             f"диагноз={diagnosis or 'неизвестен'}, профиль={health})")
 
 
 def _text(bot_id: str, silent_minutes: float, *, reminder: bool = False,
-          diagnosis: str = "", healthy: bool | None = None) -> str:
+          diagnosis: str = "", healthy: bool | str | None = None) -> str:
     name = ""
     try:
         from app.core.bots import registry
@@ -201,6 +224,56 @@ async def note_inbound(bot_id: str) -> None:
         await _redis().set(f"hb:last_inbound:{bot_id}", str(now), ex=_LAST_SEEN_TTL)
     except Exception:  # noqa: BLE001 — сторож не важнее ответа клиенту
         return
+
+
+async def note_service_event(bot_id: str) -> None:
+    """Отметить служебное событие Wappi по каналу. Никогда не роняет обработку вебхука.
+
+    Клиентскую отметку (`note_inbound`) НЕ трогает: смешать их — значит ослепить сторожа
+    тишины, ведь статусы доставки идут и по мёртвому для клиентов каналу.
+    """
+    if not bot_id:
+        return
+    now = time.time()
+    _memory_last_service[bot_id] = now
+    if settings.state_backend != "redis":
+        return
+    written = _service_written_at.get(bot_id, 0.0)
+    if now - written < _SERVICE_WRITE_EVERY_SECONDS:
+        return
+    try:
+        from app.core.stt_metrics import _redis
+        await _redis().set(f"hb:last_service:{bot_id}", str(now), ex=_LAST_SEEN_TTL)
+        _service_written_at[bot_id] = now
+    except Exception:  # noqa: BLE001 — сторож не важнее обработки события
+        return
+
+
+async def last_service_events() -> dict[str, float | None]:
+    """Отметки служебных событий по всем каналам: свежайшее из памяти и Redis.
+
+    Здесь именно `max`, а не «Redis приоритетнее», как у клиентской отметки. Разница
+    в троттлинге: `note_inbound` пишет в Redis каждое событие, поэтому там Redis не
+    бывает старее памяти, а служебная запись намеренно отстаёт до минуты — и слепой
+    приоритет Redis затирал бы более свежее значение собственного процесса.
+    """
+    from app.core.bots import registry
+    result: dict[str, float | None] = {
+        bot.id: _memory_last_service.get(bot.id) for bot in registry.all()}
+    if settings.state_backend != "redis":
+        return result
+    try:
+        from app.core.stt_metrics import _redis
+        client = _redis()
+        for bot_id in list(result):
+            raw = await client.get(f"hb:last_service:{bot_id}")
+            if raw:
+                stored = float(raw)
+                known = result.get(bot_id)
+                result[bot_id] = stored if known is None else max(known, stored)
+    except Exception:  # noqa: BLE001 — без отметки диагноз останется прежним, не хуже
+        pass
+    return result
 
 
 def merge_baseline(last_seen: dict[str, float | None], baseline: dict[str, float],

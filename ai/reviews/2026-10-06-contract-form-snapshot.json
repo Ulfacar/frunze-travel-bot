@@ -1,0 +1,31 @@
+{
+  "base": "4a22ecb8823585387f90bbdc6321506743989132",
+  "target": "UNCOMMITTED",
+  "created_at": "2026-10-06T20:22:44.175731+06:00",
+  "files": {
+    "app/admin/contracts.py": {
+      "sha256": "371af0b5547d9bc0ceee054dfbc4ad0275f2856f0f543235b2520f8f1d78335c",
+      "bytes": 15959
+    },
+    "app/admin/templates/contract.html": {
+      "sha256": "fbc4a01368cb6988a93cdde5b2f5148993d116fb2e761aecc87096f24c73df20",
+      "bytes": 6084
+    },
+    "app/admin/router.py": {
+      "sha256": "975d9ca7e70602968664164e475e33a15f0ea0f7c6ef13da5450e277e015a298",
+      "bytes": 168409
+    },
+    "app/admin/templates/_conversation.html": {
+      "sha256": "d5de060980d6cf0579b0c4ad0219755bff430557ef1015c19249a7827acde6e3",
+      "bytes": 34917
+    },
+    "tests/test_admin_contracts.py": {
+      "sha256": "0434487b22492715d518e9bc2a4c65fb8abba3482e87d0add9f7213ac362f595",
+      "bytes": 16306
+    },
+    "tests/browser_contract_form.py": {
+      "sha256": "ad57441c6d30cf7ba96b995e84de9c4425a11d6928a110497b704d263b35954e",
+      "bytes": 4591
+    }
+  }
+}

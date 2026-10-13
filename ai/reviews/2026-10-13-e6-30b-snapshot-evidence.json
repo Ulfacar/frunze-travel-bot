@@ -1,0 +1,1734 @@
+{
+  "task": "E6-30B",
+  "status": "DONE_REVIEWED_LOCAL",
+  "completion_target": "reviewed local change",
+  "branch": "fix/tours-search-quality",
+  "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+  "revision": "14583342ff53c099d720af4e52e59071510bfde9",
+  "technical_score": "96/100 unchanged; J01/J02/J03/J05 remain open",
+  "current_snapshot": "runs/e6-30b-r17",
+  "identities": {
+    "ai/STATE.md": {
+      "snapshot": "a262b7678e0823d50487a7594a2db6c5c2e60785fce20119bab5fab322c98f01",
+      "current": "a262b7678e0823d50487a7594a2db6c5c2e60785fce20119bab5fab322c98f01",
+      "matches": true
+    },
+    "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": {
+      "snapshot": "7d3de1574ec989d278001cae8f9b0a54b7ad0b31cce06d7f447c657102188441",
+      "current": "7d3de1574ec989d278001cae8f9b0a54b7ad0b31cce06d7f447c657102188441",
+      "matches": true
+    },
+    "alembic/versions/e6_specialist_decisions_0039.py": {
+      "snapshot": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+      "current": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+      "matches": true
+    },
+    "app/admin/kg_specialist.py": {
+      "snapshot": "6ff11f6d0d74e4cff0dbcbd965a865d145aac905dd73bca3be7cd015e3c68cf6",
+      "current": "6ff11f6d0d74e4cff0dbcbd965a865d145aac905dd73bca3be7cd015e3c68cf6",
+      "matches": true
+    },
+    "app/admin/router.py": {
+      "snapshot": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+      "current": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+      "matches": true
+    },
+    "app/admin/templates/kg_applications.html": {
+      "snapshot": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+      "current": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+      "matches": true
+    },
+    "app/admin/templates/kg_specialist.html": {
+      "snapshot": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+      "current": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+      "matches": true
+    },
+    "app/config.py": {
+      "snapshot": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+      "current": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+      "matches": true
+    },
+    "app/domain/dialogue_journal.py": {
+      "snapshot": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+      "current": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+      "matches": true
+    },
+    "app/domain/dialogue_stops.py": {
+      "snapshot": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+      "current": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+      "matches": true
+    },
+    "app/domain/entry_channel_stops.py": {
+      "snapshot": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+      "current": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+      "matches": true
+    },
+    "app/domain/entry_quotes.py": {
+      "snapshot": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+      "current": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+      "matches": true
+    },
+    "app/domain/models.py": {
+      "snapshot": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+      "current": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+      "matches": true
+    },
+    "app/domain/specialist_decisions.py": {
+      "snapshot": "755abbddc3b073877cc913010abd3888862db403cd3494f208178bbd925c2f40",
+      "current": "755abbddc3b073877cc913010abd3888862db403cd3494f208178bbd925c2f40",
+      "matches": true
+    },
+    "app/domain/specialist_evidence.py": {
+      "snapshot": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+      "current": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+      "matches": true
+    },
+    "app/domain/specialist_facts.py": {
+      "snapshot": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+      "current": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+      "matches": true
+    },
+    "app/domain/specialist_interruptions.py": {
+      "snapshot": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+      "current": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+      "matches": true
+    },
+    "app/domain/specialist_policy.py": {
+      "snapshot": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+      "current": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+      "matches": true
+    },
+    "app/knowledge/specialist_catalog.py": {
+      "snapshot": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+      "current": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+      "matches": true
+    },
+    "knowledge/kg_entry/specialist_catalog_v1.json": {
+      "snapshot": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+      "current": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+      "matches": true
+    },
+    "scripts/build_kg_specialist_catalog.py": {
+      "snapshot": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+      "current": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+      "matches": true
+    },
+    "tests/archived_specialist_r9.py": {
+      "snapshot": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+      "current": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+      "matches": true
+    },
+    "tests/browser_specialist.py": {
+      "snapshot": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+      "current": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+      "matches": true
+    },
+    "tests/test_admin_kg_specialist.py": {
+      "snapshot": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+      "current": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+      "matches": true
+    },
+    "tests/test_service_cases.py": {
+      "snapshot": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+      "current": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+      "matches": true
+    },
+    "tests/test_specialist_bytes.py": {
+      "snapshot": "62f6d36797a3792d90f663310fd23a83355623b4dd70c656d05f966e37e18e34",
+      "current": "62f6d36797a3792d90f663310fd23a83355623b4dd70c656d05f966e37e18e34",
+      "matches": true
+    },
+    "tests/test_specialist_decisions.py": {
+      "snapshot": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+      "current": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+      "matches": true
+    },
+    "tests/test_specialist_facts.py": {
+      "snapshot": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+      "current": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+      "matches": true
+    },
+    "tests/test_specialist_interruptions.py": {
+      "snapshot": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+      "current": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+      "matches": true
+    },
+    "tests/test_specialist_native_bounds.py": {
+      "snapshot": "62335ec740cc6bd73fa8763d7ce284ea8b609efca0bf29c56229a2d71dd275e8",
+      "current": "62335ec740cc6bd73fa8763d7ce284ea8b609efca0bf29c56229a2d71dd275e8",
+      "matches": true
+    },
+    "tests/test_specialist_native_review.py": {
+      "snapshot": "276a48b6045313a7c13c9ff2a93d044575dfc5e6b23141b420b3ec605f7bfefa",
+      "current": "276a48b6045313a7c13c9ff2a93d044575dfc5e6b23141b420b3ec605f7bfefa",
+      "matches": true
+    },
+    "tests/test_specialist_postgres.py": {
+      "snapshot": "b3b9d15dc87e1b66e3f5a466bccd8c4c68a583fde057f402c34f0839cd291a58",
+      "current": "b3b9d15dc87e1b66e3f5a466bccd8c4c68a583fde057f402c34f0839cd291a58",
+      "matches": true
+    },
+    "tests/test_specialist_quote_before_decision.py": {
+      "snapshot": "97830872984d010ff5458111e33c88952c8f3e4bcf6e1b2466bf88923df09688",
+      "current": "97830872984d010ff5458111e33c88952c8f3e4bcf6e1b2466bf88923df09688",
+      "matches": true
+    },
+    "tests/test_specialist_quote_clock.py": {
+      "snapshot": "5024572253287c94355e8d886dfbfd138b49d6a0363b0d84a6c7b50c59a0469c",
+      "current": "5024572253287c94355e8d886dfbfd138b49d6a0363b0d84a6c7b50c59a0469c",
+      "matches": true
+    },
+    "tests/test_specialist_recovery_postgres.py": {
+      "snapshot": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+      "current": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+      "matches": true
+    },
+    "tests/test_specialist_reserves.py": {
+      "snapshot": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+      "current": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+      "matches": true
+    },
+    "tests/test_specialist_review_regressions.py": {
+      "snapshot": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+      "current": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+      "matches": true
+    },
+    "tests/test_specialist_session_interruptions.py": {
+      "snapshot": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7",
+      "current": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7",
+      "matches": true
+    }
+  },
+  "runs": [
+    {
+      "directory": "runs/e6-30b-audit-r14",
+      "junit": [
+        {
+          "path": "runs/e6-30b-audit-r14/audit-quote-before-decision-r14.xml",
+          "sha256": "7deb0b02730a749f5109285e2622acd95c10367f364c2f500233b1fb72a896d7",
+          "tests": 1,
+          "passed": 0,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 54.236,
+          "unsuccessful": [
+            {
+              "name": "test_quote_cannot_predate_decision_and_equal_boundary_recovers_same_request",
+              "class_name": "tests.test_audit_specialist_quote_before_decision",
+              "result": "FAIL"
+            }
+          ]
+        },
+        {
+          "path": "runs/e6-30b-audit-r14/audit-quote-clock-r14.xml",
+          "sha256": "5b130eca55d3998a9fece404ae2660117950393c772ff55e66ed79405cd3e890",
+          "tests": 1,
+          "passed": 0,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 60.43,
+          "unsuccessful": [
+            {
+              "name": "test_quote_to_link_clock_reversal_rolls_back_both_and_original_request_recovers",
+              "class_name": "tests.test_audit_specialist_quote_clock",
+              "result": "FAIL"
+            }
+          ]
+        }
+      ],
+      "snapshot_sha256": "f2921843943a5b4c6d1cf09436e5b9a00f901ba738857e2cb4d6d4cf962d2838",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "eacf9f9b652514ecfbc2b613cfb45d1f847609db2508db706e73216a23612714",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "43f1b432307a546345ce49c0f853c57b74a657710d802179c3ecbced512b4eed",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "8026f168492332f888a2f101e9c47362f9e9f0354de7bb5191f964b31f27db77",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-audit-r16",
+      "junit": [
+        {
+          "path": "runs/e6-30b-audit-r16/audit-quote-clock-r16.xml",
+          "sha256": "d7f674f1fc5784aae41b604daabb4517a9798f519671b9ce4ef0a5d1677373ba",
+          "tests": 2,
+          "passed": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 119.148,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "7d7d0af3a339328f03c7a98f0fd1ead0a3e2cc75204596c5591628d4fc700508",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "a262b7678e0823d50487a7594a2db6c5c2e60785fce20119bab5fab322c98f01",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "7d3de1574ec989d278001cae8f9b0a54b7ad0b31cce06d7f447c657102188441",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "6ff11f6d0d74e4cff0dbcbd965a865d145aac905dd73bca3be7cd015e3c68cf6",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "755abbddc3b073877cc913010abd3888862db403cd3494f208178bbd925c2f40",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/archived_specialist_r9.py": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_bytes.py": "62f6d36797a3792d90f663310fd23a83355623b4dd70c656d05f966e37e18e34",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "b3b9d15dc87e1b66e3f5a466bccd8c4c68a583fde057f402c34f0839cd291a58",
+        "tests/test_specialist_quote_before_decision.py": "97830872984d010ff5458111e33c88952c8f3e4bcf6e1b2466bf88923df09688",
+        "tests/test_specialist_quote_clock.py": "5024572253287c94355e8d886dfbfd138b49d6a0363b0d84a6c7b50c59a0469c",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-audit-r8",
+      "junit": [
+        {
+          "path": "runs/e6-30b-audit-r8/audit-c-prefix-r8.xml",
+          "sha256": "81afd6188d8d578a384185313f02d024492f46ee188a1e0f2cfe8b1a1284b839",
+          "tests": 1,
+          "passed": 0,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 75.841,
+          "unsuccessful": [
+            {
+              "name": "test_corrupted_later_privacy_stop_cannot_disappear_behind_earlier_benign_stop",
+              "class_name": "tests.test_audit_specialist_session_corruption",
+              "result": "FAIL"
+            }
+          ]
+        },
+        {
+          "path": "runs/e6-30b-audit-r8/audit-c-sessions.xml",
+          "sha256": "b3364d2b39a093f77c433df50f3a97c1ce3c49ffd2585928671191e409d8ce02",
+          "tests": 2,
+          "passed": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 150.178,
+          "unsuccessful": []
+        },
+        {
+          "path": "runs/e6-30b-audit-r8/audit-omission-first.xml",
+          "sha256": "ac4e866a6554735888a53b4e8980e0fbf746fbf861b9491f5a1c61828c98f560",
+          "tests": 1,
+          "passed": 0,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 1.87,
+          "unsuccessful": [
+            {
+              "name": "test_existing_unsafe_cause_cannot_be_omitted_at_equal_observation_timestamp",
+              "class_name": "tests.test_audit_specialist_omission",
+              "result": "FAIL"
+            }
+          ]
+        },
+        {
+          "path": "runs/e6-30b-audit-r8/audit-omission-r8.xml",
+          "sha256": "265584e57552f41f404f36b2b373f818cdd66fb0385633c6e20cc4f2c2792fcd",
+          "tests": 1,
+          "passed": 0,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 1.978,
+          "unsuccessful": [
+            {
+              "name": "test_existing_unsafe_cause_cannot_be_omitted_at_equal_observation_timestamp",
+              "class_name": "tests.test_audit_specialist_omission",
+              "result": "FAIL"
+            }
+          ]
+        }
+      ],
+      "snapshot_sha256": "18d66b262b110128e57272b8530a7df0aec0a8aa0f244472ead4cd5aa86451f9",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "a23117416f79a44b83acd34615d05265ee41a50df4de9b598809a1e12b14460a",
+        "app/domain/specialist_evidence.py": "c1cf8b6ef8d0e0f74833f1cafb6f1cbc605a5c199e473c34524570ba3142ee83",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "efa1c22d57ab296edaa1f2254458200b1ab9b003d1c022591c2fb7f75d40e51e",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-audit-r9",
+      "junit": [
+        {
+          "path": "runs/e6-30b-audit-r9/audit-interruptions-r9.xml",
+          "sha256": "b6949bb25481ff38d606921480d91e38596b58a3f196ccb82a1bdf8df50b61df",
+          "tests": 4,
+          "passed": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 304.951,
+          "unsuccessful": []
+        },
+        {
+          "path": "runs/e6-30b-audit-r9/audit-late-outcome-r9.xml",
+          "sha256": "5e3a69c9b6a6235ce4c0eba8ac79763aa7ac6dae87518e1e7122d60f2316ec9c",
+          "tests": 1,
+          "passed": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 109.075,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "936199cdecaa9c7fe4c431b29ee3a2906cc418b181975a7b0cab4098a8e0dce6",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "91c00b9f682604810aee0780c4a4f84d8bbe306cb9cded87b48e43118423418a",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "9bcca182d8535f88ca34e05dcda828eb79cc576f146a51f3eeda132da1d3bb49",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_admin_kg_specialist.py": "2bfe6f7b95c1162467fdac4432546bc47a082beec5e5a8660ae1e713875ce7ee",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_review_regressions.py": "1016fb6413c015424cd047079cf6bb0df2174adbd7bb6515abfb64b0a6711507",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r1",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r1/runs/quote-seam-correct-command.xml",
+          "sha256": "d068f0b141a46d804aaf7321453d00ae992c8501b2647f10c48e9e6ad4c915f4",
+          "tests": 50,
+          "passed": 49,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 57.364,
+          "unsuccessful": [
+            {
+              "name": "test_current_identity_revoked_before_any_database_access[save]",
+              "class_name": "tests.test_entry_quotes",
+              "result": "FAIL"
+            }
+          ]
+        },
+        {
+          "path": "runs/e6-30b-r1/runs/quote-seam.xml",
+          "sha256": "f31a25f0bb37222f00da0342e987f770915707be55bf3c7d4cdb46939e77f0aa",
+          "tests": 0,
+          "passed": 0,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 0,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "f0f76cc5dff8700b89d131d7d93fab6adb3de72a779da8cb209c3003cabcca93",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/entry_quotes.py": "a708c77ba9f62ecf4484a25f177169044df35fc7b5281d1db070a14327a97de2",
+        "app/domain/specialist_policy.py": "709e23468d883db86575a85f5aa72d8e6e70f92c580ab3f015609d387ab7295f",
+        "app/knowledge/specialist_catalog.py": "013f21629f91e4e6b5cf233f9ed039c684bae6a5bc7244be28a41b422839c977",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "1ea7c4a758e6799502bf415b8d19f69cadbece1a26c74be83a795000f02d6395",
+        "scripts/build_kg_specialist_catalog.py": "7e5e80ccbd833f68f4edc82936685f0923e4e26b74c53ed320e6c579f6aea335"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r10",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r10/runs/specialist-postgres.xml",
+          "sha256": "c775c5500444aa2ac963cdc26e4346d7f8ef3f9a246856ecce7e88cac81d75e5",
+          "tests": 11,
+          "passed": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 676.6759999999999,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "2551d602969311008804bc96aad1f4c1f60fe2f99bd74c774fddf65202e4acf4",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "91c00b9f682604810aee0780c4a4f84d8bbe306cb9cded87b48e43118423418a",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "9bcca182d8535f88ca34e05dcda828eb79cc576f146a51f3eeda132da1d3bb49",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_admin_kg_specialist.py": "2bfe6f7b95c1162467fdac4432546bc47a082beec5e5a8660ae1e713875ce7ee",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "8026f168492332f888a2f101e9c47362f9e9f0354de7bb5191f964b31f27db77",
+        "tests/test_specialist_review_regressions.py": "1016fb6413c015424cd047079cf6bb0df2174adbd7bb6515abfb64b0a6711507",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r11",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r11/runs/specialist-browser.xml",
+          "sha256": "71fb6b167910fc5f9605518871727f5a33fdf4de3fc9eef7427bb045d2726960",
+          "tests": 1,
+          "passed": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 160.889,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "37a7d7fdcf205f682bade051f34f247396f50a81a779fb729df9458fab69c9ad",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "91c00b9f682604810aee0780c4a4f84d8bbe306cb9cded87b48e43118423418a",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "9bcca182d8535f88ca34e05dcda828eb79cc576f146a51f3eeda132da1d3bb49",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "2bfe6f7b95c1162467fdac4432546bc47a082beec5e5a8660ae1e713875ce7ee",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "8026f168492332f888a2f101e9c47362f9e9f0354de7bb5191f964b31f27db77",
+        "tests/test_specialist_review_regressions.py": "1016fb6413c015424cd047079cf6bb0df2174adbd7bb6515abfb64b0a6711507",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r12",
+      "junit": [],
+      "snapshot_sha256": "57d8d48914ecaa58ecb578a5a9a6e1d9c5b3f0c439b2afd132a729d15b7ce15f",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "ed206a6dfe869cec8032c807a345f15b2e22b30d32f08a2a69b8eed6912fbdcd",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "122e78724db5f1695ecab64cb117b44fe8d1d4c038f704df859a672b7ff10994",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "43f1b432307a546345ce49c0f853c57b74a657710d802179c3ecbced512b4eed",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "2bfe6f7b95c1162467fdac4432546bc47a082beec5e5a8660ae1e713875ce7ee",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "8026f168492332f888a2f101e9c47362f9e9f0354de7bb5191f964b31f27db77",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r13",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r13/runs/specialist-final-core.xml",
+          "sha256": "0880644ba117c960a225c47010e5f52ac00e8880ad5de3b42bf8b20601be9bcf",
+          "tests": 48,
+          "passed": 48,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 638.144,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "37e6ca7a123820ac6a3938629bd56212fcc550fde916a67d99baa4aa261c57b8",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "70831b27709c3707e27ae32c24f11b01696db7c342bb8107d30f187346609c73",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "43f1b432307a546345ce49c0f853c57b74a657710d802179c3ecbced512b4eed",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "2bfe6f7b95c1162467fdac4432546bc47a082beec5e5a8660ae1e713875ce7ee",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "8026f168492332f888a2f101e9c47362f9e9f0354de7bb5191f964b31f27db77",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r14",
+      "junit": [],
+      "snapshot_sha256": "f2921843943a5b4c6d1cf09436e5b9a00f901ba738857e2cb4d6d4cf962d2838",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "eacf9f9b652514ecfbc2b613cfb45d1f847609db2508db706e73216a23612714",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "43f1b432307a546345ce49c0f853c57b74a657710d802179c3ecbced512b4eed",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "8026f168492332f888a2f101e9c47362f9e9f0354de7bb5191f964b31f27db77",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r15",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r15/runs/specialist-recovery-concurrency.xml",
+          "sha256": "1b5ae7f0b21a6522020eaf043f6abe18d3a64d89feb681fb3a05070ad1112e28",
+          "tests": 3,
+          "passed": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 189.249,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "79d47e12bb5ad8a2fbd19e603602df40e2b4d4a42d962de591f3eb36e849ebca",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "a262b7678e0823d50487a7594a2db6c5c2e60785fce20119bab5fab322c98f01",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "7d3de1574ec989d278001cae8f9b0a54b7ad0b31cce06d7f447c657102188441",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "6ff11f6d0d74e4cff0dbcbd965a865d145aac905dd73bca3be7cd015e3c68cf6",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "43f1b432307a546345ce49c0f853c57b74a657710d802179c3ecbced512b4eed",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "8026f168492332f888a2f101e9c47362f9e9f0354de7bb5191f964b31f27db77",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r16",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r16/runs/specialist-clock-postgres.xml",
+          "sha256": "945955cb30ded0a4d4a07823462800b8a411e151f6111f4bae1304493e8f4adf",
+          "tests": 2,
+          "passed": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 124.269,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "7d7d0af3a339328f03c7a98f0fd1ead0a3e2cc75204596c5591628d4fc700508",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "a262b7678e0823d50487a7594a2db6c5c2e60785fce20119bab5fab322c98f01",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "7d3de1574ec989d278001cae8f9b0a54b7ad0b31cce06d7f447c657102188441",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "6ff11f6d0d74e4cff0dbcbd965a865d145aac905dd73bca3be7cd015e3c68cf6",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "755abbddc3b073877cc913010abd3888862db403cd3494f208178bbd925c2f40",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/archived_specialist_r9.py": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_bytes.py": "62f6d36797a3792d90f663310fd23a83355623b4dd70c656d05f966e37e18e34",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "b3b9d15dc87e1b66e3f5a466bccd8c4c68a583fde057f402c34f0839cd291a58",
+        "tests/test_specialist_quote_before_decision.py": "97830872984d010ff5458111e33c88952c8f3e4bcf6e1b2466bf88923df09688",
+        "tests/test_specialist_quote_clock.py": "5024572253287c94355e8d886dfbfd138b49d6a0363b0d84a6c7b50c59a0469c",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r17",
+      "junit": [],
+      "snapshot_sha256": "5e41b16de812d25c5ee42878a9528049bf04a64c27566d2ba0c9399d1308e875",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "a262b7678e0823d50487a7594a2db6c5c2e60785fce20119bab5fab322c98f01",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "7d3de1574ec989d278001cae8f9b0a54b7ad0b31cce06d7f447c657102188441",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "6ff11f6d0d74e4cff0dbcbd965a865d145aac905dd73bca3be7cd015e3c68cf6",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "755abbddc3b073877cc913010abd3888862db403cd3494f208178bbd925c2f40",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/archived_specialist_r9.py": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_bytes.py": "62f6d36797a3792d90f663310fd23a83355623b4dd70c656d05f966e37e18e34",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_native_bounds.py": "62335ec740cc6bd73fa8763d7ce284ea8b609efca0bf29c56229a2d71dd275e8",
+        "tests/test_specialist_native_review.py": "276a48b6045313a7c13c9ff2a93d044575dfc5e6b23141b420b3ec605f7bfefa",
+        "tests/test_specialist_postgres.py": "b3b9d15dc87e1b66e3f5a466bccd8c4c68a583fde057f402c34f0839cd291a58",
+        "tests/test_specialist_quote_before_decision.py": "97830872984d010ff5458111e33c88952c8f3e4bcf6e1b2466bf88923df09688",
+        "tests/test_specialist_quote_clock.py": "5024572253287c94355e8d886dfbfd138b49d6a0363b0d84a6c7b50c59a0469c",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r2",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r2/runs/quote-seam.xml",
+          "sha256": "698b9086d3d2a0c3b2d29989d6ec3ee3fa01a4b466d49403f6b49215077690d1",
+          "tests": 50,
+          "passed": 50,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 57.708,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "d4504cb433a7999ca4e1a92dd366d38f632e3007c861c9da50ae52f5d870c1cf",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/specialist_policy.py": "709e23468d883db86575a85f5aa72d8e6e70f92c580ab3f015609d387ab7295f",
+        "app/knowledge/specialist_catalog.py": "5af895cf215c131572fa5931cff2196ead676f2fe29f8be717f9a53efb370aac",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "c9e092ba170914b1122e2dfb19d25b4313bc7963459405841eb6fd84c7e9c69c",
+        "scripts/build_kg_specialist_catalog.py": "d3d7df58ef9151fa5202297a8bf1c4732f02621e4f2be2e32e2d9b40e5e66579"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r3",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r3/runs/specialist-facts.xml",
+          "sha256": "f662b001d4580bc33286d09f36dc3c09c4fd9f4a08ed507506e52911275460fc",
+          "tests": 40,
+          "passed": 40,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 4.123,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "fbc20d3e51cf8dbe8c5e05d85f79ea43ac196af67d8cb436e08096f4d66f152c",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/specialist_facts.py": "7607c1b3c4b34a14a32a92ee581acc4b954d4400cc6514c4288ebd99e68f07ef",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_specialist_facts.py": "fa3a70dd5084e7584c57dc3ecc2c3f88fec540ddf696662f2faa419acd4b6bd1"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r4",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r4/runs/specialist-facts.xml",
+          "sha256": "d0a8dbf50eccfe5e5446627a8c8aa1ca37369442204d61adb6178b3217c6dae1",
+          "tests": 40,
+          "passed": 40,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 4.077,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "ad50687fcf8f4be9e63f1c393bebb1b9d8fb5226ed72b78560d61ba780914d91",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "alembic/versions/e6_specialist_decisions_0039.py": "1b7aeb4b371df4e8677326df4ed187ad570ceb2105a7838abb7bd80b16f0701c",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "a9c687e211cf967294ff4338f63948c26b8d860a6b3150260945761ff36828d2",
+        "app/domain/specialist_evidence.py": "86fac17b24c44919d0bbffb0882b6be85a5939930e296f943935ca23387f08fd",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r5",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r5/runs/connected.xml",
+          "sha256": "cc75884c19f04f923835bf0492442c46533127cc629b41c9f962b93438dd300f",
+          "tests": 1,
+          "passed": 0,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 53.928,
+          "unsuccessful": [
+            {
+              "name": "test_original_source_india_ten_day_decision_quote_reload_and_withdraw[ru]",
+              "class_name": "tests.test_specialist_decisions",
+              "result": "FAIL"
+            }
+          ]
+        }
+      ],
+      "snapshot_sha256": "dcc209940be20774c702fb4693a97254b5de4689ddf4b0f9c2b8acf8cbf88d13",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "18340e9a4dea90c91b18d1a75b5e32d6ae38f6efecfd7ece94e3f5b510a763b7",
+        "app/domain/specialist_evidence.py": "86fac17b24c44919d0bbffb0882b6be85a5939930e296f943935ca23387f08fd",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_specialist_decisions.py": "032ff56011f0c51807ecd082c75d93fd8154577ddbc06df1392e2aeecafeec4f",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r6",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r6/runs/connected.xml",
+          "sha256": "3a2b3a90dbd1a8ceaad6e30561d8f457ab4bcdca8f9cf4d91f04a4fbc05e6d1c",
+          "tests": 4,
+          "passed": 3,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 192.077,
+          "unsuccessful": [
+            {
+              "name": "test_wrong_recipe_and_cross_person_are_rejected",
+              "class_name": "tests.test_specialist_decisions",
+              "result": "FAIL"
+            }
+          ]
+        }
+      ],
+      "snapshot_sha256": "56f6f0552007613dfc55aa2d20c76aaf50ec8daa4be2d9e1390014634cff8ac1",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "7161d1bcd7e090ce7d4e6053d39d240634d983e775900816610eaf232baedab1",
+        "app/domain/specialist_evidence.py": "e879a7773ace64c17a0353ca43e62d9c2c682bad7ed7fdcc0c98618c4ea4d81a",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "645c7153c244ed1755740cb7e7544ec6d4428754b9512ab4dd3a67376eefe277",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_specialist_decisions.py": "032ff56011f0c51807ecd082c75d93fd8154577ddbc06df1392e2aeecafeec4f",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r7",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r7/runs/scoped-stop-first-failure.xml",
+          "sha256": "98eabad0fbbe81925e346548b15118cdb0be26f074fb4274859c9a928238e6fc",
+          "tests": 1,
+          "passed": 0,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 1.35,
+          "unsuccessful": [
+            {
+              "name": "test_retained_unsafe_cause_is_not_cleared_by_original_ack[False]",
+              "class_name": "tests.test_specialist_interruptions",
+              "result": "FAIL"
+            }
+          ]
+        },
+        {
+          "path": "runs/e6-30b-r7/runs/scoped-stops.xml",
+          "sha256": "8392a1cb4e276d61164909ba3b69781bf78a71f99f63ad635bfb24e537d12cb2",
+          "tests": 77,
+          "passed": 73,
+          "failures": 4,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 102.419,
+          "unsuccessful": [
+            {
+              "name": "test_retained_unsafe_cause_is_not_cleared_by_original_ack[False]",
+              "class_name": "tests.test_specialist_interruptions",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_retained_unsafe_cause_is_not_cleared_by_original_ack[True]",
+              "class_name": "tests.test_specialist_interruptions",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_allowed_manager_cause_then_privacy_changes_context_without_rewriting_old_pin",
+              "class_name": "tests.test_specialist_interruptions",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_scoped_lookup_ignores_unrelated_corrupt_session_but_rejects_own_corruption",
+              "class_name": "tests.test_specialist_interruptions",
+              "result": "FAIL"
+            }
+          ]
+        }
+      ],
+      "snapshot_sha256": "7f67a8439cf20b554840589dc57a03bcc41bb8cc29c43e53d949f326ac517950",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "7161d1bcd7e090ce7d4e6053d39d240634d983e775900816610eaf232baedab1",
+        "app/domain/specialist_evidence.py": "e879a7773ace64c17a0353ca43e62d9c2c682bad7ed7fdcc0c98618c4ea4d81a",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "645c7153c244ed1755740cb7e7544ec6d4428754b9512ab4dd3a67376eefe277",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "42d79719b3149693b4dddbe60bb59444cd353c5c41af32249f379678e747ce87",
+        "tests/test_specialist_session_interruptions.py": "19a7cfcdc4ded2206f6d76fc85e1f99ee0b58d5d99dea811c364b775128c112e"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r8",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r8/runs/specialist-core.xml",
+          "sha256": "b834ceb30c0fea57006b842049e5b5dad4d035c6177ed02d6850d78268dbadc7",
+          "tests": 8,
+          "passed": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 197.998,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "18d66b262b110128e57272b8530a7df0aec0a8aa0f244472ead4cd5aa86451f9",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "a23117416f79a44b83acd34615d05265ee41a50df4de9b598809a1e12b14460a",
+        "app/domain/specialist_evidence.py": "c1cf8b6ef8d0e0f74833f1cafb6f1cbc605a5c199e473c34524570ba3142ee83",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "efa1c22d57ab296edaa1f2254458200b1ab9b003d1c022591c2fb7f75d40e51e",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-r9",
+      "junit": [
+        {
+          "path": "runs/e6-30b-r9/runs/specialist-native.xml",
+          "sha256": "644ed5f1c13bbabb1ab96f1c94a4840f75711dfb8e1c69213147fffc3160d7d6",
+          "tests": 2,
+          "passed": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 176.22199999999998,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "936199cdecaa9c7fe4c431b29ee3a2906cc418b181975a7b0cab4098a8e0dce6",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "91c00b9f682604810aee0780c4a4f84d8bbe306cb9cded87b48e43118423418a",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "9bcca182d8535f88ca34e05dcda828eb79cc576f146a51f3eeda132da1d3bb49",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_admin_kg_specialist.py": "2bfe6f7b95c1162467fdac4432546bc47a082beec5e5a8660ae1e713875ce7ee",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_review_regressions.py": "1016fb6413c015424cd047079cf6bb0df2174adbd7bb6515abfb64b0a6711507",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e6-30b-review-r12",
+      "junit": [
+        {
+          "path": "runs/e6-30b-review-r12/review-bytes.xml",
+          "sha256": "e6e2f0ba5fd352f3eee6931cd1fb6cbb1a69fea731deef782717d872933543bf",
+          "tests": 1,
+          "passed": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 31.391,
+          "unsuccessful": []
+        },
+        {
+          "path": "runs/e6-30b-review-r12/review-domain-reserves.xml",
+          "sha256": "6f3840336045253edac2abfc96ba3a5b98a2b264dd684bb6a633061b9b388f57",
+          "tests": 6,
+          "passed": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 289.253,
+          "unsuccessful": []
+        }
+      ]
+    },
+    {
+      "directory": "runs/e6-30b-review-r16",
+      "junit": [
+        {
+          "path": "runs/e6-30b-review-r16/review-atomic-final.xml",
+          "sha256": "8b43007d5e2716cfb8e9da38dc1f5d376c94f6195425728499232131bc11563e",
+          "tests": 1,
+          "passed": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 73.06,
+          "unsuccessful": []
+        }
+      ]
+    },
+    {
+      "directory": "runs/e6-30b-review-r3",
+      "junit": [
+        {
+          "path": "runs/e6-30b-review-r3/review-component-corrected.xml",
+          "sha256": "71e294ce83ab38549963edb64473ad6f87626cbdde0ea46334aea35b44cfec55",
+          "tests": 22,
+          "passed": 20,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 0.689,
+          "unsuccessful": [
+            {
+              "name": "test_rehashed_normally_valid_conditional_literal_scope_cannot_diverge[country_set0]",
+              "class_name": "tests.test_review_specialist_component",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_rehashed_normally_valid_conditional_literal_scope_cannot_diverge[country_set1]",
+              "class_name": "tests.test_review_specialist_component",
+              "result": "FAIL"
+            }
+          ]
+        },
+        {
+          "path": "runs/e6-30b-review-r3/review-component.xml",
+          "sha256": "c4de3b99f858ffd7dbee0b5d5d082dfb0ce502862f47f6edebaa3a043d1e8655",
+          "tests": 22,
+          "passed": 19,
+          "failures": 3,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 0.6699999999999999,
+          "unsuccessful": [
+            {
+              "name": "test_rehashed_normally_valid_conditional_literal_scope_cannot_diverge[country_set0]",
+              "class_name": "tests.test_review_specialist_component",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_rehashed_normally_valid_conditional_literal_scope_cannot_diverge[country_set1]",
+              "class_name": "tests.test_review_specialist_component",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_old_current_review_and_future_supporting_evidence_are_refused",
+              "class_name": "tests.test_review_specialist_component",
+              "result": "FAIL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "directory": "runs/e6-30b-review-r4",
+      "junit": [
+        {
+          "path": "runs/e6-30b-review-r4/review-component.xml",
+          "sha256": "cf7e81bbc936aec14e274c2a32dbd0851c467e82ab86be35c05cf6942f962963",
+          "tests": 22,
+          "passed": 22,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 0.6819999999999999,
+          "unsuccessful": []
+        }
+      ]
+    },
+    {
+      "directory": "runs/e6-30b-review-r8",
+      "junit": [
+        {
+          "path": "runs/e6-30b-review-r8/review-atomic-corrected.xml",
+          "sha256": "f140509c4dd01c00fa32fc65ac2103c7e9a0d840ed1ab89a6074d91bfad63ebc",
+          "tests": 1,
+          "passed": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 53.827,
+          "unsuccessful": []
+        },
+        {
+          "path": "runs/e6-30b-review-r8/review-domain.xml",
+          "sha256": "6a03098bb448580501359e30e9b84346c9f38fbd9582f61bc1777b8f82c1bffd",
+          "tests": 3,
+          "passed": 0,
+          "failures": 3,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 112.724,
+          "unsuccessful": [
+            {
+              "name": "test_removed_publication_authority_returns_unusable_not_uncaught_exception",
+              "class_name": "tests.test_review_specialist_domain",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_rehashed_history_cannot_claim_preexisting_interview_was_absent",
+              "class_name": "tests.test_review_specialist_domain",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_quote_and_link_rollback_then_exact_recovery",
+              "class_name": "tests.test_review_specialist_domain",
+              "result": "FAIL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "directory": "runs/e6-30b-review-r9",
+      "junit": [
+        {
+          "path": "runs/e6-30b-review-r9/review-domain.xml",
+          "sha256": "df09e3549dced7dcb722dc7cf20ed63b67129a5efb18d466a214c2c9a3e7d636",
+          "tests": 4,
+          "passed": 3,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 195.33499999999998,
+          "unsuccessful": [
+            {
+              "name": "test_future_dated_decision_is_not_currently_usable",
+              "class_name": "tests.test_review_specialist_domain",
+              "result": "FAIL"
+            }
+          ]
+        },
+        {
+          "path": "runs/e6-30b-review-r9/review-reserves.xml",
+          "sha256": "825deecae0c961984b3959d83dbe7ff6b4594a5e4ce45e600e85c36409e8d684",
+          "tests": 2,
+          "passed": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 51.232,
+          "unsuccessful": [
+            {
+              "name": "test_legal_admin_registry_cannot_consume_reserved_withdrawal_envelope",
+              "class_name": "tests.test_review_specialist_reserves",
+              "result": "FAIL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "directory": "runs/e630b-native-review-r13",
+      "junit": [],
+      "snapshot_sha256": "37e6ca7a123820ac6a3938629bd56212fcc550fde916a67d99baa4aa261c57b8",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "70831b27709c3707e27ae32c24f11b01696db7c342bb8107d30f187346609c73",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "43f1b432307a546345ce49c0f853c57b74a657710d802179c3ecbced512b4eed",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "2bfe6f7b95c1162467fdac4432546bc47a082beec5e5a8660ae1e713875ce7ee",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "8026f168492332f888a2f101e9c47362f9e9f0354de7bb5191f964b31f27db77",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e630b-native-review-r14",
+      "junit": [
+        {
+          "path": "runs/e630b-native-review-r14/runs/reviewer-native-r14.xml",
+          "sha256": "c40bf20476a1b3180531fa8c2fda803b0e676020c432e8eeb0500f04fc2cde96",
+          "tests": 5,
+          "passed": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 269.676,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "f2921843943a5b4c6d1cf09436e5b9a00f901ba738857e2cb4d6d4cf962d2838",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "eacf9f9b652514ecfbc2b613cfb45d1f847609db2508db706e73216a23612714",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "43f1b432307a546345ce49c0f853c57b74a657710d802179c3ecbced512b4eed",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "8026f168492332f888a2f101e9c47362f9e9f0354de7bb5191f964b31f27db77",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e630b-native-review-r15",
+      "junit": [
+        {
+          "path": "runs/e630b-native-review-r15/runs/reviewer-native-r15-bounds.xml",
+          "sha256": "d303d0d031dab70bf5ef15e751d7a6b9eb48c1e167f6c7187a6751d867fd9889",
+          "tests": 2,
+          "passed": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 81.623,
+          "unsuccessful": []
+        }
+      ],
+      "snapshot_sha256": "79d47e12bb5ad8a2fbd19e603602df40e2b4d4a42d962de591f3eb36e849ebca",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "a262b7678e0823d50487a7594a2db6c5c2e60785fce20119bab5fab322c98f01",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "7d3de1574ec989d278001cae8f9b0a54b7ad0b31cce06d7f447c657102188441",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "6ff11f6d0d74e4cff0dbcbd965a865d145aac905dd73bca3be7cd015e3c68cf6",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "43f1b432307a546345ce49c0f853c57b74a657710d802179c3ecbced512b4eed",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+        "tests/test_admin_kg_specialist.py": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+        "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_postgres.py": "8026f168492332f888a2f101e9c47362f9e9f0354de7bb5191f964b31f27db77",
+        "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+        "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+        "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    },
+    {
+      "directory": "runs/e630b-native-review-r9",
+      "junit": [
+        {
+          "path": "runs/e630b-native-review-r9/runs/reviewer-native-r9.xml",
+          "sha256": "2021c958f74ac253444735247be9ea5f2759c8f6bfc768640ad506eb0e40728b",
+          "tests": 5,
+          "passed": 0,
+          "failures": 5,
+          "errors": 0,
+          "skipped": 0,
+          "seconds": 220.662,
+          "unsuccessful": [
+            {
+              "name": "test_ru_confirmation_has_readable_material_fact_labels",
+              "class_name": "tests.test_reviewer_specialist_native",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_incomplete_quote_is_a_reviewable_internal_estimate",
+              "class_name": "tests.test_reviewer_specialist_native",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_case_registry_outage_is_controlled_and_keeps_original_post[get]",
+              "class_name": "tests.test_reviewer_specialist_native",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_case_registry_outage_is_controlled_and_keeps_original_post[post]",
+              "class_name": "tests.test_reviewer_specialist_native",
+              "result": "FAIL"
+            },
+            {
+              "name": "test_known_domain_error_classes_preserve_exact_confirmation_and_recover",
+              "class_name": "tests.test_reviewer_specialist_native",
+              "result": "FAIL"
+            }
+          ]
+        }
+      ],
+      "snapshot_sha256": "936199cdecaa9c7fe4c431b29ee3a2906cc418b181975a7b0cab4098a8e0dce6",
+      "base": "ad9e0bd4d7403f05cb8e7178a0d5f738a0cd4356",
+      "files": {
+        "ai/STATE.md": "e2c5908b26e52d671e3941bb50cbf9e5ae990b10cb439a4727695cc027afb169",
+        "ai/tasks/2026-10-13-e6-30b-specialist-quote.md": "531ea23ef569d17c3b6780ca10a608561fb1510165e4f13aab4669e9c7349adb",
+        "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+        "app/admin/kg_specialist.py": "91c00b9f682604810aee0780c4a4f84d8bbe306cb9cded87b48e43118423418a",
+        "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+        "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+        "app/admin/templates/kg_specialist.html": "9bcca182d8535f88ca34e05dcda828eb79cc576f146a51f3eeda132da1d3bb49",
+        "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+        "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+        "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+        "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+        "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+        "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+        "app/domain/specialist_decisions.py": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+        "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+        "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+        "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+        "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+        "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+        "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+        "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+        "tests/test_admin_kg_specialist.py": "2bfe6f7b95c1162467fdac4432546bc47a082beec5e5a8660ae1e713875ce7ee",
+        "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+        "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+        "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+        "tests/test_specialist_review_regressions.py": "1016fb6413c015424cd047079cf6bb0df2174adbd7bb6515abfb64b0a6711507",
+        "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+      }
+    }
+  ],
+  "count_note": "Separate overlapping runs; never sum these as independent coverage. Failed originals retained.",
+  "environment": "Frozen Git archives without root .env; synthetic SQLite and isolated PostgreSQL16 localhost55971 only",
+  "production": "N/A: no deployment, live migrations, real messages or source approval authorized",
+  "final_checks": {
+    "root_R13_core": "48 PASS; source40/domain4/native2/browser1/schema1",
+    "root_R10_actualPG": "11 PASS; concurrency/source/fact locks/cancellation/migration",
+    "root_R15_actualPG": "3 PASS; fresh62-table COPY recovery and compact actor concurrency",
+    "root_R16_actualPG": "2 PASS; nested quote clocks rollback, equality and original recovery",
+    "independent_domain": "APPROVE exact R16; see independent-review.md",
+    "independent_native": "APPROVE exact R15 mapped to R16; see native-review.md",
+    "scoped_interruptions": "APPROVE exact R9; five final own PASS, runtime unchanged",
+    "visual": "Separate auditor inspected all six R13 mobile-dark/desktop-light screenshots PASS",
+    "separate_whole_audit": "GO exact R17 /36 indexed files; see final-audit.md"
+  },
+  "pending": [],
+  "code_files": {
+    "alembic/versions/e6_specialist_decisions_0039.py": "fb738d22a0fbef6049adee4dee8d402b86822e87a121c7c57a92fdd8b989e891",
+    "app/admin/kg_specialist.py": "6ff11f6d0d74e4cff0dbcbd965a865d145aac905dd73bca3be7cd015e3c68cf6",
+    "app/admin/router.py": "b1451cf1f6f3a1b43266dc98025ce484d0573120935a957dc240f8cdd407a1ac",
+    "app/admin/templates/kg_applications.html": "aeee85d144977f13c09c0e807ec40dc3ef66eb3a2903d2960cbf3368f42ce280",
+    "app/admin/templates/kg_specialist.html": "fe56c5b2672445444162e25cd4470ee26fea8a7464bd6a851be5cc0744f8d2ba",
+    "app/config.py": "3db01d13478b9dd24d2e91290d45b1e30c673f6b8a841b8affba1ce30e49a523",
+    "app/domain/dialogue_journal.py": "0fc877778ccca463afe354bd1ae64b356f5d4bd1d5d40a11f5358fbabcffd6d8",
+    "app/domain/dialogue_stops.py": "073dab8113e1799329b7fe7eea85618e6b3ba0c9e77e62b3412e6d82f4621373",
+    "app/domain/entry_channel_stops.py": "ec50de9c3bf7dfa449b38d67979c9c67e864704a9c64415a22078b7c09a1d4c7",
+    "app/domain/entry_quotes.py": "7b97343db9f5c698255fe094603f88c9e7e969995138839fcf0e8b1b1b5f5f1c",
+    "app/domain/models.py": "5da2cc64641867378a49f5b01f28a6b0f4bf226d7340ab00fa7dd984ef05ba6f",
+    "app/domain/specialist_decisions.py": "755abbddc3b073877cc913010abd3888862db403cd3494f208178bbd925c2f40",
+    "app/domain/specialist_evidence.py": "f4c4c87e381a189fdb40e7e78fe28d84ff3e98f9592b830e7412420c87615516",
+    "app/domain/specialist_facts.py": "b86aec2ed87985870c6d7e3fc01cc4f83e5016605d0d61195d3737d0720c7bb8",
+    "app/domain/specialist_interruptions.py": "b9be5f41ea84818aa03565d6333f521e8f371b650d9b059a6546ac8393114fd3",
+    "app/domain/specialist_policy.py": "30a688c93633feb5213bf0e336965dec04506f54fc0d2dfc3122932ac467424a",
+    "app/knowledge/specialist_catalog.py": "3197aef9dda1e81afec6a461114606d6ca70f0cdd1fc6cc84fb46e9dfecc41ee",
+    "knowledge/kg_entry/specialist_catalog_v1.json": "4d6f964df3052dd1f70614b76913a6975a99fb2617e728e622852acafd2ac28e",
+    "scripts/build_kg_specialist_catalog.py": "5bfaf283b0bd66cb308fdfa5d5e5ae9a89a90e146f6e977162795527e0360b0f",
+    "tests/archived_specialist_r9.py": "91ae8c61ba3b9a7307c947db06a687b28baa2a1e055f10226c009c1c22e2ee63",
+    "tests/browser_specialist.py": "f28bcf76321e0ac3cd2a8e0dbc92d302042c88a109fbeca31a614d2c07d5de5e",
+    "tests/test_admin_kg_specialist.py": "95a25c29014ed3d57b1fddaf02bb7de0340144ccb7e334f2164e46594b8ec532",
+    "tests/test_service_cases.py": "29447f58f000298d86366f08e614a092d3c2eefa7497d5974954c9cdc27b9ef4",
+    "tests/test_specialist_bytes.py": "62f6d36797a3792d90f663310fd23a83355623b4dd70c656d05f966e37e18e34",
+    "tests/test_specialist_decisions.py": "2a198f9ac579840a5b035811c1fb71a1bd46dab464b7bc68101ffb8870254099",
+    "tests/test_specialist_facts.py": "31e7e812a4511adc103f2905423e8520069ff8a099d3b2c030cb2b228f293d12",
+    "tests/test_specialist_interruptions.py": "4b1774d1ddd1983caab638d9a0f27e8e36374b9424351194a2ab3a6c63d0c074",
+    "tests/test_specialist_native_bounds.py": "62335ec740cc6bd73fa8763d7ce284ea8b609efca0bf29c56229a2d71dd275e8",
+    "tests/test_specialist_native_review.py": "276a48b6045313a7c13c9ff2a93d044575dfc5e6b23141b420b3ec605f7bfefa",
+    "tests/test_specialist_postgres.py": "b3b9d15dc87e1b66e3f5a466bccd8c4c68a583fde057f402c34f0839cd291a58",
+    "tests/test_specialist_quote_before_decision.py": "97830872984d010ff5458111e33c88952c8f3e4bcf6e1b2466bf88923df09688",
+    "tests/test_specialist_quote_clock.py": "5024572253287c94355e8d886dfbfd138b49d6a0363b0d84a6c7b50c59a0469c",
+    "tests/test_specialist_recovery_postgres.py": "65dcbafd0a5dd97c83cd2986bd85fe822d50ee440fc2acd7f3c0bd6b3639f18c",
+    "tests/test_specialist_reserves.py": "c4d71fd87b994ea012a109c2493aa79a17ea5da1cf4abcc87aaa7e22b5ee5a94",
+    "tests/test_specialist_review_regressions.py": "1691b80b3afc7a6df7642284e012ee4dc537407b724183ad5e0087f3275a9da8",
+    "tests/test_specialist_session_interruptions.py": "fcbc8dbb8df965565b770bfd895c78551ed6acdebb8f2021b648cc18a490fbe7"
+  },
+  "commit_identity_matches": 36,
+  "reviews": {
+    "independent-review": {
+      "path": "ai/reviews/2026-10-13-e6-30b-independent-review.md",
+      "lf_sha256": "50ee6452ed7f904a77eb620c37664636b4fe02d71d48431a09690dcc94116e4c",
+      "verdict": "APPROVE (scoped)"
+    },
+    "native-review": {
+      "path": "ai/reviews/2026-10-13-e6-30b-native-review.md",
+      "lf_sha256": "bc2381a4db73385f7c6ae6c5303dca783dedf2bac72a21d62124e1aff14754c2",
+      "verdict": "APPROVE (scoped)"
+    },
+    "interruptions-audit": {
+      "path": "ai/reviews/2026-10-13-e6-30b-interruptions-audit.md",
+      "lf_sha256": "812104d75b84967fe091f3ab2d01966afde80c6290d0131fb991d1f06f072d66",
+      "verdict": "APPROVE (scoped)"
+    },
+    "final-audit": {
+      "path": "ai/reviews/2026-10-13-e6-30b-final-audit.md",
+      "lf_sha256": "06ea6ac5fdf385f8a713736373bf459d0db6d378f213ef17cab5f700b4bdf393",
+      "verdict": "GO"
+    }
+  },
+  "remaining_parent": "J01/J02/J03/J05 still open; fixed96/100; next E630C then whole-project/owner gates"
+}

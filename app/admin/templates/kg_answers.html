@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block external_scripts %}{% endblock %}
+{% block external_fonts %}{% endblock %}
+{% block title %}Frunze — Ответы по утверждённым источникам{% endblock %}
+{% block brand_sub %}база знаний по въезду{% endblock %}
+{% block head %}<style>
+.kg-answers{max-width:960px;margin:auto;padding:24px 16px;line-height:1.55;overflow-wrap:anywhere}.kg-answers h1{font-size:clamp(24px,4vw,32px)}.kg-answers h2{font-size:21px}.kg-answers a{color:var(--accent,#2563eb)}.kg-answers .box{padding:18px;margin:18px 0;border:1px solid var(--border,#cbd5e1);border-radius:12px;background:var(--surface,#fff)}.kg-answers .notice{border-left:4px solid #b7791f}.kg-answers label{display:block;font-weight:600;margin:12px 0 5px}.kg-answers input,.kg-answers select{font:inherit;box-sizing:border-box;width:100%;max-width:100%;padding:10px;border:1px solid var(--border,#cbd5e1);border-radius:7px;background:var(--surface,#fff);color:var(--text,#182738)}.kg-answers button{font:inherit;padding:10px 14px;background:#2563eb;color:white;border:0;border-radius:7px;cursor:pointer;margin-top:16px}.kg-answers :focus-visible{outline:3px solid #d97706;outline-offset:3px}.kg-answers pre{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere}.kg-answers summary{cursor:pointer}.kg-answers .muted{color:var(--muted,#526174)}
+@media(max-width:600px){.kg-answers{padding:14px 10px}.kg-answers .box{padding:12px}}
+@media print{html,body{height:auto!important;overflow:visible!important}.topbar,.kg-answers form,.kg-answers nav{display:none!important}.kg-answers{padding:0;max-width:none;font-size:10pt}.kg-answers .box{break-inside:auto}@page{size:A4;margin:14mm}}
+</style>{% endblock %}
+{% block content %}<main class="kg-answers">
+<nav><a href="/admin/kg-entry/knowledge">← Поиск по PDF</a> · <a href="/admin/kg-entry/reviews">Журнал проверки правил</a></nav>
+<h1>Ответы по утверждённым источникам</h1>
+<p>Выберите правила из журнала проверки. При каждом запросе проверяются действующая публикация, её основания и сроки.</p>
+<form method="get" action="{{ url }}" id="kg-answer-form" class="box">
+<label for="kg-answer-units">Коды правил через запятую</label><input id="kg-answer-units" name="units" value="{{ units }}" maxlength="362" required aria-describedby="kg-answer-help">
+<p id="kg-answer-help" class="muted">До трёх разных правил. Коды указаны в журнале; личные данные здесь не вводятся.</p>
+<label for="kg-answer-language">Язык ответа / Answer language</label><select id="kg-answer-language" name="language"><option value="ru" {% if language=='ru' %}selected{% endif %}>Русский</option><option value="en" {% if language=='en' %}selected{% endif %}>English</option></select>
+<button type="submit">Сформировать ответ</button></form>
+{% if error %}<p class="box notice" role="alert">{{ error }}</p>{% endif %}
+{% if report %}<section id="kg-answer-result" lang="{{ language }}">
+{% if report.fallback %}<div class="box notice" role="status"><p>{{ report.fallback }}</p><p>{{ 'Неподтверждённая часть' if language=='ru' else 'Unanswered part' }}: {% for item in report.unavailable %}{{ item.unit_id }}{% if not loop.last %}, {% endif %}{% endfor %}.</p></div>{% endif %}
+{% for answer in report.answers %}<article class="box" aria-labelledby="kg-answer-title-{{ loop.index }}"><h2 id="kg-answer-title-{{ loop.index }}">{{ answer.title }}</h2><pre class="kg-answer-text">{{ answer.text }}</pre>
+<p class="muted">{{ 'Проверено' if language=='ru' else 'Checked' }}: {{ answer.source.checked_at }}. {{ 'Действует с' if language=='ru' else 'Effective from' }} {{ answer.source.effective_from }}{% if answer.source.effective_to %} — {{ answer.source.effective_to }}{% endif %}.</p>
+<details><summary>{{ 'Проверка источника и версии' if language=='ru' else 'Source and version verification' }}</summary><p>{{ 'Источник' if language=='ru' else 'Source' }} SHA-256: {{ answer.source.source_hash }}<br>{{ 'Правило' if language=='ru' else 'Rule' }} SHA-256: {{ answer.source.unit_hash }}<br>{{ 'Публикация' if language=='ru' else 'Publication' }} SHA-256: {{ answer.source.manifest_hash }}</p></details></article>{% endfor %}
+<p class="muted">{{ 'Ответ клиенту не отправлен.' if language=='ru' else 'No answer has been sent to a client.' }}</p>
+</section>{% elif not error %}<p id="kg-answer-empty" class="box">{{ copy.empty }}</p>{% endif %}
+</main>{% endblock %}

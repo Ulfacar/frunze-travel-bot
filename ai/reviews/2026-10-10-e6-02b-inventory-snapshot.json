@@ -1,0 +1,140 @@
+{
+  "revision": "5feb4e03da07b98a9526b0433738634cfb903494",
+  "archive": "runs\\e6-02b-inventory-final",
+  "env_files_absent": true,
+  "identity": "PASS after explicit CRLF/LF normalization; raw hashes retained",
+  "files": [
+    {
+      "path": "ai/STATE.md",
+      "git_sha256": "3302fa22e91a24d2361818e1eaa124513a4cba91e4d28d8b2c8bc5b733411aa0",
+      "archive_sha256": "230bbf7fea576d2dd28a15dae91fda7f481e9dd4e4adf7e33ac5999561487efd",
+      "lf_sha256": "3302fa22e91a24d2361818e1eaa124513a4cba91e4d28d8b2c8bc5b733411aa0"
+    },
+    {
+      "path": "ai/reviews/2026-10-10-e6-02b-inventory-packet.md",
+      "git_sha256": "a1387f197f6fbd951ae4f16794126c35d5e079a67ad826a9fc74c09df9523c8a",
+      "archive_sha256": "77373bba6f6742fab7c61b42e92e29842aa0da86b05390ffc01cd750d386aa90",
+      "lf_sha256": "a1387f197f6fbd951ae4f16794126c35d5e079a67ad826a9fc74c09df9523c8a"
+    },
+    {
+      "path": "ai/reviews/2026-10-10-pdf-to70-baseline.md",
+      "git_sha256": "4df7883b840e5aae9916fca771ff3f9361e14be4e91aafc62ae28d3ba07076e1",
+      "archive_sha256": "4eb92e3f1544beb16f33cb6325729ce8126f8bfef27a1f8f22c0c7c42e8698d5",
+      "lf_sha256": "4df7883b840e5aae9916fca771ff3f9361e14be4e91aafc62ae28d3ba07076e1"
+    },
+    {
+      "path": "ai/tasks/2026-10-10-e6-02b-document-inventory.md",
+      "git_sha256": "102ec3fe3d7f2837d2d0b46848599b2195dc675d49541b80f60113b867ef9a85",
+      "archive_sha256": "28f4a0938d04434a197ed505148d0d19fea03cb128a07d979d47154399490cb4",
+      "lf_sha256": "102ec3fe3d7f2837d2d0b46848599b2195dc675d49541b80f60113b867ef9a85"
+    },
+    {
+      "path": "ai/tasks/2026-10-10-pdf-to70.md",
+      "git_sha256": "ef90e2707272bdf8c4820949081950f973e22e7e75eadc238a19d45dd9e8d2fc",
+      "archive_sha256": "bfd3bfabcd07cecc3b5882e93b28314f494d7f4c5e4cbb2cee3988c9269c434d",
+      "lf_sha256": "ef90e2707272bdf8c4820949081950f973e22e7e75eadc238a19d45dd9e8d2fc"
+    },
+    {
+      "path": "alembic/versions/e6_documents_0018.py",
+      "git_sha256": "67f94b668efc16c0fe697e137a74f8e7559bc793be9dd2f632250ba85aabc895",
+      "archive_sha256": "db98b7c76f30f113013c041d5aa23bb5ceabb406c0f194fcea93e32b9de63944",
+      "lf_sha256": "67f94b668efc16c0fe697e137a74f8e7559bc793be9dd2f632250ba85aabc895"
+    },
+    {
+      "path": "app/admin/kg_document_inventory.py",
+      "git_sha256": "dcd7af064b93c9a6d1d3b88ee276f91a8b3a0c5d28588525e9a86dfdc7c165f1",
+      "archive_sha256": "7ec55a465ef6632f341fe0f88469cce0f94a78b7fa1acf85ef552f46cb2e7ed5",
+      "lf_sha256": "dcd7af064b93c9a6d1d3b88ee276f91a8b3a0c5d28588525e9a86dfdc7c165f1"
+    },
+    {
+      "path": "app/admin/router.py",
+      "git_sha256": "70dbba47c425cf70b784748896b30f3aec69fb5dfe497186c506eacdb6ac9317",
+      "archive_sha256": "6ef6670ccbc88b11bbdb278b2dbcac1256c9d3c9ba3bc4bd13db1a0dcfc748af",
+      "lf_sha256": "70dbba47c425cf70b784748896b30f3aec69fb5dfe497186c506eacdb6ac9317"
+    },
+    {
+      "path": "app/admin/templates/kg_applications.html",
+      "git_sha256": "2b6ac6dd6ff3257a09329b3c2506a632b4213abd9c7a469b8d7d7a033b2f44fa",
+      "archive_sha256": "d474a12c6007f74c604fa5d2a73bf0ef32badbd0cc255979141e05c6069a0cf4",
+      "lf_sha256": "2b6ac6dd6ff3257a09329b3c2506a632b4213abd9c7a469b8d7d7a033b2f44fa"
+    },
+    {
+      "path": "app/admin/templates/kg_document_inventory.html",
+      "git_sha256": "626880b3d2aab718aac89b09cf7d376d74ad4436b4622f63cf83fefae559d8a7",
+      "archive_sha256": "6807511ee79ecfca46d8500e070ebbfa77c1178ce1c3e013fc919668c3536198",
+      "lf_sha256": "626880b3d2aab718aac89b09cf7d376d74ad4436b4622f63cf83fefae559d8a7"
+    },
+    {
+      "path": "app/domain/entry_document_rules.py",
+      "git_sha256": "8006072f1dae3bbcaa28c559443a4c00eaf17b8b134dcfee6fed7dfd20b7e0b0",
+      "archive_sha256": "6159791afa835a7729357e4be6d063dfdfc588a771397409c2ab2301090fc2bd",
+      "lf_sha256": "8006072f1dae3bbcaa28c559443a4c00eaf17b8b134dcfee6fed7dfd20b7e0b0"
+    },
+    {
+      "path": "app/domain/entry_documents.py",
+      "git_sha256": "05f352f72245e5425f9c9e3c1c95f32d8c8bcbf25394acfe12292e046218ca5c",
+      "archive_sha256": "0c03fdaf07216a2872990ee409f96cec1f0c5f41d2e1e0267b57d0728d4cee11",
+      "lf_sha256": "05f352f72245e5425f9c9e3c1c95f32d8c8bcbf25394acfe12292e046218ca5c"
+    },
+    {
+      "path": "app/domain/models.py",
+      "git_sha256": "ace3361a06cae88a568ea9edb27c145c1e45b4c77fc3c85e361640077c240213",
+      "archive_sha256": "7374e73750b2f45310ce9cecf242b0ab929f80f7e595300b8d6709a188c8032a",
+      "lf_sha256": "ace3361a06cae88a568ea9edb27c145c1e45b4c77fc3c85e361640077c240213"
+    },
+    {
+      "path": "docs/pdf-engineering-criteria.json",
+      "git_sha256": "f97d43b540288d1875b7fe59c2b0ec316fc71d0db1011f0bee4f208a3a49be61",
+      "archive_sha256": "f5109a1410724215fcec00c1f9a3e48caa8983337d319abf3dc06fe4d233bb7a",
+      "lf_sha256": "f97d43b540288d1875b7fe59c2b0ec316fc71d0db1011f0bee4f208a3a49be61"
+    },
+    {
+      "path": "scripts/check_pdf_engineering_progress.py",
+      "git_sha256": "c28ec4e53f038423f5b0d907f9546588a000916efd0f7dac22f5399d0ef6fdcd",
+      "archive_sha256": "edc6da4ceb5545a38cc81c61104c7f2f98f47f31d3004a47781ff6365c0fe405",
+      "lf_sha256": "c28ec4e53f038423f5b0d907f9546588a000916efd0f7dac22f5399d0ef6fdcd"
+    },
+    {
+      "path": "tests/browser_kg_document_inventory.py",
+      "git_sha256": "0149de2afecc20a0b7f3ea75b21c93adff79d845094fdbdb437dd4148b93046b",
+      "archive_sha256": "325ec5b8e92d38585a7099e9bcc8f17993fc4e6229faece9f5b1de0d333a31fc",
+      "lf_sha256": "0149de2afecc20a0b7f3ea75b21c93adff79d845094fdbdb437dd4148b93046b"
+    },
+    {
+      "path": "tests/test_admin_kg_document_inventory.py",
+      "git_sha256": "67bb6662c963e35fa33a7060a2e857a9f6fae82c606f1240a617cc7ad7ffc6d6",
+      "archive_sha256": "316c5f0c5d83c3a51d5c46e4cfb767a8507aadc3ad62ed386f371a34d3eaab8c",
+      "lf_sha256": "67bb6662c963e35fa33a7060a2e857a9f6fae82c606f1240a617cc7ad7ffc6d6"
+    },
+    {
+      "path": "tests/test_alembic_domain_migration.py",
+      "git_sha256": "561da8ea401d1759bc7242b158ba17917a9cde22a8bf5b4a27d845bc02cd39e1",
+      "archive_sha256": "939a420ed062f58824066c399d7caebe0196dc77b7463d250d8333813fd29cee",
+      "lf_sha256": "561da8ea401d1759bc7242b158ba17917a9cde22a8bf5b4a27d845bc02cd39e1"
+    },
+    {
+      "path": "tests/test_entry_documents.py",
+      "git_sha256": "4d21a441873831586b04fb7f9397652ce62027238279f5dae4de248dfebf77b7",
+      "archive_sha256": "290cd9a81c9c5e7850571095fe75a84215c6ccaf948d5b399aff750a2f628018",
+      "lf_sha256": "4d21a441873831586b04fb7f9397652ce62027238279f5dae4de248dfebf77b7"
+    },
+    {
+      "path": "tests/test_entry_documents_migration.py",
+      "git_sha256": "a9d7677ef4eb494e0908214c1d295b58773886445785ed33a254c8672976b7a1",
+      "archive_sha256": "4fc6e597360dd542b4acb3bbe03a1d6bda8e102bd0b930325690758e0d1b2858",
+      "lf_sha256": "a9d7677ef4eb494e0908214c1d295b58773886445785ed33a254c8672976b7a1"
+    },
+    {
+      "path": "tests/test_pdf_engineering_progress.py",
+      "git_sha256": "2b2300c782c876b2309270da2b72674e1bc59c83b6967d516ab1884e6f88ce4b",
+      "archive_sha256": "c0c14fd6a42860ab373b58c3783c869f7ca30e480fb25996c1742737543a1668",
+      "lf_sha256": "2b2300c782c876b2309270da2b72674e1bc59c83b6967d516ab1884e6f88ce4b"
+    },
+    {
+      "path": "tests/test_service_cases.py",
+      "git_sha256": "3bc6d163b162bebadeac6f48b655d16fd369faf3e9a8c21f8ae1d2f71307a576",
+      "archive_sha256": "fdc3f7ac04a737c2dacccefaddd4384657edfeb677f98b943ec328c67fd41274",
+      "lf_sha256": "3bc6d163b162bebadeac6f48b655d16fd369faf3e9a8c21f8ae1d2f71307a576"
+    }
+  ]
+}

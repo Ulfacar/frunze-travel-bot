@@ -1,0 +1,4 @@
+# Byte-locked knowledge inputs/outputs and the source-hash fixture must survive
+# checkout with core.autocrlf=true on Windows.
+knowledge/kg_entry/** text eol=lf
+tests/fixtures/kg_entry/synthetic_source.txt text eol=lf

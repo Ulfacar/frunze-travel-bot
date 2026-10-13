@@ -114,7 +114,8 @@ app = FastAPI(title="Frunze Travel Bot", lifespan=lifespan)
 # https_only=True ставит Secure-флаг (TLS терминирует nginx, ходим по https);
 # same_site=lax — базовая защита от CSRF.
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret,
-                   max_age=14 * 24 * 3600, https_only=True, same_site="lax")
+                   max_age=14 * 24 * 3600, https_only=settings.session_https_only,
+                   same_site="lax")
 # WP0: correlation id per request (X-Request-ID). Added last → outermost middleware,
 # so it binds the id before everything and echoes the header on the way out.
 app.add_middleware(observ.RequestIdMiddleware)
@@ -503,6 +504,22 @@ async def wappi_webhook(request: Request) -> dict:
         log.info("wappi event: wh_type=%s is_me=%s type=%s",
                  raw.get("wh_type"), raw.get("is_me"), raw.get("type"))
 
+        # Чужое НЕклиентское событие по каналу — доказательство, что труба от Wappi до нас
+        # работает, и адрес вебхука ни при чём. Нужно сторожу тишины: собственный счётчик
+        # Wappi не делится по направлению, и ответ менеджера в старый чат выглядел в нём
+        # как «сообщения приходят, а до вас не доходят» (ложная тревога 26.09).
+        #
+        # Два исключения, без которых доказательство подтверждало бы само себя:
+        #   - клиентское входящее — у него своя отметка `note_inbound` ниже;
+        #   - всё, что вызвали МЫ САМИ (`is_own`): эхо нашей же реплики под
+        #     `outgoing_message_api` и статусы доставки наших сообщений. Иначе ночной дожим
+        #     по старым лидам вечно освежал бы «доказательство» на канале, который в это
+        #     время не принимает входящие вообще.
+        if not is_incoming_user_message(raw) and not is_own(str(raw.get("id", ""))):
+            from app.core import channel_heartbeat as _hb
+            _service_orch = _wappi_orchestrators.get(str(raw.get("profile_id", "")))
+            await _hb.note_service_event(getattr(getattr(_service_orch, "bot", None), "id", ""))
+
         # Статус доставки/прочтения нашего исходящего → обновляем галочку в панели.
         if is_delivery_status(raw):
             provider_msg_id, status = parse_delivery_status(raw)
@@ -524,14 +541,16 @@ async def wappi_webhook(request: Request) -> dict:
         if not is_incoming_user_message(raw):
             continue
 
-        if _seen_before(str(raw.get("id", ""))):
-            continue  # дубль доставки вебхука — уже обработали
-
         profile_id = str(raw.get("profile_id", ""))
         orchestrator = _wappi_orchestrators.get(profile_id)
         if orchestrator is None:
             log.warning("Wappi-событие без сопоставленного бота (profile_id=%s)", profile_id)
             continue
+
+        from app.core.kg_dialogue import declared
+        managed = declared(orchestrator.channel, raw.get('chatId') or raw.get('from') or '')
+        if not managed and _seen_before(str(raw.get("id", ""))):
+            continue  # Managed routes use durable per-route identity and body conflict detection.
 
         observ.note_inbound()
         # Отметка живости КОНКРЕТНОГО канала: агрегат выше не показывает смерть части.

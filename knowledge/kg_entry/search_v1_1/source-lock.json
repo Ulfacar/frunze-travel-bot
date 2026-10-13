@@ -1,0 +1,10 @@
+{
+  "format": "kg-entry-search-source/1",
+  "kb_version": "1.1",
+  "rules_as_of": "2026-10-02",
+  "source_document": "docs/kb-visa-inbound-v1.1-derived.md",
+  "markdown_lf_sha256": "642cecf9d2bcf0368da31f8fe30fe65a3c0c0dbef0039ac8c5e551340067a5f5",
+  "pdf_sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
+  "rag_blocks": [1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17],
+  "split_after_chars": 6000
+}

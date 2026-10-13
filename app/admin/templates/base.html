@@ -1,0 +1,379 @@
+{#
+  Единая оболочка админ-панели. До 01.10.2026 каркаса не было вообще: десять страниц —
+  десять самостоятельных <!doctype> со своим <head>, своим :root и своим топбаром, отсюда
+  пять вариантов плитки-числа, семь вариантов бейджа и шесть вариантов кнопки.
+
+  Здесь живут ТОЛЬКО то, что общее: документ, шрифты, токены, шапка и базовые компоненты.
+  Страничный CSS остаётся на страницах, в блоке `head` — так переезд не перерисовывает
+  десять экранов разом. Определения ниже скопированы из boards.html дословно, чтобы вид
+  не изменился ни на пиксель.
+
+  Палитра — в одном месте: смена на другую (бирюза из макетов 07.2026) правится здесь и
+  нигде больше. Блоки: title / head / topbar_center / topbar_nav / content / scripts.
+#}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Frunze — панель{% endblock %}</title>
+  {% block external_scripts %}<script src="{% if standalone_crm %}/crm-static/htmx-1.9.12.min.js{% else %}https://unpkg.com/htmx.org@1.9.12{% endif %}"></script>{% endblock %}
+  {% if new_look %}
+  <script>
+    // Тему ставим ДО первой отрисовки: иначе ночью экран успевает мигнуть белым.
+    (function () {
+      try {
+        var t = localStorage.getItem('frunze-theme');
+        if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+      } catch (e) { /* приватный режим — живём на системной теме */ }
+    })();
+  </script>
+  {% endif %}
+  {% block external_fonts %}{% if not new_look %}<link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  {% endif %}
+  {% endblock %}
+  <style>
+    /* Светлая профессиональная тема: синий #2563EB + сделочный зелёный #059669,
+       Fira Sans (интерфейс) + Fira Code (числа/ID). Чистый минимализм, мягкие тени. */
+    :root {
+      --bg: #F1F5F9; --surface: #FFFFFF; --surface-2: #F1F5F9; --col: #F8FAFC;
+      --elev: #FFFFFF; --elev-hover: #F8FAFC;
+      --border: #E2E8F0; --border-2: #CBD5E1;
+      --text: #0F172A; --muted: #64748B; --faint: #94A3B8;
+      --accent: #2563EB; --accent-2: #1D4ED8; --accent-soft: rgba(37,99,235,.10);
+      /* Синонимы, которыми пользуются отдельные страницы. Раньше каждая объявляла
+         своё, и один и тот же смысл назывался по-разному. */
+      --brand: #2563EB; --brand-soft: rgba(37,99,235,.10);
+      --warm: #D97706; --warm-soft: rgba(217,119,6,.12); --amber: #D97706;
+      --hot: #DC2626; --hot-soft: rgba(220,38,38,.10); --red: #DC2626;
+      --green: #059669; --green-soft: rgba(5,150,105,.10); --manager: #059669;
+      --good: #059669;
+      --mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --r-sm: 8px; --r: 11px; --r-lg: 15px;
+      --shadow: 0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.07);
+      --t: 180ms cubic-bezier(.4,0,.2,1);
+    }
+
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--text);
+           font-family: {% if new_look %}'Segoe UI'{% else %}'Fira Sans'{% endif %}, system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+           font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+    ::selection { background: var(--accent-soft); }
+    ::-webkit-scrollbar { height: 10px; width: 10px; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    a { color: var(--accent); }
+
+    /* ---------- Шапка ---------- */
+    .topbar { display: flex; align-items: center; gap: 18px; padding: 0 20px; height: 58px;
+              background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px;
+             color: var(--text); text-decoration: none; }
+    .brand .logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#2563EB,#059669);
+                   display: grid; place-items: center; color: #fff; font-weight: 800; box-shadow: 0 2px 8px rgba(37,99,235,.25); }
+    .brand small { color: var(--muted); font-weight: 500; font-size: 11.5px; display: block; margin-top: -2px; }
+    .tabs { display: flex; gap: 4px; margin-left: 6px; }
+    .tab { background: transparent; color: var(--muted); border: 1px solid transparent; padding: 7px 14px;
+           border-radius: 9px; cursor: pointer; font: inherit; font-weight: 600; font-size: 13px;
+           transition: background var(--t), color var(--t); }
+    .tab:hover { background: var(--surface-2); color: var(--text); }
+    .tab.active { background: var(--accent-soft); color: var(--accent); }
+    .tab-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px;
+                 margin-left: 4px; border-radius: 9px; background: var(--hot); color: var(--on-hot, #fff);
+                 font-family: var(--mono); font-size: 10.5px; font-weight: 700; vertical-align: middle; }
+    .spacer { flex: 1; }
+    /* Переключатель направления (визы / туры / билеты) — только у полного админа. */
+    .dir-switch { display: flex; gap: 4px; margin: 0; padding: 3px; border-radius: 11px;
+                  background: var(--surface-2); border: 1px solid var(--border); }
+    .nav-link { display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+                color: var(--text); background: var(--surface-2); border: 1px solid var(--border-2);
+                border-radius: 9px; padding: 7px 12px; font-weight: 600; font-size: 13px;
+                transition: background var(--t); }
+    .nav-link:hover { background: #E2E8F0; }
+    .nav-link.on { background: var(--accent-soft); color: var(--accent); border-color: rgba(37,99,235,.22); }
+    .me { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px; font-weight: 500; }
+    .me .av { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-2);
+              border: 1px solid var(--border-2); display: grid; place-items: center; color: var(--muted); }
+
+    /* ---------- Поиск ---------- */
+    .search { position: relative; display: flex; align-items: center; }
+    .search svg { position: absolute; left: 11px; width: 15px; height: 15px; color: var(--faint); pointer-events: none; }
+    .search input { width: 230px; padding: 8px 12px 8px 34px; background: var(--surface-2); color: var(--text);
+                    border: 1px solid var(--border-2); border-radius: 9px; font: inherit; font-size: 13px;
+                    transition: border-color var(--t), box-shadow var(--t), width var(--t); }
+    .search input::placeholder { color: var(--faint); }
+    .search input:focus { outline: none; width: 280px; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+    /* ---------- Базовые компоненты ---------- */
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+             box-shadow: var(--shadow); overflow: hidden; }
+    .wrap { padding: 16px; }
+    .btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid transparent; border-radius: 9px;
+           padding: 9px 14px; cursor: pointer; font: inherit; font-weight: 600; font-size: 13px;
+           transition: background var(--t), border-color var(--t); width: 100%; justify-content: center; }
+    .btn svg { width: 15px; height: 15px; }
+    .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+    .btn-danger { background: var(--hot); color: var(--on-hot, #fff); }
+    .btn-danger:hover { background: var(--hot-hover, #B91C1C); }
+    .btn-ghost { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
+    .btn-ghost:hover { background: var(--button-hover, #E2E8F0); }
+    .btn-brand { background: var(--accent); color: var(--on-accent, #fff); width: auto; }
+    .btn-brand:hover { background: var(--accent-2); }
+    .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600;
+             padding: 2px 7px; border-radius: 6px; }
+    .badge svg { width: 11px; height: 11px; }
+    .tag { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--surface-2);
+           border: 1px solid var(--border); padding: 2px 8px; border-radius: 6px; }
+    /* Прокрутка широких таблиц: на телефоне шесть колонок иначе рвут страницу. */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    *:focus-visible { outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+    /* ---------- Телефон (минимум, чтобы шапка не рвалась; остальное — модуль M2) ---------- */
+    @media (max-width: 760px) {
+      .topbar { height: auto; flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+      .search input, .search input:focus { width: 100%; }
+      .search { flex: 1 1 100%; }
+      .wrap { padding: 12px; }
+    }
+    {% if new_look %}
+    /* ---------- Новый визуальный язык (02.10.2026, тумблер admin_new_look_enabled) ----------
+       Панель — рабочее место на весь день и диспетчерская ночью, поэтому тёмная тема здесь
+       равноправный режим, а не приложение. Фирменный цвет — глубокая бирюза из макетов
+       07.2026; ожидание, срочность и живой менеджер говорят своими тёплыми цветами, чтобы
+       акцент не спорил со статусами. Переопределяем ТОЛЬКО токены и немного геометрии —
+       разметка и классы общие с прежним видом, поэтому выключение возвращает его дословно. */
+    :root {
+      --bg: #F6F7F8; --surface: #FFFFFF; --surface-2: #F0F2F4; --col: #F6F7F8;
+      --elev: #FFFFFF; --elev-hover: #F6F7F8;
+      --border: #E1E5E9; --border-2: #C8CFD6;
+      --button-hover: #E5E9ED; --hot-hover: #8F2721;
+      --text: #29333D; --muted: #596570; --faint: #65717C;
+      --accent: #0E7C86; --accent-2: #0A626A; --accent-soft: rgba(14,124,134,.10);
+      --brand: #0E7C86; --brand-soft: rgba(14,124,134,.10);
+      --warm: #9A5B11; --warm-soft: rgba(154,91,17,.12); --amber: #9A5B11;
+      --hot: #A8332C; --hot-soft: rgba(168,51,44,.11); --red: #A8332C;
+      --green: #1F6B4F; --green-soft: rgba(31,107,79,.11); --manager: #1F6B4F;
+      --good: #1F6B4F;
+      --font-ui: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+      --mono: var(--font-ui);
+      --r-sm: 6px; --r: 8px; --r-lg: 10px;
+      --shadow: 0 4px 16px rgba(29,39,49,.08);
+      --t: 170ms cubic-bezier(.4,0,.2,1);
+      /* Цвет контента НА цветном фоне: в тёмной теме акцент светлый, и белый текст
+         на нём даёт 2.46:1 при норме 4.5 — там нужен тёмный. */
+      --on-accent: #FFFFFF; --on-hot: #FFFFFF;
+      color-scheme: light;
+    }
+    /* Тёмная — не инверсия, а свой набор: фон уходит в сине-зелёный графит, бирюза
+       поднимается в светлоту, чтобы оставаться читаемой. Значения продублированы в двух
+       блоках намеренно: медиа-запрос ловит системную тему, `[data-theme]` — явный выбор,
+       и каждый обязан побеждать в свою сторону. */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0D1415; --surface: #151F21; --surface-2: #1C282A; --col: #121C1D;
+        --elev: #172224; --elev-hover: #1D2A2C;
+        --border: #263436; --border-2: #35474A;
+        --button-hover: #293A3D; --hot-hover: #EDABA5;
+        --text: #E6EDED; --muted: #9FB0B1; --faint: #748482;
+        --accent: #4FB3BF; --accent-2: #6CC6D1; --accent-soft: rgba(79,179,191,.15);
+        --brand: #4FB3BF; --brand-soft: rgba(79,179,191,.15);
+        --warm: #D9A04A; --warm-soft: rgba(217,160,74,.16); --amber: #D9A04A;
+        --hot: #E2847B; --hot-soft: rgba(226,132,123,.15); --red: #E2847B;
+        --green: #68BE98; --green-soft: rgba(104,190,152,.15); --manager: #68BE98;
+        --good: #68BE98;
+        --shadow: 0 1px 2px rgba(0,0,0,.40), 0 12px 32px rgba(0,0,0,.35);
+        --on-accent: #0D1415; --on-hot: #0D1415;
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0D1415; --surface: #151F21; --surface-2: #1C282A; --col: #121C1D;
+      --elev: #172224; --elev-hover: #1D2A2C;
+      --border: #263436; --border-2: #35474A;
+      --button-hover: #293A3D; --hot-hover: #EDABA5;
+      --text: #E6EDED; --muted: #9FB0B1; --faint: #748482;
+      --accent: #4FB3BF; --accent-2: #6CC6D1; --accent-soft: rgba(79,179,191,.15);
+      --brand: #4FB3BF; --brand-soft: rgba(79,179,191,.15);
+      --warm: #D9A04A; --warm-soft: rgba(217,160,74,.16); --amber: #D9A04A;
+      --hot: #E2847B; --hot-soft: rgba(226,132,123,.15); --red: #E2847B;
+      --green: #68BE98; --green-soft: rgba(104,190,152,.15); --manager: #68BE98;
+      --good: #68BE98;
+      --shadow: 0 1px 2px rgba(0,0,0,.40), 0 12px 32px rgba(0,0,0,.35);
+      --on-accent: #0D1415; --on-hot: #0D1415;
+      color-scheme: dark;
+    }
+    /* 12.10: обычный системный шрифт; цифры не требуют отдельного гарнитурного слоя. */
+    body { font-size: 16px; line-height: 1.6; }
+    input, select, textarea, button { font-family: inherit; }
+    code, pre, kbd { font-family: ui-monospace, Consolas, monospace; }
+    /* Шапка дышит: высота по содержимому, а не фиксированные 58px впритык. */
+    .topbar { height: auto; min-height: 64px; padding: 10px 20px; gap: 10px; flex-wrap: wrap; }
+    .brand .logo { border-radius: 10px; background: var(--accent); box-shadow: none; }
+    .brand small { font-size: 13px; font-weight: 400; }
+    /* Разделы — тихие по умолчанию: подсвечивается тот, где менеджер сейчас. */
+    .nav-link { background: transparent; border-color: transparent; color: var(--muted);
+                font-size: 14px; font-weight: 400; padding: 7px 9px; border-radius: 6px; }
+    .nav-link:hover { background: var(--surface-2); color: var(--text); }
+    .nav-link.on { background: var(--accent-soft); color: var(--accent-2); border-color: transparent; }
+    .tab { font-size: 14px; font-weight: 400; border-radius: 6px; }
+    .tab.active { font-weight: 600; color: var(--accent-2); }
+    .tabs { flex-wrap: wrap; }
+    .me { font-size: 14px; font-weight: 400; }
+    .btn { font-size: 14px; border-radius: 6px; }
+    /* Disabled — состояние действия, а не повод прятать его название.
+       Специфичность сохраняет читаемость и в страницах со своей opacity для .btn. */
+    :root body :is(button, .btn)[disabled] {
+      opacity: 1; color: var(--muted); background: var(--surface-2);
+      border-color: var(--border-2); box-shadow: none; cursor: not-allowed;
+    }
+    .badge, .tag, .tab-badge { font-size: 12px; }
+    .me .av { border-radius: 9px; background: var(--accent-soft); border-color: transparent;
+              color: var(--accent); }
+    .search input { border-radius: 6px; font-size: 14px; background: var(--surface); }
+    .panel { box-shadow: none; }
+    /* Цифры везде одной ширины: столбец счётчиков не прыгает при обновлении. */
+    .count, .stat .n, .time, .ph { font-variant-numeric: tabular-nums; }
+    /* Переключатель темы — рядом с именем менеджера. */
+    .nav-link { white-space: nowrap; }
+    /* «Ещё»: редкие разделы не занимают место, но доступны в один клик. */
+    .more-nav { position: relative; }
+    .more-nav > summary { list-style: none; cursor: pointer; }
+    .more-nav > summary::-webkit-details-marker { display: none; }
+    .more-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 190px;
+                display: grid; gap: 2px; padding: 6px; border-radius: var(--r);
+                border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); }
+    .more-pop .nav-link { display: block; }
+    .theme-toggle { width: 34px; height: 34px; display: grid; place-items: center; padding: 0;
+                    border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+                    color: var(--muted); cursor: pointer; }
+    .theme-toggle:hover { background: var(--surface-2); color: var(--text); }
+    .theme-toggle svg { width: 17px; height: 17px; }
+    /* Телефон: блок нового вида идёт после общих правил, поэтому свои отступы для
+       узкого экрана он обязан объявить сам — иначе шапка станет тесной. */
+    @media (max-width: 760px) {
+      .topbar { padding: 8px 12px; gap: 8px; min-height: 0; }
+      .nav-link { padding: 8px 9px; font-size: 14px; }
+      .more-pop { right: auto; left: 0; }
+    }
+    @media (max-width: 480px) {
+      .topbar { padding: 7px 10px; gap: 6px; }
+      .nav-link { padding: 7px 8px; font-size: 14px; }
+      .brand small { display: none; }
+      .me span:first-child { display: none; }
+    }
+    .theme-toggle .moon { display: none; }
+    :root[data-theme="dark"] .theme-toggle .moon { display: block; }
+    :root[data-theme="dark"] .theme-toggle .sun { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .theme-toggle .moon { display: block; }
+      :root:not([data-theme="light"]) .theme-toggle .sun { display: none; }
+    }
+    {% endif %}
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {# Блоком — чтобы страница входа могла убрать шапку целиком: кнопка «Выйти»
+     до логина бессмысленна. #}
+  {% block topbar %}
+  <header class="topbar">
+    <a class="brand" href="/admin">
+      <span class="logo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></span>
+      <span>Frunze<small>{% block brand_sub %}панель{% endblock %}</small></span>
+    </a>
+
+    {# Направление: менеджеру не показываем — у него оно одно, выведено из его бота. #}
+    {% if directions %}
+    <form method="post" action="/admin/direction" class="dir-switch">
+      {% for key, label in directions %}
+      <button type="submit" name="direction" value="{{ key }}"
+              class="tab{% if key == direction %} active{% endif %}">{{ label }}</button>
+      {% endfor %}
+    </form>
+    {% endif %}
+
+    {% block topbar_center %}{% endblock %}
+    <span class="spacer"></span>
+
+    {% block topbar_nav %}
+    {% if new_look %}
+    {# Разделы без эмодзи: в карточках у нас настоящие иконки, и смесь двух языков на одном
+       экране выглядит собранной наспех. Ежедневные — на виду, редкие — за «Ещё».
+       Ни один раздел не пропал, они все здесь. #}
+    {% if focus_on %}<a href="/admin/focus" class="nav-link">Фокус</a>{% endif %}
+    {% if workday_on %}<a href="/admin/work" class="nav-link">Рабочий день</a>{% endif %}
+    {% if standalone_crm %}<a href="/admin/intake" class="nav-link">Новое обращение</a>{% endif %}
+    <a href="/admin" class="nav-link">Диалоги</a>
+    <a href="/admin/buyers" class="nav-link">Покупатели</a>
+    <a href="/admin/calendar" class="nav-link">Календарь</a>
+    <details class="more-nav">
+      <summary class="nav-link">Ещё</summary>
+      <div class="more-pop">
+        <a href="/admin/morning" class="nav-link">Горячий лист</a>
+        <a href="/admin/faq" class="nav-link">FAQ-правила</a>
+        {% if is_admin|default(false) %}
+        <a href="/admin/analytics" class="nav-link">Аналитика</a>
+        {% if not standalone_crm %}<a href="/admin/cards" class="nav-link">Карточки Bitrix</a>
+        <a href="/admin/system" class="nav-link">Статус системы</a>{% endif %}
+        <a href="/admin/audit" class="nav-link">Аудит-лог</a>
+        {% endif %}
+      </div>
+    </details>
+    {% else %}
+    {% if focus_on %}<a href="/admin/focus" class="nav-link">🎯 Фокус</a>{% endif %}
+    {% if workday_on %}<a href="/admin/work" class="nav-link">🗂 Рабочий день</a>{% endif %}
+    <a href="/admin" class="nav-link">💬 Диалоги</a>
+    <a href="/admin/buyers" class="nav-link">🎯 Покупатели</a>
+    <a href="/admin/morning" class="nav-link">🔥 Горячий лист</a>
+    <a href="/admin/calendar" class="nav-link">📅 Календарь</a>
+    <a href="/admin/faq" class="nav-link" title="FAQ-правила">FAQ</a>
+    {% if is_admin|default(false) %}
+    <a href="/admin/analytics" class="nav-link">📊 Аналитика</a>
+    <a href="/admin/cards" class="nav-link" title="Карточки Bitrix">🗂</a>
+    <a href="/admin/system" class="nav-link" title="Статус системы">⚙️</a>
+    <a href="/admin/audit" class="nav-link" title="Аудит-лог">📋</a>
+    {% endif %}
+    {% endif %}
+    {% endblock %}
+
+    {% if new_look %}
+    {# Переключатель темы. Панель открывают и ночью — выбор запоминается на этом устройстве. #}
+    <button type="button" class="theme-toggle" onclick="toggleTheme()" title="Светлая / тёмная тема"
+            aria-label="Переключить тему">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+    {% endif %}
+    <div class="me"><span>{{ manager.name if manager else 'Менеджер' }}</span>
+      <span class="av"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+      <form method="post" action="/admin/logout" style="margin-left:10px">
+        <button class="btn btn-ghost" type="submit" title="Выйти" style="padding:6px 10px;width:auto">Выйти</button>
+      </form>
+    </div>
+  </header>
+  {% endblock %}
+
+  {% block content %}{% endblock %}
+  {% if new_look %}
+  <script>
+    // Три состояния темы: системная (атрибута нет), светлая, тёмная. Кнопка переключает
+    // между светлой и тёмной и запоминает выбор на этом устройстве.
+    function toggleTheme() {
+      var root = document.documentElement;
+      var dark = root.dataset.theme
+        ? root.dataset.theme === 'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+      try { localStorage.setItem('frunze-theme', root.dataset.theme); } catch (e) { /* ok */ }
+    }
+  </script>
+  {% endif %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

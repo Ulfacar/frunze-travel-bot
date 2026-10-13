@@ -1,0 +1,23 @@
+{
+  "task": "E5-02B-SOURCE-20261007",
+  "base": "4a22ecb8823585387f90bbdc6321506743989132",
+  "branch": "fix/tours-search-quality",
+  "target": "UNCOMMITTED",
+  "files": {
+    "docs/crm-delivery/backlog.md": "5c27e750d01615f1ac6f4781aa268db32e9caab3d7fe4470cb6a5a515b9070f2",
+    "docs/e5-02-slots-schema.md": "351a5862795eb4b8637180fdd12f1723a9c3e6dc4fe1850bdd1faac241e1393d",
+    "docs/e5-02b-source-bundle.md": "b07347d4af4157ff73e77d3cfad8427cc8a3ae69de093ae9797c4cce27abca03",
+    "knowledge/kg_entry/draft-v1.1/countries.yaml": "873d92e984acf6a1c4c3f3879b9d3c6be97d469591efa6ba328628eba4dbd642",
+    "knowledge/kg_entry/draft-v1.1/meta.yaml": "6ae41d8f3c38b7373a4fcf9e9c13770d72624de44a018c75dae384221964fd30",
+    "knowledge/kg_entry/draft-v1.1/units.yaml": "729ca3a4151e0da3a7c9962019ad7bdcdcdc673504c0881143f1848fe19d81ec",
+    "knowledge/kg_entry/draft-v1.1.audit.json": "6b30a60806808a05d7bde1253bc50d53b16fe26f26aaf4c55af01aaecb8b01a0",
+    "knowledge/kg_entry/source_v1_1/aliases.json": "eb90745733128425ae311a70e32f216b2c9e203ca0a8e1edb07cc260e9bf696d",
+    "knowledge/kg_entry/source_v1_1/capture.json": "c4b08c7c577aeec1cf6d182d18e294b41ebcbdc458abbc2fef4ef50bca04bf89",
+    "knowledge/kg_entry/source_v1_1/iso3166.json": "f56f08c44c47636682f2512de72d41b1f2d2542dadce0fc54dbbd9a197e8a6ba",
+    "knowledge/kg_entry/source_v1_1/source-lock.json": "a25d4bce06350ea1e55e7715436acd57a85ebb27a77664b753244e7532bd7586",
+    "requirements-knowledge-tools.txt": "cc23bb513cf8eefc6a89c761d4d7d730fa04d839d2dc307f0a72284f93bf69e8",
+    "scripts/build_kg_entry_bundle.py": "c1aa93ab0d6485e13c81324f4449f5d1f8b05231aa9abe0fb33afc0c859ff721",
+    "scripts/kg_entry_source.py": "a53090b19f8251b0ce74621151af9c3da0a9de1adedb46d07c75e38af08892aa",
+    "tests/test_kg_entry_source_bundle.py": "65ec6d429f3ea3c5ed273539888145a45ccc97bf142ce711c33202e822ad1bce"
+  }
+}

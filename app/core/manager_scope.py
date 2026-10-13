@@ -23,13 +23,15 @@ BOT_SCOPE_BY_MANAGER: dict[str, set[str]] = {
 }
 
 
-def bot_scope_for(manager: dict | None, *, admin_user: str = "") -> set[str] | None:
+def bot_scope_for(manager: dict | None, *, admin_user: str = "", strict: bool = False) -> set[str] | None:
     """Return the set of bot ids visible to this manager; None = unrestricted admin."""
     if not manager:
         return set()
     if manager.get("admin"):
         return None
     login = str(manager.get("login") or "").strip().lower()
+    if strict:
+        return BOT_SCOPE_BY_MANAGER.get(login) or set()
     name = str(manager.get("name") or "").strip().lower()
     admin_login = str(admin_user or "").strip().lower()
     if login in {"admin", "administrator", admin_login} or "админ" in name:
