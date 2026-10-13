@@ -1,6 +1,15 @@
 # Project: Frunze Travel Bot
 
-## Local PDF/CRM work boundary — 11.10.2026
+## Separate CRM release authority — 13.10.2026
+
+The user now explicitly requests a separate-domain CRM deployment. That request
+supersedes the earlier local-only limit for this new isolated service; it does not
+authorize changes to the existing bot, copying real customer data, enabling
+messages, or approving actual source/business rules. Requested domain and access
+selection are pending. Current task:
+`ai/tasks/2026-10-13-standalone-crm-release.md`.
+
+## Historical local PDF/CRM work boundary — 11.10.2026
 
 The current continuation builds the inbound Kyrgyzstan PDF/CRM scope locally:
 versioned sources, applications/documents, procedures, portal observations,

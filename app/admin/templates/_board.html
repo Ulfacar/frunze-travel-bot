@@ -27,10 +27,10 @@
       <div class="card" tabindex="0" data-wait="{{ c.wait_level }}" data-needs="{{ '1' if c.needs_reply else '0' }}" data-noise="{{ '1' if c.is_noise else '0' }}"
            data-uid="{{ c.user_id }}"
            hx-get="/admin/conversation/{{ c.user_id }}" hx-target="#chat" hx-swap="innerHTML">
-        <button type="button" class="card-archive" title="Архивировать"
+        {% if not standalone_crm %}<button type="button" class="card-archive" title="Архивировать"
                 onclick="archiveConversation('{{ c.user_id }}', event)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-        </button>
+        </button>{% endif %}
         <div class="card-top">
           <span class="avatar" style="background: {{ c.avatar }}">{{ c.initials }}</span>
           <div class="card-id">
@@ -46,7 +46,7 @@
             <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
             {{ c.time_label }}
           </span>
-          {% if c.source %}
+          {% if c.source and not standalone_crm %}
           <span class="badge ad-source" title="{{ c.source_headline or 'Пришёл по рекламе' }}">📣 {{ 'реклама' if c.source == 'ad' else 'пост' }}</span>
           {% endif %}
           {% if c.wait_level in ('warm','hot') %}
@@ -73,7 +73,7 @@
           {% if c.assigned_to %}
           <span class="badge owner" title="Владелец лида">👤 {{ c.assigned_to }}</span>
           {% endif %}
-          {% if c.intercepted %}
+          {% if c.intercepted and not standalone_crm %}
           <span class="badge intercepted push">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             перехвачен

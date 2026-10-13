@@ -32,10 +32,15 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
+    parser.add_argument("--standalone-stage", action="store_true", help="Separate private server checkpoint; does not claim public deployment")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
     parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts", "overnight-local", "grounded-answers", "source-sop"), default="applications")
     args = parser.parse_args(argv)
+    if args.standalone_stage and args.checkpoint != 'source-sop':
+        parser.error('--standalone-stage requires --checkpoint source-sop')
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
+    if args.standalone_stage:
+        target = ROOT / f"docs/reports/frunze-crm-server-check-{args.report_date.isoformat()}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
     rows = [[part.strip() for part in line.strip().strip("|").split("|")]
             for line in source.splitlines() if line.startswith("| ")]
@@ -315,16 +320,33 @@ def main(argv=None):
         review_note = ("Точный объём ревью, исходные ошибки и повторные проверки сохранены в handoff и evidence. "
             "Проверки разных версий не складываются в новый полный прогон. Восстановление через binary COPY "
             "проверено локально; штатный pg_dump и восстановление production не подтверждены.")
+    deployment_note = 'Пилот выключен по умолчанию; на рабочий сервер эти изменения не выкатывались.'
+    readiness_note = 'Это локальная реализация, не подтверждение готовности к запуску.'
+    if args.standalone_stage:
+        title = 'Отдельная CRM · серверная проверка'
+        headline = 'Подготовлен отдельный сервис CRM.'
+        deployment_note = 'Публичный домен ещё не выбран. Серверный тест доступен только через закрытый прокси.'
+        readiness_note = 'Публикация на домене и реальная приёмка владельцем остаются отдельными шагами.'
+        result = '''<ul><li>Отдельные приложение, PostgreSQL, учётная запись и защищённая сессия.
+        Исходный бот продолжает работать самостоятельно.</li>
+        <li>Ручное обращение → предварительное дело → анкета → заявитель → отдельная заявка → задача.
+        Международные номера сохраняются без изменения кода страны.</li>
+        <li>Повтор сохранения после сбоя сверяет исходное обращение. Доступ менеджеров и формы
+        проверяются сервером; отправка сообщений из этого приложения выключена.</li>
+        <li>Проверены экран 390px в тёмной теме с JavaScript и 1365px в светлой теме
+        без JavaScript; сохранность после замены контейнера. Исправлен контраст входа и календаря.</li>
+        <li>Полные справочники PDF включены в образ. Исходники остаются черновыми;
+        цены, юридические решения и сроки не утверждаются автоматически.</li></ul>'''
+        review_note = 'Точные результаты отдельных прогонов и проверки восстановления указаны в отчёте и release handoff. Тестовая база содержит только синтетические записи.'
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
     <p>{args.report_date:%d.%m.%Y} · {title}</p>
-    <p class="note"><b>{headline}</b> {intro} Пилот выключен по умолчанию;
-    на рабочий сервер эти изменения не выкатывались.</p>
+    <p class="note"><b>{headline}</b> {intro} {deployment_note}</p>
     <h2>Результат этого этапа</h2>{result}
     <h2>Проверка</h2><p>{escape(args.checks)}</p>
     <p class="small">Код: {escape(args.revision)}<br>Ветка: fix/tours-search-quality<br>
     Независимые review/audit текущих модулей указаны в проверке;
     {review_note}
-    Это локальная реализация, не подтверждение готовности к запуску.</p>
+    {readiness_note}</p>
     <h2>Главный остаток</h2><p>{remaining} {estimate}</p>""")
     for start in range(0, len(rows), 7):
         table = "<tr>" + "".join(f"<th>{escape(cell)}</th>" for cell in header) + "</tr>"

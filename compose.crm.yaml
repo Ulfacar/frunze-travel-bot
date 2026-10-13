@@ -1,0 +1,62 @@
+name: frunze-crm
+services:
+  app:
+    image: frunze-crm:${CRM_RELEASE:?Set the reviewed release identity}
+    build:
+      context: ./release
+      dockerfile: Dockerfile.crm
+    env_file:
+      - ./crm.env
+    environment:
+      CRM_STANDALONE_ENABLED: "true"
+      CRM_PUBLIC_ORIGIN: ${CRM_PUBLIC_ORIGIN:?Confirmed HTTPS origin required}
+      CRM_DATABASE_NAME: frunze_crm
+      CRM_RELEASE_REVISION: ${CRM_RELEASE:?Set the reviewed release identity}
+    restart: unless-stopped
+    # Docker's internal network publishes no ports. Host nginx uses this fixed
+    # private address; no service port is exposed on the server's public address.
+    networks:
+      crm_private:
+        ipv4_address: 172.30.78.10
+    depends_on:
+      db:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    # Entrypoint sets no_new_privs after the Snap Docker AppArmor transition.
+    # AppArmor/seccomp remain enforced; startup checks kernel flags before serving.
+    pids_limit: 128
+    mem_limit: 1536m
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: frunze_crm
+      POSTGRES_USER: crm_owner
+      POSTGRES_PASSWORD: ${CRM_PG_OWNER_PASSWORD:?Independent database owner secret required}
+    volumes:
+      - crm_pgdata:/var/lib/postgresql/data
+    networks: [crm_private]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U crm_owner -d frunze_crm"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 768m
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+networks:
+  crm_private:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.78.0/24
+          gateway: 172.30.78.1
+volumes:
+  crm_pgdata:

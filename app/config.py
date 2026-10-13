@@ -417,6 +417,10 @@ class Settings(BaseSettings):
     # Админ-панель (канбан + чат + перехват). Бэкенд лога диалогов и доступ.
     panel_backend: Literal["memory", "postgres"] = "memory"  # прод: PANEL_BACKEND=postgres
     admin_enabled: bool = True
+    crm_standalone_enabled: bool = False
+    crm_public_origin: str = ""
+    crm_database_name: str = "frunze_crm"
+    crm_release_revision: str = ""
     admin_user: str = "admin"
     admin_password: str = "frunze"  # ПРОД: переопределить ADMIN_PASSWORD!
     # Аккаунты менеджеров: JSON в env MANAGERS='[{"login":"sezim","name":"Сезим","password":"..."}]'.

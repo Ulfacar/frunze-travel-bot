@@ -30,6 +30,12 @@
                         border:1px solid var(--border); font-weight:600; }
     .demo-btns button:hover { background:#EEF2FF; border-color:var(--accent); }
 </style>
+{% if standalone_crm %}<style>
+    .card { width:380px; max-width:calc(100vw - 32px); box-shadow:none; }
+    label, input, button { font-size:16px; }
+    input { background:var(--surface); color:var(--text); }
+    button, .logo-xl { background:var(--accent); color:var(--on-accent,#fff); }
+</style>{% endif %}
 {% endblock %}
 
 {% block content %}

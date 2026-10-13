@@ -16,7 +16,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Frunze — панель{% endblock %}</title>
-  {% block external_scripts %}<script src="https://unpkg.com/htmx.org@1.9.12"></script>{% endblock %}
+  {% block external_scripts %}<script src="{% if standalone_crm %}/crm-static/htmx-1.9.12.min.js{% else %}https://unpkg.com/htmx.org@1.9.12{% endif %}"></script>{% endblock %}
   {% if new_look %}
   <script>
     // Тему ставим ДО первой отрисовки: иначе ночью экран успевает мигнуть белым.
@@ -28,11 +28,8 @@
     })();
   </script>
   {% endif %}
-  {% block external_fonts %}<link rel="preconnect" href="https://fonts.googleapis.com">
+  {% block external_fonts %}{% if not new_look %}<link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  {% if new_look %}
-  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  {% else %}
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% endif %}
   {% endblock %}
@@ -62,7 +59,7 @@
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body { margin: 0; background: var(--bg); color: var(--text);
-           font-family: {% if new_look %}'Onest'{% else %}'Fira Sans'{% endif %}, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+           font-family: {% if new_look %}'Segoe UI'{% else %}'Fira Sans'{% endif %}, system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
            font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
     ::selection { background: var(--accent-soft); }
     ::-webkit-scrollbar { height: 10px; width: 10px; }
@@ -121,9 +118,9 @@
     .btn svg { width: 15px; height: 15px; }
     .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
     .btn-danger { background: var(--hot); color: var(--on-hot, #fff); }
-    .btn-danger:hover { background: #B91C1C; }
+    .btn-danger:hover { background: var(--hot-hover, #B91C1C); }
     .btn-ghost { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
-    .btn-ghost:hover { background: #E2E8F0; }
+    .btn-ghost:hover { background: var(--button-hover, #E2E8F0); }
     .btn-brand { background: var(--accent); color: var(--on-accent, #fff); width: auto; }
     .btn-brand:hover { background: var(--accent-2); }
     .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600;
@@ -152,19 +149,21 @@
        акцент не спорил со статусами. Переопределяем ТОЛЬКО токены и немного геометрии —
        разметка и классы общие с прежним видом, поэтому выключение возвращает его дословно. */
     :root {
-      --bg: #EEF2F3; --surface: #FFFFFF; --surface-2: #E9EEEF; --col: #F4F8F8;
-      --elev: #FFFFFF; --elev-hover: #F4F8F8;
-      --border: #DCE3E4; --border-2: #C2CDCF;
-      --text: #10201F; --muted: #5C6B6D; --faint: #8C9A9C;
+      --bg: #F6F7F8; --surface: #FFFFFF; --surface-2: #F0F2F4; --col: #F6F7F8;
+      --elev: #FFFFFF; --elev-hover: #F6F7F8;
+      --border: #E1E5E9; --border-2: #C8CFD6;
+      --button-hover: #E5E9ED; --hot-hover: #8F2721;
+      --text: #29333D; --muted: #596570; --faint: #65717C;
       --accent: #0E7C86; --accent-2: #0A626A; --accent-soft: rgba(14,124,134,.10);
       --brand: #0E7C86; --brand-soft: rgba(14,124,134,.10);
       --warm: #9A5B11; --warm-soft: rgba(154,91,17,.12); --amber: #9A5B11;
       --hot: #A8332C; --hot-soft: rgba(168,51,44,.11); --red: #A8332C;
       --green: #1F6B4F; --green-soft: rgba(31,107,79,.11); --manager: #1F6B4F;
       --good: #1F6B4F;
-      --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-      --r-sm: 9px; --r: 12px; --r-lg: 16px;
-      --shadow: 0 1px 2px rgba(16,32,31,.05), 0 10px 28px rgba(16,32,31,.07);
+      --font-ui: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+      --mono: var(--font-ui);
+      --r-sm: 6px; --r: 8px; --r-lg: 10px;
+      --shadow: 0 4px 16px rgba(29,39,49,.08);
       --t: 170ms cubic-bezier(.4,0,.2,1);
       /* Цвет контента НА цветном фоне: в тёмной теме акцент светлый, и белый текст
          на нём даёт 2.46:1 при норме 4.5 — там нужен тёмный. */
@@ -180,6 +179,7 @@
         --bg: #0D1415; --surface: #151F21; --surface-2: #1C282A; --col: #121C1D;
         --elev: #172224; --elev-hover: #1D2A2C;
         --border: #263436; --border-2: #35474A;
+        --button-hover: #293A3D; --hot-hover: #EDABA5;
         --text: #E6EDED; --muted: #9FB0B1; --faint: #748482;
         --accent: #4FB3BF; --accent-2: #6CC6D1; --accent-soft: rgba(79,179,191,.15);
         --brand: #4FB3BF; --brand-soft: rgba(79,179,191,.15);
@@ -196,6 +196,7 @@
       --bg: #0D1415; --surface: #151F21; --surface-2: #1C282A; --col: #121C1D;
       --elev: #172224; --elev-hover: #1D2A2C;
       --border: #263436; --border-2: #35474A;
+      --button-hover: #293A3D; --hot-hover: #EDABA5;
       --text: #E6EDED; --muted: #9FB0B1; --faint: #748482;
       --accent: #4FB3BF; --accent-2: #6CC6D1; --accent-soft: rgba(79,179,191,.15);
       --brand: #4FB3BF; --brand-soft: rgba(79,179,191,.15);
@@ -207,22 +208,35 @@
       --on-accent: #0D1415; --on-hot: #0D1415;
       color-scheme: dark;
     }
-    body { font-size: 14.5px; line-height: 1.5; }
+    /* 12.10: обычный системный шрифт; цифры не требуют отдельного гарнитурного слоя. */
+    body { font-size: 16px; line-height: 1.6; }
+    input, select, textarea, button { font-family: inherit; }
+    code, pre, kbd { font-family: ui-monospace, Consolas, monospace; }
     /* Шапка дышит: высота по содержимому, а не фиксированные 58px впритык. */
-    .topbar { height: auto; min-height: 60px; padding: 9px 18px; gap: 14px; }
+    .topbar { height: auto; min-height: 64px; padding: 10px 20px; gap: 10px; flex-wrap: wrap; }
     .brand .logo { border-radius: 10px; background: var(--accent); box-shadow: none; }
-    .brand small { font-size: 12px; }
+    .brand small { font-size: 13px; font-weight: 400; }
     /* Разделы — тихие по умолчанию: подсвечивается тот, где менеджер сейчас. */
     .nav-link { background: transparent; border-color: transparent; color: var(--muted);
-                font-weight: 500; padding: 7px 11px; }
+                font-size: 14px; font-weight: 400; padding: 7px 9px; border-radius: 6px; }
     .nav-link:hover { background: var(--surface-2); color: var(--text); }
-    .nav-link.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
-    .tab { font-weight: 500; }
-    .tab.active { font-weight: 600; }
+    .nav-link.on { background: var(--accent-soft); color: var(--accent-2); border-color: transparent; }
+    .tab { font-size: 14px; font-weight: 400; border-radius: 6px; }
+    .tab.active { font-weight: 600; color: var(--accent-2); }
+    .tabs { flex-wrap: wrap; }
+    .me { font-size: 14px; font-weight: 400; }
+    .btn { font-size: 14px; border-radius: 6px; }
+    /* Disabled — состояние действия, а не повод прятать его название.
+       Специфичность сохраняет читаемость и в страницах со своей opacity для .btn. */
+    :root body :is(button, .btn)[disabled] {
+      opacity: 1; color: var(--muted); background: var(--surface-2);
+      border-color: var(--border-2); box-shadow: none; cursor: not-allowed;
+    }
+    .badge, .tag, .tab-badge { font-size: 12px; }
     .me .av { border-radius: 9px; background: var(--accent-soft); border-color: transparent;
               color: var(--accent); }
-    .search input { border-radius: 10px; }
-    .panel { box-shadow: var(--shadow); }
+    .search input { border-radius: 6px; font-size: 14px; background: var(--surface); }
+    .panel { box-shadow: none; }
     /* Цифры везде одной ширины: столбец счётчиков не прыгает при обновлении. */
     .count, .stat .n, .time, .ph { font-variant-numeric: tabular-nums; }
     /* Переключатель темы — рядом с именем менеджера. */
@@ -244,12 +258,12 @@
        узкого экрана он обязан объявить сам — иначе шапка станет тесной. */
     @media (max-width: 760px) {
       .topbar { padding: 8px 12px; gap: 8px; min-height: 0; }
-      .nav-link { padding: 6px 9px; font-size: 12.5px; }
+      .nav-link { padding: 8px 9px; font-size: 14px; }
       .more-pop { right: auto; left: 0; }
     }
     @media (max-width: 480px) {
       .topbar { padding: 7px 10px; gap: 6px; }
-      .nav-link { padding: 5px 8px; font-size: 12px; }
+      .nav-link { padding: 7px 8px; font-size: 14px; }
       .brand small { display: none; }
       .me span:first-child { display: none; }
     }
@@ -294,6 +308,7 @@
        Ни один раздел не пропал, они все здесь. #}
     {% if focus_on %}<a href="/admin/focus" class="nav-link">Фокус</a>{% endif %}
     {% if workday_on %}<a href="/admin/work" class="nav-link">Рабочий день</a>{% endif %}
+    {% if standalone_crm %}<a href="/admin/intake" class="nav-link">Новое обращение</a>{% endif %}
     <a href="/admin" class="nav-link">Диалоги</a>
     <a href="/admin/buyers" class="nav-link">Покупатели</a>
     <a href="/admin/calendar" class="nav-link">Календарь</a>
@@ -304,8 +319,8 @@
         <a href="/admin/faq" class="nav-link">FAQ-правила</a>
         {% if is_admin|default(false) %}
         <a href="/admin/analytics" class="nav-link">Аналитика</a>
-        <a href="/admin/cards" class="nav-link">Карточки Bitrix</a>
-        <a href="/admin/system" class="nav-link">Статус системы</a>
+        {% if not standalone_crm %}<a href="/admin/cards" class="nav-link">Карточки Bitrix</a>
+        <a href="/admin/system" class="nav-link">Статус системы</a>{% endif %}
         <a href="/admin/audit" class="nav-link">Аудит-лог</a>
         {% endif %}
       </div>

@@ -266,9 +266,9 @@ def test_new_palette_actually_reaches_the_page(monkeypatch):
     """Самое простое и самое важное: включённый тумблер меняет палитру и шрифт."""
     new = _rendered(monkeypatch, True)
     assert "#0E7C86" in new, "бирюза не доехала до страницы"
-    assert "family=Onest" in new, "новый шрифт не подключился"
-    # Ищем ПРИМЕНЁННЫЙ шрифт, а не слово в комментарии: правка гейта 02.10 — упоминание
-    # «Fira Sans» законно остаётся в комментарии, описывающем прежний вид.
-    assert "font-family: 'Onest'" in new, "body не переведён на новый шрифт"
+    # 12.10: по новой просьбе владельца декоративный Onest заменён системным шрифтом.
+    # Старый контракт отката и проверки действий/темы выше остаются обязательными.
+    assert "fonts.googleapis.com" not in new, "новый вид всё ещё зависит от внешних шрифтов"
+    assert "font-family: 'Segoe UI'" in new, "body не переведён на системный шрифт"
     assert "font-family: 'Fira Sans'" not in new, "старый шрифт остался применённым"
     assert "family=Fira" not in new, "старый шрифт всё ещё загружается"

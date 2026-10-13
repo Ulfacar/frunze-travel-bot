@@ -107,6 +107,7 @@ def _chrome(request: Request) -> dict:
     # `directions` (переключатель) здесь НЕ отдаём: он зависит от рантайм-флага, а
     # context_processor синхронный и `await` не умеет. Его передаёт `index()`.
     return {"manager": manager, "is_admin": is_admin, "direction": direction,
+            "standalone_crm": settings.crm_standalone_enabled,
             "direction_label": dict(DIRECTIONS).get(direction, direction),
             # Тумблеры кладёт сюда `_load_new_look` (зависимость роутера).
             "new_look": bool(getattr(request.state, "new_look",
@@ -296,18 +297,25 @@ def _check_credentials(login: str, password: str) -> dict | None:
     login = (login or "").strip()
     password = (password or "").strip()
     for mgr in settings.manager_list():
-        if (secrets.compare_digest(login, (mgr.login or "").strip())
-                and secrets.compare_digest(password, (mgr.password or "").strip())):
+        if (secrets.compare_digest(login.encode(), (mgr.login or "").strip().encode())
+                and secrets.compare_digest(password.encode(), (mgr.password or "").strip().encode())):
             return {"login": mgr.login, "name": mgr.name or mgr.login, "admin": bool(mgr.admin)}
     return None
 
 
 def _manager_bot_scope(manager: dict | None) -> set[str] | None:
     """Return bot ids visible to this manager. None means unrestricted admin view."""
-    return bot_scope_for(manager, admin_user=settings.admin_user)
+    return bot_scope_for(manager, admin_user=settings.admin_user,
+                         strict=settings.crm_standalone_enabled)
 
 
 def _can_view_conversation(conv, manager: dict | None) -> bool:
+    if settings.crm_standalone_enabled and getattr(conv, 'channel', '') == 'manual':
+        from app.core.live_authz import actor_for
+        actor = actor_for(manager)
+        return (actor.is_full_admin or (
+            getattr(conv, 'funnel', '') in actor.allowed_directions and
+            getattr(conv, 'assigned_to', '') == actor.manager_id))
     scope = _manager_bot_scope(manager)
     if scope is None:
         return True
@@ -319,6 +327,8 @@ def _can_view_conversation(conv, manager: dict | None) -> bool:
 
 
 def _filter_conversations(convs: list, manager: dict | None) -> list:
+    if settings.crm_standalone_enabled:
+        return [c for c in convs if _can_view_conversation(c, manager)]
     return [c for c in convs if _can_view_conversation(c, manager)]
 
 
@@ -2258,6 +2268,11 @@ def _parse_task_when(scheduled_date: str, scheduled_time: str) -> tuple[date, da
 
 
 def _manager_can_touch_task(manager: dict, task) -> bool:
+    if settings.crm_standalone_enabled:
+        from app.core.live_authz import actor_for
+        actor = actor_for(manager)
+        return actor.is_full_admin or (task.manager_id == actor.manager_id and
+                                       task.direction in actor.allowed_directions)
     if _manager_bot_scope(manager) is None:          # full-admin
         return True
     return (task.manager_id or "") == str(manager.get("login") or "").strip().lower()
@@ -2272,6 +2287,17 @@ async def task_create(user_id: str, request: Request, manager: dict = Depends(re
     action — does NOT enable shadow or touch Bitrix)."""
     conv = await _require_visible_conversation(user_id, manager)
     direction = (direction or getattr(conv, "funnel", "") or "visa").strip()
+    phone_identity = conv.phone or conv.user_id
+    if settings.crm_standalone_enabled:
+        from app.admin.contracts import _identity
+        from app.core.live_authz import actor_for
+        actor = actor_for(manager)
+        if direction != conv.funnel or (not actor.is_full_admin and direction not in actor.allowed_directions):
+            raise HTTPException(403)
+        identity_type, canonical = _identity(conv)
+        if identity_type != 'phone':
+            raise HTTPException(422)
+        phone_identity = '+' + canonical
     try:
         d, at = _parse_task_when(scheduled_date, scheduled_time)
     except Exception:
@@ -2281,7 +2307,7 @@ async def task_create(user_id: str, request: Request, manager: dict = Depends(re
         from app.domain.services import ContactService
         async with _domain_sessionmaker()() as s:
             contact = await ContactService.find_or_create_by_identity(
-                s, "phone", conv.phone or conv.user_id)
+                s, "phone", phone_identity)
             await CalendarTaskService.create(
                 s, manager_id=manager["login"], direction=direction, kind=kind,
                 scheduled_date=d, scheduled_at=at, contact_id=contact.id, user_id=user_id,
@@ -2290,6 +2316,8 @@ async def task_create(user_id: str, request: Request, manager: dict = Depends(re
         await get_conversation_store().add_audit(
             manager["login"], "task_create", user_id, f"{kind} {d.isoformat()}")
     except Exception:  # noqa: BLE001 — never break the card on a domain error
+        if settings.crm_standalone_enabled:
+            raise HTTPException(503, 'Задача не подтверждена. Проверьте календарь перед повтором.')
         log.warning("calendar: task create failed", exc_info=True)
     return await _render_conversation(user_id, request, manager)
 
@@ -2331,6 +2359,8 @@ async def _apply_task_action(user_id: str, task_id: int, manager: dict, action: 
             manager["login"], f"task_{action}", user_id, str(task_id))
     except Exception:  # noqa: BLE001
         log.warning("calendar: task %s failed", action, exc_info=True)
+        if settings.crm_standalone_enabled:
+            raise HTTPException(503, 'Изменение задачи не подтверждено. Проверьте её состояние перед повтором.')
 
 
 @router.post("/conversation/{user_id}/task/{task_id}/complete", response_class=HTMLResponse)
@@ -2383,6 +2413,8 @@ async def _fetch_calendar_tasks(manager: dict, date_from: date, date_to: date, *
             if include_terminal:
                 seen = {t.id for t in rows}
                 rows = rows + [t for t in await _q(date_from, True) if t.id not in seen]
+            if settings.crm_standalone_enabled:
+                rows = [t for t in rows if _manager_can_touch_task(manager, t)]
             return rows
     except Exception:  # noqa: BLE001
         log.debug("calendar: fetch failed", exc_info=True)
@@ -2540,6 +2572,8 @@ async def _apply_calendar_action(task_id: int, manager: dict, action: str, *, mo
             manager["login"], f"task_{action}", uid, str(task_id))
     except Exception:  # noqa: BLE001
         log.warning("calendar: %s from calendar failed task=%s", action, task_id, exc_info=True)
+        if settings.crm_standalone_enabled:
+            raise HTTPException(503, 'Изменение задачи не подтверждено. Проверьте её состояние перед повтором.')
 
 
 @router.post("/calendar/task/{task_id}/complete")
@@ -2577,6 +2611,8 @@ async def calendar_task_reschedule(task_id: int, manager: dict = Depends(require
 
 
 def _default_direction(manager: dict) -> str:
+    if settings.crm_standalone_enabled:
+        return 'visa'
     scope = _manager_bot_scope(manager) or set()
     return "visa" if any("getvisa" in b for b in scope) else "tours"
 
@@ -2612,10 +2648,37 @@ async def calendar_task_quick_create(manager: dict = Depends(require_admin),
         d, at = _parse_task_when(scheduled_date, scheduled_time)
     except Exception:
         raise HTTPException(status_code=400, detail="bad date/time")
-    digits = "".join(ch for ch in (phone or "") if ch.isdigit())
-    if not digits:
-        return _calendar_redirect(view, day)
-    conv = await _find_conv_by_phone(digits, manager)
+    if settings.crm_standalone_enabled:
+        import re
+        from app.core.live_authz import actor_for
+        from app.domain.phones import normalize_phone
+        from app.domain.models import DomainError
+        from app.integrations.crm.db import Conversation, get_sessionmaker
+        from sqlalchemy import select
+        actor = actor_for(manager)
+        if not actor.is_full_admin and 'visa' not in actor.allowed_directions:
+            raise HTTPException(403)
+        try:
+            if not re.fullmatch(r'\+[1-9][0-9 ()-]{7,30}', phone.strip()):
+                raise DomainError('explicit international phone required')
+            digits = normalize_phone(phone)
+        except DomainError:
+            raise HTTPException(422, 'Укажите международный номер с кодом страны.')
+        async with get_sessionmaker()() as session:
+            conv = await session.scalar(select(Conversation).where(Conversation.user_id == 'manual_visa:'+digits))
+        if conv is not None:
+            from app.admin.contracts import _identity
+            if not _can_view_conversation(conv, manager):
+                raise HTTPException(404)
+            if _identity(conv) != ('phone', digits):
+                raise HTTPException(409)
+        phone_identity = '+' + digits
+    else:
+        digits = "".join(ch for ch in (phone or "") if ch.isdigit())
+        if not digits:
+            return _calendar_redirect(view, day)
+        conv = await _find_conv_by_phone(digits, manager)
+        phone_identity = digits
     try:
         from app.domain.calendar_tasks import CalendarTaskService
         from app.domain.models import DIRECTIONS
@@ -2624,7 +2687,7 @@ async def calendar_task_quick_create(manager: dict = Depends(require_admin),
         if direction not in DIRECTIONS:
             direction = _default_direction(manager)
         async with _domain_sessionmaker()() as s:
-            contact = await ContactService.find_or_create_by_identity(s, "phone", digits)
+            contact = await ContactService.find_or_create_by_identity(s, "phone", phone_identity)
             await CalendarTaskService.create(
                 s, manager_id=manager["login"], direction=direction, kind=kind,
                 scheduled_date=d, scheduled_at=at, contact_id=contact.id,
@@ -2635,6 +2698,8 @@ async def calendar_task_quick_create(manager: dict = Depends(require_admin),
             manager["login"], "task_create", (conv.user_id if conv is not None else ""),
             f"{kind} {d.isoformat()} {digits}")
     except Exception:  # noqa: BLE001 — bad number / domain down must not break the page
+        if settings.crm_standalone_enabled:
+            raise HTTPException(503, 'Задача не подтверждена. Проверьте календарь перед повтором.')
         log.warning("calendar: quick task create failed", exc_info=True)
     return _calendar_redirect(view, day)
 

@@ -1,5 +1,6 @@
 @AGENTS.md
 @ai/ROLES.md
+@ai/CLAUDE_HANDOFF.md
 
 # Frunze Travel Bot — контекст проекта
 

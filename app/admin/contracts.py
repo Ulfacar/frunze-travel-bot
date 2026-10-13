@@ -62,7 +62,17 @@ def _identity(conv) -> tuple[str, str]:
         if not re.fullmatch(r"[1-9][0-9]*", raw_key) or raw_phone != raw_key:
             raise DomainError("Идентификатор Telegram требует проверки администратора.")
         return "telegram", raw_key
-    if channel not in ("whatsapp", "wappi"):
+    if channel == 'manual':
+        if not ar.settings.crm_standalone_enabled or prefix != 'manual_visa' or conv.funnel != 'visa':
+            raise DomainError("Ручное обращение требует проверки администратора.")
+        if not re.fullmatch('[1-9][0-9]{7,14}', raw_key) or raw_phone != raw_key:
+            raise DomainError("Номер ручного обращения требует проверки администратора.")
+        # Manual intake required an explicit '+'. Preserve that intent: a bare
+        # nine-digit foreign number must not become a Kyrgyz subscriber number.
+        if normalize_phone('+' + raw_key) != raw_key:
+            raise DomainError("Номер ручного обращения требует проверки администратора.")
+        return 'phone', raw_key
+    elif channel not in ("whatsapp", "wappi"):
         raise DomainError("Канал клиента не определён. Сначала проверьте переписку.")
     for value in (raw_key, raw_phone):
         if "@g.us" in value or not re.fullmatch(r"\+?[0-9 ()-]+(?:@c\.us|@s\.whatsapp\.net)?", value):

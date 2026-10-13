@@ -1,4 +1,15 @@
-{% if chat_redesign -%}
+{% if standalone_crm %}
+<section class="panel" style="padding:24px;overflow:auto;line-height:1.6">
+  <h2>{{ c.qualification.get('name') or c.phone }}</h2>
+  <p>+{{ c.phone }} · Ведёт {{ c.assigned_to or '—' }}</p>
+  <p><a class="btn btn-brand" href="/admin/conversation/{{ c.user_id|urlencode }}/preliminary">Открыть предварительное дело</a></p>
+  <p><a href="/admin/conversation/{{ c.user_id|urlencode }}/contract">Зафиксировать подписанный договор</a></p>
+  <h3>Задачи</h3>
+  {% for t in tasks %}<p>{{ t.date_label }} {{ t.time }} · {{ t.kind_label }} · {{ t.comment }} · {{ t.status }}</p>
+  {% else %}<p>Задач пока нет.</p>{% endfor %}
+  <p><a href="/admin/calendar">Открыть календарь и добавить задачу</a></p>
+</section>
+{% elif chat_redesign -%}
 {# Старый вид остаётся целиком в else: флаг чата можно откатить независимо от панели. #}
 {% macro chat_icon(name) -%}
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">

@@ -126,6 +126,19 @@
       .grid { grid-template-columns:1fr; }
     }
 </style>
+{% if standalone_crm %}<style>
+    .stat, .sec .n { background:var(--surface-2); color:var(--text); }
+    .stat.red, .task.is-overdue { background:var(--hot-soft); color:var(--text); }
+    .stat.green { background:var(--green-soft); color:var(--text); }
+    .btn:hover { background:var(--surface-2); color:var(--text); }
+    .btn.primary, .btn.primary:hover, .seg a.on { background:var(--accent); color:var(--on-accent,#fff); }
+    .btn.primary:hover { filter:none; }
+    .btn.wa, .btn.wa:hover { background:#25D366; color:#07381b; }
+    .btn.ok, .btn.ok:hover { background:var(--green-soft); color:var(--green); }
+    .btn.del, .btn.del:hover { color:var(--hot); }
+    .task.is-done { opacity:1; }
+    .add input, .add select, .move input { background:var(--surface); color:var(--text); font-size:16px; }
+</style>{% endif %}
 {% endblock %}
 {% block content %}
   <div class="wrap {{ 'wide' if view == 'week' else '' }}">
@@ -171,7 +184,7 @@
         <div class="acts">
           {% if t.tel %}<a class="btn primary" href="{{ t.tel }}">📞 Позвонить</a>{% endif %}
           {% if t.wa %}<a class="btn wa" href="{{ t.wa }}" target="_blank" rel="noopener">💬 WhatsApp</a>{% endif %}
-          {% if t.user_id %}<a class="btn" href="/admin?open={{ t.user_id }}">Переписка →</a>{% endif %}
+          {% if t.user_id %}<a class="btn" href="/admin?open={{ t.user_id }}">{{ 'Карточка' if standalone_crm else 'Переписка' }} →</a>{% endif %}
           <span class="sep"></span>
           <form method="post" action="/admin/calendar/task/{{ t.id }}/complete">
             <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
@@ -234,7 +247,7 @@
     <details class="add">
       <summary>➕ Добавить задачу</summary>
       <form method="post" action="/admin/calendar/task/create">
-        <input class="grow" type="tel" name="phone" placeholder="Номер клиента, напр. 0555 12 34 56" required>
+        <input class="grow" type="tel" name="phone" placeholder="{% if standalone_crm %}+996 700 123 456{% else %}Номер клиента, напр. 0555 12 34 56{% endif %}" aria-label="Телефон клиента" required>
         <select name="kind">
           {% for key, label in kind_labels %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
         </select>
