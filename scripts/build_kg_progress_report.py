@@ -33,7 +33,7 @@ def main(argv=None):
     parser.add_argument("--revision", required=True, help="Code commit or explicitly uncommitted snapshot")
     parser.add_argument("--checks", required=True, help="Actual check result, including known failures")
     parser.add_argument("--date", dest="report_date", type=date.fromisoformat, default=date.today())
-    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts", "overnight-local", "grounded-answers"), default="applications")
+    parser.add_argument("--checkpoint", choices=("applications", "group-overview", "process-preview", "document-checklists", "engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts", "overnight-local", "grounded-answers", "source-sop"), default="applications")
     args = parser.parse_args(argv)
     target = ROOT / f"docs/reports/frunze-pdf-progress-{args.report_date.isoformat()}-{args.checkpoint}.pdf"
     source = (ROOT / "docs/e5-pdf-section-coverage.md").read_text(encoding="utf-8")
@@ -96,7 +96,7 @@ def main(argv=None):
         <li>Нативный экран CRM, работа без JavaScript и печать. Реальные документы
         не загружаются и не принимаются; подача не разрешается.</li></ul>"""
         estimate = "Рабочий ориентир: около 30% выполнено / около 70% осталось. Это округлённая экспертная оценка полного инженерного объёма, не измеренный процент требований и не готовность к запуску."
-    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts", "overnight-local", "grounded-answers"):
+    if args.checkpoint in ("engineering-progress", "document-quarantine", "procedural-journal", "portal-observations", "interview-handoff", "versioned-quotes", "channel-handoff", "notification-drafts", "overnight-local", "grounded-answers", "source-sop"):
         if __package__:
             from .check_pdf_engineering_progress import evaluate
         else:
@@ -174,9 +174,9 @@ def main(argv=None):
                        "защитой Windows. Полный аудит прежних модулей и production recovery ещё не подтверждены.")
     if args.checkpoint == "interview-handoff":
         title = "Полная анкета и принятие карточки специалистом"
-        intro = "Добавлены все57 кодов A–H, сохраняемый опрос RU/EN и неизменяемая карточка передачи."
+        intro = "Добавлены все 57 кодов A–H, сохраняемый опрос RU/EN и неизменяемая карточка передачи."
         result = """<ul><li>144 атомарных поля, условные ветки семьи/работодателя/компании,
-        до3 вопросов за шаг. Неизвестное, отказ, ноль и неприменимость различаются.</li>
+        до 3 вопросов за шаг. Неизвестное, отказ, ноль и неприменимость различаются.</li>
         <li>Ответы сохраняются с версиями. Смена исходного факта требует подтверждения
         зависимых ответов; повтор того же актуального согласия не отменяет его доказательства.</li>
         <li>Специалист принимает точную карточку с фактами и пробелами. Последующие исправления
@@ -283,13 +283,41 @@ def main(argv=None):
         праве конкретного человека на услугу нет; все положительные проверки синтетические.</li></ul>"""
         remaining = ("C05 — подбор услуги по утверждённым правилам; H02 — все прерывания и передача "
                      "в диалоге; J01/J02 — полные сквозные SOP и эталоны; J03 — остальные ревью; "
-                     "J05 — приёмка и допуск пилота. Все208 реальных единиц знаний остаются черновиками. "
+                     "J05 — приёмка и допуск пилота. Все 208 реальных единиц знаний остаются черновиками. "
                      "Клиентский канал к новому пути ответов ещё не подключён.")
         review_note = ("Независимые проверки относятся к локальному H03. Общий аудит проекта, "
                        "юридическая сверка источников и приёмка владельцем не завершены.")
+    headline = "Весь PDF ещё не выполнен."
+    if args.checkpoint == "source-sop":
+        title = "Связанные сценарии и проверки по этапам"
+        intro = (f"Технический счёт: {score['engineering_points']}/100; остаётся {score['remaining_points']}. "
+                 "Результат сопоставлен с исходным PDF; реальные источники и пилот ещё не утверждены.")
+        result = """<ul><li>Связаны анкета RU/EN, квалификация, передача специалисту,
+        предварительное дело, предложение, отдельный договор и фактическая оплата.</li>
+        <li>Продуктовые сценарии включают документы и подачи, выдачу, собственные
+        резидент-карту/регистрацию, продление и обе ветки урегулирования.</li>
+        <li>Фактические сроки документов сохранены с доказательствами. 17 условных
+        правил внутренних дат отделены от официальных сроков и реального допуска.</li>
+        <li>40 обязанностей SOP поддерживают выбранную менеджером дату и время в Бишкеке.
+        Изменение основания требует сверки задачи; повторы сохраняют прежнюю запись.
+        Это ручной путь выполнения, не автоматический расчёт каждого SLA.</li>
+        <li>Проверены экран RU/EN, читаемость кнопок, мобильная версия и печать.
+        Проверки базы используют синтетические данные и локальную PostgreSQL.</li></ul>"""
+        current_criteria = json.loads((ROOT/'docs/pdf-engineering-criteria.json').read_text(encoding='utf-8'))
+        pending = [row['id'] for row in current_criteria['criteria'] if row['status'] != 'PASS']
+        if pending == ['J05']:
+            estimate = estimate.replace('работа продолжается.', 'ожидаются реальные решения и приёмка.')
+            headline = "Локальная реализация проверена. Приёмка владельцем остаётся открытой."
+        remaining = ("Открытые критерии: " + ", ".join(pending) + ". "
+            "Нужны приёмка сценариев сотрудником, утверждённые источники/цены/права/хранение "
+            "и явное разрешение выбранного пилота. Пакет решений: docs/pdf-owner-acceptance.md. "
+            "Все 208 реальных единиц знаний остаются черновыми; 22 исходных правила сроков — без значения.")
+        review_note = ("Точный объём ревью, исходные ошибки и повторные проверки сохранены в handoff и evidence. "
+            "Проверки разных версий не складываются в новый полный прогон. Восстановление через binary COPY "
+            "проверено локально; штатный pg_dump и восстановление production не подтверждены.")
     output = render(f"""<h1>Frunze Travel / GetVisa</h1><h2>Что сделано по PDF и CRM</h2>
     <p>{args.report_date:%d.%m.%Y} · {title}</p>
-    <p class="note"><b>Весь PDF ещё не выполнен.</b> {intro} Пилот выключен по умолчанию;
+    <p class="note"><b>{headline}</b> {intro} Пилот выключен по умолчанию;
     на рабочий сервер эти изменения не выкатывались.</p>
     <h2>Результат этого этапа</h2>{result}
     <h2>Проверка</h2><p>{escape(args.checks)}</p>

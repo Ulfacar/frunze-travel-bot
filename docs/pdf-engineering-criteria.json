@@ -1030,9 +1030,18 @@
       "weight": 1,
       "pdf": "19",
       "acceptance": "End-to-end source SOP scenarios exercise actual connected functions",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "ce335c740748affdb3ec07ace202e37e1c74d16e",
+          "command": "Original-PDF 14-SOP source matrix; C18 product and C17 continuation scenarios, D17 rules/actual tasks, E4 connected source scenarios PASS1032.933s; final source reviewer APPROVE and separate E GO; exact commands and hashes in artifact",
+          "environment": "Windows Python3.12; env-free archives; pinned original PDF; synthetic FK SQLite, loopback PostgreSQL16.15 and Chromium; no production/providers",
+          "scope": "Connected source SOP scenarios through actual public functions; intentional uncertainty/referral retained; operator-selected reviews are not automatic SLA or real legal/source approval",
+          "artifact": "ai/reviews/2026-10-13-e6-30c-source-acceptance-review.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "J02",
@@ -1057,9 +1066,18 @@
       "weight": 1,
       "pdf": "18/IT",
       "acceptance": "Independent critical review and final audit of affected implementation",
-      "status": "UNKNOWN",
-      "evidence": [],
-      "review": "UNKNOWN"
+      "status": "PASS",
+      "evidence": [
+        {
+          "result": "PASS",
+          "revision": "ce335c740748affdb3ec07ace202e37e1c74d16e",
+          "command": "Independent affected-scope review/audit inventory, exact42 E committed identities; separate E PostgreSQL/limits/recovery/legacy GO; current package6 PASS45.52s and native/source3 PASS9.70s; full commands and attribution in artifact",
+          "environment": "Windows Python3.12; env-free immutable archives; synthetic SQLite, isolated loopback PostgreSQL16.15 and Chromium; local reviewed change",
+          "scope": "Final independent critical audit of affected implementation; original E608 single-context attribution preserved and current separate audit completed; no production or owner acceptance",
+          "artifact": "ai/reviews/2026-10-13-pdf-affected-final-audit.md"
+        }
+      ],
+      "review": "PASS"
     },
     {
       "id": "J04",

@@ -12,3 +12,7 @@
 ## Active continuation
 
 E630D `ai/tasks/2026-10-13-e6-30d-actual-anchors.md`: actual document periods/changes and conditional source dates reuse the existing deadline/task journals. Uncommitted R10 is under independent domain/native review and separate actual PostgreSQL audit. Original genuine failures are retained; no D GO or full-scope completion yet. Finish evidence and fixes, update source acceptance, then assess fixed J01/J03. J05 requires actual owner/source/business/pilot acceptance.
+
+## Completion of the separate source run — 23:23 UTC
+
+C-only R45 completed **17 PASS / 2132.17s**, zero failures/errors/skips, exit0. This contains aftercare, the same-person common/preliminary routes and connected USA/UZ scenarios on the committed C runtime, excluding D. The five saved source test files were compared again against commit `ca789334af33ce6c42bdb6dfbeb4955d7e870ce9`; they match. The final18 product run, final17 continuation run and separate3-case golden audit have distinct artifact/identity mappings in `ai/reviews/2026-10-13-e6-30c-source-final-evidence.json`. These do not constitute a final D runtime suite or close J01 by themselves. Fixed J02 is saved; validated score97/100, J01/J03/J05 remain.

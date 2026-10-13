@@ -1,0 +1,75 @@
+{
+  "revision": "ca789334af33ce6c42bdb6dfbeb4955d7e870ce9",
+  "scope": "C source scenario evidence only; D integration and J01/J03/J05 remain pending",
+  "runs": {
+    "products": {
+      "artifact": "runs/e6-30c-r41/runs/source-products-r41.xml",
+      "sha256": "2cca354c20978bb8378416e8fecd98b5a143eb982182712186023b55407a12db",
+      "pass": 18,
+      "time_seconds": "1923.184",
+      "case_ids": [
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[ts_personal]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[ts_agency]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[b_medical]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[transit]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[relative]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[family]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[student]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[equipment]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[journalist]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[volunteer]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[fund]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[digital_nomad]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[official]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[ethnic]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[investor]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[religious_consultation]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[driver]",
+        "tests.test_source_sop_products::test_operator_source_category_own_intake_conditional_documents_and_separate_decision[gcc_companion]"
+      ]
+    },
+    "continuations": {
+      "artifact": "runs/e6-30c-source-final-r45/runs/source-continuations-final-r45.xml",
+      "sha256": "2950e93a08b00e59082acdc9b8967fe972dc891660d5d1c7417b5a8e6f9e19b7",
+      "pass": 17,
+      "time_seconds": "2132.158",
+      "case_ids": [
+        "tests.test_source_sop_aftercare::test_source_19_13_special_registration_handoff_continues_child_to_r08_without_l",
+        "tests.test_source_sop_aftercare::test_source_nonwork_visa_to_own_res_medical_and_separate_registration[relative-RL]",
+        "tests.test_source_sop_aftercare::test_source_nonwork_visa_to_own_res_medical_and_separate_registration[family-FF]",
+        "tests.test_source_sop_aftercare::test_source_nonwork_visa_to_own_res_medical_and_separate_registration[student-S]",
+        "tests.test_source_sop_aftercare::test_source_nonwork_visa_to_own_res_medical_and_separate_registration[equipment-SW1]",
+        "tests.test_source_sop_aftercare::test_source_nonwork_visa_to_own_res_medical_and_separate_registration[journalist-SW2]",
+        "tests.test_source_sop_aftercare::test_source_19_10_eaeu_worker_registration_and_family_keep_own_packets_no_ep",
+        "tests.test_source_sop_aftercare::test_source_19_11_in_country_new_b_same_clinic_own_decision_delivery_and_registration",
+        "tests.test_source_sop_aftercare::test_source_19_9_preliminary_own_work_intake_partial_quote_contract_and_full_followup",
+        "tests.test_entry_source_scenarios::test_source_19_visa_same_subject_through_handoff_quote_rework_portal_and_aftercare",
+        "tests.test_entry_source_scenarios::test_source_19_1_preliminary_intake_quote_signature_payment_same_person_through_close",
+        "tests.test_entry_source_scenarios::test_source_registration_same_subject_certificate_requires_separate_decision",
+        "tests.test_entry_source_scenarios::test_exact_b8_facts_survive_handoff_and_unapproved_source_never_becomes_advice[us_tourism_45]",
+        "tests.test_entry_source_scenarios::test_exact_b8_facts_survive_handoff_and_unapproved_source_never_becomes_advice[india_business_10]",
+        "tests.test_entry_source_scenarios::test_exact_b8_facts_survive_handoff_and_unapproved_source_never_becomes_advice[uzbekistan_garment_work]",
+        "tests.test_source_golden_connected::test_b8_usa_45_days_english_intake_exceeds_short_regime_and_retains_uncertainty",
+        "tests.test_source_golden_connected::test_b8_uz_garment_exact_entry_employer_handoff_deadline_and_own_permit"
+      ]
+    },
+    "golden_audit": {
+      "artifact": "runs/e6-30c-work-task-audit-r44/runs/audit-j02-goldens-r44.xml",
+      "sha256": "0c8aee7ae078bf82913ba7310ef3fc831f2c31c59de99190cdbcdb6de131faca",
+      "pass": 3,
+      "time_seconds": "152.498",
+      "case_ids": [
+        "tests.test_source_golden_connected::test_b8_usa_45_days_english_intake_exceeds_short_regime_and_retains_uncertainty",
+        "tests.test_source_golden_connected::test_b8_uz_garment_exact_entry_employer_handoff_deadline_and_own_permit",
+        "tests.test_specialist_decisions::test_original_source_india_ten_day_decision_quote_reload_and_withdraw[ru]"
+      ]
+    }
+  },
+  "source_test_files": {
+    "tests/test_source_sop_products.py": "0703200270870cd4fbb60b49a8f746c6f4fd151f792d24f3bea1f6175e8a9d0e",
+    "tests/test_source_sop_aftercare.py": "c2bdb5514ce885d94104d8768253da1eabb0836b4eec9e106390254aa28c3131",
+    "tests/test_source_golden_connected.py": "08a55e7a46522e67b7c2e3845a0d8a68d70eb057e4d1b4c8e741bf453c16785f",
+    "tests/test_entry_source_scenarios.py": "1d4326eb9de7c8e617101f6cffe03a10a625aaf406746d0dad1f2485b02901b0",
+    "tests/test_work_process_v2.py": "45e36b3443df2be9dd8fcf722463cf69bf8540db224b47847827b2dbfe5b1956"
+  }
+}
