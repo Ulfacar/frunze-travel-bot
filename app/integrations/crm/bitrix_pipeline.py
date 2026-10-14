@@ -673,6 +673,13 @@ async def read_back_once(*, adapter: Any = None) -> dict:
     stats = {key: 0 for key in ("checked", "moved", "frozen_manual", "dossier_written",
             "dossier_skipped_human", "won", "deals_created", "deals_linked", "deals_dry_run",
             "errors")}
+    # Портал не настроен — ходить некуда. Отдельный рубильник, а не глобальный
+    # `bitrix_pipeline_enabled`: на проде включены только ключи по ботам, глобальный
+    # гейт молча остановил бы учёт продаж (замер 14.10).
+    if adapter is None and not settings.bitrix24_webhook_url:
+        return stats
+    if not await flags.get_flag("bitrix_read_back_enabled", settings.bitrix_read_back_enabled):
+        return stats
     client = _adapter(adapter)
     store = get_conversation_store()
     since = datetime.now(timezone.utc) - timedelta(days=settings.bitrix_read_back_days)

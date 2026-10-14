@@ -1003,6 +1003,14 @@ FEATURE_FLAGS = {
     },
     "bitrix_autodeal_enabled": {
         "title": "Автосоздание сделок Bitrix",
+    "bitrix_read_back_enabled": {
+        "title": "Учёт продаж из Bitrix",
+        "desc": ("Каждые 10 минут забирать из портала лиды «Подписан» и отмечать туровые "
+                 "диалоги проданными. Сейчас это единственный автоматический учёт продаж — "
+                 "выключать только при отказе от Bitrix."),
+        "default": lambda: settings.bitrix_read_back_enabled,
+        "note": lambda: "",
+    },
         "desc": "Создавать сделку в туровой воронке после статуса «Подписан».",
         "default": lambda: settings.bitrix_autodeal_enabled,
         "note": lambda: "",
