@@ -40,10 +40,19 @@ def _lock_for(conv_key: str) -> asyncio.Lock:
     return lock
 
 
-async def _enabled() -> bool:
+async def _enabled(bot_id: str = "") -> bool:
+    """Глобальный рубильник + ключ по боту `bitrix_mirror_enabled:<bot>` (дефолт — глобальный).
+
+    Ключ по боту нужен, чтобы перевести визы на «Bitrix только для чтения» (31.10), не трогая
+    туры: URL вебхука общий для всех ботов (B5, 14.10). Пока ключ по боту не задан, поведение
+    прежнее."""
     if not settings.bitrix24_webhook_url:
         return False
-    return await flags.get_flag("bitrix_mirror_enabled", settings.bitrix_mirror_enabled)
+    global_on = await flags.get_flag("bitrix_mirror_enabled", settings.bitrix_mirror_enabled)
+    bot_id = (bot_id or "").strip()
+    if not bot_id:
+        return global_on
+    return await flags.get_flag(f"bitrix_mirror_enabled:{bot_id}", global_on)
 
 
 async def _prefer_openline() -> bool:
@@ -151,7 +160,7 @@ async def _ensure_lead(store, adapter, conv_key: str, phone: str, name: str,
         return lead_id, True
 
 
-async def resolve_lead_now(phone: str) -> str:
+async def resolve_lead_now(phone: str, bot_id: str = "") -> str:
     """Найти карточку клиента в портале ПРЯМО СЕЙЧАС. Ничего не создаёт, "" при неудаче.
 
     Нужна мгновенному пушу: зеркало работает по сообщениям и рано или поздно карточку
@@ -167,7 +176,7 @@ async def resolve_lead_now(phone: str) -> str:
     последний шаг обработки входящего, и висеть на нём почти минуту нельзя.
     """
     phone = str(phone or "").strip()
-    if not phone or not await _enabled():
+    if not phone or not await _enabled(bot_id):
         return ""
 
     async def _lookup() -> str:
@@ -194,7 +203,7 @@ async def mirror_message(conv_key: str, *, sender: str, text: str,
     дважды — от бота и от Битрикса.
     """
     text = (text or "").strip()
-    if not text or not await _enabled():
+    if not text or not await _enabled(bot_id or conv_key.partition(":")[0]):
         return
     try:
         from app.integrations.crm.bitrix24 import Bitrix24Crm

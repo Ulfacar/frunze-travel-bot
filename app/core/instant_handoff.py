@@ -254,7 +254,7 @@ async def maybe_notify(user_id: str, *, promised: str = "", sessionmaker=None,
             # привязывает лид по ходу переписки. Спрашиваем портал один раз — иначе
             # менеджер получит пуш вообще без входа в Битрикс (замер 11.08).
             from app.integrations.crm import bitrix_mirror
-            lead_id = await bitrix_mirror.resolve_lead_now(phone_raw)
+            lead_id = await bitrix_mirror.resolve_lead_now(phone_raw, user_id.partition(":")[0])
             if lead_id:
                 snapshot["bitrix"] = _bitrix_link(lead_id)
                 await _remember_lead(sm, user_id, lead_id)
