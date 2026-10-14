@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import secrets
 import time
 from datetime import date, datetime, timedelta, timezone
@@ -108,6 +109,7 @@ def _chrome(request: Request) -> dict:
     # context_processor синхронный и `await` не умеет. Его передаёт `index()`.
     return {"manager": manager, "is_admin": is_admin, "direction": direction,
             "standalone_crm": settings.crm_standalone_enabled,
+            "crm_bot_mode": settings.crm_standalone_enabled and settings.crm_data_mode == "bot",
             "direction_label": dict(DIRECTIONS).get(direction, direction),
             # Тумблеры кладёт сюда `_load_new_look` (зависимость роутера).
             "new_look": bool(getattr(request.state, "new_look",
@@ -1001,8 +1003,6 @@ FEATURE_FLAGS = {
         "default": lambda: False,
         "note": lambda: "",
     },
-    "bitrix_autodeal_enabled": {
-        "title": "Автосоздание сделок Bitrix",
     "bitrix_read_back_enabled": {
         "title": "Учёт продаж из Bitrix",
         "desc": ("Каждые 10 минут забирать из портала лиды «Подписан» и отмечать туровые "
@@ -1011,6 +1011,8 @@ FEATURE_FLAGS = {
         "default": lambda: settings.bitrix_read_back_enabled,
         "note": lambda: "",
     },
+    "bitrix_autodeal_enabled": {
+        "title": "Автосоздание сделок Bitrix",
         "desc": "Создавать сделку в туровой воронке после статуса «Подписан».",
         "default": lambda: settings.bitrix_autodeal_enabled,
         "note": lambda: "",
@@ -1768,6 +1770,7 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
                         if is_full_admin else [])
     return templates.TemplateResponse(request, "_conversation.html", {
         "c": conv,
+        "crm_bot_mode": settings.crm_standalone_enabled and settings.crm_data_mode == "bot",
         "initials": _initials(name, conv.phone),
         "avatar": _avatar(conv.phone),
         "manager": manager,
@@ -1889,14 +1892,19 @@ async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]
     владения тут дисциплина команды, не граница безопасности; сбой виден в логах.
     """
     from app.core import live_authz
+    # CRM на данных бота (B1): владение — граница безопасности, не дисциплина. Проверка
+    # всегда включена и НЕ читает общий `app_flags`, любой сбой — отказ (предаудит B2).
+    strict = settings.crm_standalone_enabled and settings.crm_data_mode == "bot"
     try:
-        if not await live_authz.enforcement_enabled():
+        if not strict and not await live_authz.enforcement_enabled():
             return True, ""
     except Exception:  # noqa: BLE001 — сбой чтения флага не должен ломать панель
         log.warning("authz guard: flag read failed — fail-open", exc_info=True)
         return True, ""
     direction = _authz_direction(conv)
     if not direction:                       # команду не определить → не форсим
+        if strict:
+            return False, "Не удалось определить воронку диалога — действие запрещено."
         log.debug("authz guard: no direction for conversation, skipping")
         return True, ""
     try:
@@ -1955,6 +1963,9 @@ async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]
                                "обновите карточку.")
             return True, ""
     except Exception:  # noqa: BLE001 — fail-open только для ИНФРА-сбоев, см. докстринг
+        if strict:
+            log.warning("authz guard failed — fail-closed in CRM (action=%s)", action, exc_info=True)
+            return False, "Проверка доступа не удалась — попробуйте ещё раз."
         log.warning("authz guard failed — fail-open (action=%s)", action, exc_info=True)
         return True, ""
 
@@ -2028,7 +2039,7 @@ async def reassign(user_id: str, request: Request,
 
 @router.post("/conversation/{user_id}/send", response_class=HTMLResponse)
 async def send_message(user_id: str, request: Request, manager: dict = Depends(require_admin),
-                       text: str = Form("")):
+                       text: str = Form(""), send_key: str = Form("")):
     """Менеджер отвечает клиенту прямо из панели. Ручная отправка авто-перехватывает диалог."""
     text = text.strip()
     panel = get_conversation_store()
@@ -2036,18 +2047,56 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
     if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
     outcome = "empty"
+    strict = settings.crm_standalone_enabled and settings.crm_data_mode == "bot"
+    idem, bot = "", None
+    if text and strict:
+        # CRM на данных бота (предаудит B3/M6): только WhatsApp, профиль строго бота диалога,
+        # пустой id провайдера — сбой, повтор той же формы не уходит клиенту второй раз.
+        refusal = ""
+        from app.core.bots import registry
+        bot = registry.by_id(getattr(conv, "bot_id", "") or "")
+        if not re.fullmatch(r"[A-Za-z0-9_-]{16,64}", (send_key or "").strip()):
+            refusal = "Форма устарела — обновите страницу и отправьте ещё раз."
+        elif (getattr(conv, "channel", "") or "") != "whatsapp":
+            refusal = "Из CRM можно ответить только в WhatsApp."
+        elif bot is None or not bot.wappi_profile_id:
+            refusal = "Для этого номера не настроен профиль WhatsApp — ответьте из Bitrix."
+        if refusal:
+            resp = await _render_conversation(user_id, request, manager, notice=refusal)
+            resp.headers["X-Action-Outcome"] = "denied"
+            return resp
+        idem = f"crm-send:{user_id}:{send_key.strip()}"[:128]
     if text:
         allowed, deny_notice = await _ownership_guard(conv, manager, "send")
         if not allowed:
             resp = await _render_conversation(user_id, request, manager, notice=deny_notice)
             resp.headers["X-Action-Outcome"] = "denied"
             return resp
-        await _set_intercept(user_id, True)  # отвечает человек → бот молчит
-        await panel.update_meta(user_id, assigned_to=manager["login"])
-        msg_id = await panel.add_message(user_id, "manager", text, status="pending")
+        if strict:
+            # Атомарный захват ключа: повтор (двойной клик, потерянный ответ) не уходит клиенту
+            # и не перехватывает заново диалог, который менеджер уже вернул боту.
+            msg_id, created = await panel.add_message_once(
+                user_id, "manager", text, idempotency_key=idem, status="pending")
+            if not created:
+                resp = await _render_conversation(user_id, request, manager)
+                resp.headers["X-Action-Outcome"] = "duplicate"
+                return resp
+            await _set_intercept(user_id, True)  # отвечает человек → бот молчит
+            await panel.update_meta(user_id, assigned_to=manager["login"])
+        else:
+            await _set_intercept(user_id, True)  # отвечает человек → бот молчит
+            await panel.update_meta(user_id, assigned_to=manager["login"])
+            msg_id = await panel.add_message(user_id, "manager", text, status="pending")
         try:
-            provider = await outbound.send_to_client(
-                conv.channel, conv.bot_id, conv.chat_id or user_id, text)
+            if strict:
+                from app.channels.wappi import WappiAdapter
+                provider = await WappiAdapter(bot=bot).send(
+                    conv.chat_id or conv.phone, text, require_acceptance_id=True)
+                if not provider:
+                    raise RuntimeError("Wappi did not confirm acceptance")
+            else:
+                provider = await outbound.send_to_client(
+                    conv.channel, conv.bot_id, conv.chat_id or user_id, text)
             mark_own(provider)
             await panel.mark_message_status(message_id=msg_id, status="sent",
                                             set_provider_msg_id=(provider or None))

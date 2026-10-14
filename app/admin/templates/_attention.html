@@ -1,6 +1,6 @@
 {# Единый список «ждут ответа» (инбокс) и результаты поиска — по всем воронкам.
    mode: 'inbox' (авто-обновление 10с) | 'search'. cards — обогащённые карточки. #}
-<div data-attention {% if mode == 'inbox' %}hx-get="/admin/inbox{% if show_all %}?all=1{% endif %}" hx-trigger="every 10s [document.visibilityState==='visible' && !window.hasInboxSelection()]" hx-swap="outerHTML" hx-target="this"{% endif %}>
+<div data-attention {% if mode == 'inbox' %}hx-get="/admin/inbox{% if show_all %}?all=1{% endif %}" {% if crm_bot_mode %}hx-trigger="every 10s" data-crm-poll="inbox"{% else %}hx-trigger="every 10s [document.visibilityState==='visible' && !window.hasInboxSelection()]"{% endif %} hx-swap="outerHTML" hx-target="this"{% endif %}>
   <div class="inbox-head">
     {% if mode == 'search' %}
       <div class="inbox-title">Поиск: «{{ query }}» — {{ cards|length }}</div>
@@ -90,7 +90,7 @@
           ваш ход
         </span>
         {% endif %}
-        {% if c.intercepted and not standalone_crm %}
+        {% if c.intercepted and (not standalone_crm or crm_bot_mode) %}
         <span class="badge intercepted push">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           перехвачен

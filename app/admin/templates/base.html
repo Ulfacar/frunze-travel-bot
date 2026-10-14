@@ -16,7 +16,40 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Frunze — панель{% endblock %}</title>
-  {% block external_scripts %}<script src="{% if standalone_crm %}/crm-static/htmx-1.9.12.min.js{% else %}https://unpkg.com/htmx.org@1.9.12{% endif %}"></script>{% endblock %}
+  {% block external_scripts %}<script src="{% if standalone_crm %}/crm-static/htmx-1.9.12.min.js{% else %}https://unpkg.com/htmx.org@1.9.12{% endif %}"></script>{% endblock %}{% if crm_bot_mode %}<script>
+/* CRM на данных бота: CSP запрещает eval, поэтому hx-on и фильтры опроса htmx здесь не работают.
+   Ключ отправки — один на сообщение; меняется только после ответа sent/failed, так что повтор
+   после потерянного ответа уходит с тем же ключом и сервер его отбрасывает. */
+(function () {
+  if (window.__crmBotMode) return; window.__crmBotMode = true;
+  function newKey() { return crypto.randomUUID().replace(/-/g, ''); }
+  function arm(root) {
+    (root && root.querySelectorAll ? root : document).querySelectorAll('form[data-send-key] input[name=send_key]')
+      .forEach(function (i) { if (!i.value) i.value = newKey(); });
+  }
+  document.addEventListener('DOMContentLoaded', function () { arm(document); });
+  document.addEventListener('htmx:load', function (e) { arm(e.target); });
+  document.addEventListener('htmx:afterRequest', function (e) {
+    var f = e.detail && e.detail.elt;
+    if (!f || !f.matches || !f.matches('form[data-send-key]')) return;
+    var o = e.detail.xhr && e.detail.xhr.getResponseHeader('X-Action-Outcome');
+    // duplicate: сообщение уже принято раньше — новое сообщение обязано получить новый ключ.
+    if (e.detail.successful && (o === 'sent' || o === 'failed' || o === 'duplicate')) {
+      f.reset(); var i = f.querySelector('input[name=send_key]'); if (i) i.value = newKey();
+    }
+  });
+  document.addEventListener('htmx:beforeRequest', function (e) {
+    var el = e.detail && e.detail.elt; if (!el || !el.getAttribute) return;
+    var kind = el.getAttribute('data-crm-poll'); if (!kind) return;
+    var a = document.activeElement;
+    var skip = document.visibilityState !== 'visible' ||
+      (kind === 'composer' && a && a.closest && a.closest('.composer')) ||
+      (kind === 'inbox' && window.hasInboxSelection && window.hasInboxSelection()) ||
+      (kind === 'board' && window.__boardDragging);
+    if (skip) e.preventDefault();
+  });
+})();
+</script>{% endif %}
   {% if new_look %}
   <script>
     // Тему ставим ДО первой отрисовки: иначе ночью экран успевает мигнуть белым.
@@ -308,7 +341,7 @@
        Ни один раздел не пропал, они все здесь. #}
     {% if focus_on %}<a href="/admin/focus" class="nav-link">Фокус</a>{% endif %}
     {% if workday_on %}<a href="/admin/work" class="nav-link">Рабочий день</a>{% endif %}
-    {% if standalone_crm %}<a href="/admin/intake" class="nav-link">Новое обращение</a>{% endif %}
+    {% if standalone_crm and not crm_bot_mode %}<a href="/admin/intake" class="nav-link">Новое обращение</a>{% endif %}
     <a href="/admin" class="nav-link">Диалоги</a>
     <a href="/admin/buyers" class="nav-link">Покупатели</a>
     <a href="/admin/calendar" class="nav-link">Календарь</a>

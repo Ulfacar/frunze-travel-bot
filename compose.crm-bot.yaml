@@ -1,0 +1,44 @@
+# B1: CRM на данных бота (CRM_DATA_MODE=bot). Только приложение — своей БД нет.
+# Подключается к сети работающего бота (frunze-travel_default): его Postgres под ролью
+# frunze_crm (scripts/crm_bot_role.py) и его Redis (общий перехват). ВНИМАНИЕ: сеть бота не
+# internal — выход в интернет у контейнера есть всегда; при CRM_BOT_SEND_ENABLED=false у него
+# просто нет токена Wappi (аудит B1 §4.1). Порт — только loopback для nginx.
+# Бота этот файл не трогает: свой project, ни одной службы бота.
+name: frunze-crm-bot
+services:
+  app:
+    image: frunze-crm:${CRM_RELEASE:?Set the reviewed release identity}
+    env_file:
+      - ./crm-bot.env
+    environment:
+      CRM_STANDALONE_ENABLED: "true"
+      CRM_DATA_MODE: bot
+      CRM_BOT_SEND_ENABLED: ${CRM_BOT_SEND_ENABLED:-false}
+      CRM_PUBLIC_ORIGIN: ${CRM_PUBLIC_ORIGIN:?Confirmed HTTPS origin required}
+      CRM_DATABASE_NAME: frunze
+      CRM_RELEASE_REVISION: ${CRM_RELEASE:?Set the reviewed release identity}
+      STATE_BACKEND: redis
+      REDIS_URL: redis://redis:6379/0
+    # Gateway сети бота (проверено 14.10: docker network inspect) — единственный доверенный
+    # источник X-Forwarded-*. Access-лог выключен: в путях номера клиентов.
+    command: ["uvicorn", "app.crm_main:create_app", "--factory", "--host", "0.0.0.0",
+              "--port", "8000", "--workers", "1", "--limit-concurrency", "16",
+              "--proxy-headers", "--forwarded-allow-ips", "172.20.0.1",
+              "--no-access-log"]
+    ports:
+      - "127.0.0.1:8079:8000"
+    networks: [bot]
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    pids_limit: 128
+    mem_limit: 1536m
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+networks:
+  bot:
+    external: true
+    name: frunze-travel_default

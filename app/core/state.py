@@ -97,6 +97,18 @@ class RedisStateStore:
     async def save(self, state: DialogState) -> None:
         await self._redis.set(self._key(state.user_id), state.to_json(), ex=self._ttl)
 
+    async def ping(self) -> bool:
+        """Живой Redis С ДИАЛОГАМИ бота. Пустой или чужой Redis — False: CRM, ставящая
+        перехват не туда, оставила бы бота отвечать поверх менеджера."""
+        try:
+            if not await self._redis.ping():
+                return False
+            async for _ in self._redis.scan_iter(match=f"{self.KEY_PREFIX}*", count=100):
+                return True
+        except Exception:  # noqa: BLE001 — любой сбой = не готов
+            return False
+        return False
+
 
 def _make_redis() -> Any:
     from redis import asyncio as aioredis  # ленивый импорт: не нужен в memory-режиме

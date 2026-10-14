@@ -174,6 +174,16 @@ class MemoryConversationStore:
             conv.last_message_at = _now()
         return msg.id
 
+    async def add_message_once(self, user_id: str, sender: str, text: str, *,
+                               idempotency_key: str, **fields) -> tuple[int, bool]:
+        """(id, создано ли сейчас). Повтор с тем же ключом не создаёт записи и не шлёт."""
+        for conv in self._conv.values():
+            for m in conv.messages:
+                if getattr(m, "_idem", "") == idempotency_key:
+                    return m.id, False
+        return await self.add_message(user_id, sender, text, idempotency_key=idempotency_key,
+                                      **fields), True
+
     async def mark_message_status(self, *, message_id: int | None = None,
                                   provider_msg_id: str | None = None, status: str,
                                   set_provider_msg_id: str | None = None) -> None:
@@ -413,6 +423,36 @@ class PostgresConversationStore:
                 conv.last_message_at = _now()
             await session.commit()
             return msg.id
+
+    async def add_message_once(self, user_id: str, sender: str, text: str, *,
+                               idempotency_key: str, channel: str = "", bot_id: str = "",
+                               chat_id: str = "", status: str = "", phone: str = "") -> tuple[int, bool]:
+        """(id, создано ли сейчас) — атомарно. Индекс по ключу не уникальный (legacy-таблица),
+        поэтому на Postgres проверка и вставка идут под транзакционной advisory-блокировкой
+        ключа: два одновременных запроса с одним ключом не создадут две записи и не отправят
+        клиенту дважды (ревью B1, находка 1)."""
+        from sqlalchemy import text as sql
+        from app.integrations.crm.db import ConvMessage
+        if not idempotency_key:
+            raise ValueError("idempotency_key required")
+        async with self._sm()() as session:
+            if session.bind.dialect.name == "postgresql":
+                await session.execute(sql("SELECT pg_advisory_xact_lock(hashtext(:k))"),
+                                      {"k": idempotency_key})
+            existing = (await session.execute(select(ConvMessage.id).where(
+                ConvMessage.idempotency_key == idempotency_key).limit(1))).scalar_one_or_none()
+            if existing is not None:
+                return existing, False
+            conv = await self._ensure_row(session, user_id, channel, bot_id, chat_id, phone)
+            msg = ConvMessage(conversation_id=conv.id, sender=sender, text=text, status=status,
+                              idempotency_key=idempotency_key)
+            session.add(msg)
+            conv.archived = False
+            conv.last_text = text
+            conv.last_sender = sender
+            conv.last_message_at = _now()
+            await session.commit()
+            return msg.id, True
 
     async def mark_message_status(self, *, message_id: int | None = None,
                                   provider_msg_id: str | None = None, status: str,

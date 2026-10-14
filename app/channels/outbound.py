@@ -35,7 +35,8 @@ async def send_to_client(channel: str, bot_id: str, chat_id: str, text: str) -> 
         raise ValueError(f"нет адаптера для канала '{channel}'")
     provider_msg_id = await adapter.send(chat_id, text)
     mark_own(provider_msg_id)
-    logger.info("manager->client channel=%s chat=%s", channel, chat_id)
+    from app.channels.wappi import mask_phone
+    logger.info("manager->client channel=%s chat=%s", channel, mask_phone(chat_id))
     return provider_msg_id
 
 

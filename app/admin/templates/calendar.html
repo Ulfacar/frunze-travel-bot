@@ -184,7 +184,7 @@
         <div class="acts">
           {% if t.tel %}<a class="btn primary" href="{{ t.tel }}">📞 Позвонить</a>{% endif %}
           {% if t.wa %}<a class="btn wa" href="{{ t.wa }}" target="_blank" rel="noopener">💬 WhatsApp</a>{% endif %}
-          {% if t.user_id %}<a class="btn" href="/admin?open={{ t.user_id }}">{{ 'Карточка' if standalone_crm else 'Переписка' }} →</a>{% endif %}
+          {% if t.user_id %}<a class="btn" href="/admin?open={{ t.user_id }}">{{ 'Карточка' if standalone_crm and not crm_bot_mode else 'Переписка' }} →</a>{% endif %}
           <span class="sep"></span>
           <form method="post" action="/admin/calendar/task/{{ t.id }}/complete">
             <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">

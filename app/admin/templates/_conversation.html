@@ -1,4 +1,4 @@
-{% if standalone_crm %}
+{% if standalone_crm and not crm_bot_mode %}
 <section class="panel" style="padding:24px;overflow:auto;line-height:1.6">
   <h2>{{ c.qualification.get('name') or c.phone }}</h2>
   <p>+{{ c.phone }} · Ведёт {{ c.assigned_to or '—' }}</p>
@@ -42,7 +42,7 @@
 {%- endmacro %}
 {% set inferred = {'won':'похоже оплатил','lost':'похоже отказ','ghosted':'пропал','active':'в работе'}.get(c.outcome_inferred, c.outcome_inferred or 'не определён') %}
 <div class="panel chat-palma" data-chat-id="{{ c.user_id }}"
-     hx-get="/admin/conversation/{{ c.user_id }}" hx-trigger="every 4s [document.visibilityState==='visible' && !(document.activeElement && document.activeElement.closest('.composer'))]"
+     hx-get="/admin/conversation/{{ c.user_id }}" {% if crm_bot_mode %}hx-trigger="every 4s" data-crm-poll="composer"{% else %}hx-trigger="every 4s [document.visibilityState==='visible' && !(document.activeElement && document.activeElement.closest('.composer'))]"{% endif %}
      hx-swap="outerHTML" hx-target="this">
   <header class="chat-head">
     <button type="button" class="chat-icon-button" onclick="closeChatSheet()" title="К списку диалогов" aria-label="К списку диалогов">{{ chat_icon('back') }}</button>
@@ -127,7 +127,7 @@
           {% elif m.status == 'sent' %}<span class="chat-delivery" aria-label="отправлено" title="отправлено">{{ chat_icon('check') }}</span>
           {% elif m.status == 'delivered' %}<span class="chat-delivery chat-ticks" aria-label="доставлено" title="доставлено">{{ chat_icon('checks') }}</span>
           {% elif m.status == 'failed' %}<span class="chat-failed">{{ chat_icon('info') }}не доставлено</span>
-            <button type="button" class="chat-retry" hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-target="#chat" hx-swap="innerHTML">Повторить</button>
+            {% if not crm_bot_mode %}<button type="button" class="chat-retry" hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-target="#chat" hx-swap="innerHTML">Повторить</button>{% endif %}
           {% endif %}
         </div>
       </div>
@@ -239,15 +239,15 @@
   </details>
 
   <form class="composer chat-composer" id="composer-{{ c.user_id }}" hx-preserve="true"
-        hx-post="/admin/conversation/{{ c.user_id }}/send" hx-target="#chat" hx-swap="innerHTML"
-        hx-on::after-request="if(event.detail.successful && ['sent','failed'].includes(event.detail.xhr.getResponseHeader('X-Action-Outcome'))) this.reset()">
+        hx-post="/admin/conversation/{{ c.user_id }}/send" hx-target="#chat" hx-swap="innerHTML"{% if crm_bot_mode %} hx-sync="this:drop" data-send-key="1"{% endif %}
+        {% if not crm_bot_mode %}hx-on::after-request="if(event.detail.successful && ['sent','failed'].includes(event.detail.xhr.getResponseHeader('X-Action-Outcome'))) this.reset()"{% endif %}>{% if crm_bot_mode %}<input type="hidden" name="send_key" value="">{% endif %}
     <div class="chat-quick-replies" aria-label="Быстрые ответы" tabindex="0">
       {% for label, text in quick_replies.items() %}
       <button type="button" class="chat-chip" onclick="fillReply(this.dataset.t)" data-t="{{ text|e }}">{{ label }}</button>
       {% endfor %}
     </div>
     <div class="chat-compose-row">
-      <button type="button" class="chat-suggest" data-user-id="{{ c.user_id }}" onclick="suggestChatReply(this.dataset.userId, this)" title="Предложить ответ — черновик ИИ, проверьте перед отправкой" aria-label="Предложить ответ">{{ chat_icon('spark') }}<span>Предложить ответ</span></button>
+      {% if not crm_bot_mode %}<button type="button" class="chat-suggest" data-user-id="{{ c.user_id }}" onclick="suggestChatReply(this.dataset.userId, this)" title="Предложить ответ — черновик ИИ, проверьте перед отправкой" aria-label="Предложить ответ">{{ chat_icon('spark') }}<span>Предложить ответ</span></button>{% endif %}
       <textarea name="text" rows="1" placeholder="Ответить клиенту…" autocomplete="off" aria-label="Ответить клиенту"></textarea>
       <button type="submit" class="chat-send" aria-label="Отправить" title="Отправить">{{ chat_icon('send') }}</button>
     </div>
@@ -261,7 +261,7 @@
 {% else -%}
 {# Чат: статус бота + бриф + полный контекст + перехват + ответ. Авто-обновление 4с
    (поле ввода сохраняется через hx-preserve — текст и фокус не слетают при опросе). #}
-<div class="panel" hx-get="/admin/conversation/{{ c.user_id }}" hx-trigger="every 4s [document.visibilityState==='visible' && !(document.activeElement && document.activeElement.closest('.composer'))]" hx-swap="outerHTML" hx-target="this">
+<div class="panel" hx-get="/admin/conversation/{{ c.user_id }}" {% if crm_bot_mode %}hx-trigger="every 4s" data-crm-poll="composer"{% else %}hx-trigger="every 4s [document.visibilityState==='visible' && !(document.activeElement && document.activeElement.closest('.composer'))]"{% endif %} hx-swap="outerHTML" hx-target="this">
   <div class="ph-head">
     <span class="avatar" style="background: {{ avatar }}">{{ initials }}</span>
     <div class="meta">
@@ -466,9 +466,9 @@
           {% elif m.status == 'sent' %}<span title="отправлено">✓</span>
           {% elif m.status == 'delivered' %}<span title="доставлено">✓✓</span>
           {% elif m.status == 'failed' %}<span title="не доставлено" style="color:var(--hot)">✗ не доставлено</span>
-            <button class="btn btn-ghost" style="padding:2px 8px;font-size:12px"
+            {% if not crm_bot_mode %}<button class="btn btn-ghost" style="padding:2px 8px;font-size:12px"
                     hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}"
-                    hx-target="#chat" hx-swap="innerHTML">Повторить</button>
+                    hx-target="#chat" hx-swap="innerHTML">Повторить</button>{% endif %}
           {% endif %}
         {% endif %}
       </div>
@@ -486,16 +486,16 @@
     <button type="button" class="btn btn-ghost" style="padding:4px 9px;font-size:12px"
             onclick="fillReply(this.dataset.t)" data-t="{{ text|e }}">{{ label }}</button>
     {% endfor %}
-    <button type="button" class="btn btn-ghost" style="padding:4px 9px;font-size:12px"
-            onclick="suggestReply('{{ c.user_id }}', this)">✨ Предложить ответ</button>
+    {% if not crm_bot_mode %}<button type="button" class="btn btn-ghost" style="padding:4px 9px;font-size:12px"
+            onclick="suggestReply('{{ c.user_id }}', this)">✨ Предложить ответ</button>{% endif %}
   </div>
 
   {# id уникален на диалог: при опросе того же чата поле сохраняется (hx-preserve),
      а при переключении на другой диалог рендерится свежее пустое поле. #}
   </div>
   <form class="composer" id="composer-{{ c.user_id }}" hx-preserve="true"
-        hx-post="/admin/conversation/{{ c.user_id }}/send"
-        hx-target="#chat" hx-swap="innerHTML" hx-on::after-request="this.reset()">
+        hx-post="/admin/conversation/{{ c.user_id }}/send"{% if crm_bot_mode %} hx-sync="this:drop" data-send-key="1"{% endif %}
+        hx-target="#chat" hx-swap="innerHTML"{% if not crm_bot_mode %} hx-on::after-request="this.reset()"{% endif %}>{% if crm_bot_mode %}<input type="hidden" name="send_key" value="">{% endif %}
     <textarea name="text" rows="2" placeholder="Ответить клиенту…" autocomplete="off" aria-label="Ответить клиенту"></textarea>
     <button class="btn btn-brand" type="submit" aria-label="Отправить">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
