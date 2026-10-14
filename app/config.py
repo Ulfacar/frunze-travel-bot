@@ -305,6 +305,9 @@ class Settings(BaseSettings):
     # у сделки: без него менеджер не может позвонить прямо из карточки. Но это НОВЫЕ
     # записи в CRM заказчика, поэтому по умолчанию выключено — включаем по его слову.
     bitrix_deal_contact_enabled: bool = False
+    # Обратное чтение продаж из портала — сейчас единственный автоматический учёт продаж,
+    # поэтому дефолт ON (сохраняет текущее поведение). Выключается при отказе от Bitrix.
+    bitrix_read_back_enabled: bool = True
     bitrix_read_back_days: int = 45
     bitrix_deal_category_id: str = "27"
     bitrix_deal_stage_id: str = "C27:NEW"
@@ -421,6 +424,10 @@ class Settings(BaseSettings):
     crm_public_origin: str = ""
     crm_database_name: str = "frunze_crm"
     crm_release_revision: str = ""
+    # B1 (14.10): "standalone" — своя пустая БД (R9); "bot" — БД и Redis работающего бота,
+    # переписка и перехват. Отправка клиенту в режиме bot — отдельный флаг, дефолт OFF.
+    crm_data_mode: str = "standalone"
+    crm_bot_send_enabled: bool = False
     admin_user: str = "admin"
     admin_password: str = "frunze"  # ПРОД: переопределить ADMIN_PASSWORD!
     # Аккаунты менеджеров: JSON в env MANAGERS='[{"login":"sezim","name":"Сезим","password":"..."}]'.

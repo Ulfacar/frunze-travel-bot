@@ -322,6 +322,12 @@ def _recipient(chat_id: str) -> str:
     return chat_id.split("@")[0] if chat_id.endswith("@c.us") else chat_id
 
 
+def mask_phone(value: str) -> str:
+    """Номер клиента в логе — только последние 4 цифры (персональные данные)."""
+    digits = "".join(ch for ch in str(value or "") if ch.isdigit())
+    return f"***{digits[-4:]}" if digits else ""
+
+
 class WappiAdapter:
     channel = "whatsapp"
 
@@ -446,7 +452,7 @@ class WappiAdapter:
             if owns:
                 await client.aclose()
         logger.info("Wappi send to=%s profile=%s msg_id=%s",
-                    _recipient(chat_id), self._profile_id, provider_msg_id)
+                    mask_phone(_recipient(chat_id)), self._profile_id, provider_msg_id)
         return provider_msg_id
 
 

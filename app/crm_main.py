@@ -40,10 +40,55 @@ ROUTER_POSTS = frozenset({'login_submit', 'logout', 'set_direction',
     'calendar_task_snooze', 'calendar_task_reschedule'})
 
 
+# B1 bot-data mode: explicit allowlists, never "every GET". No money/contract/KG modules
+# (B3 is separate), no LLM suggest, no resend, no flags/system/cards/faq/followup/buyers.
+BOT_GETS = frozenset({'login_form', 'index', 'inbox', 'conversation', 'search', 'board',
+                      'calendar_view', 'stats'})  # stats: счётчик для звука/бейджа новых сообщений
+BOT_POSTS = frozenset({'login_submit', 'logout', 'set_direction', 'takeover', 'release',
+    'reassign', 'set_stage', 'set_outcome', 'task_create', 'task_complete', 'task_cancel',
+    'task_reschedule', 'calendar_task_quick_create', 'calendar_task_complete',
+    'calendar_task_cancel', 'calendar_task_snooze', 'calendar_task_reschedule'})
+BOT_SEND_POSTS = frozenset({'send_message'})
+_FORBIDDEN_CREDENTIALS = ('telegram_bot_token', 'openrouter_api_key', 'anthropic_api_key',
+                          'stt_api_key', 'bitrix24_webhook_url', 'managers_telegram_bot_token',
+                          'managers_telegram_chat_id')
+
+
+def bot_mode() -> bool:
+    return settings.crm_data_mode == 'bot'
+
+
+def _validate_bot_data(test_sqlite):
+    """Bot-data mode: the running bot's Postgres/Redis, Wappi only when sending is enabled."""
+    if settings.state_backend != 'redis' or not settings.redis_url.startswith('redis://'):
+        raise RuntimeError('Bot-data CRM must share the bot Redis state store')
+    if settings.telegram_bots:
+        raise RuntimeError('Telegram bot registrations are forbidden in the CRM')
+    for name in _FORBIDDEN_CREDENTIALS:
+        if getattr(settings, name, ''):
+            raise RuntimeError('Provider credentials are forbidden in the CRM')
+    if settings.crm_bot_send_enabled:
+        if not settings.wappi_token or not settings.bots:
+            raise RuntimeError('CRM sending requires the Wappi token and bot registry')
+        for bot in settings.bots:
+            if not bot.wappi_profile_id or bot.bitrix_bot_id or bot.bitrix_line_id:
+                raise RuntimeError('CRM bot registry carries only Wappi profiles')
+    elif settings.wappi_token:
+        raise RuntimeError('Wappi token is forbidden while CRM sending is disabled')
+    url = make_url(settings.database_url)
+    if test_sqlite and url.drivername == 'sqlite+aiosqlite':
+        return
+    if (url.drivername != 'postgresql+asyncpg' or url.username != 'frunze_crm' or
+            url.database != settings.crm_database_name or len(url.password or '') < 32):
+        raise RuntimeError('Bot-data CRM must use its own least-privilege database role')
+
+
 def validate_configuration(*, test_sqlite=False):
     """Reject bot/runtime defaults before importing or serving native handlers."""
     if not settings.crm_standalone_enabled:
         raise RuntimeError('Dedicated CRM mode must be explicitly enabled')
+    if settings.crm_data_mode not in ('standalone', 'bot'):
+        raise RuntimeError('Unknown CRM data mode')
     origin = urlsplit(settings.crm_public_origin)
     if (origin.scheme != 'https' or not origin.hostname or origin.username or
             origin.password or origin.path or origin.query or origin.fragment or
@@ -56,7 +101,8 @@ def validate_configuration(*, test_sqlite=False):
     if settings.session_secret == 'change-me-frunze-session-secret' or settings.demo_login:
         raise RuntimeError('Demo authentication is forbidden in the dedicated CRM')
     if (not settings.admin_enabled or settings.panel_backend != 'postgres' or
-            settings.crm_backend != 'postgres' or settings.state_backend != 'memory' or
+            settings.crm_backend != 'postgres' or
+            (settings.state_backend != 'memory' and not bot_mode()) or
             not settings.authz_enforce_enabled):
         raise RuntimeError('CRM requires persistent isolated storage and access enforcement')
     if not settings.managers:
@@ -70,6 +116,12 @@ def validate_configuration(*, test_sqlite=False):
         names.add(account.login)
     if not any(account.admin for account in settings.managers):
         raise RuntimeError('CRM requires an explicitly configured administrator')
+    if bot_mode():
+        _validate_bot_data(test_sqlite)
+        if test_sqlite and make_url(settings.database_url).drivername == 'sqlite+aiosqlite':
+            return origin.hostname
+        _require_kernel_restrictions()
+        return origin.hostname
     if settings.bots or settings.telegram_bots:
         raise RuntimeError('Channel registrations are forbidden in the dedicated CRM')
     for name in ('wappi_token', 'telegram_bot_token', 'openrouter_api_key',
@@ -84,13 +136,17 @@ def validate_configuration(*, test_sqlite=False):
             url.database != settings.crm_database_name or url.username != 'frunze_crm' or
             url.database != 'frunze_crm' or len(url.password or '') < 32):
         raise RuntimeError('CRM must use its dedicated database and role')
+    _require_kernel_restrictions()
+    return origin.hostname
+
+
+def _require_kernel_restrictions():
     if os.name != 'posix' or os.getuid() != 10001:
         raise RuntimeError('Dedicated CRM requires its non-root Linux image')
     status = dict(line.split(':',1) for line in Path('/proc/self/status').read_text().splitlines() if ':' in line)
     if (status.get('NoNewPrivs','').strip() != '1' or status.get('Seccomp','').strip() != '2' or
             int(status.get('CapEff','1').strip(),16) != 0 or int(status.get('CapBnd','1').strip(),16) != 0):
         raise RuntimeError('CRM container kernel restrictions are missing')
-    return origin.hostname
 
 
 def principal_binding(account):
@@ -125,7 +181,7 @@ class CrmBoundary:
         path, method = scope['path'], scope['method']
         public = path in ('/', '/health', '/admin/login') or path.startswith('/crm-static/')
         if not public and account is None:
-            response = (RedirectResponse('/admin/login?next=/admin/work', status_code=303)
+            response = (RedirectResponse('/admin/login?next=' + _home(), status_code=303)
                         if method in ('GET', 'HEAD') else JSONResponse({'detail':'login required'},401))
             return await response(scope, receive, send)
         if method not in ('GET', 'HEAD', 'OPTIONS'):
@@ -171,6 +227,43 @@ class CrmBoundary:
         await self.app(scope, receiver, protected_send)
 
 
+def _home():
+    return '/admin' if bot_mode() else '/admin/work'
+
+
+def _bot_route_allowed(module, name, methods):
+    if module != 'router':
+        return False
+    if methods <= {'GET', 'HEAD'}:
+        return name in BOT_GETS
+    allowed = BOT_POSTS | (BOT_SEND_POSTS if settings.crm_bot_send_enabled else frozenset())
+    return name in allowed
+
+
+async def _bot_data_ready(get_sessionmaker):
+    """Fail closed unless this process sees the migrated bot database and the bot's Redis."""
+    async with get_sessionmaker()() as session:
+        version = await session.scalar(text('SELECT version_num FROM alembic_version'))
+        if version != SCHEMA:
+            raise RuntimeError('Bot database schema is not current for the CRM')
+        await session.execute(text('SELECT id FROM conversations LIMIT 1'))
+        if session.bind.dialect.name == 'postgresql':
+            # The role name alone proves nothing (review B1 #5): ask the server.
+            row = (await session.execute(text(
+                "SELECT r.rolsuper, r.rolcreaterole, r.rolcreatedb, r.rolbypassrls, "
+                "has_table_privilege(current_user, 'messages', 'DELETE'), "
+                "has_table_privilege(current_user, 'app_flags', 'UPDATE'), "
+                "has_schema_privilege(current_user, 'public', 'CREATE') "
+                "FROM pg_roles r WHERE r.rolname = current_user"))).one()
+            if any(row):
+                raise RuntimeError('Bot-data CRM database role is not least-privilege')
+    from app.core.state import get_state_store
+    store = get_state_store()
+    ping = getattr(store, 'ping', None)
+    if ping is None or not await ping():
+        raise RuntimeError('Bot Redis state store is unreachable')
+
+
 def create_app(*, test_sqlite=False):
     host = validate_configuration(test_sqlite=test_sqlite)
     from app.admin import router as admin
@@ -178,6 +271,10 @@ def create_app(*, test_sqlite=False):
 
     @asynccontextmanager
     async def lifespan(app):
+        if bot_mode():
+            await _bot_data_ready(get_sessionmaker)
+            yield
+            return
         # Read-only readiness. Schema/bootstrap is an explicit separate command.
         async with get_sessionmaker()() as session:
             version = await session.scalar(text('SELECT version_num FROM alembic_version'))
@@ -197,6 +294,10 @@ def create_app(*, test_sqlite=False):
         endpoint = getattr(route, 'endpoint', None)
         module = getattr(endpoint, '__module__', '').removeprefix('app.admin.')
         methods = getattr(route, 'methods', set())
+        if bot_mode():
+            if _bot_route_allowed(module, getattr(endpoint, '__name__', ''), methods):
+                app.router.routes.append(route)
+            continue
         if (methods <= {'GET','HEAD'} or module in NATIVE_MODULES or
                 (module == 'router' and getattr(endpoint,'__name__','') in ROUTER_POSTS)):
             if getattr(route,'path','') not in ('/admin/login/demo','/admin/system','/admin/cards'):
@@ -204,7 +305,7 @@ def create_app(*, test_sqlite=False):
 
     @app.get('/')
     async def root():
-        return RedirectResponse('/admin/work',303)
+        return RedirectResponse(_home(),303)
 
     @app.get('/health')
     async def health():
@@ -215,8 +316,11 @@ def create_app(*, test_sqlite=False):
         except Exception:
             return JSONResponse({'status':'unavailable'},503)
 
-    from app.crm_intake import router as intake_router
-    app.include_router(intake_router)
+    if not bot_mode():
+        # Manual intake creates `manual` conversations; in the bot database the running
+        # bot's jobs would see them. Not part of B1.
+        from app.crm_intake import router as intake_router
+        app.include_router(intake_router)
     app.mount('/crm-static',StaticFiles(directory=Path(__file__).parent/'admin'/'static'),name='crm-static')
     app.add_middleware(CrmBoundary)
     app.add_middleware(SessionMiddleware, secret_key=settings.session_secret,

@@ -45,16 +45,25 @@
 `pipeline_controller_alert_enabled`. Пустой `bitrix_portal_url` сам убирает ссылки
 на карточки из уведомлений.
 
-## Долг, найденный попутно (не правил)
+## Долг, найденный попутно — закрыт 14.10.2026
 
-**`read_back_once` ходит в портал каждые 10 минут независимо от флагов.** Проверено лично:
-`bitrix_pipeline.py:664-685` сразу вызывает `client.list_converted_leads(since)` без
-проверки `_enabled`; джоба дёргает её на каждом втором тике (`bitrix_pipeline_job.py:13`).
-Ошибка ловится (`except Exception` → `errors += 1`), но после отключения Bitrix это
-единственное место, которое будет постоянно сыпать предупреждениями в лог. Нужен флаг
-или ранний возврат при пустом URL — отдельной мелкой задачей.
+**`read_back_once` больше не ходит в портал без нужды** (коммит `83207f8`): ранний выход при
+пустом `BITRIX24_WEBHOOK_URL` и рантайм-рубильник `bitrix_read_back_enabled` (кнопка «Учёт продаж
+из Bitrix» в админке). Дефолт ON намеренно: это единственный автоматический учёт продаж, а
+глобального ключа `bitrix_pipeline_enabled` на проде нет (только ключи по ботам) — гейт по нему
+остановил бы учёт. При отказе от Bitrix: выключить рубильник или убрать URL.
+
+## Дополнения 14.10.2026 (сверка с кодом)
+
+- В список флагов выше добавить `bitrix_read_back_enabled` и `bitrix_prefer_openline_lead`.
+- Вечерняя ссылка «Оплатил» (`app/core/sale_check.py`, `_convert_lead`) кроме `outcome=won` и суммы
+  **пишет `CONVERTED` в Bitrix** — это ещё одна запись в портал, гейт `bitrix_pipeline._enabled` по боту.
+- Номера строк в разделах выше сдвинулись; ориентироваться на имена функций.
+- Прод бота с 14.10 — ветка `hotfix/panel-safety` (`464a799`), влита в `fix/tours-search-quality`.
 
 ## Что осталось UNKNOWN
+
+- Замерено 14.10: на проде `bitrix_pipeline_enabled:<бот>` = t для трёх туровых ботов, `bitrix_autodeal_enabled`, `bitrix_deal_contact_enabled`, `bitrix_health_enabled`, `bitrix_lead_fields_enabled`, `bitrix_mirror_enabled`, `bitrix_stage_catchup_enabled` = t; `CAPTURE_MANAGER_ECHO=true`.
 
 - Значения флагов `bitrix_*` в боевой `app_flags` целиком (смотрел выборочно: из девяти
   найденных по фильтру ключей `bitrix_*` в таблице нет вовсе — значит работают дефолты OFF).

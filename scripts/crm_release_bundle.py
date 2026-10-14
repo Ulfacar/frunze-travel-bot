@@ -49,7 +49,11 @@ def bundle(snapshot: Path, destination: Path):
         target.parent.mkdir(parents=True,exist_ok=True)
         shutil.copyfile(src,target)
         hashes['release/'+name] = hashlib.sha256(target.read_bytes()).hexdigest()
-    for name in ('compose.crm.yaml','scripts/crm_prepare_environment.py'):
+    operational = ['compose.crm.yaml','scripts/crm_prepare_environment.py']
+    # B1 bot-data mode: its compose and the least-privilege role generator travel with
+    # the release when the reviewed snapshot carries them.
+    operational += [n for n in ('compose.crm-bot.yaml','scripts/crm_bot_role.py') if (snapshot/n).is_file()]
+    for name in operational:
         target=destination/name
         target.parent.mkdir(parents=True,exist_ok=True)
         shutil.copyfile(snapshot/name,target)

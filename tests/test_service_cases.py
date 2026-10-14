@@ -532,7 +532,10 @@ def test_migration_is_additive_empty_and_reversible(tmp_path, monkeypatch):
                   "entry_interviews", "entry_interview_events",
                   "entry_quote_revisions", "entry_channel_stops", "entry_notification_drafts",
                   "entry_dialogue_stop_causes", "entry_dialogue_sessions", "entry_dialogue_events", "service_case_openings", "specialist_decision_events",
-                  "entry_application_events", "entry_application_references", "entry_document_revisions", "entry_issued_revisions", "entry_applicant_profiles", "entry_applicant_stay_history", "entry_deadline_revisions", "entry_deadline_tasks", "knowledge_decisions", "knowledge_publication_events", "knowledge_publication_units", "entry_document_package_events", "entry_quarantined_files"}
+                  "entry_application_events", "entry_application_references", "entry_document_revisions", "entry_issued_revisions", "entry_applicant_profiles", "entry_applicant_stay_history", "entry_deadline_revisions", "entry_deadline_tasks", "knowledge_decisions", "knowledge_publication_events", "knowledge_publication_units", "entry_document_package_events", "entry_quarantined_files",
+                  # 0040–0043 (добавлено 14.10: список отставал от миграций)
+                  "entry_anchor_events", "entry_anchor_pins", "entry_conditional_evidence",
+                  "entry_sop_review_evidence", "entry_work_review_events"}
     engine = create_engine(url)
     try:
         command.upgrade(cfg, "bitrix_dossier_0006")
