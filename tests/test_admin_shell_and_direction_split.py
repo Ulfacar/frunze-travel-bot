@@ -168,6 +168,10 @@ def test_brand_token_is_declared_in_the_shell():
 def test_internal_links_point_to_existing_routes():
     """Ловит cards.html -> /admin/boards, которого в роутах нет."""
     known = {k.rstrip("/") for k in _static_get_paths()} | {"/admin"}
+    # Ссылки отдельной CRM (`{% if standalone_crm %}` в base.html) ведут на её собственный
+    # роутер ручного ввода, которого в боте нет — статический скан условие не видит.
+    from app.crm_intake import router as crm_intake_router
+    known |= {getattr(r, "path", "").rstrip("/") for r in crm_intake_router.routes}
     broken = []
     for p in _template_files():
         for href in re.findall(r'href="(/admin[^"?#]*)"', p.read_text(encoding="utf-8")):
