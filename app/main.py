@@ -279,9 +279,12 @@ _SALE_TITLES = {
 }
 
 
-def _sale_saved_text(outcome: str, conv) -> str:
+def _sale_saved_text(outcome: str, conv, panel: bool = False) -> str:
     """Что ответить менеджеру. Названную сумму повторяем: человек должен увидеть, что
-    записалось именно то, что он набрал, — иначе опечатку в 10 раз никто не заметит."""
+    записалось именно то, что он набрал, — иначе опечатку в 10 раз никто не заметит.
+
+    `panel` (B3): учёт продаж в панели — про Битрикс не говорим, зовём внести оплаты
+    в договор, потому что продажей считается полная оплата по нему."""
     if outcome != "won":
         return "Спасибо! Отметили, что сделка не состоялась."
     try:
@@ -291,8 +294,12 @@ def _sale_saved_text(outcome: str, conv) -> str:
     if amount > 0:
         code = str(getattr(conv, "sale_currency", "") or "KGS").upper()
         label = {"KGS": "сом", "USD": "$"}.get(code, code)
-        return (f"Спасибо! Записали оплату {amount:,.0f} {label} — она попадёт в отчёт "
-                f"по турам.".replace(",", " "))
+        tail = ("Оплаты по договору внесите в панели — продажа считается по полной "
+                "оплате." if panel else "она попадёт в отчёт по турам.")
+        return f"Спасибо! Записали оплату {amount:,.0f} {label} — {tail}".replace(",", " ")
+    if panel:
+        return ("Спасибо! Отметку сохранили. Продажа считается по полной оплате — "
+                "внесите договор и оплаты в панели.")
     return ("Спасибо! Продажа учтена — она попадёт в отчёт по турам. "
             "Сумму проставьте в карточке Битрикса.")
 
@@ -319,6 +326,9 @@ async def sale_confirm(token: str) -> HTMLResponse:
                                        "Такого диалога больше нет. Отметьте исход в панели."),
                             status_code=404)
     title, body = _SALE_TITLES.get(outcome, ("Отметить исход", ""))
+    panel = await sale_check.panel_contract_mode(settings)
+    if panel and outcome == "won":
+        body = "Отметим диалог. Продажа считается по полной оплате — оплаты вносят в договоре в панели."
     who = html.escape(sale_check.describe(conv))
     current = str(getattr(conv, "outcome", "") or "")
     if outcome != "thinking" and current in sale_check.FINAL_OUTCOMES:
@@ -333,9 +343,14 @@ async def sale_confirm(token: str) -> HTMLResponse:
                    for k, v in facts)
     check = (f'<div class=facts><div class=facts-head>Бот записал так — проверьте:</div>'
              f'<table>{rows}</table></div>') if rows else ""
-    link = sale_check.card_link(conv, settings)
+    if panel:
+        link = sale_check.panel_contract_link(conv, settings)
+        label = "Открыть договор в панели"
+    else:
+        link = sale_check.card_link(conv, settings)
+        label = "Открыть карточку в Битриксе"
     edit = (f'<a class=card-link href="{html.escape(link)}" target="_blank" '
-            f'rel="noopener">Открыть карточку в Битриксе</a>') if link else ""
+            f'rel="noopener">{label}</a>') if link else ""
     # Сумма спрашивается только у продажи и только одним полем: менеджер отвечает с
     # телефона за секунды, и любое лишнее поле здесь стоит нам ответа целиком. Без суммы
     # подтверждение всё равно принимается — пустая сумма это вопрос, неверная это
@@ -351,7 +366,8 @@ async def sale_confirm(token: str) -> HTMLResponse:
                  'autocomplete=off placeholder="например 120 000">'
                  f'<select name=currency aria-label=Валюта>{options}</select></div>'
                  '<div class=money-hint>Можно оставить пустым — тогда сумму '
-                 'проставите в Битриксе.</div></div>')
+                 + ('проставите в договоре в панели.' if panel else 'проставите в Битриксе.')
+                 + '</div></div>')
     form = (f'<form method="post" action="/sale/{html.escape(token)}">'
             f'{money}<button type="submit">Подтвердить</button></form>')
     return HTMLResponse(_sale_page(title, f"{who}<br><br>{body}", extra=check + form + edit))
@@ -372,8 +388,9 @@ async def sale_apply(token: str, amount: str = Form(default=""),
     result, conv = await sale_check.mark(cid, outcome, settings, login,
                                          amount=amount, currency=currency)
     who = html.escape(sale_check.describe(conv)) if conv is not None else ""
+    panel = await sale_check.panel_contract_mode(settings)
     pages = {
-        "saved": ("Записано ✅", _sale_saved_text(outcome, conv)),
+        "saved": ("Записано ✅", _sale_saved_text(outcome, conv, panel)),
         "saved_no_crm": ("Записано ✅",
                          "Ответ сохранён. Карточку в Битриксе обновить не удалось — "
                          "проверьте её вручную."),

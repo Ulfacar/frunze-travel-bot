@@ -168,6 +168,9 @@
     {% endif %}
   </div>
   {% endif %}
+  {% if notice %}
+  <div class="cs-ban ok" role="status" data-notice="sale">{{ notice }}</div>
+  {% endif %}
   <div class="cs-body">
 
   {# ===================== Главное действие (выше вкладок, раньше в DOM) ===================== #}

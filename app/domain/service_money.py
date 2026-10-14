@@ -104,6 +104,118 @@ class Balance:
         return False
 
 
+# --- B3: продажа = полная оплата (решение Алана 14.10, ТЗ §20) ---------------------------
+# Продажа — не статус дела (`ServiceCase.outcome` значит «дело закрыто», а после оплаты
+# услуга ещё исполняется), а факт в журнале событий: один раз на дело, append-only.
+SALE_EVENT = "sale_full_payment"          # оплаты покрыли сумму договора
+SALE_REVERSAL_EVENT = "sale_reversal_flag"  # после продажи оплаты перестали покрывать
+SALE_RESTORED_EVENT = "sale_restored_flag"  # и снова покрывают
+SALE_EVENTS = (SALE_EVENT, SALE_REVERSAL_EVENT, SALE_RESTORED_EVENT)
+
+
+def is_fully_paid(balance: Balance) -> bool:
+    """Правило продажи: зачтённые оплаты минус возвраты покрывают сумму договора.
+
+    Всё в валюте договора: строки без курса (`unconverted`) в `paid` не входят по
+    построению `Balance`. Неизвестная сумма договора — не продажа. Сломанные строки
+    журнала — не продажа: деньги в них реальные, но арифметике верить нельзя.
+    """
+    if balance.agreed is None or balance.broken_entries:
+        return False
+    return (balance.paid - balance.refunded) >= balance.agreed
+
+
+def overpaid_by(balance: Balance) -> Decimal:
+    """Переплата сверх договора. Отдельная величина: продажу она не удваивает."""
+    if balance.agreed is None:
+        return Decimal("0.00")
+    return max(balance.paid - balance.refunded - balance.agreed, Decimal("0")).quantize(CENT)
+
+
+def _sale_payload(balance: Balance) -> dict:
+    return {"agreed": str(balance.agreed), "currency": balance.currency,
+            "paid": str(balance.paid), "refunded": str(balance.refunded),
+            "overpaid": str(overpaid_by(balance))}
+
+
+async def sale_events(session: AsyncSession, case_id: int) -> list[ServiceEvent]:
+    """События продажи по делу, в порядке записи."""
+    return list(await session.scalars(
+        select(ServiceEvent).where(ServiceEvent.case_id == case_id,
+                                   ServiceEvent.event_type.in_(SALE_EVENTS))
+        .order_by(ServiceEvent.id)))
+
+
+async def lock_case(session: AsyncSession, case_id: int) -> ServiceCase:
+    """Взять строку дела под блокировку и перечитать её.
+
+    Сериализует две одновременные денежные операции: вторая ждёт первую, затем видит её
+    событие и не записывает продажу дважды (PostgreSQL; SQLite игнорирует FOR UPDATE, там
+    запись и так последовательная). `populate_existing`: без него объект из identity map
+    остаётся прежним и `stage` в событии может оказаться устаревшим. Баланс для решения о
+    продаже считать ПОСЛЕ этого вызова — иначе параллельный возврат успевает между чтением
+    и записью.
+    """
+    case = await session.get(ServiceCase, case_id, with_for_update=True,
+                             populate_existing=True)
+    if case is None:
+        raise DomainError(f"unknown service case {case_id}")
+    return case
+
+
+async def record_sale(session: AsyncSession, case_id: int, *, by: Actor,
+                      balance: Balance, dialogs: tuple[str, ...] = ()) -> ServiceEvent | None:
+    """Зафиксировать продажу один раз. Повтор — None, без второй записи.
+
+    Права не проверяются заново: баланс уже получен через `balance_of`, то есть актор
+    дело видит, а сама запись — следствие его денежной операции, прошедшей свои проверки.
+    `dialogs` — ключи диалогов клиента НА МОМЕНТ продажи: досмотр после сбоя панели ставит
+    исход только им, а не обращениям, появившимся позже (аудит 15.10, H1).
+    """
+    if not is_fully_paid(balance):
+        raise DomainError("contract is not fully paid")
+    case = await lock_case(session, case_id)
+    history = await sale_events(session, case_id)
+    if any(e.event_type == SALE_EVENT for e in history):
+        if history[-1].event_type == SALE_REVERSAL_EVENT:
+            # Возврат был, деньги снова покрыли договор: отмечаем, но продажу не удваиваем.
+            event = ServiceEvent(case_id=case.id, event_type=SALE_RESTORED_EVENT,
+                                 actor=by.manager_id, to_stage=case.stage,
+                                 reason="оплаты снова покрывают сумму договора",
+                                 payload=_sale_payload(balance))
+            session.add(event)
+            await session.flush()
+        return None
+    event = ServiceEvent(case_id=case.id, event_type=SALE_EVENT, actor=by.manager_id,
+                         to_stage=case.stage, reason="оплаты покрыли сумму договора",
+                         payload=dict(_sale_payload(balance), dialogs=list(dialogs)))
+    session.add(event)
+    await session.flush()
+    return event
+
+
+async def record_sale_reversal(session: AsyncSession, case_id: int, *, by: Actor,
+                               balance: Balance) -> ServiceEvent | None:
+    """После продажи оплаты перестали покрывать договор (возврат, аннулирование, правка).
+
+    Решение Алана 15.10 (S6): `won` у диалога НЕ снимается, пишется только пометка —
+    один раз на эпизод. Нет продажи или эпизод уже отмечен — None.
+    """
+    if is_fully_paid(balance):
+        raise DomainError("contract is fully paid; nothing to reverse")
+    case = await lock_case(session, case_id)
+    history = await sale_events(session, case_id)
+    if not history or history[-1].event_type == SALE_REVERSAL_EVENT:
+        return None
+    event = ServiceEvent(case_id=case.id, event_type=SALE_REVERSAL_EVENT,
+                         actor=by.manager_id, to_stage=case.stage,
+                         reason="после продажи оплаты не покрывают сумму договора",
+                         payload=_sale_payload(balance))
+    session.add(event)
+    await session.flush()
+    return event
+
+
 def _amount(value, field_name: str = "amount") -> Decimal:
     """Денежная величина. Отклоняет float, мусор, ноль, минус и третий знак."""
     if isinstance(value, float):

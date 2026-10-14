@@ -844,3 +844,93 @@ def test_convert_refuses_a_shared_card(tmp_path, monkeypatch):
     assert portal == [], f"общую карточку двинули в портале: {portal}"
     assert conv.outcome == "won", "ответ менеджера всё равно должен сохраниться"
     assert result in ("saved", "saved_no_crm"), result
+
+
+# ---------------- B3 (S8): вечерняя ссылка под флагом «учёт продаж в панели» -----------
+def test_panel_mode_keeps_the_lead_untouched_and_links_to_the_contract(tmp_path, monkeypatch):
+    """`sale_check_panel_contract_enabled`: ответ менеджера сохраняется и попадает в журнал,
+    лид в Bitrix в «Подписан» НЕ переводится, страница ведёт к договору в панели."""
+    from fastapi.testclient import TestClient
+
+    from app.integrations.panel import store as store_mod
+
+    async def prepare():
+        return await _store(tmp_path, [_row()], name="panel_mode.db")
+
+    engine, store = run(prepare())
+    portal: list[tuple[str, str]] = []
+
+    class FakeCrm:
+        async def get_lead(self, lead_id):
+            return {"ID": lead_id, "STATUS_ID": "UC_PNSIIB"}
+
+        async def update_stage_status(self, lead_id, status):
+            portal.append((lead_id, status))
+
+    flags.reset()
+    monkeypatch.setattr(store_mod, "get_conversation_store", lambda: store)
+    monkeypatch.setattr("app.integrations.crm.bitrix24.Bitrix24Crm", lambda: FakeCrm())
+    monkeypatch.setattr(settings, "webhook_secret", "test-secret")
+    monkeypatch.setattr(settings, "public_base_url", "https://frunzetravel.kg")
+    monkeypatch.setattr(settings, "bitrix_portal_url", "https://getvisakg.bitrix24.kz")
+    monkeypatch.setattr(settings, "bitrix_pipeline_enabled", True, raising=False)
+    monkeypatch.setattr(settings, "sale_check_panel_contract_enabled", True, raising=False)
+
+    import app.main as main_mod
+
+    token = sale_check.make_link("frunze_tours:996700000001", "won",
+                                 settings, "ademi").rsplit("/", 1)[-1]
+    with TestClient(main_mod.app) as client:
+        page = client.get(f"/sale/{token}")
+        assert page.status_code == 200
+        assert "/admin/conversation/frunze_tours%3A996700000001/contract" in page.text
+        assert "Открыть договор в панели" in page.text
+        assert "/crm/lead/details/" not in page.text
+        assert "проставите в договоре в панели" in page.text
+
+        done = client.post(f"/sale/{token}", data={"amount": "120000", "currency": "KGS"})
+        assert done.status_code == 200
+        assert "Битрикс" not in done.text and "в панели" in done.text
+    conv = run(store.get("frunze_tours:996700000001"))
+    assert conv.outcome == "won" and conv.sale_amount == 120000.0
+    assert portal == [], f"под флагом лид тронули в портале: {portal}"
+    assert any(a["action"] == "sale_check_won" for a in run(store.list_audit()))
+    flags.reset()
+    run(engine.dispose())
+
+
+def test_panel_mode_off_keeps_the_bitrix_path(tmp_path, monkeypatch):
+    """Флаг OFF (дефолт): страница и конвертация как раньше — регрессии нет."""
+    from fastapi.testclient import TestClient
+
+    from app.integrations.panel import store as store_mod
+
+    async def prepare():
+        return await _store(tmp_path, [_row()], name="panel_mode_off.db")
+
+    engine, store = run(prepare())
+    portal: list[str] = []
+
+    async def fake_convert(conv_key, lead_id, *, conv=None):
+        portal.append(lead_id)
+
+    flags.reset()
+    monkeypatch.setattr(store_mod, "get_conversation_store", lambda: store)
+    monkeypatch.setattr(sale_check, "_convert_lead", fake_convert)
+    monkeypatch.setattr(settings, "webhook_secret", "test-secret")
+    monkeypatch.setattr(settings, "public_base_url", "https://frunzetravel.kg")
+    monkeypatch.setattr(settings, "bitrix_portal_url", "https://getvisakg.bitrix24.kz")
+    monkeypatch.setattr(settings, "sale_check_panel_contract_enabled", False, raising=False)
+
+    import app.main as main_mod
+
+    token = sale_check.make_link("frunze_tours:996700000001", "won",
+                                 settings, "ademi").rsplit("/", 1)[-1]
+    with TestClient(main_mod.app) as client:
+        page = client.get(f"/sale/{token}")
+        assert "/crm/lead/details/180001/" in page.text
+        assert "Открыть карточку в Битриксе" in page.text
+        assert "/contract" not in page.text
+        client.post(f"/sale/{token}")
+    assert portal == ["180001"]
+    run(engine.dispose())

@@ -30,10 +30,33 @@
 | S3 | USD при договоре в KGS без курса | не won, деньги в «без курса» |
 | S4 | Двойной клик / повтор той же оплаты | одна запись, одна продажа |
 | S5 | Чужое направление (менеджер туров) | отказ, без записи |
-| S6 | Полная оплата, затем аннулирование/возврат | см. решение (NEEDS_HUMAN_DECISION) |
+| S6 | Полная оплата, затем аннулирование/возврат | **решение Алана 15.10:** `won` остаётся, пометка `sale_reversal_flag` в деле и `sale_fp_reversal` в журнале, один раз на эпизод |
 | S7 | Переплата 600 при договоре 500 | won один раз, переплата видна отдельно |
 | S8 | sale_check под флагом | не пишет CONVERTED в Bitrix, ведёт к договору в панели |
 
 ## Флаги
 Новые: `sale_by_full_payment_enabled` (OFF), `sale_check_panel_contract_enabled` (OFF).
 Существующие: `service_cases_enabled`, `admin_workday_enabled` (OFF).
+
+## Статус 15.10.2026 (Claude, builder)
+
+Код на ветке `feat/visa-bitrix-exit`, не закоммичен до ревью. Флаги OFF, миграций нет, Bitrix не
+трогается. Продажа пишется событием `service_events.sale_full_payment` (а не в
+`ServiceCase.outcome` — он значит «дело закрыто»), диалог получает `won` через атомарную защёлку
+`claim_outcome`, в журнал панели — ровно один `sale_full_payment` на дело (его считает
+`scripts/pilot_daily_summary.py`), плюс `sale_fp_dialog` / `sale_fp_conflict` / `sale_fp_reversal`.
+
+| ID | Статус | Доказательство |
+|---|---|---|
+| S1 | DONE | `tests/test_sale_by_payment.py::test_s1_*`, `tests/test_admin_workday.py::test_b3_s1_*` |
+| S2 | DONE | `test_s2_partial_payment_is_not_a_sale` |
+| S3 | DONE | `test_s3_foreign_currency_without_a_rate_does_not_count` |
+| S4 | DONE | `test_s4_the_same_payment_twice_is_one_record_and_one_sale`, маршрут — повтор ключа в `test_b3_s1_*` |
+| S5 | DONE | `test_b3_s5_a_tours_manager_cannot_pay_into_a_visa_case` |
+| S6 | DONE | `test_s6_refund_after_the_sale_keeps_won_and_flags_once` |
+| S7 | DONE | `test_s7_overpayment_is_one_sale_with_the_excess_visible` |
+| S8 | DONE | `tests/test_sale_check.py::test_panel_mode_keeps_the_lead_untouched_and_links_to_the_contract` + регрессия флага OFF |
+
+Сверх карточки: флаг OFF ничего не пишет; диалог другого направления с тем же номером не трогается;
+сбой панели после коммита события дозакрывается на следующей денежной операции.
+Ревью/аудит — см. handoff `ai/handoffs/2026-10-15-*-b3-sale-full-payment.md`.

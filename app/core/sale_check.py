@@ -339,6 +339,32 @@ def card_link(conv: Any, cfg: Any) -> str:
     return f"{base}/crm/lead/details/{lead_id}/" if base and lead_id else ""
 
 
+PANEL_FLAG = "sale_check_panel_contract_enabled"
+
+
+async def panel_contract_mode(cfg: Any) -> bool:
+    """B3 (S8): учёт продаж в панели — лид в Bitrix не трогаем, ведём к договору.
+
+    Сбой хранилища флагов = OFF: страница ссылки открывается после записи исхода, и
+    500 здесь выглядел бы как «не записалось», хотя ответ менеджера уже сохранён."""
+    from app.core import flags
+    try:
+        return bool(await flags.get_flag(PANEL_FLAG, bool(getattr(cfg, PANEL_FLAG, False))))
+    except Exception:  # noqa: BLE001
+        log.warning("sale check: flag store unavailable, panel mode off", exc_info=False)
+        return False
+
+
+def panel_contract_link(conv: Any, cfg: Any) -> str:
+    """Ссылка на договор клиента в панели. Пусто, если публичного адреса нет."""
+    from urllib.parse import quote
+    base = str(getattr(cfg, "public_base_url", "") or "").rstrip("/")
+    user_id = str(getattr(conv, "user_id", "") or "")
+    if not base or not user_id:
+        return ""
+    return f"{base}/admin/conversation/{quote(user_id, safe='')}/contract"
+
+
 def render_message(convs: list, cfg: Any, now: datetime | None = None,
                    login: str = "") -> str:
     """Одно сообщение менеджеру со списком и тремя ссылками на каждый диалог."""
@@ -388,7 +414,13 @@ async def _convert_lead(conv_key: str, lead_id: str, *, conv: Any = None) -> Non
     from app.integrations.crm import bitrix_pipeline
     from app.integrations.crm.bitrix24 import Bitrix24Crm
     from app.integrations.panel.store import get_conversation_store
+    from app.config import settings
 
+    if await panel_contract_mode(settings):
+        # B3: продажа считается по договору в панели; статус «Подписан» в портале
+        # больше не наш сигнал, и писать его туда значило бы вести учёт в два места.
+        log.info("sale check: учёт продаж в панели, лид не трогаем conv=%s", conv_key)
+        return
     if conv is not None and not await bitrix_pipeline._enabled(conv):
         log.info("sale check: связка с Битриксом выключена, лид не трогаем conv=%s", conv_key)
         return

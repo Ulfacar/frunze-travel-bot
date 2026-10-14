@@ -318,7 +318,7 @@ async def _case_context(request: Request, case_id: int, manager: dict, *,
                         tab: str, errors: dict | None = None,
                         echo: dict | None = None,
                         idem_key: str | None = None,
-                        outcome: str = "") -> dict:
+                        outcome: str = "", notice: str = "") -> dict:
     """Данные карточки. Права считает сервер, шаблон получает два булева."""
     actor = live_authz.actor_for(manager)
     async with ar._domain_sessionmaker()() as session:
@@ -364,6 +364,8 @@ async def _case_context(request: Request, case_id: int, manager: dict, *,
             # Исход нужен шаблону, чтобы назвать причину словами: «выключено»,
             # «нет прав» и «реестр недоступен» — это разные вещи для менеджера.
             "outcome": outcome,
+            # Строка после успешной операции (B3: «продажа зафиксирована»). Пусто — ничего.
+            "notice": notice,
             "kg_entry_on": ar.settings.admin_kg_entry_enabled and actor.is_full_admin and direction == "visa",
             "preliminary_case": preliminary,
         }
@@ -406,22 +408,44 @@ async def case_panel(case_id: int, tab: str, request: Request,
 async def _panel_response(request: Request, case_id: int, manager: dict, *,
                           tab: str, outcome: str, errors: dict | None = None,
                           echo: dict | None = None,
-                          idem_key: str | None = None) -> HTMLResponse:
+                          idem_key: str | None = None,
+                          notice: str = "") -> HTMLResponse:
     """Свежерендеренный блок ИЗ БАЗЫ, а не отражение присланной формы.
 
     Так «действие меняет следующий шаг» выполняется конструктивно: шаг выводится
     заново из этапа, задач, баланса и брони.
     """
     context = await _case_context(request, case_id, manager, tab=tab, errors=errors,
-                                  echo=echo, idem_key=idem_key, outcome=outcome)
+                                  echo=echo, idem_key=idem_key, outcome=outcome,
+                                  notice=notice)
     response = ar.templates.TemplateResponse(request, "_case_panel.html", context)
     return _outcome(response, outcome)
 
 
+# B3: что сказать менеджеру после денежной операции, если баланс вывел продажу.
+# Результаты «off», «not_full», «already» молчат: остаток и так виден в блоке денег.
+SALE_NOTICES = {
+    "won": "Оплаты покрыли сумму договора — продажа зафиксирована, диалог отмечен «оплатил».",
+    "conflict": ("Оплаты покрыли сумму договора — продажа записана в журнал. У диалога уже "
+                 "стоял финальный исход, его не меняли."),
+    "no_dialog": ("Оплаты покрыли сумму договора — продажа записана по делу. Диалог клиента "
+                  "в панели не найден, исход не ставили."),
+    "reversal": ("После этой операции оплаты не покрывают договор. Отмечено в журнале; исход "
+                 "диалога не менялся."),
+    "error": ("Операция сохранена, но проверка продажи не удалась — она повторится при "
+              "следующей денежной операции."),
+}
+
+
 async def _write(request: Request, case_id: int, manager: dict, *, tab: str,
                  operation, success: str, echo: dict,
-                 idem_key: str | None = None) -> HTMLResponse:
-    """Общая обёртка пишущих действий: права, данные, сбой — три разных исхода."""
+                 idem_key: str | None = None, after_commit=None) -> HTMLResponse:
+    """Общая обёртка пишущих действий: права, данные, сбой — три разных исхода.
+
+    `after_commit(actor)` — шаг ПОСЛЕ успешной записи (B3: вывод продажи из баланса).
+    Он возвращает строку-результат и сам не бросает; его исход — только текст менеджеру,
+    заголовок ответа остаётся исходом самой операции.
+    """
     if not _write_on(request):
         return await _panel_response(request, case_id, manager, tab=tab,
                                      outcome="off", echo=echo, idem_key=idem_key)
@@ -452,7 +476,11 @@ async def _write(request: Request, case_id: int, manager: dict, *, tab: str,
                                      outcome="failed", echo=echo, idem_key=idem_key)
     await ar.get_conversation_store().add_audit(
         str(manager.get("login") or ""), success, "", f"case={case_id}")
-    return await _panel_response(request, case_id, manager, tab=tab, outcome=success)
+    notice = ""
+    if after_commit is not None:
+        notice = SALE_NOTICES.get(str(await after_commit(actor) or ""), "")
+    return await _panel_response(request, case_id, manager, tab=tab, outcome=success,
+                                 notice=notice)
 
 
 @ar.router.post("/case/{case_id}/advance", response_class=HTMLResponse)
@@ -507,11 +535,20 @@ def _money_route(path: str, success: str, financial: bool, call):
                        idempotency_key=idempotency_key, target_id=target,
                        settles_id=settles_id)
 
+        async def after_commit(actor):
+            # B3: любая денежная операция может довести баланс до полной оплаты
+            # (или увести от неё) — считаем после каждой, флаг внутри.
+            from app.core import sale_by_payment
+            return await sale_by_payment.evaluate_after_money_write(
+                case_id, actor, str(manager.get("login") or ""),
+                sessionmaker=ar._domain_sessionmaker())
+
         return await _write(request, case_id, manager, tab="money",
                             operation=operation, success=success, echo=echo,
                             # Ключ при пере-рендере ТОТ ЖЕ: иначе повтор после
                             # неоднозначного сбоя создаст вторую оплату.
-                            idem_key=idempotency_key or None)
+                            idem_key=idempotency_key or None,
+                            after_commit=after_commit)
 
     return handler
 

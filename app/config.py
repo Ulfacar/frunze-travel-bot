@@ -438,6 +438,11 @@ class Settings(BaseSettings):
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False
     crm_bot_send_enabled: bool = False
+    # B3 (решение Алана 14.10, ТЗ §20): продажа = полная оплата по договору. Первый флаг —
+    # после записи денег в панели считать баланс и ставить won диалогу; второй — вечерняя
+    # ссылка sale_check не пишет CONVERTED в Bitrix и ведёт к договору в панели. Оба OFF.
+    sale_by_full_payment_enabled: bool = False
+    sale_check_panel_contract_enabled: bool = False
     admin_user: str = "admin"
     admin_password: str = "frunze"  # ПРОД: переопределить ADMIN_PASSWORD!
     # Аккаунты менеджеров: JSON в env MANAGERS='[{"login":"sezim","name":"Сезим","password":"..."}]'.

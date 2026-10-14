@@ -364,6 +364,12 @@ class MemoryConversationStore:
         self._audit.append({"manager": manager, "action": action, "user_id": user_id,
                             "detail": detail, "created_at": _now()})
 
+    async def audit_exists(self, action: str, detail_prefix: str) -> bool:
+        """Есть ли запись журнала с таким действием и началом текста (B3: «продажа по делу
+        уже записана», чтобы после сбоя панели не писать её второй раз)."""
+        return any(a["action"] == action and str(a["detail"] or "").startswith(detail_prefix)
+                   for a in self._audit)
+
     async def list_cards(self, funnel: str) -> list[ConversationView]:
         items = [c for c in self._conv.values() if c.funnel == funnel and not c.archived]
         items.sort(key=lambda c: c.last_message_at or _now(), reverse=True)
@@ -696,6 +702,14 @@ class PostgresConversationStore:
         async with self._sm()() as session:
             session.add(AuditLog(manager=manager, action=action, user_id=user_id, detail=detail))
             await session.commit()
+
+    async def audit_exists(self, action: str, detail_prefix: str) -> bool:
+        from app.integrations.crm.db import AuditLog
+        async with self._sm()() as session:
+            row = await session.scalar(
+                select(AuditLog.id).where(AuditLog.action == action,
+                                          AuditLog.detail.like(detail_prefix + "%")).limit(1))
+            return row is not None
 
     async def list_audit(self, limit: int = 200) -> list[dict]:
         from app.integrations.crm.db import AuditLog

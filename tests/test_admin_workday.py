@@ -729,3 +729,105 @@ def test_every_financial_route_refuses_a_plain_manager(monkeypatch, tmp_path, pa
     assert response.status_code == 200, path
     assert response.headers.get("X-Action-Outcome") == "denied", path
     assert _count(sm, ServicePayment) == 0, path
+
+
+# ---------------- B3: продажа = полная оплата, через маршрут оплаты ----------------------
+def _identity_for(sm, case_id: int, phone: str) -> None:
+    """Номер клиента в реестре — как его записывает подписание договора."""
+    from app.domain.models import ContactIdentity
+
+    async def build():
+        async with sm() as session:
+            case = await session.get(ServiceCase, case_id)
+            session.add(ContactIdentity(contact_id=case.contact_id, identity_type="phone",
+                                        normalized_value=phone, provider_scope=""))
+            await session.commit()
+
+    asyncio.run(build())
+
+
+def _sale_on(monkeypatch) -> None:
+    monkeypatch.setattr(app.config.settings, "sale_by_full_payment_enabled", True,
+                        raising=False)
+
+
+def _sale_events(sm) -> list:
+    async def go():
+        async with sm() as session:
+            rows = await session.scalars(select(ServiceEvent).where(
+                ServiceEvent.event_type == "sale_full_payment"))
+            return list(rows)
+    return asyncio.run(go())
+
+
+def test_b3_s1_full_payment_through_the_route_marks_the_dialog_won(monkeypatch, tmp_path):
+    _clear(); _managers(monkeypatch); _on(monkeypatch); _sale_on(monkeypatch)
+    sm = _make_domain_sm(tmp_path)
+    monkeypatch.setattr(admin_router, "_domain_sessionmaker", lambda: sm)
+    case = _seed_case(sm, reference="W-B3", amount="500.00")
+    _identity_for(sm, case["case_id"], "996700000001")
+    store = panel_store._memory_store
+    key = "frunze_tours:996700000001"
+    asyncio.run(store.ensure(key, channel="whatsapp", bot_id="frunze_tours",
+                             phone="996700000001"))
+    asyncio.run(store.update_meta(key, funnel="tours"))
+    client = _login(MANAGER_LOGIN)
+    data = {"amount": "500.00", "currency": "KGS", "idempotency_key": "b3-s1"}
+    response = client.post(f"/admin/case/{case['case_id']}/money/payment", data=data)
+    assert response.headers.get("X-Action-Outcome") == "recorded"
+    assert Rendered(response.text).by_attr("data-notice", "sale"), "менеджер не увидел продажу"
+    conv = asyncio.run(store.get(key))
+    assert conv.outcome == "won" and conv.sale_amount == 500.0
+    actions = [a["action"] for a in store._audit]
+    assert actions.count("sale_full_payment") == 1
+    assert len(_sale_events(sm)) == 1
+    # Повтор того же ключа: одна оплата, одна продажа, уведомления второй раз нет.
+    again = client.post(f"/admin/case/{case['case_id']}/money/payment", data=data)
+    assert again.headers.get("X-Action-Outcome") == "recorded"
+    assert not Rendered(again.text).by_attr("data-notice", "sale")
+    assert _count(sm, ServicePayment) == 1
+    assert [a["action"] for a in store._audit].count("sale_full_payment") == 1
+    assert len(_sale_events(sm)) == 1
+
+
+def test_b3_flag_off_payment_route_changes_no_outcome(monkeypatch, tmp_path):
+    _clear(); _managers(monkeypatch); _on(monkeypatch)
+    monkeypatch.setattr(app.config.settings, "sale_by_full_payment_enabled", False,
+                        raising=False)
+    sm = _make_domain_sm(tmp_path)
+    monkeypatch.setattr(admin_router, "_domain_sessionmaker", lambda: sm)
+    case = _seed_case(sm, reference="W-B3-OFF", amount="500.00")
+    _identity_for(sm, case["case_id"], "996700000002")
+    store = panel_store._memory_store
+    key = "frunze_tours:996700000002"
+    asyncio.run(store.ensure(key, channel="whatsapp", bot_id="frunze_tours",
+                             phone="996700000002"))
+    response = _login(MANAGER_LOGIN).post(
+        f"/admin/case/{case['case_id']}/money/payment",
+        data={"amount": "500.00", "currency": "KGS", "idempotency_key": "b3-off"})
+    assert response.headers.get("X-Action-Outcome") == "recorded"
+    assert not Rendered(response.text).by_attr("data-notice", "sale")
+    assert asyncio.run(store.get(key)).outcome == ""
+    assert "sale_full_payment" not in [a["action"] for a in store._audit]
+    assert _sale_events(sm) == []
+
+
+def test_b3_s5_a_tours_manager_cannot_pay_into_a_visa_case(monkeypatch, tmp_path):
+    """Чужое направление: отказ ДО записи — ни оплаты, ни продажи, ни исхода."""
+    _clear(); _managers(monkeypatch); _on(monkeypatch); _sale_on(monkeypatch)
+    sm = _make_domain_sm(tmp_path)
+    monkeypatch.setattr(admin_router, "_domain_sessionmaker", lambda: sm)
+    case = _seed_case(sm, owner="medina", direction="visa", reference="W-B3-VISA",
+                      amount="500.00")
+    _identity_for(sm, case["case_id"], "996700000003")
+    store = panel_store._memory_store
+    key = "getvisa:996700000003"
+    asyncio.run(store.ensure(key, channel="whatsapp", bot_id="getvisa", phone="996700000003"))
+    response = _login(MANAGER_LOGIN).post(
+        f"/admin/case/{case['case_id']}/money/payment",
+        data={"amount": "500.00", "currency": "KGS", "idempotency_key": "b3-s5"})
+    assert response.status_code == 404 or response.headers.get("X-Action-Outcome") == "denied"
+    assert _count(sm, ServicePayment) == 0
+    assert asyncio.run(store.get(key)).outcome == ""
+    assert "sale_full_payment" not in [a["action"] for a in store._audit]
+    assert _sale_events(sm) == []
