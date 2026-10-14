@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 import secrets
@@ -1373,8 +1374,9 @@ async def toggle_flag(key: str, request: Request,
     рестарта). Только full-admin (аудит-фикс HIGH): страница флагов и так видна лишь
     ему, но раньше POST руками мог дёрнуть любой залогиненный менеджер — включая
     kill-switch ботов и новые authz/autoassign-флаги. Пер-бот тумблеры
-    (/bots/{id}/toggle) намеренно остаются require_admin — менеджеры включают и
-    выключают СВОИХ ботов сами (требование бизнеса)."""
+    (/bots/{id}/toggle, /stt-toggle) с 14.10 тоже только полный админ — решение Алана:
+    менеджер не должен случайно оставить ночь без бота-диспетчера или включить платное
+    распознавание. Проверка скоупа внутри оставлена как второй рубеж."""
     if key not in FEATURE_FLAGS:
         raise HTTPException(status_code=404, detail="unknown flag")
     from app.core import flags
@@ -1410,7 +1412,7 @@ async def toggle_visa_availability(login: str, request: Request,
 
 
 @router.post("/followup/run", response_class=HTMLResponse)
-async def run_followup_now(manager: dict = Depends(require_admin)):
+async def run_followup_now(manager: dict = Depends(require_full_admin)):
     """Ручной дожим молчунов по кнопке (не зависит от авто-флага followup_enabled)."""
     from app.core import followup
     result = await followup.run_manual()
@@ -1427,7 +1429,7 @@ async def run_followup_now(manager: dict = Depends(require_admin)):
 
 
 @router.post("/bots/{bot_id}/toggle", response_class=HTMLResponse)
-async def toggle_bot_flag(bot_id: str, request: Request, manager: dict = Depends(require_admin),
+async def toggle_bot_flag(bot_id: str, request: Request, manager: dict = Depends(require_full_admin),
                           on: str = Form("0")):
     """Менеджер включает/выключает авто-ответы конкретного бота."""
     from app.core import flags
@@ -1435,6 +1437,10 @@ async def toggle_bot_flag(bot_id: str, request: Request, manager: dict = Depends
     bot = registry.by_id(bot_id)
     if bot is None:
         raise HTTPException(status_code=404, detail="unknown bot")
+    scope = _manager_bot_scope(manager)
+    if scope is not None and bot_id not in scope:
+        # Свой бот — можно (требование бизнеса), чужой команды — нет (ревью 14.10).
+        raise HTTPException(status_code=403, detail="not your bot")
     value = on in ("1", "true", "on", "True")
     key = f"bots_enabled:{bot_id}"
     await flags.set_flag(key, value)
@@ -1446,13 +1452,17 @@ async def toggle_bot_flag(bot_id: str, request: Request, manager: dict = Depends
 
 
 @router.post("/bots/{bot_id}/stt-toggle", response_class=HTMLResponse)
-async def toggle_stt_flag(bot_id: str, request: Request, manager: dict = Depends(require_admin),
+async def toggle_stt_flag(bot_id: str, request: Request, manager: dict = Depends(require_full_admin),
                           on: str = Form("0")):
     """Менять только распознавание: боевой WhatsApp и автоответы остаются включены."""
     from app.core import flags, stt_metrics
     from app.core.bots import registry
     if registry.by_id(bot_id) is None:
         raise HTTPException(status_code=404, detail="unknown bot")
+    scope = _manager_bot_scope(manager)
+    if scope is not None and bot_id not in scope:
+        # Свой бот — можно (требование бизнеса), чужой команды — нет (ревью 14.10).
+        raise HTTPException(status_code=403, detail="not your bot")
     value = on in ("1", "true", "on", "True")
     key = f"stt_enabled:{bot_id}"
     await flags.set_flag(key, value)
@@ -1484,7 +1494,7 @@ def _faq_scope(scope: str) -> str | None:
 
 @router.get("/faq", response_class=HTMLResponse)
 async def faq_page(request: Request, scope: str = "visa",
-                   manager: dict = Depends(require_admin)):
+                   manager: dict = Depends(require_full_admin)):
     """Редактор FAQ-правил: детерминированные ответы до LLM."""
     from app.core.faq import get_faq_store
     scope = scope if scope in {"visa", "tours", "tickets", "common"} else "visa"
@@ -1499,7 +1509,7 @@ async def faq_page(request: Request, scope: str = "visa",
 
 
 @router.post("/faq/save", response_class=HTMLResponse)
-async def faq_save(request: Request, manager: dict = Depends(require_admin),
+async def faq_save(request: Request, manager: dict = Depends(require_full_admin),
                    entry_id: int = Form(0), scope: str = Form("common"),
                    title: str = Form(""), patterns: str = Form(""),
                    negative_terms: str = Form(""), answer: str = Form(""),
@@ -1530,7 +1540,7 @@ async def faq_save(request: Request, manager: dict = Depends(require_admin),
 
 @router.post("/faq/{entry_id}/toggle")
 async def faq_toggle(entry_id: int, scope: str = Form("common"),
-                     enabled: str = Form("0"), manager: dict = Depends(require_admin)):
+                     enabled: str = Form("0"), manager: dict = Depends(require_full_admin)):
     """Включить/выключить FAQ-правило."""
     from app.core.faq import get_faq_store
     value = enabled in ("1", "true", "on", "True")
@@ -1888,25 +1898,38 @@ async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]
 
     Возвращает (allowed, notice). Успешный claim / авто-захват ничьего лида пишет
     доменный Assignment под row-lock; панельный assigned_to выставляет вызывающий
-    код (легаси-путь сохраняется). Fail-open: сбой домена не кладёт панель — правила
-    владения тут дисциплина команды, не граница безопасности; сбой виден в логах.
+    код (легаси-путь сохраняется).
+
+    Сбой проверки (14.10, перед переводом менеджеров из Bitrix в панель): отправка и
+    перехват ЗАПРЕЩАЮТСЯ — письмо клиенту не отзовёшь, а чужой диалог перехватывать нельзя.
+    «Вернуть боту» при сбое разрешено: это безопасное направление. Раньше было fail-open.
     """
     from app.core import live_authz
     # CRM на данных бота (B1): владение — граница безопасности, не дисциплина. Проверка
-    # всегда включена и НЕ читает общий `app_flags`, любой сбой — отказ (предаудит B2).
+    # всегда включена и НЕ читает общий `app_flags` (предаудит B2).
     strict = settings.crm_standalone_enabled and settings.crm_data_mode == "bot"
+    safe = action == "release"
+
+    def _release_on_failure() -> tuple[bool, str]:
+        # «Вернуть боту» при сбое — только владельцу, по ничьему диалогу или полному админу:
+        # иначе коллега возвращает боту чужой диалог, пока БД недоступна.
+        owner = (getattr(conv, "assigned_to", "") or "").strip().lower()
+        login = str((manager or {}).get("login") or "").strip().lower()
+        if live_authz.actor_for(manager).is_full_admin or owner in ("", login):
+            return True, ""
+        return False, f"Диалог ведёт {owner} — вернуть боту может владелец или администратор."
     try:
         if not strict and not await live_authz.enforcement_enabled():
             return True, ""
-    except Exception:  # noqa: BLE001 — сбой чтения флага не должен ломать панель
-        log.warning("authz guard: flag read failed — fail-open", exc_info=True)
-        return True, ""
+    except Exception:  # noqa: BLE001
+        log.warning("authz guard: flag read failed — %s (action=%s)",
+                    "allow release" if safe else "deny", action, exc_info=True)
+        return _release_on_failure() if safe else (False, "Проверка доступа не удалась — попробуйте ещё раз.")
     direction = _authz_direction(conv)
-    if not direction:                       # команду не определить → не форсим
-        if strict:
-            return False, "Не удалось определить воронку диалога — действие запрещено."
-        log.debug("authz guard: no direction for conversation, skipping")
-        return True, ""
+    if not direction:
+        if safe:
+            return _release_on_failure()
+        return False, "Не удалось определить воронку диалога — действие запрещено."
     try:
         from app.domain import live_assign
         from app.domain.models import DomainError
@@ -1962,12 +1985,10 @@ async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]
                 return False, ("Диалог только что взял другой менеджер — "
                                "обновите карточку.")
             return True, ""
-    except Exception:  # noqa: BLE001 — fail-open только для ИНФРА-сбоев, см. докстринг
-        if strict:
-            log.warning("authz guard failed — fail-closed in CRM (action=%s)", action, exc_info=True)
-            return False, "Проверка доступа не удалась — попробуйте ещё раз."
-        log.warning("authz guard failed — fail-open (action=%s)", action, exc_info=True)
-        return True, ""
+    except Exception:  # noqa: BLE001 — инфраструктурный сбой, см. докстринг
+        log.warning("authz guard failed — %s (action=%s)",
+                    "allow release" if safe else "deny", action, exc_info=True)
+        return _release_on_failure() if safe else (False, "Проверка доступа не удалась — попробуйте ещё раз.")
 
 
 @router.post("/conversation/{user_id}/takeover", response_class=HTMLResponse)
@@ -2112,27 +2133,68 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
     return resp
 
 
+_resend_locks: dict[int, "asyncio.Lock"] = {}
+
+
 @router.post("/conversation/{user_id}/resend/{message_id}", response_class=HTMLResponse)
 async def resend(user_id: str, message_id: int, request: Request,
                  manager: dict = Depends(require_admin)):
-    """Повторить отправку сообщения, помеченного failed."""
+    """Повторить отправку СВОЕГО неотправленного сообщения менеджера.
+
+    Раньше повтор брал любое сообщение диалога по id — через него клиенту можно было
+    переслать его же текст или реплику бота, мимо проверки владельца (ревью 14.10).
+    """
     panel = get_conversation_store()
     conv = await panel.get(user_id)
     if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
     target = next((m for m in conv.messages if m.id == message_id), None)
-    if target is not None and target.text:
+    if (target is None or not target.text or getattr(target, "sender", "") != "manager"
+            or getattr(target, "status", "") != "failed"):
+        resp = await _render_conversation(user_id, request, manager,
+                                          notice="Повторить можно только неотправленное сообщение менеджера.")
+        resp.headers["X-Action-Outcome"] = "denied"
+        return resp
+    allowed, deny_notice = await _ownership_guard(conv, manager, "send")
+    if not allowed:
+        resp = await _render_conversation(user_id, request, manager, notice=deny_notice)
+        resp.headers["X-Action-Outcome"] = "denied"
+        return resp
+    await _set_intercept(user_id, True)  # отвечает человек → бот молчит
+    await panel.update_meta(user_id, assigned_to=manager["login"])
+    # Блокировки не удаляем: освобождённая, но уже ожидаемая блокировка выглядит свободной,
+    # и её удаление пускает второй запрос с новой блокировкой — дубль клиенту (аудит 14.10).
+    # Словарь int→Lock копеечный и обнуляется при каждом деплое.
+    lock = _resend_locks.setdefault(message_id, asyncio.Lock())
+    async with lock:
+        # Два клика или два менеджера: второй увидит уже не `failed` и ничего не отправит.
+        fresh = await panel.get(user_id)
+        current = next((m for m in (fresh.messages if fresh else []) if m.id == message_id), None)
+        if current is None or getattr(current, "status", "") != "failed":
+            resp = await _render_conversation(user_id, request, manager)
+            resp.headers["X-Action-Outcome"] = "duplicate"
+            return resp
+        await panel.mark_message_status(message_id=message_id, status="pending")
         try:
             provider = await outbound.send_to_client(
                 conv.channel, conv.bot_id, conv.chat_id or user_id, target.text)
             mark_own(provider)
             await panel.mark_message_status(message_id=message_id, status="sent",
                                             set_provider_msg_id=(provider or None))
+            outcome = "sent"
+        except asyncio.CancelledError:
+            # Запрос оборвали посреди отправки: исход неизвестен. Ставим `failed`, чтобы
+            # менеджер видел сообщение и решал сам, а не «вечный pending».
+            await panel.mark_message_status(message_id=message_id, status="failed")
+            raise
         except Exception:  # noqa: BLE001
             await panel.mark_message_status(message_id=message_id, status="failed")
             log.warning("resend failed (channel=%s)", conv.channel, exc_info=True)
-        await panel.add_audit(manager["login"], "resend", user_id)
-    return await _render_conversation(user_id, request, manager)
+            outcome = "failed"
+    await panel.add_audit(manager["login"], "resend", user_id)
+    resp = await _render_conversation(user_id, request, manager)
+    resp.headers["X-Action-Outcome"] = outcome
+    return resp
 
 
 @router.post("/conversation/{user_id}/suggest", response_class=PlainTextResponse)
