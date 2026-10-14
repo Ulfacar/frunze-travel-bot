@@ -29,6 +29,16 @@ def clock(monkeypatch):
     at = datetime(2026,10,13,10,tzinfo=timezone.utc)
     for module in (service, sources, entry_anchors, entry_applications, applicant_profiles, applicant_stay_history, knowledge_decisions, knowledge_publication):
         monkeypatch.setattr(module, '_now', lambda:at)
+    # Модельный `created_at` по умолчанию (`models._now`, например ServiceCase) брал реальное
+    # время: после 13.10 10:00 UTC дело оказывалось «из будущего» относительно закреплённых
+    # якорей, и ~50 тестов краснели по календарю (найдено 14.10). Замораживаем и его.
+    from app.domain import models
+
+    class _Frozen(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return at if tz is not None else at.replace(tzinfo=None)
+    monkeypatch.setattr(models, 'datetime', _Frozen)
 
 
 def authority(env, rule):
