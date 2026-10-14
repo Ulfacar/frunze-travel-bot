@@ -493,7 +493,9 @@ class WappiAdapter:
                 json=payload,
             )
             resp.raise_for_status()
-            provider_msg_id = _extract_msg_id(resp, strict=True)
+            # Форма ответа на отправку файла в документации не показана (UNKNOWN): строгий разбор,
+            # а если id пришёл числом — нестрогий (ревью B2a r2, minor 3).
+            provider_msg_id = _extract_msg_id(resp, strict=True) or _extract_msg_id(resp)
         finally:
             if owns:
                 await client.aclose()

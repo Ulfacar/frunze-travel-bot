@@ -2317,24 +2317,34 @@ async def send_file(user_id: str, request: Request, manager: dict = Depends(requ
     await _set_intercept(user_id, True)  # отвечает человек → бот молчит
     await panel.update_meta(user_id, assigned_to=manager["login"])
     from app.channels.wappi import SendOutcomeUnknown, WappiAdapter
+    provider = ""
     try:
         provider = await WappiAdapter(bot=bot).send_file(conv.chat_id or conv.phone, data, filename=filename,
                                                          mime=mime, caption=caption.strip()[:500])
-        if not provider:  # не настроен токен/профиль — до провайдера не дошло
-            raise RuntimeError("not sent")
-        mark_own(provider)
-        await panel.mark_message_status(message_id=msg_id, status="sent", set_provider_msg_id=provider)
-        outcome = "sent"
+        outcome = "sent" if provider else "failed"   # пусто = не настроен токен/профиль, до Wappi не дошло
     except Exception as exc:  # noqa: BLE001
         # «Неизвестно» = файл мог уйти: обрыв/таймаут после начала отправки, 5xx, ответ без id.
-        # «Ошибка» = точно не ушло: отказ соединения, 4xx, не настроено (ревью B2a, minor 3).
-        definitely_not_sent = isinstance(exc, (httpx.ConnectError, httpx.ConnectTimeout, RuntimeError)) or (
+        # «Ошибка» = точно не ушло: отказ соединения, 4xx (ревью B2a, minor 3).
+        definitely_not_sent = isinstance(exc, (httpx.ConnectError, httpx.ConnectTimeout)) or (
             isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code < 500)
         unknown = not definitely_not_sent and isinstance(
             exc, (httpx.TransportError, httpx.HTTPStatusError, SendOutcomeUnknown))
         outcome = "unknown" if unknown else "failed"
-        await panel.mark_message_status(message_id=msg_id, status=outcome)
         log.warning("manager file send %s (%s)", outcome, type(exc).__name__)
+    # Учёт исхода — ВНЕ вызова провайдера: сбой БД после реальной отправки не превращает
+    # отправленный файл в «ошибку» (ревью B2a r2, minor 2).
+    try:
+        if outcome == "sent":
+            mark_own(provider)
+            await panel.mark_message_status(message_id=msg_id, status="sent", set_provider_msg_id=provider)
+        else:
+            await panel.mark_message_status(message_id=msg_id, status=outcome)
+        if outcome == "failed":
+            # Точно не ушло — ключ освобождаем, иначе менеджер 2–4 минуты не сможет приложить
+            # тот же файл снова (ревью B2a r2, major 1).
+            await panel.rekey_message(msg_id, f"{key}:{bucket}:failed:{msg_id}"[:128])
+    except Exception:  # noqa: BLE001
+        log.warning("manager file send: status bookkeeping failed (outcome=%s)", outcome, exc_info=True)
     await panel.add_audit(manager["login"], "send_file", user_id, f"{filename} {len(data)}B {outcome}")
     notice = {"unknown": "Неизвестно, дошёл ли файл — проверьте переписку в WhatsApp, прежде чем слать снова.",
               "failed": "Файл не отправлен. Проверьте переписку и приложите его ещё раз."}.get(outcome, "")

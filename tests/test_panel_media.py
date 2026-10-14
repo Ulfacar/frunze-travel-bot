@@ -305,3 +305,32 @@ def test_failed_file_has_no_retry_button(media):
     _post_file(c)
     mid = next(m.id for m in _conv().messages if m.sender == "manager")
     assert f"/resend/{mid}" not in c.get(f"/admin/conversation/{USER_ID}").text
+
+
+# --- ревью B2a, круг 2 ---
+
+def test_failed_file_can_be_resent_immediately(media):
+    media["behaviour"]["mode"] = "fail"
+    c = _client("medina", "m1")
+    assert _post_file(c).headers["X-Action-Outcome"] == "failed"
+    media["behaviour"]["mode"] = "ok"
+    assert _post_file(c).headers["X-Action-Outcome"] == "sent"
+    assert len(media["calls"]) == 2
+
+
+def test_numeric_provider_id_is_accepted():
+    mid = asyncio.run(_adapter(lambda r: httpx.Response(200, json={"message_id": 4242})).send_file(
+        "996700123456@c.us", PDF, filename="a.pdf", mime="application/pdf"))
+    assert mid == "4242"
+
+
+def test_db_failure_after_real_send_does_not_say_failed(media, monkeypatch):
+    store = get_conversation_store()
+    orig = store.mark_message_status
+
+    async def broken(**kw):
+        if kw.get("status") == "sent":
+            raise RuntimeError("db hiccup")
+        return await orig(**kw)
+    monkeypatch.setattr(store, "mark_message_status", broken)
+    assert _post_file(_client("medina", "m1")).headers["X-Action-Outcome"] == "sent"
