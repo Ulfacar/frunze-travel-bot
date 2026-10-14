@@ -3,22 +3,24 @@
 История (полный прежний STATE, без потерь): `ai/STATE-history.md`.
 
 ## Где мы
-- Ветка `fix/tours-search-quality`, `main` = merge `338b611` (на GitHub, 14.10). Прод бота — `913feab` (ветка не выкатывалась).
+- Прод бота: `hotfix/panel-safety` `464a799` (влит в `fix/tours-search-quality` и `main`). Деплоить дальше с `fix/tours-search-quality` — фикс панели не потеряется.
 - **Бот** (frunze-travel app/db/redis) работает. 13.10 чужая правка nginx `frunzetravel.kg` резала вебхуки Wappi (405, ~1.5 ч) — маршруты бота `/webhook/ /admin /t/ /health` возвращены; проверено живым сообщением.
 - **Отдельная CRM** https://crm.frunzetravel.kg — выкачена 14.10 (коммит `d5886b7`, release `10dc6b02b0909c3042b0`, образ R9 `sha256:4f4afd16…`). Пустая рабочая БД `frunze_crm`, только ручной ввод, без связи с ботом/WhatsApp. Вход `alan`, пароль `/root/frunze-crm/first-login.json`. Откат и доказательства — `ai/STATE-history.md` (запись 14.10) и `docs/standalone-crm-operations.md`.
 - **PDF въездного направления**: 99/100, открыт только J05 (люди: сотрудник, владельцы, разрешение пилота). Новых задач по въездному направлению не начинать без слова Алана.
 - Bitrix: учёт продаж = лиды CONVERTED через `read_back_once` (единственный автоматический). Визовые менеджеры отвечают из Открытых линий Bitrix. Импорта из Bitrix нет.
 
-## Активная работа (14.10, по брифу Алана) — НЕ закоммичено, без деплоя/пуша
+## Сделано 14.10 по брифу Алана (закоммичено и запушено: fix/tours-search-quality 66d7359, main 64d5e13)
 1. `read_back_once`: ранний выход при пустом `bitrix24_webhook_url` + рубильник `bitrix_read_back_enabled` (дефолт ON — глобального `bitrix_pipeline_enabled` на проде нет, гейт по нему остановил бы учёт продаж). Файлы: `app/integrations/crm/bitrix_pipeline.py`, `app/config.py`, `app/admin/router.py`, `tests/test_read_back_guard.py`.
 2. План отключения Bitrix (E4-02..E4-04, MIGR-2..4) — только план, `docs/plan-bitrix-exit.md`. Дата отключения — спросить у Алана.
 3. `docs/modules-roadmap.md` — статусы по факту кода; этот файл и `ai/STATE-history.md` — гигиена контекста.
 4. Черновик сообщения Грише — `docs/draft-message-grisha.md`, НЕ отправлять.
 
 ## Известные долги
-- `tests/test_admin_shell_and_direction_split.py::test_internal_links_point_to_existing_routes` красный с `d5886b7`: статический скан не видит условие `{% if standalone_crm %}` у ссылки `/admin/intake` в `base.html`. Ссылка в боте не показывается; тест ложно-красный.
+- Полный прогон объединённой ветки не завершён: ПК дважды убивал прогон по нехватке памяти. Проверено: 270 связанных тестов + 76 (две починенные красные) — зелёные.
+- Живое сообщение клиента после деплоя 464a799 ещё не пришло (ночь); маршрут вебхука проверен пробой с неверным секретом → 403 от бота.
+- Отправка из панели на реальный номер не проверялась — до 27.10, нужен тестовый номер.
 - Cloudflare-токен «Frunze new» попал в чат — удалить.
-- Тестовый том CRM `frunze-crm-check_crm_pgdata` и бэкап `audit-recovery-r8` на сервере сохранены — решить, удалять ли.
+- Сервер: репетиция B1 с копией ПД удалена 14.10. Сохранены: том R9 `frunze-crm_crm_pgdata` (пустая БД), `frunze-crm-check_crm_pgdata`, `audit-recovery-r8` (синтетика), образ `frunze-crm:a90bea9ffd9ec0de2b32`.
 
 ## Решения Алана 14.10 (Bitrix-exit)
 CRM = crm.frunzetravel.kg; продажа = полная оплата; импорт — вся история; пилот — визы, ведёт Гриша; Bitrix оплачен на откат. Срок — вариант Б: визы в CRM к 31.10, Bitrix для виз только чтение до конца ноября, туры и полный разбор истории — ноябрь. План и расписание: `docs/plan-bitrix-exit.md` §5–7.
