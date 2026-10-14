@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+from datetime import datetime, timedelta, timezone
 import logging
 import secrets
 from contextlib import asynccontextmanager
@@ -218,6 +219,39 @@ async def _is_bot_echo(panel, key: str, text: str) -> bool:
     return False
 
 
+_RECORDED_WINDOW = timedelta(minutes=2)
+
+
+async def _already_recorded(panel, key: str, event_id: str, text: str) -> bool:
+    """Эхо ответа, который уже записал ДРУГОЙ процесс (CRM на данных бота).
+
+    `is_own` живёт в памяти процесса и про отправку из отдельного контейнера CRM не знает.
+    Ищем ту же запись в базе: по id провайдера, а если CRM ещё не успела его записать —
+    по тексту свежего (до 2 минут) сообщения менеджера без id. Старую одинаковую фразу
+    считаем новым ответом: менеджер вправе повториться.
+    """
+    needle = " ".join((text or "").split())
+    try:
+        conv = await panel.get(key)
+    except Exception:  # noqa: BLE001 — сомнение в пользу записи, как в `_is_bot_echo`
+        return False
+    now = datetime.now(timezone.utc)
+    for message in reversed(list(getattr(conv, "messages", None) or [])[-_ECHO_LOOKBACK:]):
+        if event_id and getattr(message, "provider_msg_id", "") == event_id:
+            return True
+        # Только `pending`: строка `failed` значит, что CRM клиенту НЕ отправила — тот же текст,
+        # набранный менеджером с телефона, это настоящий новый ответ (ревью B1, находка 4).
+        if (getattr(message, "sender", "") == "manager" and getattr(message, "status", "") == "pending"
+                and not getattr(message, "provider_msg_id", "")
+                and " ".join((getattr(message, "text", "") or "").split()) == needle):
+            created = getattr(message, "created_at", None)
+            if created is not None and created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            if created is not None and now - created <= _RECORDED_WINDOW:
+                return True
+    return False
+
+
 async def _handle_manager_echo(raw: dict) -> None:
     event_id = str(raw.get("id", ""))
     if _seen_before(event_id):
@@ -240,6 +274,8 @@ async def _handle_manager_echo(raw: dict) -> None:
     key = f"{bot.id}:{phone}"
     panel = get_conversation_store()
     if await _is_bot_echo(panel, key, text):
+        return
+    if await _already_recorded(panel, key, event_id, text):
         return
     await panel.add_message(
         key,
