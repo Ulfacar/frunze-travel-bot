@@ -1011,6 +1011,13 @@ FEATURE_FLAGS = {
         "default": lambda: settings.pilot_reply_queue_enabled,
         "note": lambda: f"X = {settings.pilot_reply_sla_minutes} мин (ждёт решения Гриши)",
     },
+    "pilot_reply_alert_enabled": {
+        "title": "Напоминание менеджеру «клиент ждёт» (пилот виз)",
+        "desc": ("Владельцу диалога в личный Telegram одно напоминание на эпизод, если клиент "
+                 "ждёт ответа дольше X рабочих минут. Ночью и в выходные не приходит. Повторов нет."),
+        "default": lambda: settings.pilot_reply_alert_enabled,
+        "note": lambda: f"X = {settings.pilot_reply_sla_minutes} мин (ждёт решения Гриши)",
+    },
     "panel_send_media_enabled": {
         "title": "Отправка файлов из панели",
         "desc": ("Менеджер прикладывает фото или документ (PDF, JPG, PNG, WEBP, DOCX, XLSX) "

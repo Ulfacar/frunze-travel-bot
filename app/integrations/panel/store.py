@@ -421,6 +421,8 @@ class PostgresConversationStore:
                               idempotency_key=idempotency_key)
             session.add(msg)
             conv.archived = False  # новое сообщение возвращает диалог в рабочие списки
+            if sender != "client":
+                conv.reply_alert_at = None  # ответили — следующее ожидание станет новым эпизодом (B2c)
             if counts_as_reply:
                 conv.last_text = text
                 conv.last_sender = sender
@@ -458,6 +460,8 @@ class PostgresConversationStore:
                               idempotency_key=idempotency_key)
             session.add(msg)
             conv.archived = False
+            if sender != "client":
+                conv.reply_alert_at = None
             conv.last_text = text
             conv.last_sender = sender
             conv.last_message_at = _now()

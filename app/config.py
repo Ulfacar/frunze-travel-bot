@@ -436,6 +436,7 @@ class Settings(BaseSettings):
     # ГРИШИ (дефолт 30). Считаются рабочие минуты по часам приёма (schedule.py).
     pilot_reply_sla_minutes: int = 30
     pilot_reply_queue_enabled: bool = False
+    pilot_reply_alert_enabled: bool = False
     crm_bot_send_enabled: bool = False
     admin_user: str = "admin"
     admin_password: str = "frunze"  # ПРОД: переопределить ADMIN_PASSWORD!

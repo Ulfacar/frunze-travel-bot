@@ -71,6 +71,8 @@ async def lifespan(app: FastAPI):
     scheduler.register("balance_guard", balance_guard.run)
     scheduler.register("awaiting", awaiting.run)
     scheduler.register("awaiting_telegram", awaiting.run_telegram)
+    from app.core import reply_alerts
+    scheduler.register("reply_alerts", reply_alerts.run)  # B2c, флаг OFF
     scheduler.register("followup", followup.run)
     scheduler.register("rescore", rescore.run)          # ghost-ре-скоринг тира готовности
     scheduler.register("outcome_infer", outcome_infer.run)  # LLM-исход (gated OFF)

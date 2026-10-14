@@ -86,6 +86,9 @@ class Conversation(Base):
     # поэтому инструмент эскалации может вызваться повторно на следующих ходах).
     handoff_notified_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True)
+    # B2c: напоминание владельцу «клиент ждёт» уже ушло в этом эпизоде ожидания. Снимается,
+    # когда в диалог пишет не клиент (panel store add_message).
+    reply_alert_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     outcome: Mapped[str] = mapped_column(String(24), default="")       # in_progress|office|manager|won|lost
     last_text: Mapped[str] = mapped_column(Text, default="")  # превью последней реплики для карточки
     last_sender: Mapped[str] = mapped_column(String(16), default="")  # client|bot|manager — для сигналов
@@ -303,6 +306,7 @@ async def init_models(engine: AsyncEngine) -> None:
             "assigned_to": "VARCHAR(64) DEFAULT ''",
             "assigned_at": "TIMESTAMPTZ",
             "handoff_notified_at": "TIMESTAMPTZ",
+            "reply_alert_at": "TIMESTAMPTZ",
             "outcome": "VARCHAR(24) DEFAULT ''",
             "followup_sent": "BOOLEAN DEFAULT FALSE",
             "followup_count": "INTEGER DEFAULT 0",
