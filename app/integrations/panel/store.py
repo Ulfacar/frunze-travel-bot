@@ -174,6 +174,10 @@ class MemoryConversationStore:
             conv.last_message_at = _now()
         return msg.id
 
+    async def idempotency_key_exists(self, idempotency_key: str) -> bool:
+        return any(getattr(m, "_idem", "") == idempotency_key
+                   for conv in self._conv.values() for m in conv.messages)
+
     async def add_message_once(self, user_id: str, sender: str, text: str, *,
                                idempotency_key: str, **fields) -> tuple[int, bool]:
         """(id, создано ли сейчас). Повтор с тем же ключом не создаёт записи и не шлёт."""
@@ -423,6 +427,12 @@ class PostgresConversationStore:
                 conv.last_message_at = _now()
             await session.commit()
             return msg.id
+
+    async def idempotency_key_exists(self, idempotency_key: str) -> bool:
+        from app.integrations.crm.db import ConvMessage
+        async with self._sm()() as session:
+            return (await session.execute(select(ConvMessage.id).where(
+                ConvMessage.idempotency_key == idempotency_key).limit(1))).scalar_one_or_none() is not None
 
     async def add_message_once(self, user_id: str, sender: str, text: str, *,
                                idempotency_key: str, channel: str = "", bot_id: str = "",

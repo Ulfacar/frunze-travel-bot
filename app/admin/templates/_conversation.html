@@ -128,7 +128,7 @@
           {% elif m.status == 'delivered' %}<span class="chat-delivery chat-ticks" aria-label="доставлено" title="доставлено">{{ chat_icon('checks') }}</span>
           {% elif m.status == 'unknown' %}<span class="chat-failed" title="WhatsApp не ответил вовремя">{{ chat_icon('info') }}неизвестно, дошло ли — проверьте</span>
           {% elif m.status == 'failed' %}<span class="chat-failed">{{ chat_icon('info') }}не доставлено</span>
-            {% if not crm_bot_mode %}<button type="button" class="chat-retry" hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-target="#chat" hx-swap="innerHTML">Повторить</button>{% endif %}
+            {% if not crm_bot_mode and not m.text.startswith('📎 ') %}<button type="button" class="chat-retry" hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-target="#chat" hx-swap="innerHTML">Повторить</button>{% endif %}
           {% endif %}
         </div>
       </div>
@@ -474,7 +474,7 @@
           {% elif m.status == 'delivered' %}<span title="доставлено">✓✓</span>
           {% elif m.status == 'unknown' %}<span title="WhatsApp не ответил вовремя" style="color:var(--hot)">? неизвестно, дошло ли</span>
           {% elif m.status == 'failed' %}<span title="не доставлено" style="color:var(--hot)">✗ не доставлено</span>
-            {% if not crm_bot_mode %}<button class="btn btn-ghost" style="padding:2px 8px;font-size:12px"
+            {% if not crm_bot_mode and not m.text.startswith('📎 ') %}<button class="btn btn-ghost" style="padding:2px 8px;font-size:12px"
                     hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}"
                     hx-target="#chat" hx-swap="innerHTML">Повторить</button>{% endif %}
           {% endif %}

@@ -328,6 +328,10 @@ def mask_phone(value: str) -> str:
     return f"***{digits[-4:]}" if digits else ""
 
 
+class SendOutcomeUnknown(Exception):
+    """Отправка могла состояться: повторять вслепую нельзя."""
+
+
 class WappiAdapter:
     channel = "whatsapp"
 
@@ -493,6 +497,9 @@ class WappiAdapter:
         finally:
             if owns:
                 await client.aclose()
+        if not provider_msg_id:
+            # 2xx без id: провайдер мог принять файл — исход неизвестен, не «ошибка».
+            raise SendOutcomeUnknown("Wappi answered without message id")
         logger.info("Wappi send_file to=%s profile=%s kind=%s bytes=%d msg_id=%s",
                     mask_phone(_recipient(chat_id)), self._profile_id, kind, len(data), provider_msg_id)
         return provider_msg_id

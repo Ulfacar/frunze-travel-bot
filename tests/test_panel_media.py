@@ -237,3 +237,71 @@ def test_incoming_non_text_keeps_provider_id(tmp_path, monkeypatch):
     asyncio.run(o._log_in(msg, "🖼 Фото/скриншот"))
     client_msgs = [m for m in _conv().messages if m.sender == "client"]
     assert client_msgs[-1].provider_msg_id == "WAPPI-IN-9"
+
+
+# --- ревью B2a, круг 1 ---
+
+def test_two_different_files_with_same_name_are_both_sent(media):
+    c = _client("medina", "m1")
+    assert _post_file(c, data=PDF, name="image.pdf").headers["X-Action-Outcome"] == "sent"
+    assert _post_file(c, data=PDF + b"other-scan", name="image.pdf").headers["X-Action-Outcome"] == "sent"
+    assert len(media["calls"]) == 2
+
+
+@pytest.mark.parametrize("exc,expected", [
+    (lambda: httpx.HTTPStatusError("502", request=httpx.Request("POST", "http://w"), response=httpx.Response(502)), "unknown"),
+    (lambda: httpx.HTTPStatusError("400", request=httpx.Request("POST", "http://w"), response=httpx.Response(400)), "failed"),
+    (lambda: httpx.ConnectError("refused"), "failed"),
+    (lambda: httpx.ReadError("cut"), "unknown"),
+    (lambda: wappi.SendOutcomeUnknown("no id"), "unknown"),
+])
+def test_outcome_classification(media, monkeypatch, exc, expected):
+    async def boom(self, *a, **k):
+        raise exc()
+    monkeypatch.setattr(WappiAdapter, "send_file", boom)
+    assert _post_file(_client("medina", "m1")).headers["X-Action-Outcome"] == expected
+    assert _manager_messages()[-1][1] == expected
+
+
+def test_adapter_without_message_id_raises_unknown():
+    with pytest.raises(wappi.SendOutcomeUnknown):
+        asyncio.run(_adapter(lambda r: httpx.Response(200, json={"status": "done"})).send_file(
+            "996700123456@c.us", PDF, filename="a.pdf", mime="application/pdf"))
+
+
+def test_client_pdf_is_downloaded_not_rendered(media, monkeypatch):
+    async def pdf(self, message_id):
+        return PDF, "image/png"            # провайдер ошибся в типе — верим сигнатуре
+    monkeypatch.setattr(WappiAdapter, "download_media", pdf)
+    mid = _client_file()
+    r = _client("medina", "m1").get(f"/admin/conversation/{USER_ID}/media/{mid}")
+    assert r.headers["content-type"].startswith("application/pdf")
+    assert r.headers["content-disposition"] == 'attachment; filename="client-file.pdf"'
+
+
+def _zip(entries):
+    import io
+    import zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        for name in entries:
+            z.writestr(name, "x")
+    return buf.getvalue()
+
+
+def test_docx_requires_office_structure(media):
+    c = _client("medina", "m1")
+    fake = _zip(["evil.exe", "readme.txt"])
+    assert _post_file(c, data=fake, name="contract.docx").headers["X-Action-Outcome"] == "denied"
+    real = _zip(["[Content_Types].xml", "word/document.xml"])
+    assert _post_file(c, data=real, name="contract.docx").headers["X-Action-Outcome"] == "sent"
+    xlsx_as_docx = _zip(["[Content_Types].xml", "xl/workbook.xml"])
+    assert _post_file(c, data=xlsx_as_docx, name="table.docx").headers["X-Action-Outcome"] == "denied"
+
+
+def test_failed_file_has_no_retry_button(media):
+    media["behaviour"]["mode"] = "fail"
+    c = _client("medina", "m1")
+    _post_file(c)
+    mid = next(m.id for m in _conv().messages if m.sender == "manager")
+    assert f"/resend/{mid}" not in c.get(f"/admin/conversation/{USER_ID}").text

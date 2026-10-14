@@ -2208,6 +2208,26 @@ def _safe_filename(name: str) -> str:
     return base or "file"
 
 
+def _office_kind(data: bytes) -> str:
+    """'docx' / 'xlsx' по содержимому архива, иначе ''. Любой zip под .docx не проходит."""
+    import io
+    import zipfile
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            names = z.namelist()
+            if len(names) > 2000 or sum(i.file_size for i in z.infolist()) > 200 * 1024 * 1024:
+                return ""
+    except (zipfile.BadZipFile, ValueError, OSError):
+        return ""
+    if "[Content_Types].xml" not in names:
+        return ""
+    if any(n.startswith("word/") for n in names):
+        return "docx"
+    if any(n.startswith("xl/") for n in names):
+        return "xlsx"
+    return ""
+
+
 def _sniff_upload(filename: str, data: bytes) -> str | None:
     ext = ("." + filename.rsplit(".", 1)[-1].lower()) if "." in filename else ""
     kind = _SEND_TYPES.get(ext)
@@ -2215,7 +2235,27 @@ def _sniff_upload(filename: str, data: bytes) -> str | None:
         return None
     if ext == ".webp" and data[8:12] != b"WEBP":
         return None
+    if ext in (".docx", ".xlsx") and _office_kind(data) != ext[1:]:
+        return None
     return kind[0]
+
+
+def _media_signature(data: bytes) -> tuple[str, str]:
+    """(mime, расширение) файла клиента по сигнатуре байт — заголовкам провайдера не верим."""
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg", "jpg"
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png", "png"
+    if data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+        return "image/webp", "webp"
+    if data.startswith((b"GIF87a", b"GIF89a")):
+        return "image/gif", "gif"
+    if data.startswith(b"%PDF-"):
+        return "application/pdf", "pdf"
+    if data.startswith(b"PK\x03\x04"):
+        kind = _office_kind(data)
+        return ("application/octet-stream", kind) if kind else ("application/octet-stream", "zip")
+    return "application/octet-stream", "bin"
 
 
 @router.post("/conversation/{user_id}/send-file", response_class=HTMLResponse)
@@ -2253,40 +2293,44 @@ async def send_file(user_id: str, request: Request, manager: dict = Depends(requ
     if not allowed:
         return await out("denied", deny_notice)
     label = f"{FILE_MESSAGE_PREFIX}{filename}"
-    # Двойная отправка того же файла (двойной клик, повтор после сбоя сети): если такой же
-    # файл ушёл или уходит в последние 2 минуты — клиенту второй раз не шлём.
-    recent = datetime.now(timezone.utc) - timedelta(minutes=2)
-    for m in reversed(list(conv.messages or [])[-10:]):
-        created = m.created_at
-        if created is not None and created.tzinfo is None:
-            created = created.replace(tzinfo=timezone.utc)
-        if (m.sender == "manager" and m.text == label and m.status in ("pending", "sent", "delivered", "unknown")
-                and created is not None and created >= recent):
-            return await out("duplicate")
+    # Тот же файл с той же подписью в течение ~2 минут (двойной клик, повтор после сбоя сети)
+    # клиенту второй раз не уходит. Ключ — по СОДЕРЖИМОМУ, а не по имени: два разных скана
+    # «image.jpg» подряд — это два документа. Захват атомарный (ревью B2a, major 1).
+    import hashlib
+    import time as _time
+    digest = hashlib.sha256(data + b"\0" + caption.strip().encode("utf-8")).hexdigest()[:40]
+    bucket = int(_time.time() // 120)
+    key = f"file:{user_id}:{digest}"[:110]
+    if await panel.idempotency_key_exists(f"{key}:{bucket - 1}"):
+        return await out("duplicate", "Этот файл только что отправлен.")
+    msg_id, created = await panel.add_message_once(user_id, "manager", label,
+                                                   idempotency_key=f"{key}:{bucket}", status="pending")
+    if not created:
+        return await out("duplicate", "Этот файл только что отправлен.")
     await _set_intercept(user_id, True)  # отвечает человек → бот молчит
     await panel.update_meta(user_id, assigned_to=manager["login"])
-    msg_id = await panel.add_message(user_id, "manager", label, status="pending")
-    from app.channels.wappi import WappiAdapter
+    from app.channels.wappi import SendOutcomeUnknown, WappiAdapter
     try:
         provider = await WappiAdapter(bot=bot).send_file(conv.chat_id or conv.phone, data, filename=filename,
                                                          mime=mime, caption=caption.strip()[:500])
-        if not provider:
-            raise RuntimeError("Wappi did not confirm acceptance")
+        if not provider:  # не настроен токен/профиль — до провайдера не дошло
+            raise RuntimeError("not sent")
         mark_own(provider)
         await panel.mark_message_status(message_id=msg_id, status="sent", set_provider_msg_id=provider)
         outcome = "sent"
-    except httpx.TimeoutException:
-        # Провайдер не ответил вовремя: файл мог уйти. Слепо не повторяем.
-        await panel.mark_message_status(message_id=msg_id, status="unknown")
-        outcome = "unknown"
-        log.warning("manager file send timed out (status unknown)")
-    except Exception:  # noqa: BLE001
-        await panel.mark_message_status(message_id=msg_id, status="failed")
-        outcome = "failed"
-        log.warning("manager file send failed", exc_info=True)
+    except Exception as exc:  # noqa: BLE001
+        # «Неизвестно» = файл мог уйти: обрыв/таймаут после начала отправки, 5xx, ответ без id.
+        # «Ошибка» = точно не ушло: отказ соединения, 4xx, не настроено (ревью B2a, minor 3).
+        definitely_not_sent = isinstance(exc, (httpx.ConnectError, httpx.ConnectTimeout, RuntimeError)) or (
+            isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code < 500)
+        unknown = not definitely_not_sent and isinstance(
+            exc, (httpx.TransportError, httpx.HTTPStatusError, SendOutcomeUnknown))
+        outcome = "unknown" if unknown else "failed"
+        await panel.mark_message_status(message_id=msg_id, status=outcome)
+        log.warning("manager file send %s (%s)", outcome, type(exc).__name__)
     await panel.add_audit(manager["login"], "send_file", user_id, f"{filename} {len(data)}B {outcome}")
-    notice = {"unknown": "WhatsApp не ответил вовремя — проверьте в переписке, дошёл ли файл, прежде чем слать снова.",
-              "failed": "Файл не отправлен. Приложите его ещё раз."}.get(outcome, "")
+    notice = {"unknown": "Неизвестно, дошёл ли файл — проверьте переписку в WhatsApp, прежде чем слать снова.",
+              "failed": "Файл не отправлен. Проверьте переписку и приложите его ещё раз."}.get(outcome, "")
     return await out(outcome, notice)
 
 
@@ -2319,9 +2363,13 @@ async def media_view(user_id: str, message_id: int, manager: dict = Depends(requ
     if len(data) > 25 * 1024 * 1024:
         return PlainTextResponse("Файл слишком большой для просмотра в панели.", status_code=502)
     await panel.add_audit(manager["login"], "media_view", user_id, str(message_id))
-    inline = mime in _VIEW_TYPES
-    return Response(content=data, media_type=mime if inline else "application/octet-stream", headers={
-        "Content-Disposition": "inline" if inline else 'attachment; filename="client-file"',
+    # Тип — по сигнатуре байт. Картинки показываем, остальное (в т.ч. PDF) скачиваем: PDF под
+    # CSP sandbox в Chrome не открывается (ревью B2a, major 2), а снимать sandbox не будем.
+    sniffed, ext = _media_signature(data)
+    inline = sniffed in _VIEW_TYPES and sniffed.startswith("image/")
+    disposition = "inline" if inline else f'attachment; filename="client-file.{ext}"'
+    return Response(content=data, media_type=sniffed, headers={
+        "Content-Disposition": disposition,
         "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store",
         "Content-Security-Policy": "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox",
     })
