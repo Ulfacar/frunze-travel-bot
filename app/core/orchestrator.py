@@ -513,8 +513,15 @@ class Orchestrator:
     async def _log_in(self, msg: Message, text: str) -> None:
         try:
             panel = get_conversation_store()
+            # Файл клиента (фото/документ) панель откроет по id провайдера — сам файл мы не
+            # храним (политика хранения ПД не утверждена). Только для не-текстовых: у текста
+            # id не нужен, а поведение для клиента не меняется вовсе (B2a, 14.10).
+            media_id = ""
+            if msg.kind == "non_text" and isinstance(msg.raw, dict):
+                media_id = str(msg.raw.get("id") or msg.raw.get("message_id") or "")[:128]
             await panel.add_message(self._key(msg), "client", text, channel=msg.channel,
-                                    bot_id=self._bot_id, chat_id=msg.chat_id, phone=msg.user_id)
+                                    bot_id=self._bot_id, chat_id=msg.chat_id, phone=msg.user_id,
+                                    provider_msg_id=media_id)
             if self.bot is not None:
                 await panel.update_meta(self._key(msg), funnel=self.bot.scenario)
             if msg.referral:

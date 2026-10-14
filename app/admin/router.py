@@ -15,9 +15,9 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from urllib.parse import quote
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
-                               RedirectResponse)
+                               RedirectResponse, Response)
 from fastapi.templating import Jinja2Templates
 
 from app.agent.llm import chat, llm_enabled
@@ -1004,6 +1004,21 @@ FEATURE_FLAGS = {
         "default": lambda: False,
         "note": lambda: "",
     },
+    "panel_send_media_enabled": {
+        "title": "Отправка файлов из панели",
+        "desc": ("Менеджер прикладывает фото или документ (PDF, JPG, PNG, WEBP, DOCX, XLSX) "
+                 "в окне диалога, клиент получает его в WhatsApp. Проверки владельца — как у "
+                 "текста. Включать после проверки на тестовом номере."),
+        "default": lambda: settings.panel_send_media_enabled,
+        "note": lambda: "",
+    },
+    "panel_media_view_enabled": {
+        "title": "Просмотр файлов клиента в панели",
+        "desc": ("Ссылка «Открыть» у фото и документов клиента: файл берётся из WhatsApp "
+                 "через Wappi по запросу, у нас не хранится."),
+        "default": lambda: settings.panel_media_view_enabled,
+        "note": lambda: "",
+    },
     "bitrix_read_back_enabled": {
         "title": "Учёт продаж из Bitrix",
         "desc": ("Каждые 10 минут забирать из портала лиды «Подписан» и отмечать туровые "
@@ -1780,6 +1795,9 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
                         if is_full_admin else [])
     return templates.TemplateResponse(request, "_conversation.html", {
         "c": conv,
+        "media_view_on": await _media_flag("panel_media_view_enabled"),
+        "send_media_on": await _media_flag("panel_send_media_enabled"),
+        "send_media_max_mb": settings.panel_send_media_max_mb,
         "crm_bot_mode": settings.crm_standalone_enabled and settings.crm_data_mode == "bot",
         "initials": _initials(name, conv.phone),
         "avatar": _avatar(conv.phone),
@@ -2133,6 +2151,154 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
     return resp
 
 
+async def _media_flag(key: str) -> bool:
+    from app.core.flags import get_flag
+    try:
+        return bool(await get_flag(key, getattr(settings, key)))
+    except Exception:  # noqa: BLE001 — нет флага/БД → функция выключена
+        return False
+
+
+# Файлы менеджера клиенту (B2a, 14.10). Тип определяем по сигнатуре, а не по имени/заголовку:
+# менеджер не должен случайно отправить исполняемый файл под видом документа.
+_ZIP = b"PK\x03\x04"
+_SEND_TYPES = {
+    ".pdf": ("application/pdf", b"%PDF-"),
+    ".jpg": ("image/jpeg", b"\xff\xd8\xff"),
+    ".jpeg": ("image/jpeg", b"\xff\xd8\xff"),
+    ".png": ("image/png", b"\x89PNG\r\n\x1a\n"),
+    ".webp": ("image/webp", b"RIFF"),
+    ".docx": ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", _ZIP),
+    ".xlsx": ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", _ZIP),
+}
+FILE_MESSAGE_PREFIX = "📎 "
+
+
+def _safe_filename(name: str) -> str:
+    base = (name or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    base = re.sub(r"[^\w.\- ]+", "_", base, flags=re.UNICODE)[:100].strip(" .")
+    return base or "file"
+
+
+def _sniff_upload(filename: str, data: bytes) -> str | None:
+    ext = ("." + filename.rsplit(".", 1)[-1].lower()) if "." in filename else ""
+    kind = _SEND_TYPES.get(ext)
+    if kind is None or not data.startswith(kind[1]):
+        return None
+    if ext == ".webp" and data[8:12] != b"WEBP":
+        return None
+    return kind[0]
+
+
+@router.post("/conversation/{user_id}/send-file", response_class=HTMLResponse)
+async def send_file(user_id: str, request: Request, manager: dict = Depends(require_admin),
+                    upload: UploadFile = File(...), caption: str = Form("")):
+    """Менеджер отправляет клиенту фото/документ. Те же проверки владельца, что у текста."""
+    import httpx
+    if not await _media_flag("panel_send_media_enabled"):
+        raise HTTPException(status_code=404, detail="not enabled")
+    panel = get_conversation_store()
+    conv = await panel.get(user_id)
+    if conv is None or not _can_view_conversation(conv, manager):
+        raise HTTPException(status_code=404, detail="conversation not found")
+
+    async def out(outcome: str, notice: str = ""):
+        resp = await _render_conversation(user_id, request, manager, notice=notice)
+        resp.headers["X-Action-Outcome"] = outcome
+        return resp
+
+    from app.core.bots import registry
+    bot = registry.by_id(getattr(conv, "bot_id", "") or "")
+    if (getattr(conv, "channel", "") or "") != "whatsapp" or bot is None or not bot.wappi_profile_id:
+        return await out("denied", "Файл можно отправить только в WhatsApp с настроенным профилем.")
+    limit = max(1, int(settings.panel_send_media_max_mb)) * 1024 * 1024
+    data = await upload.read(limit + 1)
+    if not data:
+        return await out("denied", "Файл пустой.")
+    if len(data) > limit:
+        return await out("denied", f"Файл больше {settings.panel_send_media_max_mb} МБ.")
+    filename = _safe_filename(upload.filename or "")
+    mime = _sniff_upload(filename, data)
+    if mime is None:
+        return await out("denied", "Можно отправить PDF, JPG, PNG, WEBP, DOCX или XLSX.")
+    allowed, deny_notice = await _ownership_guard(conv, manager, "send")
+    if not allowed:
+        return await out("denied", deny_notice)
+    label = f"{FILE_MESSAGE_PREFIX}{filename}"
+    # Двойная отправка того же файла (двойной клик, повтор после сбоя сети): если такой же
+    # файл ушёл или уходит в последние 2 минуты — клиенту второй раз не шлём.
+    recent = datetime.now(timezone.utc) - timedelta(minutes=2)
+    for m in reversed(list(conv.messages or [])[-10:]):
+        created = m.created_at
+        if created is not None and created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+        if (m.sender == "manager" and m.text == label and m.status in ("pending", "sent", "delivered", "unknown")
+                and created is not None and created >= recent):
+            return await out("duplicate")
+    await _set_intercept(user_id, True)  # отвечает человек → бот молчит
+    await panel.update_meta(user_id, assigned_to=manager["login"])
+    msg_id = await panel.add_message(user_id, "manager", label, status="pending")
+    from app.channels.wappi import WappiAdapter
+    try:
+        provider = await WappiAdapter(bot=bot).send_file(conv.chat_id or conv.phone, data, filename=filename,
+                                                         mime=mime, caption=caption.strip()[:500])
+        if not provider:
+            raise RuntimeError("Wappi did not confirm acceptance")
+        mark_own(provider)
+        await panel.mark_message_status(message_id=msg_id, status="sent", set_provider_msg_id=provider)
+        outcome = "sent"
+    except httpx.TimeoutException:
+        # Провайдер не ответил вовремя: файл мог уйти. Слепо не повторяем.
+        await panel.mark_message_status(message_id=msg_id, status="unknown")
+        outcome = "unknown"
+        log.warning("manager file send timed out (status unknown)")
+    except Exception:  # noqa: BLE001
+        await panel.mark_message_status(message_id=msg_id, status="failed")
+        outcome = "failed"
+        log.warning("manager file send failed", exc_info=True)
+    await panel.add_audit(manager["login"], "send_file", user_id, f"{filename} {len(data)}B {outcome}")
+    notice = {"unknown": "WhatsApp не ответил вовремя — проверьте в переписке, дошёл ли файл, прежде чем слать снова.",
+              "failed": "Файл не отправлен. Приложите его ещё раз."}.get(outcome, "")
+    return await out(outcome, notice)
+
+
+_VIEW_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"}
+
+
+@router.get("/conversation/{user_id}/media/{message_id}")
+async def media_view(user_id: str, message_id: int, manager: dict = Depends(require_admin)):
+    """Открыть файл клиента: берём у Wappi по id, у себя не храним (политика ПД не утверждена)."""
+    if not await _media_flag("panel_media_view_enabled"):
+        raise HTTPException(status_code=404, detail="not enabled")
+    panel = get_conversation_store()
+    conv = await panel.get(user_id)
+    if conv is None or not _can_view_conversation(conv, manager):
+        raise HTTPException(status_code=404, detail="conversation not found")
+    target = next((m for m in conv.messages if m.id == message_id), None)
+    if target is None or target.sender != "client" or not target.provider_msg_id:
+        raise HTTPException(status_code=404, detail="file not found")
+    from app.core.bots import registry
+    bot = registry.by_id(getattr(conv, "bot_id", "") or "")
+    if bot is None or not bot.wappi_profile_id:
+        raise HTTPException(status_code=404, detail="file not found")
+    from app.channels.wappi import WappiAdapter
+    try:
+        data, mime = await WappiAdapter(bot=bot).download_media(target.provider_msg_id)
+    except Exception:  # noqa: BLE001
+        log.warning("media download failed", exc_info=True)
+        return PlainTextResponse("Файл недоступен: WhatsApp хранит файлы около 20 дней, или сервис не ответил.",
+                                 status_code=502)
+    if len(data) > 25 * 1024 * 1024:
+        return PlainTextResponse("Файл слишком большой для просмотра в панели.", status_code=502)
+    await panel.add_audit(manager["login"], "media_view", user_id, str(message_id))
+    inline = mime in _VIEW_TYPES
+    return Response(content=data, media_type=mime if inline else "application/octet-stream", headers={
+        "Content-Disposition": "inline" if inline else 'attachment; filename="client-file"',
+        "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store",
+        "Content-Security-Policy": "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox",
+    })
+
+
 _resend_locks: dict[int, "asyncio.Lock"] = {}
 
 
@@ -2150,7 +2316,7 @@ async def resend(user_id: str, message_id: int, request: Request,
         raise HTTPException(status_code=404, detail="conversation not found")
     target = next((m for m in conv.messages if m.id == message_id), None)
     if (target is None or not target.text or getattr(target, "sender", "") != "manager"
-            or getattr(target, "status", "") != "failed"):
+            or getattr(target, "status", "") != "failed" or target.text.startswith(FILE_MESSAGE_PREFIX)):
         resp = await _render_conversation(user_id, request, manager,
                                           notice="Повторить можно только неотправленное сообщение менеджера.")
         resp.headers["X-Action-Outcome"] = "denied"

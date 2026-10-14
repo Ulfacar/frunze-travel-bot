@@ -120,12 +120,13 @@
     <div class="msg {{ m.sender }}" data-message-id="{{ m.id }}">
       <div class="bubble">
         <div class="who">{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(m.sender, m.sender) }}</div>
-        <div class="chat-message-text">{{ m.text }}</div>
+        <div class="chat-message-text">{{ m.text }}{% if media_view_on and m.sender == 'client' and m.provider_msg_id %} <a class="chat-media-open" href="/admin/conversation/{{ c.user_id|urlencode }}/media/{{ m.id }}" target="_blank" rel="noopener noreferrer">Открыть файл</a>{% endif %}</div>
         <div class="chat-message-meta">
           {% if m.created_at %}<span class="chat-time">{{ m.created_at.strftime('%H:%M') }}</span>{% endif %}
           {% if m.status == 'pending' %}<span class="chat-delivery">{{ chat_icon('clock') }}отправляется</span>
           {% elif m.status == 'sent' %}<span class="chat-delivery" aria-label="отправлено" title="отправлено">{{ chat_icon('check') }}</span>
           {% elif m.status == 'delivered' %}<span class="chat-delivery chat-ticks" aria-label="доставлено" title="доставлено">{{ chat_icon('checks') }}</span>
+          {% elif m.status == 'unknown' %}<span class="chat-failed" title="WhatsApp не ответил вовремя">{{ chat_icon('info') }}неизвестно, дошло ли — проверьте</span>
           {% elif m.status == 'failed' %}<span class="chat-failed">{{ chat_icon('info') }}не доставлено</span>
             {% if not crm_bot_mode %}<button type="button" class="chat-retry" hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-target="#chat" hx-swap="innerHTML">Повторить</button>{% endif %}
           {% endif %}
@@ -251,7 +252,13 @@
       <textarea name="text" rows="1" placeholder="Ответить клиенту…" autocomplete="off" aria-label="Ответить клиенту"></textarea>
       <button type="submit" class="chat-send" aria-label="Отправить" title="Отправить">{{ chat_icon('send') }}</button>
     </div>
-  </form>
+  </form>{% if send_media_on %}
+  <form class="composer chat-file" hx-post="/admin/conversation/{{ c.user_id }}/send-file" hx-encoding="multipart/form-data" hx-target="#chat" hx-swap="innerHTML" hx-sync="this:drop">
+    <input type="file" name="upload" required accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,application/pdf,image/jpeg,image/png,image/webp" aria-label="Файл клиенту">
+    <input type="text" name="caption" maxlength="500" placeholder="Подпись (необязательно)" aria-label="Подпись к файлу">
+    <button class="btn" type="submit">Отправить файл</button>
+    <span class="hint">PDF, фото, DOCX, XLSX до {{ send_media_max_mb }} МБ</span>
+  </form>{% endif %}
   <div class="chat-hint">Отправка перехватывает диалог — бот замолкает</div>
   {% set failed = c.messages | selectattr('status', 'equalto', 'failed') | list %}
   <div class="chat-error" role="alert"{% if not notice and not failed %} hidden{% endif %}>
@@ -465,6 +472,7 @@
           {% if m.status == 'pending' %}<span title="отправляется">⏳</span>
           {% elif m.status == 'sent' %}<span title="отправлено">✓</span>
           {% elif m.status == 'delivered' %}<span title="доставлено">✓✓</span>
+          {% elif m.status == 'unknown' %}<span title="WhatsApp не ответил вовремя" style="color:var(--hot)">? неизвестно, дошло ли</span>
           {% elif m.status == 'failed' %}<span title="не доставлено" style="color:var(--hot)">✗ не доставлено</span>
             {% if not crm_bot_mode %}<button class="btn btn-ghost" style="padding:2px 8px;font-size:12px"
                     hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}"
@@ -472,7 +480,7 @@
           {% endif %}
         {% endif %}
       </div>
-      <div class="bubble">{{ m.text }}</div>
+      <div class="bubble">{{ m.text }}{% if media_view_on and m.sender == 'client' and m.provider_msg_id %} <a class="chat-media-open" href="/admin/conversation/{{ c.user_id|urlencode }}/media/{{ m.id }}" target="_blank" rel="noopener noreferrer">Открыть файл</a>{% endif %}</div>
     </div>
     {% else %}
     <div class="msgs-empty">Сообщений пока нет</div>
@@ -501,7 +509,13 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
       Отправить
     </button>
-  </form>
+  </form>{% if send_media_on %}
+  <form class="composer chat-file" hx-post="/admin/conversation/{{ c.user_id }}/send-file" hx-encoding="multipart/form-data" hx-target="#chat" hx-swap="innerHTML" hx-sync="this:drop">
+    <input type="file" name="upload" required accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,application/pdf,image/jpeg,image/png,image/webp" aria-label="Файл клиенту">
+    <input type="text" name="caption" maxlength="500" placeholder="Подпись (необязательно)" aria-label="Подпись к файлу">
+    <button class="btn" type="submit">Отправить файл</button>
+    <span class="hint">PDF, фото, DOCX, XLSX до {{ send_media_max_mb }} МБ</span>
+  </form>{% endif %}
   <div class="hint">Отправка ответа перехватывает диалог — бот замолкает.</div>
 </div>
 {%- endif %}

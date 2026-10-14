@@ -427,6 +427,11 @@ class Settings(BaseSettings):
     # B1 (14.10): "standalone" — своя пустая БД (R9); "bot" — БД и Redis работающего бота,
     # переписка и перехват. Отправка клиенту в режиме bot — отдельный флаг, дефолт OFF.
     crm_data_mode: str = "standalone"
+    # B2a (14.10, к пилоту виз без Bitrix): файлы в панели. Оба OFF до проверки на тестовом
+    # номере (S1). Лимит — свой, в документации Wappi размера нет.
+    panel_send_media_enabled: bool = False
+    panel_media_view_enabled: bool = False
+    panel_send_media_max_mb: int = 10
     crm_bot_send_enabled: bool = False
     admin_user: str = "admin"
     admin_password: str = "frunze"  # ПРОД: переопределить ADMIN_PASSWORD!

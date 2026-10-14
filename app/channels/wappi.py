@@ -455,6 +455,88 @@ class WappiAdapter:
                     mask_phone(_recipient(chat_id)), self._profile_id, provider_msg_id)
         return provider_msg_id
 
+    # Файлы из панели (B2a). Источник — официальная документация Wappi
+    # (https://wappi.pro/api-documentation, раздел «Работа с сообщениями», 14.10.2026):
+    # POST /api/sync/message/img/send и /api/sync/message/document/send, поля `recipient`,
+    # `b64_file` (base64 БЕЗ префикса MIME), `file_name`, `caption`. Ограничение размера в
+    # документации не указано (UNKNOWN) — лимит ставит вызывающий код.
+    _IMAGE_MIMES = frozenset({"image/jpeg", "image/png", "image/webp"})
+
+    async def send_file(self, chat_id: str, data: bytes, *, filename: str, mime: str,
+                        caption: str = "") -> str:
+        """Отправить картинку или документ. Возвращает id принятого сообщения; "" — не принято.
+
+        Таймаут провайдера пробрасывается (`httpx.TimeoutException`): исход неизвестен,
+        слепо повторять нельзя — клиент мог уже получить файл.
+        """
+        import base64
+        if not self._token or not self._profile_id:
+            logger.warning("Wappi send_file пропущен: не заданы token/profile_id")
+            return ""
+        kind = "img" if mime in self._IMAGE_MIMES else "document"
+        payload = {"recipient": _recipient(chat_id), "b64_file": base64.b64encode(data).decode("ascii")}
+        if caption:
+            payload["caption"] = caption
+        if kind == "document":
+            payload["file_name"] = filename
+        owns = self._client is None
+        client = self._client or httpx.AsyncClient(timeout=60)
+        try:
+            resp = await client.post(
+                f"{self._base}/api/sync/message/{kind}/send",
+                params={"profile_id": self._profile_id, "bot_id": self._OPENLINE_BOT_ID},
+                headers={"Authorization": self._token, "Content-Type": "application/json"},
+                json=payload,
+            )
+            resp.raise_for_status()
+            provider_msg_id = _extract_msg_id(resp, strict=True)
+        finally:
+            if owns:
+                await client.aclose()
+        logger.info("Wappi send_file to=%s profile=%s kind=%s bytes=%d msg_id=%s",
+                    mask_phone(_recipient(chat_id)), self._profile_id, kind, len(data), provider_msg_id)
+        return provider_msg_id
+
+    async def download_media(self, message_id: str) -> tuple[bytes, str]:
+        """Файл входящего сообщения по его id — для просмотра в панели, без хранения у нас.
+
+        Метод из документации Wappi: GET /api/sync/message/media/download. Его параметры и
+        форма ответа в документации НЕ раскрыты (UNKNOWN на 14.10): передаём `profile_id` и
+        `message_id`, а ответ разбираем терпимо — сырой файл с content-type либо JSON с
+        base64 (как сделано для голосовых в `extract_voice`). Подтвердить на тестовом номере (S1).
+        """
+        import base64
+        import binascii
+        if not self._token or not self._profile_id or not message_id:
+            raise ValueError("media download is not configured")
+        owns = self._client is None
+        client = self._client or httpx.AsyncClient(timeout=30)
+        try:
+            resp = await client.get(
+                f"{self._base}/api/sync/message/media/download",
+                params={"profile_id": self._profile_id, "message_id": message_id},
+                headers={"Authorization": self._token},
+            )
+            resp.raise_for_status()
+        finally:
+            if owns:
+                await client.aclose()
+        ctype = (resp.headers.get("content-type") or "").split(";")[0].strip().lower()
+        if ctype and ctype != "application/json" and not ctype.startswith("text/"):
+            return resp.content, ctype
+        data = resp.json()
+        containers = [data] + [data[k] for k in ("message", "file", "media", "data") if isinstance(data.get(k), dict)]
+        for container in containers:
+            for key in ("file", "body", "media", "data", "base64", "b64_file"):
+                value = container.get(key)
+                if isinstance(value, str) and len(value) > 16:
+                    try:
+                        raw = base64.b64decode(value.split(",", 1)[-1], validate=True)
+                    except (binascii.Error, ValueError):
+                        continue
+                    return raw, _first_mime(container) if any(k in container for k in _MIME_KEYS) else "application/octet-stream"
+        raise ValueError("media download: unknown response shape")
+
 
     async def fetch_chat_messages(self, phone: str) -> list[dict]:
         """Переписка с номером как её видит WhatsApp (вместе с нашими исходящими).
