@@ -1004,6 +1004,13 @@ FEATURE_FLAGS = {
         "default": lambda: False,
         "note": lambda: "",
     },
+    "pilot_reply_queue_enabled": {
+        "title": "Очередь «ждут ответа» (пилот виз)",
+        "desc": ("Отдельный список: клиент ждёт ответа менеджера дольше X рабочих минут "
+                 "(часы приёма, ночь не считается). Свои и ничьи диалоги, дольше всех — сверху."),
+        "default": lambda: settings.pilot_reply_queue_enabled,
+        "note": lambda: f"X = {settings.pilot_reply_sla_minutes} мин (ждёт решения Гриши)",
+    },
     "panel_send_media_enabled": {
         "title": "Отправка файлов из панели",
         "desc": ("Менеджер прикладывает фото или документ (PDF, JPG, PNG, WEBP, DOCX, XLSX) "
@@ -1651,7 +1658,9 @@ async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query:
     if truncated:
         cards = cards[:page_size]
     return templates.TemplateResponse(request, "_attention.html",
-                                      {"mode": mode, "cards": cards, "query": query,
+                                      {"overdue_on": await _media_flag("pilot_reply_queue_enabled"),
+                                       "overdue_sla": settings.pilot_reply_sla_minutes,
+                                       "mode": mode, "cards": cards, "query": query,
                                        "noise_count": noise_count, "total": total,
                                        "truncated": truncated, "show_all": show_all,
                                        "page_size": page_size})
@@ -1736,6 +1745,25 @@ async def focus(request: Request, lead: str = "", manager: dict = Depends(requir
                                        "pulse": {"needs_reply": sum(1 for m in models if m["needs_reply"]),
                                                  "waiting": len(ranked),
                                                  "total": len(models)}})
+
+
+@router.get("/overdue", response_class=HTMLResponse)
+async def overdue_queue(request: Request, manager: dict = Depends(require_admin)):
+    """Очередь пилота: клиент ждёт ответа человека дольше X рабочих минут (B2b)."""
+    if not await _media_flag("pilot_reply_queue_enabled"):
+        raise HTTPException(status_code=404, detail="not enabled")
+    from app.core import reply_sla
+    convs = _filter_conversations(await get_conversation_store().all_conversations_light(), manager)
+    now = _now()
+    items = reply_sla.overdue(convs, now, sla_minutes=settings.pilot_reply_sla_minutes,
+                              login=str(manager.get("login") or ""),
+                              full_admin=_manager_bot_scope(manager) is None)
+    rows = [{"user_id": i["user_id"], "name": (i["conv"].qualification.get("name") or i["conv"].phone or i["user_id"]),
+             "phone": i["conv"].phone or "", "owner": i["owner"] or "ничей",
+             "waited": _time_label(i["waited"]), "last_text": (i["conv"].last_text or "")[:140]} for i in items]
+    return templates.TemplateResponse(request, "overdue.html", {
+        "rows": rows, "sla": settings.pilot_reply_sla_minutes, "manager": manager,
+    }, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/inbox", response_class=HTMLResponse)

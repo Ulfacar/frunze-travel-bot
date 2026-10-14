@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Frunze — ждут ответа{% endblock %}
+{% block head %}
+<style>
+  .wrap { max-width:760px; margin:0 auto; padding:16px; }
+  .sla-row { display:flex; gap:12px; align-items:baseline; padding:12px 14px; border:1px solid var(--border);
+             border-radius:12px; background:var(--surface); margin-bottom:8px; text-decoration:none; color:inherit; }
+  .sla-row:hover { border-color:var(--brand); }
+  .sla-wait { font-weight:800; min-width:64px; }
+  .sla-main { flex:1; min-width:0; }
+  .sla-text { color:var(--muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sla-owner { color:var(--muted); font-size:12px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="wrap">
+  <h2>Ждут ответа дольше {{ sla }} мин</h2>
+  <p class="sla-owner">Считаются только часы приёма; ночь и выходные не в счёт. Ваши диалоги и ничьи — дольше всех сверху.</p>
+  {% for r in rows %}
+  <a class="sla-row" href="/admin?open={{ r.user_id|urlencode }}">
+    <span class="sla-wait">{{ r.waited }}</span>
+    <span class="sla-main"><b>{{ r.name }}</b><div class="sla-text">{{ r.last_text }}</div></span>
+    <span class="sla-owner">{{ r.owner }}</span>
+  </a>
+  {% else %}
+  <p>Никто не ждёт дольше {{ sla }} минут.</p>
+  {% endfor %}
+</div>
+{% endblock %}
