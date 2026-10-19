@@ -315,11 +315,29 @@
     .me form .btn { min-height: 36px; }
     /* Телефон: блок нового вида идёт после общих правил, поэтому свои отступы для
        узкого экрана он обязан объявить сам — иначе шапка станет тесной. */
+    .main-nav { display: contents; }
     @media (max-width: 760px) {
       .topbar { padding: 6px 12px; gap: 6px; min-height: 0; }
-      .nav-link { padding: 0 8px; font-size: 14px; }
-      .nav-link svg { display: none; }
-      .more-pop { right: auto; left: 0; }
+      /* Нижняя навигация: пять разделов под большим пальцем, редкие — в «Ещё». */
+      .main-nav { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0;
+                  position: fixed; left: 0; right: 0; bottom: 0; z-index: 35; padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+                  background: var(--surface); border-top: 1px solid var(--border); }
+      .main-nav .nav-link { flex-direction: column; justify-content: center; gap: 2px; min-height: 52px;
+                            padding: 4px 2px; font-size: 11px; font-weight: 500; border-radius: var(--r-sm); white-space: normal; text-align: center; line-height: 1.15; }
+      .main-nav .nav-link svg { display: block; width: 22px; height: 22px; }
+      .main-nav .more-nav { display: contents; }
+      .main-nav .more-nav > summary { display: flex; flex-direction: column; align-items: center; }
+      .main-nav .more-pop { position: fixed; left: 8px; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom)); top: auto; min-width: 0; }
+      .main-nav .more-pop .nav-link { flex-direction: row; justify-content: flex-start; font-size: 14px; min-height: 44px; padding: 0 10px; }
+      .main-nav .more-pop .nav-link svg { width: 18px; height: 18px; }
+      body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+      body.chat-open .main-nav { display: none; }
+      /* Шапка телефона: бренд и профиль в одной строке, вкладки и поиск — ниже. */
+      .topbar > .brand { order: 0; }
+      .topbar > .me { order: 0; margin-left: auto; }
+      .topbar > .spacer { display: none; }
+      .topbar > .tabs, .topbar > .search, .topbar > .dir-switch { order: 1; }
+      .topbar > .theme-toggle { order: 0; }
     }
     @media (max-width: 480px) {
       .topbar { padding: 6px 10px; gap: 4px; }
@@ -367,6 +385,8 @@
        экране выглядит собранной наспех. Ежедневные — на виду, редкие — за «Ещё».
        Ни один раздел не пропал, они все здесь. #}
     {% import "_icons.html" as ic %}
+    {# На телефоне эта же навигация становится нижней панелью (см. CSS .main-nav). #}
+    <nav class="main-nav" aria-label="Разделы">
     {% if focus_on %}<a href="/admin/focus" class="nav-link">{{ ic.icon('focus') }}Фокус</a>{% endif %}
     {% if workday_on %}<a href="/admin/work" class="nav-link">{{ ic.icon('work') }}Рабочий день</a>{% endif %}
     {% if standalone_crm and not crm_bot_mode %}<a href="/admin/intake" class="nav-link">{{ ic.icon('plus') }}Новое обращение</a>{% endif %}
@@ -386,6 +406,7 @@
         {% endif %}
       </div>
     </details>
+    </nav>
     {% else %}
     {% if focus_on %}<a href="/admin/focus" class="nav-link">🎯 Фокус</a>{% endif %}
     {% if workday_on %}<a href="/admin/work" class="nav-link">🗂 Рабочий день</a>{% endif %}
