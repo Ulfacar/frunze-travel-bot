@@ -385,24 +385,29 @@
        экране выглядит собранной наспех. Ежедневные — на виду, редкие — за «Ещё».
        Ни один раздел не пропал, они все здесь. #}
     {% import "_icons.html" as ic %}
+    {# Текущий раздел подсвечен по пути запроса: на телефоне это единственный ориентир, где ты. #}
+    {% set here = request.url.path if request else '' %}
+    {% macro nl(href, name, label) -%}
+    <a href="{{ href }}" class="nav-link{% if here == href or (href != '/admin' and here.startswith(href)) %} on{% endif %}"{% if here == href or (href != '/admin' and here.startswith(href)) %} aria-current="page"{% endif %}>{{ ic.icon(name) }}{{ label }}</a>
+    {%- endmacro %}
     {# На телефоне эта же навигация становится нижней панелью (см. CSS .main-nav). #}
     <nav class="main-nav" aria-label="Разделы">
-    {% if focus_on %}<a href="/admin/focus" class="nav-link">{{ ic.icon('focus') }}Фокус</a>{% endif %}
-    {% if workday_on %}<a href="/admin/work" class="nav-link">{{ ic.icon('work') }}Рабочий день</a>{% endif %}
-    {% if standalone_crm and not crm_bot_mode %}<a href="/admin/intake" class="nav-link">{{ ic.icon('plus') }}Новое обращение</a>{% endif %}
-    <a href="/admin" class="nav-link">{{ ic.icon('chat') }}Диалоги</a>
-    <a href="/admin/buyers" class="nav-link">{{ ic.icon('users') }}Покупатели</a>
-    <a href="/admin/calendar" class="nav-link">{{ ic.icon('calendar') }}Календарь</a>
+    {% if focus_on %}{{ nl('/admin/focus','focus','Фокус') }}{% endif %}
+    {% if workday_on %}{{ nl('/admin/work','work','Рабочий день') }}{% endif %}
+    {% if standalone_crm and not crm_bot_mode %}{{ nl('/admin/intake','plus','Новое обращение') }}{% endif %}
+    {{ nl('/admin','chat','Диалоги') }}
+    {{ nl('/admin/buyers','users','Покупатели') }}
+    {{ nl('/admin/calendar','calendar','Календарь') }}
     <details class="more-nav">
       <summary class="nav-link">{{ ic.icon('list') }}Ещё</summary>
       <div class="more-pop">
-        <a href="/admin/morning" class="nav-link">{{ ic.icon('flame') }}Горячий лист</a>
+        {{ nl('/admin/morning','flame','Горячий лист') }}
         {% if is_admin|default(false) %}
-        <a href="/admin/faq" class="nav-link">{{ ic.icon('faq') }}FAQ-правила</a>
-        <a href="/admin/analytics" class="nav-link">{{ ic.icon('chart') }}Аналитика</a>
-        {% if not standalone_crm %}<a href="/admin/cards" class="nav-link">{{ ic.icon('cards') }}Карточки Bitrix</a>
-        <a href="/admin/system" class="nav-link">{{ ic.icon('settings') }}Статус системы</a>{% endif %}
-        <a href="/admin/audit" class="nav-link">{{ ic.icon('file') }}Аудит-лог</a>
+        {{ nl('/admin/faq','faq','FAQ-правила') }}
+        {{ nl('/admin/analytics','chart','Аналитика') }}
+        {% if not standalone_crm %}{{ nl('/admin/cards','cards','Карточки Bitrix') }}
+        {{ nl('/admin/system','settings','Статус системы') }}{% endif %}
+        {{ nl('/admin/audit','file','Аудит-лог') }}
         {% endif %}
       </div>
     </details>
