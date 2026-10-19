@@ -10,25 +10,28 @@
     .card { width:340px; background:var(--surface); border:1px solid var(--border);
             border-radius:16px; padding:28px; box-shadow:0 10px 30px rgba(15,23,42,.08); }
     .logo-xl { width:44px; height:44px; border-radius:12px; margin:0 auto 14px;
-               background:linear-gradient(135deg,#2563EB,#059669); display:grid; place-items:center;
-               color:#fff; font-weight:800; font-size:20px; }
+               background:linear-gradient(135deg,var(--accent),var(--green)); display:grid; place-items:center;
+               color:var(--on-accent,#fff); font-weight:800; font-size:20px; }
     h1 { font-size:18px; text-align:center; margin:0 0 4px; }
     .sub { text-align:center; color:var(--muted); font-size:13px; margin:0 0 20px; }
     label { display:block; font-size:12px; color:var(--muted); margin:12px 0 6px; }
-    input { width:100%; padding:11px 12px; background:#F8FAFC; border:1px solid var(--border);
-            border-radius:10px; color:var(--text); font-size:14px; }
-    input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+    /* 20.10: поля и кнопки только на токенах — в тёмной теме белое поле с светлым текстом
+       делало ввод невидимым (скриншот Алана). */
+    input { width:100%; padding:11px 12px; background:var(--surface-2); border:1px solid var(--border);
+            border-radius:10px; color:var(--text); font-size:16px; }
+    input::placeholder { color:var(--faint); }
+    input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
     button { width:100%; margin-top:18px; padding:12px; border:0; border-radius:10px;
-             background:var(--accent); color:#fff; font-weight:700; font-size:14px; cursor:pointer;
+             background:var(--accent); color:var(--on-accent,#fff); font-weight:700; font-size:16px; cursor:pointer;
              transition:background 180ms; }
     button:hover { background:var(--accent-2); }
     .err { margin-top:14px; color:var(--hot); font-size:13px; text-align:center; }
     .demo { margin-top:20px; padding-top:16px; border-top:1px dashed var(--border); }
     .demo-l { text-align:center; color:var(--muted); font-size:12px; margin-bottom:10px; }
     .demo-btns { display:flex; flex-direction:column; gap:8px; }
-    .demo-btns button { margin:0; padding:10px; background:#F8FAFC; color:var(--text);
+    .demo-btns button { margin:0; padding:10px; background:var(--surface-2); color:var(--text);
                         border:1px solid var(--border); font-weight:600; }
-    .demo-btns button:hover { background:#EEF2FF; border-color:var(--accent); }
+    .demo-btns button:hover { background:var(--accent-soft); border-color:var(--accent); }
 </style>
 {% if standalone_crm %}<style>
     .card { width:380px; max-width:calc(100vw - 32px); box-shadow:none; }
