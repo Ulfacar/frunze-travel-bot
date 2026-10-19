@@ -65,6 +65,11 @@ DOMAIN_TABLES = {
     "entry_portal_receipts", "entry_portal_actions",
     "entry_interviews", "entry_interview_events",
     "entry_quote_revisions", "entry_channel_stops", "entry_notification_drafts", "entry_dialogue_stop_causes",
+    # 0036–0043: типизированный диалог, предварительная карточка, решения специалиста,
+    # условные проверки, фактические даты и ручные проверки SOP.
+    "entry_dialogue_events", "entry_dialogue_sessions", "service_case_openings",
+    "specialist_decision_events", "entry_work_review_events", "entry_conditional_evidence",
+    "entry_anchor_events", "entry_anchor_pins", "entry_sop_review_evidence",
 }
 LEGACY_TABLES = {
     "deals", "conversations", "messages", "audit_log", "app_flags", "faq_entries",
