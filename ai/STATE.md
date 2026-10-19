@@ -1,4 +1,4 @@
-# Current state — 19.10.2026
+# Current state — 20.10.2026
 
 История (полный прежний STATE, без потерь): `ai/STATE-history.md`.
 
@@ -16,6 +16,11 @@
   (9 этапов по ТЗ §7.4, версия 1 неизменяема). Остальные 7 продуктов без процесса — в формах договора не
   показываются. KG-блок (`admin_kg_entry_enabled`) и `pilot_reply_alert_enabled`, `sale_by_full_payment_enabled`,
   `sale_check_panel_contract_enabled` — по-прежнему OFF. Откат показа — те же тумблеры OFF.
+- **20.10 ~01:20: редизайн панели v2 на проде, коммит `b2700c9`** (после `3e2cf50`, фикс логина).
+  Дизайн-система `docs/design-system/frunze-panel/MASTER.md` (скилл `ui-ux-pro-max`, стиль
+  Data-Dense Dashboard, navy `#1E40AF` / тёмная `#8FB4FF`, системный шрифт, иконки `_icons.html`).
+  Handoff: `ai/handoffs/2026-10-20-0120-panel-redesign-v2.md`. Откат вида: тумблер
+  `admin_new_look_enabled` OFF (старый вид байт-в-байт) или `rollback_prod.sh 3e2cf50`.
 - `deploy_prod.sh` миграции не запускает — ручной шаг (порядок в handoff).
 - 🔴 Туровые профили Wappi не авторизованы с 17.10 (401, сообщений по турам 0) — кабинет Wappi, Алан в курсе.
 - `crm.frunzetravel.kg` → панель бота (только `/admin`, остальное 404). Отдельная CRM R9 остановлена, том сохранён. Откат nginx: бэкап `/root/crm.frunzetravel.kg.nginx.bak.20261014-014947-before-bot-panel`.
