@@ -1,120 +1,131 @@
 {% extends "base.html" %}
+{% import "_icons.html" as ic %}
 {% block title %}Frunze — календарь{% endblock %}
 {% block head %}
 <style>
+/* 20.10: календарь на токенах оболочки (светлая и тёмная тема), иконки из _icons.html. */
 .muted { color:var(--muted); }
     .spacer { flex:1; }
-    .wrap { max-width:900px; margin:0 auto; padding:16px 16px 60px; }
+    .wrap { max-width:900px; margin:0 auto; padding:var(--space-4, 16px) var(--space-4, 16px) 60px; }
     .wrap.wide { max-width:1240px; }
+    .ic { width:16px; height:16px; flex:none; }
 
     /* --- шапка дня --------------------------------------------------------- */
-    .dayhead { background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    .dayhead { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
                padding:16px 18px; margin-bottom:14px; }
     .dayhead .row1 { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-    .dayhead h1 { margin:0; font-size:22px; font-weight:800; letter-spacing:-.2px; }
-    .badge-today { background:#DBEAFE; color:#1D4ED8; font-size:12px; font-weight:700;
-                   padding:3px 9px; border-radius:999px; }
+    .dayhead h1 { margin:0; font-size:22px; font-weight:600; letter-spacing:-.01em; }
+    .badge-today { background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:600;
+                   padding:3px 10px; border-radius:999px; }
     .stats { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
     .stat { display:flex; align-items:baseline; gap:7px; border:1px solid var(--border);
-            border-radius:11px; padding:7px 12px; background:#F8FAFC; }
+            border-radius:var(--r); padding:7px 12px; background:var(--surface-2); color:var(--text); }
     .stat b { font-size:17px; }
-    .stat.red { border-color:#FCA5A5; background:#FEF2F2; color:#B91C1C; }
-    .stat.green { border-color:#A7F3D0; background:#ECFDF5; color:#047857; }
-    .pbar { height:7px; border-radius:99px; background:#E2E8F0; margin-top:14px; overflow:hidden; }
+    .stat.red { border-color:transparent; background:var(--hot-soft); color:var(--hot); }
+    .stat.green { border-color:transparent; background:var(--green-soft); color:var(--green); }
+    .pbar { height:6px; border-radius:99px; background:var(--surface-2); margin-top:14px; overflow:hidden; }
     .pbar i { display:block; height:100%; background:var(--green); border-radius:99px; }
 
     .bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
-    .seg { display:inline-flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-    .seg a { padding:8px 15px; text-decoration:none; color:var(--text); font-weight:600; font-size:14px; background:var(--surface); }
-    .seg a.on { background:var(--accent); color:#fff; }
+    .seg { display:inline-flex; border:1px solid var(--border-2); border-radius:var(--r); overflow:hidden; }
+    .seg a { padding:8px 15px; min-height:40px; display:inline-flex; align-items:center; text-decoration:none;
+             color:var(--text); font-weight:600; font-size:14px; background:var(--surface); }
+    .seg a.on { background:var(--accent); color:var(--on-accent,#fff); }
     .nav { display:inline-flex; gap:6px; }
-    .nav a { display:inline-flex; align-items:center; justify-content:center; min-width:36px; height:36px;
-             padding:0 12px; border:1px solid var(--border); border-radius:10px; background:var(--surface);
+    .nav a { display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:40px;
+             padding:0 12px; border:1px solid var(--border-2); border-radius:var(--r); background:var(--surface);
              color:var(--text); text-decoration:none; font-weight:600; }
+    .nav a:hover, .seg a:hover:not(.on) { background:var(--surface-2); }
 
     /* --- секции ------------------------------------------------------------ */
     .sec { margin:20px 0 10px; display:flex; align-items:center; gap:9px; }
-    .sec h2 { margin:0; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); }
-    .sec .n { font-size:12px; color:var(--muted); background:#E2E8F0; border-radius:99px; padding:1px 8px; font-weight:700; }
-    .sec.danger h2 { color:#B91C1C; } .sec.danger .n { background:#FEE2E2; color:#B91C1C; }
+    .sec h2 { margin:0; font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+    .sec .n { font-size:12px; color:var(--muted); background:var(--surface-2); border-radius:99px; padding:1px 8px; font-weight:600; }
+    .sec.danger h2 { color:var(--hot); } .sec.danger .n { background:var(--hot-soft); color:var(--hot); }
 
     /* --- карточка задачи --------------------------------------------------- */
     .task { display:flex; gap:14px; background:var(--surface); border:1px solid var(--border);
-            border-left:5px solid var(--accent); border-radius:14px; padding:13px 15px; margin-bottom:10px; }
+            border-left:4px solid var(--accent); border-radius:var(--r-lg); padding:13px 15px; margin-bottom:10px; }
     .task.meeting { border-left-color:var(--green); }
     .task.office_visit { border-left-color:var(--amber); }
-    .task.followup { border-left-color:#7C3AED; }
+    .task.followup { border-left-color:var(--accent-2); }
     .task.other { border-left-color:var(--muted); }
-    .task.is-overdue { border-left-color:var(--red); background:#FEF2F2; }
-    .task.is-next { box-shadow:0 0 0 2px rgba(37,99,235,.18); }
-    .task.is-done { opacity:.62; border-left-color:#CBD5E1; }
+    .task.is-overdue { border-left-color:var(--hot); background:var(--hot-soft); }
+    .task.is-next { box-shadow:0 0 0 2px var(--accent-soft); }
+    .task.is-done { opacity:.7; border-left-color:var(--border-2); }
     .task.is-done .name { text-decoration:line-through; }
     .when { min-width:62px; text-align:center; }
-    .when .hh { font-family:var(--mono); font-weight:700; font-size:18px; line-height:1.15; }
+    .when .hh { font-weight:700; font-size:18px; line-height:1.15; font-variant-numeric:tabular-nums; }
     .when .any { font-size:11px; color:var(--muted); line-height:1.25; }
-    .when .kd { font-size:18px; }
+    .when .any.overdue-date { color:var(--hot); font-weight:600; }
+    .when .kd { display:inline-grid; place-items:center; color:var(--muted); margin-top:4px; }
+    .when .kd .ic { width:18px; height:18px; }
     .body { flex:1; min-width:0; }
     .line { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
-    .name { font-weight:700; font-size:16px; }
-    .tel { font-family:var(--mono); font-size:14px; text-decoration:none; font-weight:600; }
-    .chip { font-size:11px; padding:2px 8px; border-radius:8px; background:#EEF2F7; color:#334155; font-weight:600; }
-    .chip.hi { background:#FEE2E2; color:#B91C1C; }
-    .chip.wait { background:#FEF3C7; color:#92400E; }
-    .chip.mgr { background:#E0F2FE; color:#075985; font-family:var(--mono); }
+    .name { font-weight:600; font-size:16px; }
+    .tel { font-variant-numeric:tabular-nums; font-size:14px; text-decoration:none; font-weight:600; }
+    .chip { font-size:12px; padding:2px 8px; border-radius:999px; background:var(--surface-2); color:var(--muted); font-weight:600; }
+    .chip.hi { background:var(--hot-soft); color:var(--hot); }
+    .chip.wait { background:var(--warm-soft); color:var(--warm); }
+    .chip.mgr { background:var(--accent-soft); color:var(--accent); }
     .note { margin-top:6px; font-size:14px; }
     .ctx { margin-top:4px; font-size:13px; color:var(--muted); }
     .ctx .q { font-style:italic; }
 
     .acts { display:flex; gap:7px; flex-wrap:wrap; margin-top:11px; align-items:center; }
     .acts form { margin:0; }
-    .btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--surface);
-           color:var(--text); border-radius:10px; padding:8px 12px; font:inherit; font-size:13px; font-weight:600;
-           text-decoration:none; cursor:pointer; white-space:nowrap; }
-    .btn:hover { background:#F8FAFC; }
-    .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
-    .btn.primary:hover { filter:brightness(1.06); }
-    .btn.wa { background:#25D366; border-color:#25D366; color:#062; }
-    .btn.ok { background:#ECFDF5; border-color:#A7F3D0; color:#047857; }
-    .btn.del { color:#B91C1C; }
-    .btn.sm { padding:6px 10px; font-size:12px; }
+    .btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border-2); background:var(--surface);
+           color:var(--text); border-radius:var(--r-sm); padding:8px 12px; min-height:40px; font:inherit; font-size:13px; font-weight:600;
+           text-decoration:none; cursor:pointer; white-space:nowrap; width:auto; }
+    .btn:hover { background:var(--surface-2); }
+    .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent,#fff); }
+    .btn.primary:hover { background:var(--accent-2); }
+    .btn.wa { background:var(--green-soft); border-color:transparent; color:var(--green); }
+    .btn.ok { background:var(--green-soft); border-color:transparent; color:var(--green); }
+    .btn.del { color:var(--hot); }
+    .btn.sm { padding:6px 10px; font-size:12px; min-height:36px; }
     .sep { width:1px; height:22px; background:var(--border); margin:0 3px; }
 
     .move { position:relative; }
     .move summary { list-style:none; }
     .move summary::-webkit-details-marker { display:none; }
     .move .pop { position:absolute; z-index:15; top:calc(100% + 6px); left:0; background:var(--surface);
-                 border:1px solid var(--border); border-radius:12px; padding:11px; box-shadow:0 12px 28px rgba(15,23,42,.14);
+                 border:1px solid var(--border); border-radius:var(--r); padding:11px; box-shadow:var(--shadow);
                  display:flex; gap:7px; align-items:center; }
-    .move input { border:1px solid var(--border); border-radius:9px; padding:7px 9px; font:inherit; font-size:13px; }
+    .move input { border:1px solid var(--border-2); border-radius:var(--r-sm); padding:7px 9px; font:inherit; font-size:14px;
+                  background:var(--surface); color:var(--text); }
 
-    .empty { background:var(--surface); border:1px dashed var(--border); border-radius:14px;
+    .empty { background:var(--surface); border:1px dashed var(--border-2); border-radius:var(--r-lg);
              padding:26px; text-align:center; color:var(--muted); }
-    .empty .big { font-size:34px; margin-bottom:8px; }
+    .empty .big { display:grid; place-items:center; margin-bottom:8px; color:var(--faint); }
+    .empty .big .ic { width:34px; height:34px; }
 
     /* --- добавить задачу --------------------------------------------------- */
-    .add { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:14px; }
-    .add summary { cursor:pointer; padding:12px 15px; font-weight:700; list-style:none; }
+    .add { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); margin-bottom:14px; }
+    .add summary { cursor:pointer; padding:12px 15px; font-weight:600; list-style:none; display:flex; align-items:center; gap:8px; }
     .add summary::-webkit-details-marker { display:none; }
     .add form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:0 15px 14px; }
-    .add input, .add select { border:1px solid var(--border); border-radius:10px; padding:9px 11px; font:inherit; font-size:14px; }
+    .add input, .add select { border:1px solid var(--border-2); border-radius:var(--r-sm); padding:9px 11px; font:inherit; font-size:16px;
+                              background:var(--surface); color:var(--text); min-height:40px; }
     .add input.grow { flex:1; min-width:190px; }
 
     /* --- неделя ------------------------------------------------------------ */
     .grid { display:grid; gap:11px; grid-template-columns:repeat(7, minmax(0,1fr)); }
-    .col { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:11px; min-height:130px; }
-    .col.today { border-color:var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
+    .col { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:11px; min-height:130px; }
+    .col.today { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
     .col-h { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px; }
-    .col-h a { text-decoration:none; font-weight:700; color:var(--text); }
-    .col-h .dt { color:var(--muted); font-size:12px; font-family:var(--mono); }
-    .mini { border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:9px;
+    .col-h a { text-decoration:none; font-weight:600; color:var(--text); }
+    .col-h .dt { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
+    .mini { border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:var(--r-sm);
             padding:6px 8px; margin-bottom:6px; font-size:13px; }
     .mini.meeting { border-left-color:var(--green); } .mini.office_visit { border-left-color:var(--amber); }
-    .mini.followup { border-left-color:#7C3AED; } .mini.other { border-left-color:var(--muted); }
-    .mini .t { font-family:var(--mono); font-weight:700; font-size:12px; }
+    .mini.followup { border-left-color:var(--accent-2); } .mini.other { border-left-color:var(--muted); }
+    .mini .t { font-weight:700; font-size:12px; font-variant-numeric:tabular-nums; }
     .mini a { text-decoration:none; color:var(--text); display:block; }
     .mini .nm { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
     .legend { display:flex; gap:14px; flex-wrap:wrap; color:var(--muted); font-size:12px; margin-top:18px; }
+    .legend span { display:inline-flex; align-items:center; gap:5px; }
 
     @media (max-width:900px) { .grid { grid-template-columns:repeat(2, minmax(0,1fr)); } }
     @media (max-width:640px) {
@@ -125,6 +136,7 @@
       .btn { padding:9px 12px; }         /* пальцем — не мышкой */
       .grid { grid-template-columns:1fr; }
     }
+    @media (prefers-reduced-motion: reduce) { .btn, .task { transition:none; } }
 </style>
 {% if standalone_crm %}<style>
     .stat, .sec .n { background:var(--surface-2); color:var(--text); }
@@ -162,8 +174,8 @@
                         {{ 'is-next' if t.id == next_id and not t.overdue else '' }}
                         {{ 'is-done' if t.done else '' }}">
       <div class="when">
-        {% if t.has_time %}<div class="hh">{{ t.time }}</div>{% else %}<div class="kd">{{ t.kind_label.split(' ')[0] }}</div>{% endif %}
-        {% if t.overdue %}<div class="any" style="color:#B91C1C">{{ t.date_label }}</div>
+        {% if t.has_time %}<div class="hh">{{ t.time }}</div>{% else %}<div class="kd" title="{{ t.kind_label }}">{{ ic.icon({"call":"phone","meeting":"users","office_visit":"building","followup":"refresh","checkin":"plane","departure":"plane","review_request":"star","complaint":"alert"}.get(t.kind, "flag"), 18) }}</div>{% endif %}
+        {% if t.overdue %}<div class="any overdue-date">{{ t.date_label }}</div>
         {% elif not t.has_time %}<div class="any">в течение дня</div>{% endif %}
       </div>
       <div class="body">
@@ -182,34 +194,34 @@
 
         {% if not t.done %}
         <div class="acts">
-          {% if t.tel %}<a class="btn primary" href="{{ t.tel }}">📞 Позвонить</a>{% endif %}
-          {% if t.wa %}<a class="btn wa" href="{{ t.wa }}" target="_blank" rel="noopener">💬 WhatsApp</a>{% endif %}
+          {% if t.tel %}<a class="btn primary" href="{{ t.tel }}">{{ ic.icon("phone", 16) }}Позвонить</a>{% endif %}
+          {% if t.wa %}<a class="btn wa" href="{{ t.wa }}" target="_blank" rel="noopener">{{ ic.icon("whatsapp", 16) }}WhatsApp</a>{% endif %}
           {% if t.user_id %}<a class="btn" href="/admin?open={{ t.user_id }}">{{ 'Карточка' if standalone_crm and not crm_bot_mode else 'Переписка' }} →</a>{% endif %}
           <span class="sep"></span>
           <form method="post" action="/admin/calendar/task/{{ t.id }}/complete">
             <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
-            <button class="btn ok" type="submit">✅ Сделано</button>
+            <button class="btn ok" type="submit">{{ ic.icon("check", 16) }}Сделано</button>
           </form>
           {% if t.overdue %}
           <form method="post" action="/admin/calendar/task/{{ t.id }}/snooze">
             <input type="hidden" name="mode" value="today">
             <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
-            <button class="btn sm" type="submit">↪ На сегодня</button>
+            <button class="btn sm" type="submit">{{ ic.icon("refresh", 16) }}На сегодня</button>
           </form>
           {% else %}
           <form method="post" action="/admin/calendar/task/{{ t.id }}/snooze">
             <input type="hidden" name="mode" value="h2">
             <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
-            <button class="btn sm" type="submit">🕑 +2 ч</button>
+            <button class="btn sm" type="submit">{{ ic.icon("clock", 16) }}+2 ч</button>
           </form>
           {% endif %}
           <form method="post" action="/admin/calendar/task/{{ t.id }}/snooze">
             <input type="hidden" name="mode" value="tomorrow">
             <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
-            <button class="btn sm" type="submit">📅 Завтра</button>
+            <button class="btn sm" type="submit">{{ ic.icon("calendar", 16) }}Завтра</button>
           </form>
           <details class="move">
-            <summary class="btn sm">🗓 Другой день</summary>
+            <summary class="btn sm">{{ ic.icon("calendar", 16) }}Другой день</summary>
             <div class="pop">
               <form method="post" action="/admin/calendar/task/{{ t.id }}/reschedule" style="display:flex;gap:7px;align-items:center">
                 <input type="date" name="scheduled_date" value="{{ t.date_iso }}" required>
@@ -222,7 +234,7 @@
           <form method="post" action="/admin/calendar/task/{{ t.id }}/cancel"
                 onsubmit="return confirm('Отменить задачу?')">
             <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
-            <button class="btn del sm" type="submit" title="Отменить">✕</button>
+            <button class="btn del sm" type="submit" title="Отменить" aria-label="Отменить">{{ ic.icon("x", 16) }}</button>
           </form>
         </div>
         {% endif %}
@@ -245,7 +257,7 @@
     </div>
 
     <details class="add">
-      <summary>➕ Добавить задачу</summary>
+      <summary>{{ ic.icon("plus", 16) }}Добавить задачу</summary>
       <form method="post" action="/admin/calendar/task/create">
         <input class="grow" type="tel" name="phone" placeholder="{% if standalone_crm %}+996 700 123 456{% else %}Номер клиента, напр. 0555 12 34 56{% endif %}" aria-label="Телефон клиента" required>
         <select name="kind">
@@ -281,7 +293,7 @@
 
     {% if not overdue and not timed and not untimed %}
     <div class="empty">
-      <div class="big">{{ '☕' if n_done else '📭' }}</div>
+      <div class="big">{{ ic.icon('check' if n_done else 'archive', 34) }}</div>
       {% if n_done %}Все задачи на день закрыты. {{ n_done }} — молодец.
       {% else %}На этот день задач нет.<br>Поставьте звонок кнопкой «Добавить задачу» или из карточки клиента.{% endif %}
     </div>
@@ -289,7 +301,7 @@
 
     {% if done %}
     <details style="margin-top:22px">
-      <summary class="muted" style="cursor:pointer;font-weight:600">✅ Сделано{{ ' сегодня' if is_today else '' }} ({{ done|length }})</summary>
+      <summary class="muted" style="cursor:pointer;font-weight:600">{{ ic.icon("check", 16) }} Сделано{{ ' сегодня' if is_today else '' }} ({{ done|length }})</summary>
       <div style="margin-top:10px">{% for t in done %}{{ task_card(t) }}{% endfor %}</div>
     </details>
     {% endif %}
@@ -323,7 +335,7 @@
     {% endif %}
 
     <div class="legend">
-      {% for key, label in kind_labels %}<span>{{ label }}</span>{% endfor %}
+      {% for key, label in kind_labels %}<span>{{ ic.icon({"call":"phone","meeting":"users","office_visit":"building","followup":"refresh","checkin":"plane","departure":"plane","review_request":"star","complaint":"alert"}.get(key, "flag"), 14) }}{{ label.split(" ", 1)[1] if " " in label else label }}</span>{% endfor %}
       <span>· задачи ставятся здесь или в карточке клиента</span>
     </div>
   </div>

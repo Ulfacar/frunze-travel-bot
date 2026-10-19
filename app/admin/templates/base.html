@@ -175,128 +175,155 @@
       .wrap { padding: 12px; }
     }
     {% if new_look %}
-    /* ---------- Новый визуальный язык (02.10.2026, тумблер admin_new_look_enabled) ----------
-       Панель — рабочее место на весь день и диспетчерская ночью, поэтому тёмная тема здесь
-       равноправный режим, а не приложение. Фирменный цвет — глубокая бирюза из макетов
-       07.2026; ожидание, срочность и живой менеджер говорят своими тёплыми цветами, чтобы
-       акцент не спорил со статусами. Переопределяем ТОЛЬКО токены и немного геометрии —
-       разметка и классы общие с прежним видом, поэтому выключение возвращает его дословно. */
+    /* ---------- Визуальный язык панели v2 (20.10.2026, тумблер admin_new_look_enabled) ----------
+       Дизайн-система: docs/design-system/frunze-panel/MASTER.md (ui-ux-pro-max: «Data-Dense
+       Dashboard», минимализм, корпоративный navy + серый, янтарь для ожидания). Одна
+       оболочка, два равноправных режима: день (светлая) и ночная диспетчерская (тёмная).
+       Переопределяем ТОЛЬКО токены и геометрию — разметка и классы общие с прежним видом,
+       выключение тумблера возвращает его дословно. Все цвета — токены, в компонентах hex нет. */
     :root {
-      --bg: #F6F7F8; --surface: #FFFFFF; --surface-2: #F0F2F4; --col: #F6F7F8;
-      --elev: #FFFFFF; --elev-hover: #F6F7F8;
-      --border: #E1E5E9; --border-2: #C8CFD6;
-      --button-hover: #E5E9ED; --hot-hover: #8F2721;
-      --text: #29333D; --muted: #596570; --faint: #65717C;
-      --accent: #0E7C86; --accent-2: #0A626A; --accent-soft: rgba(14,124,134,.10);
-      --brand: #0E7C86; --brand-soft: rgba(14,124,134,.10);
-      --warm: #9A5B11; --warm-soft: rgba(154,91,17,.12); --amber: #9A5B11;
-      --hot: #A8332C; --hot-soft: rgba(168,51,44,.11); --red: #A8332C;
-      --green: #1F6B4F; --green-soft: rgba(31,107,79,.11); --manager: #1F6B4F;
-      --good: #1F6B4F;
-      --font-ui: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
-      --mono: var(--font-ui);
-      --r-sm: 6px; --r: 8px; --r-lg: 10px;
-      --shadow: 0 4px 16px rgba(29,39,49,.08);
-      --t: 170ms cubic-bezier(.4,0,.2,1);
+      --bg: #F5F7FA; --surface: #FFFFFF; --surface-2: #EEF2F7; --col: #F5F7FA;
+      --elev: #FFFFFF; --elev-hover: #F5F7FA;
+      --border: #E2E8F0; --border-2: #CBD5E1;
+      --button-hover: #E2E8F0; --hot-hover: #991B1B;
+      --text: #0F172A; --muted: #475569; --faint: #5B6B80;
+      --accent: #1E40AF; --accent-2: #1E3A8A; --accent-soft: rgba(30,64,175,.10);
+      --brand: #1E40AF; --brand-soft: rgba(30,64,175,.10);
+      --warm: #A14A07; --warm-soft: rgba(217,119,6,.14); --amber: #A14A07;
+      --hot: #B91C1C; --hot-soft: rgba(220,38,38,.10); --red: #B91C1C;
+      --green: #047857; --green-soft: rgba(5,150,105,.12); --manager: #047857;
+      --good: #047857;
+      --font-ui: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Inter', Roboto, Arial, sans-serif;
+      --mono: ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+      --r-sm: 6px; --r: 8px; --r-lg: 12px;
+      --shadow: 0 1px 2px rgba(15,23,42,.05), 0 4px 16px rgba(15,23,42,.06);
+      --t: 160ms cubic-bezier(.4,0,.2,1);
+      --focus: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent);
+      /* Шкала отступов и шрифтов: плотность 7/10 — рабочий стол, а не лендинг. */
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px;
+      --space-6: 24px; --space-7: 32px; --space-8: 40px;
+      --fs-xs: 12px; --fs-sm: 13px; --fs-md: 15px; --fs-lg: 17px; --fs-xl: 22px;
       /* Цвет контента НА цветном фоне: в тёмной теме акцент светлый, и белый текст
-         на нём даёт 2.46:1 при норме 4.5 — там нужен тёмный. */
+         на нём не проходит 4.5 — там нужен тёмный. */
       --on-accent: #FFFFFF; --on-hot: #FFFFFF;
       color-scheme: light;
     }
-    /* Тёмная — не инверсия, а свой набор: фон уходит в сине-зелёный графит, бирюза
-       поднимается в светлоту, чтобы оставаться читаемой. Значения продублированы в двух
-       блоках намеренно: медиа-запрос ловит системную тему, `[data-theme]` — явный выбор,
-       и каждый обязан побеждать в свою сторону. */
+    /* Тёмная — не инверсия, а свой набор: глубокий сине-графитовый фон, светлый navy-акцент.
+       Значения продублированы в двух блоках намеренно: медиа-запрос ловит системную тему,
+       `[data-theme]` — явный выбор, и каждый обязан побеждать в свою сторону. */
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
-        --bg: #0D1415; --surface: #151F21; --surface-2: #1C282A; --col: #121C1D;
-        --elev: #172224; --elev-hover: #1D2A2C;
-        --border: #263436; --border-2: #35474A;
-        --button-hover: #293A3D; --hot-hover: #EDABA5;
-        --text: #E6EDED; --muted: #9FB0B1; --faint: #748482;
-        --accent: #4FB3BF; --accent-2: #6CC6D1; --accent-soft: rgba(79,179,191,.15);
-        --brand: #4FB3BF; --brand-soft: rgba(79,179,191,.15);
-        --warm: #D9A04A; --warm-soft: rgba(217,160,74,.16); --amber: #D9A04A;
-        --hot: #E2847B; --hot-soft: rgba(226,132,123,.15); --red: #E2847B;
-        --green: #68BE98; --green-soft: rgba(104,190,152,.15); --manager: #68BE98;
-        --good: #68BE98;
-        --shadow: 0 1px 2px rgba(0,0,0,.40), 0 12px 32px rgba(0,0,0,.35);
-        --on-accent: #0D1415; --on-hot: #0D1415;
+        --bg: #0B1220; --surface: #111A2E; --surface-2: #18233A; --col: #0E1627;
+        --elev: #141E33; --elev-hover: #1B2740;
+        --border: #243049; --border-2: #334155;
+        --button-hover: #223050; --hot-hover: #FBC1BB;
+        --text: #E2E8F0; --muted: #A3B1C6; --faint: #8593AB;
+        --accent: #8FB4FF; --accent-2: #B3CBFF; --accent-soft: rgba(143,180,255,.16);
+        --brand: #8FB4FF; --brand-soft: rgba(143,180,255,.16);
+        --warm: #F5B155; --warm-soft: rgba(245,177,85,.16); --amber: #F5B155;
+        --hot: #F08A82; --hot-soft: rgba(240,138,130,.16); --red: #F08A82;
+        --green: #5FD3A0; --green-soft: rgba(95,211,160,.16); --manager: #5FD3A0;
+        --good: #5FD3A0;
+        --shadow: 0 1px 2px rgba(0,0,0,.45), 0 10px 28px rgba(0,0,0,.40);
+        --on-accent: #0B1220; --on-hot: #0B1220;
         color-scheme: dark;
       }
     }
     :root[data-theme="dark"] {
-      --bg: #0D1415; --surface: #151F21; --surface-2: #1C282A; --col: #121C1D;
-      --elev: #172224; --elev-hover: #1D2A2C;
-      --border: #263436; --border-2: #35474A;
-      --button-hover: #293A3D; --hot-hover: #EDABA5;
-      --text: #E6EDED; --muted: #9FB0B1; --faint: #748482;
-      --accent: #4FB3BF; --accent-2: #6CC6D1; --accent-soft: rgba(79,179,191,.15);
-      --brand: #4FB3BF; --brand-soft: rgba(79,179,191,.15);
-      --warm: #D9A04A; --warm-soft: rgba(217,160,74,.16); --amber: #D9A04A;
-      --hot: #E2847B; --hot-soft: rgba(226,132,123,.15); --red: #E2847B;
-      --green: #68BE98; --green-soft: rgba(104,190,152,.15); --manager: #68BE98;
-      --good: #68BE98;
-      --shadow: 0 1px 2px rgba(0,0,0,.40), 0 12px 32px rgba(0,0,0,.35);
-      --on-accent: #0D1415; --on-hot: #0D1415;
+      --bg: #0B1220; --surface: #111A2E; --surface-2: #18233A; --col: #0E1627;
+      --elev: #141E33; --elev-hover: #1B2740;
+      --border: #243049; --border-2: #334155;
+      --button-hover: #223050; --hot-hover: #FBC1BB;
+      --text: #E2E8F0; --muted: #A3B1C6; --faint: #8593AB;
+      --accent: #8FB4FF; --accent-2: #B3CBFF; --accent-soft: rgba(143,180,255,.16);
+      --brand: #8FB4FF; --brand-soft: rgba(143,180,255,.16);
+      --warm: #F5B155; --warm-soft: rgba(245,177,85,.16); --amber: #F5B155;
+      --hot: #F08A82; --hot-soft: rgba(240,138,130,.16); --red: #F08A82;
+      --green: #5FD3A0; --green-soft: rgba(95,211,160,.16); --manager: #5FD3A0;
+      --good: #5FD3A0;
+      --shadow: 0 1px 2px rgba(0,0,0,.45), 0 10px 28px rgba(0,0,0,.40);
+      --on-accent: #0B1220; --on-hot: #0B1220;
       color-scheme: dark;
     }
-    /* 12.10: обычный системный шрифт; цифры не требуют отдельного гарнитурного слоя. */
-    body { font-size: 16px; line-height: 1.6; }
+    /* ---- Типографика: системный шрифт, 15px, табличные цифры везде. ---- */
+    body { font-size: var(--fs-md); line-height: 1.5; font-variant-numeric: tabular-nums; }
     input, select, textarea, button { font-family: inherit; }
-    code, pre, kbd { font-family: ui-monospace, Consolas, monospace; }
-    /* Шапка дышит: высота по содержимому, а не фиксированные 58px впритык. */
-    .topbar { height: auto; min-height: 64px; padding: 10px 20px; gap: 10px; flex-wrap: wrap; }
-    .brand .logo { border-radius: 10px; background: var(--accent); box-shadow: none; }
-    .brand small { font-size: 13px; font-weight: 400; }
-    /* Разделы — тихие по умолчанию: подсвечивается тот, где менеджер сейчас. */
-    .nav-link { background: transparent; border-color: transparent; color: var(--muted);
-                font-size: 14px; font-weight: 400; padding: 7px 9px; border-radius: 6px; }
+    code, pre, kbd, .mono { font-family: var(--mono); font-size: .93em; }
+    h1 { font-size: var(--fs-xl); font-weight: 600; letter-spacing: -.01em; }
+    h2 { font-size: var(--fs-lg); font-weight: 600; }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--faint); }
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+    textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: none;
+    }
+    /* ---- Шапка: одна плотная строка, разделы тихие, активный подсвечен. ---- */
+    .topbar { height: auto; min-height: 56px; padding: 6px 20px; gap: 8px; flex-wrap: wrap;
+              border-bottom: 1px solid var(--border); background: var(--surface); }
+    .brand { gap: 10px; }
+    .brand .logo { width: 32px; height: 32px; border-radius: var(--r); background: var(--accent);
+                   color: var(--on-accent); box-shadow: none; }
+    .brand small { font-size: var(--fs-xs); font-weight: 400; color: var(--muted); }
+    .nav-link { display: inline-flex; align-items: center; gap: 8px; min-height: 40px;
+                background: transparent; border: 1px solid transparent; color: var(--muted);
+                font-size: 14px; font-weight: 500; padding: 0 10px; border-radius: var(--r-sm);
+                white-space: nowrap; cursor: pointer; }
+    .nav-link svg { width: 18px; height: 18px; flex: none; }
     .nav-link:hover { background: var(--surface-2); color: var(--text); }
-    .nav-link.on { background: var(--accent-soft); color: var(--accent-2); border-color: transparent; }
-    .tab { font-size: 14px; font-weight: 400; border-radius: 6px; }
-    .tab.active { font-weight: 600; color: var(--accent-2); }
-    .tabs { flex-wrap: wrap; }
-    .me { font-size: 14px; font-weight: 400; }
-    .btn { font-size: 14px; border-radius: 6px; }
-    /* Disabled — состояние действия, а не повод прятать его название.
-       Специфичность сохраняет читаемость и в страницах со своей opacity для .btn. */
+    .nav-link.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
+    .dir-switch { padding: 2px; border-radius: var(--r); }
+    .tabs { flex-wrap: wrap; gap: 2px; }
+    .tab { font-size: 14px; font-weight: 500; border-radius: var(--r-sm); padding: 8px 12px; min-height: 40px;
+           cursor: pointer; }
+    .tab.active { font-weight: 600; color: var(--accent); background: var(--accent-soft); }
+    .tab-badge { font-family: inherit; font-size: var(--fs-xs); }
+    .me { font-size: 14px; font-weight: 500; gap: 8px; }
+    .me .av { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft);
+              border-color: transparent; color: var(--accent); }
+    .search input { border-radius: var(--r-sm); font-size: 14px; background: var(--surface);
+                    border-color: var(--border-2); min-height: 40px; }
+    .search input:focus { box-shadow: none; outline: 2px solid var(--accent); outline-offset: 0; }
+    /* ---- Компоненты. ---- */
+    .panel { box-shadow: none; border-radius: var(--r-lg); }
+    .btn { font-size: 14px; font-weight: 600; border-radius: var(--r-sm); min-height: 40px; padding: 8px 14px; }
+    .btn-ghost { background: var(--surface); border-color: var(--border-2); }
+    .btn-ghost:hover { background: var(--surface-2); }
     :root body :is(button, .btn)[disabled] {
       opacity: 1; color: var(--muted); background: var(--surface-2);
       border-color: var(--border-2); box-shadow: none; cursor: not-allowed;
     }
-    .badge, .tag, .tab-badge { font-size: 12px; }
-    .me .av { border-radius: 9px; background: var(--accent-soft); border-color: transparent;
-              color: var(--accent); }
-    .search input { border-radius: 6px; font-size: 14px; background: var(--surface); }
-    .panel { box-shadow: none; }
-    /* Цифры везде одной ширины: столбец счётчиков не прыгает при обновлении. */
+    .badge, .tag, .tab-badge { font-size: var(--fs-xs); font-weight: 600; border-radius: 999px; padding: 2px 8px; }
+    .tag { font-weight: 500; }
     .count, .stat .n, .time, .ph { font-variant-numeric: tabular-nums; }
-    /* Переключатель темы — рядом с именем менеджера. */
-    .nav-link { white-space: nowrap; }
+    input:not([type=checkbox]):not([type=radio]), select, textarea {
+      accent-color: var(--accent);
+    }
+    input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
     /* «Ещё»: редкие разделы не занимают место, но доступны в один клик. */
     .more-nav { position: relative; }
     .more-nav > summary { list-style: none; cursor: pointer; }
     .more-nav > summary::-webkit-details-marker { display: none; }
-    .more-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 190px;
+    .more-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 210px;
                 display: grid; gap: 2px; padding: 6px; border-radius: var(--r);
                 border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); }
-    .more-pop .nav-link { display: block; }
-    .theme-toggle { width: 34px; height: 34px; display: grid; place-items: center; padding: 0;
-                    border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+    .more-pop .nav-link { display: flex; }
+    .theme-toggle { width: 40px; height: 40px; display: grid; place-items: center; padding: 0;
+                    border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface);
                     color: var(--muted); cursor: pointer; }
     .theme-toggle:hover { background: var(--surface-2); color: var(--text); }
-    .theme-toggle svg { width: 17px; height: 17px; }
+    .theme-toggle svg { width: 18px; height: 18px; }
+    .me form .btn { min-height: 36px; }
     /* Телефон: блок нового вида идёт после общих правил, поэтому свои отступы для
        узкого экрана он обязан объявить сам — иначе шапка станет тесной. */
     @media (max-width: 760px) {
-      .topbar { padding: 8px 12px; gap: 8px; min-height: 0; }
-      .nav-link { padding: 8px 9px; font-size: 14px; }
+      .topbar { padding: 6px 12px; gap: 6px; min-height: 0; }
+      .nav-link { padding: 0 8px; font-size: 14px; }
+      .nav-link svg { display: none; }
       .more-pop { right: auto; left: 0; }
     }
     @media (max-width: 480px) {
-      .topbar { padding: 7px 10px; gap: 6px; }
-      .nav-link { padding: 7px 8px; font-size: 14px; }
+      .topbar { padding: 6px 10px; gap: 4px; }
+      .nav-link { padding: 0 7px; font-size: 14px; }
       .brand small { display: none; }
       .me span:first-child { display: none; }
     }
@@ -339,22 +366,23 @@
     {# Разделы без эмодзи: в карточках у нас настоящие иконки, и смесь двух языков на одном
        экране выглядит собранной наспех. Ежедневные — на виду, редкие — за «Ещё».
        Ни один раздел не пропал, они все здесь. #}
-    {% if focus_on %}<a href="/admin/focus" class="nav-link">Фокус</a>{% endif %}
-    {% if workday_on %}<a href="/admin/work" class="nav-link">Рабочий день</a>{% endif %}
-    {% if standalone_crm and not crm_bot_mode %}<a href="/admin/intake" class="nav-link">Новое обращение</a>{% endif %}
-    <a href="/admin" class="nav-link">Диалоги</a>
-    <a href="/admin/buyers" class="nav-link">Покупатели</a>
-    <a href="/admin/calendar" class="nav-link">Календарь</a>
+    {% import "_icons.html" as ic %}
+    {% if focus_on %}<a href="/admin/focus" class="nav-link">{{ ic.icon('focus') }}Фокус</a>{% endif %}
+    {% if workday_on %}<a href="/admin/work" class="nav-link">{{ ic.icon('work') }}Рабочий день</a>{% endif %}
+    {% if standalone_crm and not crm_bot_mode %}<a href="/admin/intake" class="nav-link">{{ ic.icon('plus') }}Новое обращение</a>{% endif %}
+    <a href="/admin" class="nav-link">{{ ic.icon('chat') }}Диалоги</a>
+    <a href="/admin/buyers" class="nav-link">{{ ic.icon('users') }}Покупатели</a>
+    <a href="/admin/calendar" class="nav-link">{{ ic.icon('calendar') }}Календарь</a>
     <details class="more-nav">
-      <summary class="nav-link">Ещё</summary>
+      <summary class="nav-link">{{ ic.icon('list') }}Ещё</summary>
       <div class="more-pop">
-        <a href="/admin/morning" class="nav-link">Горячий лист</a>
+        <a href="/admin/morning" class="nav-link">{{ ic.icon('flame') }}Горячий лист</a>
         {% if is_admin|default(false) %}
-        <a href="/admin/faq" class="nav-link">FAQ-правила</a>
-        <a href="/admin/analytics" class="nav-link">Аналитика</a>
-        {% if not standalone_crm %}<a href="/admin/cards" class="nav-link">Карточки Bitrix</a>
-        <a href="/admin/system" class="nav-link">Статус системы</a>{% endif %}
-        <a href="/admin/audit" class="nav-link">Аудит-лог</a>
+        <a href="/admin/faq" class="nav-link">{{ ic.icon('faq') }}FAQ-правила</a>
+        <a href="/admin/analytics" class="nav-link">{{ ic.icon('chart') }}Аналитика</a>
+        {% if not standalone_crm %}<a href="/admin/cards" class="nav-link">{{ ic.icon('cards') }}Карточки Bitrix</a>
+        <a href="/admin/system" class="nav-link">{{ ic.icon('settings') }}Статус системы</a>{% endif %}
+        <a href="/admin/audit" class="nav-link">{{ ic.icon('file') }}Аудит-лог</a>
         {% endif %}
       </div>
     </details>

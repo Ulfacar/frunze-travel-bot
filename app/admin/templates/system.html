@@ -9,7 +9,7 @@
     .card .l { color:var(--muted); font-size:12.5px; margin-bottom:6px; }
     .card .v { font-size:16px; font-weight:600; display:flex; align-items:center; gap:8px; }
     .dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
-    .ok { background:var(--green); } .bad { background:var(--hot); } .warn { background:var(--warm); } .off { background:#94A3B8; }
+    .ok { background:var(--green); } .bad { background:var(--hot); } .warn { background:var(--warm); } .off { background:var(--faint); }
     .mono { font-family:var(--mono); }
     .muted { color:var(--muted); }
     .panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-top:18px; }
@@ -23,16 +23,16 @@
     .t-title { font-size:15px; font-weight:600; margin-bottom:5px; }
     .t-desc { color:var(--muted); font-size:13px; line-height:1.5; max-width:640px; }
     .state { font-family:var(--mono); font-size:12px; padding:2px 8px; border-radius:6px; }
-    .state.on { background:rgba(5,150,105,.12); color:var(--green); }
-    .state.off { background:#F1F5F9; color:var(--muted); }
+    .state.on { background:var(--green-soft); color:var(--green); }
+    .state.off { background:var(--surface-2); color:var(--muted); }
     .switch { position:relative; display:inline-block; width:50px; height:28px; flex-shrink:0; }
     .switch input { opacity:0; width:0; height:0; }
-    .slider { position:absolute; cursor:pointer; inset:0; background:#CBD5E1; border-radius:28px; transition:.2s; }
+    .slider { position:absolute; cursor:pointer; inset:0; background:var(--border-2); border-radius:28px; transition:.2s; }
     .slider:before { content:""; position:absolute; height:22px; width:22px; left:3px; bottom:3px;
-                     background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+                     background:var(--surface); border-radius:50%; transition:.2s; box-shadow:var(--shadow); }
     .switch input:checked + .slider { background:var(--green); }
     .switch input:checked + .slider:before { transform:translateX(22px); }
-    .switch input:focus-visible + .slider { box-shadow:0 0 0 3px rgba(37,99,235,.25); }
+    .switch input:focus-visible + .slider { box-shadow:0 0 0 3px var(--accent-soft); }
 </style>
 {% endblock %}
 {% block content %}

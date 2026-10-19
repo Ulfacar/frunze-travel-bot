@@ -266,7 +266,7 @@ def test_theme_choice_survives_reload(monkeypatch):
 def test_new_palette_actually_reaches_the_page(monkeypatch):
     """Самое простое и самое важное: включённый тумблер меняет палитру и шрифт."""
     new = _rendered(monkeypatch, True)
-    assert "#0E7C86" in new, "бирюза не доехала до страницы"
+    assert "#1E40AF" in new, "navy-акцент дизайн-системы v2 не доехал до страницы"
     # 12.10: по новой просьбе владельца декоративный Onest заменён системным шрифтом.
     # Старый контракт отката и проверки действий/темы выше остаются обязательными.
     assert "fonts.googleapis.com" not in new, "новый вид всё ещё зависит от внешних шрифтов"
