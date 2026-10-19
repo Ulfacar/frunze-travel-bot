@@ -1,10 +1,17 @@
-# Current state — 15.10.2026
+# Current state — 19.10.2026
 
 История (полный прежний STATE, без потерь): `ai/STATE-history.md`.
 
 ## Прод (не трогать без слова Алана)
-- Бот: ветка `hotfix/panel-safety`, коммит `464a799` (от `913feab`), БД на схеме `e2_payments_0009`. Фикс влит в `fix/tours-search-quality` и `main`, следующий деплой его не потеряет.
-- `crm.frunzetravel.kg` → панель бота (только `/admin`, остальное 404). Отдельная CRM R9 остановлена, том сохранён. Откат: nginx из бэкапа `/root/crm.frunzetravel.kg.nginx.bak.20261014-014947-before-bot-panel`, затем `rollback_prod.sh 913feab`.
+- **19.10 ~23:40 Бишкек: бот переведён на ветку `feat/visa-bitrix-exit`, коммит `773eb46`, БД мигрирована
+  `e2_payments_0009` → `e6_sop_review_evidence_0043` (76 таблиц).** Все новые флаги OFF — поведение для
+  менеджеров и клиентов не изменилось (`/admin/work` 404). Handoff:
+  `ai/handoffs/2026-10-19-2345-deploy-visa-bitrix-exit.md`. Дамп до миграции:
+  `/root/backups/frunze-before-0043-20261019-193324.dump`. Откат кода `rollback_prod.sh 464a799` (старый код
+  живёт на новой схеме), схему не даунгрейдить.
+- `deploy_prod.sh` миграции не запускает — ручной шаг (порядок в handoff).
+- 🔴 Туровые профили Wappi не авторизованы с 17.10 (401, сообщений по турам 0) — кабинет Wappi, Алан в курсе.
+- `crm.frunzetravel.kg` → панель бота (только `/admin`, остальное 404). Отдельная CRM R9 остановлена, том сохранён. Откат nginx: бэкап `/root/crm.frunzetravel.kg.nginx.bak.20261014-014947-before-bot-panel`.
 - Пароли medina/eliza/grisha сменены 14.10, файл `/root/panel-passwords-20261014.txt` (0600) — Алан передаёт сам.
 - Учёт продаж сейчас: `read_back` из Bitrix (рубильник `bitrix_read_back_enabled`, ON) + вечерняя ссылка sale_check.
 
