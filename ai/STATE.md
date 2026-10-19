@@ -9,6 +9,13 @@
   `ai/handoffs/2026-10-19-2345-deploy-visa-bitrix-exit.md`. Дамп до миграции:
   `/root/backups/frunze-before-0043-20261019-193324.dump`. Откат кода `rollback_prod.sh 464a799` (старый код
   живёт на новой схеме), схему не даунгрейдить.
+- **20.10 ~00:40 по слову Алана («делай») включены тумблеры показа** через `/admin/flags/*` (аудит есть):
+  `admin_new_look_enabled`, `admin_chat_redesign_enabled`, `admin_focus_enabled`, `admin_workday_enabled`,
+  `service_cases_enabled`, `panel_send_media_enabled`, `pilot_reply_queue_enabled`. В боевой базе заведены
+  9 продуктов ТЗ (`seed_products`, актор `alan`): процесс опубликован у `tour_package` (сидер) и `visa_usa`
+  (9 этапов по ТЗ §7.4, версия 1 неизменяема). Остальные 7 продуктов без процесса — в формах договора не
+  показываются. KG-блок (`admin_kg_entry_enabled`) и `pilot_reply_alert_enabled`, `sale_by_full_payment_enabled`,
+  `sale_check_panel_contract_enabled` — по-прежнему OFF. Откат показа — те же тумблеры OFF.
 - `deploy_prod.sh` миграции не запускает — ручной шаг (порядок в handoff).
 - 🔴 Туровые профили Wappi не авторизованы с 17.10 (401, сообщений по турам 0) — кабинет Wappi, Алан в курсе.
 - `crm.frunzetravel.kg` → панель бота (только `/admin`, остальное 404). Отдельная CRM R9 остановлена, том сохранён. Откат nginx: бэкап `/root/crm.frunzetravel.kg.nginx.bak.20261014-014947-before-bot-panel`.
