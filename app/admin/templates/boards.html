@@ -403,6 +403,14 @@
     #chat .panel.chat-palma { height:88dvh; max-height:88dvh; border-radius:16px 16px 0 0; }
     #chat:has(.chat-loading-overlay) { min-height:88dvh; }
   }
+  /* Форма файла: своя строка, на телефоне кнопка и подсказка не ломают композер. */
+  .chat-palma .chat-file { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:8px 12px 4px; }
+  .chat-palma .chat-file input[type=file] { flex:1 1 180px; min-width:0; font-size:13px; color:var(--s-ink-2); }
+  .chat-palma .chat-file input[type=file]::file-selector-button { font:inherit; font-weight:600; color:var(--s-ink);
+    background:var(--s-surface-2); border:1px solid var(--s-line); border-radius:8px; padding:8px 12px; min-height:40px;
+    margin-right:10px; cursor:pointer; }
+  .chat-palma .chat-file button { min-height:40px; white-space:nowrap; }
+  @container (max-width: 420px) { .chat-palma .chat-file > * { flex-basis:100%; } }
 </style>
 {% endif %}
 {% if new_look %}

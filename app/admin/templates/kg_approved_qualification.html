@@ -3,9 +3,9 @@
 {% block external_fonts %}{% endblock %}
 {% block title %}Frunze — Проверка варианта въезда{% endblock %}
 {% block head %}<style>
-.kg-route{max-width:850px;margin:auto;padding:24px 16px;line-height:1.6;overflow-wrap:anywhere}.kg-route h1{font-size:clamp(24px,4vw,32px)}.kg-route h2{font-size:21px}.kg-route a{color:var(--accent,#2563eb)}.kg-route section{padding:20px;margin:20px 0;border:1px solid var(--border,#cbd5e1);border-radius:10px;background:var(--surface,#fff)}.kg-route .notice{border-left:4px solid #b7791f}.kg-route dl{margin:0}.kg-route dt{font-weight:600}.kg-route dd{margin:0 0 12px}.kg-route details{margin-top:16px}.kg-route summary{cursor:pointer}.kg-route :focus-visible{outline:3px solid #d97706;outline-offset:3px}
+.kg-route{max-width:850px;margin:auto;padding:24px 16px;line-height:1.6;overflow-wrap:anywhere}.kg-route h1{font-size:clamp(24px,4vw,32px)}.kg-route h2{font-size:21px}.kg-route a{color:var(--accent,var(--accent))}.kg-route section{padding:20px;margin:20px 0;border:1px solid var(--border,var(--border-2));border-radius:10px;background:var(--surface,#fff)}.kg-route .notice{border-left:4px solid var(--warm)}.kg-route dl{margin:0}.kg-route dt{font-weight:600}.kg-route dd{margin:0 0 12px}.kg-route details{margin-top:16px}.kg-route summary{cursor:pointer}.kg-route :focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 @media(max-width:600px){.kg-route{padding:14px 10px}.kg-route section{padding:14px}}
-@media print{html,body{height:auto!important;overflow:visible!important}.topbar,.kg-route nav{display:none!important}.kg-route{padding:0;max-width:none;font-size:10pt;color:#111!important}.kg-route section{background:white!important;border-color:#aaa!important}.kg-route details{display:none}@page{size:A4;margin:14mm}}
+@media print{html,body{height:auto!important;overflow:visible!important}.topbar,.kg-route nav{display:none!important}.kg-route{padding:0;max-width:none;font-size:10pt;color:var(--text)!important}.kg-route section{background:white!important;border-color:var(--faint)!important}.kg-route details{display:none}@page{size:A4;margin:14mm}}
 </style>{% endblock %}
 {% block content %}
 {% set en = report and report.language == 'en' %}

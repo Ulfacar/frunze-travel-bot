@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_icons.html" as ic %}
 {% block title %}Frunze — горячий лист{% endblock %}
 {% block head %}
 <style>
@@ -19,7 +20,7 @@
 
     .feed { display:flex; flex-direction:column; gap:12px; }
     .lead-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;
-                 box-shadow:0 1px 2px rgba(15,23,42,.04); border-left:4px solid var(--border); }
+                 box-shadow:none; border-left:4px solid var(--border); }
     .lead-card.green { border-left-color:var(--green); }
     .lead-card.warm  { border-left-color:var(--amber); }
     .lc-top { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
@@ -27,13 +28,13 @@
     .lc-dir { color:var(--muted); font-size:13px; white-space:nowrap; }
     .lc-meta { display:flex; gap:7px; flex-wrap:wrap; margin:9px 0; }
     .lc-chip { font-family:var(--mono); font-size:13px; font-weight:700; padding:4px 10px; border-radius:8px;
-               background:#EEF2F7; color:var(--text); font-variant-numeric:tabular-nums; }
-    .lc-chip.check { background:#E0F2FE; color:#075985; }
-    .lc-chip.wait  { background:#FEF3C7; color:#92400E; }
-    .lc-chip.wait--late { background:#FEE2E2; color:#B91C1C; }
+               background:var(--surface-2); color:var(--text); font-variant-numeric:tabular-nums; }
+    .lc-chip.check { background:var(--accent-soft); color:var(--accent); }
+    .lc-chip.wait  { background:var(--warm-soft); color:var(--warm); }
+    .lc-chip.wait--late { background:var(--hot-soft); color:var(--hot); }
     .lc-reason { color:var(--muted); font-size:14px; font-style:italic; margin-bottom:12px;
                  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-    .lc-open { border:none; background:var(--accent); color:#fff; font-weight:700; font-size:14px;
+    .lc-open { border:none; background:var(--accent); color:var(--on-accent,#fff); font-weight:700; font-size:14px;
                padding:9px 15px; border-radius:10px; cursor:pointer; font-family:inherit; text-decoration:none;
                display:inline-block; }
     .empty { text-align:center; padding:26px; color:var(--muted); font-size:15px; }
@@ -44,8 +45,8 @@
     <div class="hero">
       <div class="hero-date">Утренний список звонков · {{ b.date_label }}</div>
       <div class="hero-counts">
-        <div class="hc green"><b>{{ b.green_count }}</b><span>готовы 🟢</span></div>
-        <div class="hc warm"><b>{{ b.warm_count }}</b><span>тёплые 🟡</span></div>
+        <div class="hc green"><b>{{ b.green_count }}</b><span>готовы</span></div>
+        <div class="hc warm"><b>{{ b.warm_count }}</b><span>тёплые</span></div>
       </div>
     </div>
 
@@ -92,7 +93,7 @@
     {% endif %}
 
     {% if not b.green and not b.warm %}
-    <div class="empty">Готовых лидов за ночь нет — спокойное утро ☕</div>
+    <div class="empty">Готовых лидов за ночь нет — спокойное утро</div>
     {% endif %}
   </div>
 {% endblock %}

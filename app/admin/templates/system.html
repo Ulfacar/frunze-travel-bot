@@ -104,9 +104,9 @@
         <tr><td>Хранилище состояния</td><td class="mono">{{ s.state_backend }}</td></tr>
         <tr><td>Хранилище панели</td><td class="mono">{{ s.panel_backend }}</td></tr>
         <tr><td>CRM</td><td class="mono">{{ s.crm_backend }}</td></tr>
-        <tr><td>Проверка вебхуков (секрет)</td><td>{{ '✅ включена' if s.webhook_secret_set else '⚠️ выключена' }}</td></tr>
-        <tr><td>Watchdog-алерты</td><td>{{ '✅ настроены' if s.alerts_configured else '— не настроены' }}</td></tr>
-        <tr><td>Автодожим</td><td>{{ '✅ включён' if s.followup_enabled else '— выключен' }}</td></tr>
+        <tr><td>Проверка вебхуков (секрет)</td><td>{{ 'включена' if s.webhook_secret_set else 'выключена' }}</td></tr>
+        <tr><td>Watchdog-алерты</td><td>{{ 'настроены' if s.alerts_configured else '— не настроены' }}</td></tr>
+        <tr><td>Автодожим</td><td>{{ 'включён' if s.followup_enabled else '— выключен' }}</td></tr>
       </table>
       </div>
     </div>

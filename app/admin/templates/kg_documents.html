@@ -6,14 +6,14 @@
 .kg-docs h1{font-size:clamp(23px,4vw,30px)}.kg-docs h2{font-size:21px}.kg-docs h3{font-size:17px}
 .kg-docs a{color:var(--accent)}.kg-docs :focus{outline:2px solid var(--accent);outline-offset:3px}
 .kg-docs .box{padding:16px;margin:16px 0;background:var(--surface);border:1px solid var(--border);border-radius:10px}
-.kg-docs .notice{border-left:4px solid #b7791f}.kg-docs .muted{color:var(--muted);font-size:14px}
+.kg-docs .notice{border-left:4px solid var(--warm)}.kg-docs .muted{color:var(--muted);font-size:14px}
 .kg-docs label{display:block;font-weight:600;margin:8px 0 4px}.kg-docs select{width:100%;max-width:100%;box-sizing:border-box}
 .kg-docs select,.kg-docs button{font:inherit;padding:9px;min-height:44px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px}
 .kg-docs button{margin-top:12px}.kg-docs .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.kg-docs .grid>div{min-width:0}
 .kg-docs .source{white-space:pre-wrap;font-size:14px}.kg-docs summary{cursor:pointer;padding:10px 0}.kg-docs .summary{font-weight:600}
 @media(max-width:600px){.kg-docs{padding:14px 10px}.kg-docs .grid{grid-template-columns:1fr}}
 @page{size:A4;margin:12mm}
-@media print{.topbar,.kg-docs nav,.kg-docs .no-print,.kg-docs .has-result,.kg-docs .controls{display:none!important}.kg-docs{max-width:none;padding:0;font-size:10pt;line-height:1.3;color:black}.kg-docs h1{font-size:20pt}.kg-docs h2{font-size:14pt}.kg-docs h3{font-size:11pt;margin:5px 0}.kg-docs p{margin:4px 0}.kg-docs .box{padding:9px;margin:8px 0;background:white;border-color:#aaa}.kg-docs .item{padding:6px;margin:6px 0;break-inside:avoid}.kg-docs .muted{font-size:8pt}.kg-docs h2{break-after:avoid}}
+@media print{.topbar,.kg-docs nav,.kg-docs .no-print,.kg-docs .has-result,.kg-docs .controls{display:none!important}.kg-docs{max-width:none;padding:0;font-size:10pt;line-height:1.3;color:black}.kg-docs h1{font-size:20pt}.kg-docs h2{font-size:14pt}.kg-docs h3{font-size:11pt;margin:5px 0}.kg-docs p{margin:4px 0}.kg-docs .box{padding:9px;margin:8px 0;background:white;border-color:var(--faint)}.kg-docs .item{padding:6px;margin:6px 0;break-inside:avoid}.kg-docs .muted{font-size:8pt}.kg-docs h2{break-after:avoid}}
 </style>{% endblock %}
 {% block content %}<main class="kg-docs">
 <nav><a href="/admin/kg-entry/processes">Проверка процессов</a> · <a href="/admin/kg-entry/knowledge">Поиск по исходной базе</a></nav>

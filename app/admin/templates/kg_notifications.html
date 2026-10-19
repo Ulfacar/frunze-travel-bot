@@ -2,7 +2,7 @@
 {% block content %}
 {% set printed = preview.preview.result if preview else (selected.receipt.result if selected else none) %}
 <style>
-.draft-page{max-width:920px;margin:28px auto;padding:0 16px}.draft-box{padding:20px;border:1px solid #d6e0ea;border-radius:12px;background:white;margin:18px 0}.draft-note{border-left:4px solid #c38b23}.draft-page label{display:block;margin:12px 0 6px}.draft-page input,.draft-page select{max-width:100%;box-sizing:border-box}.draft-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.draft-meta{font-size:13px;overflow-wrap:anywhere}.draft-page button{margin-top:14px}.draft-page .error{color:#9d241c}
+.draft-page{max-width:920px;margin:28px auto;padding:0 16px}.draft-box{padding:20px;border:1px solid var(--border);border-radius:12px;background:white;margin:18px 0}.draft-note{border-left:4px solid var(--warm)}.draft-page label{display:block;margin:12px 0 6px}.draft-page input,.draft-page select{max-width:100%;box-sizing:border-box}.draft-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.draft-meta{font-size:13px;overflow-wrap:anywhere}.draft-page button{margin-top:14px}.draft-page .error{color:var(--hot)}
 @page{size:A4;margin:18mm 14mm 23mm;{% if printed %}@bottom-left{content:"Внутренний черновик. Отправка не разрешена.\A{{ printed.template_id }} · {{ printed.renderer_version }} · PDF v1.1 · стр. {{ printed.page }}";white-space:pre-wrap;font:9pt/1.3 sans-serif;color:black;vertical-align:middle}{% endif %}}
 @media print{html,body{height:auto!important;min-height:0!important;margin:0!important}nav,header,.no-print{display:none!important}.draft-page{max-width:none;margin:0;padding:0}.draft-box{break-inside:auto;border-radius:0}.draft-text{font-size:11pt}.draft-meta{font-size:9pt}}
 </style>

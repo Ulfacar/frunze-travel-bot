@@ -13,20 +13,20 @@
     .hero-money { font-family:var(--mono); font-size:26px; font-weight:700; color:var(--text);
                   font-variant-numeric:tabular-nums; margin:8px 0 2px; }
     .hero-sla { display:inline-block; margin-top:12px; padding:6px 12px; border-radius:10px;
-                background:#FEF2F2; color:var(--red); font-weight:700; font-size:14px; }
+                background:var(--hot-soft); color:var(--red); font-weight:700; font-size:14px; }
     .noise { margin-top:16px; color:var(--muted); font-size:14px; }
     .noise b { color:var(--text); }
-    .noise-bar { margin-top:6px; height:10px; background:#EEF2F7; border-radius:6px; overflow:hidden; }
-    .noise-bar__fill { height:100%; background:linear-gradient(90deg,#94A3B8,#64748B); border-radius:6px; transition:width .5s; }
+    .noise-bar { margin-top:6px; height:10px; background:var(--surface-2); border-radius:6px; overflow:hidden; }
+    .noise-bar__fill { height:100%; background:var(--faint); border-radius:6px; transition:width .5s; }
     .tiers { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
-    .chip { font-family:var(--mono); font-weight:700; font-size:13px; padding:5px 11px; border-radius:20px; background:#EEF2F7; }
-    .chip-green { color:#065F46; background:#D1FAE5; } .chip-warm { color:#92400E; background:#FEF3C7; }
-    .chip-noise { color:#334155; } .chip-unknown { color:#475569; }
+    .chip { font-family:var(--mono); font-weight:700; font-size:13px; padding:5px 11px; border-radius:20px; background:var(--surface-2); }
+    .chip-green { color:var(--green); background:var(--green-soft); } .chip-warm { color:var(--warm); background:var(--warm-soft); }
+    .chip-noise { color:var(--text); } .chip-unknown { color:var(--muted); }
 
     /* --- ЛЕНТА покупателей --- */
     .feed { display:flex; flex-direction:column; gap:12px; }
     .lead-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;
-                 box-shadow:0 1px 2px rgba(15,23,42,.04); }
+                 box-shadow:none; }
     .lead-card.taken { color:var(--muted); font-weight:600; text-align:center; }
     .lc-top { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
     .lc-name { font-weight:700; font-size:16px; }
@@ -41,7 +41,7 @@
     .wait--ok { color:var(--green); } .wait--warn { color:var(--amber); }
     .wait--late { color:var(--red); animation:pulse 1.4s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-    .claim { border:none; background:var(--accent); color:#fff; font-weight:700; font-size:14px;
+    .claim { border:none; background:var(--accent); color:var(--on-accent,#fff); font-weight:700; font-size:14px;
              padding:10px 16px; border-radius:10px; cursor:pointer; font-family:inherit; }
     .claim:active { transform:scale(.97); }
     .empty, .more { text-align:center; padding:22px; color:var(--muted); font-size:14px; }

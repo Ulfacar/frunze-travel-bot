@@ -1,7 +1,8 @@
+{% import "_icons.html" as ic %}
 {# Партиал: hero владельца + лента 🟢. Рендерится и в странице, и в поллинге every 30s. #}
 <section class="hero">
   <div class="hero-date">Покупатели сегодня · {{ b.date_label }}</div>
-  <div class="hero-green"><b>🟢 {{ b.hero.green_count }}</b> готовы купить</div>
+  <div class="hero-green"><b>{{ b.hero.green_count }}</b> готовы купить</div>
   {% if b.hero.value_by_currency %}
   <div class="hero-money">~
     {% for cur, val in b.hero.value_by_currency.items() -%}
@@ -9,7 +10,7 @@
     {%- endfor %} потенциал</div>
   {% endif %}
   {% if b.hero.waiting_late %}
-  <div class="hero-sla">⏱ {{ b.hero.waiting_late }} ждут ответа &gt;15 мин 🔴</div>
+  <div class="hero-sla">{{ ic.icon("clock",14) }} {{ b.hero.waiting_late }} ждут ответа &gt;15 мин</div>
   {% endif %}
   {% if b.hero.total_today %}
   <div class="noise">Шум отфильтрован: <b>{{ b.hero.filtered }}</b> из {{ b.hero.total_today }}
@@ -18,10 +19,10 @@
   {% endif %}
   <div class="tiers">
     <span class="muted" style="font-size:12px;align-self:center;margin-right:2px">Сегодня:</span>
-    <span class="chip chip-green">🟢 {{ b.hero.tiers.green }}</span>
-    <span class="chip chip-warm">🟡 {{ b.hero.tiers.warm }}</span>
-    <span class="chip chip-noise">⚫ {{ b.hero.tiers.noise }}</span>
-    <span class="chip chip-unknown">❔ {{ b.hero.tiers.insufficient }}</span>
+    <span class="chip chip-green">готовы {{ b.hero.tiers.green }}</span>
+    <span class="chip chip-warm">тёплые {{ b.hero.tiers.warm }}</span>
+    <span class="chip chip-noise">шум {{ b.hero.tiers.noise }}</span>
+    <span class="chip chip-unknown">мало данных {{ b.hero.tiers.insufficient }}</span>
   </div>
 </section>
 
@@ -29,7 +30,7 @@
   {% for c in b.feed %}
   <div class="lead-card" id="lead-{{ loop.index }}">
     <div class="lc-top">
-      <span class="lc-name">🟢 {{ c.name }}</span>
+      <span class="lc-name">{{ c.name }}</span>
       <span class="lc-dir">{{ c.direction }}</span>
     </div>
     <div class="lc-val">
@@ -44,7 +45,7 @@
     </div>
   </div>
   {% else %}
-  <div class="empty">Пока нет готовых покупателей 🟢 — бот собирает и дожимает поток.</div>
+  <div class="empty">Пока нет готовых покупателей — бот собирает и дожимает поток.</div>
   {% endfor %}
   {% if b.more %}<div class="more muted">…и ещё {{ b.more }} готовых сверх ёмкости (топ-15 показаны)</div>{% endif %}
 </section>

@@ -1,3 +1,4 @@
+{% import "_icons.html" as ic %}
 {# Единый список «ждут ответа» (инбокс) и результаты поиска — по всем воронкам.
    mode: 'inbox' (авто-обновление 10с) | 'search'. cards — обогащённые карточки. #}
 <div data-attention {% if mode == 'inbox' %}hx-get="/admin/inbox{% if show_all %}?all=1{% endif %}" {% if crm_bot_mode %}hx-trigger="every 10s" data-crm-poll="inbox"{% else %}hx-trigger="every 10s [document.visibilityState==='visible' && !window.hasInboxSelection()]"{% endif %} hx-swap="outerHTML" hx-target="this"{% endif %}>
@@ -5,7 +6,7 @@
     {% if mode == 'search' %}
       <div class="inbox-title">Поиск: «{{ query }}» — {{ cards|length }}</div>
       <button class="tab" hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML"
-              onclick="clearSearch()">✕ Сбросить</button>
+              onclick="clearSearch()">{{ ic.icon("x",14) }} Сбросить</button>
     {% else %}
       {# Число — по всей базе, а не по странице: бейдж, считающий одно, когда список
          показывает другое, уже был находкой ревью 01.10. #}
@@ -76,7 +77,7 @@
           {{ c.time_label }}
         </span>
         {% if c.source and not standalone_crm %}
-        <span class="badge ad-source" title="{{ c.source_headline or 'Пришёл по рекламе' }}">📣 {{ 'реклама' if c.source == 'ad' else 'пост' }}</span>
+        <span class="badge ad-source" title="{{ c.source_headline or 'Пришёл по рекламе' }}">{{ ic.icon('flame',12) }} {{ 'реклама' if c.source == 'ad' else 'пост' }}</span>
         {% endif %}
         {% if c.wait_level in ('warm','hot') %}
         <span class="badge wait-{{ c.wait_level }}">

@@ -11,7 +11,7 @@
     .card .v { font-size:20px; font-weight:600; }
     .card .v.small { font-size:15px; font-weight:500; }
     .dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:7px; }
-    .ok { background:var(--green); } .bad { background:var(--hot); } .warn { background:var(--warm); } .off { background:#94A3B8; }
+    .ok { background:var(--green); } .bad { background:var(--hot); } .warn { background:var(--warm); } .off { background:var(--faint); }
     .panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-top:18px; }
     .panel h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 12px; }
     table { width:100%; border-collapse:collapse; }
@@ -20,10 +20,10 @@
     .mono { font-family:var(--mono); font-size:12.5px; }
     .muted { color:var(--muted); }
     .bar { height:8px; border-radius:4px; background:var(--accent); min-width:3px; }
-    .bar.new { background:#94A3B8; }
+    .bar.new { background:var(--faint); }
     .empty { color:var(--muted); padding:10px 4px; }
     .pill { display:inline-block; padding:1px 8px; border-radius:20px; font-size:12px;
-            background:var(--elev,#F1F5F9); border:1px solid var(--border); color:var(--muted); }
+            background:var(--surface-2); border:1px solid var(--border); color:var(--muted); }
 </style>
 {% endblock %}
 {% block content %}

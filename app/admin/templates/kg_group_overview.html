@@ -6,7 +6,7 @@
 .kg-group h1{font-size:clamp(24px,4vw,32px)}.kg-group h2{font-size:21px}.kg-group h3{font-size:18px}
 .kg-group a{color:var(--accent)}.kg-group :focus{outline:2px solid var(--accent);outline-offset:3px}
 .kg-group .box{margin:18px 0;padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
-.kg-group .notice{border-left:4px solid #b7791f}.kg-group .muted{color:var(--muted)}
+.kg-group .notice{border-left:4px solid var(--warm)}.kg-group .muted{color:var(--muted)}
 .kg-group .actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}.kg-group .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .kg-group .grid>section{min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px}
 .kg-group ul{padding-left:22px}.kg-group li{margin:7px 0}.kg-group .attempts{list-style:none;padding:0}
@@ -14,7 +14,7 @@
 .kg-group label{display:block;font-weight:600}.kg-group select,.kg-group button{font:inherit;padding:10px;max-width:100%;min-height:44px;border:1px solid var(--border);border-radius:7px;color:var(--text);background:var(--surface)}
 @media(max-width:600px){.kg-group{padding:14px 10px}.kg-group .box{padding:12px}.kg-group .grid{grid-template-columns:1fr}}
 @page{size:A4;margin:12mm}
-@media print{.topbar,.kg-group nav,.kg-group form,.kg-group .no-print{display:none!important}.kg-group{max-width:none;padding:0;color:black;font-size:10pt;line-height:1.35}.kg-group .box,.kg-group .grid>section{background:white;border-color:#aaa;padding:10px;margin:10px 0}.kg-group article.box,.kg-group .grid>section,.kg-group .attempts>li{break-inside:avoid}.kg-group h1{font-size:22pt}.kg-group h2{font-size:14pt}.kg-group h3{font-size:12pt}.kg-group h2,.kg-group h3{break-after:avoid;margin:8px 0}.kg-group p{margin:6px 0}.kg-group #kg-group-counts{columns:2}.kg-group .grid{gap:8px}}
+@media print{.topbar,.kg-group nav,.kg-group form,.kg-group .no-print{display:none!important}.kg-group{max-width:none;padding:0;color:black;font-size:10pt;line-height:1.35}.kg-group .box,.kg-group .grid>section{background:white;border-color:var(--faint);padding:10px;margin:10px 0}.kg-group article.box,.kg-group .grid>section,.kg-group .attempts>li{break-inside:avoid}.kg-group h1{font-size:22pt}.kg-group h2{font-size:14pt}.kg-group h3{font-size:12pt}.kg-group h2,.kg-group h3{break-after:avoid;margin:8px 0}.kg-group p{margin:6px 0}.kg-group #kg-group-counts{columns:2}.kg-group .grid{gap:8px}}
 </style>{% endblock %}
 {% block content %}
 <main class="kg-group">

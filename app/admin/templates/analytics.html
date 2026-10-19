@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_icons.html" as ic %}
 {% block title %}Frunze — аналитика{% endblock %}
 {% block head %}
 <style>
@@ -21,11 +22,11 @@
     .periods { display:flex; gap:6px; margin:0 0 20px; }
     .periods a { padding:6px 13px; border-radius:9px; border:1px solid var(--border); background:var(--surface);
                  color:var(--muted); font-size:13px; font-weight:600; }
-    .periods a.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .periods a.on { background:var(--accent); color:var(--on-accent,#fff); border-color:var(--accent); }
     /* Мини-график активности (CSS-бары) */
     .chart { display:flex; align-items:flex-end; gap:10px; height:130px; padding-top:8px; }
     .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
-    .bar { width:100%; max-width:46px; background:linear-gradient(180deg,#2563EB,#1D4ED8); border-radius:6px 6px 0 0;
+    .bar { width:100%; max-width:46px; background:var(--accent); border-radius:6px 6px 0 0;
            min-height:3px; position:relative; transition:height .3s; }
     .bar .v { position:absolute; top:-18px; left:0; right:0; text-align:center; font-family:var(--mono);
               font-size:11px; font-weight:700; color:var(--text); }
@@ -38,9 +39,10 @@
     /* Горизонтальные бары по сотрудникам */
     .hbar { display:grid; grid-template-columns:130px 1fr auto; align-items:center; gap:10px; margin-bottom:10px; }
     .hbar .track { background:var(--elev); border-radius:6px; height:22px; overflow:hidden; }
-    .hbar .fill { height:100%; border-radius:6px; min-width:22px; background:linear-gradient(90deg,#2563EB,#1D4ED8);
+    .hbar .fill .v { color:inherit; }
+    .hbar .fill { height:100%; border-radius:6px; min-width:22px; background:var(--accent);
                   display:flex; align-items:center; justify-content:flex-end; padding-right:8px;
-                  color:#fff; font-family:var(--mono); font-size:12px; font-weight:700; }
+                  color:var(--on-accent,#fff); font-family:var(--mono); font-size:12px; font-weight:700; }
     .hbar .meta { font-size:12px; color:var(--muted); white-space:nowrap; font-family:var(--mono); }
     .hbar .meta b { color:var(--green); }
     /* Донат «бот vs менеджер» */
@@ -50,7 +52,7 @@
     .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
     /* Сплит по воронкам */
     .fsplit { display:flex; gap:3px; height:24px; border-radius:6px; overflow:hidden; margin:8px 0 12px; }
-    .fsplit i { display:flex; align-items:center; justify-content:center; color:#fff;
+    .fsplit i { display:flex; align-items:center; justify-content:center; color:var(--on-accent,#fff);
                 font-size:12px; font-weight:700; font-family:var(--mono); min-width:24px; }
     .fleg span { margin-right:16px; font-size:13px; color:var(--muted); }
 </style>
@@ -88,9 +90,9 @@
     <div class="cards">
       <div class="kpi good"><div class="n">{{ a.containment_rate }}%</div><div class="l">Containment (бот без менеджера)</div></div>
       <div class="kpi"><div class="n">{{ a.contained }}/{{ a.total }}</div><div class="l">Диалогов вёл только бот</div></div>
-      <div class="kpi good"><div class="n">{{ a.outcomes.get('won', 0) }}</div><div class="l">✅ Оплатили</div></div>
-      <div class="kpi"><div class="n">{{ a.outcomes.get('office', 0) }}</div><div class="l">🏢 Дошли в офис</div></div>
-      <div class="kpi warm"><div class="n">{{ a.outcomes.get('lost', 0) }}</div><div class="l">❌ Слились</div></div>
+      <div class="kpi good"><div class="n">{{ a.outcomes.get('won', 0) }}</div><div class="l">{{ ic.icon("check",14) }} Оплатили</div></div>
+      <div class="kpi"><div class="n">{{ a.outcomes.get('office', 0) }}</div><div class="l">{{ ic.icon("building",14) }} Дошли в офис</div></div>
+      <div class="kpi warm"><div class="n">{{ a.outcomes.get('lost', 0) }}</div><div class="l">{{ ic.icon("x",14) }} Слились</div></div>
       <div class="kpi"><div class="n">{{ a.median_response_min if a.median_response_min is not none else '—' }}{% if a.median_response_min is not none %} мин{% endif %}</div><div class="l">Медиана времени ответа менеджера</div></div>
       <div class="kpi"><div class="n">{{ a.median_handoff_min if a.median_handoff_min is not none else '—' }}{% if a.median_handoff_min is not none %} мин{% endif %}</div><div class="l">Медиана времени до подключения менеджера</div></div>
     </div>
@@ -110,21 +112,21 @@
           </svg>
           <div class="donut-legend">
             <span><span class="dot" style="background:var(--green)"></span>Бот сам: <b>{{ a.contained }}</b></span>
-            <span><span class="dot" style="background:#CBD5E1"></span>Передано менеджеру: <b>{{ a.total - a.contained }}</b></span>
+            <span><span class="dot" style="background:var(--border-2)"></span>Передано менеджеру: <b>{{ a.total - a.contained }}</b></span>
             <span class="muted" style="margin-top:8px">Всего: {{ a.total }} диалогов</span>
           </div>
         </div>
       </div>
       <div class="panel" style="margin-bottom:0">
         <h2>Воронки: доля диалогов</h2>
-        {% set fcolors = {'tours':'#2563EB','visa':'#1c8a9e','tickets':'#94A3B8'} %}
+        {% set fcolors = {'tours':'var(--accent)','visa':'var(--green)','tickets':'var(--faint)'} %}
         {% set ftot = a.funnel_totals.values()|sum %}
         {% if ftot %}
         <div class="fsplit">
-          {% for f, n in a.funnel_totals.items() %}{% if n %}<i style="flex:{{ n }};background:{{ fcolors.get(f, '#94A3B8') }}" title="{{ f }}: {{ n }}">{{ n }}</i>{% endif %}{% endfor %}
+          {% for f, n in a.funnel_totals.items() %}{% if n %}<i style="flex:{{ n }};background:{{ fcolors.get(f, 'var(--faint)') }}" title="{{ f }}: {{ n }}">{{ n }}</i>{% endif %}{% endfor %}
         </div>
         <div class="fleg">
-          {% for f, n in a.funnel_totals.items() %}{% if n %}<span><span class="dot" style="background:{{ fcolors.get(f, '#94A3B8') }}"></span>{{ f }} — {{ n }} ({{ (100 * n / ftot)|round }}%)</span>{% endif %}{% endfor %}
+          {% for f, n in a.funnel_totals.items() %}{% if n %}<span><span class="dot" style="background:{{ fcolors.get(f, 'var(--faint)') }}"></span>{{ f }} — {{ n }} ({{ (100 * n / ftot)|round }}%)</span>{% endif %}{% endfor %}
         </div>
         {% else %}<div class="muted">Нет данных</div>{% endif %}
       </div>
@@ -146,8 +148,8 @@
 
     <div class="panel">
       <h2>Исходы</h2>
-      {% set colors = {'won':'#059669','office':'#2563EB','manager':'#D97706','lost':'#DC2626','in_progress':'#94A3B8'} %}
-      {% for key, label in [('won','✅ Оплатил'),('office','🏢 Дошёл в офис'),('manager','👤 У менеджера'),('lost','❌ Слился'),('in_progress','⏳ В работе')] %}
+      {% set colors = {'won':'var(--green)','office':'var(--accent)','manager':'var(--warm)','lost':'var(--hot)','in_progress':'var(--faint)'} %}
+      {% for key, label in [('won','Оплатил'),('office','Дошёл в офис'),('manager','У менеджера'),('lost','Слился'),('in_progress','В работе')] %}
       {% set n = a.outcomes.get(key, 0) %}
       <div class="obar">
         <span>{{ label }}</span>
@@ -170,7 +172,7 @@
       {% endfor %}
       <div class="table-wrap">
       <table style="margin-top:14px">
-        <tr><th>Сотрудник</th><th>Вёл диалогов</th><th>✅ Оплат</th><th>🏢 Офис</th><th>❌ Слив</th><th>Win-rate</th></tr>
+        <tr><th>Сотрудник</th><th>Вёл диалогов</th><th>Оплат</th><th>Офис</th><th>Слив</th><th>Win-rate</th></tr>
         {% for mgr, st in a.by_manager.items() %}
         <tr><td><b>{{ mgr }}</b></td><td>{{ st.get('handled', 0) }}</td>
             <td>{{ st.get('won', 0) }}</td><td>{{ st.get('office', 0) }}</td><td>{{ st.get('lost', 0) }}</td>
