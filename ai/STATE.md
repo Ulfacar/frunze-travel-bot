@@ -16,7 +16,7 @@
   (9 этапов по ТЗ §7.4, версия 1 неизменяема). Остальные 7 продуктов без процесса — в формах договора не
   показываются. KG-блок (`admin_kg_entry_enabled`) и `pilot_reply_alert_enabled`, `sale_by_full_payment_enabled`,
   `sale_check_panel_contract_enabled` — по-прежнему OFF. Откат показа — те же тумблеры OFF.
-- **20.10 ~01:20: редизайн панели v2 на проде, коммит `b2700c9`** (после `3e2cf50`, фикс логина).
+- **20.10 ~01:45: редизайн панели v2 на проде, коммиты `b2700c9` → `4459202` (второй проход: второстепенные и kg_* экраны)** (после `3e2cf50`, фикс логина).
   Дизайн-система `docs/design-system/frunze-panel/MASTER.md` (скилл `ui-ux-pro-max`, стиль
   Data-Dense Dashboard, navy `#1E40AF` / тёмная `#8FB4FF`, системный шрифт, иконки `_icons.html`).
   Handoff: `ai/handoffs/2026-10-20-0120-panel-redesign-v2.md`. Откат вида: тумблер
