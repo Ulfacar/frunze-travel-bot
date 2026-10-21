@@ -148,7 +148,8 @@
       <section class="chat-section">
         <h3 class="chat-section-title">ИИ-исход <small>оценка ИИ, поправьте кнопкой</small></h3>
         <p>{{ inferred }}{% if c.outcome_inferred_reason %} — {{ c.outcome_inferred_reason }}{% endif %}</p>
-        {{ chat_outcomes() }}
+        {# Исходы уже есть в меню ⋮. В простом режиме дубль убираем: одно действие — одно место. #}
+        {% if not simple_on %}{{ chat_outcomes() }}{% endif %}
       </section>
       <section class="chat-section"><h3 class="chat-section-title">Контекст</h3><p>{{ c.ai_summary or 'Контекст пока не собран' }}</p></section>
       <section class="chat-section"><h3 class="chat-section-title">Следующий шаг</h3><p>{{ c.manager_next_step or 'Не указан' }}</p></section>

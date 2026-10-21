@@ -5,12 +5,15 @@
                  ("waiting", "Ждём", counts.waiting, ""), ("stuck", "Зависли", counts.stuck, "hot")] %}
   {% set mine_q = "" if mine else "&mine=0" %}
 
+  {# Плитки повторяют те же числа, что и вкладки ниже. В простом режиме оставляем вкладки. #}
+  {% if not simple_on %}
   <div class="wk-stats">
     {% for key, label, n, tone in tabs[1:] %}
     <div class="wk-stat {{ tone }}"><b data-count="{{ key }}">{{ n }}</b> <span>{{ label|lower }}</span></div>
     {% endfor %}
     <div class="wk-stat"><b data-count="total">{{ counts.total }}</b> <span>всего</span></div>
   </div>
+  {% endif %}
 
   <div class="wk-tabs" role="tablist" aria-label="Фильтр услуг">
     {% for key, label, n, tone in tabs %}

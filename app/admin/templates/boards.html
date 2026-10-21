@@ -1074,5 +1074,22 @@
     }
     .inbox-list .card:has(.bulk-checkbox:checked) { outline: 2px solid var(--accent); outline-offset: 0; }
     .bulk-archive:disabled, .bulk-noise:disabled { opacity: .45; cursor: default; }
+{% if simple_on %}
+    /* Простой режим: разбор списка — отдельная задача. Пока «Разобрать список» закрыт,
+       чекбокс и крестик на карточках не показываем вообще: на телефоне они видны всегда
+       (правило `@media (hover:none)` выше), и это 120 лишних элементов на 60 карточках.
+       Разметка на месте — раскрыл список, и всё доступно, включая наведение и touch. */
+    [data-attention]:not(:has(.inbox-tools[open])) :is(.card-select, .card-archive) { display: none; }
+    .inbox-tools { position: relative; }
+    .inbox-tools > summary { list-style: none; cursor: pointer; }
+    .inbox-tools > summary::-webkit-details-marker { display: none; }
+    .inbox-tools[open] > summary { background: var(--accent-soft); color: var(--accent); }
+    .inbox-tools:not([open]) .inbox-tools-body { display: none; }
+    .inbox-tools[open] .inbox-tools-body { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+                        padding: 10px; border: 1px solid var(--border); border-radius: var(--r);
+                        background: var(--surface); }
+    .inbox-head:has(.inbox-tools[open]) { align-items: flex-start; }
+    .inbox-tools-body .tab { min-height: 40px; }
+{% endif %}
   </style>
 {% endblock %}

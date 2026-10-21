@@ -18,7 +18,7 @@
         Показать все ({{ total }})
       </button>
       {% else %}
-      <span class="inbox-sub">Все воронки · кто дольше ждёт — выше</span>
+      {% if not simple_on %}<span class="inbox-sub">Все воронки · кто дольше ждёт — выше</span>{% endif %}
       {% if show_all and page_size %}
       <button class="tab" hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML">
         Свернуть до {{ page_size }}
@@ -26,6 +26,31 @@
       {% endif %}
       {% endif %}
     {% endif %}
+{% if simple_on %}
+    {# Простой режим: разбор списка — отдельная задача, а не фон рабочего дня. Пять кнопок
+       и чекбоксы на каждой карточке уезжают под одну раскрывашку; пока она закрыта,
+       менеджер видит только клиентов. Разметка и обработчики те же — это показ, не функция. #}
+    <details class="inbox-tools">
+      <summary class="tab">Разобрать список</summary>
+      <div class="inbox-tools-body">
+        <button type="button" class="tab noise-filter" onclick="toggleNoise(this)">
+          Скрыть рекламу/без диалога · {{ noise_count or 0 }}
+        </button>
+        {% if not standalone_crm %}<button type="button" class="tab" onclick="selectVisibleInboxCards(this)">
+          {% if truncated %}Выбрать показанные{% else %}Выбрать все{% endif %}
+        </button>
+        <button type="button" class="tab" onclick="clearInboxSelection(this)">
+          Снять выбор
+        </button>
+        <button type="button" class="tab bulk-archive" onclick="archiveSelectedInbox(this)" disabled>
+          Архивировать выбранные (<span data-selected-count>0</span>)
+        </button>
+        <button type="button" class="tab bulk-noise" onclick="archiveNoiseInbox(this)" {% if not noise_count %}disabled{% endif %} data-noise-count="{{ noise_count or 0 }}">
+          Очистить рекламу/без диалога ({{ noise_count or 0 }})
+        </button>{% endif %}
+      </div>
+    </details>
+{% else %}
     <button type="button" class="tab noise-filter" onclick="toggleNoise(this)">
       Скрыть рекламу/без диалога · {{ noise_count or 0 }}
     </button>
@@ -41,6 +66,7 @@
     <button type="button" class="tab bulk-noise" onclick="archiveNoiseInbox(this)" {% if not noise_count %}disabled{% endif %} data-noise-count="{{ noise_count or 0 }}">
       Очистить рекламу/без диалога ({{ noise_count or 0 }})
     </button>{% endif %}
+{% endif %}
   </div>
 
   {% if not cards %}

@@ -336,10 +336,12 @@
   </section>
   {% endif %}
 
+  {% if not simple_on %}
   <p class="hint">
     <kbd>J</kbd> следующий · <kbd>T</kbd> взять · <kbd>A</kbd> в архив ·
     <kbd>Ctrl+Enter</kbd> отправить · <kbd>/</kbd> поиск
   </p>
+  {% endif %}
  </div>
 
  {% if queue %}

@@ -41,7 +41,8 @@ log = logging.getLogger("admin")
 _LOOK_TTL = 5.0
 _look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
                                   "focus_on": None, "chat_redesign": None,
-                                  "workday_on": None, "cases_write_on": None}
+                                  "workday_on": None, "cases_write_on": None,
+                                  "simple_on": None}
 
 
 async def _load_new_look(request: Request) -> None:
@@ -58,7 +59,8 @@ async def _load_new_look(request: Request) -> None:
     key = (bool(settings.admin_new_look_enabled), bool(settings.admin_focus_enabled),
            bool(settings.admin_chat_redesign_enabled),
            # Четвёртым — иначе подмена флага в тестах не видна весь TTL, и гейт флапает.
-           bool(settings.admin_workday_enabled), bool(settings.service_cases_enabled))
+           bool(settings.admin_workday_enabled), bool(settings.service_cases_enabled),
+           bool(settings.panel_simple_mode_enabled))
     if (_look_cache["key"] == key and _look_cache["new_look"] is not None
             and now - float(_look_cache["at"]) < _LOOK_TTL):
         request.state.new_look = bool(_look_cache["new_look"])
@@ -66,6 +68,7 @@ async def _load_new_look(request: Request) -> None:
         request.state.chat_redesign = bool(_look_cache["chat_redesign"])
         request.state.workday_on = bool(_look_cache["workday_on"])
         request.state.cases_write_on = bool(_look_cache["cases_write_on"])
+        request.state.simple_on = bool(_look_cache["simple_on"])
         return
     try:
         new_look = await _flags.get_flag("admin_new_look_enabled",
@@ -77,21 +80,26 @@ async def _load_new_look(request: Request) -> None:
                                            settings.admin_workday_enabled)
         cases_write_on = await _flags.get_flag("service_cases_enabled",
                                                settings.service_cases_enabled)
+        simple_on = await _flags.get_flag("panel_simple_mode_enabled",
+                                          settings.panel_simple_mode_enabled)
         _look_cache.update({"at": now, "key": key, "new_look": new_look,
                             "focus_on": focus_on, "chat_redesign": chat_redesign,
                             "workday_on": workday_on,
-                            "cases_write_on": cases_write_on})
+                            "cases_write_on": cases_write_on,
+                            "simple_on": simple_on})
     except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
         new_look, focus_on = (bool(settings.admin_new_look_enabled),
                               bool(settings.admin_focus_enabled))
         chat_redesign = bool(settings.admin_chat_redesign_enabled)
         workday_on = bool(settings.admin_workday_enabled)
         cases_write_on = bool(settings.service_cases_enabled)
+        simple_on = bool(settings.panel_simple_mode_enabled)
     request.state.new_look = bool(new_look)
     request.state.focus_on = bool(focus_on)
     request.state.chat_redesign = bool(chat_redesign)
     request.state.workday_on = bool(workday_on)
     request.state.cases_write_on = bool(cases_write_on)
+    request.state.simple_on = bool(simple_on)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"],
@@ -117,6 +125,9 @@ def _chrome(request: Request) -> dict:
                                      settings.admin_new_look_enabled)),
             "focus_on": bool(getattr(request.state, "focus_on",
                                      settings.admin_focus_enabled)),
+            # Простой режим: вторичные действия прячутся до того, как станут нужны.
+            "simple_on": bool(getattr(request.state, "simple_on",
+                                      settings.panel_simple_mode_enabled)),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
                                           settings.admin_chat_redesign_enabled)),
             "workday_on": bool(getattr(request.state, "workday_on",
@@ -421,6 +432,20 @@ def _demo_managers() -> list[dict]:
     return list(by_login.values())
 
 
+def _home_for(request: Request, manager: dict | None) -> str:
+    """Куда вести менеджера после входа, если он не пришёл по конкретной ссылке.
+
+    В простом режиме обычный менеджер попадает на «Фокус»: один следующий клиент, одно
+    поле, одна кнопка — 26 элементов против 199 в инбоксе (замер 21.10). Полный админ
+    по-прежнему приходит на доску: ему нужна общая картина, а не очередь.
+    """
+    simple = bool(getattr(request.state, "simple_on", settings.panel_simple_mode_enabled))
+    focus_on = bool(getattr(request.state, "focus_on", settings.admin_focus_enabled))
+    if simple and focus_on and manager is not None and _manager_bot_scope(manager) is not None:
+        return "/admin/focus"
+    return "/admin"
+
+
 def _safe_next(target: str | None) -> str:
     """Куда вернуть менеджера после входа. Чужое — отбрасываем.
 
@@ -487,7 +512,10 @@ async def login_submit(request: Request, login: str = Form(...), password: str =
     request.session["manager"] = manager
     await get_conversation_store().add_audit(manager["login"], "login")
     # Возврат туда, откуда пришли: менеджер тапнул ссылку на диалог из уведомления,
-    # и после входа должен попасть в этот диалог, а не на общую доску.
+    # и после входа должен попасть в этот диалог, а не на общую доску. Явную ссылку
+    # домашний экран не перебивает — иначе простой режим ломал бы этот сценарий.
+    if not (next or "").strip():
+        target = _home_for(request, manager)
     return RedirectResponse(target, status_code=303)
 
 
@@ -1003,6 +1031,15 @@ FEATURE_FLAGS = {
                  "бюджета, дат и состава бот отрабатывает сам и не беспокоит."),
         "default": lambda: False,
         "note": lambda: "",
+    },
+    "panel_simple_mode_enabled": {
+        "title": "Простой режим панели",
+        "desc": ("Порог входа для менеджера: вторичные действия прячутся, пока не нужны "
+                 "(разбор списка, перенос задач), а после входа менеджер попадает на «Фокус» — "
+                 "один клиент за раз. Ни одна возможность не удаляется. У полного админа "
+                 "домашний экран прежний."),
+        "default": lambda: settings.panel_simple_mode_enabled,
+        "note": lambda: "замер 21.10: в инбоксе 199 элементов, в работе менеджера — 5",
     },
     "pilot_reply_queue_enabled": {
         "title": "Очередь «ждут ответа» (пилот виз)",

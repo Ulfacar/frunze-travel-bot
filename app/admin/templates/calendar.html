@@ -86,6 +86,17 @@
     .btn.sm { padding:6px 10px; font-size:12px; min-height:36px; }
     .sep { width:1px; height:22px; background:var(--border); margin:0 3px; }
 
+{% if simple_on %}
+    /* Простой режим: у задачи снаружи остаются «Позвонить», «Сделано» и «Переписка»,
+       остальные пять кнопок — под «Ещё». Приём тот же, что у «Другой день» ниже. */
+    .task-more { position:relative; }
+    .task-more > summary { list-style:none; cursor:pointer; }
+    .task-more > summary::-webkit-details-marker { display:none; }
+    .task-more:not([open]) .task-more-body { display:none; }
+    .task-more[open] .task-more-body { display:flex; gap:7px; flex-wrap:wrap; align-items:center; margin-top:8px;
+                      padding:10px; border:1px solid var(--border); border-radius:var(--r);
+                      background:var(--surface-2); flex-basis:100%; }
+{% endif %}
     .move { position:relative; }
     .move summary { list-style:none; }
     .move summary::-webkit-details-marker { display:none; }
@@ -195,13 +206,15 @@
         {% if not t.done %}
         <div class="acts">
           {% if t.tel %}<a class="btn primary" href="{{ t.tel }}">{{ ic.icon("phone", 16) }}Позвонить</a>{% endif %}
-          {% if t.wa %}<a class="btn wa" href="{{ t.wa }}" target="_blank" rel="noopener">{{ ic.icon("whatsapp", 16) }}WhatsApp</a>{% endif %}
+          {% if t.wa and not simple_on %}<a class="btn wa" href="{{ t.wa }}" target="_blank" rel="noopener">{{ ic.icon("whatsapp", 16) }}WhatsApp</a>{% endif %}
           {% if t.user_id %}<a class="btn" href="/admin?open={{ t.user_id }}">{{ 'Карточка' if standalone_crm and not crm_bot_mode else 'Переписка' }} →</a>{% endif %}
           <span class="sep"></span>
           <form method="post" action="/admin/calendar/task/{{ t.id }}/complete">
             <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
             <button class="btn ok" type="submit">{{ ic.icon("check", 16) }}Сделано</button>
           </form>
+          {% if simple_on %}<details class="task-more"><summary class="btn sm">{{ ic.icon("list", 16) }}Ещё</summary><div class="task-more-body">{% endif %}
+          {% if t.wa and simple_on %}<a class="btn wa" href="{{ t.wa }}" target="_blank" rel="noopener">{{ ic.icon("whatsapp", 16) }}WhatsApp</a>{% endif %}
           {% if t.overdue %}
           <form method="post" action="/admin/calendar/task/{{ t.id }}/snooze">
             <input type="hidden" name="mode" value="today">
@@ -236,6 +249,7 @@
             <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="day" value="{{ anchor_iso }}">
             <button class="btn del sm" type="submit" title="Отменить" aria-label="Отменить">{{ ic.icon("x", 16) }}</button>
           </form>
+          {% if simple_on %}</div></details>{% endif %}
         </div>
         {% endif %}
       </div>
