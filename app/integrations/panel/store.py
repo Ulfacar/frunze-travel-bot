@@ -720,18 +720,18 @@ class PostgresConversationStore:
         """
         from sqlalchemy import func
         from app.core.leadstate import UNSEEN_MIN_CLIENT_MSGS
-        from app.integrations.crm.db import Conversation, Message
+        from app.integrations.crm.db import Conversation, ConvMessage
         async with self._sm()() as session:
             rows = (await session.execute(
                 select(Conversation).where(Conversation.archived.is_not(True))
             )).scalars().all()
             stats = (await session.execute(
                 select(
-                    Message.conversation_id,
+                    ConvMessage.conversation_id,
                     func.count().label("total"),
-                    func.count().filter(Message.sender == "client").label("clients"),
-                    func.count().filter(Message.sender.in_(("bot", "manager"))).label("ours"),
-                ).group_by(Message.conversation_id)
+                    func.count().filter(ConvMessage.sender == "client").label("clients"),
+                    func.count().filter(ConvMessage.sender.in_(("bot", "manager"))).label("ours"),
+                ).group_by(ConvMessage.conversation_id)
             )).all()
             by_conv = {r[0]: (r[1], r[2], r[3]) for r in stats}
             views = []

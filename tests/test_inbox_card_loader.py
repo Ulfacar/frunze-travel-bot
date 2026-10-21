@@ -114,3 +114,44 @@ async def test_memory_store_card_loader_returns_live_conversations():
     await store.add_message("getvisa:996700000001", "client", "привет", bot_id="getvisa")
     cards = await store.all_conversations_for_cards()
     assert [c.user_id for c in cards] == ["getvisa:996700000001"]
+
+
+# ---------------- боевой путь: Postgres-бэкенд на SQLite ----------------
+# 21.10: первый выпуск этого загрузчика упал на проде с ImportError — имя модели в
+# `app.integrations.crm.db` оказалось `ConvMessage`, а не `Message`. Тесты этого не
+# поймали: все они работали на MemoryConversationStore, а ветка Postgres НИ РАЗУ не
+# исполнялась. Поэтому здесь метод именно ВЫЗЫВАЕТСЯ на живом движке.
+@pytest.mark.asyncio
+async def test_postgres_card_loader_runs_and_folds_history():
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+    from sqlalchemy.pool import StaticPool
+
+    from app.integrations.crm.db import init_models
+
+    engine = create_async_engine("sqlite+aiosqlite://",
+                                 connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    await init_models(engine)
+    store = PostgresConversationStore(sessionmaker=async_sessionmaker(engine, expire_on_commit=False))
+
+    # клиент пишет трижды, наших реплик нет — это «ведут без нас»
+    alone = "getvisa:996700000011"
+    for _ in range(UNSEEN_MIN_CLIENT_MSGS):
+        await store.add_message(alone, "client", "вы работаете?", channel="whatsapp", bot_id="getvisa")
+    # обычный диалог: клиент и наш ответ
+    answered = "getvisa:996700000012"
+    await store.add_message(answered, "client", "здравствуйте", channel="whatsapp", bot_id="getvisa")
+    await store.add_message(answered, "bot", "здравствуйте, чем помочь?", channel="whatsapp", bot_id="getvisa")
+
+    cards = {c.user_id: c for c in await store.all_conversations_for_cards()}
+    assert set(cards) == {alone, answered}
+
+    senders = lambda key: [m.sender for m in cards[key].messages]
+    assert senders(alone) == ["client"] * UNSEEN_MIN_CLIENT_MSGS
+    assert "bot" in senders(answered) and "client" in senders(answered)
+    # текста истории в карточке нет — ради этого всё и затевалось
+    assert all(m.text == "" for c in cards.values() for m in c.messages)
+
+    full = {c.user_id: c for c in await store.all_conversations()}
+    for key in cards:
+        assert is_noise(cards[key], NOW, settings) == is_noise(full[key], NOW, settings), key
+        assert is_silent(cards[key], NOW, settings) == is_silent(full[key], NOW, settings), key
