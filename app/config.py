@@ -441,6 +441,10 @@ class Settings(BaseSettings):
     # B2b/B2c (14.10): очередь «ждут ответа» и уведомление владельцу. X минут — ЖДЁТ РЕШЕНИЯ
     # ГРИШИ (дефолт 30). Считаются рабочие минуты по часам приёма (schedule.py).
     pilot_reply_sla_minutes: int = 30
+    # Въездные визы в КР (ТЗ Гриши v1.1). Главный флаг ветки и отдельный флаг РЕЧИ:
+    # второй позволяет выкатить движок и карточку, не разрешая боту произносить правила.
+    kg_entry_enabled: bool = False
+    kg_entry_say_confirmed_enabled: bool = False
     panel_missing_cards_enabled: bool = False
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False

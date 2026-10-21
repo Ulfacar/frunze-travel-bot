@@ -760,7 +760,10 @@ class Orchestrator:
 
     async def _maybe_faq_reply(self, msg: Message, state, store) -> bool:
         """Try deterministic FAQ before LLM/funnel logic. Fail open to the normal flow."""
-        if state.funnel == "visa":
+        # Гвард по въездному режиму. Прайс ниже — ВЫЕЗДНОЙ, и он стреляет до воронки:
+        # без этой проверки иностранец, спросивший «how much is a visa to Kyrgyzstan»,
+        # получил бы цены по Шенгену и США. Находка проектирования 21.10.
+        if state.funnel == "visa" and state.qualification.get("entry_mode") != "kg_entry":
             try:
                 from app.core.visa_pricing import self_visa_reply, visa_price_reply
                 answer = visa_price_reply(msg.text)

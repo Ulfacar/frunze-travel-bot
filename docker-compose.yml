@@ -16,6 +16,9 @@ services:
       PANEL_SIMPLE_MODE_ENABLED: ${PANEL_SIMPLE_MODE_ENABLED:-false}
       # Список «нет карточки в Bitrix» (21.10): только чтение, в портал не пишет. OFF.
       PANEL_MISSING_CARDS_ENABLED: ${PANEL_MISSING_CARDS_ENABLED:-false}
+      # Въездные визы в КР (ТЗ Гриши v1.1). Оба OFF: ветка и отдельно речь бота.
+      KG_ENTRY_ENABLED: ${KG_ENTRY_ENABLED:-false}
+      KG_ENTRY_SAY_CONFIRMED_ENABLED: ${KG_ENTRY_SAY_CONFIRMED_ENABLED:-false}
       PILOT_REPLY_SLA_MINUTES: ${PILOT_REPLY_SLA_MINUTES:-30}
       PILOT_REPLY_QUEUE_ENABLED: ${PILOT_REPLY_QUEUE_ENABLED:-false}
       PILOT_REPLY_ALERT_ENABLED: ${PILOT_REPLY_ALERT_ENABLED:-false}

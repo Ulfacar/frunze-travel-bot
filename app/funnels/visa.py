@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from app.channels.base import Message
+from app.config import settings
 from app.agent.llm import llm_available
 from app.core.branding import GETVISA_OFFICE_ADDRESS, is_english_speaking
 from app.core.state import DialogState
@@ -31,10 +32,27 @@ def _required_fields(qualification: dict) -> list[str]:
     return REQUIRED_FIELDS
 
 
+# Передача человеку по въездному вопросу. Двуязычно, потому что клиент-иностранец
+# пишет по-английски, а Б.2 п.2 требует отвечать на языке клиента. Без чисел и сумм:
+# цен бот не называет (решение владельца), а сроки без подтверждения — тоже факт.
+ENTRY_HANDOVER = (
+    "Здравствуйте! Я помощник Frunze Travel — помогаем с визами и пребыванием "
+    "в Кыргызстане. Передаю ваш вопрос специалисту: он уточнит условия именно "
+    "для вашего гражданства и цели поездки и ответит в рабочее время." + "\n\n" +
+    "Hello! I am the Frunze Travel assistant — we help with visas and stays in "
+    "Kyrgyzstan. I am passing your question to a specialist: they will confirm the "
+    "rules for your citizenship and purpose of travel and reply during working hours."
+)
+
+
 class VisaFunnel:
     name = "visa"
 
     async def handle(self, msg: Message, state: DialogState) -> str | None:
+        entry = await _entry_branch(msg, state)
+        if entry is not None:
+            return entry
+
         # Боевой режим: живой AI-диалог через OpenRouter (tool-use).
         if await llm_available():
             from app.agent.runner import run_visa_turn
@@ -112,3 +130,34 @@ def _ask_for(field: str) -> str:
         "prior_refusal": "Были ли ранее отказы в визе? Если да — в какую страну и в каком году?",
     }
     return questions.get(field, "Расскажите, пожалуйста, подробнее.")
+
+
+async def _entry_branch(msg: Message, state: DialogState) -> str | None:
+    """Въездные визы в КР: своя тема на том же номере. None — обычный путь воронки.
+
+    Воронка остаётся `visa`, режим помечается двумя ключами в анкете. Так сделано
+    осознанно: значение воронки продублировано примерно в десяти местах (аналитика,
+    брифы, FAQ, дожим, админка) и зашито констрейнтом БД
+    `direction IN ('tours','visa','tickets')`. Новое значение падало бы на уровне базы,
+    а два ключа не трогают ни один из этих списков. Ключей именно два, а не три:
+    `derive_stage` считает непустые поля, и порог «подбора» не должен перескакиваться
+    первой же репликой.
+
+    Пока речь бота не разрешена (модуль C ядра), исход один: передать человеку. Это не
+    заглушка, а требование Б.2 п.6 «в любой неуверенности — уточню у менеджера».
+    """
+    from app.core import flags
+    from app.core.entry_intent import detect
+
+    if not await flags.get_flag("kg_entry_enabled", settings.kg_entry_enabled):
+        return None
+
+    sticky = state.qualification.get("entry_mode")
+    intent = detect(msg.text or "", sticky=sticky)
+    if intent != "kg_entry":
+        return None
+
+    state.qualification["entry_mode"] = "kg_entry"
+    state.qualification.setdefault("kg_entry", {})
+    state.stage = "manager"
+    return ENTRY_HANDOVER
