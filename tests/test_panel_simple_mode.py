@@ -15,6 +15,7 @@
 3. **Домашний экран.** Менеджер попадает на «Фокус», админ — на доску, а явная ссылка
    из уведомления сильнее домашнего экрана (иначе ломается вход по ссылке на диалог).
 """
+import re
 from pathlib import Path
 
 import pytest
@@ -186,3 +187,58 @@ def test_manager_grisha_lands_on_focus_in_simple_mode(monkeypatch):
     for key, value in (("admin_new_look_enabled", True), ("admin_focus_enabled", True), (FLAG, True)):
         monkeypatch.setattr(app.config.settings, key, value, raising=False)
     assert _login(_client(), "grisha", "visa-pass").headers["location"] == "/admin/focus"
+
+
+# ---------------- путь браузера, а не придуманный (находка ревью 21.10) ----------------
+# Первая версия теста слала POST без `next` — так браузер не делает НИКОГДА: `login_form`
+# кладёт в скрытое поле `_safe_next("")`, то есть «/admin», а `index` без сессии ведёт на
+# `/admin/login?next=%2Fadmin`. Тест был зелёный, а домашний экран не работал. Поэтому
+# здесь форма сначала ЗАПРАШИВАЕТСЯ, из неё берётся реальное значение поля, и только
+# потом отправляется — ровно как в браузере.
+def _next_from_form(client, query: str = "") -> str:
+    html = client.get("/admin/login" + query).text
+    found = re.search(r'name="next" value="([^"]*)"', html)
+    assert found, "в форме входа нет скрытого поля next"
+    return found.group(1)
+
+
+def test_manager_reaches_focus_through_the_real_login_form(monkeypatch):
+    _setup(monkeypatch, simple=True)
+    client = _client()
+    target = _next_from_form(client)
+    assert target == "/admin", "форма изменилась — проверь, что сценарий всё ещё реальный"
+    r = client.post("/admin/login", data={"login": "medina", "password": "visa-pass",
+                                          "next": target}, follow_redirects=False)
+    assert r.headers["location"] == "/admin/focus"
+
+
+def test_link_from_a_notification_still_wins_through_the_form(monkeypatch):
+    _setup(monkeypatch, simple=True)
+    client = _client()
+    deep = "/admin?open=getvisa:996700000001"
+    target = _next_from_form(client, "?next=" + deep)
+    r = client.post("/admin/login", data={"login": "medina", "password": "visa-pass",
+                                          "next": target}, follow_redirects=False)
+    assert r.headers["location"] == deep
+
+
+def test_admin_through_the_form_still_lands_on_the_board(monkeypatch):
+    _setup(monkeypatch, simple=True)
+    client = _client()
+    r = client.post("/admin/login", data={"login": "admin", "password": "frunze",
+                                          "next": _next_from_form(client)},
+                    follow_redirects=False)
+    assert r.headers["location"] == "/admin"
+
+
+def test_open_sorting_panel_is_not_wiped_by_the_ten_second_poll(monkeypatch):
+    """Опрос перерисовывал блок и схлопывал «Разобрать список» — массовый архив был
+    практически недостижим: пропуск срабатывал только после отметки чекбокса."""
+    page = _page(monkeypatch, "/admin/inbox", simple=True)
+    # В условии триггера есть своя квадратная скобка (`.inbox-tools[open]`), поэтому
+    # читаем до конца атрибута, а не до первой закрывающей.
+    trigger = re.search(r'hx-trigger="(every 10s .*?)"', page)
+    assert trigger, "у инбокса пропал триггер опроса"
+    assert "inbox-tools[open]" in trigger.group(1), trigger.group(1)
+    # И обратная сторона контракта: при выключенном флаге сторожа в разметке нет.
+    assert "inbox-tools[open]" not in _page(monkeypatch, "/admin/inbox", simple=False)
