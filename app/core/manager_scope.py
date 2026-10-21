@@ -20,6 +20,11 @@ BOT_SCOPE_BY_MANAGER: dict[str, set[str]] = {
     "eliza": {"getvisa", "getvisa_tg"},
     "элиза": {"getvisa", "getvisa_tg"},
     "getvisa": {"getvisa", "getvisa_tg"},
+    # Гриша — заказчик визового направления и ведущий пилота 27.10. Решение Алана 21.10:
+    # основной вход у него МЕНЕДЖЕРСКИЙ, чтобы он оценивал ровно то, что видят Медина и
+    # Элиза, а не админский экран. Полные права — на отдельной учётке `grisha-admin`.
+    "grisha": {"getvisa", "getvisa_tg"},
+    "гриша": {"getvisa", "getvisa_tg"},
 }
 
 

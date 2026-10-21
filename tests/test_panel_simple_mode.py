@@ -160,3 +160,29 @@ def test_templates_declare_the_flag_only_through_the_context(monkeypatch):
     used = [p.name for p in TEMPLATES.glob("*.html") if "simple_on" in p.read_text("utf-8")]
     assert {"_attention.html", "calendar.html", "_work_list.html", "focus.html",
             "_conversation.html", "boards.html"} <= set(used), used
+
+
+# ---------------- доступ Гриши (решение Алана 21.10) ----------------
+# Две учётки: `grisha` видит ровно то же, что визовые менеджеры, `grisha-admin` — всё.
+# Тест держит именно разделение: заказчик оценивает рабочее место сотрудника, а не
+# админский экран, и при этом не теряет возможности остановить пилот с другой учётки.
+def test_grisha_logs_in_as_a_visa_manager_not_an_admin():
+    from app.core.manager_scope import bot_scope_for
+    assert bot_scope_for({"login": "grisha", "name": "Гриша", "admin": False}) == {"getvisa", "getvisa_tg"}
+    assert bot_scope_for({"login": "grisha", "name": "Гриша", "admin": False}) == \
+           bot_scope_for({"login": "medina", "name": "Медина", "admin": False})
+
+
+def test_the_separate_admin_account_keeps_full_rights():
+    from app.core.manager_scope import bot_scope_for
+    assert bot_scope_for({"login": "grisha-admin", "name": "Гриша (админ)", "admin": True}) is None
+
+
+def test_manager_grisha_lands_on_focus_in_simple_mode(monkeypatch):
+    _clear()
+    monkeypatch.setattr(app.config.settings, "managers", [
+        ManagerConfig(login="grisha", name="Гриша", password="visa-pass", admin=False),
+    ], raising=False)
+    for key, value in (("admin_new_look_enabled", True), ("admin_focus_enabled", True), (FLAG, True)):
+        monkeypatch.setattr(app.config.settings, key, value, raising=False)
+    assert _login(_client(), "grisha", "visa-pass").headers["location"] == "/admin/focus"
