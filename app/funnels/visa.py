@@ -159,5 +159,11 @@ async def _entry_branch(msg: Message, state: DialogState) -> str | None:
 
     state.qualification["entry_mode"] = "kg_entry"
     state.qualification.setdefault("kg_entry", {})
+
+    if await llm_available():
+        from app.agent.runner import run_kg_entry_turn
+        return await run_kg_entry_turn(state, msg.text)
+
+    # Без ключа модели диалог вести нечем: честно передаём человеку.
     state.stage = "manager"
     return ENTRY_HANDOVER

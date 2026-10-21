@@ -130,6 +130,60 @@ TOOLS = [
             "required": ["route"],
         },
     },
+    # --- Въездные визы в КР (ТЗ Гриши v1.1, слоты Б.3) ---
+    # Перечисления взяты из JSON Б.3 дословно, чтобы модель не изобретала своих значений:
+    # по ТЗ эти же коды уходят в CRM, и расхождение сломало бы и карточку, и отчёты.
+    {
+        "name": "kg_entry_facts",
+        "description": ("Записать факты о клиенте-иностранце, который едет в Кыргызстан "
+                        "или уже в нём. Вызывать сразу, как клиент что-то назвал. "
+                        "Не придумывать значения, которых клиент не говорил."),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "citizenship": {"type": "string",
+                                "description": "Страна паспорта, с которым клиент поедет"},
+                "document_type": {"type": "string",
+                                  "enum": ["ordinary", "diplomatic", "service", "un_lp",
+                                           "stateless", "refugee", "other", "id_card",
+                                           "internal"]},
+                "purpose": {"type": "string",
+                            "enum": ["tourism", "private_visit", "relatives_kg_citizen",
+                                     "family_of_foreigner", "business_meeting", "event",
+                                     "sport", "medical", "study", "work_hire",
+                                     "work_individual_employer", "entrepreneur",
+                                     "investor", "it_remote", "journalism", "volunteer",
+                                     "equipment_installation", "transit", "religious",
+                                     "driver", "accompanying_gcc", "official"]},
+                "purpose_details": {"type": "string"},
+                "location": {"type": "string", "enum": ["abroad", "in_kg"]},
+                "in_kg_since": {"type": "string", "description": "ГГГГ-ММ-ДД"},
+                "entry_on": {"type": "string", "description": "ГГГГ-ММ-ДД"},
+                "exit_on": {"type": "string", "description": "ГГГГ-ММ-ДД"},
+                "applicants_count": {"type": "integer"},
+                "inviter": {"type": "string",
+                            "description": "Приглашающая сторона в КР, если есть"},
+                "family": {"type": "string", "description": "Состав семьи или группы"},
+                "language": {"type": "string", "description": "Язык общения клиента"},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "kg_entry_handoff",
+        "description": ("Передать въездную заявку специалисту. Вызывать, когда выяснено "
+                        "достаточно либо сработал стоп-фактор."),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "reason": {"type": "string",
+                           "description": "Коротко: почему передаём именно сейчас"},
+                "flags": {"type": "array", "items": {"type": "string"},
+                          "description": "Срочно, B2B, был отказ, нарушения и т.п."},
+            },
+            "required": ["reason"],
+        },
+    },
     {
         "name": "crm_update_stage",
         "description": "Сдвинуть сделку по канбану CRM.",

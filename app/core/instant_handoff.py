@@ -76,6 +76,10 @@ def _chat_id_for(login: str) -> str:
 def _request_line(qualification: dict | None, funnel: str) -> str:
     """Запрос одной строкой: направление, состав, даты, бюджет — что есть, то и есть."""
     q = qualification or {}
+    if q.get("entry_mode") == "kg_entry":
+        # Въездной лид: гражданство и цель важнее направления и бюджета.
+        from app.core.entry_card import request_line as entry_request_line
+        return entry_request_line(q, None)
     order = ("destination", "country", "visa_country", "dates", "period",
              "pax", "adults", "budget", "purpose")
     seen: list[str] = []

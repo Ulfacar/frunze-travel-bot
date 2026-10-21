@@ -19,6 +19,7 @@ from app.agent.prompts.common import DOZHIM_AND_PRICE_FORK
 from app.agent.prompts.tickets import SYSTEM as TICKETS_SYSTEM
 from app.agent.prompts.tours import SYSTEM as TOURS_SYSTEM, system_for_manager as tours_system_for_manager
 from app.agent.prompts.visa import SYSTEM as VISA_SYSTEM
+from app.agent.prompts.kg_entry import SYSTEM as KG_ENTRY_SYSTEM
 from app.agent.routing import choose_model, should_escalate_tours_input
 from app.agent.tools import tools_for
 from app.agent.validator import validate_reply
@@ -193,6 +194,12 @@ class FunnelSpec:
     system: str
     tools: list[dict]
     exec_tool: ToolExec
+    # Свой компактный рендер известных фактов вместо тотального дампа анкеты. Нужен
+    # воронкам с большим числом слотов: `_qual_context_message` кладёт в промпт КАЖДОЕ
+    # непустое поле на каждом ходу, и на шестидесяти слотах это и дорого, и шумно.
+    qual_context: object | None = None
+    # Дополнительный профиль валидатора сверх имени воронки (см. validate_reply).
+    validator_profile: str | None = None
 
 
 async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str | None:
@@ -218,7 +225,8 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
                              _schedule_context_message(state.bot_id),
                              _language_context_message(state.history),
                              _ad_context_message(state.ad_referral),
-                             _qual_context_message(state.qualification)) if m]
+                             (spec.qual_context or _qual_context_message)(
+                                 state.qualification)) if m]
         prefix = _shielded_prefix(notes) if shield_notes else notes
         messages = prefix + window
         resp = await client().messages.create(
@@ -245,8 +253,12 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
 
         text = "".join(b.text for b in resp.content if b.type == "text")
         # Валидатор: чиним безопасное (markdown, дисклеймер цен туров), мягко логируем риски.
+        allowed, consent = _entry_claim_permissions(state, spec)
         text, violations = validate_reply(text, spec.name,
-                                          shield_service_notes=shield_notes)
+                                          shield_service_notes=shield_notes,
+                                          profile=spec.validator_profile,
+                                          allowed_claims=allowed,
+                                          consent_given=consent)
         if violations:
             logger.info("validator (%s): %s", spec.name, ", ".join(violations))
             for v in violations:
@@ -703,3 +715,128 @@ TICKETS_SPEC = FunnelSpec(
 async def run_tickets_turn(state: DialogState, user_text: str) -> str | None:
     """Один ход клиента в воронке «Билеты»."""
     return await run_turn(state, user_text, TICKETS_SPEC)
+
+# ---------------------------------------------------------------- въездные визы в КР
+# ТЗ Гриши v1.1. Режим въезда считает КОД (`app/knowledge/entry_regime.py`), модель
+# только пересказывает вычисленное и только то, что разрешено произносить.
+
+def _kg(state: DialogState) -> dict:
+    """Подсловарь анкеты под въездные факты. Два ключа в анкете, остальное внутри."""
+    state.qualification.setdefault("kg_entry", {})
+    return state.qualification["kg_entry"]
+
+
+def _entry_verdict(state: DialogState):
+    """Вывод движка по тому, что уже известно. None — гражданство ещё не названо."""
+    try:
+        from app.knowledge import entry_regime as er
+    except Exception:  # noqa: BLE001
+        return None
+    kg = state.qualification.get("kg_entry") or {}
+    iso = kg.get("citizenship_iso3")
+    if not iso:
+        return None
+    history = tuple(tuple(x) for x in (kg.get("history") or ()))
+    try:
+        return er.evaluate(er.EntryQuery(
+            citizenship_iso3=iso,
+            document_type=kg.get("document_type") or "ordinary",
+            purpose=kg.get("purpose"), entry_on=kg.get("entry_on"),
+            exit_on=kg.get("exit_on"), location=kg.get("location"), history=history))
+    except Exception:  # noqa: BLE001 — молчим и отдаём менеджеру
+        logger.warning("kg entry verdict failed", exc_info=True)
+        return None
+
+
+def _entry_claim_permissions(state: DialogState, spec: "FunnelSpec"):
+    """Что боту разрешено утверждать и получено ли согласие на обработку данных.
+
+    Отдельный флаг РЕЧИ: даже при подтверждённых единицах знаний бот молчит, пока
+    `kg_entry_say_confirmed_enabled` выключен. Это нужно, чтобы выкатить движок и
+    карточку, не разрешая произносить правила до приёмки источников Гришей.
+    """
+    if spec.validator_profile != "kg_entry":
+        return frozenset(), False
+    kg = state.qualification.get("kg_entry") or {}
+    consent = bool(kg.get("consent_given"))
+    if not settings.kg_entry_say_confirmed_enabled:
+        return frozenset(), consent
+    verdict = _entry_verdict(state)
+    return (getattr(verdict, "sayable", frozenset()) or frozenset()), consent
+
+
+def _entry_qual_context(qual: dict) -> dict | None:
+    """Компактный контекст: шесть строк, без сырого JSON и без дампа всех полей."""
+    kg = (qual or {}).get("kg_entry") or {}
+    rows = []
+    for key, label in (("citizenship", "гражданство"), ("document_type", "паспорт"),
+                       ("purpose", "цель"), ("location", "где сейчас"),
+                       ("entry_on", "въезд"), ("exit_on", "выезд"),
+                       ("applicants_count", "человек"), ("inviter", "приглашающая сторона")):
+        if kg.get(key):
+            rows.append(f"{label}: {kg[key]}")
+    verdict = kg.get("_verdict_line")
+    if verdict:
+        rows.append(f"вывод по правилам: {verdict}")
+    if not rows:
+        return None
+    return {"role": "user", "content": "[Уже известно: " + "; ".join(rows) + "]"}
+
+
+async def _kg_entry_exec_tool(name: str, args: dict, state: DialogState, crm=None) -> str:
+    """Исполнитель въездных инструментов. Возвращает инструкцию модели, не текст клиенту."""
+    kg = _kg(state)
+
+    if name == "kg_entry_facts":
+        for key in ("document_type", "purpose", "purpose_details", "location",
+                    "in_kg_since", "entry_on", "exit_on", "applicants_count",
+                    "inviter", "family", "language"):
+            if args.get(key):
+                kg[key] = args[key]
+        if args.get("citizenship"):
+            kg["citizenship"] = args["citizenship"]
+            from app.knowledge.entry_regime import resolve_citizenship
+            iso = resolve_citizenship(str(args["citizenship"]))
+            if iso:
+                kg["citizenship_iso3"] = iso
+            else:
+                kg.pop("citizenship_iso3", None)
+
+        verdict = _entry_verdict(state)
+        if verdict is None:
+            return ("Факты записаны. Правило по гражданству пока не определено — "
+                    "продолжай выяснять и не утверждай ничего про режим въезда.")
+        from app.core.entry_card import _regime_line
+        kg["_verdict_line"] = _regime_line(verdict)
+        allowed = sorted(verdict.sayable) if settings.kg_entry_say_confirmed_enabled else []
+        if not allowed:
+            return ("Факты записаны. Вывод по правилам получен, но произносить его "
+                    "НЕЛЬЗЯ: правила ещё не прошли приёмку. Скажи клиенту, что условия "
+                    "уточнит специалист, и передай заявку через kg_entry_handoff.")
+        return (f"Факты записаны. Разрешено сообщить клиенту: {', '.join(allowed)}. "
+                f"Вывод: {kg['_verdict_line']}. Остальное — к специалисту.")
+
+    if name == "kg_entry_handoff":
+        kg["handoff_reason"] = args.get("reason") or "квалификация завершена"
+        if args.get("flags"):
+            kg["flags"] = list(args["flags"])
+        state.stage = "manager"
+        return ("Заявка передана специалисту. Скажи клиенту честно: специалист свяжется "
+                "в рабочее время и подтвердит условия. Сумм не называй.")
+
+    return "Инструмент недоступен."
+
+
+KG_ENTRY_SPEC = FunnelSpec(
+    name="visa",                      # воронка остаётся визовой, см. app/funnels/visa.py
+    system=KG_ENTRY_SYSTEM,
+    tools=tools_for(["kg_entry_facts", "kg_entry_handoff"]),
+    exec_tool=_kg_entry_exec_tool,
+    qual_context=_entry_qual_context,
+    validator_profile="kg_entry",
+)
+
+
+async def run_kg_entry_turn(state: DialogState, user_text: str) -> str | None:
+    """Один ход клиента-иностранца по въезду в Кыргызстан."""
+    return await run_turn(state, user_text, KG_ENTRY_SPEC)

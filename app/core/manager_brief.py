@@ -53,6 +53,11 @@ def build_manager_brief(state: DialogState) -> dict[str, str]:
             "lead_temperature": "hot" if hot_signal else "new",
         }
 
+    if (state.qualification or {}).get("entry_mode") == "kg_entry":
+        # Въездной лид: у него свои поля и свой формат (приложение Б.4 ТЗ). Общий
+        # `_summary` их не знает и показал бы латинские ключи вперемешку.
+        return _entry_brief(state, hot_signal)
+
     known = _known_fields(state.qualification)
     summary = _summary(state.funnel, known)
     next_step = _next_step(state, hot_signal)
@@ -153,3 +158,23 @@ def _latest_user_text(state: DialogState) -> str:
         if item.get("role") == "user" and isinstance(item.get("content"), str):
             return item["content"]
     return ""
+
+def _entry_brief(state: DialogState, hot_signal: bool) -> dict[str, str]:
+    """Сводка по въездному лиду: карточка Б.4 целиком, без догадок о температуре."""
+    from app.core.entry_card import render, request_line
+    verdict = None
+    try:
+        from app.agent.runner import _entry_verdict
+        verdict = _entry_verdict(state)
+    except Exception:  # noqa: BLE001 — сводка не имеет права ронять ход
+        pass
+    data = dict(state.qualification or {})
+    data.setdefault("phone", getattr(state, "user_id", ""))
+    kg = data.get("kg_entry") or {}
+    return {
+        "ai_summary": render(data, verdict),
+        "manager_next_step": ("Подтвердить условия въезда и ответить клиенту: "
+                              + request_line(data, verdict)),
+        "escalation_reason": kg.get("handoff_reason") or "",
+        "lead_temperature": "hot" if (hot_signal or state.stage == "manager") else "warm",
+    }

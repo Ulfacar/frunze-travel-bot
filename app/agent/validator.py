@@ -229,8 +229,69 @@ def _strip_unknown_urls(text: str) -> tuple[str, bool]:
     return new, stripped
 
 
+def _apply_entry_profile(text: str, *, allowed_claims: frozenset[str],
+                         consent_given: bool) -> tuple[str, list[str]]:
+    """Пять ремней въездной ветки. Подменяет текст, а не только логирует.
+
+    Порядок важен: запрещённые формулировки Б.7 идут ПЕРВЫМИ, потому что их безопасные
+    замены сами содержат правила («Единое разрешение», «не продлевает безвизовый срок»),
+    и проверка неподтверждённого не должна их тут же вырезать.
+    """
+    from app.agent import entry_guards as g
+
+    violations: list[str] = []
+    clean = text
+
+    for name, pattern, negation, safe in g.FORBIDDEN:
+        clean, blocked = _replace_sentences(
+            clean, affirm=pattern, neg=negation, safe_text=safe)
+        if blocked:
+            violations.append(f"kg_entry_forbidden_{name}")
+
+    if _PRICE.search(clean):
+        clean, blocked = _replace_sentences(
+            clean, affirm=_PRICE, neg=re.compile(r"(?!x)x"),
+            safe_text=g.SAFE_PRICE_REPLY)
+        if blocked:
+            violations.append("kg_entry_price_blocked")
+
+    if _GUARANTEE.search(clean):
+        clean, blocked = _replace_sentences(
+            clean, affirm=_GUARANTEE, neg=re.compile(r"не\s+гаранти", re.IGNORECASE),
+            safe_text=g.SAFE_GUARANTEE_REPLY)
+        if blocked:
+            violations.append("kg_entry_guarantee_blocked")
+
+    if not consent_given and g.asks_for_documents(clean):
+        clean, blocked = _replace_sentences(
+            clean, affirm=re.compile(g._ASK_DOCS.pattern, re.IGNORECASE),
+            neg=re.compile(r"(?!x)x"), safe_text=g.SAFE_CONSENT_REPLY)
+        if blocked:
+            violations.append("kg_entry_scan_before_consent_blocked")
+
+    # Последним: утверждения о законе, на которые нет разрешения.
+    unconfirmed = False
+    parts: list[str] = []
+    sentences = [m.group(1) for m in _SENTENCE_SPLIT.finditer(clean) if m.group(1).strip()]
+    for sentence in sentences or [clean]:
+        need = g.claimed_fields(sentence)
+        if need and not need <= allowed_claims:
+            unconfirmed = True
+            continue
+        parts.append(sentence)
+    if unconfirmed:
+        kept = " ".join(p.strip() for p in parts if p.strip())
+        clean = f"{kept} {g.SAFE_UNCONFIRMED_REPLY}".strip() if kept else g.SAFE_UNCONFIRMED_REPLY
+        violations.append("kg_entry_unconfirmed_claim_blocked")
+
+    return clean.strip(), violations
+
+
 def validate_reply(text: str, funnel: str | None,
-                   *, shield_service_notes: bool = False) -> tuple[str, list[str]]:
+                   *, shield_service_notes: bool = False,
+                   profile: str | None = None,
+                   allowed_claims: frozenset[str] = frozenset(),
+                   consent_given: bool = False) -> tuple[str, list[str]]:
     """Вернуть (очищенный_текст, список_нарушений).
 
     Мутируем ТОЛЬКО безопасное (markdown, дисклеймер цен туров). Остальное — в список
@@ -238,6 +299,13 @@ def validate_reply(text: str, funnel: str | None,
 
     `shield_service_notes` — второй рубеж экрана служебных заметок; ходит вместе с
     флагом `service_notes_shield_enabled`, поэтому по умолчанию выключен.
+
+    `profile` — дополнительный набор правил сверх воронки. Единственный пока профиль
+    `kg_entry` (въездные визы в КР) не логирует нарушения, а ПОДМЕНЯЕТ текст: там бот
+    излагает закон чужой страны, и ошибка стоит человеку консульского сбора и запрета
+    на въезд. `allowed_claims` — поля, которые разрешено произносить (см.
+    `EntryVerdict.sayable`); `consent_given` — получено ли согласие на обработку данных.
+    При `profile=None` поведение прежних воронок не меняется ни на символ.
     """
     violations: list[str] = []
 
@@ -279,6 +347,17 @@ def validate_reply(text: str, funnel: str | None,
         )
         if blocked:
             violations.append("work_visa_offer_blocked")
+
+    if profile == "kg_entry":
+        clean, profile_violations = _apply_entry_profile(
+            clean, allowed_claims=allowed_claims, consent_given=consent_given)
+        violations.extend(profile_violations)
+        if len(clean) > MAX_LEN:
+            violations.append("too_long")
+        # Б.2 п.1 разрешает 2-3 вопроса за сообщение — общий порог здесь не годится.
+        if clean.count("?") > 3:
+            violations.append("too_many_questions")
+        return clean, violations
 
     # --- мягкие сигналы (только лог, без правки текста) ---
     # Визы теперь называют официальный прайс услуг → цена тут НЕ нарушение. Билеты — цену
