@@ -31,6 +31,9 @@ COPY knowledge/kg_entry/template_renderers/ ./knowledge/kg_entry/template_render
 COPY knowledge/kg_entry/processes_v1_1/catalog.json ./knowledge/kg_entry/processes_v1_1/catalog.json
 COPY knowledge/kg_entry/documents_v1_1/catalog.json ./knowledge/kg_entry/documents_v1_1/catalog.json
 COPY knowledge/kg_entry/complete_documents_v1_1/ ./knowledge/kg_entry/complete_documents_v1_1/
+# Бандл правил въезда: по нему движок считает режим и срок регистрации. Без этой
+# строки `entry_regime` молча отвечает «не знаю» на всё — проверено перед выкатом.
+COPY knowledge/kg_entry/draft-v1.1/ ./knowledge/kg_entry/draft-v1.1/
 
 # Непривилегированный пользователь.
 RUN useradd --create-home appuser

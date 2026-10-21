@@ -113,3 +113,15 @@ def test_registration_exemptions_do_not_contradict_the_default():
     with_exempt = {u["unit_id"].rsplit(".", 1)[-1] for u in units
                    if u.get("kind") == "registration_exemption" and u.get("value")}
     assert not (no_exempt & with_exempt), f"противоречие по странам: {no_exempt & with_exempt}"
+
+
+def test_bundle_is_copied_into_the_docker_image():
+    """Молчаливая поломка, поймана перед выкатом 21.10.
+
+    Dockerfile копирует каталоги знаний по одному, перечислением. Забыть строку — значит
+    получить на проде движок, который отвечает «не знаю» на любой вопрос, при зелёном
+    /health и зелёных тестах: локально файлы на месте, в образе их нет.
+    """
+    dockerfile = (Path(__file__).resolve().parents[1] / "Dockerfile").read_text("utf-8")
+    assert "knowledge/kg_entry/draft-v1.1/" in dockerfile, (
+        "бандл правил въезда не копируется в образ — на проде движок режима будет пуст")
