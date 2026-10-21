@@ -76,7 +76,10 @@ FLAGGED_PATHS = {"/admin/focus", "/admin/work", "/admin/work/list",
                  "/admin/kg-entry/processes", "/admin/kg-entry/documents",
                  "/admin/kg-entry/templates", "/admin/kg-entry/publication", "/admin/kg-entry/reviews",
                  "/admin/kg-entry/answers",
-                 "/admin/overdue"}  # очередь пилота за флагом pilot_reply_queue_enabled (14.10)
+                 "/admin/overdue",  # очередь пилота за флагом pilot_reply_queue_enabled (14.10)
+                 # Список «нет карточки в Bitrix» за флагом panel_missing_cards_enabled (21.10).
+                 # Его OFF/ON, скоуп менеджера и выгрузка — tests/test_panel_missing_cards.py.
+                 "/admin/no-card", "/admin/no-card.csv"}
 # Answer-page OFF/ON, workday and role gates: test_admin_kg_answers.py.
 # Knowledge review/publication OFF/ON and role gates have dedicated HTTP coverage
 # in test_admin_kg_knowledge_decisions.py and test_admin_kg_knowledge_publication.py.

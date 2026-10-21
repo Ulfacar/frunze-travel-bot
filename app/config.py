@@ -441,6 +441,7 @@ class Settings(BaseSettings):
     # B2b/B2c (14.10): очередь «ждут ответа» и уведомление владельцу. X минут — ЖДЁТ РЕШЕНИЯ
     # ГРИШИ (дефолт 30). Считаются рабочие минуты по часам приёма (schedule.py).
     pilot_reply_sla_minutes: int = 30
+    panel_missing_cards_enabled: bool = False
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False
     crm_bot_send_enabled: bool = False

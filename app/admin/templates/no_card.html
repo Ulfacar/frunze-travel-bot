@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Frunze — нет карточки в Bitrix{% endblock %}
+{% block head %}
+<style>
+  /* Токены дизайн-системы, без своих цветов: экран должен выглядеть частью панели. */
+  .wrap { max-width:900px; margin:0 auto; padding:16px; }
+  .nc-top { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:4px; }
+  .nc-note { color:var(--muted); font-size:13px; line-height:1.5; margin:0 0 14px; }
+  .nc-row { display:flex; gap:12px; align-items:baseline; padding:12px 14px; border:1px solid var(--border);
+            border-radius:12px; background:var(--surface); margin-bottom:8px; text-decoration:none; color:inherit; }
+  .nc-row:hover { border-color:var(--brand); }
+  .nc-main { flex:1; min-width:0; }
+  .nc-phone { font-variant-numeric:tabular-nums; font-weight:700; }
+  .nc-text { color:var(--muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nc-meta { color:var(--muted); font-size:12px; white-space:nowrap; }
+  .nc-tag { font-size:12px; border:1px solid var(--border); border-radius:999px; padding:1px 8px; color:var(--muted); }
+  @media (max-width:560px) {
+    .nc-row { flex-wrap:wrap; gap:4px 10px; }
+    .nc-main { flex-basis:100%; }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="nc-top">
+    <h2 style="margin:0">Нет карточки в Bitrix — {{ rows|length }}</h2>
+    {% if rows %}<a class="btn" href="/admin/no-card.csv">Скачать списком</a>{% endif %}
+  </div>
+  <p class="nc-note">
+    Эти клиенты писали нам, но карточка в портале по ним не появилась: зеркало было выключено,
+    портал отвечал отказом или бот в тот момент молчал из-за внешнего сбоя. Разговор у нас сохранён
+    целиком — потеряна только карточка. Экран ничего в Bitrix не создаёт, он нужен, чтобы номера
+    не пропали. Из них с живым разговором — {{ talked }}. Архивные диалоги здесь не показываются.
+  </p>
+  {% for r in rows %}
+  <a class="nc-row" href="/admin?open={{ r.user_id|urlencode }}">
+    <span class="nc-main">
+      <b>{{ r.name }}</b>
+      {% if r.phone and r.phone != r.name %}<span class="nc-phone">{{ r.phone }}</span>{% endif %}
+      <span class="nc-tag">{{ r.direction }}</span>
+      <span class="nc-tag">{{ r.stage }}</span>
+      <div class="nc-text">{{ r.last_text }}</div>
+    </span>
+    <span class="nc-meta">{{ r.last_at }}</span>
+    <span class="nc-meta">{{ r.owner }}</span>
+  </a>
+  {% else %}
+  <p>Карточка в Bitrix есть у всех диалогов. Терять нечего.</p>
+  {% endfor %}
+</div>
+{% endblock %}

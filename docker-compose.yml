@@ -14,6 +14,8 @@ services:
       PANEL_SEND_MEDIA_MAX_MB: ${PANEL_SEND_MEDIA_MAX_MB:-10}
       # Простой режим панели (21.10): порог входа для менеджеров. OFF по умолчанию.
       PANEL_SIMPLE_MODE_ENABLED: ${PANEL_SIMPLE_MODE_ENABLED:-false}
+      # Список «нет карточки в Bitrix» (21.10): только чтение, в портал не пишет. OFF.
+      PANEL_MISSING_CARDS_ENABLED: ${PANEL_MISSING_CARDS_ENABLED:-false}
       PILOT_REPLY_SLA_MINUTES: ${PILOT_REPLY_SLA_MINUTES:-30}
       PILOT_REPLY_QUEUE_ENABLED: ${PILOT_REPLY_QUEUE_ENABLED:-false}
       PILOT_REPLY_ALERT_ENABLED: ${PILOT_REPLY_ALERT_ENABLED:-false}

@@ -60,7 +60,8 @@ async def _load_new_look(request: Request) -> None:
            bool(settings.admin_chat_redesign_enabled),
            # Четвёртым — иначе подмена флага в тестах не видна весь TTL, и гейт флапает.
            bool(settings.admin_workday_enabled), bool(settings.service_cases_enabled),
-           bool(settings.panel_simple_mode_enabled))
+           bool(settings.panel_simple_mode_enabled),
+           bool(settings.panel_missing_cards_enabled))
     if (_look_cache["key"] == key and _look_cache["new_look"] is not None
             and now - float(_look_cache["at"]) < _LOOK_TTL):
         request.state.new_look = bool(_look_cache["new_look"])
@@ -69,6 +70,7 @@ async def _load_new_look(request: Request) -> None:
         request.state.workday_on = bool(_look_cache["workday_on"])
         request.state.cases_write_on = bool(_look_cache["cases_write_on"])
         request.state.simple_on = bool(_look_cache["simple_on"])
+        request.state.missing_cards_on = bool(_look_cache["missing_cards_on"])
         return
     try:
         new_look = await _flags.get_flag("admin_new_look_enabled",
@@ -82,11 +84,14 @@ async def _load_new_look(request: Request) -> None:
                                                settings.service_cases_enabled)
         simple_on = await _flags.get_flag("panel_simple_mode_enabled",
                                           settings.panel_simple_mode_enabled)
+        missing_cards_on = await _flags.get_flag("panel_missing_cards_enabled",
+                                                 settings.panel_missing_cards_enabled)
         _look_cache.update({"at": now, "key": key, "new_look": new_look,
                             "focus_on": focus_on, "chat_redesign": chat_redesign,
                             "workday_on": workday_on,
                             "cases_write_on": cases_write_on,
-                            "simple_on": simple_on})
+                            "simple_on": simple_on,
+                            "missing_cards_on": missing_cards_on})
     except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
         new_look, focus_on = (bool(settings.admin_new_look_enabled),
                               bool(settings.admin_focus_enabled))
@@ -94,12 +99,14 @@ async def _load_new_look(request: Request) -> None:
         workday_on = bool(settings.admin_workday_enabled)
         cases_write_on = bool(settings.service_cases_enabled)
         simple_on = bool(settings.panel_simple_mode_enabled)
+        missing_cards_on = bool(settings.panel_missing_cards_enabled)
     request.state.new_look = bool(new_look)
     request.state.focus_on = bool(focus_on)
     request.state.chat_redesign = bool(chat_redesign)
     request.state.workday_on = bool(workday_on)
     request.state.cases_write_on = bool(cases_write_on)
     request.state.simple_on = bool(simple_on)
+    request.state.missing_cards_on = bool(missing_cards_on)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"],
@@ -128,6 +135,9 @@ def _chrome(request: Request) -> dict:
             # Простой режим: вторичные действия прячутся до того, как станут нужны.
             "simple_on": bool(getattr(request.state, "simple_on",
                                       settings.panel_simple_mode_enabled)),
+            # Ссылка на список «нет карточки в Bitrix» — только когда экран включён.
+            "missing_cards_on": bool(getattr(request.state, "missing_cards_on",
+                                             settings.panel_missing_cards_enabled)),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
                                           settings.admin_chat_redesign_enabled)),
             "workday_on": bool(getattr(request.state, "workday_on",
@@ -1048,6 +1058,15 @@ FEATURE_FLAGS = {
         "default": lambda: settings.panel_simple_mode_enabled,
         "note": lambda: "замер 21.10: в инбоксе 199 элементов, в работе менеджера — 5",
     },
+    "panel_missing_cards_enabled": {
+        "title": "Список «нет карточки в Bitrix»",
+        "desc": ("Клиенты, которые писали нам, но карточка в портале по ним так и не "
+                 "появилась: зеркало не сработало, портал отвечал отказом или тумблер "
+                 "был выключен. Экран только читает и даёт скачать список номеров, "
+                 "ничего в Bitrix не создаёт."),
+        "default": lambda: settings.panel_missing_cards_enabled,
+        "note": lambda: "замер прода 21.10: 811 диалогов без карточки, из них 355 не в архиве",
+    },
     "pilot_reply_queue_enabled": {
         "title": "Очередь «ждут ответа» (пилот виз)",
         "desc": ("Отдельный список: клиент ждёт ответа менеджера дольше X рабочих минут "
@@ -1838,6 +1857,65 @@ async def overdue_queue(request: Request, manager: dict = Depends(require_admin)
     return templates.TemplateResponse(request, "overdue.html", {
         "rows": rows, "sla": settings.pilot_reply_sla_minutes, "manager": manager,
     }, headers={"Cache-Control": "no-store"})
+
+
+def _missing_card_rows(convs: list) -> list[dict]:
+    """Диалоги без карточки Bitrix, самые свежие сверху.
+
+    Почему это вообще список, а не ноль строк: карточка создаётся зеркалом по ходу
+    разговора, и она не появляется, когда зеркало выключено, портал ответил отказом
+    (ночные 403) или бот молчал из-за внешнего сбоя. Такой клиент остаётся только у нас,
+    и при переносе учёта его легко потерять — поэтому номера видно и можно забрать файлом.
+    """
+    rows = [c for c in convs if not (getattr(c, "bitrix_lead_id", "") or "").strip()]
+    rows.sort(key=lambda c: (c.last_message_at is None, c.last_message_at and -c.last_message_at.timestamp()))
+    out = []
+    for c in rows:
+        out.append({
+            "user_id": c.user_id,
+            "name": (c.qualification or {}).get("name") or c.phone or c.user_id,
+            "phone": c.phone or "",
+            "direction": "визы" if "visa" in (c.funnel or "") or "getvisa" in (c.bot_id or "") else "туры",
+            "stage": STAGE_LABELS.get(c.stage or "", c.stage or ""),
+            "owner": c.assigned_to or "ничей",
+            "last_at": c.last_message_at.strftime("%d.%m.%Y") if c.last_message_at else "",
+            "last_text": (c.last_text or "")[:120],
+            "talked": bool((c.last_text or "").strip()),
+        })
+    return out
+
+
+@router.get("/no-card", response_class=HTMLResponse)
+async def missing_cards(request: Request, manager: dict = Depends(require_admin)):
+    """Клиенты, у которых нет карточки в Bitrix: читаем и показываем, в портал не пишем."""
+    if not await _media_flag("panel_missing_cards_enabled"):
+        raise HTTPException(status_code=404, detail="not enabled")
+    convs = _filter_conversations(await get_conversation_store().all_conversations_light(), manager)
+    rows = _missing_card_rows(convs)
+    return templates.TemplateResponse(request, "no_card.html", {
+        "rows": rows, "manager": manager, "talked": sum(1 for r in rows if r["talked"]),
+    }, headers={"Cache-Control": "no-store"})
+
+
+@router.get("/no-card.csv")
+async def missing_cards_csv(request: Request, manager: dict = Depends(require_admin)):
+    """Тот же список файлом. Разделитель — точка с запятой, кодировка с BOM: иначе
+    Excel в русской Windows открывает CSV одной колонкой и ломает кириллицу."""
+    if not await _media_flag("panel_missing_cards_enabled"):
+        raise HTTPException(status_code=404, detail="not enabled")
+    convs = _filter_conversations(await get_conversation_store().all_conversations_light(), manager)
+    rows = _missing_card_rows(convs)
+    import csv, io as _io
+    buf = _io.StringIO()
+    w = csv.writer(buf, delimiter=";", lineterminator=chr(13) + chr(10))
+    w.writerow(["Номер", "Имя", "Направление", "Стадия", "Кто ведёт", "Последнее сообщение", "Последняя реплика"])
+    for r in rows:
+        w.writerow([r["phone"], r["name"], r["direction"], r["stage"], r["owner"], r["last_at"], r["last_text"]])
+    await get_conversation_store().add_audit(manager["login"], "export", "",
+                                             f"no_card_csv rows={len(rows)}")
+    return Response(chr(0xFEFF) + buf.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="clients-without-bitrix-card.csv"',
+                             "Cache-Control": "no-store"})
 
 
 @router.get("/inbox", response_class=HTMLResponse)

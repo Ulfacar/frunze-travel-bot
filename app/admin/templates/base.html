@@ -402,6 +402,7 @@
       <summary class="nav-link">{{ ic.icon('list') }}Ещё</summary>
       <div class="more-pop">
         {{ nl('/admin/morning','flame','Горячий лист') }}
+        {% if missing_cards_on %}{{ nl('/admin/no-card','cards','Нет карточки в Bitrix') }}{% endif %}
         {% if is_admin|default(false) %}
         {{ nl('/admin/faq','faq','FAQ-правила') }}
         {{ nl('/admin/analytics','chart','Аналитика') }}
@@ -418,6 +419,7 @@
     <a href="/admin" class="nav-link">💬 Диалоги</a>
     <a href="/admin/buyers" class="nav-link">🎯 Покупатели</a>
     <a href="/admin/morning" class="nav-link">🔥 Горячий лист</a>
+    {% if missing_cards_on %}<a href="/admin/no-card" class="nav-link" title="Нет карточки в Bitrix">🗂❗</a>{% endif %}
     <a href="/admin/calendar" class="nav-link">📅 Календарь</a>
     {% if is_admin|default(false) %}
     <a href="/admin/faq" class="nav-link" title="FAQ-правила">FAQ</a>
