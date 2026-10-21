@@ -242,3 +242,27 @@ def test_open_sorting_panel_is_not_wiped_by_the_ten_second_poll(monkeypatch):
     assert "inbox-tools[open]" in trigger.group(1), trigger.group(1)
     # И обратная сторона контракта: при выключенном флаге сторожа в разметке нет.
     assert "inbox-tools[open]" not in _page(monkeypatch, "/admin/inbox", simple=False)
+
+
+# ---------------- календарь не показывает чужих клиентов (находка аудита 21.10) ----------------
+# Задачи фильтруются по владельцу, а карточка берёт имя и телефон из диалога. Пока владелец
+# задачи и доступ к диалогу совпадают, это незаметно. Перевод Гриши из админов в визовый
+# скоуп их развёл: в его календаре остались 25 задач турового клиента — имя и номер видны,
+# а «Переписка →» отдаёт 404. Проверяем сам фильтр, а не страницу: он и есть предохранитель.
+@pytest.mark.asyncio
+async def test_calendar_card_data_is_limited_to_the_managers_scope(monkeypatch):
+    _clear()
+    store = panel_store._memory_store
+    await store.add_message("getvisa:996700000021", "client", "виза", bot_id="getvisa")
+    await store.add_message("frunze_tours_sezim:996700000022", "client", "тур",
+                            bot_id="frunze_tours_sezim")
+    monkeypatch.setattr(panel_store, "get_conversation_store", lambda: store, raising=False)
+    monkeypatch.setattr(admin_router, "get_conversation_store", lambda: store, raising=False)
+    ids = {"getvisa:996700000021", "frunze_tours_sezim:996700000022"}
+
+    visa_manager = {"login": "medina", "name": "Медина", "admin": False}
+    seen = await admin_router._conv_map(ids, visa_manager)
+    assert set(seen) == {"getvisa:996700000021"}, "визовому менеджеру видно туровых клиентов"
+
+    full_admin = {"login": "admin", "name": "Админ", "admin": True}
+    assert set(await admin_router._conv_map(ids, full_admin)) == ids, "админ потерял видимость"

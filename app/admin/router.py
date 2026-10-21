@@ -2866,14 +2866,24 @@ async def _fetch_calendar_tasks(manager: dict, date_from: date, date_to: date, *
         return []
 
 
-async def _conv_map(user_ids: set[str]) -> dict:
+async def _conv_map(user_ids: set[str], manager: dict | None = None) -> dict:
     """user_id → live conversation, for the human bits on a task card (name, waiting, context).
-    One light store read for the whole page. Fail-safe: empty map degrades to phone-only cards."""
+
+    Скоуп применяется ЗДЕСЬ, а не только при выборке задач. Задачи фильтруются по
+    владельцу (`manager_id`), и этого достаточно, пока владелец задачи и доступ к
+    диалогу совпадают. Стоит им разойтись — и карточка показывает имя, телефон и
+    последнюю реплику клиента из чужого направления, а ссылка «Переписка →» отдаёт 404.
+    Ровно это и случилось 21.10, когда Гришу перевели из админов в визовый скоуп: в его
+    календаре остались 25 задач турового клиента (находка независимого аудита).
+
+    One light store read for the whole page. Fail-safe: empty map degrades to phone-only cards.
+    """
     if not user_ids:
         return {}
     try:
         convs = await get_conversation_store().all_conversations_light()
-        return {c.user_id: c for c in convs if c.user_id in user_ids}
+        return {c.user_id: c for c in convs
+                if c.user_id in user_ids and _can_view_conversation(c, manager)}
     except Exception:  # noqa: BLE001
         log.debug("calendar: conversation map failed", exc_info=True)
         return {}
@@ -2896,7 +2906,7 @@ async def calendar_view(request: Request, manager: dict = Depends(require_admin)
         view, d_from, d_to = "day", anchor, anchor
 
     rows = await _fetch_calendar_tasks(manager, d_from, d_to, include_terminal=(view == "day"))
-    convs = await _conv_map({t.user_id for t in rows if t.user_id})
+    convs = await _conv_map({t.user_id for t in rows if t.user_id}, manager)
     cards = [_task_ui(t, today, convs.get(t.user_id or "")) for t in rows]
 
     # Older-than-range tasks only ever surface as the overdue tail.
