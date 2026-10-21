@@ -1637,8 +1637,13 @@ async def board(funnel: str, request: Request, manager: dict = Depends(require_a
 
 
 async def _all_models(now: datetime, manager: dict | None = None) -> list[dict]:
-    """Обогащённые карточки по ВСЕМ воронкам (для инбокса, поиска, счётчиков)."""
-    convs = await get_conversation_store().all_conversations()
+    """Обогащённые карточки по ВСЕМ воронкам (для инбокса, поиска, счётчиков).
+
+    Загрузчик карточный, а не полный: инбокс опрашивается раз в 10 секунд, и полная
+    история (52 812 сообщений на 20.10.2026) держала контейнер в 100% CPU. Признаки
+    истории, нужные детекторам, приходят агрегатом — см. `all_conversations_for_cards`.
+    """
+    convs = await get_conversation_store().all_conversations_for_cards()
     return [_card_model(c, now) for c in _filter_conversations(convs, manager)]
 
 

@@ -329,6 +329,10 @@ class MemoryConversationStore:
         """То же, но без гарантии сообщений — для сводок (buyers), где текст не нужен."""
         return [c for c in self._conv.values() if not c.archived]
 
+    async def all_conversations_for_cards(self) -> list[ConversationView]:
+        """Для инбокса/доски/счётчиков: в памяти история и так под рукой."""
+        return [c for c in self._conv.values() if not c.archived]
+
     async def list_audit(self, limit: int = 200) -> list[dict]:
         """Последние записи аудита (новые сверху)."""
         return list(reversed(self._audit[-limit:]))
@@ -696,6 +700,55 @@ class PostgresConversationStore:
                 select(Conversation).where(Conversation.archived.is_not(True))
             )).scalars().all()
             return [_view(conv) for conv in rows]
+
+    async def all_conversations_for_cards(self) -> list[ConversationView]:
+        """Карточки инбокса/доски/счётчиков: лёгкие строки + ТОЛЬКО те признаки истории,
+        которые читают детекторы `is_noise`/`is_silent`.
+
+        Зачем. `all_conversations()` тянула каждый диалог вместе со всеми сообщениями, а
+        инбокс опрашивается раз в 10 с, счётчик — раз в 12 с, доска — раз в 15 с. Замер
+        прода 20.10.2026: 3488 диалогов и 52 812 сообщений на КАЖДЫЙ опрос, страница
+        инбокса 2,1 МБ, `/admin/stats` 5,3 с при пустом ответе, контейнер в 100% CPU.
+
+        Детекторам из истории нужны ровно три факта: есть ли сообщения вообще, есть ли
+        среди них наша реплика (бот/менеджер) и сколько реплик клиента — но не больше
+        порога `UNSEEN_MIN_CLIENT_MSGS`. Считаем их одним GROUP BY и подставляем
+        ЗАГЛУШКИ сообщений: на этих данных `_has_message`, `_has_bot_or_manager_message`,
+        `_only_client_messages` и `looks_unseen_conversation` дают тот же ответ, что и на
+        полной истории — равенство закреплено `tests/test_inbox_card_loader.py`.
+        Текста сообщений здесь нет: карточке он нужен только из `last_text`.
+        """
+        from sqlalchemy import func
+        from app.core.leadstate import UNSEEN_MIN_CLIENT_MSGS
+        from app.integrations.crm.db import Conversation, Message
+        async with self._sm()() as session:
+            rows = (await session.execute(
+                select(Conversation).where(Conversation.archived.is_not(True))
+            )).scalars().all()
+            stats = (await session.execute(
+                select(
+                    Message.conversation_id,
+                    func.count().label("total"),
+                    func.count().filter(Message.sender == "client").label("clients"),
+                    func.count().filter(Message.sender.in_(("bot", "manager"))).label("ours"),
+                ).group_by(Message.conversation_id)
+            )).all()
+            by_conv = {r[0]: (r[1], r[2], r[3]) for r in stats}
+            views = []
+            for conv in rows:
+                total, clients, ours = by_conv.get(conv.id, (0, 0, 0))
+                stubs = [MessageView(sender="client", text="")
+                         for _ in range(min(clients, UNSEEN_MIN_CLIENT_MSGS))]
+                if ours:
+                    stubs.append(MessageView(sender="bot", text=""))
+                if total and not stubs:
+                    # Ни клиента, ни нашей реплики (служебные отправители): история не
+                    # пуста, и `_has_message` обязан это видеть.
+                    stubs.append(MessageView(sender="", text=""))
+                v = _view(conv)
+                v.messages = stubs
+                views.append(v)
+            return views
 
     async def add_audit(self, manager: str, action: str, user_id: str = "", detail: str = "") -> None:
         from app.integrations.crm.db import AuditLog
