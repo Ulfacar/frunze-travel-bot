@@ -1962,18 +1962,29 @@ async def archive_conversations(request: Request, manager: dict = Depends(requir
         if conv is not None and _can_view_conversation(conv, manager):
             allowed.append(item)
     count = await panel.set_archived_many(allowed, True)
-    await panel.add_audit(manager["login"], "archive_many", "", f"count={count}")
+    await panel.add_audit(manager["login"], "archive_many", "",
+                          f"count={count} ids={','.join(allowed)}")
     return await _render_inbox_partial(request)
 
 
 @router.post("/conversations/archive-noise", response_class=HTMLResponse)
 async def archive_noise_conversations(request: Request, manager: dict = Depends(require_admin)):
-    """Archive all current noise conversations using the same card model as the inbox."""
-    models = await _all_models(_now(), manager)
+    """Archive all current noise conversations using the same card model as the inbox.
+
+    Два предохранителя, оба — находки независимого аудита 21.10:
+
+    1. Модели берём через `_visible_models`, а не `_all_models`: число в кнопке и в
+       подтверждении считает именно он, с фильтром по направлению. Разойдись они — и
+       диалог спросит про двенадцать, а заархивирует все, включая чужое направление.
+    2. В журнал пишем САМИ идентификаторы, а не только их количество. Разархивации
+       пачкой в панели нет, и по записи «count=256» выборочно вернуть нельзя ничего.
+    """
+    models = await _visible_models(request, manager)
     ids = [m["user_id"] for m in models if m["is_noise"]]
     panel = get_conversation_store()
     count = await panel.set_archived_many(ids, True)
-    await panel.add_audit(manager["login"], "archive_noise", "", f"count={count}")
+    await panel.add_audit(manager["login"], "archive_noise", "",
+                          f"count={count} ids={','.join(ids)}")
     return await _render_inbox_partial(request)
 
 

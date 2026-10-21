@@ -266,3 +266,24 @@ async def test_calendar_card_data_is_limited_to_the_managers_scope(monkeypatch):
 
     full_admin = {"login": "admin", "name": "Админ", "admin": True}
     assert set(await admin_router._conv_map(ids, full_admin)) == ids, "админ потерял видимость"
+
+
+# ---------------- массовый архив: счёт и действие обязаны совпадать (аудит 21.10) ----------------
+def test_noise_archive_counts_and_archives_the_same_set():
+    """Кнопка считает по `_visible_models` (с фильтром направления), а архивировал
+    `_all_models` — без него. Включат разделение направлений, и диалог спросит про
+    двенадцать, а снесёт все, включая чужую воронку."""
+    source = Path(admin_router.__file__).read_text("utf-8")
+    body = source[source.index("async def archive_noise_conversations"):]
+    body = body[:body.index("@router.post", 10)]
+    assert "_visible_models(request, manager)" in body, "массовый архив снова считает не то, что показывает"
+    assert "_all_models(" not in body
+    assert "ids=" in body, "в журнал не пишутся идентификаторы — откат невозможен"
+
+
+def test_service_check_account_is_a_scoped_manager_not_an_admin():
+    """Автопроверки ходят под своим логином: журнал владения не должен подписываться
+    именами Медины и Элизы (находка аудита 21.10)."""
+    from app.core.manager_scope import bot_scope_for
+    assert bot_scope_for({"login": "svc-check", "name": "Проверка", "admin": False}) == \
+           {"getvisa", "getvisa_tg"}

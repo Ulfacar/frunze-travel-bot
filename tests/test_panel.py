@@ -392,8 +392,11 @@ def test_bulk_archive_endpoint_hides_cards_and_audits():
     board = client.get("/admin/board/visa").text
     assert "u-live" in board
     assert "u-bulk-a" not in board
-    assert any(a["action"] == "archive_many" and a["detail"] == "count=2"
-               for a in panel_store._memory_store._audit)
+    # 21.10: в журнале не только число, но и сами id — иначе выборочно вернуть
+    # заархивированное нельзя, а разархивации пачкой в панели нет (находка аудита).
+    entry = next(a for a in panel_store._memory_store._audit if a["action"] == "archive_many")
+    assert entry["detail"].startswith("count=2 ids=")
+    assert "u-bulk-a" in entry["detail"] and "u-bulk-b" in entry["detail"]
 
 
 def test_archive_noise_endpoint_uses_card_noise_logic_and_audits():
@@ -414,8 +417,9 @@ def test_archive_noise_endpoint_uses_card_noise_logic_and_audits():
     assert 'data-user-id="noise-1"' not in client.get("/admin/search", params={"q": "noise-1"}).text
     assert 'data-user-id="noise-2"' not in client.get("/admin/search", params={"q": "noise-2"}).text
     assert 'data-user-id="real-1"' in client.get("/admin/search", params={"q": "real-1"}).text
-    assert any(a["action"] == "archive_noise" and a["detail"] == "count=2"
-               for a in panel_store._memory_store._audit)
+    entry = next(a for a in panel_store._memory_store._audit if a["action"] == "archive_noise")
+    assert entry["detail"].startswith("count=2 ids=")
+    assert "noise-1" in entry["detail"] and "noise-2" in entry["detail"]
 
 
 def test_manager_send_replies_and_takes_over(monkeypatch):

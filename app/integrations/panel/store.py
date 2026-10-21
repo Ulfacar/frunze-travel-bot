@@ -12,7 +12,7 @@ Read-методы возвращают простые dataclass-вью (Conversa
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, is_dataclass, replace
 from datetime import datetime, timezone
 from typing import Any
 
@@ -330,8 +330,30 @@ class MemoryConversationStore:
         return [c for c in self._conv.values() if not c.archived]
 
     async def all_conversations_for_cards(self) -> list[ConversationView]:
-        """Для инбокса/доски/счётчиков: в памяти история и так под рукой."""
-        return [c for c in self._conv.values() if not c.archived]
+        """Для инбокса/доски/счётчиков: та же свёртка истории, что в боевом Postgres.
+
+        В памяти история под рукой, и соблазн вернуть её целиком велик. Но тогда тесты
+        на памяти видят одно, а прод — другое, и регрессия в боевой ветке проходит мимо
+        них: 21.10 так уехал `ImportError` в карточном загрузчике. Свёртка здесь держит
+        оба бэкенда в одной форме данных.
+        """
+        from app.core.leadstate import UNSEEN_MIN_CLIENT_MSGS
+        out = []
+        for conv in self._conv.values():
+            if conv.archived:
+                continue
+            messages = list(getattr(conv, "messages", None) or [])
+            clients = sum(1 for m in messages if getattr(m, "sender", "") == "client")
+            ours = any(getattr(m, "sender", "") in ("bot", "manager") for m in messages)
+            stubs = [MessageView(sender="client", text="")
+                     for _ in range(min(clients, UNSEEN_MIN_CLIENT_MSGS))]
+            if ours:
+                stubs.append(MessageView(sender="bot", text=""))
+            if messages and not stubs:
+                stubs.append(MessageView(sender="", text=""))
+            view = replace(conv, messages=stubs) if is_dataclass(conv) else conv
+            out.append(view)
+        return out
 
     async def list_audit(self, limit: int = 200) -> list[dict]:
         """Последние записи аудита (новые сверху)."""
