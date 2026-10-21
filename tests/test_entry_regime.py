@@ -184,3 +184,40 @@ def test_confirmed_units_unlock_their_own_field_only(engine, monkeypatch):
     assert "regime" in v.sayable and "stay_limit" in v.sayable
     assert "registration" not in v.sayable, \
         "срок регистрации произнесён, хотя его единица не подтверждена"
+
+
+# --- G. Эталонные сценарии приложения Б.8 --------------------------------------
+
+def test_b8_case_1_usa_tourist(engine):
+    """США, туризм: безвиз 30/60, освобождение от регистрации 30 дней."""
+    v = _ask(engine, "США", purpose="tourism")
+    assert v.regime == "visa_free"
+    assert (v.stay_limit_days, v.window_days) == (30, 60)
+    assert v.registration.exempt_days == 30
+
+
+def test_b8_case_2_india_business_falls_to_the_general_procedure(engine):
+    """Индия: нужна виза в общем порядке.
+
+    Ловушка, найденная прогоном эталона: у Индии привязано правило об упрощённом
+    порядке для резидентов Залива, и у него ПУСТОЕ значение. По ТЗ это повод задать
+    вопрос про ВНЖ Залива, а не вывод о режиме. Движок обязан пропустить такую
+    единицу, уйти в общий порядок и отметить особый случай для менеджера.
+    """
+    v = _ask(engine, "Индия", purpose="business_meeting")
+    assert v.regime == "visa_required"
+    assert any(u.unit_id == "KG.VR.GENERAL" for u in v.units), \
+        "Индия не ушла в общий порядок"
+    assert v.gknb_approval is True, "не указано согласование ГКНБ"
+    assert any(w.startswith("special_case_unresolved") for w in v.withheld), \
+        "особый случай по резидентам Залива не отмечен для менеджера"
+
+
+def test_b8_case_3_uzbek_worker(engine):
+    """Узбекистан, работа: 60/120, нужно Единое разрешение, учёт за 5 рабочих дней."""
+    v = _ask(engine, "Узбекистан", purpose="work_hire", location="in_kg")
+    assert v.regime == "visa_free"
+    assert (v.stay_limit_days, v.window_days) == (60, 120)
+    assert v.unified_permit_required is True
+    assert v.registration.working_days_from_border == 5
+    assert v.registration.registered_for_days == 60

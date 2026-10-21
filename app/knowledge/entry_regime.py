@@ -250,8 +250,19 @@ def evaluate(query: EntryQuery) -> EntryVerdict:
         elif why:
             withheld.append(why)
     else:
-        required = [u for u in (links.get("visa_required_regime") or [])
-                    if _scope_allows(u, query.purpose)]
+        # Единица без значения ничего определить не может. У Индии, например, привязано
+        # правило об упрощённом порядке для резидентов Залива (`value: null`): по ТЗ это
+        # повод ЗАДАТЬ вопрос про ВНЖ Залива, а не вывод о режиме. Поэтому такие единицы
+        # пропускаем и падаем в общий порядок, но отмечаем — менеджер должен знать, что
+        # по этой стране есть неразрешённый особый случай.
+        linked = links.get("visa_required_regime") or []
+        for skipped in linked:
+            if (skipped.get("value") or {}).get("procedure") is None:
+                withheld.append(f"special_case_unresolved:{skipped.get('unit_id')}")
+                units.append(_ref(skipped))
+        required = [u for u in linked
+                    if (u.get("value") or {}).get("procedure") is not None
+                    and _scope_allows(u, query.purpose)]
         if not required:
             # «Все остальные» — общий порядок с согласованием ГКНБ (KG.VR.GENERAL).
             required = [u for u in (found.get("source_fallbacks") or [])
