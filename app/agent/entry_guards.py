@@ -133,6 +133,120 @@ SAFE_REMAINING_REPLY = ("Точный остаток дней по вашему 
                         "система учёта — его подтвердит специалист по отметкам о въезде "
                         "и выезде.")
 
+# Те же подмены по-английски. Половина клиентов въездной ветки пишет не по-русски, и
+# русская вставка в английский ответ — это сломанный бот. Поймано живым прогоном
+# 22.10: «…are you traveling alone Это правило уточнит специалист».
+SAFE_PRICE_REPLY_EN = ("A specialist will confirm the exact amount — it depends on the "
+                       "visa type and duration, and we confirm it before any payment.")
+SAFE_GUARANTEE_REPLY_EN = ("The decision is made by the Ministry of Foreign Affairs of "
+                           "the Kyrgyz Republic. We are responsible for preparing your "
+                           "documents correctly and on time.")
+SAFE_UNCONFIRMED_REPLY_EN = ("A specialist will confirm this rule: the conditions depend "
+                             "on your citizenship and the purpose of your trip.")
+SAFE_CONSENT_REPLY_EN = ("Before we ask for documents we need your consent to process "
+                         "personal data — a specialist will arrange it.")
+SAFE_REMAINING_REPLY_EN = ("The exact number of days you have left is calculated by the "
+                           "state migration system — a specialist will confirm it from "
+                           "the entry and exit stamps in your passport.")
+
+
+# --- Английские ремни въездного профиля ----------------------------------------
+# Отдельно от общих `_PRICE` и `_GUARANTEE` валидатора: те работают и для выездной
+# воронки, которая живёт по официальному прайсу, и менять их поведение нельзя.
+# Здесь — только въездной профиль, где цен нет вообще, а клиент чаще пишет латиницей.
+
+PRICE_EN = re.compile(
+    r"\d[\d\s.,]*\s?(?:dollars?|euros?|soms?|somoni)|(?:costs?|fee|price)\s+(?:is\s+)?"
+    r"\d[\d\s.,]*", re.IGNORECASE)
+
+GUARANTEE_EN = re.compile(
+    r"(100\s?%|guarantee\w*|we\s+promise|definitely\s+(?:get|be\s+approved|approve)|"
+    r"sure\s+to\s+(?:get|be\s+approved)|certainly\s+(?:get|be\s+approved))",
+    re.IGNORECASE)
+GUARANTEE_EN_NEG = re.compile(
+    r"(cannot|can't|cant|do\s+not|don't|no|never)\s+(?:\w+\s+){0,2}guarantee|"
+    r"not\s+guaranteed", re.IGNORECASE)
+
+# Шесть запретов Б.7 по-английски. Форма та же, что у русских: утвердительный шаблон
+# плюс шаблон отрицания, иначе верный ответ («you may NOT work on a tourist visa»)
+# блокировал бы сам себя.
+FORBIDDEN_EN_RULES: tuple[tuple[str, re.Pattern[str], re.Pattern[str]], ...] = (
+    ("work_on_tourist",
+     re.compile(r"(?:can|could|may|able\s+to)\s+(?:\w+\s+){0,3}work[^.!?]*tourist|"
+                r"work\s+(?:a\s+little\s+)?on\s+a?\s*tourist", re.IGNORECASE),
+     re.compile(r"(?:can|may)\s?(?:not|n't)|cannot|without\s+a\s+permit|"
+                r"are\s+not\s+allowed", re.IGNORECASE)),
+    ("registration_extends",
+     re.compile(r"registration[^.!?]*(?:extend|prolong|increase)", re.IGNORECASE),
+     re.compile(r"does\s+not\s+extend|doesn't\s+extend|never\s+extend|"
+                r"cannot\s+extend", re.IGNORECASE)),
+    ("fine_at_airport",
+     re.compile(r"fine[^.!?]*(?:at\s+the\s+)?(?:airport|border|checkpoint)",
+                re.IGNORECASE),
+     re.compile(r"(?:not|cannot|can't|never)\s+(?:be\s+)?(?:paid|pay)|only\s+through",
+                re.IGNORECASE)),
+    ("tourist_visa_extended",
+     re.compile(r"tourist\s+visa[^.!?]*(?:extend|prolong)|extend[^.!?]*tourist\s+visa",
+                re.IGNORECASE),
+     re.compile(r"cannot\s+be\s+extended|can't\s+be\s+extended|is\s+not\s+extended|"
+                r"not\s+extendable", re.IGNORECASE)),
+    ("speed_by_acquaintance",
+     re.compile(r"speed\s+(?:it\s+)?up\s+through[^.!?]*(?:contact|connection|friend)|"
+                r"through\s+(?:our|my)\s+(?:contacts|connections)", re.IGNORECASE),
+     NEVER),
+    ("stay_while_pending",
+     re.compile(r"(?:can|may)\s+stay[^.!?]*(?:pending|being\s+reviewed|under\s+review|"
+                r"while\s+(?:we|they)\s+review)", re.IGNORECASE),
+     re.compile(r"(?:can|may)\s?(?:not|n't)|cannot", re.IGNORECASE)),
+)
+
+# Те же шесть исправлений Б.7 по-английски, по именам ремней.
+FORBIDDEN_EN: dict[str, str] = {
+    "work_on_tourist": ("You may not work on a tourist visa — employment requires a "
+                        "Unified Work Permit."),
+    "registration_extends": ("Registration does not extend your visa-free period."),
+    "fine_at_airport": ("A fine is paid only through the police before you leave, not "
+                        "at the airport."),
+    "tourist_visa_extended": "A tourist visa cannot be extended.",
+    "speed_by_acquaintance": ("There is an official expedited option: a decision within "
+                              "two working days, at a higher fee."),
+    "stay_while_pending": ("We apply in advance so the decision arrives before your "
+                           "permitted stay ends."),
+}
+
+
+def forbidden_safe(name: str, text: str, fallback: str) -> str:
+    """Безопасная замена запрещённой формулировки — на языке реплики."""
+    if _in_english(text):
+        return FORBIDDEN_EN.get(name) or fallback
+    return fallback
+
+
+def _in_english(text: str) -> bool:
+    """Отвечать надо на языке реплики. Латиница без кириллицы — английский."""
+    from app.core.entry_intent import looks_english
+    return looks_english(text or "")
+
+
+def safe_price_reply(text: str) -> str:
+    return SAFE_PRICE_REPLY_EN if _in_english(text) else SAFE_PRICE_REPLY
+
+
+def safe_guarantee_reply(text: str) -> str:
+    return SAFE_GUARANTEE_REPLY_EN if _in_english(text) else SAFE_GUARANTEE_REPLY
+
+
+def safe_unconfirmed_reply(text: str) -> str:
+    return SAFE_UNCONFIRMED_REPLY_EN if _in_english(text) else SAFE_UNCONFIRMED_REPLY
+
+
+def safe_consent_reply(text: str) -> str:
+    return SAFE_CONSENT_REPLY_EN if _in_english(text) else SAFE_CONSENT_REPLY
+
+
+def safe_remaining_reply(text: str) -> str:
+    return SAFE_REMAINING_REPLY_EN if _in_english(text) else SAFE_REMAINING_REPLY
+
 
 def claimed_fields(text: str) -> frozenset[str]:
     """Какие утверждения о законе содержит реплика."""

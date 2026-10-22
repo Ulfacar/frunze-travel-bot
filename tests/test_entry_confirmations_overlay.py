@@ -465,6 +465,113 @@ def test_only_sayable_facts_reach_the_model_context(engine):
     assert "специалист" in silent
 
 
+# --- F. Реплика обязана остаться читаемой --------------------------------------
+# Всё в этом разделе найдено живым прогоном в Telegram 22.10, не тестами: прежние
+# тесты проверяли, что запрещённое НЕ дошло до клиента, и ни один не проверял, что
+# дошедшее можно прочитать.
+
+def test_cutting_a_claim_keeps_the_punctuation_of_the_rest():
+    """Ремень убирает предложение, а не знаки препинания у соседних.
+
+    Ветка неподтверждённых утверждений собирала только ТЕЛА предложений и склеивала
+    их пробелами, теряя точки, вопросительные и восклицательные знаки по всей реплике.
+    Клиент видел «Hi I am Medina Great question When do you plan to arrive» — так бот
+    выглядит сломанным, и заодно ломается подсчёт вопросов в реплике.
+    """
+    from app.agent.validator import validate_reply
+    text = ("Hi! I am Medina. Great question! You do not need a visa for 30 days. "
+            "When do you plan to arrive?")
+    clean, violations = validate_reply(text, "visa", profile="kg_entry",
+                                       allowed_claims=frozenset())
+    assert "kg_entry_unconfirmed_claim_blocked" in violations
+    assert "You do not need a visa" not in clean, "неподтверждённое правило дошло"
+    assert "Hi! I am Medina." in clean, f"потеряна пунктуация: {clean!r}"
+    assert "Great question!" in clean
+    assert "When do you plan to arrive?" in clean
+
+
+def test_the_safe_replacement_speaks_the_language_of_the_reply():
+    """Английскому клиенту нельзя отвечать русской вставкой.
+
+    В прогоне бот писал «…are you traveling alone Это правило уточнит специалист»:
+    безопасные подмены существовали только по-русски.
+    """
+    from app.agent.validator import validate_reply
+    english = ("Hello! You do not need a visa for 30 days. "
+               "When are you planning to arrive?")
+    clean, _ = validate_reply(english, "visa", profile="kg_entry",
+                              allowed_claims=frozenset())
+    assert not any("а" <= ch.lower() <= "я" for ch in clean), \
+        f"в английский ответ попала кириллица: {clean!r}"
+    assert "specialist" in clean.lower()
+
+    russian = "Здравствуйте! Виза вам не нужна 30 дней. Когда планируете приехать?"
+    clean_ru, _ = validate_reply(russian, "visa", profile="kg_entry",
+                                 allowed_claims=frozenset())
+    assert "специалист" in clean_ru.lower(), "русский ответ получил английскую вставку"
+
+
+@pytest.mark.parametrize("text", [
+    "You can work a little on a tourist visa, nobody checks.",
+    "Registration will extend your visa-free stay.",
+    "You can just pay the fine at the airport when you leave.",
+    "We will extend your tourist visa later, no problem.",
+    "We can speed it up through our contacts.",
+    "You can stay in the country while your application is pending.",
+])
+def test_appendix_b7_belts_also_work_in_english(text):
+    """Аудитория въездной ветки — иностранцы, половина пишет по-английски.
+
+    Шесть запретов Б.7 были написаны только по-русски, то есть англоязычному клиенту
+    бот мог пообещать что угодно. Поймано живым прогоном 22.10: «We guarantee your
+    visa will be approved» не ловилось ничем.
+    """
+    from app.agent.validator import validate_reply
+    clean, violations = validate_reply(text, "visa", profile="kg_entry",
+                                       allowed_claims=frozenset({"regime", "stay_limit",
+                                                                 "registration",
+                                                                 "unified_permit"}))
+    assert any(v.startswith("kg_entry_forbidden_") for v in violations), \
+        f"запрещённая формулировка прошла по-английски: {text!r} -> {violations}"
+    assert clean != text
+
+
+@pytest.mark.parametrize("text", [
+    "You may not work on a tourist visa without a permit.",
+    "Registration does not extend your visa-free period.",
+    "A tourist visa cannot be extended.",
+])
+def test_the_correct_english_wording_is_not_blocked(text):
+    """Правильный ответ содержит те же слова с отрицанием — его блокировать нельзя."""
+    from app.agent.validator import validate_reply
+    clean, violations = validate_reply(text, "visa", profile="kg_entry",
+                                       allowed_claims=frozenset({"regime", "stay_limit",
+                                                                 "registration",
+                                                                 "unified_permit"}))
+    assert not any(v.startswith("kg_entry_forbidden_") for v in violations), \
+        f"верная формулировка заблокирована: {text!r} -> {violations}"
+    assert clean == text
+
+
+@pytest.mark.parametrize("text,marker", [
+    ("The service fee is $50 per person.", "specialist"),
+    ("The service costs 50 dollars per person.", "specialist"),
+    ("We guarantee your visa will be approved.", "decision"),
+    ("Approval is 100% guaranteed.", "decision"),
+    ("You have 12 days left.", "stamps"),
+])
+def test_english_belts_replace_with_english_text(text, marker):
+    from app.agent.validator import validate_reply
+    clean, violations = validate_reply(text, "visa", profile="kg_entry",
+                                       allowed_claims=frozenset({"regime", "stay_limit",
+                                                                 "registration",
+                                                                 "unified_permit"}))
+    assert violations, f"ремень не сработал на {text!r}"
+    assert not any("а" <= ch.lower() <= "я" for ch in clean), \
+        f"кириллица в английской подмене: {clean!r}"
+    assert marker in clean.lower(), f"ожидал {marker!r} в подмене: {clean!r}"
+
+
 def test_missing_overlay_means_nothing_is_sayable(engine, monkeypatch):
     """Удаление оверлея — штатный откат: бот возвращается к «уточнит специалист»."""
     from app.knowledge import entry_confirmations

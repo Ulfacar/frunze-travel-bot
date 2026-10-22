@@ -248,51 +248,72 @@ def _apply_entry_profile(text: str, *, allowed_claims: frozenset[str],
 
     for name, pattern, negation, safe in g.FORBIDDEN:
         clean, blocked = _replace_sentences(
-            clean, affirm=pattern, neg=negation, safe_text=safe)
+            clean, affirm=pattern, neg=negation,
+            safe_text=g.forbidden_safe(name, clean, safe))
         if blocked:
+            violations.append(f"kg_entry_forbidden_{name}")
+
+    # Те же шесть запретов по-английски: аудитория въездной ветки — иностранцы, и
+    # русские шаблоны их реплик не покрывают вообще.
+    for name, pattern, negation in g.FORBIDDEN_EN_RULES:
+        clean, blocked = _replace_sentences(
+            clean, affirm=pattern, neg=negation,
+            safe_text=g.FORBIDDEN_EN.get(name, g.safe_unconfirmed_reply(clean)))
+        if blocked and f"kg_entry_forbidden_{name}" not in violations:
             violations.append(f"kg_entry_forbidden_{name}")
 
     if g.claims_remaining_days(clean):
         clean, blocked = _replace_sentences(
             clean, affirm=g._RULE_REMAINING, neg=re.compile(r"(?!x)x"),
-            safe_text=g.SAFE_REMAINING_REPLY)
+            safe_text=g.safe_remaining_reply(clean))
         if blocked:
             violations.append("kg_entry_remaining_days_blocked")
 
-    if _PRICE.search(clean):
-        clean, blocked = _replace_sentences(
-            clean, affirm=_PRICE, neg=re.compile(r"(?!x)x"),
-            safe_text=g.SAFE_PRICE_REPLY)
-        if blocked:
-            violations.append("kg_entry_price_blocked")
+    # Цены и гарантии: к общим шаблонам добавлены английские — въездной ветке они
+    # нужны, а общие менять нельзя, их делит с собой выездная воронка.
+    for affirm, neg in ((_PRICE, re.compile(r"(?!x)x")), (g.PRICE_EN, re.compile(r"(?!x)x"))):
+        if affirm.search(clean):
+            clean, blocked = _replace_sentences(
+                clean, affirm=affirm, neg=neg, safe_text=g.safe_price_reply(clean))
+            if blocked and "kg_entry_price_blocked" not in violations:
+                violations.append("kg_entry_price_blocked")
 
-    if _GUARANTEE.search(clean):
-        clean, blocked = _replace_sentences(
-            clean, affirm=_GUARANTEE, neg=re.compile(r"не\s+гаранти", re.IGNORECASE),
-            safe_text=g.SAFE_GUARANTEE_REPLY)
-        if blocked:
-            violations.append("kg_entry_guarantee_blocked")
+    for affirm, neg in ((_GUARANTEE, re.compile(r"не\s+гаранти", re.IGNORECASE)),
+                        (g.GUARANTEE_EN, g.GUARANTEE_EN_NEG)):
+        if affirm.search(clean):
+            clean, blocked = _replace_sentences(
+                clean, affirm=affirm, neg=neg, safe_text=g.safe_guarantee_reply(clean))
+            if blocked and "kg_entry_guarantee_blocked" not in violations:
+                violations.append("kg_entry_guarantee_blocked")
 
     if not consent_given and g.asks_for_documents(clean):
         clean, blocked = _replace_sentences(
             clean, affirm=re.compile(g._ASK_DOCS.pattern, re.IGNORECASE),
-            neg=re.compile(r"(?!x)x"), safe_text=g.SAFE_CONSENT_REPLY)
+            neg=re.compile(r"(?!x)x"), safe_text=g.safe_consent_reply(clean))
         if blocked:
             violations.append("kg_entry_scan_before_consent_blocked")
 
     # Последним: утверждения о законе, на которые нет разрешения.
+    #
+    # Знаки препинания сохраняем вместе с предложением. Прежняя версия собирала только
+    # ТЕЛА предложений и склеивала пробелами — реплика теряла точки и вопросительные
+    # знаки целиком, и клиент видел «Hi I am Medina Great question When do you plan to
+    # arrive». Поймано живым прогоном в Telegram, тестами не ловилось: они проверяли,
+    # что запрещённое не дошло, и ни один — что дошедшее читается.
     unconfirmed = False
     parts: list[str] = []
-    sentences = [m.group(1) for m in _SENTENCE_SPLIT.finditer(clean) if m.group(1).strip()]
-    for sentence in sentences or [clean]:
-        need = g.claimed_fields(sentence)
+    pieces = [(m.group(1), m.group(2)) for m in _SENTENCE_SPLIT.finditer(clean)
+              if m.group(1).strip()]
+    for body, sep in pieces or [(clean, "")]:
+        need = g.claimed_fields(body)
         if need and not need <= allowed_claims:
             unconfirmed = True
             continue
-        parts.append(sentence)
+        parts.append((body.strip() + sep.strip()).strip())
     if unconfirmed:
-        kept = " ".join(p.strip() for p in parts if p.strip())
-        clean = f"{kept} {g.SAFE_UNCONFIRMED_REPLY}".strip() if kept else g.SAFE_UNCONFIRMED_REPLY
+        kept = " ".join(p for p in parts if p)
+        safe = g.safe_unconfirmed_reply(clean)
+        clean = f"{kept} {safe}".strip() if kept else safe
         violations.append("kg_entry_unconfirmed_claim_blocked")
 
     return clean.strip(), violations
