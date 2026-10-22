@@ -458,7 +458,8 @@ def test_only_sayable_facts_reach_the_model_context(engine):
         "лимит с меткой verify попал в контекст модели — остался один рубеж из двух"
 
     rus = _ask(engine, "Россия")
-    assert "90/180" in sayable_regime_line(rus, rus.sayable)
+    # Окно раскрыто словами, а не дробью — см. test_the_window_is_spelled_out_for_the_model.
+    assert "90 дней в каждые 180" in sayable_regime_line(rus, rus.sayable)
     # Тумблер речи выключен — в контекст не уходит ни одного числа.
     silent = sayable_regime_line(rus, frozenset())
     assert "90" not in silent and "180" not in silent
@@ -534,6 +535,43 @@ def test_appendix_b7_belts_also_work_in_english(text):
     assert any(v.startswith("kg_entry_forbidden_") for v in violations), \
         f"запрещённая формулировка прошла по-английски: {text!r} -> {violations}"
     assert clean != text
+
+
+@pytest.mark.parametrize("text", [
+    # Так модель ответила американцу в живом прогоне 22.10. По ТЗ 30/60 — это «30 дней
+    # в каждом 60-дневном периоде», а не «30 плюс регистрация = 60». Регистрация
+    # безвизовый срок НЕ продлевает (Б.7 и правило 2.9), но прежний шаблон ловил только
+    # слова «продлить» и «extend», а этой формулировки в нём нет.
+    "You get 30 days visa-free, and if you register you can stay up to 60 days total.",
+    "Register with the authorities and you can remain for 60 days in total.",
+    "Если зарегистрируетесь, сможете остаться до 60 дней.",
+    "С регистрацией вы сможете пробыть дольше — до 60 дней.",
+])
+def test_registration_never_buys_extra_days(text):
+    """Самый дорогой неверный ответ: человек останется дольше и получит запрет на въезд."""
+    from app.agent.validator import validate_reply
+    clean, violations = validate_reply(text, "visa", profile="kg_entry",
+                                       allowed_claims=frozenset({"regime", "stay_limit",
+                                                                 "registration",
+                                                                 "unified_permit"}))
+    assert "kg_entry_forbidden_registration_extends" in violations, \
+        f"бот обещал лишние дни за регистрацию: {text!r} -> {violations}"
+    assert clean != text
+
+
+def test_the_window_is_spelled_out_for_the_model():
+    """Модели нельзя давать «30/60»: она читает это как сумму, а не как окно.
+
+    В живом прогоне она превратила «30/60» в «30 дней плюс регистрация = 60 дней».
+    """
+    from app.core.entry_card import sayable_regime_line
+    from app.knowledge.entry_regime import EntryQuery, evaluate, resolve_citizenship
+    v = evaluate(EntryQuery(citizenship_iso3=resolve_citizenship("США"),
+                            purpose="tourism"))
+    line = sayable_regime_line(v, v.sayable)
+    assert "30/60" not in line, f"в контекст модели ушла дробь: {line!r}"
+    assert "30 дней в каждые 60" in line or "30 дней в каждом 60" in line, \
+        f"окно не раскрыто словами: {line!r}"
 
 
 @pytest.mark.parametrize("text", [

@@ -96,9 +96,17 @@ FORBIDDEN: tuple[tuple[str, re.Pattern[str], re.Pattern[str], str], ...] = (
                 r"[^.!?]*турист", re.IGNORECASE),
      NEVER,
      "Работать по туристической визе нельзя — для работы нужно Единое разрешение."),
+    # Шаблон ловит не только слово «продлить». В живом прогоне 22.10 модель сказала
+    # американцу «30 дней без визы, а с регистрацией — до 60 дней всего», и прежний
+    # шаблон этого не видел: слов «продлить» и «увеличить» в фразе нет. По ТЗ 30/60
+    # означает «30 дней в каждом 60-дневном периоде», регистрация к сроку не добавляет.
     ("registration_extends",
-     re.compile(r"регистрац\w*[^.!?]*(?:продл|увелич)\w*", re.IGNORECASE),
-     re.compile(r"не\s+(?:продл|увелич)", re.IGNORECASE),
+     re.compile(r"(?:регистрац\w*|зарегистрир\w*)[^.!?]*"
+                r"(?:продл|увелич|остат\w*ся|оста(?:нет|ть)\w*|пробы\w*|нахо\w*)"
+                r"[^.!?]*(?:дольше|больше|до\s+\d|\d{1,3}\s*дн)"
+                r"|(?:продл|увелич)\w*[^.!?]*(?:регистрац\w*|зарегистрир\w*)"
+                r"|регистрац\w*[^.!?]*(?:продл|увелич)\w*", re.IGNORECASE),
+     re.compile(r"не\s+(?:продл|увелич|да[её]т|добавля)", re.IGNORECASE),
      "Регистрация не продлевает безвизовый срок."),
     ("fine_at_airport",
      re.compile(r"штраф\w*[^.!?]*(?:аэропорт|кпп|границ)", re.IGNORECASE),
@@ -177,9 +185,15 @@ FORBIDDEN_EN_RULES: tuple[tuple[str, re.Pattern[str], re.Pattern[str]], ...] = (
      re.compile(r"(?:can|may)\s?(?:not|n't)|cannot|without\s+a\s+permit|"
                 r"are\s+not\s+allowed", re.IGNORECASE)),
     ("registration_extends",
-     re.compile(r"registration[^.!?]*(?:extend|prolong|increase)", re.IGNORECASE),
+     re.compile(r"(?:registration|register\w*)[^.!?]*"
+                r"(?:extend|prolong|increase|stay|remain)[^.!?]*"
+                r"(?:up\s+to|total|longer|more|\d{1,3}\s*days?)"
+                r"|(?:stay|remain)[^.!?]*(?:up\s+to|total|longer)[^.!?]*"
+                r"(?:registration|register\w*)"
+                r"|(?:registration|register\w*)[^.!?]*(?:extend|prolong|increase)",
+                re.IGNORECASE),
      re.compile(r"does\s+not\s+extend|doesn't\s+extend|never\s+extend|"
-                r"cannot\s+extend", re.IGNORECASE)),
+                r"cannot\s+extend|does\s+not\s+add|no\s+extra\s+days", re.IGNORECASE)),
     ("fine_at_airport",
      re.compile(r"fine[^.!?]*(?:at\s+the\s+)?(?:airport|border|checkpoint)",
                 re.IGNORECASE),

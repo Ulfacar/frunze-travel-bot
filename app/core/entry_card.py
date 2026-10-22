@@ -88,7 +88,12 @@ def sayable_regime_line(verdict: Any, allowed: Any) -> str:
             bits.append("общий порядок, согласование ГКНБ")
     if "stay_limit" in allowed and getattr(verdict, "stay_limit_days", None) \
             and getattr(verdict, "window_days", None):
-        bits.append(f"{verdict.stay_limit_days}/{verdict.window_days}")
+        # Словами, а не дробью. Живой прогон 22.10: модель прочитала «30/60» как сумму
+        # и сказала клиенту «30 дней, а с регистрацией до 60». Окно — это скользящий
+        # период, в который укладывается лимит, и к нему ничего не прибавляется.
+        bits.append(f"{verdict.stay_limit_days} дней в каждые "
+                    f"{verdict.window_days} дней (скользящее окно, "
+                    f"регистрация дней не добавляет)")
     if "unified_permit" in allowed:
         if getattr(verdict, "unified_permit_required", None) is True:
             bits.append("для работы нужно Единое разрешение")
