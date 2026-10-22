@@ -445,6 +445,10 @@ class Settings(BaseSettings):
     # второй позволяет выкатить движок и карточку, не разрешая боту произносить правила.
     kg_entry_enabled: bool = False
     kg_entry_say_confirmed_enabled: bool = False
+    # Поиск по базе знаний ТЗ (блоки 1-2, 5-13, 15-17) в руках бота. Отдельный флаг от
+    # речи по единицам: движок режима въезда и база знаний — разные источники с разной
+    # приёмкой. Дефолт OFF, per-bot ключ `kg_entry_knowledge_enabled:<bot_id>`.
+    kg_entry_knowledge_enabled: bool = False
     panel_missing_cards_enabled: bool = False
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False

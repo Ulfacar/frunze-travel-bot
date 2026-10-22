@@ -282,6 +282,21 @@ def test_the_slice_is_pinned_by_the_numbers(sliced):
                             "ПРАКТИКА": 34, "РЕШЕНИЕ": 21}
     assert sum(1 for p in items if p["answerable"]) == 700
     assert sum(1 for p in items if p["grants"]) == 283
+    # Одобряемых меньше отвечаемых: 109 кусков исключены из-за сумм (68 из них —
+    # блок 12 «Оплата и стоимость»). Решение владельца: бот цен не называет.
+    assert sum(1 for p in items if p["approvable"]) == 600
+    assert sum(1 for p in items if p["has_money"]) == 109
+    assert sum(1 for p in items if p["approvable"] and not p["labels"]) == 534
+
+
+def test_money_is_never_approvable(sliced):
+    """Сумма в контексте модели рано или поздно будет произнесена."""
+    from app.knowledge.answerable import MONEY
+    for items in sliced.values():
+        for piece in items:
+            if MONEY.search(piece["text"]):
+                assert piece["approvable"] is False, \
+                    f"{piece['piece_id']}: кусок с суммой подлежит одобрению"
 
 
 def test_fragments_without_content_produce_nothing(sliced):

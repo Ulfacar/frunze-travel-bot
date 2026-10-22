@@ -88,15 +88,17 @@ def approved(piece: dict[str, Any], *, corpus_hash: str, source_hash: str) -> bo
       2. его привязка совпала с текущим корпусом и исходным PDF;
       3. кусок в списке одобренных;
       4. хеш текста совпал — иначе текст правили после одобрения;
-      5. кусок отвечаем, то есть не несёт метку `[РЕШЕНИЕ]` (её ТЗ запрещает
-         озвучивать клиенту безусловно, и никакое одобрение этого не снимает).
+      5. кусок подлежит одобрению: не несёт метку `[РЕШЕНИЕ]` (её ТЗ запрещает
+         озвучивать безусловно) и не содержит сумм (решение владельца: бот цен не
+         называет, а сумма в контексте модели рано или поздно будет произнесена).
     """
     overlay = load()
     if overlay is None:
         return False
     if overlay.corpus_hash != corpus_hash or overlay.source_hash != source_hash:
         return False
-    if not piece.get("answerable"):
+    if not piece.get("approvable", piece.get("answerable")):
+        # `approvable` строже: кроме метки РЕШЕНИЕ исключает всё, где есть деньги.
         return False
     piece_id = str(piece.get("piece_id") or "")
     expected = overlay.by_piece.get(piece_id)

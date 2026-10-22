@@ -38,6 +38,16 @@ LABEL_OPENING = re.compile(r"\[(ПРОВЕРИТЬ|ПРАКТИКА|РЕШЕНИ
 # По ТЗ (стр. 2) клиенту не озвучивается вообще только это.
 NEVER_TO_CLIENT = "РЕШЕНИЕ"
 
+# Деньги в любом виде. Решение владельца 21.10: бот сумм не называет вообще, потому
+# что в ТЗ (прил. Г п.2) государственные сборы имеют статус «Открыт», фактических сумм
+# портала не существует, а комиссия банка названа двумя разными цифрами. Такой кусок не
+# подлежит одобрению: попав в контекст модели, сумма рано или поздно будет произнесена,
+# и единственным препятствием остался бы ремень валидатора.
+MONEY = re.compile(
+    r"[$€]\s?\d|\d[\d\s.,]*\s?(?:\$|€|сом|usd|eur|долл|руб)|\d+\s?%|надбавк|"
+    r"консульск\w*\s+сбор|сервисн\w*\s+сбор|пошлин|тариф",
+    re.IGNORECASE)
+
 _TABLE_SEPARATOR = re.compile(r"\|[\s\-:|]+\|")
 _NUMBERED = re.compile(r"^\d+[.)]\s")
 _BULLET = re.compile(r"^[-*+]\s")
@@ -142,6 +152,10 @@ def pieces(fragment: dict[str, Any]) -> list[dict[str, Any]]:
             "labels": own_labels,
             "inherited_labels": list(inherited),
             "answerable": NEVER_TO_CLIENT not in own_labels,
+            # Одобрению подлежит только то, что и по метке можно, и денег не содержит.
+            "approvable": (NEVER_TO_CLIENT not in own_labels
+                           and not MONEY.search(text)),
+            "has_money": bool(MONEY.search(text)),
             "grants": sorted(claimed_fields(text)),
             "source_lines": owned,
         })

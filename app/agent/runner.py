@@ -748,6 +748,86 @@ def _entry_verdict(state: DialogState):
         return None
 
 
+# Бюджет поиска по базе на один ход. Витков LLM до шести, а ограничения на число
+# вызовов инструментов за ход в цикле нет вовсе — без счётчика один ход мог бы
+# обойтись в десяток поисков и утроить цену.
+KB_MAX_CALLS = 2
+KB_MAX_PIECES = 4
+KB_MAX_CHARS = 1500
+
+HANDOVER_INSTRUCTION = (
+    "В базе знаний ответа нет. Отвечать из общих знаний НЕЛЬЗЯ. Скажи клиенту, что "
+    "этот вопрос уточнит специалист, и передай заявку через kg_entry_handoff."
+)
+
+
+async def _kg_entry_knowledge(kg: dict, state: DialogState, question: str) -> str:
+    """Поиск по базе знаний ТЗ. Возвращает инструкцию модели, не текст клиенту.
+
+    Три правила, заданные владельцем 22.10 и зашитые здесь, а не в промпте:
+
+    1. **Не нашёл — передай человеку.** Никаких ответов из общих знаний модели.
+    2. **Только одобренное.** Право произнести даёт оверлей, подписанный человеком;
+       пока он пуст, выдача пуста, и это штатное состояние.
+    3. **Провенанс в модель не уходит.** Клиент видит человеческий язык без ссылок на
+       раздел и страницу, значит и модели они не нужны: что попало в контекст, то рано
+       или поздно будет произнесено. Основание уходит менеджеру в карточку и в снимок.
+    """
+    from app.core import flags
+
+    if not await flags.get_bot_flag("kg_entry_knowledge_enabled", state.bot_id,
+                                    settings.kg_entry_knowledge_enabled):
+        return HANDOVER_INSTRUCTION
+
+    used = int(kg.get("_kb_calls") or 0)
+    if used >= KB_MAX_CALLS:
+        return ("Больше не ищи в этой реплике — бюджет поиска на ход исчерпан. "
+                "Скажи, что уточнит специалист, и передай через kg_entry_handoff.")
+    kg["_kb_calls"] = used + 1
+
+    from app.knowledge import answers_index
+    index = answers_index.load()
+    if index is None:
+        return HANDOVER_INSTRUCTION
+    try:
+        found = index.search(question, limit=KB_MAX_PIECES)
+    except Exception:  # noqa: BLE001 — поиск не имеет права ронять диалог
+        logger.warning("kg entry knowledge search failed", exc_info=True)
+        return HANDOVER_INSTRUCTION
+    if not found:
+        return HANDOVER_INSTRUCTION
+
+    taken: list[dict] = []
+    budget = 0
+    for piece in found:
+        text = str(piece.get("text") or "")
+        if taken and budget + len(text) > KB_MAX_CHARS:
+            break                      # кусок не режем: обрезанная норма меняет смысл
+        taken.append(piece)
+        budget += len(text)
+
+    # Для карточки менеджеру и снимка заявки — с провенансом. Модель этого не видит.
+    cited = kg.setdefault("_knowledge", [])
+    for piece in taken:
+        row = {"piece_id": piece["piece_id"], "block": piece["block"],
+               "section": piece["section"], "pdf_pages": piece["pdf_pages"],
+               "labels": piece["labels"], "text_sha256": piece["text_sha256"]}
+        if row not in cited:
+            cited.append(row)
+
+    lines = ["Из базы знаний (отвечай ТОЛЬКО по этому, своими словами, без ссылок на "
+             "разделы и страницы):"]
+    for piece in taken:
+        note = ""
+        if "ПРОВЕРИТЬ" in piece["labels"]:
+            note = " [не называй как точный факт — скажи, что подтвердит специалист]"
+        elif "ПРАКТИКА" in piece["labels"]:
+            note = " [это наше внутреннее правило, не требование закона]"
+        lines.append(f"- {piece['text']}{note}")
+    lines.append("Чего здесь нет — не придумывай: передай специалисту. Сумм не называй.")
+    return "\n".join(lines)
+
+
 async def _entry_speech_allowed(bot_id: str) -> bool:
     """Разрешено ли произносить подтверждённые правила — этому боту.
 
@@ -833,6 +913,9 @@ async def _kg_entry_exec_tool(name: str, args: dict, state: DialogState, crm=Non
         return (f"Факты записаны. Разрешено сообщить клиенту: {', '.join(allowed)}. "
                 f"Вывод: {kg['_verdict_line']}. Остальное — к специалисту.")
 
+    if name == "kg_entry_knowledge":
+        return await _kg_entry_knowledge(kg, state, str(args.get("question") or ""))
+
     if name == "kg_entry_handoff":
         kg["handoff_reason"] = args.get("reason") or "квалификация завершена"
         if args.get("flags"):
@@ -866,7 +949,7 @@ async def _kg_entry_exec_tool(name: str, args: dict, state: DialogState, crm=Non
 KG_ENTRY_SPEC = FunnelSpec(
     name="visa",                      # воронка остаётся визовой, см. app/funnels/visa.py
     system=KG_ENTRY_SYSTEM,
-    tools=tools_for(["kg_entry_facts", "kg_entry_handoff"]),
+    tools=tools_for(["kg_entry_facts", "kg_entry_knowledge", "kg_entry_handoff"]),
     exec_tool=_kg_entry_exec_tool,
     qual_context=_entry_qual_context,
     validator_profile="kg_entry",
