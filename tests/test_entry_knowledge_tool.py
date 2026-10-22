@@ -90,21 +90,35 @@ def test_with_the_flag_off_the_tool_refuses(monkeypatch):
 # --- B. Оверлея нет — бот передаёт человеку ------------------------------------
 
 def test_without_an_approved_overlay_the_bot_hands_over(monkeypatch):
-    """Главная проверка выката: право говорить ещё никто не подписал."""
+    """Удаление подписи — штатный откат: бот возвращается к «уточнит специалист»."""
+    from app.knowledge import answers_approval
     monkeypatch.setattr(app.config.settings, "kg_entry_knowledge_enabled", True,
                         raising=False)
+    monkeypatch.setattr(answers_approval, "load", lambda: None)
     answer = _call(_state())
     assert "специалист" in answer.lower(), answer
     assert "докуме" not in answer.lower(), "в модель уехал текст базы без одобрения"
 
 
 def test_nothing_from_the_base_leaks_without_approval(monkeypatch):
+    from app.knowledge import answers_approval
     monkeypatch.setattr(app.config.settings, "kg_entry_knowledge_enabled", True,
                         raising=False)
+    monkeypatch.setattr(answers_approval, "load", lambda: None)
     state = _state()
     _call(state)
     recorded = state.qualification["kg_entry"].get("_knowledge") or []
     assert recorded == [], f"неодобренные куски записаны в анкету: {recorded}"
+
+
+def test_with_the_signed_overlay_the_bot_answers(monkeypatch):
+    """Обратная сторона: подпись есть — бот отвечает по базе, а не отписывается."""
+    monkeypatch.setattr(app.config.settings, "kg_entry_knowledge_enabled", True,
+                        raising=False)
+    state = _state()
+    answer = _call(state, "какие документы нужны для деловой визы")
+    assert "Из базы знаний" in answer, answer
+    assert state.qualification["kg_entry"]["_knowledge"],         "использованные куски не записаны для карточки менеджера"
 
 
 # --- C. Нашлось — что именно уходит модели -------------------------------------

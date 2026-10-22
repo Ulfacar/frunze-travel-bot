@@ -39,6 +39,10 @@ COPY knowledge/kg_entry/draft-v1.1/ ./knowledge/kg_entry/draft-v1.1/
 # (сборка упадёт), а тумблер `kg_entry_say_confirmed_enabled` или пустой список
 # `confirmed` внутри файла.
 COPY knowledge/kg_entry/confirmations-v1.1.yaml ./knowledge/kg_entry/confirmations-v1.1.yaml
+# Оверлей одобрения кусков базы знаний: без него на проде не одобрено ничего, бот не
+# произносит ни одного факта из базы и молча передаёт человеку — при зелёном /health.
+# Тот же класс ловушки, что чинил `fc12075`. Откат — тумблер, а не удаление файла.
+COPY knowledge/kg_entry/answers-approved-v1.1.yaml ./knowledge/kg_entry/answers-approved-v1.1.yaml
 
 # Непривилегированный пользователь.
 RUN useradd --create-home appuser

@@ -69,6 +69,7 @@ async def prepare_flags() -> None:
     """Въездная ветка и речь включены только этому симулятору."""
     await flags.set_flag(f"kg_entry_enabled:{BOT_ID}", True)
     await flags.set_flag(f"kg_entry_say_confirmed_enabled:{BOT_ID}", True)
+    await flags.set_flag(f"kg_entry_knowledge_enabled:{BOT_ID}", True)
     await flags.set_flag("bots_enabled", True)
     await flags.set_flag(f"bots_enabled:{BOT_ID}", True)
     # Ночной режим иначе заткнул бы бота днём и прогон был бы пустым.

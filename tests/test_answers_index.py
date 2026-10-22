@@ -38,14 +38,49 @@ def loaded():
 
 # --- A. Fail-closed: без подписи человека бот ничего не произносит --------------
 
-def test_without_an_overlay_nothing_is_returned(loaded):
-    """Оверлея нет — выдача пуста. Это штатное состояние до приёмки."""
+def test_without_an_overlay_nothing_is_returned(loaded, monkeypatch):
+    """Оверлея нет — выдача пуста, бот передаёт человеку.
+
+    23.10.2026 оверлей подписан («грузи»), поэтому проверка привязана не к состоянию
+    файла, а к механизму: удаление оверлея обязано остаться штатным откатом. Состав
+    подписанного проверяет `test_the_signed_overlay_is_pinned`.
+    """
     from app.knowledge import answers_approval
-    assert answers_approval.load() is None, (
-        "в дереве появился оверлей одобрения — перепишите тест осознанно, "
-        "он охраняет именно состояние «ничего не одобрено»")
+    monkeypatch.setattr(answers_approval, "load", lambda: None)
     assert loaded.search("какие документы нужны для деловой визы") == []
     assert loaded.search("what documents are needed for a business visa") == []
+
+
+def test_the_signed_overlay_is_pinned(loaded):
+    """Инвариант по поставляемым данным: подписано ровно то, что прошло отбор.
+
+    Каждая новая строка — это новый факт, который бот начнёт утверждать клиенту.
+    Числа обязаны меняться осознанно, с прогоном scripts/build_answers_approval.py.
+    """
+    from app.knowledge.answerable import MONEY
+    from app.knowledge import answers_approval
+    overlay = answers_approval.load()
+    assert overlay is not None, "оверлей одобрения исчез — бот перестал отвечать по базе"
+    assert len(overlay.by_piece) == 534
+    assert overlay.corpus_hash == loaded.corpus_hash
+    assert overlay.source_hash == loaded.source_hash
+    for piece_id, digest in overlay.by_piece.items():
+        piece = loaded._pieces.get(piece_id)          # noqa: SLF001
+        assert piece is not None, f"подписан несуществующий кусок {piece_id}"
+        assert digest == piece["text_sha256"], f"{piece_id}: текст правили после подписи"
+        assert not piece["labels"], f"{piece_id}: подписан кусок с меткой ТЗ"
+        assert not MONEY.search(piece["text"]), f"{piece_id}: подписан кусок с суммой"
+
+
+def test_the_signed_overlay_actually_answers(loaded):
+    """Подпись должна давать ответы, а не просто лежать в файле."""
+    for query in ("какие документы нужны для деловой визы",
+                  "what documents are needed for a business visa",
+                  "почему отказывают в визе"):
+        found = loaded.search(query, limit=3)
+        assert found, f"{query!r}: подписано 534 куска, а выдача пуста"
+        for piece in found:
+            assert not piece["labels"]
 
 
 def test_approval_requires_both_hashes(loaded, monkeypatch):
