@@ -284,6 +284,19 @@ def test_an_empty_visa_free_unit_does_not_become_the_general_procedure(engine, c
     assert v.sayable == frozenset(), f"{country}: произносится вывод по пустой единице"
 
 
+@pytest.mark.parametrize("citizenship", ["Кыргызстан", "KGZ", "ESH"])
+def test_no_entry_verdict_for_citizenships_that_have_no_entry_rule(engine, citizenship):
+    """Гражданину КР виза в КР не нужна — такой строки в таблице 2.2 нет и быть не может.
+
+    Движок проваливал его в единицу «все остальные», и бот утверждал «нужна виза с
+    согласованием ГКНБ» гражданину Кыргызстана. Туда же непризнанные паспорта: ТЗ,
+    ШАГ 2 — эскалация со словами «оформить нельзя».
+    """
+    v = _ask(engine, citizenship, purpose="tourism")
+    assert v.sayable == frozenset(), f"{citizenship}: произносится вывод о режиме"
+    assert any("no_entry_rule_for_citizenship" in w for w in v.withheld)
+
+
 @pytest.mark.parametrize("country", ["Нигерия", "Афганистан", "Китай", "Туркменистан"])
 def test_the_general_procedure_still_answers_where_the_pdf_puts_it(engine, country):
     """Обратная сторона: «все остальные» — верный ответ для этих стран (ТЗ 2.2, с. 22).
@@ -412,6 +425,17 @@ def test_remaining_days_are_blocked_even_when_the_limit_is_allowed(text):
                                   "unified_permit"}))
     assert "kg_entry_remaining_days_blocked" in violations
     assert clean != text, f"остаток дней дошёл до клиента: {clean!r}"
+
+
+def test_a_neighbouring_word_is_not_mistaken_for_a_remainder():
+    """«Остальное» — не «осталось». Ремень не должен подменять нормальную реплику."""
+    from app.agent.validator import validate_reply
+    text = "Документы готовим 3 дня, остальное обсудим на встрече."
+    clean, violations = validate_reply(
+        text, "visa", profile="kg_entry",
+        allowed_claims=frozenset({"regime", "stay_limit"}))
+    assert "kg_entry_remaining_days_blocked" not in violations
+    assert clean == text
 
 
 def test_the_limit_from_the_rule_still_passes():
