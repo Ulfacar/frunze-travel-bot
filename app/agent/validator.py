@@ -278,7 +278,10 @@ def _apply_entry_profile(text: str, *, allowed_claims: frozenset[str],
             if blocked and "kg_entry_price_blocked" not in violations:
                 violations.append("kg_entry_price_blocked")
 
-    for affirm, neg in ((_GUARANTEE, re.compile(r"не\s+гаранти", re.IGNORECASE)),
+    # Отрицание допускает пару слов между «не» и «гаранти»: правильный ответ бота
+    # звучит как «мы НЕ МОЖЕМ гарантировать выдачу», и прежний шаблон затирал его.
+    # Найдено прогоном клиентских историй 22.10.
+    for affirm, neg in ((_GUARANTEE, g.GUARANTEE_RU_NEG),
                         (g.GUARANTEE_EN, g.GUARANTEE_EN_NEG)):
         if affirm.search(clean):
             clean, blocked = _replace_sentences(

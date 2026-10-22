@@ -82,6 +82,17 @@ _ARRIVAL = (
     "arriving", "arrival", "visit",
 )
 
+# Отъезд ОТСЮДА. Иностранец, живущий в Бишкеке и собравшийся за границу, — выездной
+# клиент, и забирать его во въездную ветку нельзя даже при названном гражданстве.
+_DEPARTURE = (
+    "поехать", "поеду", "выехать", "выезжа", "уехать", "уеду", "за границу",
+    "за рубеж", "улета", "go abroad", "travel to", "fly to",
+)
+
+# Слова про сам визовый вопрос. Сами тему не решают: нужны вместе с названным чужим
+# гражданством и при молчащем вето выездного.
+_VISA_WORDS_RU = ("виз", "оформит", "оформлен", "документы на")
+
 
 def _outbound_stems() -> tuple[str, ...]:
     """Основы названий выездных стран из брендинга, чтобы список не разъехался с промптом."""
@@ -160,12 +171,34 @@ def _without_origin(low: str) -> str:
     return _ORIGIN_CLAIM.sub(" ", low)
 
 
+# Что ломает липкость режима. Только то, чего во въездном разговоре быть не может:
+# выездная страна как пункт назначения и сугубо выездные артефакты. Слова
+# «посольство», «консульство», «собеседование» сюда НЕ входят — их задаёт и
+# иностранец про МИД Кыргызстана, и прибитый тест это требует.
+_OUTBOUND_HARD = ("шенген", "schengen", "ds-160", "ds160", "грин карт", "green card",
+                  "vfs", "визовый центр")
+
+
+def _outbound_evidence(low: str) -> bool:
+    """Твёрдая улика выездного разговора — достаточная, чтобы перебить липкость."""
+    veto = _without_origin(low)
+    return (any(w in veto for w in _OUTBOUND_HARD)
+            or any(w in veto for w in _OUTBOUND_SHORT)
+            or any(stem in veto for stem in _outbound_stems()))
+
+
 def detect(text: str, *, sticky: str | None = None) -> Intent:
     """Тема реплики. `sticky` — уже определённый режим диалога, он сильнее текста."""
+    low = (text or "").lower()
+
     if sticky in ("kg_entry", "outbound"):
+        # Липкость не должна запирать диалог в неверной ветке: режим мог быть угадан
+        # по косвенным признакам. Прямая улика выездного её перебивает — но только
+        # прямая, иначе обычное продолжение въездного разговора будет перескакивать.
+        if sticky == "kg_entry" and low.strip() and _outbound_evidence(low):
+            return "outbound"
         return sticky                                  # type: ignore[return-value]
 
-    low = (text or "").lower()
     if not low.strip():
         return "unknown"
 
@@ -174,20 +207,31 @@ def detect(text: str, *, sticky: str | None = None) -> Intent:
 
     # Вето считаем по тексту БЕЗ своего гражданства, иначе «я из Германии, хочу
     # приехать туристом» уезжает в выездную воронку из-за слова «Германии».
+    leaving = any(word in low for word in _DEPARTURE)
+
     veto = _without_origin(low)
     if any(w in veto for w in _OUTBOUND_WORDS) or any(w in veto for w in _OUTBOUND_SHORT):
         return "outbound"
     if any(stem in veto for stem in _outbound_stems()):
         return "outbound"
 
-    # Назвал чужое гражданство и собирается приехать — это въезд. Гражданин КР так про
-    # себя не пишет, а его собственное гражданство здесь не считается чужим.
-    origins = _claimed_origins(low)
-    if origins and any(iso != "KGZ" for iso in origins) \
-            and any(word in low for word in _ARRIVAL):
-        return "kg_entry"
+    # Назвал чужое гражданство — дальше смотрим, куда он собрался. Гражданин КР так
+    # про себя не пишет, а его собственное гражданство чужим не считается.
+    foreign = any(iso != "KGZ" for iso in _claimed_origins(low))
+    if foreign and not leaving:
+        if any(word in low for word in _ARRIVAL):
+            return "kg_entry"
+        # Просит визу и не назвал ни одной страны (вето выше молчало) — речь о
+        # Кыргызстане. Иначе иностранец, написавший «оформите мне визу», уходил в
+        # выездную воронку, и бот спрашивал, какую страну он рассматривает.
+        if any(word in low for word in _VISA_WORDS_RU) or (
+                looks_english(low) and any(re.search(rf"\b{w}\b", low)
+                                           for w in _VISA_WORDS_EN)):
+            return "kg_entry"
 
-    if any(w in low for w in _ENTRY_WEAK):
+    # Слабый маркер не работает, если клиент прямо говорит об отъезде отсюда:
+    # «живу в Бишкеке, хочу выехать на учёбу» — это выездной клиент.
+    if any(w in low for w in _ENTRY_WEAK) and not leaving:
         return "kg_entry"
 
     # Клиентура выездного GetVisa — граждане КР, они пишут по-русски. Англоязычный

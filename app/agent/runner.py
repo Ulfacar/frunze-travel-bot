@@ -838,6 +838,18 @@ async def _kg_entry_exec_tool(name: str, args: dict, state: DialogState, crm=Non
         if args.get("flags"):
             kg["flags"] = list(args["flags"])
         state.stage = "manager"
+        # Передача — НЕ замена ответу. Прежняя инструкция велела сказать только
+        # «специалист свяжется», и модель послушно выбрасывала то, что уже имела право
+        # сообщить: серб-удалёнщик не услышал свой лимит 90/180, хотя движок его знал.
+        from app.core.entry_card import sayable_regime_line
+        verdict = _entry_verdict(state)
+        allowed = (verdict.sayable if verdict is not None
+                   and await _entry_speech_allowed(state.bot_id) else frozenset())
+        if allowed:
+            line = sayable_regime_line(verdict, allowed)
+            return (f"Заявка передана специалисту. СНАЧАЛА сообщи клиенту то, что уже "
+                    f"можно: {line}. Затем скажи, что специалист свяжется в рабочее "
+                    f"время и подтвердит остальное. Сумм не называй.")
         return ("Заявка передана специалисту. Скажи клиенту честно: специалист свяжется "
                 "в рабочее время и подтвердит условия. Сумм не называй.")
 

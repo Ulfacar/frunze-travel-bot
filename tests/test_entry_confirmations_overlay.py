@@ -448,6 +448,38 @@ def test_the_limit_from_the_rule_still_passes():
     assert clean == text, "норма из ТЗ подменена вместе с остатком"
 
 
+def test_handoff_does_not_swallow_the_answer_the_bot_may_give(engine, monkeypatch):
+    """Передача специалисту — не замена ответу.
+
+    Прогон историй 22.10: серб-удалёнщик получил только «специалист свяжется в
+    рабочее время», хотя движок знал его режим и разрешал его произнести. Виноват был
+    сам инструмент передачи: он велел модели сказать ровно эту фразу.
+    """
+    import asyncio
+
+    import app.config
+    from app.agent.runner import _kg_entry_exec_tool
+    from app.core import flags
+    from app.core.state import DialogState
+
+    monkeypatch.setattr(app.config.settings, "kg_entry_say_confirmed_enabled", True,
+                        raising=False)
+    state = DialogState(user_id="sim:1", funnel="visa", bot_id="sim")
+    state.qualification["kg_entry"] = {"citizenship": "Сербия", "citizenship_iso3": "SRB",
+                                       "purpose": "it_remote"}
+
+    async def go():
+        flags.reset()
+        return await _kg_entry_exec_tool("kg_entry_handoff", {"reason": "нужен продукт"},
+                                         state)
+
+    instruction = asyncio.run(go())
+    assert "90" in instruction, (
+        "инструмент передачи не велит сказать разрешённое — готовый ответ теряется: "
+        f"{instruction!r}")
+    assert "специалист" in instruction.lower()
+
+
 def test_only_sayable_facts_reach_the_model_context(engine):
     """В промпт кладём лишь разрешённое: что модель видит, она рано или поздно скажет."""
     from app.core.entry_card import sayable_regime_line
@@ -572,6 +604,27 @@ def test_the_window_is_spelled_out_for_the_model():
     assert "30/60" not in line, f"в контекст модели ушла дробь: {line!r}"
     assert "30 дней в каждые 60" in line or "30 дней в каждом 60" in line, \
         f"окно не раскрыто словами: {line!r}"
+
+
+@pytest.mark.parametrize("text", [
+    "Визу даёт МИД, мы не можем гарантировать выдачу.",
+    "Мы не даём гарантий одобрения.",
+    "Гарантировать выдачу визы невозможно, решение принимает МИД.",
+    "The decision is made by the ministry, we cannot guarantee approval.",
+])
+def test_a_correct_refusal_of_a_guarantee_is_not_replaced(text):
+    """Ремень не должен затирать ПРАВИЛЬНЫЙ отказ в гарантии.
+
+    Найдено прогоном историй: на просьбу «гарантируйте визу» бот честно ответил «мы
+    не можем гарантировать выдачу», и ремень подменил этот ответ — шаблон отрицания
+    требовал «не» непосредственно перед «гаранти», а между ними стояло «можем».
+    """
+    from app.agent.validator import validate_reply
+    clean, violations = validate_reply(text, "visa", profile="kg_entry",
+                                       allowed_claims=frozenset({"regime"}))
+    assert "kg_entry_guarantee_blocked" not in violations, \
+        f"правильный отказ подменён: {text!r}"
+    assert clean == text
 
 
 @pytest.mark.parametrize("text", [
