@@ -46,7 +46,7 @@ PDF_NAME_FIXES = {"Бруней-Даруссалам": "Бруней"}
 # Расхождения, которые уже разобраны: почему так и чем это безопасно. Гейт их
 # показывает, но не красит в красное — иначе он перестаёт ловить НОВЫЕ расхождения.
 KNOWN_GAPS: tuple[tuple[str, str], ...] = (
-    ("C: MDA назван в ПДФ вне Перечня",
+    ("C: MDA назван в ПДФ вне Перечня, в KG.REG.DEFAULT его нет",
      "пробел импорта. Молдова в таблице 2.10 попадает в строку «Нет в Перечне», "
      "но в KG.REG.DEFAULT её нет, а KG.REG.EXEMPT.MDA заблокирована. Движок из-за "
      "этого отдаёт срок регистрации для MDA менеджеру и клиенту не называет "
@@ -63,11 +63,15 @@ def fail(msg: str) -> None:
 
 
 def triage(found: list[str]) -> tuple[list[str], list[tuple[str, str]]]:
-    """Разделить расхождения на новые и уже разобранные."""
+    """Разделить расхождения на новые и уже разобранные.
+
+    Сопоставление по ПОЛНОМУ тексту, а не по префиксу: иначе разобранный пробел
+    прячет любое будущее расхождение, которое начинается теми же словами.
+    """
     fresh: list[str] = []
     known: list[tuple[str, str]] = []
     for item in found:
-        match = next((reason for prefix, reason in KNOWN_GAPS if item.startswith(prefix)), None)
+        match = next((reason for text, reason in KNOWN_GAPS if item == text), None)
         (known.append((item, match)) if match else fresh.append(item))
     return fresh, known
 
@@ -254,6 +258,161 @@ def check_annex1(pages: dict[int, dict], units: list[dict],
              "вместо 30/60")
 
 
+def cells_text(pages: dict[int, dict]) -> str:
+    """Все ячейки таблиц одной строкой. Нужно там, где фраза ТЗ живёт в ячейке.
+
+    По тексту страницы такую фразу не найти: в многоколоночной вёрстке
+    ``extract_text`` склеивает строки по горизонтали, и между словами одной фразы
+    вклиниваются слова соседних колонок.
+    """
+    out: list[str] = []
+    for page in pages.values():
+        for table in page["tables"]:
+            for row in table:
+                for cell in row:
+                    out.append(re.sub(r"\s+", " ", str(cell or "")))
+    return " ~ ".join(out)
+
+
+def visa_free_rows(pages: dict[int, dict]) -> list[tuple[str, str]]:
+    """Строки таблицы 2.2 со значением «Нужна ли виза = Нет»: (группа, срок)."""
+    rows: list[tuple[str, str]] = []
+    for num in (19, 20, 21):
+        for table in pages[num]["tables"]:
+            head = re.sub(r"\s+", " ", " ".join(str(c or "")
+                                                for c in (table[0] if table else ())))
+            if "Нужна ли виза" not in head:
+                continue
+            for row in table[1:]:
+                cells = [re.sub(r"\s+", " ", str(c or "")).strip() for c in row]
+                if not cells or not cells[0]:
+                    continue
+                answer = next((c for c in cells[1:3] if c), "")
+                if answer.startswith("Нет"):
+                    rows.append((cells[0], cells[3] if len(cells) > 3 else ""))
+    return rows
+
+
+def check_visa_free_coverage(pages: dict[int, dict], units: list[dict],
+                             countries: dict[str, str]) -> None:
+    """G: каждая страна, которой по ТЗ виза НЕ нужна, либо покрыта единицей, либо в страховке.
+
+    Это проверка полноты списка `entry_regime.REGIME_UNRESOLVED_IN_DATA`. Без неё
+    страна из строки «Нет» таблицы 2.2, которую импорт не выразил, проваливается в
+    единицу «все остальные», и бот утверждает «нужна виза» тому, кому она не нужна.
+    """
+    sys.path.insert(0, str(ROOT))
+    from app.knowledge.entry_regime import REGIME_UNRESOLVED_IN_DATA
+
+    covered: set[str] = set()
+    for unit in units:
+        if unit.get("kind") != "visa_free_regime":
+            continue
+        value = unit.get("value") or {}
+        if value.get("days") is None:
+            continue           # пустая единица ничего не покрывает
+        listed = value.get("countries")
+        if isinstance(listed, list):
+            covered |= set(listed)
+
+    from_pdf: set[str] = set()
+    for group, _term in visa_free_rows(pages):
+        if "приложения 1" in group:
+            continue           # полный список берёт проверка D из раздела 2.3
+        text = group.split(":", 1)[1] if ":" in group else group
+        text = re.sub(r"\(.*?\)", " ", text)
+        for name in split_countries(text):
+            code = iso3(name, countries)
+            if code is None:
+                fail(f"G: в строке «Нет» таблицы 2.2 не распознана страна {name!r} "
+                     f"(группа {group[:40]!r})")
+            else:
+                from_pdf.add(code)
+
+    if len(from_pdf) < 20:
+        fail(f"G: из строк «Нет» разобрано подозрительно мало стран — {len(from_pdf)}")
+        return
+    notes.append(f"G: из строк «Нет» таблицы 2.2 разобрано {len(from_pdf)} стран; "
+                 f"покрыто единицами {len(covered)}; в страховке "
+                 f"{len(REGIME_UNRESOLVED_IN_DATA)}")
+
+    for code in sorted(from_pdf - covered - set(REGIME_UNRESOLVED_IN_DATA)):
+        fail(f"G: {code} по ТЗ без визы, но ни одна единица его не покрывает и в "
+             "REGIME_UNRESOLVED_IN_DATA его нет — бот скажет «нужна виза»")
+    stale = sorted(set(REGIME_UNRESOLVED_IN_DATA) & covered)
+    if stale:
+        fail(f"G: страховка REGIME_UNRESOLVED_IN_DATA держит страны, которые уже "
+             f"покрыты единицами — молчание лишнее: {', '.join(stale)}")
+
+
+def check_visa_required(pages: dict[int, dict], units: list[dict],
+                        countries: dict[str, str]) -> None:
+    """H: визовые порядки — состав стран, согласование ГКНБ и область действия.
+
+    Эти единицы подтверждены, значит бот утверждает их клиенту как факт.
+    """
+    index = {u.get("unit_id"): (u.get("value") or {}) for u in units}
+    text = re.sub(r"\s+", " ", " ".join(page["text"] for page in pages.values()))
+
+    simplified = index.get("KG.VR.SIMPLIFIED_ALL") or {}
+    expected = {iso3(n, countries) for n in
+                ("Индонезия", "Филиппины", "ЮАР", "Венесуэла")} - {None}
+    if set(simplified.get("countries") or ()) != expected:
+        fail(f"H: KG.VR.SIMPLIFIED_ALL: состав стран {simplified.get('countries')} "
+             "не совпадает с разделом 2.4 ТЗ (Индонезия, Филиппины, ЮАР, Венесуэла)")
+    if simplified.get("gknb_approval") is not False:
+        fail("H: KG.VR.SIMPLIFIED_ALL: упрощённый порядок обязан означать «без "
+             f"согласования ГКНБ», указано {simplified.get('gknb_approval')!r}")
+    if "не согласовываются с ГКНБ" not in text:
+        fail("H: в ТЗ не нашёл формулировку про отсутствие согласования ГКНБ "
+             "для упрощённого порядка")
+
+    iran = index.get("KG.VR.SIMPLIFIED_IRN_B_TS") or {}
+    if set(iran.get("countries") or ()) != {"IRN"}:
+        fail(f"H: KG.VR.SIMPLIFIED_IRN_B_TS: ожидался только Иран, "
+             f"указано {iran.get('countries')}")
+    if iran.get("scope") != "business_tourist":
+        fail(f"H: KG.VR.SIMPLIFIED_IRN_B_TS: ТЗ даёт упрощение Ирану только для деловых "
+             f"и туристических виз, в единице scope={iran.get('scope')!r}")
+    if iran.get("gknb_approval") is not False:
+        fail("H: KG.VR.SIMPLIFIED_IRN_B_TS: ожидалось «без согласования ГКНБ»")
+
+    general = index.get("KG.VR.GENERAL") or {}
+    if general.get("countries") != "all_others":
+        fail(f"H: KG.VR.GENERAL: ожидалось «все остальные», "
+             f"указано {general.get('countries')!r}")
+    if general.get("gknb_approval") is not True:
+        fail("H: KG.VR.GENERAL: общий порядок обязан требовать согласования ГКНБ")
+    if "согласование ГКНБ" not in text and "согласованием ГКНБ" not in text:
+        fail("H: в ТЗ не нашёл формулировку про согласование ГКНБ в общем порядке")
+    notes.append("H: визовые порядки сверены: состав стран, ГКНБ, область действия")
+
+
+def check_unified_permit(pages: dict[int, dict], units: list[dict]) -> None:
+    """I: флаг «для работы нужно Единое разрешение» — он уходит клиенту как факт."""
+    index = {u.get("unit_id"): (u.get("value") or {}) for u in units}
+    text = re.sub(r"\s+", " ", " ".join(page["text"] for page in pages.values()))
+    # Правило про ЕАЭС живёт в ЯЧЕЙКЕ таблицы, а не в прозе: по тексту страницы его не
+    # найти, там между словами фразы вклиниваются слова соседних колонок.
+    cells = cells_text(pages)
+
+    eaeu = index.get("KG.VF.EAEU") or {}
+    if eaeu.get("work_needs_unified_permit") is not False:
+        fail("I: KG.VF.EAEU: ТЗ (с. 19) прямо говорит «для работы ЕР не нужен», "
+             f"в единице {eaeu.get('work_needs_unified_permit')!r}")
+    if "ЕР не нужен" not in cells:
+        fail("I: в ТЗ не нашёл формулировку «ЕР не нужен» по ЕАЭС")
+
+    for uid in ("KG.VF.UZB", "KG.VF.NINETY_180", "KG.VF.ANNEX1_30_60"):
+        value = index.get(uid) or {}
+        if value.get("work_needs_unified_permit") is not True:
+            fail(f"I: {uid}: по ТЗ безвиз не даёт права работать, нужно ЕР; "
+                 f"в единице {value.get('work_needs_unified_permit')!r}")
+    if "Безвиз — это право на пребывание, но не на работу" not in text:
+        fail("I: в ТЗ не нашёл правило «безвиз не даёт права работать»")
+    notes.append("I: флаг Единого разрешения сверен по всем подтверждённым режимам")
+
+
 def check_limits(pages: dict[int, dict], units: list[dict]) -> None:
     """E: лимит каждого безвизового режима встречается в ячейках таблиц ТЗ.
 
@@ -261,13 +420,7 @@ def check_limits(pages: dict[int, dict], units: list[dict]) -> None:
     ``extract_text`` склеивает строки по горизонтали, и между словами одной фразы
     вклиниваются слова соседних колонок.
     """
-    cells: list[str] = []
-    for page in pages.values():
-        for table in page["tables"]:
-            for row in table:
-                for cell in row:
-                    cells.append(re.sub(r"\s+", " ", str(cell or "")))
-    joined = " ~ ".join(cells)
+    joined = cells_text(pages)
     for unit in units:
         if unit.get("kind") != "visa_free_regime":
             continue
@@ -357,6 +510,9 @@ def main() -> int:
     check_exemptions(pages, units, countries)
     check_annex1(pages, units, countries)
     check_limits(pages, units)
+    check_visa_free_coverage(pages, units, countries)
+    check_visa_required(pages, units, countries)
+    check_unified_permit(pages, units)
     check_overlay(meta, units)
 
     for note in notes:
@@ -370,8 +526,12 @@ def main() -> int:
         for problem in fresh:
             print("  x " + problem)
         return 1
-    print(f"\nНовых расхождений нет: данные бандла совпадают с таблицами ПДФ "
-          f"(разобранных пробелов {len(known)}).")
+    # Формулировка узкая намеренно: сверено то, что перечислено в докстроке модуля,
+    # а не «весь бандл». Остальные 100 с лишним единиц бот как факт не произносит.
+    print("\nНовых расхождений нет. Сверено с ПДФ: таблица 2.10 и строка «Нет в "
+          "Перечне», список приложения 1 (раздел 2.3), лимиты безвизовых режимов, "
+          "полнота страховки по строкам «Нет» таблицы 2.2, визовые порядки с ГКНБ "
+          f"и флаг Единого разрешения. Разобранных пробелов {len(known)}.")
     return 0
 
 

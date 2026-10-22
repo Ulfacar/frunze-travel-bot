@@ -46,6 +46,28 @@ HUMAN_ONLY_DOCUMENTS = frozenset({
 # `decision` = [РЕШЕНИЕ] (последнее клиенту не озвучивается вообще).
 UNSAYABLE_LABELS = frozenset({"verify", "decision"})
 
+# Страны, которым по ТЗ виза НЕ нужна, но данные этого не выражают.
+#
+# Таблица 2.2 (с. 21) содержит строки «Нужна ли виза = Нет» для ССАГПЗ (180/360),
+# Мальдив, Гонконга и Макао, Малайзии, Кубы и КНДР. При импорте соответствующие
+# единицы (`KG.VF.GCC`, `KG.VF.MDV`, `KG.VF.MYS`, `KG.VF.CUB`, `KG.VF.PRK`,
+# `KG.SP.HK_MACAO`) получили пустое значение и потеряли список стран, поэтому индекс
+# не привязывает к ним гражданство. Без этой страховки такая страна проваливалась в
+# единицу «все остальные» (`KG.VR.GENERAL`) — и бот утверждал клиенту из ОАЭ, что
+# нужна виза с согласованием ГКНБ. Для Нигерии или Афганистана «все остальные» —
+# верный ответ, поэтому отличить по наличию привязок нельзя, нужен явный список.
+#
+# Список НИКОГДА не используется для утверждения правила — только чтобы промолчать и
+# передать человеку. Его полнота относительно ТЗ проверяется скриптом
+# `scripts/verify_entry_confirmations.py`: каждая страна из строк «Нет» таблицы 2.2
+# обязана быть либо покрыта непустой единицей, либо перечислена здесь.
+REGIME_UNRESOLVED_IN_DATA = frozenset({
+    "SAU", "ARE", "QAT", "KWT", "OMN", "BHR",   # ССАГПЗ, с. 21: безвиз 180/360
+    "MDV",                                      # с. 21: 30 дней, все типы паспортов
+    "HKG", "MAC",                               # с. 21 и 2.5: постоянные жители, 30 дней
+    "MYS", "CUB", "PRK",                        # с. 21; по Кубе и КНДР срок не найден
+})
+
 
 @dataclass(frozen=True)
 class UnitRef:
@@ -253,6 +275,21 @@ def evaluate(query: EntryQuery) -> EntryVerdict:
     permit = gknb = None
 
     free = next(iter(links.get("visa_free_regime") or []), None)
+
+    # Режим не определяем, если данные о безвизе есть, но непригодны: либо единица
+    # привязана с пустым значением (ТЗ знает про безвиз, но срок утерян), либо страна
+    # в списке потерянных привязок. Проваливаться в «все остальные» в этих случаях
+    # нельзя: это самый дорогой неверный ответ — «нужна виза» тому, кому она не нужна.
+    # Значение для менеджера при этом считаем дальше (срок регистрации ему нужен).
+    free_unusable = free is not None and (free.get("value") or {}).get("days") is None
+    if free_unusable or iso3 in REGIME_UNRESOLVED_IN_DATA:
+        if free is not None:
+            units.append(_ref(free))
+        withheld.append(f"regime_unresolved_in_data:{iso3}")
+        registration, _ = _registration(links, iso3, withheld, units)
+        return EntryVerdict(regime="unknown", registration=registration,
+                            units=tuple(units), withheld=tuple(dict.fromkeys(withheld)))
+
     if free is not None and (free.get("value") or {}).get("days") is not None:
         regime = "visa_free"
         value = free["value"]

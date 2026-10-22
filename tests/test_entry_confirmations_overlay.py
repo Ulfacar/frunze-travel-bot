@@ -164,7 +164,7 @@ def test_visa_required_regime_is_now_sayable(engine, country):
     assert "regime" in v.sayable, f"{country}: визовый порядок подтверждён, но молчит"
 
 
-@pytest.mark.parametrize("country,exempt", [("США", 30), ("Австрия", 30), ("ОАЭ", 60)])
+@pytest.mark.parametrize("country,exempt", [("США", 30), ("Австрия", 30), ("Сербия", 60)])
 def test_registration_exemption_is_now_sayable(engine, country, exempt):
     v = _ask(engine, country)
     assert v.registration is not None and v.registration.exempt_days == exempt
@@ -239,6 +239,63 @@ def test_registration_term_must_be_confirmed_on_its_own(engine, monkeypatch):
         "срок оформления регистрации произнесён без подтверждения своей единицы"
 
 
+# --- C2. Страны, которым по ТЗ виза НЕ нужна, а в данных это не выражено --------
+
+# Таблица 2.2 ТЗ, строки «Нужна ли виза = Нет», которые бандл не смог выразить:
+# у единиц `KG.VF.GCC`, `MDV`, `MYS`, `CUB`, `PRK` и `KG.SP.HK_MACAO` пустое значение
+# и потерян список стран, поэтому индекс не привязывает к ним гражданство.
+PDF_VISA_FREE_BUT_UNEXPRESSED = {
+    # ССАГПЗ, с. 21: «Нет, 180 дней в каждом 360-дневном периоде»
+    "Саудовская Аравия": "SAU", "ОАЭ": "ARE", "Катар": "QAT",
+    "Кувейт": "KWT", "Оман": "OMN", "Бахрейн": "BHR",
+    # с. 21: 30 дней
+    "Мальдивы": "MDV", "Гонконг": "HKG", "Макао": "MAC", "Малайзия": "MYS",
+    # с. 21: срок в источниках не найден, ТЗ предписывает эскалацию
+    "Куба": "CUB", "КНДР": "PRK",
+}
+
+
+@pytest.mark.parametrize("country", sorted(PDF_VISA_FREE_BUT_UNEXPRESSED))
+def test_countries_the_pdf_calls_visa_free_never_hear_a_visa_requirement(engine, country):
+    """Худший из возможных неверных ответов: «нужна виза» тому, кому она не нужна.
+
+    Движок проваливал такие страны в единицу «все остальные» (общий порядок плюс
+    согласование ГКНБ). Она подтверждена, поэтому бот утверждал бы это как факт, а
+    клиент из ОАЭ купил бы визу, которая ему не нужна.
+    """
+    v = _ask(engine, country, purpose="tourism")
+    assert "regime" not in v.sayable, (
+        f"{country}: бот утверждает режим въезда, хотя ТЗ относит страну к безвизовым, "
+        f"а данные этого не выражают (получено {v.regime!r})")
+    assert any("regime" in w for w in v.withheld), \
+        f"{country}: причина умолчания о режиме не записана для менеджера"
+
+
+@pytest.mark.parametrize("country", ["Мальдивы", "Малайзия", "Куба", "КНДР"])
+def test_an_empty_visa_free_unit_does_not_become_the_general_procedure(engine, country):
+    """У этих стран безвизовая единица привязана, но пустая.
+
+    Пустое значение — это «мы не знаем срок», а не «безвиза нет». Подмена пустой
+    единицы единицей «все остальные» заодно обходила метку `verify`.
+    """
+    v = _ask(engine, country, purpose="tourism")
+    assert v.regime != "visa_required", \
+        f"{country}: пустая безвизовая единица подменена общим визовым порядком"
+    assert v.sayable == frozenset(), f"{country}: произносится вывод по пустой единице"
+
+
+@pytest.mark.parametrize("country", ["Нигерия", "Афганистан", "Китай", "Туркменистан"])
+def test_the_general_procedure_still_answers_where_the_pdf_puts_it(engine, country):
+    """Обратная сторона: «все остальные» — верный ответ для этих стран (ТЗ 2.2, с. 22).
+
+    Страховка не должна заглушить самую большую группу визовых стран.
+    """
+    v = _ask(engine, country, purpose="tourism")
+    assert v.regime == "visa_required"
+    assert v.gknb_approval is True
+    assert "regime" in v.sayable, f"{country}: верный ответ про визу перестал звучать"
+
+
 # --- D. Аннулирование подтверждения --------------------------------------------
 
 def test_editing_a_value_kills_its_confirmation(units):
@@ -264,6 +321,124 @@ def test_wrong_bundle_hash_voids_the_whole_overlay(units, monkeypatch):
                             by_unit=real.by_unit))
     assert not entry_confirmations.confirmed(dict(units["KG.VF.EAEU"])), \
         "оверлей от другого бандла всё ещё действует"
+
+
+@pytest.mark.parametrize("bundle_hash,source_hash,case", [
+    ("", None, "пустой bundle_hash"),
+    (None, "z" * 64, "чужой source_hash"),
+    ("", "", "оба пустые"),
+])
+def test_a_confirmation_without_a_real_binding_is_not_trusted(
+        units, monkeypatch, bundle_hash, source_hash, case):
+    """Привязка оверлея к бандлу и к PDF обязательна, а не «если указана».
+
+    Хеш значения защищает от правки значения, но не от добавления, удаления или
+    переименования единиц. От этого защищает только привязка к бандлу целиком —
+    значит пустая привязка не может считаться привязкой.
+    """
+    from app.knowledge import entry_confirmations
+    entry_confirmations.reset()
+    real = entry_confirmations.load()
+    assert real is not None
+    patched = entry_confirmations.Confirmations(
+        bundle_hash=real.bundle_hash if bundle_hash is None else bundle_hash,
+        source_hash=real.source_hash if source_hash is None else source_hash,
+        by_unit=real.by_unit)
+    monkeypatch.setattr(entry_confirmations, "load", lambda: patched)
+    assert not entry_confirmations.confirmed(dict(units["KG.VF.EAEU"])), \
+        f"{case}: оверлей без настоящей привязки всё ещё действует"
+
+
+def test_confirmed_units_on_real_data_match_the_selection_rule(units):
+    """Инвариант по поставляемым данным, а не по механизму.
+
+    Проверяет ровно то, что раньше проверял тест «оверлей пуст»: что в поставке
+    подтверждено ровно ожидаемое и ни одной единицы больше. Правило повторяет
+    scripts/build_entry_confirmations.py.
+    """
+    from app.knowledge import entry_confirmations
+    entry_confirmations.reset()
+    allowed_kinds = set(EXPECTED_KINDS)
+    unexpected: list[str] = []
+    missing: list[str] = []
+    for uid, unit in units.items():
+        eligible = (unit.get("kind") in allowed_kinds
+                    and unit.get("value") is not None
+                    and str(unit.get("label") or "") == "none"
+                    and not unit.get("conflict_ref"))
+        is_confirmed = entry_confirmations.confirmed(unit)
+        if is_confirmed and not eligible:
+            unexpected.append(uid)
+        if eligible and not is_confirmed:
+            missing.append(uid)
+    assert unexpected == [], f"подтверждено лишнее: {unexpected}"
+    assert missing == [], f"правило отбора выполнено, но подтверждения нет: {missing}"
+
+
+def test_an_unconfirmed_unlabelled_rule_is_marked_for_the_manager(monkeypatch):
+    """Путь `not_confirmed` обязан быть виден в карточке, а не только путь по метке."""
+    from app.core import entry_card
+    from app.knowledge import entry_confirmations
+    from app.knowledge.entry_regime import EntryQuery, evaluate, resolve_citizenship
+
+    monkeypatch.setattr(entry_confirmations, "confirmed", lambda unit: False)
+    verdict = evaluate(EntryQuery(citizenship_iso3=resolve_citizenship("Россия")))
+    card = entry_card.render({"name": "X", "phone": "996700000000"}, verdict)
+    assert "not_confirmed" in card, "менеджер не видит, что правило не прошло приёмку"
+    assert "не подтверждено" in card
+
+
+# --- E. Остаток дней: запрет ТЗ 2.9 не зависит от подтверждений -----------------
+
+@pytest.mark.parametrize("text", [
+    "У вас осталось 12 дней пребывания.",
+    "Остаток — 5 дней в текущем окне.",
+    "Вы можете пробыть ещё 20 дней.",
+    "В запасе 3 дня, лучше выехать раньше.",
+    "You have 14 days left in this window.",
+])
+def test_remaining_days_are_blocked_even_when_the_limit_is_allowed(text):
+    """Лимит из нормы произносить можно, остаток по конкретному человеку — никогда.
+
+    Оба утверждения выглядят одинаково — «число рядом со словом день», — поэтому
+    разрешение произносить лимит само по себе открывало дорогу остатку. ТЗ 2.9:
+    остаток считает государственная система учёта, доступа к ней нет, политика
+    подсчёта дня въезда и выезда в данных не подтверждена.
+    """
+    from app.agent.validator import validate_reply
+    clean, violations = validate_reply(
+        text, "visa", profile="kg_entry",
+        allowed_claims=frozenset({"regime", "stay_limit", "registration",
+                                  "unified_permit"}))
+    assert "kg_entry_remaining_days_blocked" in violations
+    assert clean != text, f"остаток дней дошёл до клиента: {clean!r}"
+
+
+def test_the_limit_from_the_rule_still_passes():
+    from app.agent.validator import validate_reply
+    text = "Без визы можно находиться 30 дней в каждом 60-дневном периоде."
+    clean, violations = validate_reply(
+        text, "visa", profile="kg_entry",
+        allowed_claims=frozenset({"regime", "stay_limit"}))
+    assert "kg_entry_remaining_days_blocked" not in violations
+    assert clean == text, "норма из ТЗ подменена вместе с остатком"
+
+
+def test_only_sayable_facts_reach_the_model_context(engine):
+    """В промпт кладём лишь разрешённое: что модель видит, она рано или поздно скажет."""
+    from app.core.entry_card import sayable_regime_line
+
+    tjk = _ask(engine, "Таджикистан")
+    line = sayable_regime_line(tjk, tjk.sayable)
+    assert "60/120" not in line, \
+        "лимит с меткой verify попал в контекст модели — остался один рубеж из двух"
+
+    rus = _ask(engine, "Россия")
+    assert "90/180" in sayable_regime_line(rus, rus.sayable)
+    # Тумблер речи выключен — в контекст не уходит ни одного числа.
+    silent = sayable_regime_line(rus, frozenset())
+    assert "90" not in silent and "180" not in silent
+    assert "специалист" in silent
 
 
 def test_missing_overlay_means_nothing_is_sayable(engine, monkeypatch):

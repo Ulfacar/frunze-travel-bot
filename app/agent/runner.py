@@ -806,9 +806,12 @@ async def _kg_entry_exec_tool(name: str, args: dict, state: DialogState, crm=Non
         if verdict is None:
             return ("Факты записаны. Правило по гражданству пока не определено — "
                     "продолжай выяснять и не утверждай ничего про режим въезда.")
-        from app.core.entry_card import _regime_line
-        kg["_verdict_line"] = _regime_line(verdict)
+        from app.core.entry_card import sayable_regime_line
         allowed = sorted(verdict.sayable) if settings.kg_entry_say_confirmed_enabled else []
+        # В контекст модели кладём только разрешённое. Полный вывод с лимитами и
+        # согласованием ГКНБ уходит менеджеру в карточку, а не в промпт: то, что модель
+        # видит, она рано или поздно произнесёт.
+        kg["_verdict_line"] = sayable_regime_line(verdict, allowed)
         if not allowed:
             return ("Факты записаны. Вывод по правилам получен, но произносить его "
                     "НЕЛЬЗЯ: правила ещё не прошли приёмку. Скажи клиенту, что условия "

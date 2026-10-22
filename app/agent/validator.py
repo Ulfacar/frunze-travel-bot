@@ -231,11 +231,15 @@ def _strip_unknown_urls(text: str) -> tuple[str, bool]:
 
 def _apply_entry_profile(text: str, *, allowed_claims: frozenset[str],
                          consent_given: bool) -> tuple[str, list[str]]:
-    """Пять ремней въездной ветки. Подменяет текст, а не только логирует.
+    """Шесть ремней въездной ветки. Подменяет текст, а не только логирует.
 
     Порядок важен: запрещённые формулировки Б.7 идут ПЕРВЫМИ, потому что их безопасные
     замены сами содержат правила («Единое разрешение», «не продлевает безвизовый срок»),
     и проверка неподтверждённого не должна их тут же вырезать.
+
+    Ремень остатка дней стоит до проверки разрешений и не смотрит на них: его запрет
+    (ТЗ 2.9) не снимается подтверждением единиц. Разрешение произносить лимит — это
+    разрешение на норму, а не на расчёт по конкретному паспорту.
     """
     from app.agent import entry_guards as g
 
@@ -247,6 +251,13 @@ def _apply_entry_profile(text: str, *, allowed_claims: frozenset[str],
             clean, affirm=pattern, neg=negation, safe_text=safe)
         if blocked:
             violations.append(f"kg_entry_forbidden_{name}")
+
+    if g.claims_remaining_days(clean):
+        clean, blocked = _replace_sentences(
+            clean, affirm=g._RULE_REMAINING, neg=re.compile(r"(?!x)x"),
+            safe_text=g.SAFE_REMAINING_REPLY)
+        if blocked:
+            violations.append("kg_entry_remaining_days_blocked")
 
     if _PRICE.search(clean):
         clean, blocked = _replace_sentences(

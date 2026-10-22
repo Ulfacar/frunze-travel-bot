@@ -70,6 +70,39 @@ def _regime_line(verdict: Any) -> str:
     return " · ".join(bits)
 
 
+def sayable_regime_line(verdict: Any, allowed: Any) -> str:
+    """Строка «Режим» только из разрешённых полей — для контекста модели.
+
+    Карточке менеджеру нужен полный вывод, модели — лишь то, что разрешено произнести.
+    Причина: то, что попало в контекст, модель рано или поздно скажет, и единственным
+    препятствием остался бы ремень валидатора на выходе. Один рубеж вместо двух — это
+    ровно тот случай, когда неверное правило доезжает до клиента.
+    """
+    allowed = frozenset(allowed or ())
+    if verdict is None or not allowed:
+        return "условия уточнит специалист"
+    bits: list[str] = []
+    if "regime" in allowed:
+        bits.append(REGIME_LABELS.get(getattr(verdict, "regime", ""), "не определён"))
+        if getattr(verdict, "gknb_approval", None):
+            bits.append("общий порядок, согласование ГКНБ")
+    if "stay_limit" in allowed and getattr(verdict, "stay_limit_days", None) \
+            and getattr(verdict, "window_days", None):
+        bits.append(f"{verdict.stay_limit_days}/{verdict.window_days}")
+    if "unified_permit" in allowed:
+        if getattr(verdict, "unified_permit_required", None) is True:
+            bits.append("для работы нужно Единое разрешение")
+        elif getattr(verdict, "unified_permit_required", None) is False:
+            bits.append("работа без Единого разрешения")
+    if "registration" in allowed:
+        line = _registration_line(verdict)
+        if line != UNKNOWN:
+            bits.append(f"регистрация: {line}")
+    if not bits:
+        return "условия уточнит специалист"
+    return " · ".join(bits)
+
+
 def _registration_line(verdict: Any) -> str:
     reg = getattr(verdict, "registration", None) if verdict is not None else None
     if reg is None:

@@ -65,8 +65,15 @@ def load() -> Confirmations | None:
                 log.warning("kg entry confirmations: запись без unit_id/хеша — игнорирую")
                 return None          # битый оверлей целиком недоверенный, а не частично
             by_unit[uid] = digest
-        return Confirmations(bundle_hash=str(doc.get("bundle_hash") or ""),
-                             source_hash=str(doc.get("source_hash") or ""),
+        bundle_hash = str(doc.get("bundle_hash") or "")
+        source_hash = str(doc.get("source_hash") or "")
+        if not bundle_hash or not source_hash:
+            # Привязка обязательна. Хеш значения защищает от правки значения, но не от
+            # добавления, удаления или переименования единиц — от этого защищает только
+            # привязка к бандлу целиком. Пустая привязка не может считаться привязкой.
+            log.warning("kg entry confirmations: оверлей без привязки к бандлу или PDF")
+            return None
+        return Confirmations(bundle_hash=bundle_hash, source_hash=source_hash,
                              by_unit=by_unit)
     except Exception as exc:  # noqa: BLE001 — битый оверлей = ничего не подтверждено
         log.warning("kg entry confirmations unreadable: %s", type(exc).__name__)
@@ -77,7 +84,8 @@ def confirmed(unit: dict[str, Any]) -> bool:
     """Можно ли считать единицу подтверждённой человеком.
 
     Четыре условия, и все обязательны:
-      1. оверлей есть и его `bundle_hash` совпал с текущим бандлом;
+      1. оверлей есть, а его `bundle_hash` и `source_hash` совпали с текущим бандлом
+         и с исходным PDF — оба обязательны, пустое значение не проходит;
       2. единица в списке подтверждённых;
       3. у единицы есть значение (пустое подтвердить нельзя);
       4. хеш значения совпал — иначе значение правили после подтверждения.
@@ -87,7 +95,11 @@ def confirmed(unit: dict[str, Any]) -> bool:
     if conf is None:
         return False
     bundle = loaded()
-    if bundle is None or (conf.bundle_hash and conf.bundle_hash != bundle.bundle_hash):
+    if bundle is None or conf.bundle_hash != bundle.bundle_hash:
+        return False
+    # Сверка с исходником обязательна в рантайме: скрипт сверки на проде не работает,
+    # а оверлей от другой версии ТЗ подтверждает нормы, которых в этом PDF уже нет.
+    if conf.source_hash != str((bundle.meta or {}).get("source_hash") or ""):
         return False
     uid = unit.get("unit_id")
     value = unit.get("value")
