@@ -77,6 +77,16 @@ def snapshot(kg: dict[str, Any], verdict: Any, *, said_to_client: Any,
         "basis": _basis(verdict),
         "flags": list(flags or ()),
         "handoff_reason": handoff_reason or "",
+        # Из каких кусков базы знаний бот отвечал. Клиенту раздел и страница не
+        # показываются (решение владельца), поэтому снимок и карточка — единственное
+        # место, где это остаётся, и единственный способ потом ответить на вопрос
+        # «почему бот так сказал».
+        "knowledge_used": [
+            {"piece_id": row.get("piece_id"), "block": row.get("block"),
+             "section": row.get("section"), "pdf_pages": list(row.get("pdf_pages") or ()),
+             "labels": list(row.get("labels") or ())}
+            for row in ((kg or {}).get("_knowledge") or ())
+        ],
     }
     if verdict is not None:
         out["verdict"] = {

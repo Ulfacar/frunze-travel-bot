@@ -139,3 +139,58 @@ def test_without_a_citizenship_the_snapshot_is_still_written(monkeypatch):
     assert intake["verdict"] is None
     assert intake["said_to_client"] == []
     assert intake["handoff_reason"] == "стоп-фактор"
+
+
+# --- Основание из базы знаний --------------------------------------------------
+
+def test_the_snapshot_carries_the_knowledge_it_used(monkeypatch):
+    """Менеджер обязан видеть, из каких кусков базы бот отвечал.
+
+    Клиенту раздел и страница не показываются (решение владельца), поэтому
+    единственное место, где это остаётся, — снимок заявки и карточка.
+    """
+    monkeypatch.setattr(app.config.settings, "kg_entry_say_confirmed_enabled", True,
+                        raising=False)
+    state = _state(citizenship="Индия", citizenship_iso3="IND",
+                   purpose="business_meeting")
+    state.qualification["kg_entry"]["_knowledge"] = [
+        {"piece_id": "KG.KB.5.2#007", "block": 5, "section": "5.2",
+         "pdf_pages": [37], "labels": [], "text_sha256": "a" * 64},
+    ]
+    _handoff(state, reason="нужен список документов")
+    intake = state.qualification["kg_entry"]["intake"]
+    assert intake["knowledge_used"], "основание из базы не попало в снимок"
+    row = intake["knowledge_used"][0]
+    assert row["section"] == "5.2" and row["block"] == 5
+    assert row["pdf_pages"] == [37]
+    assert row["piece_id"] == "KG.KB.5.2#007"
+
+
+def test_without_knowledge_the_field_is_empty(monkeypatch):
+    monkeypatch.setattr(app.config.settings, "kg_entry_say_confirmed_enabled", True,
+                        raising=False)
+    state = _state(citizenship="США", citizenship_iso3="USA", purpose="tourism")
+    _handoff(state)
+    assert state.qualification["kg_entry"]["intake"]["knowledge_used"] == []
+
+
+def test_the_card_shows_the_knowledge_basis():
+    from app.core import entry_card
+    filled = {"name": "Rajesh", "phone": "996700111222", "channel": "whatsapp",
+              "kg_entry": {"citizenship": "IND", "_knowledge": [
+                  {"piece_id": "KG.KB.5.2#007", "block": 5, "section": "5.2",
+                   "pdf_pages": [37], "labels": [], "text_sha256": "a" * 64}]}}
+    card = entry_card.render(filled, None)
+    assert "5.2" in card, "в карточке нет раздела базы, из которого отвечал бот"
+    assert "37" in card, "в карточке нет страницы ТЗ"
+
+
+def test_the_knowledge_basis_never_reaches_the_client_card_fields():
+    """Хеш куска менеджеру не нужен — он служебный, в карточке его быть не должно."""
+    from app.core import entry_card
+    filled = {"name": "X", "phone": "996700000000",
+              "kg_entry": {"_knowledge": [
+                  {"piece_id": "KG.KB.5.2#007", "block": 5, "section": "5.2",
+                   "pdf_pages": [37], "labels": [], "text_sha256": "b" * 64}]}}
+    card = entry_card.render(filled, None)
+    assert "b" * 64 not in card

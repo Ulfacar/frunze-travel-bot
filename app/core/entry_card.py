@@ -108,6 +108,24 @@ def sayable_regime_line(verdict: Any, allowed: Any) -> str:
     return " · ".join(bits)
 
 
+def _knowledge_line(kg: dict[str, Any]) -> str:
+    """Разделы и страницы ТЗ, из которых бот отвечал по базе знаний.
+
+    Хеш куска сюда не идёт: он служебный, менеджеру не нужен и только мешает читать.
+    """
+    rows = (kg or {}).get("_knowledge") or ()
+    if not rows:
+        return UNKNOWN
+    parts: list[str] = []
+    for row in rows:
+        pages = ", ".join(str(page) for page in (row.get("pdf_pages") or ()))
+        label = f" — метка {', '.join(row['labels'])}" if row.get("labels") else ""
+        mark = f"разд. {row.get('section') or '?'}" + (f" (с. {pages})" if pages else "")
+        if mark + label not in parts:
+            parts.append(mark + label)
+    return "; ".join(parts)
+
+
 def _registration_line(verdict: Any) -> str:
     reg = getattr(verdict, "registration", None) if verdict is not None else None
     if reg is None:
@@ -168,6 +186,7 @@ def render(data: dict[str, Any], verdict: Any = None) -> str:
         f"Режим: {_regime_line(verdict)}",
         f"Регистрация: {_registration_line(verdict)}",
         f"Основание: {_basis_line(verdict)}",
+        f"Основание из базы: {_knowledge_line(kg)}",
         f"Приглашающая сторона: {kg.get('inviter') or 'нет данных'}",
         f"Семья/группа: {kg.get('family') or 'нет данных'}",
         f"Риски/флаги: {', '.join(flags) if flags else 'не отмечены'}",
