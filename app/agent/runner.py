@@ -842,9 +842,16 @@ async def _kg_entry_exec_tool(name: str, args: dict, state: DialogState, crm=Non
         # «специалист свяжется», и модель послушно выбрасывала то, что уже имела право
         # сообщить: серб-удалёнщик не услышал свой лимит 90/180, хотя движок его знал.
         from app.core.entry_card import sayable_regime_line
+        from app.core import entry_intake
         verdict = _entry_verdict(state)
         allowed = (verdict.sayable if verdict is not None
                    and await _entry_speech_allowed(state.bot_id) else frozenset())
+        # Машинный снимок заявки рядом с текстовой карточкой: по тексту нельзя
+        # восстановить, что бот сказал клиенту и на каком основании. Он же контракт
+        # данных для любого пути в нашу CRM — см. docs/bot-to-crm-handoff.md.
+        entry_intake.store(kg, entry_intake.snapshot(
+            kg, verdict, said_to_client=allowed,
+            handoff_reason=kg.get("handoff_reason") or "", flags=kg.get("flags") or ()))
         if allowed:
             line = sayable_regime_line(verdict, allowed)
             return (f"Заявка передана специалисту. СНАЧАЛА сообщи клиенту то, что уже "
