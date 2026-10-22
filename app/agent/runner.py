@@ -253,7 +253,7 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
 
         text = "".join(b.text for b in resp.content if b.type == "text")
         # Валидатор: чиним безопасное (markdown, дисклеймер цен туров), мягко логируем риски.
-        allowed, consent = _entry_claim_permissions(state, spec)
+        allowed, consent = await _entry_claim_permissions(state, spec)
         text, violations = validate_reply(text, spec.name,
                                           shield_service_notes=shield_notes,
                                           profile=spec.validator_profile,
@@ -748,7 +748,20 @@ def _entry_verdict(state: DialogState):
         return None
 
 
-def _entry_claim_permissions(state: DialogState, spec: "FunnelSpec"):
+async def _entry_speech_allowed(bot_id: str) -> bool:
+    """Разрешено ли произносить подтверждённые правила — этому боту.
+
+    Рантайм-флаг, а не только настройка: иначе кнопка в панели ничего не делает, а
+    включение и ОТКАТ речи требуют правки env и рестарта. Персональный ключ
+    `kg_entry_say_confirmed_enabled:<bot_id>` позволяет обкатать знания в песочнице,
+    пока боевой номер GetVisa молчит про правила.
+    """
+    from app.core import flags
+    return await flags.get_bot_flag("kg_entry_say_confirmed_enabled", bot_id,
+                                    settings.kg_entry_say_confirmed_enabled)
+
+
+async def _entry_claim_permissions(state: DialogState, spec: "FunnelSpec"):
     """Что боту разрешено утверждать и получено ли согласие на обработку данных.
 
     Отдельный флаг РЕЧИ: даже при подтверждённых единицах знаний бот молчит, пока
@@ -759,7 +772,7 @@ def _entry_claim_permissions(state: DialogState, spec: "FunnelSpec"):
         return frozenset(), False
     kg = state.qualification.get("kg_entry") or {}
     consent = bool(kg.get("consent_given"))
-    if not settings.kg_entry_say_confirmed_enabled:
+    if not await _entry_speech_allowed(state.bot_id):
         return frozenset(), consent
     verdict = _entry_verdict(state)
     return (getattr(verdict, "sayable", frozenset()) or frozenset()), consent
@@ -807,7 +820,8 @@ async def _kg_entry_exec_tool(name: str, args: dict, state: DialogState, crm=Non
             return ("Факты записаны. Правило по гражданству пока не определено — "
                     "продолжай выяснять и не утверждай ничего про режим въезда.")
         from app.core.entry_card import sayable_regime_line
-        allowed = sorted(verdict.sayable) if settings.kg_entry_say_confirmed_enabled else []
+        speaking = await _entry_speech_allowed(state.bot_id)
+        allowed = sorted(verdict.sayable) if speaking else []
         # В контекст модели кладём только разрешённое. Полный вывод с лимитами и
         # согласованием ГКНБ уходит менеджеру в карточку, а не в промпт: то, что модель
         # видит, она рано или поздно произнесёт.

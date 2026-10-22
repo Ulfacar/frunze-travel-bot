@@ -67,6 +67,23 @@ async def get_flag(key: str, default: bool) -> bool:
     return await _store().get(key, default)
 
 
+async def get_bot_flag(key: str, bot_id: str, default: bool) -> bool:
+    """Флаг с персональным ключом по боту: `<key>:<bot_id>` поверх глобального `<key>`.
+
+    Нужно, чтобы включить поведение одному боту и не задеть остальных: например
+    обкатать новые знания в песочнице Telegram, пока на боевом номере GetVisa сидят
+    живые клиенты. Тот же приём давно применён к `bots_enabled` в оркестраторе —
+    здесь он вынесен, чтобы не повторять его в каждой воронке.
+
+    Персональный ключ сильнее глобального в обе стороны: им можно и включить
+    выключенное всем, и заглушить одного бота при включённом глобальном.
+    """
+    global_on = await get_flag(key, default)
+    if not bot_id:
+        return global_on
+    return await get_flag(f"{key}:{bot_id}", global_on)
+
+
 async def set_flag(key: str, value: bool) -> None:
     await _store().set(key, value)
 

@@ -149,7 +149,10 @@ async def _entry_branch(msg: Message, state: DialogState) -> str | None:
     from app.core import flags
     from app.core.entry_intent import detect
 
-    if not await flags.get_flag("kg_entry_enabled", settings.kg_entry_enabled):
+    # Персональный ключ по боту: `kg_entry_enabled:<bot_id>`. Так ветку включают в
+    # песочнице Telegram, не будя боевой номер GetVisa с живыми клиентами.
+    if not await flags.get_bot_flag("kg_entry_enabled", state.bot_id,
+                                    settings.kg_entry_enabled):
         return None
 
     sticky = state.qualification.get("entry_mode")
