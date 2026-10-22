@@ -93,7 +93,8 @@ def _basis_line(verdict: Any) -> str:
     seen: list[str] = []
     for u in units:
         mark = f"{u.unit_id} ({u.section}, с. {u.page})"
-        status = "" if u.confirmation_status == "confirmed" else " — не подтверждено"
+        confirmed = getattr(u, "confirmed", False) or u.confirmation_status == "confirmed"
+        status = "" if confirmed else " — не подтверждено"
         label = f" — метка {u.label}" if u.label and u.label != "none" else ""
         if mark not in seen:
             seen.append(mark + status + label)

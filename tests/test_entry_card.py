@@ -109,7 +109,19 @@ def test_basis_names_units_sections_and_pages(filled):
     card = entry_card.render(filled, _verdict("Россия"))
     assert "KG.VF.EAEU" in card
     assert "с. " in card, "в основании нет страницы ТЗ"
-    assert "не подтверждено" in card, \
+
+
+def test_manager_sees_which_rules_passed_acceptance(filled):
+    """Пометка приёмки обязана отражать оверлей, а не черновой статус в бандле.
+
+    Иначе карточка помечает «не подтверждено» то правило, которое бот уже произнёс
+    клиенту, и менеджер не может понять, чему верить.
+    """
+    confirmed = entry_card.render(filled, _verdict("Россия"))
+    assert "KG.VF.EAEU — не подтверждено" not in confirmed, \
+        "подтверждённое правило помечено как не прошедшее приёмку"
+    pending = entry_card.render(filled, _verdict("Таджикистан"))
+    assert "не подтверждено" in pending, \
         "менеджер не видит, что правило ещё не прошло приёмку"
 
 
@@ -128,10 +140,15 @@ def test_prices_are_explicitly_not_quoted(filled):
 
 
 def test_withheld_reasons_reach_the_manager(filled):
-    """Чего бот НЕ сказал клиенту — важнее того, что сказал."""
-    card = entry_card.render(filled, _verdict("Россия"))
+    """Чего бот НЕ сказал клиенту — важнее того, что сказал.
+
+    Причина умолчания взята по Таджикистану: с 22.10.2026 режим России подтверждён
+    оверлеем и скрывать по ней нечего, а метка `verify` у стран СНГ — запрет, который
+    никаким подтверждением не снимается.
+    """
+    card = entry_card.render(filled, _verdict("Таджикистан"))
     assert "Не сказано клиенту:" in card
-    assert "not_confirmed" in card
+    assert "source_label_verify" in card
 
 
 # --- F. Производные формы ------------------------------------------------------

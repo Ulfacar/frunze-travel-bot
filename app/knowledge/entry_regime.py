@@ -57,6 +57,11 @@ class UnitRef:
     section: str
     page: str
     source_ref: str
+    # Подтверждена ли единица оверлеем. Отдельно от `confirmation_status`: в бандле
+    # статус остаётся черновым навсегда, подтверждения живут отдельным файлом. Без
+    # этого поля карточка менеджеру помечала бы «не подтверждено» то правило, которое
+    # бот уже произнёс клиенту.
+    confirmed: bool = False
 
 
 @dataclass(frozen=True)
@@ -116,7 +121,9 @@ def resolve_citizenship(text: str) -> str | None:
 
 
 def _ref(unit: dict[str, Any]) -> UnitRef:
-    return UnitRef(unit_id=str(unit.get("unit_id") or ""),
+    from app.knowledge import entry_confirmations
+    return UnitRef(confirmed=entry_confirmations.confirmed(unit),
+                   unit_id=str(unit.get("unit_id") or ""),
                    kind=str(unit.get("kind") or ""),
                    label=str(unit.get("label") or ""),
                    confirmation_status=str(unit.get("confirmation_status") or ""),
@@ -163,15 +170,23 @@ def _registration(links: dict[str, list], iso3: str,
     term = next(iter(links.get("registration_term") or []), None)
     default = next(iter(links.get("registration_default") or []), None)
 
+    # Срок, НА КОТОРЫЙ оформляется регистрация, — отдельная единица знаний со своим
+    # подтверждением. Без этой проверки подтверждение общего срока учёта разрешало бы
+    # произнести заодно и это число, взятое из неподтверждённой единицы.
     registered_for = None
+    term_ok = True
     if term is not None:
         units.append(_ref(term))
         registered_for = (term.get("value") or {}).get("days")
+        if registered_for is not None:
+            term_ok, why = _sayable(term)
+            if not term_ok and why:
+                withheld.append(why)
 
     if exempt is not None and (exempt.get("value") or {}).get("days") is not None:
         units.append(_ref(exempt))
         can, why = _sayable(exempt)
-        if can:
+        if can and term_ok:
             ok_fields.add("registration")
         elif why:
             withheld.append(why)
@@ -183,7 +198,7 @@ def _registration(links: dict[str, list], iso3: str,
         if iso3 in set(value.get("not_in_list") or ()):
             units.append(_ref(default))
             can, why = _sayable(default)
-            if can:
+            if can and term_ok:
                 ok_fields.add("registration")
             elif why:
                 withheld.append(why)

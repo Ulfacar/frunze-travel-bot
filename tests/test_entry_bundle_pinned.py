@@ -125,3 +125,6 @@ def test_bundle_is_copied_into_the_docker_image():
     dockerfile = (Path(__file__).resolve().parents[1] / "Dockerfile").read_text("utf-8")
     assert "knowledge/kg_entry/draft-v1.1/" in dockerfile, (
         "бандл правил въезда не копируется в образ — на проде движок режима будет пуст")
+    assert "knowledge/kg_entry/confirmations-v1.1.yaml" in dockerfile, (
+        "оверлей подтверждений не копируется в образ — на проде не подтверждено ничего "
+        "и бот не произносит ни одного правила, при зелёных тестах и зелёном /health")

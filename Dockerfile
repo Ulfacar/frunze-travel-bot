@@ -34,6 +34,11 @@ COPY knowledge/kg_entry/complete_documents_v1_1/ ./knowledge/kg_entry/complete_d
 # Бандл правил въезда: по нему движок считает режим и срок регистрации. Без этой
 # строки `entry_regime` молча отвечает «не знаю» на всё — проверено перед выкатом.
 COPY knowledge/kg_entry/draft-v1.1/ ./knowledge/kg_entry/draft-v1.1/
+# Оверлей подтверждений: без него в образе не подтверждено ничего и бот не произносит
+# ни одного правила — при зелёных тестах и зелёном /health. Откат — не удаление файла
+# (сборка упадёт), а тумблер `kg_entry_say_confirmed_enabled` или пустой список
+# `confirmed` внутри файла.
+COPY knowledge/kg_entry/confirmations-v1.1.yaml ./knowledge/kg_entry/confirmations-v1.1.yaml
 
 # Непривилегированный пользователь.
 RUN useradd --create-home appuser

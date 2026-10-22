@@ -146,8 +146,17 @@ def test_russian_names_still_resolve(engine):
 
 # --- F. Что говорить нельзя ----------------------------------------------------
 
-def test_nothing_is_sayable_while_the_overlay_is_empty(engine):
-    """Главный предохранитель: 0 подтверждённых единиц ⇒ бот ничего не утверждает."""
+def test_nothing_is_sayable_without_an_overlay(engine, monkeypatch):
+    """Главный предохранитель: 0 подтверждённых единиц ⇒ бот ничего не утверждает.
+
+    22.10.2026 Гриша разрешил «как в ПДФ», и оверлей подтверждений перестал быть
+    пустым, поэтому проверка привязана не к состоянию файла, а к механизму: без
+    оверлея бот обязан молчать при любых данных. Это строже прежней формы — удаление
+    оверлея остаётся штатным откатом. Состав подтверждений проверяет
+    tests/test_entry_confirmations_overlay.py.
+    """
+    from app.knowledge import entry_confirmations
+    monkeypatch.setattr(entry_confirmations, "load", lambda: None)
     for country in ("Россия", "Турция", "Австрия", "Нигерия", "Узбекистан"):
         v = _ask(engine, country)
         assert v.sayable == frozenset(), (
