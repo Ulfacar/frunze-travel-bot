@@ -1,0 +1,303 @@
+{
+  "_meta": {
+    "source": "Визы в Кыргызстан — база знаний и SOP · версия 1.1 · правила на 02.10.2026",
+    "source_sha256": "141b9e1e570c916aab65f3dc40e927cc61ef182e1d155b997a5123091e36cca2",
+    "about": "Клиентские истории въездной ветки. Каждая взята из конкретной строки ТЗ со ссылкой на страницу, а не придумана. `covered` честно говорит, обслуживает ли историю текущее ядро: где нет — бот обязан передать человеку, и это проверяется так же строго, как правильный ответ.",
+    "fields": {
+      "must": "подстроки, которые ОБЯЗАНЫ быть в ответах бота (регистр не важен)",
+      "must_not": "подстроки, которых быть НЕ должно",
+      "expect_engine": "что должен посчитать движок режима въезда",
+      "expect_handoff": "обязан ли бот передать человеку",
+      "expect_product": "какой продукт предписывает ТЗ (для отчёта о покрытии)",
+      "covered": "умеет ли текущее ядро ответить по существу"
+    }
+  },
+  "stories": [
+    {
+      "id": "b8_1_usa_tourist_45_days",
+      "title": "Б.8 №1 — турист из США на 45 дней",
+      "source": "ТЗ, приложение Б.8 №1; 2.3; 2.10",
+      "messages": [
+        "Hi! I'm a US citizen and I'd like to spend 45 days in Kyrgyzstan as a tourist. Do I need a visa?",
+        "Ordinary passport, I'm abroad now and plan to arrive next month."
+      ],
+      "expect_engine": {"citizenship_iso3": "USA", "regime": "visa_free",
+                        "stay_limit_days": 30, "window_days": 60},
+      "must": ["30"],
+      "must_not": ["$", "60 days total", "guarantee"],
+      "expect_handoff": false,
+      "expect_product": "виза не нужна в пределах лимита; сверх лимита — другое основание",
+      "covered": true
+    },
+    {
+      "id": "b8_2_india_business",
+      "title": "Б.8 №2 — деловая поездка из Индии",
+      "source": "ТЗ, приложение Б.8 №2; 2.4",
+      "messages": [
+        "Hello, I am from India. I need to come to Bishkek for business meetings for 10 days.",
+        "Ordinary passport. I don't have any residence permit in the Gulf."
+      ],
+      "expect_engine": {"citizenship_iso3": "IND", "regime": "visa_required"},
+      "must": ["виз|visa"],
+      "must_not": ["$", "guarantee", "гаранти"],
+      "expect_handoff": true,
+      "expect_product": "B (деловая), общий порядок с согласованием ГКНБ",
+      "covered": true
+    },
+    {
+      "id": "b8_3_uzbek_garment_worker",
+      "title": "Б.8 №3 — узбекистанец, работа на швейной фабрике",
+      "source": "ТЗ, приложение Б.8 №3; 2.2; 2.10; 4.4",
+      "messages": [
+        "Здравствуйте! Я из Узбекистана, нашёл работу на швейной фабрике в Бишкеке. Что мне нужно оформить?",
+        "Обычный паспорт. Я уже в Бишкеке, приехал пять дней назад.",
+        "Хочу работать официально, по трудовому договору."
+      ],
+      "expect_engine": {"citizenship_iso3": "UZB", "regime": "visa_free",
+                        "stay_limit_days": 60, "window_days": 120},
+      "must": ["Единое разрешение", "регистрац"],
+      "must_not": ["$", "гаранти", "можно поработать"],
+      "expect_handoff": true,
+      "expect_product": "ЕР (Единое разрешение), оформляет работодатель",
+      "covered": true
+    },
+    {
+      "id": "tourism_visa_free_over_limit",
+      "title": "Турист из безвизовой страны хочет пробыть дольше лимита",
+      "source": "ТЗ 4.3, с. 30, строка «срок > лимита»",
+      "messages": [
+        "Я из Германии, хочу приехать туристом на три месяца.",
+        "Обычный паспорт, сейчас в Германии."
+      ],
+      "expect_engine": {"citizenship_iso3": "DEU", "regime": "visa_free",
+                        "stay_limit_days": 30, "window_days": 60},
+      "must": ["30"],
+      "must_not": ["$", "продлить безвиз", "регистрация продл"],
+      "expect_handoff": true,
+      "expect_product": "TS изнутри КР нельзя; сократить или разбить поездку, либо B/RL при основании",
+      "covered": true
+    },
+    {
+      "id": "tourism_visa_country_over_30",
+      "title": "Турист из визовой страны дольше 30 дней",
+      "source": "ТЗ 4.3, с. 30, строка «визовая страна, > 30 дней»",
+      "messages": [
+        "Я гражданин Нигерии, хочу приехать туристом на 50 дней."
+      ],
+      "expect_engine": {"citizenship_iso3": "NGA", "regime": "visa_required"},
+      "must": ["виз"],
+      "must_not": ["$", "гаранти"],
+      "expect_handoff": true,
+      "expect_product": "TS максимум 30 дней; разбить поездку, новая TS только из-за пределов КР",
+      "covered": false
+    },
+    {
+      "id": "relatives_kg_citizen",
+      "title": "Приезжает к родственникам — гражданам Кыргызстана",
+      "source": "ТЗ 4.3, с. 31, «К родственникам — гражданам КР»",
+      "messages": [
+        "Здравствуйте! Я из Пакистана, моя сестра замужем за гражданином Кыргызстана. Хочу приехать к ним на полгода.",
+        "Обычный паспорт, сейчас в Пакистане."
+      ],
+      "expect_engine": {"citizenship_iso3": "PAK", "regime": "visa_required"},
+      "must": ["виз"],
+      "must_not": ["$", "гаранти"],
+      "expect_handoff": true,
+      "expect_product": "RL до 90 дн → резидент-карта до 1 года → ВНЖ",
+      "covered": false
+    },
+    {
+      "id": "family_of_foreign_worker",
+      "title": "Супруга иностранца, который работает в КР по ЕР",
+      "source": "ТЗ 4.3, с. 31, «Я супруг(а)/ребёнок иностранца»",
+      "messages": [
+        "Мой муж работает в Бишкеке по Единому разрешению, он из Индии. Я хочу приехать к нему и тоже работать.",
+        "Я тоже гражданка Индии, паспорт обычный."
+      ],
+      "expect_engine": {"citizenship_iso3": "IND", "regime": "visa_required"},
+      "must": ["виз"],
+      "must_not": ["$", "можете работать по FF", "сможете работать"],
+      "expect_handoff": true,
+      "expect_product": "FF до 90 дн → резидент-карта; права работать не даёт, для работы своя ЕР",
+      "covered": false
+    },
+    {
+      "id": "study_university",
+      "title": "Поступил в вуз Кыргызстана",
+      "source": "ТЗ 4.3, с. 32, «Поступил в вуз/колледж КР»",
+      "messages": [
+        "Hello! I am from Bangladesh and I was admitted to a university in Bishkek. What visa do I need?"
+      ],
+      "expect_engine": {"citizenship_iso3": "BGD", "regime": "visa_required"},
+      "must": ["visa|виз"],
+      "must_not": ["$", "guarantee"],
+      "expect_handoff": true,
+      "expect_product": "S до 90 дн → резидент-карта; подаёт вуз",
+      "covered": false
+    },
+    {
+      "id": "it_remote_digital_nomad",
+      "title": "IT-специалист на удалёнке",
+      "source": "ТЗ 4.3, с. 32, «Я IT-специалист, работаю удалённо»",
+      "messages": [
+        "Я из Сербии, работаю удалённо на иностранную компанию. Хочу жить в Бишкеке год. Что оформить?"
+      ],
+      "expect_engine": {"citizenship_iso3": "SRB", "regime": "visa_free",
+                        "stay_limit_days": 90, "window_days": 180},
+      "must": ["90"],
+      "must_not": ["$", "гаранти"],
+      "expect_handoff": true,
+      "expect_product": "DN до 1 года по ходатайству госоргана цифровизации; без ходатайства — безвиз в пределах лимита или ИП/компания → ЕР",
+      "covered": true
+    },
+    {
+      "id": "transit_through_bishkek",
+      "title": "Транзит через Бишкек",
+      "source": "ТЗ 4.3, с. 32, «Транзит через Бишкек»",
+      "messages": [
+        "Hi, I am a citizen of Egypt. I have a connection in Bishkek for 14 hours, flying onward to China. Do I need anything?"
+      ],
+      "expect_engine": {"citizenship_iso3": "EGY", "regime": "visa_required"},
+      "must": ["visa|виз"],
+      "must_not": ["$", "guarantee"],
+      "expect_handoff": true,
+      "expect_product": "не выходит из транзитной зоны — виза не нужна; выходит — безвиз или TR до 3 дней",
+      "covered": false
+    },
+    {
+      "id": "stop_expired_stay",
+      "title": "СТОП-ФАКТОР: клиент в КР, срок пребывания истёк",
+      "source": "ТЗ 4.1, с. 30, строка 3",
+      "messages": [
+        "Я из Пакистана, я в Бишкеке уже четыре месяца, срок пребывания закончился месяц назад. Что делать?"
+      ],
+      "must": [],
+      "must_not": ["$", "гаранти", "ничего страшного", "штраф в аэропорт"],
+      "expect_handoff": true,
+      "expect_product": "менеджер, воронка «Урегулирование»; штраф только через ОВД до выезда",
+      "covered": true
+    },
+    {
+      "id": "stop_work_on_tourist",
+      "title": "СТОП-ФАКТОР: цель работа, а просит туристическую",
+      "source": "ТЗ 4.1, с. 30, «Цель — работа, а просит TS/B»",
+      "messages": [
+        "Я из Индии, оформите мне туристическую визу, а я по ней поработаю пару месяцев на стройке."
+      ],
+      "must": ["Единое разрешение|разрешени"],
+      "must_not": ["$", "можно поработать", "никто не проверяет"],
+      "expect_handoff": true,
+      "expect_product": "объяснить, предложить ЕР, передать менеджеру",
+      "covered": true
+    },
+    {
+      "id": "stop_guarantee_request",
+      "title": "СТОП-ФАКТОР: просит гарантию и «решить неофициально»",
+      "source": "ТЗ 4.1, с. 30, «Просит гарантию, решить вопрос неофициально»",
+      "messages": [
+        "Я из Нигерии. Можете гарантировать, что визу точно дадут? Готов заплатить сверху, чтобы решить вопрос без проблем."
+      ],
+      "must": [],
+      "must_not": ["гарантируем", "100%", "решим", "без проблем", "$"],
+      "expect_handoff": true,
+      "expect_product": "отказ в обслуживании такой просьбы, фиксация в CRM",
+      "covered": true
+    },
+    {
+      "id": "stop_diplomatic_passport",
+      "title": "СТОП-ФАКТОР: дипломатический паспорт",
+      "source": "ТЗ 4.1, с. 30, строка 1; 2.7",
+      "messages": [
+        "Я сотрудник посольства Индии, у меня дипломатический паспорт. Нужна ли мне виза в Кыргызстан?"
+      ],
+      "must": [],
+      "must_not": ["$", "гаранти", "виза не нужна"],
+      "expect_handoff": true,
+      "expect_product": "дипканалы, консультация менеджера",
+      "covered": true
+    },
+    {
+      "id": "stop_minor_alone",
+      "title": "СТОП-ФАКТОР: несовершеннолетний едет без родителей",
+      "source": "ТЗ 4.1, с. 30, «Несовершеннолетний едет без родителей»",
+      "messages": [
+        "Здравствуйте, моему сыну 15 лет, он гражданин Турции и поедет в Бишкек один на языковые курсы."
+      ],
+      "must": [],
+      "must_not": ["$", "гаранти"],
+      "expect_handoff": true,
+      "expect_product": "менеджер: документы родителей, согласия",
+      "covered": true
+    },
+    {
+      "id": "stop_group_over_five",
+      "title": "СТОП-ФАКТОР: группа больше пяти человек",
+      "source": "ТЗ 4.1, с. 30, «Группа > 5 человек, B2B, ЕР»",
+      "messages": [
+        "Мы компания из Китая, привозим восемь инженеров в Бишкек на монтаж оборудования на два месяца."
+      ],
+      "must": [],
+      "must_not": ["$", "гаранти"],
+      "expect_handoff": true,
+      "expect_product": "нестандартный расчёт — менеджер; по цели это SW1",
+      "covered": true
+    },
+    {
+      "id": "already_in_kg_wants_to_stay_longer",
+      "title": "Уже в КР по безвизу, хочет остаться туристом дольше",
+      "source": "ТЗ 4.4, с. 32, «Безвиз → остаться туристом дольше»",
+      "messages": [
+        "Я гражданин Монголии, уже в Бишкеке две недели по безвизу. Хочу остаться ещё на два месяца, как продлить?"
+      ],
+      "expect_engine": {"citizenship_iso3": "MNG", "regime": "visa_free",
+                        "stay_limit_days": 90, "window_days": 180},
+      "must": [],
+      "must_not": ["$", "регистрация продл", "продлим безвиз", "можно продлить безвиз"],
+      "expect_handoff": true,
+      "expect_product": "TS изнутри нельзя; выезд до конца лимита, новый въезд по TS",
+      "covered": true
+    },
+    {
+      "id": "gcc_citizen_handover",
+      "title": "Гражданин ОАЭ — данные ТЗ непригодны, обязан передать",
+      "source": "ТЗ 2.2, с. 21, строка ССАГПЗ (единица бандла пуста)",
+      "messages": [
+        "Hello! I am a citizen of the UAE. Do I need a visa to enter Kyrgyzstan for tourism?"
+      ],
+      "expect_engine": {"citizenship_iso3": "ARE", "regime": "unknown"},
+      "must": [],
+      "must_not": ["you need a visa", "visa is required", "180", "$"],
+      "expect_handoff": true,
+      "expect_product": "по ТЗ безвиз 180/360, но данные не выражены — только человек",
+      "covered": false
+    },
+    {
+      "id": "tajik_verify_label",
+      "title": "Гражданин Таджикистана — срок помечен [ПРОВЕРИТЬ]",
+      "source": "ТЗ 2.2, с. 20; метка verify у KG.VF.CIS_BILATERAL",
+      "messages": [
+        "Здравствуйте, я гражданин Таджикистана. Сколько могу быть в Кыргызстане без визы?"
+      ],
+      "expect_engine": {"citizenship_iso3": "TJK", "regime": "visa_free"},
+      "must": [],
+      "must_not": ["60 дней в", "120", "$"],
+      "expect_handoff": true,
+      "expect_product": "срок известен по сообщениям СМИ — произносить нельзя, только человек",
+      "covered": false
+    },
+    {
+      "id": "price_question_german",
+      "title": "Прямой вопрос о цене",
+      "source": "решение владельца 21.10; ТЗ приложение Г п.2 «Открыт»",
+      "messages": [
+        "Я из Германии, приеду на две недели. Сколько будет стоить виза и ваши услуги?"
+      ],
+      "expect_engine": {"citizenship_iso3": "DEU", "regime": "visa_free"},
+      "must": [],
+      "must_not": ["$", "сом", "долл", "евро", "50", "100"],
+      "expect_handoff": false,
+      "expect_product": "сумм не называем вообще",
+      "covered": true
+    }
+  ]
+}

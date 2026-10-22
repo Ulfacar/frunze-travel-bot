@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from typing import Literal
 
 Intent = Literal["kg_entry", "outbound", "unknown"]
@@ -63,6 +64,24 @@ _CYRILLIC = re.compile(r"[а-яёА-ЯЁ]")
 _LATIN = re.compile(r"[a-zA-Z]")
 _STEM = 5          # сколько первых букв страны считаем основой: «польш», «канад»
 
+# Заявленное СВОЁ гражданство. Прогон клиентских историй 22.10 показал, что живой
+# иностранец почти никогда не пишет «виза в Кыргызстан»: он пишет «Я из Нигерии, хочу
+# приехать туристом на 50 дней». Без этой пары шесть историй из двадцати уходили в
+# выездную воронку, и бот спрашивал «в какую страну вам нужна виза?».
+_ORIGIN_CLAIM = re.compile(
+    r"(?:я\s+из|родом\s+из|я\s+гражданин|я\s+гражданка|гражданин|гражданка|"
+    r"гражданство)\s+([а-яё\-]{4,22})"
+    r"|(?:i\s*am|i'?m)\s+(?:a\s+)?(?:citizen\s+of\s+|from\s+)([a-z\-]{3,22})"
+    r"|citizen\s+of\s+([a-z\-]{3,22})",
+    re.IGNORECASE)
+
+# Приезд СЮДА, а не поездка отсюда. Разница в приставке: «приехать» против «поехать».
+_ARRIVAL = (
+    "приехать", "приеду", "приезжа", "приеха", "въехать", "въезжа", "въеду", "въезд",
+    "прилет", "прибыва", "прибыть", "come to", "come for", "coming", "arrive",
+    "arriving", "arrival", "visit",
+)
+
 
 def _outbound_stems() -> tuple[str, ...]:
     """Основы названий выездных стран из брендинга, чтобы список не разъехался с промптом."""
@@ -78,6 +97,69 @@ def looks_english(text: str) -> bool:
     return bool(_LATIN.search(t)) and not _CYRILLIC.search(t)
 
 
+@lru_cache(maxsize=1)
+def _origin_keys() -> dict[str, str]:
+    """Основа русского названия страны → ISO3, с запасом на падеж.
+
+    Клиент пишет «я из Нигерии», «я гражданин Пакистана» — родительный падеж, и
+    сравнение по полной форме не срабатывает. Отрезаем последнюю букву у названий от
+    пяти букв: «индия» → «инди» покрывает «индии», «пакистан» → «пакиста» покрывает
+    «пакистана». У коротких («иран», «ирак») не отрезаем, иначе они сольются в одну
+    основу и страна определится неверно.
+    """
+    try:
+        from app.knowledge.entry_bundle import loaded
+        bundle = loaded()
+    except Exception:  # noqa: BLE001 — без бандла правило просто не срабатывает
+        return {}
+    if bundle is None:
+        return {}
+    keys: dict[str, str] = {}
+    for alias, iso in (bundle.countries or {}).items():
+        name = str(alias).strip().lower()
+        if len(name) < 4 or not _CYRILLIC.search(name):
+            continue
+        key = name[:-1] if len(name) >= 5 else name
+        keys.setdefault(key, str(iso))
+    return keys
+
+
+def _origin_iso3(word: str) -> str | None:
+    """ISO3 по слову, которым клиент назвал своё гражданство."""
+    name = (word or "").strip().lower()
+    if not name:
+        return None
+    from app.knowledge.country_aliases_en import iso3_for_en
+    found = iso3_for_en(name)
+    if found:
+        return found
+    for key, iso in _origin_keys().items():
+        if name.startswith(key):
+            return iso
+    return None
+
+
+def _claimed_origins(low: str) -> list[str]:
+    """Все гражданства, названные клиентом про СЕБЯ."""
+    out: list[str] = []
+    for match in _ORIGIN_CLAIM.finditer(low):
+        word = next((g for g in match.groups() if g), "")
+        iso = _origin_iso3(word)
+        if iso:
+            out.append(iso)
+    return out
+
+
+def _without_origin(low: str) -> str:
+    """Текст без упоминаний своего гражданства.
+
+    Страна во фразе «я из Германии» — это гражданство клиента, а не пункт назначения,
+    и вето выездного по ней срабатывать не должно. Тот же принцип уже записан выше в
+    докстроке про австрийца; здесь он доведён до вето.
+    """
+    return _ORIGIN_CLAIM.sub(" ", low)
+
+
 def detect(text: str, *, sticky: str | None = None) -> Intent:
     """Тема реплики. `sticky` — уже определённый режим диалога, он сильнее текста."""
     if sticky in ("kg_entry", "outbound"):
@@ -90,10 +172,20 @@ def detect(text: str, *, sticky: str | None = None) -> Intent:
     if any(w in low for w in _ENTRY_STRONG):
         return "kg_entry"
 
-    if any(w in low for w in _OUTBOUND_WORDS) or any(w in low for w in _OUTBOUND_SHORT):
+    # Вето считаем по тексту БЕЗ своего гражданства, иначе «я из Германии, хочу
+    # приехать туристом» уезжает в выездную воронку из-за слова «Германии».
+    veto = _without_origin(low)
+    if any(w in veto for w in _OUTBOUND_WORDS) or any(w in veto for w in _OUTBOUND_SHORT):
         return "outbound"
-    if any(stem in low for stem in _outbound_stems()):
+    if any(stem in veto for stem in _outbound_stems()):
         return "outbound"
+
+    # Назвал чужое гражданство и собирается приехать — это въезд. Гражданин КР так про
+    # себя не пишет, а его собственное гражданство здесь не считается чужим.
+    origins = _claimed_origins(low)
+    if origins and any(iso != "KGZ" for iso in origins) \
+            and any(word in low for word in _ARRIVAL):
+        return "kg_entry"
 
     if any(w in low for w in _ENTRY_WEAK):
         return "kg_entry"

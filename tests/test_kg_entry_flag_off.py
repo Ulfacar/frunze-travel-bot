@@ -140,12 +140,27 @@ def test_no_prices_in_the_entry_reply(monkeypatch):
 # --- E. Гвард на выездной прайс (находка проектирования 21.10) ------------------
 
 def test_outbound_price_reply_is_guarded_for_entry_dialogs():
-    """Иностранец про КР не должен получить прайс по Шенгену из слоя выше воронки."""
+    """Иностранец про КР не должен получить прайс по Шенгену из слоя выше воронки.
+
+    22.10 проверка усилена: прежняя требовала в `_maybe_faq_reply` упоминания
+    `entry_mode`, и этого оказалось НЕ достаточно — `entry_mode` выставляется только
+    после первого прохода воронки, а прайс стреляет до неё. Прогон клиентских историй
+    поймал, что немцу на первой реплике называли шенгенские сборы. Теперь гвард обязан
+    смотреть и на липкий режим, и на саму реплику через распознаватель темы.
+    Поведенческая проверка — в tests/test_entry_routing_openers.py.
+    """
     from pathlib import Path
     import app.core.orchestrator as orch
     source = Path(orch.__file__).read_text("utf-8")
     block = source[source.index("def _maybe_faq_reply"):]
     block = block[:block.index("visa_price_reply") + 200]
-    assert "entry_mode" in block, (
-        "в _maybe_faq_reply нет гварда по entry_mode: въездной клиент получит "
-        "детерминированный прайс выездных виз ещё до воронки")
+    assert "_entry_talk" in block or "entry_mode" in block, (
+        "в _maybe_faq_reply нет гварда: въездной клиент получит детерминированный "
+        "прайс выездных виз ещё до воронки")
+
+    guard = source[source.index("def _entry_talk"):]
+    guard = guard[:guard.index("async def _maybe_faq_reply")]
+    assert "entry_mode" in guard, "гвард не смотрит на уже определённый режим диалога"
+    assert "detect(" in guard, (
+        "гвард не спрашивает распознаватель темы — на ПЕРВОЙ реплике, когда entry_mode "
+        "ещё не выставлен, выездной прайс снова ответит иностранцу")

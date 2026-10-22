@@ -758,12 +758,33 @@ class Orchestrator:
             log.warning("persona greeting failed", exc_info=True)
             return False
 
+    async def _entry_talk(self, msg: Message, state) -> bool:
+        """Въездной ли это разговор — по липкому режиму ИЛИ по самой реплике.
+
+        Одного липкого значения мало: `entry_mode` появляется только после первого
+        прохода воронки, а выездной прайс стреляет ДО неё. Прогон клиентских историй
+        22.10 это и поймал: немцу, спросившему про въезд в Кыргызстан, бот назвал
+        шенгенские сборы на первой же реплике.
+
+        При выключенной въездной ветке возвращаем False, то есть прежнее поведение
+        дословно: распознаватель даже не спрашивается.
+        """
+        if (state.qualification or {}).get("entry_mode") == "kg_entry":
+            return True
+        from app.config import settings
+        from app.core import flags
+        if not await flags.get_bot_flag("kg_entry_enabled", self._bot_id,
+                                        settings.kg_entry_enabled):
+            return False
+        from app.core.entry_intent import detect
+        return detect(msg.text or "") == "kg_entry"
+
     async def _maybe_faq_reply(self, msg: Message, state, store) -> bool:
         """Try deterministic FAQ before LLM/funnel logic. Fail open to the normal flow."""
         # Гвард по въездному режиму. Прайс ниже — ВЫЕЗДНОЙ, и он стреляет до воронки:
         # без этой проверки иностранец, спросивший «how much is a visa to Kyrgyzstan»,
         # получил бы цены по Шенгену и США. Находка проектирования 21.10.
-        if state.funnel == "visa" and state.qualification.get("entry_mode") != "kg_entry":
+        if state.funnel == "visa" and not await self._entry_talk(msg, state):
             try:
                 from app.core.visa_pricing import self_visa_reply, visa_price_reply
                 answer = visa_price_reply(msg.text)
