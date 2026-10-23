@@ -311,3 +311,71 @@ def test_an_empty_allowlist_behaves_exactly_as_before():
     without, viol_b = validate_reply(reply, "visa", profile="kg_entry",
                                      allowed_claims=frozenset({"regime"}))
     assert with_list == without and viol_a == viol_b
+
+
+# --- F. База подкладывается кодом, а не по желанию модели ----------------------
+
+def test_a_base_question_is_recognised_in_both_languages():
+    """Распознаватель вопроса к базе: по-русски и по-английски."""
+    from app.agent.entry_guards import looks_like_base_question as q
+    for text in ("какие документы нужны для деловой визы",
+                 "а по каким причинам отказывают",
+                 "как подавать заявление",
+                 "как продлить визу",
+                 "сколько рассматривают заявление",
+                 "What documents do I need for a business visa?",
+                 "How do I submit the application?",
+                 "Why do they refuse visas?",
+                 "how long does processing take",
+                 "can I extend my visa"):
+        assert q(text), f"не распознан вопрос к базе: {text!r}"
+    for text in ("здравствуйте", "меня зовут Раджеш", "I am from India",
+                 "спасибо большое", "хорошо, понял", "какая погода в Бишкеке"):
+        assert not q(text), f"ложно распознан как вопрос к базе: {text!r}"
+
+
+def test_the_base_is_injected_without_waiting_for_the_model(monkeypatch):
+    """Найдено на боевой конфигурации 23.10: модель не зовёт инструмент.
+
+    Инструмент был зарегистрирован, схема совпадала, флаг включён — и всё равно
+    `_kb_calls` оставался None на всех четырёх проверочных вопросах: модель
+    предпочитала записать факты и ответить из системного промпта. Поэтому базу в ход
+    кладёт КОД, когда клиент задал вопрос по делу, а не доброта модели.
+    """
+    from app.agent import runner
+    monkeypatch.setattr(app.config.settings, "kg_entry_knowledge_enabled", True,
+                        raising=False)
+    state = _state()
+
+    async def go():
+        return await runner._kb_context_message(
+            state, "какие документы нужны для деловой визы")
+
+    note = asyncio.run(go())
+    assert note, "база не подложена в ход"
+    assert note["role"] == "user", "контекст кладётся в messages, не в system"
+    body = note["content"] if isinstance(note["content"], str) else str(note["content"])
+    assert "базы знаний" in body.lower()
+    assert state.qualification["kg_entry"].get("_kb_calls") == 1, \
+        "подкладывание не учтено в бюджете поиска"
+
+
+def test_nothing_is_injected_for_small_talk(monkeypatch):
+    """На «здравствуйте» базу не подкладываем — это пустые токены на каждый ход."""
+    from app.agent import runner
+    monkeypatch.setattr(app.config.settings, "kg_entry_knowledge_enabled", True,
+                        raising=False)
+    state = _state()
+    note = asyncio.run(runner._kb_context_message(state, "здравствуйте, я из Индии"))
+    assert note is None
+    assert not state.qualification["kg_entry"].get("_kb_calls")
+
+
+def test_nothing_is_injected_while_the_flag_is_off(monkeypatch):
+    from app.agent import runner
+    monkeypatch.setattr(app.config.settings, "kg_entry_knowledge_enabled", False,
+                        raising=False)
+    state = _state()
+    note = asyncio.run(runner._kb_context_message(
+        state, "какие документы нужны для деловой визы"))
+    assert note is None

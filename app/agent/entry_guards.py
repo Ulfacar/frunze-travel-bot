@@ -306,6 +306,48 @@ def period_literals(text: str) -> frozenset[tuple[int, str]]:
     return frozenset(found)
 
 
+_BASE_QUESTION = (
+    # Русский: тема базы плюс вопросительная форма или просьба.
+    r"как(ие|ой|ая)?\s+(документ|бумаг|справк)",
+    r"\bдокумент\w*\s+(нужн|надо|треб|собрать)",
+    r"\b(нужн\w*|надо|треб\w*)\s+\w*\s*документ",
+    r"\bотказ\w*", r"\bпричин\w+\s+отказ", r"почему\s+(отказ|не\s+дают)",
+    r"как\s+(подавать|подать|оформ|получ|продл|заполн)",
+    r"\b(где|куда)\s+(подавать|подать|обращ)",
+    r"\bпродл\w*\b", r"\bсколько\s+(рассматр|ждать|дней|времени)",
+    r"\bсрок\w*\s+(рассмотр|оформл|подач)",
+    r"\bприглаш\w*", r"\bанкет\w*", r"\bпортал\w*", r"\bевиза\b", r"\be-?visa\b",
+    r"\bрегистрац\w*\s+(как|где|когда|нужн)",
+    # Английский: клиенты въездной ветки пишут в основном так.
+    r"\bwhat\s+documents?\b", r"\bwhich\s+documents?\b",
+    r"\bdocuments?\s+(do|are|needed|required)",
+    r"\bhow\s+(do|can|to)\s+i?\s*(submit|apply|extend|get|prolong|register)",
+    r"\bwhere\s+(do|can)\s+i\b",
+    r"\bwhy\s+.{0,20}(refus|reject|den(y|ied))",
+    r"\b(refus|reject)\w*\b", r"\bhow\s+long\s+.{0,20}(take|process)",
+    r"\bprocessing\s+time\b", r"\binvitation\b", r"\bextend\b",
+    r"\bapplication\s+(form|process)", r"\brequirements?\b",
+)
+_BASE_QUESTION_RE = tuple(re.compile(p, re.IGNORECASE) for p in _BASE_QUESTION)
+
+
+def looks_like_base_question(text: str) -> bool:
+    """Похоже ли сообщение на вопрос, ответ на который обязан прийти из базы.
+
+    Нужен потому, что на боевой конфигурации 23.10 модель НЕ зовёт инструмент поиска:
+    он зарегистрирован, схема верна, флаг включён, а `_kb_calls` остаётся пустым — ей
+    удобнее записать факты и ответить из системного промпта. Это ровно то, что владелец
+    запретил: отвечать из общих знаний. Поэтому решение «идти в базу» принимает код.
+
+    Лишнее срабатывание дешёвое: подложим куски, которые модель не использует. Пропуск
+    дорогой: клиент получит сочинение вместо подписанного человеком факта.
+    """
+    body = (text or "").strip()
+    if len(body) < 6:
+        return False
+    return any(rx.search(body) for rx in _BASE_QUESTION_RE)
+
+
 def claims_remaining_days(text: str) -> bool:
     """Называет ли реплика остаток дней по конкретному человеку (ТЗ 2.9 запрещает)."""
     return bool(_RULE_REMAINING.search(text or ""))

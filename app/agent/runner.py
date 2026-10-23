@@ -202,6 +202,30 @@ class FunnelSpec:
     validator_profile: str | None = None
 
 
+async def _kb_context_message(state: DialogState, user_text: str) -> dict | None:
+    """Положить куски базы в ход, не дожидаясь, пока модель сама позовёт инструмент.
+
+    На боевой конфигурации 23.10 модель не позвала поиск ни на одном из четырёх
+    проверочных вопросов: инструмент зарегистрирован, схема верна, флаг включён, а
+    _kb_calls оставался пустым — ей удобнее записать факты и ответить из системного
+    промпта. Для нас это худший исход: клиент получает сочинение вместо подписанного
+    человеком факта, что владелец прямо запретил. Поэтому решение идти в базу
+    принимает код, а инструмент остаётся для уточняющих поисков внутри хода.
+
+    Кладём в messages, а не в system: system кэшируется, и меняющийся кусок ломал бы
+    кэш на каждом ходу (та же причина записана выше про контекст анкеты).
+    """
+    from app.agent.entry_guards import looks_like_base_question
+
+    if not looks_like_base_question(user_text):
+        return None
+    kg = _kg(state)
+    found = await _kg_entry_knowledge(kg, state, user_text)
+    if not found or found == HANDOVER_INSTRUCTION:
+        return None
+    return {"role": "user", "content": found}
+
+
 async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str | None:
     """Обработать один ход клиента через LLM-агента (общий цикл для всех воронок)."""
     if state.intercepted:
@@ -215,6 +239,7 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
     # Флаг читаем один раз на ход, а не на каждой итерации инструментов.
     shield_notes = await flags.get_flag("service_notes_shield_enabled",
                                         settings.service_notes_shield_enabled)
+    kb_note_done = False
 
     for _ in range(MAX_TOOL_ITERATIONS):
         model = choose_model(spec.name, escalated)
@@ -227,6 +252,15 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
                              _ad_context_message(state.ad_referral),
                              (spec.qual_context or _qual_context_message)(
                                  state.qualification)) if m]
+        # База подкладывается только на первой итерации: дальше модель уже видит её в
+        # истории, а повтор жёг бы бюджет поиска и токены на каждом круге инструментов.
+        if spec.validator_profile == "kg_entry" and not kb_note_done:
+            kb_note_done = True
+            kb_note = await _kb_context_message(state, user_text)
+            if kb_note:
+                state.history.insert(len(state.history) - 1, kb_note)
+                window = _windowed_history(state.history,
+                                          settings.llm_history_max_messages)
         prefix = _shielded_prefix(notes) if shield_notes else notes
         messages = prefix + window
         resp = await client().messages.create(
