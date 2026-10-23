@@ -253,12 +253,13 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
 
         text = "".join(b.text for b in resp.content if b.type == "text")
         # Валидатор: чиним безопасное (markdown, дисклеймер цен туров), мягко логируем риски.
-        allowed, consent = await _entry_claim_permissions(state, spec)
+        allowed, consent, quoted = await _entry_claim_permissions(state, spec)
         text, violations = validate_reply(text, spec.name,
                                           shield_service_notes=shield_notes,
                                           profile=spec.validator_profile,
                                           allowed_claims=allowed,
-                                          consent_given=consent)
+                                          consent_given=consent,
+                                          quoted_periods=quoted)
         if violations:
             logger.info("validator (%s): %s", spec.name, ", ".join(violations))
             for v in violations:
@@ -815,6 +816,14 @@ async def _kg_entry_knowledge(kg: dict, state: DialogState, question: str) -> st
         if row not in cited:
             cited.append(row)
 
+    # Буквальные числа отданных кусков — на ЭТОТ ход. Из них валидатор разрешит
+    # произнести срок, который реально стоит в источнике, и только его.
+    from app.agent.entry_guards import period_literals
+    periods = set(kg.get("_kb_periods") or ())
+    for piece in taken:
+        periods |= {(number, unit) for number, unit in period_literals(piece["text"])}
+    kg["_kb_periods"] = sorted(periods)
+
     lines = ["Из базы знаний (отвечай ТОЛЬКО по этому, своими словами, без ссылок на "
              "разделы и страницы):"]
     for piece in taken:
@@ -849,13 +858,16 @@ async def _entry_claim_permissions(state: DialogState, spec: "FunnelSpec"):
     карточку, не разрешая произносить правила до приёмки источников Гришей.
     """
     if spec.validator_profile != "kg_entry":
-        return frozenset(), False
+        return frozenset(), False, frozenset()
     kg = state.qualification.get("kg_entry") or {}
     consent = bool(kg.get("consent_given"))
+    quoted = frozenset(
+        (int(pair[0]), str(pair[1])) for pair in (kg.get("_kb_periods") or ())
+        if isinstance(pair, (list, tuple)) and len(pair) == 2)
     if not await _entry_speech_allowed(state.bot_id):
-        return frozenset(), consent
+        return frozenset(), consent, quoted
     verdict = _entry_verdict(state)
-    return (getattr(verdict, "sayable", frozenset()) or frozenset()), consent
+    return ((getattr(verdict, "sayable", frozenset()) or frozenset()), consent, quoted)
 
 
 def _entry_qual_context(qual: dict) -> dict | None:
@@ -963,5 +975,7 @@ async def run_kg_entry_turn(state: DialogState, user_text: str) -> str | None:
     # ревью 22.10: без обнуления после двух вопросов бот навсегда отвечал «бюджет
     # исчерпан» и передавал человеку, то есть ответы по базе отмирали на третьей
     # реплике клиента.
-    _kg(state).pop("_kb_calls", None)
+    kg_turn = _kg(state)
+    kg_turn.pop("_kb_calls", None)
+    kg_turn.pop("_kb_periods", None)
     return await run_turn(state, user_text, KG_ENTRY_SPEC)

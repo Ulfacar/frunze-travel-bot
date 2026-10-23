@@ -229,3 +229,85 @@ def test_the_search_budget_resets_every_turn(monkeypatch):
     answer = _call(state)
     assert "бюджет" not in answer.lower(), \
         f"после нового хода бот всё ещё считает бюджет исчерпанным: {answer!r}"
+
+
+# --- E. Разрешение по буквальным числам из одобренных кусков --------------------
+
+def test_a_document_requirement_is_not_destroyed_by_the_stay_limit_belt():
+    """Найдено живым прогоном: ответ про документы вырезался целиком.
+
+    «паспорт со сроком не менее 6 месяцев» — это требование к ДОКУМЕНТУ, но «6
+    месяцев» ловится шаблоном срока, требует разрешения `stay_limit`, которого у
+    визовой страны нет, и предложение выбрасывалось. Клиент получал отписку вместо
+    списка документов, хотя список подписан человеком.
+    """
+    from app.agent.entry_guards import period_literals
+    from app.agent.validator import validate_reply
+    reply = ("Для деловой визы нужны загранпаспорт со сроком не менее 6 месяцев, "
+             "фотография и письмо приглашающей компании.")
+    quoted = period_literals("паспорт действителен не менее 6 месяцев после окончания визы")
+    clean, violations = validate_reply(
+        reply, "visa", profile="kg_entry",
+        allowed_claims=frozenset({"regime", "registration"}), quoted_periods=quoted)
+    assert "kg_entry_unconfirmed_claim_blocked" not in violations, violations
+    assert "6 месяцев" in clean and "письмо" in clean
+
+
+def test_a_number_absent_from_the_allowlist_is_still_cut():
+    """Разрешение — это СПИСОК чисел из источника, а не право говорить о сроках."""
+    from app.agent.entry_guards import period_literals
+    from app.agent.validator import validate_reply
+    quoted = period_literals("не менее 6 месяцев")
+    clean, violations = validate_reply(
+        "Вы можете находиться 45 дней без визы.", "visa", profile="kg_entry",
+        allowed_claims=frozenset({"regime"}), quoted_periods=quoted)
+    assert "kg_entry_unconfirmed_claim_blocked" in violations
+    assert "45" not in clean
+
+
+def test_the_remaining_days_belt_survives_the_allowlist():
+    """ТЗ 2.9 безусловен: остаток дней нельзя назвать, даже если число из источника."""
+    from app.agent.entry_guards import period_literals
+    from app.agent.validator import validate_reply
+    quoted = period_literals("30 дней")
+    clean, violations = validate_reply(
+        "У вас осталось 30 дней пребывания.", "visa", profile="kg_entry",
+        allowed_claims=frozenset({"regime", "stay_limit"}), quoted_periods=quoted)
+    assert "kg_entry_remaining_days_blocked" in violations
+    assert "осталось 30 дней" not in clean
+
+
+def test_the_allowlist_never_widens_the_other_claims():
+    """Послабление касается только лимита дней: режим и регистрацию решает движок."""
+    from app.agent.entry_guards import period_literals
+    from app.agent.validator import validate_reply
+    quoted = period_literals("5 рабочих дней")
+    clean, violations = validate_reply(
+        "Виза вам не нужна, регистрация в течение 5 рабочих дней.", "visa",
+        profile="kg_entry", allowed_claims=frozenset(), quoted_periods=quoted)
+    assert "kg_entry_unconfirmed_claim_blocked" in violations
+    assert "не нужна" not in clean
+
+
+def test_working_days_do_not_license_calendar_days():
+    """«5 рабочих дней» в источнике не разрешает сказать «5 календарных дней»."""
+    from app.agent.entry_guards import period_literals
+    from app.agent.validator import validate_reply
+    quoted = period_literals("учёт в течение 5 рабочих дней")
+    clean, violations = validate_reply(
+        "Зарегистрироваться нужно в течение 5 календарных дней.", "visa",
+        profile="kg_entry", allowed_claims=frozenset({"registration"}),
+        quoted_periods=quoted)
+    assert "kg_entry_unconfirmed_claim_blocked" in violations
+
+
+def test_an_empty_allowlist_behaves_exactly_as_before():
+    """Откат дословный: пустой список чисел — поведение как до этой правки."""
+    from app.agent.validator import validate_reply
+    reply = "Для визы нужен паспорт со сроком не менее 6 месяцев."
+    with_list, viol_a = validate_reply(reply, "visa", profile="kg_entry",
+                                       allowed_claims=frozenset({"regime"}),
+                                       quoted_periods=frozenset())
+    without, viol_b = validate_reply(reply, "visa", profile="kg_entry",
+                                     allowed_claims=frozenset({"regime"}))
+    assert with_list == without and viol_a == viol_b

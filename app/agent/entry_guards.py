@@ -271,6 +271,41 @@ def claimed_fields(text: str) -> frozenset[str]:
     return frozenset(out)
 
 
+_PERIOD_LITERAL = re.compile(
+    r"(\d{1,3})\s*(календарн\w*\s+дн\w*|рабоч\w*\s+дн\w*|working\s+day\w*|"
+    r"calendar\s+day\w*|дн\w*|сут\w*|месяц\w*|month\w*|day\w*)",
+    re.IGNORECASE)
+
+
+def _unit_class(unit: str) -> str:
+    low = (unit or "").lower()
+    if low.startswith(("рабоч", "working")):
+        return "working_day"
+    if low.startswith(("календарн", "calendar")):
+        return "calendar_day"
+    if low.startswith(("месяц", "month")):
+        return "month"
+    return "day"
+
+
+def period_literals(text: str) -> frozenset[tuple[int, str]]:
+    """Числа со сроками, буквально встречающиеся в тексте: (число, класс единицы).
+
+    Нужно, чтобы разрешать боту произносить СРОК ИЗ ИСТОЧНИКА, не разрешая при этом
+    говорить о сроках вообще. Класс единицы различается нарочно: «5 рабочих дней» в
+    базе не даёт права сказать «5 календарных дней» — для дедлайна подачи это разные
+    сроки.
+    """
+    found: set[tuple[int, str]] = set()
+    for match in _PERIOD_LITERAL.finditer(text or ""):
+        try:
+            number = int(match.group(1))
+        except ValueError:          # pragma: no cover — защита от странного ввода
+            continue
+        found.add((number, _unit_class(match.group(2))))
+    return frozenset(found)
+
+
 def claims_remaining_days(text: str) -> bool:
     """Называет ли реплика остаток дней по конкретному человеку (ТЗ 2.9 запрещает)."""
     return bool(_RULE_REMAINING.search(text or ""))

@@ -229,8 +229,38 @@ def _strip_unknown_urls(text: str) -> tuple[str, bool]:
     return new, stripped
 
 
+def _period_is_quoted(body: str, need: frozenset[str],
+                      allowed_claims: frozenset[str],
+                      quoted_periods: frozenset[tuple[int, str]]) -> bool:
+    """Можно ли пропустить предложение, где не хватает только разрешения на срок.
+
+    Это СПИСОК буквальных чисел из одобренных человеком кусков базы, а не право
+    говорить о сроках. Выдуманного числа в списке нет, и предложение с ним вырежется
+    как прежде.
+
+    Понадобилось потому, что иначе ремень убивал ответы про документы: «паспорт со
+    сроком не менее 6 месяцев» — требование к документу, но «6 месяцев» ловится
+    шаблоном срока и требует `stay_limit`, которого у визовой страны нет. Клиент
+    получал отписку вместо подписанного человеком списка документов.
+
+    Четыре условия, и все обязательны.
+    """
+    from app.agent import entry_guards as g
+
+    if not quoted_periods:
+        return False                                   # пустой список — как раньше
+    if need - {"stay_limit"} - allowed_claims:
+        return False                                   # послабление только для срока
+    literals = g.period_literals(body)
+    if not literals or not literals <= quoted_periods:
+        return False                                   # число не из источника
+    return not g.claims_remaining_days(body)           # остаток дней — никогда
+
+
 def _apply_entry_profile(text: str, *, allowed_claims: frozenset[str],
-                         consent_given: bool) -> tuple[str, list[str]]:
+                         consent_given: bool,
+                         quoted_periods: frozenset[tuple[int, str]] = frozenset(),
+                         ) -> tuple[str, list[str]]:
     """Шесть ремней въездной ветки. Подменяет текст, а не только логирует.
 
     Порядок важен: запрещённые формулировки Б.7 идут ПЕРВЫМИ, потому что их безопасные
@@ -309,7 +339,8 @@ def _apply_entry_profile(text: str, *, allowed_claims: frozenset[str],
               if m.group(1).strip()]
     for body, sep in pieces or [(clean, "")]:
         need = g.claimed_fields(body)
-        if need and not need <= allowed_claims:
+        if need and not need <= allowed_claims and not _period_is_quoted(
+                body, need, allowed_claims, quoted_periods):
             unconfirmed = True
             continue
         parts.append((body.strip() + sep.strip()).strip())
@@ -326,7 +357,9 @@ def validate_reply(text: str, funnel: str | None,
                    *, shield_service_notes: bool = False,
                    profile: str | None = None,
                    allowed_claims: frozenset[str] = frozenset(),
-                   consent_given: bool = False) -> tuple[str, list[str]]:
+                   consent_given: bool = False,
+                   quoted_periods: frozenset[tuple[int, str]] = frozenset(),
+                   ) -> tuple[str, list[str]]:
     """Вернуть (очищенный_текст, список_нарушений).
 
     Мутируем ТОЛЬКО безопасное (markdown, дисклеймер цен туров). Остальное — в список
@@ -385,7 +418,8 @@ def validate_reply(text: str, funnel: str | None,
 
     if profile == "kg_entry":
         clean, profile_violations = _apply_entry_profile(
-            clean, allowed_claims=allowed_claims, consent_given=consent_given)
+            clean, allowed_claims=allowed_claims, consent_given=consent_given,
+            quoted_periods=quoted_periods)
         violations.extend(profile_violations)
         if len(clean) > MAX_LEN:
             violations.append("too_long")

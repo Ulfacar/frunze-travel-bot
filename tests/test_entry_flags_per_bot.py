@@ -111,12 +111,12 @@ def test_speech_toggle_works_at_runtime(monkeypatch):
                                        "purpose": "tourism"}
 
     async def go():
-        silent, _ = await _entry_claim_permissions(state, spec)
+        silent, _, _ = await _entry_claim_permissions(state, spec)
         await flags.set_flag("kg_entry_say_confirmed_enabled:getvisa_tg", True)
-        speaking, _ = await _entry_claim_permissions(state, spec)
+        speaking, _, _ = await _entry_claim_permissions(state, spec)
         live_state = _state(LIVE)
         live_state.qualification["kg_entry"] = dict(state.qualification["kg_entry"])
-        on_live, _ = await _entry_claim_permissions(live_state, spec)
+        on_live, _, _ = await _entry_claim_permissions(live_state, spec)
         return silent, speaking, on_live
 
     silent, speaking, on_live = asyncio.run(go())
