@@ -20,6 +20,7 @@
 """
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from functools import lru_cache
 import math
@@ -157,6 +158,10 @@ def load() -> AnswersIndex | None:
         return AnswersIndex(collected, sections=index, corpus_hash=corpus_hash,
                             source_hash=index.source_hash)
     except Exception:  # noqa: BLE001 — нет базы, значит бот отдаёт человеку
+        # Логируем обязательно: иначе сбой сборки образа выглядит как «бот просто
+        # передаёт человеку» при зелёном /health, и причину не найти.
+        logging.getLogger(__name__).warning("kg answers index unavailable",
+                                            exc_info=True)
         return None
 
 

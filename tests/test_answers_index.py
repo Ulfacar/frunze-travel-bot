@@ -61,7 +61,9 @@ def test_the_signed_overlay_is_pinned(loaded):
     from app.knowledge import answers_approval
     overlay = answers_approval.load()
     assert overlay is not None, "оверлей одобрения исчез — бот перестал отвечать по базе"
-    assert len(overlay.by_piece) == 534
+    # 457, а не 534: независимое ревью нашло таблицы сборов, где валюта стоит в шапке,
+    # и метки в заголовках разделов 5.5 и 9.4. После усиления отбора подписей меньше.
+    assert len(overlay.by_piece) == 454
     assert overlay.corpus_hash == loaded.corpus_hash
     assert overlay.source_hash == loaded.source_hash
     for piece_id, digest in overlay.by_piece.items():
@@ -206,3 +208,20 @@ def test_the_review_path_still_refuses_to_grant_quoting():
     assert report["mode"] == "review_only"
     for item in report["results"]:
         assert item["fragment"]["may_quote"] is False
+
+
+def test_no_inherited_label_is_signed(loaded):
+    """Метка из заголовка раздела запрещает подпись так же, как своя.
+
+    Найдено независимым ревью 22.10: раздел 5.5 «Внутренний стандарт качества файлов
+    [ПРАКТИКА]» помечен в ЗАГОЛОВКЕ, и его куски без собственной метки были подписаны.
+    Бот мог выдать внутренний формат имени файла за требование закона.
+    """
+    from app.knowledge import answers_approval
+    overlay = answers_approval.load()
+    assert overlay is not None
+    for piece_id in overlay.by_piece:
+        piece = loaded._pieces[piece_id]              # noqa: SLF001
+        assert not piece["inherited_labels"], (
+            f"{piece_id}: подписан кусок раздела, помеченного в заголовке "
+            f"({piece['inherited_labels']})")

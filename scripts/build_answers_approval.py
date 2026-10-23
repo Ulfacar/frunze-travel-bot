@@ -69,8 +69,13 @@ def main() -> int:
         if not piece.get("approvable"):
             skipped["метка РЕШЕНИЕ" if "РЕШЕНИЕ" in piece["labels"] else "сумма"] += 1
             continue
-        if args.labels == "none" and piece["labels"]:
-            skipped[f"метка {', '.join(piece['labels'])}"] += 1
+        marks = list(piece["labels"]) + [
+            kind for kind in piece["inherited_labels"] if kind not in piece["labels"]]
+        if args.labels == "none" and marks:
+            # Унаследованная метка считается так же, как своя: раздел 5.5
+            # «Внутренний стандарт качества файлов [ПРАКТИКА]» помечен в ЗАГОЛОВКЕ, и
+            # его куски без собственной метки проскакивали фильтр. Найдено ревью 22.10.
+            skipped[f"метка {', '.join(marks)}"] += 1
             continue
         if not str(piece.get("text") or "").strip():
             skipped["пустой текст"] += 1

@@ -174,10 +174,15 @@ def test_a_piece_inside_an_open_label_inherits_it(sliced):
 
 
 def test_inherited_labels_do_not_become_own(corpus, sliced):
-    """Метка во введении блока не делает кусок помеченным — она только понижает его."""
+    """Метка во введении блока или в заголовке раздела не становится СВОЕЙ меткой куска.
+
+    Она попадает в `inherited_labels` и влияет на право одобрения, но за метку самого
+    текста не выдаётся — иначе в диффе не видно, где метка стоит в источнике.
+    """
     for fragment in corpus:
+        source = (fragment["context_text"] or "") + "\n" + (fragment["title"] or "")
         context_labels = {LABEL.match(m.group(0)).group(1)
-                          for m in LABEL.finditer(fragment["context_text"] or "")}
+                          for m in LABEL.finditer(source)}
         for piece in sliced[fragment["id"]]:
             assert set(piece["inherited_labels"]) == context_labels, \
                 f"{piece['piece_id']}: унаследованные метки собраны неверно"
@@ -196,7 +201,9 @@ def test_a_decision_piece_is_never_answerable(sliced):
 
 
 def test_unlabelled_pieces_are_answerable(sliced):
-    without = [p for items in sliced.values() for p in items if not p["labels"]]
+    """Кусок без своей метки отвечаем — если РЕШЕНИЕ не пришло из заголовка раздела."""
+    without = [p for items in sliced.values() for p in items
+               if not p["labels"] and "РЕШЕНИЕ" not in p["inherited_labels"]]
     assert without, "ни одного куска без метки — это противоречит замеру по ПДФ"
     for piece in without:
         assert piece["answerable"] is True, \
@@ -262,9 +269,11 @@ def test_the_slice_is_pinned_by_the_numbers(sliced):
     """
     import collections
     items = [p for group in sliced.values() for p in group]
-    assert len(items) == 721, f"кусков {len(items)}, ожидалось 721"
+    # 726, а не 721: пять строк вида `<!--PDF:37--> текст` отбрасывались целиком,
+    # пока комментарий конверсии считался признаком служебной строки.
+    assert len(items) == 726, f"кусков {len(items)}, ожидалось 726"
     assert dict(collections.Counter(p["kind"] for p in items)) == {
-        "table_row": 451, "paragraph": 225, "list_item": 45}
+        "table_row": 451, "paragraph": 229, "list_item": 46}
 
     labels = collections.Counter()
     for piece in items:
@@ -276,25 +285,24 @@ def test_the_slice_is_pinned_by_the_numbers(sliced):
             labels["ПРАКТИКА"] += 1
         else:
             labels["без метки"] += 1
-    # ПРОВЕРИТЬ 53, а не 51: два куска раздела 2.7 считались чистыми, пока метки
-    # искались закрытыми парами, а не открытиями — см. тесты про разорванную метку.
-    assert dict(labels) == {"без метки": 613, "ПРОВЕРИТЬ": 53,
-                            "ПРАКТИКА": 34, "РЕШЕНИЕ": 21}
-    assert sum(1 for p in items if p["answerable"]) == 700
-    assert sum(1 for p in items if p["grants"]) == 283
-    # Одобряемых меньше отвечаемых: 109 кусков исключены из-за сумм (68 из них —
-    # блок 12 «Оплата и стоимость»). Решение владельца: бот цен не называет.
-    assert sum(1 for p in items if p["approvable"]) == 600
-    assert sum(1 for p in items if p["has_money"]) == 109
-    assert sum(1 for p in items if p["approvable"] and not p["labels"]) == 534
+    assert dict(labels) == {"без метки": 616, "ПРОВЕРИТЬ": 54,
+                            "ПРАКТИКА": 34, "РЕШЕНИЕ": 22}
+    assert sum(1 for p in items if p["answerable"]) == 703
+    assert sum(1 for p in items if p["grants"]) == 284
+    # Одобряемых заметно меньше отвечаемых: 208 кусков исключены из-за денег. Было 109,
+    # пока деньги искались только рядом с валютой — независимое ревью нашло таблицы,
+    # где «USD» стоит в шапке, а сумма в строке данных.
+    assert sum(1 for p in items if p["approvable"]) == 512
+    assert sum(1 for p in items if p["has_money"]) == 208
+    assert sum(1 for p in items if p["approvable"] and not p["labels"]) == 457
 
 
 def test_money_is_never_approvable(sliced):
     """Сумма в контексте модели рано или поздно будет произнесена."""
-    from app.knowledge.answerable import MONEY
+    from app.knowledge.answerable import has_money
     for items in sliced.values():
         for piece in items:
-            if MONEY.search(piece["text"]):
+            if has_money(piece["text"], piece["section"]):
                 assert piece["approvable"] is False, \
                     f"{piece['piece_id']}: кусок с суммой подлежит одобрению"
 
@@ -303,3 +311,91 @@ def test_fragments_without_content_produce_nothing(sliced):
     """Фрагмент из одного заголовка и маркера страницы кусков не даёт — и это верно."""
     empty = [fid for fid, group in sliced.items() if not group]
     assert len(empty) == 9, f"фрагментов без кусков {len(empty)}, ожидалось 9: {empty}"
+
+
+# --- G. Находки независимого ревью 22.10 ---------------------------------------
+
+def test_a_label_in_the_section_heading_reaches_every_piece(corpus, sliced):
+    """Метка в заголовке помечает весь раздел.
+
+    Найдено ревью: `## 9.4. Frunze Travel как приглашающая сторона для TS [РЕШЕНИЕ]` —
+    строка заголовка служебная и пропускалась, а унаследованные метки брались только
+    из `context_text`. В результате единственный кусок раздела, который ТЗ запрещает
+    озвучивать клиенту ВООБЩЕ, считался чистым и подлежал одобрению. Так же три куска
+    раздела 5.5 `[ПРАКТИКА]`.
+    """
+    from app.knowledge.answerable import _labels
+    for fragment in corpus:
+        heading = _labels(fragment.get("title") or "")
+        if not heading:
+            continue
+        items = sliced[fragment["id"]]
+        assert items, f"{fragment['id']}: раздел с меткой в заголовке дал ноль кусков"
+        for piece in items:
+            for kind in heading:
+                assert kind in piece["labels"] or kind in piece["inherited_labels"], (
+                    f"{piece['piece_id']}: метка {kind} из заголовка раздела потеряна")
+
+
+def test_a_decision_in_the_heading_blocks_the_whole_section(corpus, sliced):
+    """`[РЕШЕНИЕ]` в заголовке запрещает весь раздел, а не только строку с меткой."""
+    from app.knowledge.answerable import _labels
+    for fragment in corpus:
+        if "РЕШЕНИЕ" not in _labels(fragment.get("title") or ""):
+            continue
+        for piece in sliced[fragment["id"]]:
+            assert piece["approvable"] is False, (
+                f"{piece['piece_id']}: раздел помечен РЕШЕНИЕМ в заголовке, "
+                "а кусок подлежит одобрению")
+
+
+FEE_SECTIONS = ("12.1", "12.2", "12.6", "12.8")
+
+
+def test_no_fee_table_is_approvable(sliced):
+    """Таблица сборов не подлежит одобрению, даже когда рядом с числом нет валюты.
+
+    Найдено ревью: `| Услуга | Ставка, USD | | Однократная виза до 1 месяца | 50 |` —
+    «USD» стоит в шапке, а не рядом с «50», и денежный шаблон этого не видел. Решение
+    владельца «бот сумм не называет» нарушалось на уровне одобрения.
+    """
+    for items in sliced.values():
+        for piece in items:
+            if piece["section"] in FEE_SECTIONS:
+                assert piece["approvable"] is False, (
+                    f"{piece['piece_id']}: раздел о сборах подлежит одобрению: "
+                    f"{piece['text'][:90]!r}")
+
+
+@pytest.mark.parametrize("text", [
+    "| Услуга | Ставка, USD |\n| Однократная виза до 1 месяца | 50 |",
+    "| Сумма | Основание |\n| Штраф | 1 100 |",
+    "До 2 рабочих дней, сбор ×3",
+    "Скидка по решению руководителя",
+    "Бесплатно, если ошибка наша",
+])
+def test_money_is_detected_without_a_currency_sign(text):
+    from app.knowledge.answerable import has_money
+    assert has_money(text), f"сумма не распознана: {text!r}"
+
+
+@pytest.mark.parametrize("text", [
+    "Регистрацию оформляют в течение 5 рабочих дней",
+    "Безвиз 30 дней в каждом 60-дневном периоде",
+    "| Документ | Что делать |\n| Паспорт | Проверить срок |",
+])
+def test_plain_facts_are_not_mistaken_for_money(text):
+    from app.knowledge.answerable import has_money
+    assert not has_money(text), f"ложное срабатывание на деньги: {text!r}"
+
+
+def test_a_comment_prefix_does_not_swallow_the_line(sliced):
+    """Строка вида `<!--PDF:37--> Кто платит пошлину` теряла содержательный остаток.
+
+    Найдено ревью: пять строк источника исчезали целиком. Сторона безопасная — бот
+    не знает, а не знает лишнее, — но инвариант «ничего не потеряно» нарушался.
+    """
+    for items in sliced.values():
+        for piece in items:
+            assert "<!--" not in piece["text"], \
+                f"{piece['piece_id']}: комментарий конверсии попал в текст куска"

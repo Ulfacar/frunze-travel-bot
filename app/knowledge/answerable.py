@@ -43,10 +43,36 @@ NEVER_TO_CLIENT = "РЕШЕНИЕ"
 # портала не существует, а комиссия банка названа двумя разными цифрами. Такой кусок не
 # подлежит одобрению: попав в контекст модели, сумма рано или поздно будет произнесена,
 # и единственным препятствием остался бы ремень валидатора.
+# Валюта рядом с числом — только самый простой случай. Независимое ревью 22.10 нашло
+# главный: `| Услуга | Ставка, USD | | Однократная виза до 1 месяца | 50 |` — «USD»
+# стоит в ШАПКЕ таблицы, а не рядом с «50», и такой кусок считался чистым. Поэтому
+# денежным считается и кусок, где слово о деньгах есть где угодно, а цифра где угодно.
 MONEY = re.compile(
-    r"[$€]\s?\d|\d[\d\s.,]*\s?(?:\$|€|сом|usd|eur|долл|руб)|\d+\s?%|надбавк|"
-    r"консульск\w*\s+сбор|сервисн\w*\s+сбор|пошлин|тариф",
+    r"[$€]\s?\d|\d[\d\s.,]*\s?(?:\$|€|сом|usd|eur|долл|руб)|\d+\s?%|×\s?\d|"
+    r"надбавк|пошлин|тариф|скидк|бесплатн|"
+    r"консульск\w*\s+сбор|сервисн\w*\s+сбор",
     re.IGNORECASE)
+
+# Слово о деньгах плюс любое число в том же куске. Нужно для таблиц, где валюта или
+# слово «ставка» стоят в шапке, а сумма — в строке данных.
+MONEY_WORD = re.compile(r"ставк|сумма|стоимост|сбор|оплат|плат[аеиёй]|usd|\$|€|сом\b",
+                        re.IGNORECASE)
+DIGIT = re.compile(r"\d")
+
+# Разделы ТЗ о деньгах целиком. Страховка поверх шаблонов: в блоке 12 почти каждая
+# строка — сумма или условие оплаты, и полагаться на распознавание отдельной строки
+# здесь нельзя.
+FEE_SECTIONS = frozenset({"12.1", "12.2", "12.6", "12.8"})
+
+
+def has_money(text: str, section: str = "") -> bool:
+    """Есть ли в куске деньги — в любом виде, включая «50» под шапкой «Ставка, USD»."""
+    if str(section or "") in FEE_SECTIONS:
+        return True
+    body = text or ""
+    if MONEY.search(body):
+        return True
+    return bool(MONEY_WORD.search(body) and DIGIT.search(body))
 
 _TABLE_SEPARATOR = re.compile(r"\|[\s\-:|]+\|")
 _NUMBERED = re.compile(r"^\d+[.)]\s")
@@ -96,9 +122,22 @@ def _labels_with_carry(text: str, carried: str | None) -> tuple[list[str], str |
     return found, carry
 
 
+_COMMENT = re.compile(r"<!--.*?-->")
+
+
+def _strip_comments(line: str) -> str:
+    """Снять комментарии конверсии, оставив содержательный остаток строки.
+
+    Найдено ревью 22.10: строка вида `<!--PDF:37--> Кто платит пошлину` отбрасывалась
+    целиком, и пять строк источника исчезали. Сторона безопасная, но инвариант
+    «ничего не потеряно» нарушался.
+    """
+    return _COMMENT.sub(" ", line).strip()
+
+
 def _is_service(line: str) -> bool:
-    """Разметка, а не норма: заголовок, маркер страницы, комментарий, ограда кода."""
-    return line.startswith(("#", ">", "<!--", "```"))
+    """Разметка, а не норма: заголовок, маркер страницы, ограда кода, пустой остаток."""
+    return not line or line.startswith(("#", ">", "```"))
 
 
 def _digest(text: str) -> str:
@@ -118,7 +157,13 @@ def pieces(fragment: dict[str, Any]) -> list[dict[str, Any]]:
     """
     raw = fragment.get("raw_text") or ""
     lines = raw.split("\n")
-    inherited = _labels(fragment.get("context_text") or "")
+    # Метка в ЗАГОЛОВКЕ раздела помечает весь раздел. Найдено ревью 22.10: строка
+    # заголовка служебная и пропускается, а унаследованные метки брались только из
+    # введения блока — поэтому раздел 9.4 «…для TS [РЕШЕНИЕ]», который ТЗ запрещает
+    # озвучивать вообще, считался чистым.
+    inherited = _labels((fragment.get("context_text") or "")
+                        + "\n" + (fragment.get("title") or ""))
+    section = str(fragment.get("section") or "")
     fragment_id = str(fragment.get("id") or "")
     pages = list(fragment.get("pdf_pages_from_markers") or [])
 
@@ -134,7 +179,7 @@ def pieces(fragment: dict[str, Any]) -> list[dict[str, Any]]:
         nonlocal carry
         owned = list(indexes)
         shown = list(prepend) + owned
-        text = "\n".join(lines[i].strip() for i in shown).strip()
+        text = "\n".join(_strip_comments(lines[i].strip()) for i in shown).strip()
         if not text:
             return
         own_labels, carry = _labels_with_carry(text, carry)
@@ -151,11 +196,15 @@ def pieces(fragment: dict[str, Any]) -> list[dict[str, Any]]:
             "text_sha256": _digest(text),
             "labels": own_labels,
             "inherited_labels": list(inherited),
-            "answerable": NEVER_TO_CLIENT not in own_labels,
+            # Метка РЕШЕНИЕ запрещает кусок и когда стоит в нём самом, и когда стоит
+            # в заголовке раздела или во введении блока.
+            "answerable": (NEVER_TO_CLIENT not in own_labels
+                           and NEVER_TO_CLIENT not in inherited),
             # Одобрению подлежит только то, что и по метке можно, и денег не содержит.
             "approvable": (NEVER_TO_CLIENT not in own_labels
-                           and not MONEY.search(text)),
-            "has_money": bool(MONEY.search(text)),
+                           and NEVER_TO_CLIENT not in inherited
+                           and not has_money(text, section)),
+            "has_money": has_money(text, section),
             "grants": sorted(claimed_fields(text)),
             "source_lines": owned,
         })
@@ -167,7 +216,7 @@ def pieces(fragment: dict[str, Any]) -> list[dict[str, Any]]:
             paragraph = []
 
     for index, raw_line in enumerate(lines):
-        line = raw_line.strip()
+        line = _strip_comments(raw_line.strip())
 
         if not line:
             flush_paragraph()

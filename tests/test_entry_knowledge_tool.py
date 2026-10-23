@@ -201,3 +201,31 @@ def test_the_overlay_is_shipped_once_it_exists():
     assert "answers-approved-v1.1.yaml" in dockerfile, (
         "оверлей одобрения не копируется в образ — на проде бот не произнесёт "
         "ни одного факта из базы при зелёном /health")
+
+
+def test_the_search_budget_resets_every_turn(monkeypatch):
+    """Бюджет поиска — на ХОД, а не на диалог.
+
+    Найдено независимым ревью 22.10: счётчик лежит в анкете, которая переживает ход,
+    и без обнуления бот после двух вопросов навсегда отвечал «бюджет исчерпан». То
+    есть ответы по базе отмирали на третьей реплике клиента.
+    """
+    from app.agent import runner
+    monkeypatch.setattr(app.config.settings, "kg_entry_knowledge_enabled", True,
+                        raising=False)
+    state = _state()
+    for _ in range(runner.KB_MAX_CALLS):
+        _call(state)
+    assert state.qualification["kg_entry"].get("_kb_calls") == runner.KB_MAX_CALLS
+
+    # Модель здесь не нужна: проверяем ровно обнуление на входе в ход, а не диалог.
+    async def no_llm(_state, _text, _spec):
+        return "ок"
+
+    monkeypatch.setattr(runner, "run_turn", no_llm)
+    asyncio.run(runner.run_kg_entry_turn(state, "а ещё вопрос"))
+    assert not state.qualification["kg_entry"].get("_kb_calls"), \
+        "счётчик поиска не обнулён в начале хода"
+    answer = _call(state)
+    assert "бюджет" not in answer.lower(), \
+        f"после нового хода бот всё ещё считает бюджет исчерпанным: {answer!r}"
