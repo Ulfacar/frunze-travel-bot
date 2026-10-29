@@ -1126,6 +1126,14 @@ FEATURE_FLAGS = {
         "default": lambda: settings.panel_manual_lead_enabled,
         "note": lambda: "",
     },
+    "reassign_moves_tasks_enabled": {
+        "title": "Передача клиента переносит его задачи",
+        "desc": ("Когда администратор передаёт клиента другому менеджеру, открытые задачи "
+                 "по этому клиенту (звонки, встречи) уходят новому владельцу. Каждый перенос "
+                 "пишется в историю задачи. Клиенту ничего не уходит."),
+        "default": lambda: settings.reassign_moves_tasks_enabled,
+        "note": lambda: "",
+    },
     "panel_client_card_enabled": {
         "title": "Заметки и карточка клиента (замена Bitrix)",
         "desc": ("Внутренние заметки менеджера в переписке и карточка клиента: все его "
@@ -2038,8 +2046,7 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
     active_tasks = [t for t in tasks if t["active"]]
     # Sprint 2: полный админ видит контрол «Переназначить» (список логинов менеджеров).
     is_full_admin = _manager_bot_scope(manager) is None
-    reassign_targets = ([m.login for m in settings.manager_list() if (m.login or "").strip()]
-                        if is_full_admin else [])
+    reassign_targets = _reassign_targets(conv) if is_full_admin else []
     return templates.TemplateResponse(request, "_conversation.html", {
         "c": conv,
         "media_view_on": await _media_flag("panel_media_view_enabled"),
@@ -2308,6 +2315,26 @@ async def release(user_id: str, request: Request, manager: dict = Depends(requir
     return await _render_conversation(user_id, request, manager)
 
 
+def _manager_session(m) -> dict:
+    """Учётка менеджера из настроек в том виде, в каком она лежит в сессии."""
+    return {"login": m.login, "name": m.name, "admin": bool(m.admin)}
+
+
+def _reassign_targets(conv) -> list[str]:
+    """Кому можно передать диалог: только тем, кто его увидит.
+
+    Раньше список был «все логины», и визовый диалог уходил туровому менеджеру —
+    у неё он не открывается (404), а в панели висит как «ведёт Айсина»: клиент ничей
+    по факту. Найдено при сверке с Bitrix 30.10.
+    """
+    out = []
+    for m in settings.manager_list():
+        login = (m.login or "").strip()
+        if login and _can_view_conversation(conv, _manager_session(m)):
+            out.append(login)
+    return out
+
+
 @router.post("/conversation/{user_id}/reassign", response_class=HTMLResponse)
 async def reassign(user_id: str, request: Request,
                    manager: dict = Depends(require_full_admin), target: str = Form("")):
@@ -2321,6 +2348,12 @@ async def reassign(user_id: str, request: Request,
     known = {(m.login or "").strip().lower() for m in settings.manager_list()}
     if not target or target not in known:
         raise HTTPException(status_code=400, detail="unknown target manager")
+    if target not in {t.lower() for t in _reassign_targets(conv)}:
+        resp = await _render_conversation(
+            user_id, request, manager,
+            notice=f"{target} не видит это направление — передайте менеджеру направления.")
+        resp.headers["X-Action-Outcome"] = "denied"
+        return resp
     direction = _authz_direction(conv)
     if not direction:
         return await _render_conversation(
@@ -2334,6 +2367,16 @@ async def reassign(user_id: str, request: Request,
             await live_assign.assign_locked(
                 s, contact.id, direction, target, assigned_by=manager["login"],
                 reason="admin_reassign", allow_emergency=True)
+            # ТЗ TASK-04: открытые задачи по клиенту уходят новому владельцу в той же
+            # транзакции, что и назначение, — без «карточка у Элизы, звонки у Медины».
+            moved = 0
+            if await _media_flag("reassign_moves_tasks_enabled"):
+                from app.domain.calendar_tasks import CalendarTaskService
+                for task_direction in dict.fromkeys((direction, getattr(conv, "funnel", "") or "")):
+                    if task_direction:
+                        moved += await CalendarTaskService.reassign_open_tasks(
+                            s, contact_id=contact.id, direction=task_direction,
+                            new_manager_id=target, actor=manager["login"])
             await s.commit()
     except Exception:  # noqa: BLE001
         log.warning("reassign failed", exc_info=True)
@@ -2341,8 +2384,9 @@ async def reassign(user_id: str, request: Request,
             user_id, request, manager, notice="Не удалось переназначить — попробуйте ещё раз.")
     await get_conversation_store().update_meta(user_id, assigned_to=target)
     await get_conversation_store().add_audit(manager["login"], "reassign", user_id, target)
+    tail = f" Задач перенесено: {moved}." if moved else ""
     return await _render_conversation(
-        user_id, request, manager, notice=f"Лид передан менеджеру {target}.")
+        user_id, request, manager, notice=f"Лид передан менеджеру {target}.{tail}")
 
 
 @router.post("/conversation/{user_id}/send", response_class=HTMLResponse)
