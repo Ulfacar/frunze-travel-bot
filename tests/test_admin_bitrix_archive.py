@@ -71,6 +71,15 @@ def _client(login="admin", pw=None):
     return c
 
 
+def _search(c, phone):
+    """Поиск так, как его делает форма: POST с токеном формы, номера в адресе нет."""
+    import re
+    page = c.get("/admin/bitrix-archive").text
+    token = re.search(r'name="csrf_token" value="([^"]+)"', page)
+    return c.post("/admin/bitrix-archive",
+                  data={"phone": phone, "csrf_token": token.group(1) if token else ""})
+
+
 def test_flag_off_404_and_no_menu(env):
     c = _client()
     assert c.get("/admin/bitrix-archive").status_code == 404
@@ -82,7 +91,7 @@ def test_admin_finds_client_in_any_phone_format(env):
     c = _client()
     assert "/admin/bitrix-archive" in c.get("/admin/calendar").text      # пункт в «Ещё»
     for q in ("0555 111 222", "+996555111222", "555-111-222", "996 (555) 11-12-22"):
-        r = c.get("/admin/bitrix-archive", params={"phone": q})
+        r = _search(c, q)
         assert r.status_code == 200
         assert "Асель" in r.text and "Лид #70" in r.text and "Сделка #700" in r.text
         assert "250 USD" in r.text and "комментариев 2" in r.text
@@ -95,13 +104,14 @@ def test_admin_finds_client_in_any_phone_format(env):
 def test_managers_are_forbidden(env, login):
     _on()
     c = _client(login)
-    assert c.get("/admin/bitrix-archive", params={"phone": "0555111222"}).status_code == 403
+    assert c.get("/admin/bitrix-archive").status_code == 403
+    assert c.post("/admin/bitrix-archive", data={"phone": "0555111222"}).status_code == 403
     assert "/admin/bitrix-archive" not in c.get("/admin/calendar").text
 
 
 def test_archive_text_is_escaped(env):
     _on()
-    html = _client().get("/admin/bitrix-archive", params={"phone": "0555111222"}).text
+    html = _search(_client(), "0555111222").text
     assert "<script>alert(1)" not in html and "<img src=x" not in html and "<b>жирный" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html and "&lt;b&gt;жирный" in html
 
@@ -109,17 +119,53 @@ def test_archive_text_is_escaped(env):
 def test_missing_archive_explains_what_to_do(env, tmp_path):
     _on()
     env.setattr(app.config.settings, "bitrix_archive_dir", str(tmp_path / "nope"))
-    r = _client().get("/admin/bitrix-archive", params={"phone": "0555111222"})
+    r = _search(_client(), "0555111222")
     assert r.status_code == 200 and "Архив не найден" in r.text and "BITRIX_ARCHIVE_DIR" in r.text
     env.setattr(app.config.settings, "bitrix_archive_dir", "")
     assert "Архив не найден" in _client().get("/admin/bitrix-archive").text
 
 
 def test_short_and_unknown_numbers(env):
+    """A3: 7–8 цифр раньше принимались и молча ничего не находили (сравнение — по 9)."""
     _on()
     c = _client()
-    assert "не меньше 7 цифр" in c.get("/admin/bitrix-archive", params={"phone": "12345"}).text
-    assert "ничего нет" in c.get("/admin/bitrix-archive", params={"phone": "0700000000"}).text
+    for short in ("12345", "5551112", "55511122"):
+        html = _search(c, short).text
+        assert "не меньше 9 цифр" in html and "0555 123 456" in html
+    assert "ничего нет" in _search(c, "0700000000").text
+    assert "Асель" in _search(c, "555111222").text      # ровно 9 цифр — находит
+
+
+def test_search_number_never_goes_into_the_url(env):
+    """A1: номер клиента не попадает в строку запроса — значит, ни в журнал uvicorn/nginx,
+    ни в историю браузера. GET с номером ничего не ищет; POST без токена формы — 403."""
+    _on()
+    c = _client()
+    page = c.get("/admin/bitrix-archive").text
+    assert 'method="post"' in page and 'name="csrf_token"' in page
+    r = c.get("/admin/bitrix-archive", params={"phone": "0555111222"})
+    assert r.status_code == 200 and "Асель" not in r.text
+    assert c.post("/admin/bitrix-archive", data={"phone": "0555111222"}).status_code == 403
+    assert c.post("/admin/bitrix-archive",
+                  data={"phone": "0555111222", "csrf_token": "x" * 64}).status_code == 403
+    assert not [a for a in panel_store._memory_store._audit if a["action"] == "bitrix_archive"]
+    r = _search(c, "0555111222")
+    assert r.status_code == 200 and "Асель" in r.text and "0555111222" not in str(r.url)
+
+
+def test_non_string_dates_do_not_break_the_page(env, arch):
+    """A2: архив — файл; число вместо строки в дате не должно ронять страницу (500)."""
+    _on()
+    _write(arch / "leads.jsonl", [{"ID": "70", "TITLE": "Шенген", "CONTACT_ID": "7",
+                                   "DATE_CREATE": 1717200000}])
+    _write(arch / "deals.jsonl", [{"ID": "700", "LEAD_ID": "70", "DATE_CREATE": None}])
+    _write(arch / "timeline.jsonl", [{"entity_type": "lead", "entity_id": 70, "comments": [
+        {"ID": "1", "CREATED": 20260601, "COMMENT": "звонил"}]}])
+    _write(arch / "contacts.jsonl", [{"ID": "7", "NAME": "Асель", "DATE_CREATE": 5,
+                                      "PHONE": [{"VALUE": "+996 555 111 222"}]}])
+    r = _search(_client(), "0555111222")
+    assert r.status_code == 200 and "Лид #70" in r.text and "1717200000" in r.text
+    assert "20260601" in r.text and "звонил" in r.text
 
 
 def test_large_archive_is_streamed_not_loaded(tmp_path):

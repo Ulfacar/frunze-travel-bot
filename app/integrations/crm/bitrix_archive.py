@@ -13,7 +13,9 @@ import re
 from pathlib import Path
 
 LIMIT = 100
-MIN_DIGITS = 7
+# Сравнение идёт по последним TAIL цифрам: 7–8 цифр раньше принимались и молча ничего
+# не находили (ревью ux 30.10, A3). Меньше TAIL — просим номер целиком.
+MIN_DIGITS = 9
 TAIL = 9
 
 

@@ -346,7 +346,7 @@ def test_search_foreign_number_exact(archive):
 def test_search_not_found_and_too_short(archive):
     assert _search(archive, "0555999999")[0] == 1
     code, text = _search(archive, "12345")
-    assert code == 2 and "не меньше 7 цифр" in text
+    assert code == 2 and "не меньше 9 цифр" in text
 
 
 def test_search_json_and_missing_archive(archive, tmp_path):

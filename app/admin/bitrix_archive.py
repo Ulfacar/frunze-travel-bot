@@ -39,29 +39,60 @@ def _archive_dir() -> Path | None:
     return path
 
 
-@ar.router.get("/bitrix-archive", response_class=HTMLResponse)
-async def bitrix_archive_page(request: Request, phone: str = "",
-                              manager: dict = Depends(ar.require_full_admin)):
+def _render(request: Request, manager: dict, *, phone: str = "", found=None, error: str = "",
+            folder: Path | None = None, status_code: int = 200):
+    from app.admin.contracts import _csrf
+    return ar.templates.TemplateResponse(request, "bitrix_archive.html", {
+        "manager": manager, "phone": phone, "found": found, "error": error,
+        "csrf_token": _csrf(request),
+        "files": {f: (folder / f).is_file() for f in FILES} if folder else {},
+    }, status_code=status_code, headers={"Cache-Control": "no-store"})
+
+
+async def _guard() -> None:
     if settings.crm_standalone_enabled or not await ar._media_flag(FLAG):
         raise HTTPException(status_code=404)
-    phone = (phone or "").strip()[:40]
+
+
+@ar.router.get("/bitrix-archive", response_class=HTMLResponse)
+async def bitrix_archive_page(request: Request, manager: dict = Depends(ar.require_full_admin)):
+    """Только форма. Номер в адресе не принимается: строка запроса уходит в журналы
+    uvicorn/nginx и в историю браузера, а там нужен не весь номер (ревью ux 30.10, A1)."""
+    await _guard()
+    folder = _archive_dir()
+    error = "" if folder else _NO_ARCHIVE
+    return _render(request, manager, error=error, folder=folder)
+
+
+_NO_ARCHIVE = ("Архив не найден. Выгрузите его скриптом bitrix_archive_export.py и укажите "
+               "каталог в настройке BITRIX_ARCHIVE_DIR.")
+
+
+@ar.router.post("/bitrix-archive", response_class=HTMLResponse)
+async def bitrix_archive_search(request: Request, manager: dict = Depends(ar.require_full_admin)):
+    """Поиск по номеру — POST с токеном формы, как остальные формы панели."""
+    import hmac
+    await _guard()
+    form = await request.form()
+    token = str(form.get("csrf_token", ""))
+    expected = request.session.get("contract_csrf", "")
+    if not expected or not token or not hmac.compare_digest(token.encode(), expected.encode()):
+        raise HTTPException(status_code=403, detail="Форма устарела. Откройте её заново.")
+    phone = str(form.get("phone", "") or "").strip()[:40]
     found, error = None, ""
     folder = _archive_dir()
     if folder is None:
-        error = ("Архив не найден. Выгрузите его скриптом bitrix_archive_export.py и укажите "
-                 "каталог в настройке BITRIX_ARCHIVE_DIR.")
+        error = _NO_ARCHIVE
     elif phone:
         try:
             found = archive.search(folder, phone, with_comments=True)
         except ValueError:
-            error = f"Введите номер: не меньше {archive.MIN_DIGITS} цифр."
+            error = (f"Введите номер полностью: не меньше {archive.MIN_DIGITS} цифр, "
+                     "например 0555 123 456 или +7 701 123 45 67.")
         except OSError:
             log.warning("bitrix archive: read failed", exc_info=True)
             error = "Архив не читается — проверьте файлы на сервере."
     if phone:   # кто и что искал в персональных данных; в журнал — только хвост номера
         await ar.get_conversation_store().add_audit(
             manager["login"], "bitrix_archive", "", f"…{archive._digits(phone)[-4:]}")
-    return ar.templates.TemplateResponse(request, "bitrix_archive.html", {
-        "manager": manager, "phone": phone, "found": found, "error": error,
-        "files": {f: (folder / f).is_file() for f in FILES} if folder else {},
-    }, headers={"Cache-Control": "no-store"})
+    return _render(request, manager, phone=phone, found=found, error=error, folder=folder)
