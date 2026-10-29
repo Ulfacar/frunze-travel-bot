@@ -471,6 +471,10 @@ class Settings(BaseSettings):
     # `scripts/bitrix_archive_export.py`). Каталог архива на сервере. OFF; только админ.
     panel_bitrix_archive_enabled: bool = False
     bitrix_archive_dir: str = ""
+    # «Сводка пилота» для руководителя направления (30.10). OFF. Руководители — логины по
+    # направлениям, JSON: {"visa": ["grisha"], "tours": []}. Полный админ видит всё и без списка.
+    panel_pilot_summary_enabled: bool = False
+    panel_direction_leads: dict[str, list[str]] = {}
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False
     crm_bot_send_enabled: bool = False

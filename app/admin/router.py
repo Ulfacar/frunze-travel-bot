@@ -43,7 +43,8 @@ _look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
                                   "focus_on": None, "chat_redesign": None,
                                   "workday_on": None, "cases_write_on": None,
                                   "simple_on": None, "manual_lead_on": None,
-                                  "send_unknown_on": None, "bitrix_archive_on": None}
+                                  "send_unknown_on": None, "bitrix_archive_on": None,
+                                  "pilot_summary_on": None}
 
 
 async def _load_new_look(request: Request) -> None:
@@ -65,7 +66,8 @@ async def _load_new_look(request: Request) -> None:
            bool(settings.panel_missing_cards_enabled),
            bool(settings.panel_manual_lead_enabled),
            bool(settings.panel_send_unknown_status_enabled),
-           bool(settings.panel_bitrix_archive_enabled))
+           bool(settings.panel_bitrix_archive_enabled),
+           bool(settings.panel_pilot_summary_enabled))
     if (_look_cache["key"] == key and _look_cache["new_look"] is not None
             and now - float(_look_cache["at"]) < _LOOK_TTL):
         request.state.new_look = bool(_look_cache["new_look"])
@@ -78,6 +80,7 @@ async def _load_new_look(request: Request) -> None:
         request.state.manual_lead_on = bool(_look_cache["manual_lead_on"])
         request.state.send_unknown_on = bool(_look_cache["send_unknown_on"])
         request.state.bitrix_archive_on = bool(_look_cache["bitrix_archive_on"])
+        request.state.pilot_summary_on = bool(_look_cache["pilot_summary_on"])
         return
     try:
         new_look = await _flags.get_flag("admin_new_look_enabled",
@@ -100,6 +103,8 @@ async def _load_new_look(request: Request) -> None:
                                                 settings.panel_send_unknown_status_enabled)
         bitrix_archive_on = (not settings.crm_standalone_enabled) and await _flags.get_flag(
             "panel_bitrix_archive_enabled", settings.panel_bitrix_archive_enabled)
+        pilot_summary_on = (not settings.crm_standalone_enabled) and await _flags.get_flag(
+            "panel_pilot_summary_enabled", settings.panel_pilot_summary_enabled)
         _look_cache.update({"at": now, "key": key, "new_look": new_look,
                             "focus_on": focus_on, "chat_redesign": chat_redesign,
                             "workday_on": workday_on,
@@ -108,7 +113,8 @@ async def _load_new_look(request: Request) -> None:
                             "missing_cards_on": missing_cards_on,
                             "manual_lead_on": manual_lead_on,
                             "send_unknown_on": send_unknown_on,
-                            "bitrix_archive_on": bitrix_archive_on})
+                            "bitrix_archive_on": bitrix_archive_on,
+                            "pilot_summary_on": pilot_summary_on})
     except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
         new_look, focus_on = (bool(settings.admin_new_look_enabled),
                               bool(settings.admin_focus_enabled))
@@ -120,6 +126,7 @@ async def _load_new_look(request: Request) -> None:
         manual_lead_on = False
         send_unknown_on = False
         bitrix_archive_on = False
+        pilot_summary_on = False
     request.state.new_look = bool(new_look)
     request.state.focus_on = bool(focus_on)
     request.state.chat_redesign = bool(chat_redesign)
@@ -130,10 +137,16 @@ async def _load_new_look(request: Request) -> None:
     request.state.manual_lead_on = bool(manual_lead_on)
     request.state.send_unknown_on = bool(send_unknown_on)
     request.state.bitrix_archive_on = bool(bitrix_archive_on)
+    request.state.pilot_summary_on = bool(pilot_summary_on)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"],
                    dependencies=[Depends(_load_new_look)])
+def _pilot_summary_visible(manager) -> bool:
+    from app.admin.pilot_summary import allowed_directions
+    return bool(manager) and bool(allowed_directions(manager))
+
+
 def _chrome(request: Request) -> dict:
     """Общий контекст шапки для КАЖДОГО шаблона: кто вошёл, админ ли, направление.
 
@@ -167,6 +180,9 @@ def _chrome(request: Request) -> dict:
             "send_unknown_on": bool(getattr(request.state, "send_unknown_on", False)),
             # «Архив Битрикса» в «Ещё» у админа — `app/admin/bitrix_archive.py`.
             "bitrix_archive_on": bool(getattr(request.state, "bitrix_archive_on", False)),
+            # «Сводка пилота» — полному админу и руководителю направления (`pilot_summary.py`).
+            "pilot_summary_on": bool(getattr(request.state, "pilot_summary_on", False))
+                                and _pilot_summary_visible(manager),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
                                           settings.admin_chat_redesign_enabled)),
             "workday_on": bool(getattr(request.state, "workday_on",
@@ -1163,6 +1179,16 @@ FEATURE_FLAGS = {
                  "клиента в архиве надёжно не определяется."),
         "default": lambda: settings.panel_bitrix_archive_enabled,
         "note": lambda: ("каталог: " + (settings.bitrix_archive_dir or "не задан (BITRIX_ARCHIVE_DIR)")),
+    },
+    "panel_pilot_summary_enabled": {
+        "title": "Сводка пилота для руководителя направления",
+        "desc": ("Страница в «Ещё»: за сегодня, вчера и 7 дней — новые обращения, ответы из "
+                 "панели, сколько клиентов ждали дольше X минут, ошибки отправки, продажи; по "
+                 "менеджерам, каждая цифра раскрывается в список. Видят полный админ и "
+                 "руководители из PANEL_DIRECTION_LEADS — только своё направление."),
+        "default": lambda: settings.panel_pilot_summary_enabled,
+        "note": lambda: ("руководители: " + (", ".join(f"{d}: {', '.join(v) or '—'}" for d, v in
+                         (settings.panel_direction_leads or {}).items()) or "не заданы")),
     },
     "reassign_moves_tasks_enabled": {
         "title": "Передача клиента переносит его задачи",
@@ -3472,6 +3498,7 @@ from app.admin import workday  # noqa: E402,F401 — side-effect: регистр
 from app.admin import contracts  # noqa: E402,F401 — договор из переписки, за флагами E2-06
 from app.admin import clients  # noqa: E402,F401 — новый клиент вручную, заметки, карточка; флаги OFF
 from app.admin import bitrix_archive  # noqa: E402,F401 — архив Битрикса, только чтение; флаг OFF
+from app.admin import pilot_summary  # noqa: E402,F401 — сводка пилота руководителю; флаг OFF
 from app.admin import precontract  # noqa: E402,F401 — предварительная визовая карточка и договор в ней
 from app.admin import kg_entry  # noqa: E402,F401 — пилот анкеты въезда, default OFF
 from app.admin import kg_knowledge  # noqa: E402,F401 — поиск источника за тем же пилотным флагом
