@@ -101,10 +101,13 @@
       <div class="last"><b>{{ {'client':'Клиент','bot':'Бот','manager':'Вы'}.get(c.last_sender, '') }}{% if c.last_sender %}: {% endif %}</b>{{ c.last_text }}</div>
       {% endif %}
       <div class="card-foot">
+        {#- Простой режим: «◷ 4 ч» рядом с «ждёт 4 ч» — одно и то же число дважды. -#}
+        {% if not (simple_on and c.wait_level in ('warm','hot')) %}
         <span class="time">
           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
           {{ c.time_label }}
         </span>
+        {% endif %}
         {% if c.source and not standalone_crm %}
         <span class="badge ad-source" title="{{ c.source_headline or 'Пришёл по рекламе' }}">{{ ic.icon('flame',12) }} {{ 'реклама' if c.source == 'ad' else 'пост' }}</span>
         {% endif %}
@@ -117,7 +120,7 @@
         {% if c.needs_reply %}
         <span class="badge wait-hot">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-          ваш ход
+          {% if simple_on %}отвечать вам{% else %}ваш ход{% endif %}
         </span>
         {% endif %}
         {% if c.intercepted and (not standalone_crm or crm_bot_mode) %}

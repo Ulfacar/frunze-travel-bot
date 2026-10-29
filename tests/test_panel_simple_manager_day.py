@@ -225,6 +225,16 @@ def test_chat_menu_is_not_clipped_by_the_sticky_header():
 
 
 # ---------------- диалоги ----------------
+def test_inbox_card_says_it_plainly_and_once(monkeypatch):
+    _setup(monkeypatch); _seed(minutes_ago=240, stage="manager")
+    page = _client().get("/admin/inbox").text
+    assert "ждёт 4 ч" in page
+    assert 'class="time"' not in page, "время ожидания показано дважды"
+    assert "отвечать вам" in page and "ваш ход" not in page
+    _setup(monkeypatch, simple=False); _seed(minutes_ago=240, stage="manager")
+    assert 'class="time"' in _client().get("/admin/inbox").text
+
+
 def test_visa_manager_sees_only_her_own_board_tab(monkeypatch):
     _setup(monkeypatch)
     page = _client().get("/admin").text
