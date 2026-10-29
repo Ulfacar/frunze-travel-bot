@@ -2308,6 +2308,22 @@ async def reassign(user_id: str, request: Request,
         user_id, request, manager, notice=f"Лид передан менеджеру {target}.")
 
 
+def _whatsapp_unconfigured(conv) -> bool:
+    """WhatsApp у бота диалога не настроен: Wappi молча вернёт "" и ничего не отправит.
+
+    Без этой проверки менеджер видел галочку «отправлено» у сообщения, которое никуда
+    не ушло (замер на стенде 30.10: нет токена → `Wappi send пропущен`, в чате ✓).
+    Пустой id при настроенном канале по-прежнему считается отправкой: Wappi иногда
+    принимает сообщение без id, и «не доставлено» там дало бы дубль при повторе.
+    """
+    if (getattr(conv, "channel", "") or "") != "whatsapp":
+        return False
+    from app.core.bots import registry
+    bot = registry.by_id(getattr(conv, "bot_id", "") or "") if getattr(conv, "bot_id", "") else None
+    profile = (bot.wappi_profile_id if bot and bot.wappi_profile_id else settings.wappi_profile_id)
+    return not (settings.wappi_token and profile)
+
+
 @router.post("/conversation/{user_id}/send", response_class=HTMLResponse)
 async def send_message(user_id: str, request: Request, manager: dict = Depends(require_admin),
                        text: str = Form(""), send_key: str = Form("")):
@@ -2368,6 +2384,8 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
             else:
                 provider = await outbound.send_to_client(
                     conv.channel, conv.bot_id, conv.chat_id or user_id, text)
+                if not provider and _whatsapp_unconfigured(conv):
+                    raise RuntimeError("WhatsApp-канал бота не настроен — Wappi пропустил отправку")
             mark_own(provider)
             await panel.mark_message_status(message_id=msg_id, status="sent",
                                             set_provider_msg_id=(provider or None))
@@ -2634,6 +2652,8 @@ async def resend(user_id: str, message_id: int, request: Request,
         try:
             provider = await outbound.send_to_client(
                 conv.channel, conv.bot_id, conv.chat_id or user_id, target.text)
+            if not provider and _whatsapp_unconfigured(conv):
+                raise RuntimeError("WhatsApp-канал бота не настроен — Wappi пропустил отправку")
             mark_own(provider)
             await panel.mark_message_status(message_id=message_id, status="sent",
                                             set_provider_msg_id=(provider or None))
