@@ -285,16 +285,18 @@ def test_the_slice_is_pinned_by_the_numbers(sliced):
             labels["ПРАКТИКА"] += 1
         else:
             labels["без метки"] += 1
-    assert dict(labels) == {"без метки": 616, "ПРОВЕРИТЬ": 54,
-                            "ПРАКТИКА": 34, "РЕШЕНИЕ": 22}
-    assert sum(1 for p in items if p["answerable"]) == 703
+    # 23 РЕШЕНИЕ / 615 без метки, а не 22 / 616: осиротевшая метка `**[РЕШЕНИЕ]**.` из
+    # следующего абзаца теперь помечает кусок 6.3#014 (PM-ревью 30.10.2026).
+    assert dict(labels) == {"без метки": 615, "ПРОВЕРИТЬ": 54,
+                            "ПРАКТИКА": 34, "РЕШЕНИЕ": 23}
+    assert sum(1 for p in items if p["answerable"]) == 702
     assert sum(1 for p in items if p["grants"]) == 284
     # Одобряемых заметно меньше отвечаемых: 208 кусков исключены из-за денег. Было 109,
     # пока деньги искались только рядом с валютой — независимое ревью нашло таблицы,
     # где «USD» стоит в шапке, а сумма в строке данных.
-    assert sum(1 for p in items if p["approvable"]) == 512
+    assert sum(1 for p in items if p["approvable"]) == 511
     assert sum(1 for p in items if p["has_money"]) == 208
-    assert sum(1 for p in items if p["approvable"] and not p["labels"]) == 457
+    assert sum(1 for p in items if p["approvable"] and not p["labels"]) == 456
 
 
 def test_money_is_never_approvable(sliced):

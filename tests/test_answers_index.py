@@ -66,10 +66,21 @@ def test_the_signed_overlay_is_pinned(loaded):
     assert len(overlay.by_piece) == 454
     assert overlay.corpus_hash == loaded.corpus_hash
     assert overlay.source_hash == loaded.source_hash
+    # Подписи, которые ждут снятия решением Гриши (PM-ревью 30.10.2026). Кусок 6.3#014
+    # получил метку [РЕШЕНИЕ] после починки нарезки (осиротевшая метка относится к
+    # предыдущему абзацу); подпись в файле осталась, но код её не признаёт:
+    # `approvable=False` → `approved()` = False. Снять строку из оверлея — решение
+    # владельца, см. docs/pm-review-2026-10-30/pdf.md.
+    awaiting_unsign = {"KG.KB.6.3#014"}
     for piece_id, digest in overlay.by_piece.items():
         piece = loaded._pieces.get(piece_id)          # noqa: SLF001
         assert piece is not None, f"подписан несуществующий кусок {piece_id}"
         assert digest == piece["text_sha256"], f"{piece_id}: текст правили после подписи"
+        if piece_id in awaiting_unsign:
+            assert not answers_approval.approved(
+                piece, corpus_hash=loaded.corpus_hash, source_hash=loaded.source_hash), \
+                f"{piece_id}: кусок с меткой [РЕШЕНИЕ] всё ещё произносим"
+            continue
         assert not piece["labels"], f"{piece_id}: подписан кусок с меткой ТЗ"
         assert not MONEY.search(piece["text"]), f"{piece_id}: подписан кусок с суммой"
 

@@ -122,6 +122,18 @@ def _labels_with_carry(text: str, carried: str | None) -> tuple[list[str], str |
     return found, carry
 
 
+# Абзац, который НАЧИНАЕТСЯ с метки и сразу за ней кончается предложение: `**[РЕШЕНИЕ]**.`
+# Так конверсия PDF→Markdown разрывает хвост предыдущего абзаца (живой случай — 6.3
+# «Чей e-mail указывать… из CRM» ⏎ ⏎ «**[РЕШЕНИЕ]**. Проверить…»). Такая метка
+# относится к ПРЕДЫДУЩЕМУ куску: без переноса содержательный абзац уходил в одобренные
+# как чистый, а ТЗ (с. 2) запрещает озвучивать `[РЕШЕНИЕ]` клиенту безусловно. Найдено
+# PM-ревью 30.10.2026 на `KG.KB.6.3#014`.
+#
+# «**[ПРАКТИКА]**: планировать въезд…» под это НЕ попадает: после метки идёт двоеточие и
+# своё предложение, это самостоятельное правило, а не хвост.
+_ORPHAN_LABEL = re.compile(r"^\s*(?:\*\*)?\[(ПРОВЕРИТЬ|ПРАКТИКА|РЕШЕНИЕ)[^\]]*\]"
+                           r"(?:\*\*)?\s*[.;,]")
+
 _COMMENT = re.compile(r"<!--.*?-->")
 
 
@@ -183,6 +195,15 @@ def pieces(fragment: dict[str, Any]) -> list[dict[str, Any]]:
         if not text:
             return
         own_labels, carry = _labels_with_carry(text, carry)
+        orphan = _ORPHAN_LABEL.match(text) if kind == "paragraph" else None
+        if orphan and out and out[-1]["kind"] == "paragraph":
+            previous = out[-1]
+            if orphan.group(1) not in previous["labels"]:
+                previous["labels"] = [*previous["labels"], orphan.group(1)]
+            decided = (NEVER_TO_CLIENT in previous["labels"]
+                       or NEVER_TO_CLIENT in previous["inherited_labels"])
+            previous["answerable"] = not decided
+            previous["approvable"] = not decided and not previous["has_money"]
         from app.agent.entry_guards import claimed_fields
         out.append({
             "piece_id": f"{fragment_id}#{len(out) + 1:03d}",
