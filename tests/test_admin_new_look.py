@@ -80,6 +80,7 @@ FLAGGED_PATHS = {"/admin/focus", "/admin/work", "/admin/work/list",
                  # «Новый клиент» вручную за флагом panel_manual_lead_enabled (30.10),
                  # ON/OFF и права — tests/test_admin_clients.py.
                  "/admin/clients/new",
+                 "/admin/bitrix-archive",   # флаг panel_bitrix_archive_enabled, test_admin_bitrix_archive.py
                  # Список «нет карточки в Bitrix» за флагом panel_missing_cards_enabled (21.10).
                  # Его OFF/ON, скоуп менеджера и выгрузка — tests/test_panel_missing_cards.py.
                  "/admin/no-card", "/admin/no-card.csv"}

@@ -430,6 +430,7 @@
         {% if not standalone_crm %}{{ nl('/admin/cards','cards','Карточки Bitrix') }}
         {{ nl('/admin/system','settings','Статус системы') }}{% endif %}
         {{ nl('/admin/audit','file','Аудит-лог') }}
+        {% if bitrix_archive_on|default(false) %}{{ nl('/admin/bitrix-archive','file','Архив Битрикса') }}{% endif %}
         {% endif %}
       </div>
     </details>

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Архив Битрикса — Frunze{% endblock %}
+{% block head %}
+<style>
+.ba{max-width:920px;margin:20px auto;padding:0 16px;display:grid;gap:14px}
+.ba-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg,12px);padding:16px 18px}
+.ba h1{font-size:22px;margin:0 0 6px}.ba .lead{margin:0;color:var(--muted);line-height:1.5}
+.ba form{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ba input{flex:1 1 220px;padding:12px;font:inherit;font-size:16px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px}
+.ba button{padding:12px 18px;font:inherit;font-weight:600;border:0;border-radius:8px;background:var(--accent);color:var(--on-accent,#fff);cursor:pointer}
+.ba h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 8px}
+.ba-row{padding:10px 0;border-top:1px solid var(--border)}.ba-row:first-of-type{border-top:0}
+.ba-meta{font-size:13px;color:var(--muted)}
+.ba-text{white-space:pre-wrap;word-break:break-word;margin-top:4px}
+.ba-cm{margin:6px 0 0 12px;padding-left:10px;border-left:2px solid var(--border)}
+.ba-err{color:var(--hot)}
+.ba-space{height:0}
+@media(max-width:600px){.ba-space{height:96px}}
+</style>
+{% endblock %}
+{% block content %}
+<main class="ba">
+  <section class="ba-box">
+    <h1>Архив Битрикса</h1>
+    <p class="lead">Поиск старого клиента по номеру в выгрузке Битрикса. Только просмотр: здесь ничего не меняется, в портал запрос не уходит.</p>
+    <form method="get" action="/admin/bitrix-archive">
+      <input name="phone" value="{{ phone }}" type="tel" inputmode="tel" placeholder="0555 123 456 или +7 701 …" aria-label="Телефон клиента" maxlength="40">
+      <button type="submit">Найти</button>
+    </form>
+    {% if error %}<p class="ba-err" role="alert">{{ error }}</p>{% endif %}
+  </section>
+  {% if found %}
+  {% set f = found %}
+  {% if not (f.contacts or f.leads or f.deals) %}
+  <section class="ba-box"><p class="lead">По номеру …{{ f.query_tail }} в архиве ничего нет.</p></section>
+  {% else %}
+  {% if f.truncated %}<section class="ba-box"><p class="ba-err">Совпадений много — показаны первые. Уточните номер.</p></section>{% endif %}
+  <section class="ba-box" aria-labelledby="ba-c"><h2 id="ba-c">Контакты ({{ f.contacts|length }})</h2>
+    {% for c in f.contacts %}<div class="ba-row"><b>#{{ c.ID }}</b> {{ [c.NAME, c.SECOND_NAME, c.LAST_NAME]|select|join(' ') or 'без имени' }}
+      <div class="ba-meta">создан {{ (c.DATE_CREATE or '')[:10] or '—' }} · ответственный {{ c.ASSIGNED_BY_ID or '—' }}</div></div>
+    {% else %}<p class="lead">Контактов нет.</p>{% endfor %}
+  </section>
+  <section class="ba-box" aria-labelledby="ba-l"><h2 id="ba-l">Лиды ({{ f.leads|length }})</h2>
+    {% for x in f.leads %}{% set cms = f.timeline.get('lead:' ~ x.ID) or [] %}
+    <div class="ba-row"><b>Лид #{{ x.ID }}</b> {{ x.TITLE or '' }}
+      <div class="ba-meta">статус {{ x.STATUS_ID or '—' }} · {{ (x.DATE_CREATE or '')[:10] or '—' }} · ответственный {{ x.ASSIGNED_BY_ID or '—' }} · комментариев {{ cms|length }}</div>
+      {% if x.COMMENTS %}<div class="ba-text">{{ x.COMMENTS }}</div>{% endif %}
+      {% for cm in cms %}<div class="ba-cm"><div class="ba-meta">{{ (cm.CREATED or '')[:16] }}</div><div class="ba-text">{{ cm.COMMENT }}</div></div>{% endfor %}
+    </div>
+    {% else %}<p class="lead">Лидов нет.</p>{% endfor %}
+  </section>
+  <section class="ba-box" aria-labelledby="ba-d"><h2 id="ba-d">Сделки ({{ f.deals|length }})</h2>
+    {% for d in f.deals %}{% set cms = f.timeline.get('deal:' ~ d.ID) or [] %}
+    <div class="ba-row"><b>Сделка #{{ d.ID }}</b> {{ d.TITLE or '' }}
+      <div class="ba-meta">стадия {{ d.STAGE_ID or '—' }} · сумма {{ d.OPPORTUNITY or '—' }} {{ d.CURRENCY_ID or '' }} · {{ (d.DATE_CREATE or '')[:10] or '—' }} · комментариев {{ cms|length }}</div>
+      {% for cm in cms %}<div class="ba-cm"><div class="ba-meta">{{ (cm.CREATED or '')[:16] }}</div><div class="ba-text">{{ cm.COMMENT }}</div></div>{% endfor %}
+    </div>
+    {% else %}<p class="lead">Сделок нет.</p>{% endfor %}
+  </section>
+  {% endif %}
+  {% endif %}
+</main>
+<div class="ba-space" aria-hidden="true"></div>
+{% endblock %}

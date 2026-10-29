@@ -17,67 +17,11 @@ import re
 import sys
 from pathlib import Path
 
-MIN_DIGITS = 7
-TAIL = 9
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app.integrations.crm.bitrix_archive import (  # noqa: E402
+    MIN_DIGITS, TAIL, _digits, _jsonl, _phones, phone_matches, search)
 
-
-def _digits(value) -> str:
-    return re.sub(r"\D", "", str(value or ""))
-
-
-def _phones(record: dict) -> list[str]:
-    out = []
-    for item in record.get("PHONE") or []:
-        value = item.get("VALUE") if isinstance(item, dict) else item
-        d = _digits(value)
-        if d:
-            out.append(d)
-    return out
-
-
-def phone_matches(query: str, candidate: str) -> bool:
-    if len(query) >= 11 and len(candidate) >= 11 and not (
-            query.startswith("996") or candidate.startswith("996")):
-        return query == candidate                      # иностранный номер — целиком
-    return candidate[-TAIL:] == query[-TAIL:]
-
-
-def _jsonl(path: Path):
-    if not path.exists():
-        return
-    with open(path, encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if line:
-                try:
-                    yield json.loads(line)
-                except json.JSONDecodeError:
-                    continue                            # оборванная строка при выгрузке
-
-
-def search(archive: Path, phone: str, *, with_comments: bool = False) -> dict:
-    q = _digits(phone)
-    if len(q) < MIN_DIGITS:
-        raise ValueError(f"нужно не меньше {MIN_DIGITS} цифр номера")
-    contacts = [c for c in _jsonl(archive / "contacts.jsonl")
-                if any(phone_matches(q, d) for d in _phones(c))]
-    contact_ids = {str(c.get("ID")) for c in contacts}
-    leads = [x for x in _jsonl(archive / "leads.jsonl")
-             if any(phone_matches(q, d) for d in _phones(x))
-             or str(x.get("CONTACT_ID") or "") in contact_ids]
-    lead_ids = {str(x.get("ID")) for x in leads}
-    deals = [x for x in _jsonl(archive / "deals.jsonl")
-             if str(x.get("CONTACT_ID") or "") in contact_ids
-             or str(x.get("LEAD_ID") or "") in lead_ids]
-    deal_ids = {str(x.get("ID")) for x in deals}
-    timeline: dict[str, list] = {}
-    for rec in _jsonl(archive / "timeline.jsonl"):
-        key = f"{rec.get('entity_type')}:{rec.get('entity_id')}"
-        if (rec.get("entity_type") == "lead" and str(rec.get("entity_id")) in lead_ids) or (
-                rec.get("entity_type") == "deal" and str(rec.get("entity_id")) in deal_ids):
-            timeline[key] = rec.get("comments") or []
-    return {"query_tail": q[-TAIL:], "contacts": contacts, "leads": leads, "deals": deals,
-            "timeline": timeline if with_comments else {k: len(v) for k, v in timeline.items()}}
+__all__ = ["MIN_DIGITS", "TAIL", "_digits", "_jsonl", "_phones", "phone_matches", "search"]
 
 
 def _name(r: dict) -> str:
