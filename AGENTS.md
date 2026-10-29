@@ -55,6 +55,12 @@ and must be reported; validation reports the configuration error. Mode never low
 
 Prefer a different provider when available and appropriate. Vendor diversity alone does not prove
 independence. A reviewer examines the requirement and actual change before the builder's conclusions.
+
+Record the reviewer's actual model, not the name of the agent that ran it. An agent named after a
+provider is not that provider: verify the configured model before reporting a review as
+cross-vendor, and label a same-vendor review as such. Where the profile requires a cross-vendor
+review and that provider is unreachable, run the review in a separate same-vendor context, label it
+explicitly, and keep working; an unreachable provider is a label in the report, not a blocker.
 See `ai/ROLES.md`. Delegate only when the user/host permits it and the task benefits. Do not start
 paid services, change providers, or send private repository data elsewhere solely for this protocol.
 
