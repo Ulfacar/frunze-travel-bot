@@ -267,6 +267,11 @@
     {#- Во вкладке «Деньги» своя кнопка «Внести оплату» — второй здесь не нужно (одно место). -#}
     {% if simple_on and write_on and may_pay and tab != 'money' and b is not none and b.outstanding is not none and b.outstanding > 0 %}
     <p class="cs-pay-cta"><a class="btn btn-soft" href="?tab=money#pay">Внести оплату · осталось {{ b.outstanding }} {{ b.currency or case.currency or '' }}</a></p>
+    {% if b.unconverted %}
+    {#- Ревью pdf 30.10: платёж в другой валюте без курса в «осталось» не входит — без
+        пометки менеджер попросил бы доплату, которая уже внесена. Те же данные, что у плитки. -#}
+    <p class="cs-note warn cs-pay-unconv">Есть незачтённая оплата{% for c, amount in b.unconverted|dictsort %} {{ amount }} {{ c }}{% if not loop.last %},{% endif %}{% endfor %} — нет курса, поэтому она не вошла в «осталось». Укажите курс во вкладке «Деньги».</p>
+    {% endif %}
     {% endif %}
   </div>
 
@@ -321,7 +326,7 @@
     {% endif %}
 
     {% if events %}
-    <h4>{% if simple_on %}История договора{% else %}Лента событий · основание у каждого{% endif %}</h4>
+    <h4>{% if simple_on %}История договора · время по Бишкеку{% else %}Лента событий · основание у каждого{% endif %}</h4>
     <div>
       {% for e in events %}
       {% set kind = 'warn' if e.event_type in warn_events else ('money' if e.event_type.startswith('money_') or e.event_type == 'contract_amount_corrected' else ('sys' if e.actor == 'system' else 'mgr')) %}
@@ -406,28 +411,10 @@
     {% endif %}
     {% if not simple_on %}<p class="cs-fine">Валюты не складываются без зафиксированного курса. Остаток считается только по зачтённым операциям; обязательства вернуть в него не входят.</p>{% endif %}
 
-    <h4>{% if simple_on %}Оплаты и возвраты{% else %}Операции · подтверждает сотрудник, не банк{% endif %}</h4>
-    {% if money_events %}
-    <div class="cs-ops">
-      {% for e in money_events %}
-      {% set p = e.payload or {} %}
-      <div class="cs-op" data-kind="{{ e.event_type }}">
-        <span class="t">{{ ev_titles.get(e.event_type, e.event_type) }}</span>
-        <span class="a">{% if p.get('amount') %}{{ p.get('amount') }} {{ p.get('currency') or '' }}{% else %}—{% endif %}</span>
-        <div class="m">{% if simple_on %}{% if e.occurred_at %}{{ e.occurred_at | bishkek('%d.%m %H:%M') }} · {% endif %}записал(а) <b>{{ e.actor | who }}</b>{% else %}{% if e.occurred_at %}{{ e.occurred_at.strftime('%d.%m %H:%M') }} UTC · {% endif %}записал <b>{{ e.actor }}</b>{% endif %}
-          {% if p.get('fx_rate') %} · курс {{ p.get('fx_rate') }}{% endif %}
-          {% if p.get('previous_amount') %} · было {{ p.get('previous_amount') }} {{ p.get('previous_currency') or '' }}{% endif %}
-          {% if p.get('corrects_id') %} · исправляет запись №{{ p.get('corrects_id') }}{% endif %}
-          {% if p.get('payment_id') %} · запись №{{ p.get('payment_id') }}{% endif %}
-          · <b>основание:</b> {{ e.reason or 'не указано' }}</div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    {% if simple_on %}<div class="cs-empty" style="padding-top:4px"><b>Оплат пока нет</b>Клиент написал «оплатил»? Внесите оплату здесь — только так она засчитывается.</div>
-    {% else %}<div class="cs-empty" style="padding-top:4px"><b>Операций нет</b>Сообщение клиента «оплатил» деньгами не считается: оплату подтверждает сотрудник записью с основанием.</div>{% endif %}
-    {% endif %}
-
+    {#- Формы денег собираются один раз и выводятся в одном из двух мест. Простой режим:
+        сразу под суммами — и на экране, и в разметке (WCAG 1.3.2: скринридер читает в том же
+        порядке, что видит глаз; раньше порядок менял только CSS order). Сами формы те же. -#}
+    {% set money_forms %}
     {# --- формы денег: права показываем, а не прячем --- #}
     <div class="cs-forms">
       {% if not write_on %}
@@ -548,6 +535,33 @@
       <p class="cs-note lock">Возврат, аннулирование и исправление сумм — у руководителя.</p>
       {% endif %}
     </div>
+    {% endset %}
+    {% if simple_on %}{{ money_forms }}{% endif %}
+    <h4>{% if simple_on %}Оплаты и возвраты{% else %}Операции · подтверждает сотрудник, не банк{% endif %}</h4>
+    {% if money_events %}
+    <div class="cs-ops">
+      {% for e in money_events %}
+      {% set p = e.payload or {} %}
+      <div class="cs-op" data-kind="{{ e.event_type }}">
+        {#- Простой режим: «Оплата зачтена» у платежа без курса спорила с пометкой «не зачтена».
+            Запись — факт, зачёт в остаток показывают суммы выше. -#}
+        <span class="t">{% if simple_on and e.event_type == 'money_payment' %}Оплата записана{% else %}{{ ev_titles.get(e.event_type, e.event_type) }}{% endif %}</span>
+        <span class="a">{% if p.get('amount') %}{{ p.get('amount') }} {{ p.get('currency') or '' }}{% else %}—{% endif %}</span>
+        <div class="m">{% if simple_on %}{% if e.occurred_at %}{{ e.occurred_at | bishkek('%d.%m %H:%M') }} по Бишкеку · {% endif %}записал(а) <b>{{ e.actor | who }}</b>{% else %}{% if e.occurred_at %}{{ e.occurred_at.strftime('%d.%m %H:%M') }} UTC · {% endif %}записал <b>{{ e.actor }}</b>{% endif %}
+          {% if p.get('fx_rate') %} · курс {{ p.get('fx_rate') }}{% endif %}
+          {% if p.get('previous_amount') %} · было {{ p.get('previous_amount') }} {{ p.get('previous_currency') or '' }}{% endif %}
+          {% if p.get('corrects_id') %} · исправляет запись №{{ p.get('corrects_id') }}{% endif %}
+          {% if p.get('payment_id') %} · запись №{{ p.get('payment_id') }}{% endif %}
+          · <b>основание:</b> {{ e.reason or 'не указано' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    {% if simple_on %}<div class="cs-empty" style="padding-top:4px"><b>Оплат пока нет</b>Клиент написал «оплатил»? Внесите оплату здесь — только так она засчитывается.</div>
+    {% else %}<div class="cs-empty" style="padding-top:4px"><b>Операций нет</b>Сообщение клиента «оплатил» деньгами не считается: оплату подтверждает сотрудник записью с основанием.</div>{% endif %}
+    {% endif %}
+
+    {% if not simple_on %}{{ money_forms }}{% endif %}
     {% endif %}
   </div>
 

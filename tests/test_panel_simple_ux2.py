@@ -103,3 +103,43 @@ def test_case_card_shows_bishkek_time_and_a_pay_button(monkeypatch, tmp_path):
     _simple(monkeypatch, False)
     plain = tw._login(tw.MANAGER_LOGIN).get(f"/admin/case/{case['case_id']}").text
     assert "ближайшая задача · UTC" in plain and 'href="?tab=money#pay"' not in plain
+
+
+# ---------------- ревью потока pdf 30.10, раздел 2 ----------------
+def _case_with_usd_payment(monkeypatch, tmp_path):
+    tw._clear(); tw._managers(monkeypatch); tw._on(monkeypatch)
+    sm = tw._make_domain_sm(tmp_path)
+    monkeypatch.setattr(admin_router, "_domain_sessionmaker", lambda: sm)
+    case = tw._seed_case(sm, reference="UX2-USD", amount="250.00")
+    client = tw._login(tw.MANAGER_LOGIN)
+    r = client.post(f"/admin/case/{case['case_id']}/money/payment",
+                    data={"amount": "5.00", "currency": "USD", "idempotency_key": "ux2-usd-1"})
+    assert r.headers.get("X-Action-Outcome") == "recorded"
+    return case, client
+
+
+def test_unconverted_payment_is_flagged_next_to_the_pay_button(monkeypatch, tmp_path):
+    _simple(monkeypatch)
+    case, client = _case_with_usd_payment(monkeypatch, tmp_path)
+    page = client.get(f"/admin/case/{case['case_id']}?tab=path").text
+    cta = page.index('href="?tab=money#pay"')
+    note = page.index("Есть незачтённая оплата 5.00 USD")
+    assert 0 < note - cta < 600, "пометка стоит рядом с кнопкой «Внести оплату»"
+
+
+def test_money_times_say_bishkek_and_form_comes_first_in_the_dom(monkeypatch, tmp_path):
+    _simple(monkeypatch)
+    case, client = _case_with_usd_payment(monkeypatch, tmp_path)
+    money = client.get(f"/admin/case/{case['case_id']}?tab=money").text
+    assert "по Бишкеку · записал(а)" in money
+    ops = money.split('class="cs-ops"')[1]
+    assert "Оплата записана" in ops and "Оплата зачтена" not in ops, "платёж без курса не зачтён"
+
+    path = client.get(f"/admin/case/{case['case_id']}?tab=path").text
+    assert "История договора · время по Бишкеку" in path
+    pane = money.split('id="pane-money"')[1].split('id="pane-tasks"')[0]
+    assert pane.index('id="pay-sheet"') < pane.index("Оплаты и возвраты") < pane.index('class="cs-ops"'), \
+        "простой режим: форма оплаты под суммами и в разметке, не только визуально"
+    _simple(monkeypatch, False)
+    plain = client.get(f"/admin/case/{case['case_id']}?tab=money").text.split('id="pane-money"')[1]
+    assert plain.index('class="cs-ops"') < plain.index('id="pay-sheet"'), "без простого режима — как было"
