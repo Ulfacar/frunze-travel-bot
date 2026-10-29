@@ -21,7 +21,11 @@
 {% block content %}
 <main class="cn">
   <h1>Новый клиент</h1>
+  {% if simple_on %}
+  <p class="lead">Клиент позвонил, пришёл в офис или написал в Instagram — сохраните его здесь. Когда он напишет в WhatsApp, переписка будет у вас. Бот этому клиенту не пишет.</p>
+  {% else %}
   <p class="lead">Клиент позвонил, пришёл в офис или написал не в WhatsApp. Карточка заводится на ваш WhatsApp-номер: когда клиент напишет сам, переписка будет здесь же. Бот в этот диалог не вмешивается.</p>
+  {% endif %}
   {% if existing %}
   <div class="ok" role="status">
     Этот номер уже есть{% if existing.name %} — {{ existing.name }}{% endif %}{% if existing.assigned_to %}, ведёт {{ existing.assigned_to|who }}{% endif %}.

@@ -85,6 +85,10 @@
       <summary class="chat-icon-button" title="Ещё действия" aria-label="Ещё действия">{{ chat_icon('more') }}</summary>
       <div class="chat-menu-body">
         <div class="chat-phone"><span>{{ c.phone | phone_h if simple_on else c.phone }}</span><button type="button" class="chat-chip" data-phone="{{ c.phone }}" onclick="copyChatPhone(this)">копировать</button></div>
+        {% if simple_on and client_notes %}
+        {#- Карточка клиента — одно место: здесь, под номером (в «Заметках» ссылки нет). -#}
+        <a class="chat-menu-action" href="{{ client_notes.card_url }}">Карточка клиента: все обращения и заметки</a>
+        {% endif %}
         <div class="chat-tags">
           {% if not simple_on %}<span class="tag">{{ c.channel or '—' }}</span>
           <span class="tag">{{ c.funnel or '—' }} · {{ c.stage }}</span>{% endif %}

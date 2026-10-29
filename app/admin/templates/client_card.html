@@ -24,7 +24,8 @@
 <main class="cc">
   <section class="cc-box cc-head cc-wide">
     <h1>{{ name or 'Без имени' }}</h1>
-    <div class="ph">{{ digits }}</div>
+    <div class="ph">{{ digits | phone_h if simple_on else digits }}</div>
+    {% if simple_on and convs %}<p style="margin:12px 0 0"><a class="btn btn-brand" href="{{ convs[0].open_url }}">Открыть переписку</a></p>{% endif %}
   </section>
 
   <section class="cc-box cc-wide" aria-labelledby="cc-convs">
@@ -32,14 +33,19 @@
     {% for c in convs %}
     <div class="cc-row">
       <div class="main">
-        <a href="{{ c.open_url }}">{{ c.funnel }}</a>
+        <a href="{{ c.open_url }}">{{ c.funnel }}{% if simple_on %} — открыть переписку{% endif %}</a>
         {% if c.stage %}<span class="cc-tag">{{ c.stage }}</span>{% endif %}
-        {% if c.outcome %}<span class="cc-tag">{{ c.outcome }}</span>{% endif %}
+        {% if c.outcome %}<span class="cc-tag">{% if simple_on %}{{ c.outcome | replace('✅ ', '') | replace('🏢 ', '') | replace('❌ ', '') | replace('Оплатил', 'продажа состоялась') | replace('Дошёл в офис', 'пришёл в офис') | replace('Слился', 'клиент отказался') }}{% else %}{{ c.outcome }}{% endif %}</span>{% endif %}
         {% if c.origin %}<span class="cc-tag">вручную: {{ c.origin }}</span>{% endif %}
         {% if c.archived %}<span class="cc-tag">в архиве</span>{% endif %}
         <div class="last">{% if c.last_text %}{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(c.last_sender,'') }}{% if c.last_sender %}: {% endif %}{{ c.last_text }}{% else %}Сообщений пока нет{% endif %}</div>
       </div>
+      {% if simple_on %}
+      {#- Простой режим: без служебного имени бота, «ничей» — словами. -#}
+      <div class="cc-meta">{{ 'ведёт ' ~ (c.assigned_to|who) if c.assigned_to else 'ни за кем не закреплён' }}{% if c.intercepted %} · бот молчит{% else %} · отвечает бот{% endif %}{% if c.last_message_at %} · последнее сообщение {{ c.last_message_at|bishkek('%d.%m.%Y %H:%M') }}{% endif %}</div>
+      {% else %}
       <div class="cc-meta">{{ 'ведёт ' ~ (c.assigned_to|who) if c.assigned_to else 'ничей' }}{% if c.intercepted %} · бот молчит{% endif %}{% if c.last_message_at %} · {{ c.last_message_at|bishkek('%d.%m.%Y') }}{% endif %} · {{ c.bot_id }}</div>
+      {% endif %}
     </div>
     {% endfor %}
   </section>
@@ -49,7 +55,7 @@
     {% if notes_error %}<p class="cc-empty" role="alert">{{ notes_error }}</p>{% endif %}
     {% for n in notes %}
     <div class="cc-note"><div class="cc-meta">{{ n.author|who }}{% if n.created_at %} · {{ n.created_at|bishkek }}{% endif %}</div>{{ n.text }}</div>
-    {% else %}<p class="cc-empty">Заметок нет. Добавить — в переписке, блок «Заметки».</p>{% endfor %}
+    {% else %}<p class="cc-empty">Заметок нет. Добавить — в переписке, блок «{% if simple_on %}Заметки для коллег{% else %}Заметки{% endif %}».</p>{% endfor %}
   </section>
 
   <section class="cc-box" aria-labelledby="cc-tasks">
@@ -65,15 +71,24 @@
     {% for a in domain.assignments %}
     <div class="cc-row"><div class="main">{{ a.manager|who }} · {{ a.direction }}{% if a.active %} <span class="cc-tag">сейчас</span>{% endif %}</div>
       <div class="cc-meta">{% if a.from %}с {{ a.from|bishkek('%d.%m.%Y') }}{% endif %}{% if a.to %} по {{ a.to|bishkek('%d.%m.%Y') }}{% endif %}{% if a.by and a.by != a.manager %} · назначил(а) {{ a.by|who }}{% endif %}</div></div>
-    {% else %}<p class="cc-empty">Закреплений в учёте нет — смотрите «Ведёт» у обращения.</p>{% endfor %}
+    {% else %}<p class="cc-empty">{% if simple_on %}Ни за кем не закреплён.{% else %}Закреплений в учёте нет — смотрите «Ведёт» у обращения.{% endif %}</p>{% endfor %}
   </section>
 
   <section class="cc-box" aria-labelledby="cc-cases">
+    {% if simple_on %}
+    {#- Простой режим: в меню этот раздел — «Договоры»; служебный код этапа не показываем. -#}
+    <h2 id="cc-cases">Договоры ({{ domain.cases|length }})</h2>
+    {% for k in domain.cases %}
+    <div class="cc-row"><div class="main"><a href="/admin/case/{{ k.id }}">Договор №{{ k.id }} — открыть</a>{% if k.signed %} <span class="cc-tag">подписан</span>{% endif %}</div>
+      <div class="cc-meta">ведёт {{ k.owner | who }}{% if k.amount is not none %} · {{ k.amount }} {{ k.currency }}{% endif %}</div></div>
+    {% else %}<p class="cc-empty">Договоров пока нет.</p>{% endfor %}
+    {% else %}
     <h2 id="cc-cases">Услуги ({{ domain.cases|length }})</h2>
     {% for k in domain.cases %}
     <div class="cc-row"><div class="main"><a href="/admin/case/{{ k.id }}">Услуга №{{ k.id }}</a> <span class="cc-tag">{{ k.stage }}</span>{% if k.signed %}<span class="cc-tag">договор подписан</span>{% endif %}</div>
       <div class="cc-meta">{{ k.owner }}{% if k.amount is not none %} · {{ k.amount }} {{ k.currency }}{% endif %}</div></div>
     {% else %}<p class="cc-empty">Услуг не заведено.</p>{% endfor %}
+    {% endif %}
   </section>
 
   <section class="cc-box cc-wide" aria-labelledby="cc-hist">

@@ -474,6 +474,10 @@
 {% endif %}
 {% if new_look %}
 <style>
+  /* «Новый клиент» в шапке «Диалогов» (простой режим): заметная, но не главная кнопка. */
+  @media (max-width: 760px) { .topbar > .new-client { order: 1; } }
+  .topbar > .new-client { display:inline-flex; align-items:center; gap:6px; color:var(--accent);
+    border:1px solid var(--accent); font-weight:600; text-decoration:none; white-space:nowrap; }
   /* Список входящих читают весь день: имя, сообщение, затем служебные отметки. */
   /* Тёмная тема (только новый вид): --hot на выделенной карточке давал 4.04:1 (замер 30.10). */
   html[data-theme="dark"] .badge.wait-hot { color: #FFB4AD; }
@@ -527,6 +531,7 @@
     /* Общая навигация и инструменты диалогов — две предсказуемые строки. */
     .topbar::after { content: ""; flex-basis: 100%; order: 1; }
     .topbar > .tabs { order: 2; flex: 1; margin-left: 0; }
+  .topbar > .new-client { order: 2; }
     .topbar > .search { order: 2; }
     .topbar > .search input { width: 300px; }
     #chat { top: 132px; max-height: calc(100dvh - 148px); }
@@ -573,6 +578,10 @@
       {% endfor %}
       {% endif %}
     </nav>
+{% if simple_on and manual_lead_on|default(false) %}
+{#- Простой режим: «Новый клиент» — здесь, рядом со списком клиентов (одно место). -#}
+<a class="tab new-client" href="/admin/clients/new">{% if new_look %}{{ ic.icon("plus", 16) }} {% endif %}Новый клиент</a>
+{% endif %}
 <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
       <input type="search" name="q" placeholder="Поиск по имени или номеру…" autocomplete="off"

@@ -25,9 +25,9 @@
 <main class="contract-wrap">
   {% if simple_on %}<a href="/admin?open={{ c.user_id | urlencode }}">← К переписке с клиентом</a>{% else %}<a href="/admin/work">← Рабочий день</a>{% endif %}
   <h1>Договор подписан</h1>
-  <p>Клиент: <strong>{{ c.qualification.get('name') or 'Имя не указано' }}</strong> · {{ c.phone or c.user_id }}</p>
-  {% if owner %}<p>Услугу ведёт <strong>{{ owner }}</strong>.</p>{% endif %}
-  <p class="muted">Зафиксируйте уже подписанный договор. После сохранения откроется карточка услуги с её этапами и задачами.</p>
+  <p>Клиент: <strong>{{ c.qualification.get('name') or 'Имя не указано' }}</strong> · {{ (c.phone | phone_h) if simple_on and c.phone else (c.phone or c.user_id) }}</p>
+  {% if owner %}<p>{% if simple_on %}Договор ведёт <strong>{{ owner | who }}</strong>.{% else %}Услугу ведёт <strong>{{ owner }}</strong>.{% endif %}</p>{% endif %}
+  <p class="muted">{% if simple_on %}Заполните, когда клиент уже подписал договор. После сохранения откроется карточка договора — там вносятся оплаты.{% else %}Зафиксируйте уже подписанный договор. После сохранения откроется карточка услуги с её этапами и задачами.{% endif %}</p>
   {% if error %}<p class="contract-notice contract-error" role="alert">{{ error | replace('действие «Перехватить»', 'кнопку «Взять себе»') if simple_on else error }}</p>{% endif %}
   {% if simple_on and not owner %}
   {#- Простой режим: договор оформляет тот, за кем закреплён клиент. Кнопка здесь же —
@@ -49,7 +49,7 @@
   {% if not write_on %}<p class="contract-notice" role="status">Запись услуг выключена. Договор пока нельзя сохранить.</p>{% endif %}
   {#- Простой режим: «нет продуктов» показываем и рядом с другой ошибкой — иначе менеджер
       берёт клиента себе и упирается во второе препятствие, о котором не знал. -#}
-  {% if not products and (not error or simple_on) %}<p class="contract-notice" role="status">Нет доступных продуктов с опубликованным процессом. Обратитесь к администратору.</p>{% endif %}
+  {% if not products and (not error or simple_on) %}<p class="contract-notice" role="status">{% if simple_on %}Для вашего направления договор в CRM пока не оформить: администратор ещё не настроил список продуктов. Сообщите руководителю.{% else %}Нет доступных продуктов с опубликованным процессом. Обратитесь к администратору.{% endif %}</p>{% endif %}
   <form class="contract-form" action="{{ form_url }}" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="idempotency_key" value="{{ values.idempotency_key }}">
@@ -61,29 +61,29 @@
           {% for product in products %}<option value="{{ product.id }}" {% if values.product_id == product.id|string %}selected{% endif %}>{{ product.name }}</option>{% endfor %}
         </select>
       </label>
-      <label class="contract-field" for="contract-reference">Номер или идентификатор договора
+      <label class="contract-field" for="contract-reference">{% if simple_on %}Номер договора{% else %}Номер или идентификатор договора{% endif %}
         <input id="contract-reference" name="reference" maxlength="128" value="{{ values.reference }}" required autocomplete="off">
       </label>
-      <label class="contract-field" for="contract-signed">Дата и время подписания · Бишкек (UTC+6)
+      <label class="contract-field" for="contract-signed">{% if simple_on %}Когда подписан (время Бишкека){% else %}Дата и время подписания · Бишкек (UTC+6){% endif %}
         <input id="contract-signed" name="signed_at" type="datetime-local" value="{{ values.signed_at }}" required>
       </label>
       <div class="contract-money">
-        <label class="contract-field" for="contract-amount">Согласованная сумма
+        <label class="contract-field" for="contract-amount">{% if simple_on %}Сумма по договору{% else %}Согласованная сумма{% endif %}
           <input id="contract-amount" name="amount" inputmode="decimal" type="number" min="0.01" step="0.01" max="999999999999.99" value="{{ values.amount }}" aria-describedby="amount-help">
         </label>
         <label class="contract-field" for="contract-currency">Валюта
           <input id="contract-currency" name="currency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="KGS, USD…" value="{{ values.currency }}">
         </label>
       </div>
-      <p id="amount-help" class="muted">Введите сумму из договора и валюту. Если сумма ещё уточняется, оставьте её пустой и укажите причину ниже. Оплаты вносятся отдельно в карточке услуги.</p>
-      <label class="contract-field" for="contract-reason">Почему сумма уточняется
+      <p id="amount-help" class="muted">{% if simple_on %}Сумма и валюта — как в договоре (KGS, USD…). Суммы ещё нет — оставьте пустой и напишите ниже почему. Оплаты вносятся потом, в карточке договора.{% else %}Введите сумму из договора и валюту. Если сумма ещё уточняется, оставьте её пустой и укажите причину ниже. Оплаты вносятся отдельно в карточке услуги.{% endif %}</p>
+      <label class="contract-field" for="contract-reason">{% if simple_on %}Если суммы ещё нет — почему{% else %}Почему сумма уточняется{% endif %}
         <textarea id="contract-reason" name="amount_unknown_reason" maxlength="255" rows="2">{{ values.amount_unknown_reason }}</textarea>
       </label>
       <label class="contract-confirm" for="contract-confirmed">
         <input id="contract-confirmed" type="checkbox" name="confirmed" value="yes" required {% if values.confirmed == 'yes' %}checked{% endif %}>
         <span>Подтверждаю, что клиент подписал договор и введённые данные ему соответствуют.</span>
       </label>
-      <button class="btn btn-brand" type="submit">Зафиксировать договор и открыть услугу</button>
+      <button class="btn btn-brand" type="submit">{% if simple_on %}Сохранить договор{% else %}Зафиксировать договор и открыть услугу{% endif %}</button>
     </fieldset>
   </form>
 </main>

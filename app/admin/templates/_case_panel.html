@@ -66,8 +66,13 @@
       <div class="cs-id">
         <h1 class="cs-title">{{ d.title }}</h1>
         {% if kg_entry_on %}<a href="/admin/case/{{ case.id }}/kg-entry">Анкета въезда в Кыргызстан</a>{% endif %}
+        {% if simple_on %}
+        {#- Простой режим: без служебного кода продукта, имя вместо логина, «договор» вместо «услуги». -#}
+        <div class="cs-sub">{{ dir_label }} · ведёт <b>{{ d.owner_login | who }}</b> · договор <span class="ref">№{{ d.case_id }}</span>
+        {% else %}
         <div class="cs-sub">{{ dir_label }}{% if d.product_code %} · <span class="ref">{{ d.product_code }}</span>{% endif %}
           · ведёт <b>{{ d.owner_login }}</b> · услуга <span class="ref">№{{ d.case_id }}</span>
+        {% endif %}
           {# номер договора уже в d.title — второй раз не повторяем #}
           {% if not case.signed_at %} · <b>договор не зафиксирован</b>{% endif %}</div>
       </div>
@@ -89,8 +94,13 @@
       <div class="cs-fact{% if d.due_at %} due{% endif %}">
         <div class="k">Срок</div>
         {% if d.due_at %}
+        {% if simple_on %}
+        <div class="v">{{ d.due_at | bishkek('%d.%m %H:%M') }}</div>
+        <div class="s">ближайшее дело · время Бишкека</div>
+        {% else %}
         <div class="v">{{ d.due_at.strftime('%d.%m %H:%M') }}</div>
         <div class="s">ближайшая задача · UTC</div>
+        {% endif %}
         {% else %}
         <div class="v none">не задан</div>
         <div class="s">активных задач со сроком нет</div>
@@ -109,7 +119,7 @@
       <button type="button" class="cs-chip" data-reason="{{ top.code }}" data-goto-tab="{{ top.anchor }}"
               title="Показать вкладку-основание">{{ top.label }}</button>
       {% if top.detail %}<span class="detail">{{ top.detail }}</span>{% endif %}
-      {% if top.why %}<div class="rule"><b>правило:</b> {{ top.why }}</div>{% endif %}
+      {% if top.why and not simple_on %}<div class="rule"><b>правило:</b> {{ top.why }}</div>{% endif %}
       {% if n_more > 0 %}
       <details class="cs-more">
         <summary>ещё {{ n_more }} {% if n_more % 10 == 1 and n_more % 100 != 11 %}причина{% elif n_more % 10 in [2, 3, 4] and n_more % 100 not in [12, 13, 14] %}причины{% else %}причин{% endif %}</summary>
@@ -131,7 +141,7 @@
        Развёрнутый список на 360 px уводил главную кнопку за первый экран. #}
     {% if d.checks %}
     <details class="cs-ready">
-      <summary class="cs-ready-h">готово <b>{{ d.ready_done }} из {{ d.ready_total }}</b>{% if unknown_checks %} · не проверено {{ unknown_checks }}{% endif %}{% if d.ready_total - d.ready_done - unknown_checks > 0 %} · нет {{ d.ready_total - d.ready_done - unknown_checks }}{% endif %}</summary>
+      <summary class="cs-ready-h">{% if simple_on %}Для этого этапа готово{% else %}готово{% endif %} <b>{{ d.ready_done }} из {{ d.ready_total }}</b>{% if unknown_checks %} · не проверено {{ unknown_checks }}{% endif %}{% if d.ready_total - d.ready_done - unknown_checks > 0 %} · нет {{ d.ready_total - d.ready_done - unknown_checks }}{% endif %}</summary>
       <ul class="cs-checks">
         {% for c in d.checks %}
         <li class="cs-check" data-state="{{ c.state }}">
@@ -193,7 +203,7 @@
     {% elif ns.kind == 'advance' and ns.requires %}
     {# Обязательные факты перехода — в details, не в JS-модалке: фокус и Esc умеет сам браузер. #}
     <details class="cs-sheet"{% if errors.message %} open{% endif %}>
-      <summary class="btn btn-brand">{{ ns.label }}…</summary>
+      <summary class="btn btn-brand">{% if simple_on %}Дальше: {{ ns.label }}…{% else %}{{ ns.label }}…{% endif %}</summary>
       <form method="post" action="{{ post }}/advance"
             hx-post="{{ post }}/advance" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
         <p class="cs-hint">Переход {{ stage_no }} → «{{ ns.label }}». Сервер проверит права и обязательные факты; запишет автора, время и основание.</p>
@@ -216,7 +226,7 @@
       <input type="hidden" name="to_stage" value="{{ ns.to_stage }}">
       <input type="hidden" name="expected_revision" value="{{ rev }}">
       <input type="hidden" name="tab" value="{{ tab }}">
-      <button class="btn btn-brand" type="submit">{{ ns.label }}</button>
+      <button class="btn btn-brand" type="submit">{% if simple_on %}Дальше: {{ ns.label }}{% else %}{{ ns.label }}{% endif %}</button>
     </form>
 
     {% elif ns.kind == 'choice' %}
@@ -246,7 +256,16 @@
     {% endif %}
 
     {% if ns and ns.blocked_by and write_on %}
+    {% if simple_on %}
+    <p class="cs-note warn">{{ ns.blocked_by }}. Это подсказка, а не запрет: если для этапа чего-то не хватает, система скажет при переходе.</p>
+    {% else %}
     <p class="cs-note warn">{{ ns.blocked_by }} — пояснение, не запрет: допустимость перехода решает сервер по обязательным фактам этапа.</p>
+    {% endif %}
+    {% endif %}
+    {#- Простой режим: «Внести оплату» — рядом с главным действием, а не только во вкладке
+        «Деньги». Ссылка открывает ту же форму (тот же POST), JS раскрывает её по #pay. -#}
+    {% if simple_on and write_on and may_pay and b is not none and b.outstanding is not none and b.outstanding > 0 %}
+    <p class="cs-pay-cta"><a class="btn btn-soft" href="?tab=money#pay">Внести оплату · осталось {{ b.outstanding }} {{ b.currency or case.currency or '' }}</a></p>
     {% endif %}
   </div>
 
@@ -301,16 +320,17 @@
     {% endif %}
 
     {% if events %}
-    <h4>Лента событий · основание у каждого</h4>
+    <h4>{% if simple_on %}История договора{% else %}Лента событий · основание у каждого{% endif %}</h4>
     <div>
       {% for e in events %}
       {% set kind = 'warn' if e.event_type in warn_events else ('money' if e.event_type.startswith('money_') or e.event_type == 'contract_amount_corrected' else ('sys' if e.actor == 'system' else 'mgr')) %}
       {% set p = e.payload or {} %}
       <div class="cs-ev" data-kind="{{ kind }}">
-        <div class="tm">{% if e.occurred_at %}<b>{{ e.occurred_at.strftime('%d.%m') }}</b>{{ e.occurred_at.strftime('%H:%M') }}{% endif %}</div>
+        {#- Простой режим: время по Бишкеку (раньше — UTC без подписи, на 6 часов раньше). -#}
+        <div class="tm">{% if e.occurred_at %}{% if simple_on %}<b>{{ e.occurred_at | bishkek('%d.%m') }}</b>{{ e.occurred_at | bishkek('%H:%M') }}{% else %}<b>{{ e.occurred_at.strftime('%d.%m') }}</b>{{ e.occurred_at.strftime('%H:%M') }}{% endif %}{% endif %}</div>
         <span class="dot" aria-hidden="true"></span>
         <div class="bd">
-          <div class="au"><b>{{ e.actor }}</b></div>
+          <div class="au"><b>{{ e.actor | who if simple_on else e.actor }}</b></div>
           <div class="ti">{{ ev_titles.get(e.event_type, e.event_type) }}{% if e.from_stage and e.to_stage and e.from_stage != e.to_stage %} · {{ e.from_stage }} → {{ e.to_stage }}{% endif %}</div>
           {% set bits = [] %}
           {% if p.get('amount') %}{% set _ = bits.append(p.get('amount') ~ ' ' ~ (p.get('currency') or '')) %}{% endif %}
@@ -320,7 +340,8 @@
           {% if p.get('fx_rate') %}{% set _ = bits.append('курс ' ~ p.get('fx_rate')) %}{% endif %}
           {% if p.get('from') and p.get('to') %}{% set _ = bits.append(p.get('from') ~ ' → ' ~ p.get('to')) %}{% endif %}
           {% if bits %}<div class="ds cs-ref">{{ bits|join(' · ') }}</div>{% endif %}
-          <div class="bs"><b>основание:</b> {% if e.reason %}{{ e.reason }}{% else %}<span>не указано</span>{% endif %}</div>
+          {% if simple_on %}{% if e.reason %}<div class="bs"><b>основание:</b> {{ e.reason }}</div>{% endif %}
+          {% else %}<div class="bs"><b>основание:</b> {% if e.reason %}{{ e.reason }}{% else %}<span>не указано</span>{% endif %}</div>{% endif %}
         </div>
       </div>
       {% endfor %}
@@ -332,7 +353,7 @@
   </div>
 
   {# ---------- Деньги ---------- #}
-  <div role="tabpanel" id="pane-money" aria-labelledby="tab-money" data-tab="money" class="cs-pane"{% if tab != 'money' %} hidden{% endif %}>
+  <div role="tabpanel" id="pane-money" aria-labelledby="tab-money" data-tab="money" class="cs-pane{% if simple_on %} is-simple{% endif %}"{% if tab != 'money' %} hidden{% endif %}>
     {% if b is none %}
     <div class="cs-money">
       <div class="cs-mt unk"><div class="k">Сумма договора</div><div class="v">не установлена</div><div class="s">договор не зафиксирован</div></div>
@@ -350,7 +371,7 @@
       <div class="cs-mt"><div class="k">Сумма договора</div><div class="v">{{ b.agreed }}<small>{{ cur }}</small></div></div>
       {% endif %}
       {% if b.paid == 0 %}
-      <div class="cs-mt unk"><div class="k">Внесено</div><div class="v">оплат нет</div><div class="s">не «0»: зачтённых операций не было</div></div>
+      <div class="cs-mt unk"><div class="k">Внесено</div><div class="v">оплат нет</div>{% if not simple_on %}<div class="s">не «0»: зачтённых операций не было</div>{% endif %}</div>
       {% else %}
       <div class="cs-mt"><div class="k">Внесено</div><div class="v">{{ b.paid }}<small>{{ cur }}</small></div><div class="s">зачтено в валюте договора</div></div>
       {% endif %}
@@ -382,9 +403,9 @@
       {% if b.broken_entries %}<li><span>{{ b.broken_entries|length }} записей журнала не удалось истолковать (id {{ b.broken_entries|join(', ') }})</span></li>{% endif %}
     </ul>
     {% endif %}
-    <p class="cs-fine">Валюты не складываются без зафиксированного курса. Остаток считается только по зачтённым операциям; обязательства вернуть в него не входят.</p>
+    {% if not simple_on %}<p class="cs-fine">Валюты не складываются без зафиксированного курса. Остаток считается только по зачтённым операциям; обязательства вернуть в него не входят.</p>{% endif %}
 
-    <h4>Операции · подтверждает сотрудник, не банк</h4>
+    <h4>{% if simple_on %}Оплаты и возвраты{% else %}Операции · подтверждает сотрудник, не банк{% endif %}</h4>
     {% if money_events %}
     <div class="cs-ops">
       {% for e in money_events %}
@@ -392,7 +413,7 @@
       <div class="cs-op" data-kind="{{ e.event_type }}">
         <span class="t">{{ ev_titles.get(e.event_type, e.event_type) }}</span>
         <span class="a">{% if p.get('amount') %}{{ p.get('amount') }} {{ p.get('currency') or '' }}{% else %}—{% endif %}</span>
-        <div class="m">{% if e.occurred_at %}{{ e.occurred_at.strftime('%d.%m %H:%M') }} UTC · {% endif %}записал <b>{{ e.actor }}</b>
+        <div class="m">{% if simple_on %}{% if e.occurred_at %}{{ e.occurred_at | bishkek('%d.%m %H:%M') }} · {% endif %}записал(а) <b>{{ e.actor | who }}</b>{% else %}{% if e.occurred_at %}{{ e.occurred_at.strftime('%d.%m %H:%M') }} UTC · {% endif %}записал <b>{{ e.actor }}</b>{% endif %}
           {% if p.get('fx_rate') %} · курс {{ p.get('fx_rate') }}{% endif %}
           {% if p.get('previous_amount') %} · было {{ p.get('previous_amount') }} {{ p.get('previous_currency') or '' }}{% endif %}
           {% if p.get('corrects_id') %} · исправляет запись №{{ p.get('corrects_id') }}{% endif %}
@@ -402,7 +423,8 @@
       {% endfor %}
     </div>
     {% else %}
-    <div class="cs-empty" style="padding-top:4px"><b>Операций нет</b>Сообщение клиента «оплатил» деньгами не считается: оплату подтверждает сотрудник записью с основанием.</div>
+    {% if simple_on %}<div class="cs-empty" style="padding-top:4px"><b>Оплат пока нет</b>Клиент написал «оплатил»? Внесите оплату здесь — только так она засчитывается.</div>
+    {% else %}<div class="cs-empty" style="padding-top:4px"><b>Операций нет</b>Сообщение клиента «оплатил» деньгами не считается: оплату подтверждает сотрудник записью с основанием.</div>{% endif %}
     {% endif %}
 
     {# --- формы денег: права показываем, а не прячем --- #}
@@ -411,11 +433,11 @@
       <button class="btn btn-soft" type="button" disabled>Добавить оплату…</button>
       <p class="cs-note lock">Запись в реестр услуг выключена</p>
       {% elif may_pay %}
-      <details class="cs-sheet"{% if errors.message %} open{% endif %}>
-        <summary class="btn btn-brand">Добавить оплату…</summary>
+      <details class="cs-sheet" id="pay-sheet"{% if errors.message %} open{% endif %}>
+        <summary class="btn btn-brand">{% if simple_on %}Внести оплату{% else %}Добавить оплату…{% endif %}</summary>
         <form method="post" action="{{ post }}/money/payment"
               hx-post="{{ post }}/money/payment" hx-target="#case-panel" hx-swap="outerHTML" hx-indicator="#case-panel">
-          <p class="cs-hint">Отдельная запись журнала. Валюта не договора — укажите курс, иначе платёж повиснет незачтённым.</p>
+          <p class="cs-hint">{% if simple_on %}Каждая оплата — отдельной записью. Платят в другой валюте — укажите курс, иначе оплата не засчитается.{% else %}Отдельная запись журнала. Валюта не договора — укажите курс, иначе платёж повиснет незачтённым.{% endif %}</p>
           {# Ключ идемпотентности рендерит сервер и ОБЯЗАН повторить тот же после ошибки: иначе повтор создаст вторую оплату. #}
           <input type="hidden" name="idempotency_key" value="{{ idem_key }}">
           <input type="hidden" name="expected_revision" value="{{ rev }}">
@@ -427,7 +449,7 @@
           </div>
           <label class="cs-fld" for="pay-fx"><span>Курс к валюте договора (если валюта другая)</span><input id="pay-fx" name="fx_rate" inputmode="decimal"
                  value="{{ echo.fx_rate or '' }}" placeholder="например 0.0115"></label>
-          <label class="cs-fld" for="pay-reason"><span>Основание</span><input id="pay-reason" name="reason" value="{{ echo.reason or '' }}"
+          <label class="cs-fld" for="pay-reason"><span>{% if simple_on %}Чем подтверждается (чек, выписка, ордер){% else %}Основание{% endif %}</span><input id="pay-reason" name="reason" value="{{ echo.reason or '' }}"
                  placeholder="приходный ордер, выписка, чек…"></label>
           {% if errors.message %}
           <p class="cs-err" role="alert">Не сохранилось: {{ errors.message }}.
@@ -537,7 +559,7 @@
         {% if t.done %}<span class="cs-pill good">выполнена</span>{% elif t.cancelled %}<span class="cs-pill none">отменена</span>{% elif t.overdue %}<span class="cs-pill bad">просрочена</span>{% elif t.status == 'rescheduled' %}<span class="cs-pill info">перенесена</span>{% endif %}</div>
       <div class="m">
         <span class="due{% if t.active and t.overdue %} over{% endif %}">{{ t.date_label }}{% if t.has_time %} {{ t.time }}{% endif %}</span>
-        <span>ведёт <b>{{ t.manager_id }}</b></span>
+        <span>ведёт <b>{{ t.manager_id | who if simple_on else t.manager_id }}</b></span>
         {% if t.name %}<span>{{ t.name }}</span>{% elif t.phone_display %}<span class="cs-ref">{{ t.phone_display }}</span>{% endif %}
       </div>
       <div class="why"><b>почему создано:</b> {{ task_why.get(t.kind) or t.context or 'первым шагом процесса при договоре или вручную менеджером' }}</div>
