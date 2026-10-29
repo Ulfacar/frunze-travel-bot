@@ -7,6 +7,7 @@ from sqlalchemy import select
 from app.domain import entry_applications as transactions
 from app.domain.entry_calculations import _bundle
 from app.domain.entry_storage import EntryStorageConflict, EntryStorageInvalid, _authorize, _hash, _id, _key, _plain
+from app.domain.knowledge_import import _authorize_admin
 from app.domain.models import KnowledgeDecision, KnowledgeImport, KnowledgePublicationEvent, KnowledgeSet, KnowledgeVersion, _now
 from app.knowledge.review import canonical
 
@@ -97,7 +98,7 @@ def _view(row):
 
 
 async def record_knowledge_decision(engine, *, actor, version_id, unit_id: str, expected_revision, request_key, decision):
-    _authorize(actor);_id(version_id);_unit_id(unit_id);_key(request_key)
+    _authorize_admin(actor);_id(version_id);_unit_id(unit_id);_key(request_key)
     if type(expected_revision) is not int or not 0<=expected_revision<MAX_REVISIONS:
         raise EntryStorageInvalid('invalid_knowledge_decision_revision')
     # Validate shape before I/O; time validity follows the original-receipt lookup.
@@ -133,7 +134,7 @@ async def record_knowledge_decision(engine, *, actor, version_id, unit_id: str, 
 
 
 async def read_knowledge_decisions(engine, *, actor, version_id, unit_id: str, revision=None):
-    _authorize(actor);_id(version_id);_unit_id(unit_id)
+    _authorize_admin(actor);_id(version_id);_unit_id(unit_id)
     if revision is not None and (type(revision) is not int or not 1<=revision<=MAX_REVISIONS):
         raise EntryStorageInvalid('invalid_knowledge_decision_revision')
     async def read(session):
@@ -148,7 +149,7 @@ async def read_knowledge_decisions(engine, *, actor, version_id, unit_id: str, r
 
 
 async def review_catalog(engine, *, actor, version_id=None, page=1, query=''):
-    _authorize(actor)
+    _authorize_admin(actor)
     if version_id is not None:_id(version_id)
     if type(page) is not int or not 1<=page<=250 or not isinstance(query,str) or len(query)>80 or any(ord(c)<32 for c in query):
         raise EntryStorageInvalid('invalid_knowledge_catalog_query')

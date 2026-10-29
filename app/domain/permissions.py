@@ -30,6 +30,12 @@ class Actor:
     is_full_admin: bool = False
     # Directions (teams) this manager may act in, e.g. frozenset({"visa"}).
     allowed_directions: frozenset[str] = field(default_factory=frozenset)
+    # Оператор въездной CRM по PDF (визовый менеджер при включённом
+    # `kg_entry_manager_access_enabled`). Даёт право РАБОТАТЬ по делу (анкеты, заявки,
+    # документы, сроки), но не администрировать знания: публикация, решения по
+    # единицам, импорт — только `is_full_admin`. Выставляется ТОЛЬКО шлюзом
+    # `app/admin/kg_entry._gate`, никогда из cookie напрямую.
+    kg_entry_operator: bool = False
 
 
 def _has_direction_access(actor: Actor, requested_direction: str | None) -> bool:

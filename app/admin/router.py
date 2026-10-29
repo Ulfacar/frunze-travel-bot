@@ -1111,6 +1111,18 @@ FEATURE_FLAGS = {
         "default": lambda: settings.kg_entry_outbound_isolation_enabled,
         "note": lambda: "PM-ревью 30.10: воспроизведено прямым вызовом, на живой модели не мерили",
     },
+    "kg_entry_manager_access_enabled": {
+        "title": "Въездная CRM по PDF доступна визовым менеджерам",
+        "desc": ("Экраны «въезд в Кыргызстан» (анкета, заявки, документы, сроки, "
+                 "статусы) открываются менеджерам визового направления по их услугам, "
+                 "а не только полному администратору. Туровые менеджеры, чужие услуги "
+                 "и прямые ссылки закрыты на сервере. Публикация знаний, решения по "
+                 "единицам базы и импорт остаются за администратором."),
+        "default": lambda: settings.kg_entry_manager_access_enabled,
+        "note": lambda: ("работает только при ADMIN_KG_ENTRY_ENABLED=true; "
+                         "действия по политикам (интервью, уведомления, расчёты) "
+                         "требуют оператора в политике"),
+    },
     "panel_missing_cards_enabled": {
         "title": "Список «нет карточки в Bitrix»",
         "desc": ("Клиенты, которые писали нам, но карточка в портале по ним так и не "
@@ -2008,6 +2020,12 @@ async def stats(request: Request, manager: dict = Depends(require_admin)):
     })
 
 
+async def _kg_entry_chat_link(conv, manager) -> str | None:
+    """Ссылка на въездное дело из чата (флаг `kg_entry_manager_access_enabled`)."""
+    from app.admin.kg_entry import chat_case_link
+    return await chat_case_link(conv, manager)
+
+
 async def _render_conversation(user_id: str, request: Request, manager: dict, *,
                                notice: str = ""):
     panel = get_conversation_store()
@@ -2041,6 +2059,7 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
         "reassign_targets": reassign_targets,
         "outcomes": OUTCOMES,
         "quick_replies": quick_replies_for(conv.funnel),
+        "kg_entry_case_url": await _kg_entry_chat_link(conv, manager),
         "funnel_label": FUNNEL_LABELS.get(conv.funnel or "", conv.funnel or "—"),
         # Неизвестный этап лучше не показывать вовсе, чем показывать сырой
         # английский ключ: «silent» в шапке менеджеру ничего не говорит.

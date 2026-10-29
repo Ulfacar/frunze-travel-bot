@@ -111,8 +111,8 @@ async def _render(request,manager,actor,case,applicant_id,*,revision=None,item=0
 @ar.router.get('/case/{case_id}/kg-entry/applicants/{applicant_id}/history',response_class=HTMLResponse)
 async def history_form(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),
     revision:int|None=Query(None,ge=1,le=service.MAX_REVISIONS),item:int=Query(0,ge=0,le=1000),
-    page:int=Query(1,ge=1,le=40),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager)
+    page:int=Query(1,ge=1,le=40),manager=Depends(entry.require_kg_entry_access)):
+    actor=await entry._gate(request,manager)
     pairs=list(request.query_params.multi_items())
     if len({k for k,v in pairs})!=len(pairs) or any(k not in ('revision','item','page') for k,v in pairs):raise HTTPException(422,headers=HEADERS)
     try:case=await entry._case(case_id,actor)
@@ -123,8 +123,8 @@ async def history_form(request:Request,case_id:int=Path(ge=1,le=2147483647),appl
 
 
 @ar.router.post('/case/{case_id}/kg-entry/applicants/{applicant_id}/history',response_class=HTMLResponse)
-async def history_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager,write=True)
+async def history_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),manager=Depends(entry.require_kg_entry_access)):
+    actor=await entry._gate(request,manager,write=True)
     values=await _form(request,actor,case_id,applicant_id)
     try:case=await entry._case(case_id,actor)
     except PermissionDenied:raise HTTPException(403,headers=HEADERS) from None

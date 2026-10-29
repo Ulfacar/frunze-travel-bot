@@ -93,8 +93,8 @@ async def _render(request,manager,actor,case,application_id,*,item_id='',values=
 
 @ar.router.get('/case/{case_id}/kg-entry/applications/{application_id}/quarantine',response_class=HTMLResponse)
 async def quarantine_form(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),
-                          item:str=Query('',max_length=41),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager); case=await entry._case(case_id,actor)
+                          item:str=Query('',max_length=41),manager=Depends(entry.require_kg_entry_access)):
+    actor=await entry._gate(request,manager); case=await entry._case(case_id,actor)
     if len(request.query_params)!=len(request.query_params.multi_items()) or any(k!='item' for k in request.query_params):
         raise HTTPException(422,headers=HEADERS)
     return await _render(request,manager,actor,case,application_id,item_id=item)
@@ -102,8 +102,8 @@ async def quarantine_form(request:Request,case_id:int=Path(ge=1,le=2147483647),a
 
 @ar.router.post('/case/{case_id}/kg-entry/applications/{application_id}/quarantine',response_class=HTMLResponse)
 async def quarantine_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),
-                            manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager,write=True); case=await entry._case(case_id,actor)
+                            manager=Depends(entry.require_kg_entry_access)):
+    actor=await entry._gate(request,manager,write=True); case=await entry._case(case_id,actor)
     policy,_=_policy()
     try: authorize_upload(actor,policy,day=service.applications._today())
     except (EntryStorageInvalid,PermissionDenied): raise HTTPException(403,'Загрузка не разрешена действующей политикой.',headers=HEADERS) from None

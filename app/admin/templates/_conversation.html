@@ -90,6 +90,7 @@
         <hr>
         {% if workday_on and cases_write_on %}
         {% if c.funnel=='visa' %}<a class="chat-menu-action" href="/admin/conversation/{{ c.user_id|urlencode }}/preliminary">Открыть карточку до договора</a>{% endif %}
+        {% if kg_entry_case_url %}<a class="chat-menu-action" href="{{ kg_entry_case_url }}">Визовая заявка (КР)</a>{% endif %}
         <a class="chat-menu-action" href="/admin/conversation/{{ c.user_id|urlencode }}/contract">Договор подписан → создать услугу</a>
         {% endif %}{% if c.intercepted %}
         <button type="button" class="chat-menu-action" hx-post="/admin/conversation/{{ c.user_id }}/release" hx-target="#chat" hx-swap="innerHTML">{{ chat_icon('return') }}Вернуть боту</button>
@@ -315,6 +316,7 @@
 
   <div class="ph-actions">{% if workday_on and cases_write_on %}
     <a class="btn btn-brand" href="/admin/conversation/{{ c.user_id|urlencode }}/contract">Договор подписан → создать услугу</a>
+    {% if kg_entry_case_url %}<a class="btn" href="{{ kg_entry_case_url }}">Визовая заявка (КР)</a>{% endif %}
     {% endif %}
     {% if c.intercepted %}
       <div class="status paused">

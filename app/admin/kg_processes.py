@@ -40,8 +40,8 @@ def _render(request, manager, context, status=200):
 
 
 @ar.router.get('/kg-entry/processes',response_class=HTMLResponse)
-async def process_preview(request:Request,manager=Depends(ar.require_full_admin)):
-    entry._gate(request,manager)
+async def process_preview(request:Request,manager=Depends(entry.require_kg_entry_access)):
+    await entry._gate(request,manager)
     try:
         pairs=list(request.query_params.multi_items())
         if len(pairs)>2 or len({key for key,_ in pairs})!=len(pairs) or any(key not in ('process','stage') or len(value)>24 for key,value in pairs):
@@ -55,8 +55,8 @@ async def process_preview(request:Request,manager=Depends(ar.require_full_admin)
 
 
 @ar.router.post('/kg-entry/processes',response_class=HTMLResponse)
-async def process_preview_check(request:Request,manager=Depends(ar.require_full_admin)):
-    entry._gate(request,manager)  # read-only preview also works with writes disabled
+async def process_preview_check(request:Request,manager=Depends(entry.require_kg_entry_access)):
+    await entry._gate(request,manager)  # read-only preview also works with writes disabled
     if request.headers.get('content-type','').split(';',1)[0].strip()!='application/x-www-form-urlencoded':
         raise HTTPException(415,'Используйте форму проверки.',headers=HEADERS)
     body=bytearray()

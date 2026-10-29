@@ -466,6 +466,11 @@ class Settings(BaseSettings):
     # едет В Кыргызстан. Дефолт OFF: меняет ответы клиенту на боевом номере GetVisa.
     # Per-bot `kg_entry_outbound_isolation_enabled:<bot_id>`.
     kg_entry_outbound_isolation_enabled: bool = False
+    # Доступ визового менеджера к въездной CRM по PDF (`/admin/kg-entry/*`,
+    # `/admin/case/{id}/kg-entry/*`). Без него все эти экраны — только полный админ.
+    # При ON менеджер направления «визы» работает по СВОИМ услугам; публикация знаний,
+    # решения по единицам и импорт остаются админскими. Дефолт OFF (права).
+    kg_entry_manager_access_enabled: bool = False
     panel_missing_cards_enabled: bool = False
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False

@@ -32,8 +32,8 @@ def _error(request,manager,exc):
 
 
 @ar.router.get('/kg-entry/documents',response_class=HTMLResponse)
-async def documents_preview(request:Request,manager=Depends(ar.require_full_admin)):
-    entry._gate(request,manager)
+async def documents_preview(request:Request,manager=Depends(entry.require_kg_entry_access)):
+    await entry._gate(request,manager)
     try:
         pairs=list(request.query_params.multi_items())
         if len(pairs)>1 or any(k!='product' or len(v)>8 for k,v in pairs):
@@ -43,8 +43,8 @@ async def documents_preview(request:Request,manager=Depends(ar.require_full_admi
 
 
 @ar.router.post('/kg-entry/documents',response_class=HTMLResponse)
-async def documents_check(request:Request,manager=Depends(ar.require_full_admin)):
-    entry._gate(request,manager)
+async def documents_check(request:Request,manager=Depends(entry.require_kg_entry_access)):
+    await entry._gate(request,manager)
     if request.headers.get('content-type','').split(';',1)[0].strip()!='application/x-www-form-urlencoded':
         raise HTTPException(415,'Используйте форму.',headers=HEADERS)
     body=bytearray()

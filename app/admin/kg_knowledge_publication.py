@@ -110,7 +110,7 @@ async def _render(request, manager, actor, *, version=None, units='', status=200
 @ar.router.get('/kg-entry/publication', response_class=HTMLResponse)
 async def publication_form(request:Request, version:int|None=Query(None,ge=1,le=2147483647),
     units:str=Query('',max_length=12100), manager=Depends(ar.require_full_admin)):
-    actor = entry._gate(request, manager)
+    actor = await entry._gate(request, manager, admin_only=True)
     pairs = request.query_params.multi_items()
     if len(dict(pairs)) != len(pairs) or any(k not in ('version','units') for k,v in pairs) or units and not version:
         raise HTTPException(422, headers=HEADERS)
@@ -122,7 +122,7 @@ async def publication_form(request:Request, version:int|None=Query(None,ge=1,le=
 
 @ar.router.post('/kg-entry/publication', response_class=HTMLResponse)
 async def publication_submit(request:Request, manager=Depends(ar.require_full_admin)):
-    actor = entry._gate(request, manager, write=True)
+    actor = await entry._gate(request, manager, write=True, admin_only=True)
     try: policy = configured_policy(ar.settings); authorize_publisher(actor, policy)
     except (PermissionDenied, EntryStorageInvalid): raise HTTPException(403, 'Полномочия публикации не настроены.', headers=HEADERS) from None
     values = await _form(request, actor)

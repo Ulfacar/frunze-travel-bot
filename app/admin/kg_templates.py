@@ -38,8 +38,8 @@ def _render(request,manager,actor,*,catalog=None,template_id='KG.TPL.A01',values
 
 
 @ar.router.get(URL,response_class=HTMLResponse)
-async def template_form(request:Request,manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager)
+async def template_form(request:Request,manager=Depends(entry.require_kg_entry_access)):
+    actor=await entry._gate(request,manager)
     pairs=list(request.query_params.multi_items())
     if len(pairs)>1 or any(key!='template' or len(value)>32 for key,value in pairs):
         raise HTTPException(422,'Недопустимый выбор шаблона.',headers=HEADERS)
@@ -54,8 +54,8 @@ async def template_form(request:Request,manager=Depends(ar.require_full_admin)):
 
 
 @ar.router.post(URL,response_class=HTMLResponse)
-async def template_preview(request:Request,manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager)
+async def template_preview(request:Request,manager=Depends(entry.require_kg_entry_access)):
+    actor=await entry._gate(request,manager)
     if request.headers.get('content-type','').split(';',1)[0].strip()!='application/x-www-form-urlencoded':
         raise HTTPException(415,'Используйте форму предварительного просмотра.',headers=HEADERS)
     body=bytearray()

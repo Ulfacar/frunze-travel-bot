@@ -5,6 +5,7 @@ from sqlalchemy import select, update, union
 
 from app.domain import entry_applications as transactions, knowledge_decisions as decisions
 from app.domain.entry_storage import EntryStorageConflict, EntryStorageInvalid, _authorize, _hash, _id, _key, _plain
+from app.domain.knowledge_import import _authorize_admin
 from app.domain.knowledge_projection import verify_projection
 from app.domain.knowledge_publication_rules import PublicationPolicy, authorize_publisher, unavailable_reasons
 from app.domain.models import (EntryApplicantProfile, EntryCalculation, EntryDeadlineRevision, EntryQualification,
@@ -201,7 +202,7 @@ async def _context(session, version_id, *, write=False):
 
 
 async def publication_preview(engine, *, actor, version_id, unit_ids):
-    _authorize(actor); _id(version_id); ids = _identifiers(unit_ids)
+    _authorize_admin(actor); _id(version_id); ids = _identifiers(unit_ids)
     async def read(session):
         context = await _context(session, version_id)
         history = await _history(context)

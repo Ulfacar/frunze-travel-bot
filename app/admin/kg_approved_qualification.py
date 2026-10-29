@@ -20,8 +20,8 @@ HEADERS = {'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer'}
 @ar.router.get('/case/{case_id}/kg-entry/applicants/{applicant_id}/route', response_class=HTMLResponse)
 async def approved_route(request: Request, case_id: int = Path(ge=1, le=2147483647),
                          applicant_id: int = Path(ge=1, le=2147483647),
-                         manager=Depends(ar.require_full_admin)):
-    actor = entry._gate(request, manager)
+                         manager=Depends(entry.require_kg_entry_access)):
+    actor = await entry._gate(request, manager)
     if request.query_params:
         raise HTTPException(422)
     report = None
