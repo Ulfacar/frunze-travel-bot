@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from dataclasses import dataclass, field
@@ -62,7 +63,9 @@ RETRY_STATUSES = {403, 429, 500, 502, 503, 504}
 RETRY_ERRORS = {"QUERY_LIMIT_EXCEEDED", "OPERATION_TIME_LIMIT", "INTERNAL_SERVER_ERROR"}
 BACKOFF = (5, 15, 30, 60, 120, 300, 600, 900, 900)   # секунды; ночное окно 403 ≈ 4 ч
 
-EXIT_OK, EXIT_USAGE, EXIT_HTTP, EXIT_GAVE_UP = 0, 2, 4, 3
+EXIT_OK, EXIT_USAGE, EXIT_HTTP, EXIT_GAVE_UP, EXIT_CORRUPT = 0, 2, 4, 3, 5
+# Входящий вебхук Битрикса: https://<портал>/rest/<id пользователя>/<токен>/
+_WEBHOOK_PATH = re.compile(r"^/rest/\d+/[A-Za-z0-9_-]+/?$")
 
 
 class ForbiddenMethod(RuntimeError):
@@ -75,6 +78,30 @@ class GaveUp(RuntimeError):
 
 class PortalError(RuntimeError):
     """Ответ, который не лечится повтором (неверный вебхук, нет прав на метод)."""
+
+
+class ArchiveCorrupt(RuntimeError):
+    """Повреждена строка в середине файла архива — молча продолжать нельзя."""
+
+
+def webhook_problem(url: str) -> str:
+    """Почему URL не похож на входящий вебхук. Пусто — всё в порядке. URL не печатаем.
+
+    Ошибка оператора (вставили ссылку с методом или `?…`) иначе собрала бы путь
+    `…/crm.lead.list.json/crm.lead.list.json`, который портал разберёт непредсказуемо."""
+    from urllib.parse import urlsplit
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return "не разбирается как URL"
+    local = parts.hostname in ("127.0.0.1", "localhost")
+    if parts.scheme != "https" and not (parts.scheme == "http" and local):
+        return "нужен https"
+    if parts.query or parts.fragment:
+        return "в адресе не должно быть ? и #"
+    if not _WEBHOOK_PATH.match(parts.path or ""):
+        return "путь должен быть /rest/<id>/<токен>/ без имени метода"
+    return ""
 
 
 # Транспорт: (полный URL, тело) → (HTTP-статус, разобранный JSON или None).
@@ -147,7 +174,16 @@ class ReadOnlyBitrix:
 # ------------------------------- файлы и курсор -------------------------------
 
 def _secure_dir(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
+    """Каталог архива и все СОЗДАВАЕМЫЕ им родители — 0700 (уже существующие не трогаем:
+    это может быть `/root`). `mkdir(parents=True)` дал бы родителям права по umask."""
+    missing = []
+    probe = path.resolve()
+    while not probe.exists():
+        missing.append(probe)
+        probe = probe.parent
+    for level in reversed(missing):
+        level.mkdir(mode=0o700)
+        os.chmod(level, 0o700)
     os.chmod(path, 0o700)
 
 
@@ -170,31 +206,37 @@ def repair_tail(path: Path) -> int:
     return len(data) - cut
 
 
-def max_id_in(path: Path, key: str = "ID") -> int:
-    """Наибольший ID в JSONL — истина для продолжения, а не cursor.json."""
-    best = 0
+def iter_jsonl(path: Path):
+    """Записи файла архива. Хвост уже отрезан `repair_tail`; повреждение в СЕРЕДИНЕ —
+    `ArchiveCorrupt` с номером строки: пропустить её молча значит потерять запись
+    (а выгрузка решила бы, что всё на месте)."""
     if not path.exists():
-        return best
+        return
     with open(path, encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
+        for number, line in enumerate(fh, 1):
+            if not line.strip():
                 continue
             try:
-                best = max(best, int(json.loads(line).get(key) or 0))
-            except (ValueError, json.JSONDecodeError):
-                continue
-    return best
+                rec = json.loads(line)
+                if not isinstance(rec, dict):
+                    raise ValueError("not an object")
+            except ValueError:
+                raise ArchiveCorrupt(f"{path.name}: строка {number} повреждена") from None
+            yield rec
+
+
+def max_id_in(path: Path, key: str = "ID") -> int:
+    """Наибольший ID в JSONL — истина для продолжения, а не cursor.json."""
+    return max((int(r.get(key) or 0) for r in iter_jsonl(path)), default=0)
 
 
 def ids_in(path: Path, key: str = "ID") -> list[int]:
-    out = []
-    if path.exists():
-        with open(path, encoding="utf-8") as fh:
-            for line in fh:
-                if line.strip():
-                    out.append(int(json.loads(line)[key]))
-    return out
+    try:
+        return [int(r[key]) for r in iter_jsonl(path)]
+    except (KeyError, TypeError, ValueError) as exc:
+        if isinstance(exc, ArchiveCorrupt):
+            raise
+        raise ArchiveCorrupt(f"{path.name}: запись без числового {key}") from None
 
 
 def load_cursor(out: Path) -> dict:
@@ -271,12 +313,11 @@ def export_entity(api: ReadOnlyBitrix, out: Path, kind: str, cursor: dict, *,
 
 def _timeline_done(path: Path) -> set[tuple[str, int]]:
     done = set()
-    if path.exists():
-        with open(path, encoding="utf-8") as fh:
-            for line in fh:
-                if line.strip():
-                    rec = json.loads(line)
-                    done.add((rec["entity_type"], int(rec["entity_id"])))
+    for rec in iter_jsonl(path):
+        try:
+            done.add((rec["entity_type"], int(rec["entity_id"])))
+        except (KeyError, TypeError, ValueError):
+            raise ArchiveCorrupt(f"{path.name}: запись без entity_type/entity_id") from None
     return done
 
 
@@ -342,6 +383,10 @@ def run(argv: list[str] | None = None, *, transport: Transport | None = None,
     if not base:
         say(f"Нет вебхука: задайте {args.webhook_env}. В командной строке URL не принимаем.")
         return EXIT_USAGE
+    problem = webhook_problem(base)
+    if problem:
+        say(f"Вебхук в {args.webhook_env} не похож на входящий вебхук Битрикса: {problem}.")
+        return EXIT_USAGE
     if not 0 < args.rps <= 2:
         say("--rps должен быть в (0, 2]: лимит портала — 2 запроса в секунду.")
         return EXIT_USAGE
@@ -388,6 +433,10 @@ def run(argv: list[str] | None = None, *, transport: Transport | None = None,
     except PortalError as exc:
         say(f"ОШИБКА ПОРТАЛА: {exc}. Проверьте вебхук и права (только чтение CRM).")
         return EXIT_HTTP
+    except ArchiveCorrupt as exc:
+        say(f"АРХИВ ПОВРЕЖДЁН: {exc}. Выгрузка остановлена, файл не изменён: восстановите "
+            "его из копии или уберите строку и запустите снова.")
+        return EXIT_CORRUPT
 
 
 if __name__ == "__main__":

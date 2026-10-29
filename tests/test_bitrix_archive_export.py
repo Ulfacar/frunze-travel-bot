@@ -360,3 +360,67 @@ def test_search_survives_truncated_line(archive):
     with open(archive / "leads.jsonl", "a", encoding="utf-8") as fh:
         fh.write('{"ID":"99","PHONE":[{"VALUE":"0555000099"')
     assert _search(archive, "0555000003")[0] == 0
+
+
+# ---------------------------- замечания ревью потока pdf ----------------------------
+
+@pytest.mark.parametrize("url", [
+    "https://portal.invalid/rest/1/secret-token/crm.lead.list",     # с именем метода
+    "https://portal.invalid/rest/1/secret-token/?auth=x",           # с query
+    "http://portal.invalid/rest/1/secret-token/",                   # не https
+    "https://portal.invalid/crm/lead/",                             # не вебхук
+    "portal.invalid/rest/1/secret-token",                           # без схемы
+])
+def test_malformed_webhook_is_refused_without_echoing_it(tmp_path, url):
+    out = io.StringIO()
+    os.environ["BITRIX24_WEBHOOK_URL"] = url
+    try:
+        code = exp.run(["--out", str(tmp_path / "a")], transport=pytest.fail, stdout=out)
+    finally:
+        os.environ.pop("BITRIX24_WEBHOOK_URL", None)
+    assert code == exp.EXIT_USAGE
+    assert "secret-token" not in out.getvalue() and "portal.invalid" not in out.getvalue()
+
+
+@pytest.mark.parametrize("url", ["https://portal.invalid/rest/1/secret-token",
+                                 "https://portal.invalid/rest/155383/abc123def456/",
+                                 "http://127.0.0.1:8799/rest/1/fake"])
+def test_wellformed_webhooks_pass(url):
+    assert exp.webhook_problem(url) == ""
+
+
+def test_created_parent_dirs_are_private(tmp_path):
+    portal = FakePortal(n_leads=3, n_deals=0, n_contacts=0)
+    out = io.StringIO()
+    os.environ["BITRIX24_WEBHOOK_URL"] = WEBHOOK
+    try:
+        code = exp.run(["--out", str(tmp_path / "a" / "b" / "c"), "--yes", "--only", "lead"],
+                       transport=portal, sleep=lambda s: None, clock=lambda: 0.0, stdout=out)
+    finally:
+        os.environ.pop("BITRIX24_WEBHOOK_URL", None)
+    assert code == 0
+    for level in ("a", "a/b", "a/b/c"):
+        assert stat.S_IMODE(os.stat(tmp_path / level).st_mode) == 0o700, level
+
+
+def test_corrupt_line_in_the_middle_stops_with_clear_message(tmp_path):
+    portal = FakePortal(n_leads=120, n_deals=0, n_contacts=0)
+    _run(tmp_path, portal, "--yes", "--only", "lead", "--limit", "50")
+    path = tmp_path / "arch" / "leads.jsonl"
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    lines[10] = '{"ID":"11","TITLE":"битая\n'
+    path.write_text("".join(lines), encoding="utf-8")
+    before = path.read_bytes()
+    code, text, _ = _run(tmp_path, portal, "--yes", "--only", "lead")
+    assert code == exp.EXIT_CORRUPT and "leads.jsonl: строка 11 повреждена" in text
+    assert path.read_bytes() == before
+
+
+def test_corrupt_timeline_line_also_stops(tmp_path):
+    portal = FakePortal(n_leads=3, n_deals=0, n_contacts=0, comments_per_lead=1)
+    _run(tmp_path, portal, "--yes")
+    path = tmp_path / "arch" / "timeline.jsonl"
+    rows = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    path.write_text(rows[0] + "мусор\n" + "".join(rows[1:]), encoding="utf-8")
+    code, text, _ = _run(tmp_path, portal, "--yes", "--only", "timeline")
+    assert code == exp.EXIT_CORRUPT and "timeline.jsonl: строка 2" in text

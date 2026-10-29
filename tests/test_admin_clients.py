@@ -426,3 +426,50 @@ def test_retry_after_partial_failure_finishes_own_card(env, monkeypatch):
     conv = _conv(VISA_UID)
     assert conv.assigned_to == "medina" and conv.intercepted is True
     assert len(_audit("manual_lead")) == 1 and not _audit("manual_lead_existing")
+
+
+def _seed_case(env, owner, *, reference, amount):
+    from decimal import Decimal
+    from app.domain.models import Contact, ContactIdentity
+    from app.domain.permissions import Actor
+    from app.domain.service_cases import publish_version, seed_products, sign_contract
+    sm = env["dom_sm"]
+
+    async def seed():
+        async with sm() as s:
+            ident = await s.scalar(select(ContactIdentity).where(
+                ContactIdentity.normalized_value == PHONE))
+            if ident is None:
+                contact = Contact(); s.add(contact); await s.flush()
+                s.add(ContactIdentity(contact_id=contact.id, identity_type="phone",
+                                      normalized_value=PHONE, provider_scope=""))
+                contact_id = contact.id
+                products = await seed_products(s, published_by="admin", by=Actor("system", True))
+                product = next(p for p in products if p.direction == "visa")
+                await publish_version(s, product.id, [{"code": "V-1", "name": "x"}], {"V-1": []},
+                                      "admin", by=Actor("system", True))
+            else:
+                contact_id = ident.contact_id
+                from app.domain.models import Product
+                product = await s.scalar(select(Product).where(Product.direction == "visa"))
+            await sign_contract(s, contact_id=contact_id, product_id=product.id, owner_login=owner,
+                                by=Actor(owner, False, frozenset({"visa"})), reference=reference,
+                                amount=Decimal(amount), currency="KGS", idempotency_key=reference)
+            await s.commit()
+    asyncio.run(seed())
+
+
+def test_card_hides_colleague_case_like_case_page(env):
+    """Ревью потока pdf, находка №1: в карточке клиента Медина видела сумму, этап и
+    владельца услуги Элизы, хотя сама услуга `/admin/case/{id}` ей отвечает 404.
+    Правило то же, что у карточки услуги: `can_view_case` — направление И владелец."""
+    _on(clients.CARD_FLAG)
+    _seed(VISA_UID, owner="eliza")
+    _seed_case(env, "eliza", reference="SECRET-777", amount="123456.00")
+    _seed_case(env, "medina", reference="MINE-1", amount="2500.00")
+    card = _client("medina").get(f"/admin/client/{PHONE}")
+    assert card.status_code == 200
+    assert "123456.00" not in card.text and "SECRET-777" not in card.text
+    assert "2500.00" in card.text and "Услуги (1)" in card.text
+    admin = _client("admin").get(f"/admin/client/{PHONE}").text
+    assert "123456.00" in admin and "2500.00" in admin and "Услуги (2)" in admin

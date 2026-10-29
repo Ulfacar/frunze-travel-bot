@@ -472,11 +472,19 @@ async def _audit_for(user_ids: list[str]) -> list[dict]:
     return out[:60]
 
 
-async def _domain_view(digits: str, directions: set[str] | None) -> dict:
-    """Владельцы и услуги из доменной схемы. Только чтение: контакт не создаётся."""
+async def _domain_view(digits: str, actor) -> dict:
+    """Владельцы и услуги из доменной схемы. Только чтение: контакт не создаётся.
+
+    Услуги — по тому же правилу, что карточка услуги `/admin/case/{id}`
+    (`workday._case_or_404` → `can_view_case`): своё направление И свой клиент.
+    Чужая услуга коллеги по направлению там отвечает 404, значит и здесь её нет —
+    ни суммы, ни этапа, ни самой строки (ревью потока pdf 30.10, находка №1).
+    """
+    from app.domain.service_authz import can_view_case
+    directions = None if actor.is_full_admin else set(actor.allowed_directions)
     out = {"assignments": [], "cases": []}
     try:
-        from app.domain.models import Assignment, ContactIdentity, ServiceCase
+        from app.domain.models import Assignment, ContactIdentity, Product, ServiceCase
         async with ar._domain_sessionmaker()() as s:
             contact_id = await s.scalar(select(ContactIdentity.contact_id).where(
                 ContactIdentity.identity_type == "phone",
@@ -494,7 +502,9 @@ async def _domain_view(digits: str, directions: set[str] | None) -> dict:
             cases = (await s.scalars(select(ServiceCase).where(
                 ServiceCase.contact_id == contact_id).order_by(ServiceCase.id.desc()).limit(20))).all()
             for c in cases:
-                if directions is not None and c.owner_login and not await _case_visible(s, c, directions):
+                product = await s.get(Product, c.product_id)
+                if not can_view_case(actor, direction=getattr(product, "direction", None),
+                                     owner_login=c.owner_login):
                     continue
                 out["cases"].append({"id": c.id, "stage": c.stage, "owner": c.owner_login,
                                      "amount": c.agreed_amount, "currency": c.currency or "",
@@ -502,12 +512,6 @@ async def _domain_view(digits: str, directions: set[str] | None) -> dict:
     except Exception:  # noqa: BLE001 — доменная база может быть недоступна, карточка живёт
         log.warning("client card: domain view failed", exc_info=True)
     return out
-
-
-async def _case_visible(session, case, directions: set[str]) -> bool:
-    from app.domain.models import Product
-    product = await session.get(Product, case.product_id)
-    return product is not None and getattr(product, "direction", "") in directions
 
 
 async def _convs_by_phone(digits: str) -> list:
@@ -543,7 +547,6 @@ async def client_card(phone: str, request: Request, manager: dict = Depends(ar.r
     ids = [c.user_id for c in convs]
     from app.core.live_authz import actor_for
     actor = actor_for(manager)
-    directions = None if actor.is_full_admin else set(actor.allowed_directions)
     tasks = []
     for c in convs:
         for t in await ar._load_user_tasks(c.user_id):
@@ -568,6 +571,6 @@ async def client_card(phone: str, request: Request, manager: dict = Depends(ar.r
         "convs": [dict(_conv_row(c), origin=origins.get(c.user_id, "")) for c in convs],
         "tasks": tasks, "notes": notes,
         "notes_error": notes_error, "history": await _audit_for(ids),
-        "domain": await _domain_view(digits, directions),
+        "domain": await _domain_view(digits, actor),
         "manual_on": await _flag_on(MANUAL_FLAG),
     }, headers={"Cache-Control": "no-store"})
