@@ -30,6 +30,22 @@ DIRECTIONS = (("visa", "Визы"), ("tours", "Туры и билеты"))
 LIST_CAP = 200
 
 
+def _phone_human(value) -> str:
+    """Номер читаемо для простого режима: «+996 555 80 00 01» (ревью ux, P2).
+
+    Фильтр простого режима `router._phone_human` живёт в ветке ux; если он есть — берём
+    его, чтобы номер выглядел так же, как в остальной панели."""
+    shared = getattr(ar, "_phone_human", None)
+    if shared is not None:
+        return shared(value)
+    raw = str(value or "").strip()
+    if not (raw.isdigit() and len(raw) >= 9):
+        return raw
+    if len(raw) == 12 and raw.startswith("996"):
+        return f"+{raw[:3]} {raw[3:6]} {raw[6:8]} {raw[8:10]} {raw[10:]}"
+    return f"+{raw}"
+
+
 def allowed_directions(manager: dict | None) -> list[str]:
     from app.core.live_authz import actor_for
     actor = actor_for(manager)
@@ -93,15 +109,17 @@ async def pilot_summary(request: Request, direction: str = "", period: str = "to
     if metric:
         source = (current["per_ids"].get(who, {}).get(metric, set()) if who
                   else current["ids"][metric])
-        store = ar.get_conversation_store()
+        wanted = sorted(source)[:LIST_CAP]
+        views = await ps.cards(wanted)
         rows = []
-        for uid in sorted(source)[:LIST_CAP]:
-            conv = await store.get(uid)
+        for uid in wanted:
+            conv = views.get(uid)
             if conv is None or not ar._can_view_conversation(conv, manager):
                 continue
+            phone = conv.phone or uid.split(":")[-1]
             rows.append({"open_url": "/admin?open=" + quote(uid, safe=""),
                          "name": (conv.qualification or {}).get("name") or "",
-                         "phone": conv.phone or uid.split(":")[-1],
+                         "phone": phone, "phone_h": _phone_human(phone),
                          "owner": conv.assigned_to or "", "bot": conv.bot_id,
                          "last_text": conv.last_text or "", "last_sender": conv.last_sender or "",
                          "last_at": conv.last_message_at})

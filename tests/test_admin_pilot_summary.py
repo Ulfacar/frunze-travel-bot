@@ -206,3 +206,97 @@ def test_admin_sees_both_directions_and_menu(env):
     tours = c.get("/admin/pilot-summary", params={"direction": "tours"})
     assert tours.status_code == 200 and _cards(tours.text)["Новых обращений"] == 2   # админ — все номера
     assert "/admin/pilot-summary" in _client("grisha").get("/admin/calendar").text
+
+
+# ------------------- ревью ux 30.10: P5, P1, P2 -------------------
+
+V5 = "getvisa:996555800005"
+
+
+def test_client_waiting_since_yesterday_counts_today(env):
+    """P5: написал вчера в 22:00 и всё ещё ждёт — это и «сегодня» ждали дольше X."""
+    _conv(V5, "getvisa", "medina", [("client", NOW - timedelta(hours=16), "")], "Вечерний")
+    _on()
+    c = _client("grisha")
+    today = c.get("/admin/pilot-summary", params={"metric": "over_sla"}).text
+    assert "Вечерний" in today
+    cards = _cards(today)
+    assert cards["Дольше всех ждали, мин"] == 960     # с 22:00 вчера до 14:00 сегодня
+    assert cards["Новых обращений"] == 3              # новым он остаётся только вчера
+    assert "с прошлого дня" in today                  # на странице сказано, как считается
+    y = c.get("/admin/pilot-summary", params={"period": "yesterday", "metric": "over_sla"}).text
+    assert "Вечерний" in y                            # 22:00–24:00 вчера — тоже дольше 30
+
+
+def test_answered_carryover_wait_is_not_open_forever(env):
+    """Ждал с вечера, ответили сегодня в 09:00 — эпизод закрыт ответом, а не «сейчас»."""
+    _conv(V5, "getvisa", "medina", [("client", NOW - timedelta(hours=16), ""),
+                                     ("manager", NOW - timedelta(hours=5), "sent")], "Вечерний")
+    _on()
+    cards = _cards(_client("grisha").get("/admin/pilot-summary").text)
+    assert cards["Дольше всех ждали, мин"] == 660     # 22:00 → 09:00
+
+
+def test_drilldown_does_not_load_full_histories(env):
+    """P1: раскрытие строит строки из лёгких карточек, не из `store.get` с историей."""
+    _on()
+
+    async def no_full(*a, **kw):
+        raise AssertionError("раскрытие не должно грузить полную историю диалога")
+    env.setattr(panel_store._memory_store, "get", no_full)
+    r = _client("grisha").get("/admin/pilot-summary", params={"metric": "new"})
+    assert r.status_code == 200 and "Асель" in r.text and "Бакыт" in r.text
+
+
+def test_simple_mode_shows_phone_readably(env):
+    """P2: в простом режиме номер в раскрытии — как везде, «+996 555 80 00 02»."""
+    env.setattr(app.config.settings, "panel_simple_mode_enabled", True)
+    _on()
+    html = _client("grisha").get("/admin/pilot-summary", params={"metric": "over_sla"}).text
+    assert "+996 555 80 00 02" in html
+
+
+def test_sql_loader_and_cards_run_on_a_real_engine(env, tmp_path):
+    """P1: ветка Postgres вызывается на живом движке (SQLite): окно сообщений через JOIN,
+    карточки раскрытия — пачками, без истории."""
+    from sqlalchemy import update
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from app.core import pilot_summary as ps
+    from app.integrations.crm import db
+    from app.integrations.panel.store import PostgresConversationStore
+    engine = create_async_engine("sqlite+aiosqlite:///" + str(tmp_path / "p.db"))
+    sm = async_sessionmaker(engine, expire_on_commit=False)
+    store = PostgresConversationStore(sessionmaker=sm)
+    env.setattr(panel_store, "get_conversation_store", lambda: store)
+    env.setattr(ps, "CARD_BATCH", 2)                 # три диалога → две пачки IN
+
+    async def go():
+        async with engine.begin() as conn:
+            await conn.run_sync(db.Base.metadata.create_all)
+        for uid, bot, at in ((V1, "getvisa", TODAY), (V2, "getvisa", NOW - timedelta(hours=16)),
+                             (V3, "getvisa", TODAY - timedelta(days=30)), (T1, "frunze_tours", TODAY)):
+            mid = await store.add_message(uid, "client", "текст", channel="whatsapp", bot_id=bot,
+                                          phone=uid.split(":")[1])
+            async with sm() as s:
+                await s.execute(update(db.ConvMessage).where(db.ConvMessage.id == mid)
+                                .values(created_at=at))
+                await s.commit()
+        await store.update_meta(V1, qualification={"name": "Асель"})
+        await store.add_audit("medina", "send", V1, "x")
+        async with sm() as s:
+            await s.execute(update(db.AuditLog).values(created_at=TODAY))
+            await s.commit()
+        start, end = ps.period_bounds("today", NOW)
+        dialogs, audit = await ps.load({"getvisa"}, start, end)
+        views = await ps.cards([V1, V2, V3, T1])
+        return dialogs, audit, views
+    dialogs, audit, views = asyncio.run(go())
+    by = {d.user_id: d for d in dialogs}
+    assert set(by) == {V1, V2, V3}                   # туры не попали
+    assert len(by[V2].messages) == 1                 # вчерашнее сообщение — в окне
+    assert by[V3].messages == []                     # месячной давности — нет
+    assert [r["action"] for r in audit] == ["send"]
+    assert set(views) == {V1, V2, V3, T1}
+    assert views[V1].qualification.get("name") == "Асель" and views[V1].messages == []
+    asyncio.run(engine.dispose())

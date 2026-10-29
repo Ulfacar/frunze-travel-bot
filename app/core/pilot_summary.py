@@ -3,7 +3,9 @@
 Те же правила, что у `scripts/pilot_daily_summary.py`:
 - **эпизод ожидания** — от сообщения клиента до первого ответа (менеджера или бота), в
   рабочих минутах по часам приёма (`reply_sla.working_minutes`); без ответа — до конца
-  периода (или до «сейчас» для сегодняшнего дня);
+  периода (или до «сейчас» для сегодняшнего дня). **Отличие от скрипта** (ревью ux, P5):
+  эпизод, начатый до периода и длящийся в нём, тоже входит в период — скрипт считает
+  только эпизоды, начатые внутри дня;
 - «ждали дольше X» — X = `pilot_reply_sla_minutes`;
 - ошибки отправки — сообщения менеджера со статусом `failed` / `unknown`;
 - продажи — `sale_full_payment` из журнала при включённом B3 (`sale_by_full_payment_enabled`),
@@ -56,17 +58,29 @@ class Dialog:
 
 
 def _episodes(d: Dialog, start: datetime, end: datetime) -> list[float]:
+    """Ожидания, которые ПЕРЕСЕКАЮТ период [start, end), в рабочих минутах.
+
+    Эпизод — от первого сообщения клиента после нашего ответа до следующего ответа
+    менеджера или бота. Попадает в период, если хоть часть ожидания лежит в нём: клиент,
+    который написал вчера вечером и ждёт до сих пор, — это и «сегодня» (ревью ux 30.10,
+    P5). Длина — от сообщения клиента (а не от начала периода) до ответа; без ответа к
+    концу периода — до конца периода. Так «ждал с вечера и до 9:20 утра» — одно долгое
+    ожидание, а не два коротких по разные стороны полуночи.
+    """
     from app.core.reply_sla import working_minutes
     out, since = [], None
     for sender, _status, at in sorted(d.messages, key=lambda m: _aware(m[2])):
         at = _aware(at)
+        if at >= end:
+            break
         if sender == "client":
-            if since is None and start <= at < end:
+            if since is None:
                 since = at
         elif since is not None:
-            out.append(working_minutes(d.bot_id, since, at))
+            if at > start:                       # ответ пришёл уже в периоде
+                out.append(working_minutes(d.bot_id, since, at))
             since = None
-    if since is not None:
+    if since is not None:                        # к концу периода ответа нет
         out.append(working_minutes(d.bot_id, since, end))
     return out
 
@@ -115,11 +129,25 @@ def compute(dialogs: list[Dialog], audit: list[dict], start: datetime, end: date
 
 # ------------------------------ загрузка ------------------------------
 
+# Пачка `IN (...)` для карточек раскрытия: у asyncpg предел 32 767 параметров (ревью ux, P1).
+CARD_BATCH = 500
+
+
+def _sessionmaker(store):
+    sm = getattr(store, "_sm", None)
+    if sm is not None:
+        return sm()
+    from app.integrations.crm.db import get_sessionmaker
+    return get_sessionmaker()
+
+
 async def load(bot_ids: set[str], start: datetime, end: datetime) -> tuple[list[Dialog], list[dict]]:
     """Диалоги ботов направления с сообщениями окна [start − 2 дня, end) и журнал периода.
 
-    Память панели (тесты) — из неё; Postgres (прод) — двумя запросами, без загрузки
-    всей истории всех диалогов."""
+    Окно на 2 дня раньше начала — чтобы увидеть ожидание, начавшееся до периода (P5);
+    ожидание, начатое ещё раньше, видно с первого сообщения клиента внутри окна.
+    Память панели (тесты) — из неё; Postgres (прод) — тремя запросами: скалярные колонки
+    диалогов ботов, сообщения окна через JOIN по боту (без списка id в `IN`), журнал."""
     from app.integrations.panel.store import get_conversation_store
     store = get_conversation_store()
     window = start - timedelta(days=2)
@@ -136,19 +164,23 @@ async def load(bot_ids: set[str], start: datetime, end: datetime) -> tuple[list[
         audit = [r for r in store._audit if start <= _aware(r["created_at"]) < end]
         return dialogs, audit
     from sqlalchemy import select
-    from app.integrations.crm.db import AuditLog, Conversation, ConvMessage, get_sessionmaker
-    async with get_sessionmaker()() as s:
+    from app.integrations.crm.db import AuditLog, Conversation, ConvMessage
+    bots = sorted(bot_ids)
+    if not bots:
+        return [], []
+    async with _sessionmaker(store)() as s:
         convs = (await s.execute(select(Conversation.id, Conversation.user_id, Conversation.bot_id,
                                         Conversation.assigned_to, Conversation.created_at)
-                                 .where(Conversation.bot_id.in_(bot_ids)))).all()
+                                 .where(Conversation.bot_id.in_(bots)))).all()
         by_pk = {pk: Dialog(uid, bot, owner or "", created) for pk, uid, bot, owner, created in convs}
-        if by_pk:
-            rows = (await s.execute(select(ConvMessage.conversation_id, ConvMessage.sender,
-                                           ConvMessage.status, ConvMessage.created_at)
-                                    .where(ConvMessage.conversation_id.in_(list(by_pk)),
-                                           ConvMessage.created_at >= window,
-                                           ConvMessage.created_at < end))).all()
-            for pk, sender, status, at in rows:
+        rows = (await s.execute(select(ConvMessage.conversation_id, ConvMessage.sender,
+                                       ConvMessage.status, ConvMessage.created_at)
+                                .join(Conversation, Conversation.id == ConvMessage.conversation_id)
+                                .where(Conversation.bot_id.in_(bots),
+                                       ConvMessage.created_at >= window,
+                                       ConvMessage.created_at < end))).all()
+        for pk, sender, status, at in rows:
+            if pk in by_pk:
                 by_pk[pk].messages.append((sender, status or "", at))
         audit = [{"manager": m, "action": a, "user_id": u, "detail": d, "created_at": at}
                  for m, a, u, d, at in
@@ -157,3 +189,27 @@ async def load(bot_ids: set[str], start: datetime, end: datetime) -> tuple[list[
                                   .where(AuditLog.created_at >= start, AuditLog.created_at < end)))
                  .all()]
     return list(by_pk.values()), audit
+
+
+async def cards(user_ids: list[str]) -> dict:
+    """Лёгкие карточки для раскрытия: скалярные колонки диалога, БЕЗ истории сообщений.
+
+    Раньше раскрытие делало до 200 `store.get` — каждый тянул всю переписку (ревью ux, P1;
+    ср. 21.10: инбокс на полной истории держал CPU на 100%). `IN` — пачками `CARD_BATCH`."""
+    from dataclasses import is_dataclass, replace
+    from app.integrations.panel.store import _view, get_conversation_store
+    store = get_conversation_store()
+    memory = getattr(store, "_conv", None)
+    if memory is not None:
+        return {uid: (replace(memory[uid], messages=[]) if is_dataclass(memory[uid]) else memory[uid])
+                for uid in user_ids if uid in memory}
+    from sqlalchemy import select
+    from app.integrations.crm.db import Conversation
+    out = {}
+    async with _sessionmaker(store)() as s:
+        for i in range(0, len(user_ids), CARD_BATCH):
+            batch = user_ids[i:i + CARD_BATCH]
+            for conv in (await s.execute(select(Conversation)
+                                         .where(Conversation.user_id.in_(batch)))).scalars().all():
+                out[conv.user_id] = _view(conv)
+    return out

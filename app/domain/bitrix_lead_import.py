@@ -7,7 +7,9 @@
 Правила склейки — те же, что в `app/domain/legacy_match.py`, и они важнее удобства:
 
 * **Человек = телефон.** Номер разбирается `legacy_match._phone_or_none` (не меньше 10
-  цифр, `normalize_phone`). Имя, ID лида, ответственный — не признаки личности.
+  цифр, `normalize_phone`). Имя, ID лида, ответственный — не признаки личности. План
+  обещает только номер, который запись нормализует так же (иначе — реестр), а «8…» из
+  11 цифр без «+» — «проверить вручную».
 * **Одна карточка — один номер.** Лид с двумя разными номерами (общая карточка
   Открытой линии: менеджер дописал родственника) не переносится: это `mixed_card` в
   реестр, разводит человек (ТЗ §19 п.2: «автоматическое слияние по одному Bitrix ID
@@ -29,6 +31,8 @@ from typing import Iterable
 from sqlalchemy import or_, select
 
 from app.domain.legacy_match import KNOWN_DIRECTIONS, _phone_or_none
+from app.domain.models import DomainError
+from app.domain.phones import normalize_phone
 
 PROVIDER, LEAD = "bitrix", "lead"
 TERMINAL = frozenset({"CONVERTED", "JUNK", "UC_R8BD0W"})   # = bitrix_pipeline.TERMINAL_STATUSES
@@ -43,7 +47,10 @@ MIXED = "mixed_card"
 FOREIGN_DIALOG = "lead_belongs_to_other_number"
 NO_DIRECTION = "unknown_direction"
 TWO_DIRECTIONS = "ambiguous_direction"
-PROBLEMS = (NO_PHONE, BAD_PHONE, MIXED, FOREIGN_DIALOG, NO_DIRECTION, TWO_DIRECTIONS)
+# «8 999 123 45 67» без «+»: это и российский 8…, и +7…; WhatsApp того же человека даст
+# 7…, а не 8… — создать личность значит расщепить человека надвое (ревью pdf, 1.3).
+CHECK_BY_HAND = "check_by_hand"
+PROBLEMS = (NO_PHONE, BAD_PHONE, MIXED, FOREIGN_DIALOG, NO_DIRECTION, TWO_DIRECTIONS, CHECK_BY_HAND)
 
 
 @dataclass(frozen=True)
@@ -78,6 +85,22 @@ def _raw_phones(record: dict) -> list[str]:
         if str(raw or "").strip():
             out.append(str(raw).strip())
     return out
+
+
+def _trunk_eight(raw: str) -> bool:
+    head = str(raw or "").split("@", 1)[0].strip()
+    digits = "".join(ch for ch in head if ch.isdigit())
+    return not head.startswith("+") and len(digits) == 11 and digits.startswith("8")
+
+
+def _survives_write(phone: str) -> bool:
+    """Запись (`find_or_create_by_identity(assume_e164=True)`) нормализует номер ещё раз.
+    План обещает только то, что пройдёт эту повторную нормализацию без изменений:
+    «+65 6123 4567» → `6561234567`, а 10 цифр без «+» запись уже не примет (ревью pdf, 1.1)."""
+    try:
+        return normalize_phone(phone, assume_e164=True) == phone
+    except DomainError:
+        return False
 
 
 def open_leads(rows: Iterable[dict], plan: Plan):
@@ -167,6 +190,10 @@ async def build_plan(leads: Iterable[dict], contacts: dict[str, list[str]], exis
         if not raw:
             plan.items.append(Item(lead_id, NO_PHONE, detail="ни в лиде, ни в контакте"))
             continue
+        if any(_trunk_eight(r) for r in raw):
+            plan.items.append(Item(lead_id, CHECK_BY_HAND,
+                                   detail="номер через 8 без «+» — проверить вручную (8… или +7…)"))
+            continue
         phones = sorted({p for p in (_phone_or_none(r) for r in raw) if p})
         if not phones:
             plan.items.append(Item(lead_id, BAD_PHONE, detail=f"номеров {len(raw)}, ни один не разобран"))
@@ -175,6 +202,11 @@ async def build_plan(leads: Iterable[dict], contacts: dict[str, list[str]], exis
             plan.items.append(Item(lead_id, MIXED, detail=f"{len(phones)} разных номера в одной карточке"))
             continue
         phone = phones[0]
+        if not _survives_write(phone):
+            plan.items.append(Item(lead_id, BAD_PHONE, phone,
+                                   detail="номер не проходит повторную нормализацию при записи "
+                                          "(короткий международный номер) — внести вручную"))
+            continue
         others = [u for u, p in await existing.dialogs_with_lead(lead_id) if _phone_or_none(p) != phone]
         if others:
             plan.items.append(Item(lead_id, FOREIGN_DIALOG, phone, dialogs=tuple(others),
@@ -207,11 +239,12 @@ async def build_plan(leads: Iterable[dict], contacts: dict[str, list[str]], exis
 async def apply_plan(sessionmaker, plan: Plan) -> dict[str, int]:
     """Записать переносимое. Каждый лид — своя транзакция; уже связанные не трогаются.
 
-    Возвращает счётчики РЕАЛЬНЫХ изменений: второй прогон по тому же архиву обязан
-    дать нули."""
-    from app.domain.models import ContactIdentity, DomainError, ExternalReference, link_external
+    Возвращает счётчики РЕАЛЬНЫХ изменений (второй прогон по тому же архиву обязан
+    дать нули) и `failed` — пары (ID лида, класс ошибки) для отчёта."""
+    from app.domain.models import ContactIdentity, ExternalReference, link_external
     from app.domain.services import ContactService, RequestService
-    changes = {"contacts_created": 0, "requests_opened": 0, "references_created": 0, "errors": 0}
+    changes = {"contacts_created": 0, "requests_opened": 0, "references_created": 0, "errors": 0,
+               "failed": []}
     for item in plan.items:
         if item.action not in (CREATE, LINK):
             continue
@@ -236,7 +269,10 @@ async def apply_plan(sessionmaker, plan: Plan) -> dict[str, int]:
                 changes["contacts_created"] += had is None
                 changes["requests_opened"] += opened
                 changes["references_created"] += 1
-            except DomainError:
+            except Exception as exc:  # noqa: BLE001 — каждый лид отдельно; повтор доделает
+                # Любая ошибка записи — с ID лида и классом ошибки. Текст ошибки не берём:
+                # у ошибок базы в нём параметры SQL, то есть номер клиента.
                 await s.rollback()
                 changes["errors"] += 1
+                changes["failed"].append((item.lead_id, type(exc).__name__))
     return changes

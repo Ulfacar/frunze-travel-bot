@@ -143,14 +143,16 @@ def test_apply_then_second_run_changes_nothing(db):
                           for c in (await s.scalars(select(Conversation))).all())
     convs_before = asyncio.run(_snap())
     first = asyncio.run(imp.apply_plan(db["sm"], _plan(db)))
-    assert first == {"contacts_created": 4, "requests_opened": 4, "references_created": 5, "errors": 0}
+    assert first == {"contacts_created": 4, "requests_opened": 4, "references_created": 5,
+                     "errors": 0, "failed": []}
     # 4 человека: 100001 (лиды 1 и 3), 100002, 100007, 77011234567; лид 3 — в ту же заявку
     assert _count(db["sm"], Contact) == 4 and _count(db["sm"], Request) == 4
     assert _count(db["sm"], ExternalReference) == 5
     again = _plan(db)
     assert sum(1 for i in again.items if i.action == imp.DONE) == 5
     second = asyncio.run(imp.apply_plan(db["sm"], again))
-    assert second == {"contacts_created": 0, "requests_opened": 0, "references_created": 0, "errors": 0}
+    assert second == {"contacts_created": 0, "requests_opened": 0, "references_created": 0,
+                      "errors": 0, "failed": []}
     assert _count(db["sm"], ExternalReference) == 5
     # Диалоги панели не тронуты: ни новых, ни изменённых (bitrix_lead_id прежний).
     from app.integrations.crm.db import Conversation
@@ -215,9 +217,9 @@ def test_cli_write_requires_exact_db_name(db, tmp_path):
     assert _cli(*base, "--yes")[0] == 2
     assert _cli(*base, "--yes", "--confirm-db", "prod")[0] == 2
     assert _count(db["sm"], ExternalReference) == 0
-    code, text = _cli(*base, "--yes", "--confirm-db", "bot.db")
+    code, text = _cli(*base, "--yes", "--confirm-db", _target(db))
     assert code == 0 and "references_created=5" in text
-    code, text = _cli(*base, "--yes", "--confirm-db", "bot.db")
+    code, text = _cli(*base, "--yes", "--confirm-db", _target(db))
     assert "contacts_created=0, requests_opened=0, references_created=0" in text
 
 
@@ -225,3 +227,101 @@ def test_cli_without_db_plans_everything_as_new(tmp_path):
     code, text = _cli("--archive", str(_archive(tmp_path)), "--assignee", "visa=96451")
     assert code == 0 and "create_contact" in text and "link_existing" in text   # лид 3 — тот же номер
     assert _cli("--archive", str(tmp_path / "nope"))[0] == 2
+
+
+# ------------------- ревью pdf 30.10 (раздел 1) -------------------
+
+def test_ten_digit_plus_number_goes_to_registry_not_lost(db):
+    """1.1: «+65 6123 4567» план называл create_contact, а запись падала на повторной
+    нормализации — errors=N, лид не перенесён и не в реестре. Теперь — реестр с причиной."""
+    from app.domain.models import ContactIdentity, ExternalReference
+    leads = [_lead(21, "+65 6123 4567"), _lead(22, "+45 12 34 56 78"), _lead(1, "+996 555 100 001")]
+    plan = _plan(db, leads=leads)
+    got = _by_id(plan)
+    assert got["21"].action == imp.BAD_PHONE and got["22"].action == imp.BAD_PHONE
+    assert "повторн" in got["21"].detail
+    assert got["1"].action == imp.CREATE
+    changes = asyncio.run(imp.apply_plan(db["sm"], plan))
+    assert changes["errors"] == 0 and changes["references_created"] == 1
+    assert _count(db["sm"], ExternalReference) == 1 and _count(db["sm"], ContactIdentity) == 1
+
+
+def test_every_planned_phone_survives_the_write_normalization(db):
+    """Контракт «сухой прогон = запись»: всё, что план создаёт или связывает, проходит ту
+    же нормализацию, что и `find_or_create_by_identity(assume_e164=True)`."""
+    from app.domain.phones import normalize_phone
+    for item in _plan(db).items:
+        if item.action in (imp.CREATE, imp.LINK):
+            assert normalize_phone(item.phone, assume_e164=True) == item.phone
+
+
+def test_trunk_eight_without_plus_is_checked_by_hand(db):
+    """1.3: «8 999 123 45 67» без «+» — это и 8…, и +7…: не создаём фантомную личность."""
+    from app.domain.models import ContactIdentity
+    plan = _plan(db, leads=[_lead(23, "8 999 123 45 67"), _lead(24, contact="80")])
+    got = _by_id(plan)
+    assert got["23"].action == imp.CHECK_BY_HAND and "вручную" in got["23"].detail
+    assert imp.CHECK_BY_HAND in imp.PROBLEMS
+    plan2 = asyncio.run(imp.build_plan([_lead(24, contact="80")], {"80": ["8(999)1234567"]},
+                                       imp.DbExisting(db["sm"]), assignee_direction=ASSIGNEES))
+    assert _by_id(plan2)["24"].action == imp.CHECK_BY_HAND
+    asyncio.run(imp.apply_plan(db["sm"], plan))
+    assert _count(db["sm"], ContactIdentity) == 0
+
+
+def test_write_error_names_the_lead_without_the_number(db, tmp_path, monkeypatch):
+    """Любая ошибка записи — с ID лида и классом ошибки; номер и текст SQL не печатаем."""
+    from app.domain import services
+    real = services.ContactService.find_or_create_by_identity
+
+    async def boom(session, kind, value, **kw):
+        if value == "996555100002":
+            raise RuntimeError("INSERT ... parameters ('996555100002',)")
+        return await real(session, kind, value, **kw)
+    monkeypatch.setattr(services.ContactService, "find_or_create_by_identity", boom)
+    plan = _plan(db)
+    changes = asyncio.run(imp.apply_plan(db["sm"], plan))
+    assert changes["errors"] == 1
+    assert changes["failed"] == [("4", "RuntimeError")]
+    arch = _archive(tmp_path)
+    code, text = _cli("--archive", str(arch), "--dsn", db["url"], "--assignee", "visa=96451",
+                      "--assignee", "tours=155267", "--yes", "--confirm-db", _target(db))
+    assert "errors=" in text and "ошибка записи: лид 4: RuntimeError" in text
+    assert "996555100002" not in text and "INSERT" not in text
+
+
+def test_mask_keeps_only_last_four_digits():
+    """1.4: раньше `9965***0001` — 8 из 12 цифр."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import bitrix_open_leads_import as cli
+    assert cli.mask("996555100001") == "***0001"
+    assert cli.mask("77011234567") == "***4567"
+    assert cli.mask("12345") == "***"
+
+
+def _target(db):
+    from pathlib import Path
+    return "sqlite:" + str(Path(db["url"].split(":///", 1)[1]).resolve())
+
+
+def test_confirm_db_checks_host_port_and_name(db, tmp_path):
+    """1.2: одно имя базы на другом хосте или в другом каталоге — не та база."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import bitrix_open_leads_import as cli
+    a = cli._db_target("postgresql+asyncpg://u:secret@10.0.0.1/frunze")
+    b = cli._db_target("postgresql+asyncpg://u:secret@127.0.0.1/frunze")
+    assert a == "10.0.0.1:5432/frunze" and a != b and "secret" not in a
+    assert cli._db_target("postgresql+asyncpg://u:p@10.0.0.1:6543/frunze") == "10.0.0.1:6543/frunze"
+    from app.domain.models import ExternalReference
+    arch = _archive(tmp_path)
+    base = ["--archive", str(arch), "--dsn", db["url"], "--assignee", "visa=96451",
+            "--assignee", "tours=155267", "--yes", "--confirm-db"]
+    assert _cli(*base, "bot.db")[0] == 2                              # только имя — мало
+    assert _cli(*base, "sqlite:" + str(tmp_path / "other" / "bot.db"))[0] == 2
+    assert _count(db["sm"], ExternalReference) == 0
+    code, text = _cli(*base, _target(db))
+    assert code == 0 and "references_created=5" in text
