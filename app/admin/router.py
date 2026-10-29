@@ -2934,6 +2934,35 @@ def _manager_can_touch_task(manager: dict, task) -> bool:
     return (task.manager_id or "") == str(manager.get("login") or "").strip().lower()
 
 
+# Команда, которая ведёт направление: билеты ведут туры (как в `_authz_direction`).
+_TASK_TEAM = {"visa": "visa", "tours": "tours", "tickets": "tours"}
+
+
+def _task_direction_for(conv, manager: dict, requested: str) -> str:
+    """Направление задачи по диалогу; значение формы — только уточнение внутри команды.
+
+    Пусто → воронка диалога. Не из списка направлений → 422 (раньше молча терялось:
+    ответ 200, задачи нет). Чужая команда для этого клиента или для этого менеджера →
+    403 — в том числе у полного админа: направление клиента определяет его диалог.
+    """
+    from app.core.live_authz import actor_for
+    from app.domain.models import DIRECTIONS
+    funnel = (getattr(conv, "funnel", "") or "").strip()
+    team = _TASK_TEAM.get(funnel) or _authz_direction(conv)
+    server = funnel if funnel in DIRECTIONS else (team if team in DIRECTIONS else "")
+    if not server:
+        raise HTTPException(status_code=409, detail="Не удалось определить направление клиента")
+    if requested == "":
+        return server
+    if requested not in DIRECTIONS:
+        raise HTTPException(status_code=422, detail="unknown direction")
+    actor = actor_for(manager)
+    if _TASK_TEAM.get(requested) != team or not (
+            actor.is_full_admin or team in actor.allowed_directions):
+        raise HTTPException(status_code=403, detail="direction outside your scope")
+    return requested
+
+
 @router.post("/conversation/{user_id}/task/create", response_class=HTMLResponse)
 async def task_create(user_id: str, request: Request, manager: dict = Depends(require_admin),
                       kind: str = Form("call"), scheduled_date: str = Form(""),
@@ -2942,7 +2971,9 @@ async def task_create(user_id: str, request: Request, manager: dict = Depends(re
     """Create a task for this client. Resolves/creates a domain Contact by phone (explicit
     action — does NOT enable shadow or touch Bitrix)."""
     conv = await _require_visible_conversation(user_id, manager)
-    direction = (direction or getattr(conv, "funnel", "") or "visa").strip()
+    # Направление задачи задаёт сервер (CRITICAL, 30.10): раньше значение формы шло в
+    # задачу как есть, и визовый клиент получал «туровую» задачу.
+    direction = _task_direction_for(conv, manager, direction)
     phone_identity = conv.phone or conv.user_id
     if settings.crm_standalone_enabled:
         from app.admin.contracts import _identity
