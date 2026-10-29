@@ -433,6 +433,9 @@
   .chat-remind-form label.wide { grid-column:1 / -1; }
   .chat-remind-form input, .chat-remind-form select { width:100%; min-height:36px; }
   .chat-remind-form button { grid-column:1 / -1; min-height:40px; }
+  .chat-remind-form label.chat-remind-important { grid-column:1 / -1; display:flex; align-items:center; gap:8px;
+    color:var(--s-ink); font-weight:600; }
+  .chat-remind-form label.chat-remind-important input { width:18px; height:18px; min-height:0; }
   @container (max-width: 420px) { .chat-remind-form { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
     .chat-remind-form label:first-child { grid-column:1 / -1; } }
   .chat-palma .chat-attach { display:grid; place-items:center; width:40px; height:40px; flex:none; border-radius:50%;
@@ -574,7 +577,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
       <input type="search" name="q" placeholder="Поиск по имени или номеру…" autocomplete="off"
              aria-label="Поиск диалогов"
-             hx-get="/admin/search" hx-trigger="keyup changed delay:300ms, search"
+             hx-get="/admin/search" hx-trigger="input changed delay:300ms, search"
              hx-target="#board" hx-swap="innerHTML">
     </div>
 {% endblock %}

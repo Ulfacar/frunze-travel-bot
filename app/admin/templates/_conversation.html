@@ -127,16 +127,19 @@
   <div class="chat-who{% if c.intercepted %} is-human{% endif %}" id="chat-who-{{ c.user_id }}">
     <span class="chat-who-text">
       {%- if c.intercepted and c.assigned_to == manager.login %}Отвечаете вы — бот молчит
-      {%- elif c.intercepted %}Отвечает {{ c.assigned_to or 'менеджер' }} — бот молчит
-      {%- elif busy_by %}Клиент закреплён за {{ busy_by }}
+      {%- elif c.intercepted %}Отвечает {{ (c.assigned_to | who) if c.assigned_to else 'менеджер' }} — бот молчит
+      {%- elif busy_by %}Клиента ведёт {{ busy_by | who }}
       {%- else %}Отвечает бот{% endif -%}
     </span>
     {% if c.intercepted and (not c.assigned_to or c.assigned_to == manager.login or is_full_admin) %}
     <button type="button" class="chat-who-btn" hx-post="/admin/conversation/{{ c.user_id }}/release" hx-target="#chat" hx-swap="innerHTML"
             title="Бот снова будет отвечать этому клиенту">{{ chat_icon('return') }}Вернуть боту</button>
-    {% elif not c.intercepted and not busy_by %}
+    {% elif not c.intercepted and (not busy_by or is_full_admin) %}
+    {#- Ревью 30.10: админ на закреплённом, но не перехваченном диалоге не видел ни «Взять
+        себе», ни «Перехватить». Права те же, что на базе: админ перехватывает, менеджер
+        чужого клиента — нет (кнопки нет, сервер решает в `_ownership_guard`). -#}
     <button type="button" class="chat-who-btn" hx-post="/admin/conversation/{{ c.user_id }}/takeover" hx-target="#chat" hx-swap="innerHTML"
-            title="Бот замолчит, клиенту будете отвечать вы">{{ chat_icon('pause') }}Взять себе</button>
+            title="{% if busy_by %}Клиента ведёт {{ busy_by | who }}. Бот замолчит, отвечать будете вы{% else %}Бот замолчит, клиенту будете отвечать вы{% endif %}">{{ chat_icon('pause') }}Взять себе</button>
     {% endif %}
     {% if not crm_bot_mode %}
     <details class="chat-remind" id="chat-remind-{{ c.user_id }}">
@@ -150,6 +153,9 @@
         <label>Когда<input type="date" name="scheduled_date" value="{{ tomorrow_iso }}" required></label>
         <label>Время<input type="time" name="scheduled_time"></label>
         <label class="wide">О чём<input name="comment" placeholder="Например: перезвонить про документы" autocomplete="off"></label>
+        {#- Ревью 30.10: «Важно» можно было поставить только из «Моих дел». Не отмечено — поле
+            не уходит, сервер берёт свой дефолт `normal` (Form("normal")). -#}
+        <label class="chat-remind-important"><input type="checkbox" name="priority" value="high">Важно</label>
         <button class="btn btn-brand" type="submit">Поставить</button>
       </form>
     </details>
