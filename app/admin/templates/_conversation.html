@@ -361,7 +361,7 @@
     <div class="brief-row"><span class="k">ИИ-исход</span><span>{{ {'won':'✅ похоже оплатил','lost':'❌ похоже отказ','ghosted':'💤 пропал','active':'⏳ в работе'}.get(c.outcome_inferred, c.outcome_inferred) }}{% if c.outcome_inferred_reason %} — {{ c.outcome_inferred_reason }}{% endif %} <i>(оценка ИИ, поправьте кнопкой)</i></span></div>
     {% endif %}
     {% if c.ai_summary %}
-    <div class="brief-row"><span class="k">Контекст</span><span style="white-space:pre-line">{{ c.ai_summary }}</span></div>
+    <div class="brief-row"><span class="k">Контекст</span><span>{{ c.ai_summary }}</span></div>
     {% endif %}
     {% if c.manager_next_step %}
     <div class="brief-row"><span class="k">Следующий шаг</span><span>{{ c.manager_next_step }}</span></div>
