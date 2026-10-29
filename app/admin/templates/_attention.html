@@ -2,7 +2,7 @@
 {# Единый список «ждут ответа» (инбокс) и результаты поиска — по всем воронкам.
    mode: 'inbox' (авто-обновление 10с) | 'search'. cards — обогащённые карточки. #}
 <div data-attention {% if mode == 'inbox' %}hx-get="/admin/inbox{% if show_all %}?all=1{% endif %}" {% if crm_bot_mode %}hx-trigger="every 10s" data-crm-poll="inbox"{% else %}hx-trigger="every 10s [document.visibilityState==='visible' && !window.hasInboxSelection(){% if simple_on %} && !document.querySelector('.inbox-tools[open]'){% endif %}]"{% endif %} hx-swap="outerHTML" hx-target="this"{% endif %}>
-  <div class="inbox-head">{% if overdue_on and mode != 'search' %}<a class="tab" href="/admin/overdue">Ждут дольше {{ overdue_sla }} мин</a>{% endif %}
+  <div class="inbox-head">{% if overdue_on and mode != 'search' and not simple_on %}<a class="tab" href="/admin/overdue">Ждут дольше {{ overdue_sla }} мин</a>{% endif %}
     {% if mode == 'search' %}
       <div class="inbox-title">Поиск: «{{ query }}» — {{ cards|length }}</div>
       <button class="tab" hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML"
@@ -31,8 +31,12 @@
        и чекбоксы на каждой карточке уезжают под одну раскрывашку; пока она закрыта,
        менеджер видит только клиентов. Разметка и обработчики те же — это показ, не функция. #}
     <details class="inbox-tools">
-      <summary class="tab">Разобрать список</summary>
+      {#- 30.10: «Разобрать список» не говорило, что внутри. Внутри — фильтр и архив. -#}
+      <summary class="tab">Фильтры и архив</summary>
       <div class="inbox-tools-body">
+        {#- Простой режим: «Ждут дольше N мин» — тот же список, отфильтрованный по сроку;
+            на виду он дублировал заголовок «Ждут ответа». -#}
+        {% if overdue_on and mode != 'search' %}<a class="tab" href="/admin/overdue">Ждут дольше {{ overdue_sla }} мин</a>{% endif %}
         <button type="button" class="tab noise-filter" onclick="toggleNoise(this)">
           Скрыть рекламу/без диалога · {{ noise_count or 0 }}
         </button>
@@ -89,8 +93,8 @@
       <div class="card-top">
         <span class="avatar" style="background: {{ c.avatar }}">{{ c.initials }}</span>
         <div class="card-id">
-          <div class="nm">{{ c.name }}</div>
-          {% if c.name != c.phone %}<div class="ph">{{ c.phone }}</div>{% endif %}
+          <div class="nm">{{ c.name | phone_h if simple_on else c.name }}</div>
+          {% if c.name != c.phone %}<div class="ph">{{ c.phone | phone_h if simple_on else c.phone }}</div>{% endif %}
         </div>
         <span class="badge funnel-badge" data-funnel="{{ c.funnel }}">{{ c.funnel_label }}</span>
       </div>
@@ -98,10 +102,13 @@
       <div class="last"><b>{{ {'client':'Клиент','bot':'Бот','manager':'Вы'}.get(c.last_sender, '') }}{% if c.last_sender %}: {% endif %}</b>{{ c.last_text }}</div>
       {% endif %}
       <div class="card-foot">
+        {#- Простой режим: «◷ 4 ч» рядом с «ждёт 4 ч» — одно и то же число дважды. -#}
+        {% if not (simple_on and c.wait_level in ('warm','hot')) %}
         <span class="time">
           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
           {{ c.time_label }}
         </span>
+        {% endif %}
         {% if c.source and not standalone_crm %}
         <span class="badge ad-source" title="{{ c.source_headline or 'Пришёл по рекламе' }}">{{ ic.icon('flame',12) }} {{ 'реклама' if c.source == 'ad' else 'пост' }}</span>
         {% endif %}
@@ -114,7 +121,7 @@
         {% if c.needs_reply %}
         <span class="badge wait-hot">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-          ваш ход
+          {% if simple_on %}отвечать вам{% else %}ваш ход{% endif %}
         </span>
         {% endif %}
         {% if c.intercepted and (not standalone_crm or crm_bot_mode) %}

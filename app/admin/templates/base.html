@@ -392,6 +392,25 @@
     {%- endmacro %}
     {# На телефоне эта же навигация становится нижней панелью (см. CSS .main-nav). #}
     <nav class="main-nav" aria-label="Разделы">
+    {% if simple_on and not is_admin|default(false) %}
+    {#- Простой режим, менеджер: четыре раздела на день и «Ещё». Слова — что там лежит,
+        а не внутренние названия экранов: «Главная» вместо «Фокус», «Мои дела» вместо
+        «Календаря», «Договоры» вместо «Рабочего дня» (там услуги после договора).
+        Админ видит прежний набор целиком — ниже. -#}
+    {% if focus_on %}{{ nl('/admin/focus','focus','Главная') }}{% endif %}
+    {{ nl('/admin','chat','Диалоги') }}
+    {% if manual_lead_on|default(false) %}{{ nl('/admin/clients/new','plus','Новый клиент') }}{% endif %}
+    {{ nl('/admin/calendar','calendar','Мои дела') }}
+    {% if workday_on %}{{ nl('/admin/work','work','Договоры') }}{% endif %}
+    <details class="more-nav">
+      <summary class="nav-link">{{ ic.icon('list') }}Ещё</summary>
+      <div class="more-pop">
+        {{ nl('/admin/buyers','users','Покупатели') }}
+        {{ nl('/admin/morning','flame','Горячий лист') }}
+        {% if missing_cards_on %}{{ nl('/admin/no-card','cards','Нет карточки в Bitrix') }}{% endif %}
+      </div>
+    </details>
+    {% else %}
     {% if focus_on %}{{ nl('/admin/focus','focus','Фокус') }}{% endif %}
     {% if workday_on %}{{ nl('/admin/work','work','Рабочий день') }}{% endif %}
     {% if standalone_crm and not crm_bot_mode %}{{ nl('/admin/intake','plus','Новое обращение') }}{% endif %}
@@ -413,6 +432,7 @@
         {% endif %}
       </div>
     </details>
+    {% endif %}
     </nav>
     {% else %}
     {% if focus_on %}<a href="/admin/focus" class="nav-link">🎯 Фокус</a>{% endif %}

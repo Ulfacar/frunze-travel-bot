@@ -1881,6 +1881,7 @@ async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query:
 
 
 FOCUS_QUEUE_LIMIT = 8      # один в фокусе + семь в очереди: больше за раз не удержать
+FOCUS_TASKS_LIMIT = 6   # «Мои дела на сегодня» на главной; остальное — в календаре
 FOCUS_HISTORY_LIMIT = 10   # хвост переписки рядом с лидом: последний разговор, не весь диалог
 
 
@@ -1950,8 +1951,22 @@ async def focus(request: Request, lead: str = "", manager: dict = Depends(requir
                      # местное время, и в Бишкеке таймер соврёт на шесть часов.
                      "wait_since": _as_utc_iso(conv.last_message_at)}
 
+    # Простой режим: «мои дела на сегодня» на том же стартовом экране, чтобы менеджеру
+    # не ходить в календарь за ответом на второй вопрос дня. Источник и правила доступа —
+    # те же, что у календаря (`_fetch_calendar_tasks`: менеджер видит только свои задачи).
+    today_tasks, today_total = [], 0
+    if bool(getattr(request.state, "simple_on", settings.panel_simple_mode_enabled)):
+        today = _bishkek_today()
+        rows = [t for t in await _fetch_calendar_tasks(manager, today, today)
+                if t.status in ("planned", "rescheduled") and t.scheduled_date <= today]
+        convs = await _conv_map({t.user_id for t in rows if t.user_id}, manager)
+        cards = [_task_ui(t, today, convs.get(t.user_id or "")) for t in rows]
+        cards.sort(key=lambda c: (not c["overdue"], c["time"] or "99:99"))
+        today_total, today_tasks = len(cards), cards[:FOCUS_TASKS_LIMIT]
+
     return templates.TemplateResponse(request, "focus.html",
                                       {"current": current, "brief": brief,
+                                       "today_tasks": today_tasks, "today_total": today_total,
                                        "queue": queue[1:], "history": history,
                                        # Числа считаем на сервере: до первого ответа `/stats`
                                        # экран показывал «0 ваш ход» при восьми ждущих и
@@ -2131,6 +2146,8 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
         "today_iso": _bishkek_today().isoformat(),
         # Заметки менеджера (флаг panel_client_card_enabled; None — блока нет).
         "client_notes": await _client_notes_context(request, conv, manager),
+        # «Напомнить» в простом режиме: по умолчанию — завтра, это самый частый случай.
+        "tomorrow_iso": (_bishkek_today() + timedelta(days=1)).isoformat(),
     })
 
 
@@ -2442,6 +2459,22 @@ async def reassign(user_id: str, request: Request,
         user_id, request, manager, notice=f"Лид передан менеджеру {target}.{tail}")
 
 
+def _whatsapp_unconfigured(conv) -> bool:
+    """WhatsApp у бота диалога не настроен: Wappi молча вернёт "" и ничего не отправит.
+
+    Без этой проверки менеджер видел галочку «отправлено» у сообщения, которое никуда
+    не ушло (замер на стенде 30.10: нет токена → `Wappi send пропущен`, в чате ✓).
+    Пустой id при настроенном канале по-прежнему считается отправкой: Wappi иногда
+    принимает сообщение без id, и «не доставлено» там дало бы дубль при повторе.
+    """
+    if (getattr(conv, "channel", "") or "") != "whatsapp":
+        return False
+    from app.core.bots import registry
+    bot = registry.by_id(getattr(conv, "bot_id", "") or "") if getattr(conv, "bot_id", "") else None
+    profile = (bot.wappi_profile_id if bot and bot.wappi_profile_id else settings.wappi_profile_id)
+    return not (settings.wappi_token and profile)
+
+
 @router.post("/conversation/{user_id}/send", response_class=HTMLResponse)
 async def send_message(user_id: str, request: Request, manager: dict = Depends(require_admin),
                        text: str = Form(""), send_key: str = Form("")):
@@ -2502,6 +2535,8 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
             else:
                 provider = await outbound.send_to_client(
                     conv.channel, conv.bot_id, conv.chat_id or user_id, text)
+                if not provider and _whatsapp_unconfigured(conv):
+                    raise RuntimeError("WhatsApp-канал бота не настроен — Wappi пропустил отправку")
             mark_own(provider)
             await panel.mark_message_status(message_id=msg_id, status="sent",
                                             set_provider_msg_id=(provider or None))
@@ -2768,6 +2803,8 @@ async def resend(user_id: str, message_id: int, request: Request,
         try:
             provider = await outbound.send_to_client(
                 conv.channel, conv.bot_id, conv.chat_id or user_id, target.text)
+            if not provider and _whatsapp_unconfigured(conv):
+                raise RuntimeError("WhatsApp-канал бота не настроен — Wappi пропустил отправку")
             mark_own(provider)
             await panel.mark_message_status(message_id=message_id, status="sent",
                                             set_provider_msg_id=(provider or None))
@@ -2890,6 +2927,19 @@ def _fmt_phone(digits: str) -> str:
     if len(d) == 12 and d.startswith("996"):
         return f"+{d[:3]} {d[3:6]} {d[6:8]} {d[8:10]} {d[10:]}"
     return f"+{d}" if d else ""
+
+
+def _phone_human(value) -> str:
+    """Фильтр шаблонов простого режима: номер читаемо, данные не трогаем.
+
+    Только для строки из одних цифр (номер диалога); всё остальное — как есть, чтобы
+    не превратить имя или служебный ключ в «+».
+    """
+    raw = str(value or "").strip()
+    return _fmt_phone(raw) if raw.isdigit() and len(raw) >= 9 else raw
+
+
+templates.env.filters["phone_h"] = _phone_human
 
 
 def _as_utc(when: datetime | None) -> datetime:
@@ -3186,14 +3236,46 @@ async def _conv_map(user_ids: set[str], manager: dict | None = None) -> dict:
 
 @router.get("/calendar", response_class=HTMLResponse)
 async def calendar_view(request: Request, manager: dict = Depends(require_admin),
-                        view: str = "day", day: str = ""):
+                        view: str = "", day: str = ""):
     """Manager calendar. Day = the working call-list (overdue → now → later → done);
-    week = a planning grid. Scoped manager sees only their tasks; full-admin all."""
+    week = a planning grid. Scoped manager sees only their tasks; full-admin all.
+
+    Простой режим, менеджер (30.10): по умолчанию — список «Просрочено / Сегодня / Завтра»
+    с «Сделано» и «Перенести на завтра»; неделя и день — по кнопке. Данные и права те же
+    (`_fetch_calendar_tasks`), действия — те же эндпоинты complete/snooze/reschedule/cancel.
+    """
     today = _bishkek_today()
     try:
         anchor = date.fromisoformat(day) if day else today
     except Exception:
         anchor = today
+    is_admin = _manager_bot_scope(manager) is None
+    simple_list = (bool(getattr(request.state, "simple_on", settings.panel_simple_mode_enabled))
+                   and not is_admin)
+    if not view:
+        view = "list" if simple_list else "day"
+    if view == "list" and simple_list:
+        tomorrow = today + timedelta(days=1)
+        rows = await _fetch_calendar_tasks(manager, today, tomorrow)
+        convs = await _conv_map({t.user_id for t in rows if t.user_id}, manager)
+        cards = [c for c in (_task_ui(t, today, convs.get(t.user_id or "")) for t in rows)
+                 if c["active"]]
+        def _by_time(items):
+            return sorted(items, key=lambda c: (not c["has_time"], c["time"] or "", c["id"]))
+        overdue = sorted((c for c in cards if c["date"] < today),
+                         key=lambda c: (c["date_iso"], c["time"] or "99:99"))
+        return templates.TemplateResponse(request, "calendar.html", {
+            "manager": manager, "is_admin": is_admin, "view": "list",
+            "anchor_iso": today.isoformat(), "today_iso": today.isoformat(),
+            "tomorrow_iso": tomorrow.isoformat(), "is_today": True,
+            "overdue": overdue,
+            "today_cards": _by_time(c for c in cards if c["date"] == today),
+            "tomorrow_cards": _by_time(c for c in cards if c["date"] == tomorrow),
+            "now_hhmm": (datetime.now(timezone.utc) + timedelta(hours=6)).strftime("%H:%M"),
+            "day_title": f"{_WEEKDAYS_FULL_RU[today.weekday()]}, {today.day} {_MONTHS_RU[today.month - 1]}",
+            "kind_labels": TASK_KIND_LABELS, "priority_labels": TASK_PRIORITY_LABELS,
+            "simple_list": True,
+        }, headers={"Cache-Control": "no-store"})
     if view == "week":
         d_from = anchor - timedelta(days=anchor.weekday())   # Monday
         d_to = d_from + timedelta(days=6)
@@ -3263,13 +3345,14 @@ async def calendar_view(request: Request, manager: dict = Depends(require_admin)
         "task_total": sum(dv["count"] for dv in day_views),
         "kind_labels": TASK_KIND_LABELS,
         "priority_labels": TASK_PRIORITY_LABELS,
+        "simple_list": simple_list,
     }, headers={"Cache-Control": "no-store"})
 
 
 # ---- one-tap actions straight from the calendar (no client-card round-trip) ----------
 
 def _calendar_redirect(view: str, day: str) -> RedirectResponse:
-    v = "week" if view == "week" else "day"
+    v = view if view in ("week", "list") else "day"
     d = (day or "").strip()
     return RedirectResponse(f"/admin/calendar?view={v}" + (f"&day={d}" if d else ""),
                             status_code=303)

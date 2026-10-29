@@ -23,14 +23,33 @@
 {% endblock %}
 {% block content %}
 <main class="contract-wrap">
-  <a href="/admin/work">← Рабочий день</a>
+  {% if simple_on %}<a href="/admin?open={{ c.user_id | urlencode }}">← К переписке с клиентом</a>{% else %}<a href="/admin/work">← Рабочий день</a>{% endif %}
   <h1>Договор подписан</h1>
   <p>Клиент: <strong>{{ c.qualification.get('name') or 'Имя не указано' }}</strong> · {{ c.phone or c.user_id }}</p>
   {% if owner %}<p>Услугу ведёт <strong>{{ owner }}</strong>.</p>{% endif %}
   <p class="muted">Зафиксируйте уже подписанный договор. После сохранения откроется карточка услуги с её этапами и задачами.</p>
-  {% if error %}<p class="contract-notice contract-error" role="alert">{{ error }}</p>{% endif %}
+  {% if error %}<p class="contract-notice contract-error" role="alert">{{ error | replace('действие «Перехватить»', 'кнопку «Взять себе»') if simple_on else error }}</p>{% endif %}
+  {% if simple_on and not owner %}
+  {#- Простой режим: договор оформляет тот, за кем закреплён клиент. Кнопка здесь же —
+      тот же эндпоинт перехвата, что и в чате; без неё менеджер шёл назад искать «Перехватить». -#}
+  <p><button type="button" class="btn btn-brand" id="contract-claim"
+             onclick="claimForContract(this, '{{ c.user_id | urlencode }}')">Взять клиента себе и продолжить</button></p>
+  <script>
+    async function claimForContract(btn, uid) {
+      btn.disabled = true;
+      try {
+        var r = await fetch('/admin/conversation/' + uid + '/takeover',
+                            { method: 'POST', headers: { 'HX-Request': 'true' } });
+        if (r.ok && r.headers.get('X-Action-Outcome') === 'claimed') { location.reload(); return; }
+        btn.textContent = 'Не получилось: клиент закреплён за другим менеджером';
+      } catch (_) { btn.textContent = 'Ошибка сети — попробуйте ещё раз'; btn.disabled = false; }
+    }
+  </script>
+  {% endif %}
   {% if not write_on %}<p class="contract-notice" role="status">Запись услуг выключена. Договор пока нельзя сохранить.</p>{% endif %}
-  {% if not products and not error %}<p class="contract-notice" role="status">Нет доступных продуктов с опубликованным процессом. Обратитесь к администратору.</p>{% endif %}
+  {#- Простой режим: «нет продуктов» показываем и рядом с другой ошибкой — иначе менеджер
+      берёт клиента себе и упирается во второе препятствие, о котором не знал. -#}
+  {% if not products and (not error or simple_on) %}<p class="contract-notice" role="status">Нет доступных продуктов с опубликованным процессом. Обратитесь к администратору.</p>{% endif %}
   <form class="contract-form" action="{{ form_url }}" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="idempotency_key" value="{{ values.idempotency_key }}">

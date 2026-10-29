@@ -79,7 +79,9 @@ def test_inbox_bulk_actions_hide_behind_one_disclosure(monkeypatch):
     plain = _page(monkeypatch, "/admin/inbox", simple=False)
     simple = _page(monkeypatch, "/admin/inbox", simple=True)
     assert "inbox-tools" not in plain, "при выключенном тумблере вид обязан быть прежним"
-    assert "Разобрать список" in simple and "inbox-tools" in simple
+    # 30.10: подпись «Разобрать список» → «Фильтры и архив» (проход менеджера: из
+    # названия не было понятно, что внутри). Раскрывашка и её содержимое те же.
+    assert "Фильтры и архив" in simple and "inbox-tools" in simple
 
 
 @pytest.mark.parametrize("handler", BULK)
@@ -153,7 +155,11 @@ def test_focus_hides_the_hotkey_footnote_but_keeps_the_keys(monkeypatch):
     simple = _page(monkeypatch, "/admin/focus", simple=True)
     assert "следующий ·" in plain
     assert "следующий ·" not in simple
-    assert "Ctrl" in simple, "подпись на кнопке отправки обязана остаться"
+    # 30.10: прежняя проверка `"Ctrl" in simple` была пустой — «Ctrl» находился в `e.ctrlKey`
+    # скрипта, а на пустой очереди кнопки нет вовсе. Подсказка клавиши ушла с кнопки в title
+    # (проход менеджера: «Ctrl+Enter» читался как часть названия), это проверяет
+    # test_panel_simple_manager_day.py на засеянном клиенте. Здесь — что сочетание живо.
+    assert "requestSubmit()" in simple, "обработчик Ctrl+Enter обязан остаться"
 
 
 def test_templates_declare_the_flag_only_through_the_context(monkeypatch):

@@ -298,7 +298,9 @@
   .chat-palma .chat-head { position:sticky; top:0; z-index:3; }
   .chat-menu { flex:none; }
   .chat-menu-body { position:absolute; z-index:6; top:56px; right:8px; width:300px; max-width:calc(100% - 16px);
-    max-height:calc(100% - 66px); overflow-y:auto; overscroll-behavior:contain; padding:10px;
+    /* Не «100% − 66px»: блок отсчитывается от липкой шапки (position:sticky делает её
+       контейнером), и меню схлопывалось до 22 px — действия внутри не было видно. */
+    max-height:min(560px, calc(100dvh - 170px)); overflow-y:auto; overscroll-behavior:contain; padding:10px;
     background:var(--s-surface); color:var(--s-ink); border:1px solid var(--s-line); border-radius:12px;
     box-shadow:0 12px 34px -12px rgba(0,0,0,.45); font-size:13px; }
   .chat-phone { display:flex; align-items:center; gap:8px; }
@@ -411,11 +413,68 @@
     margin-right:10px; cursor:pointer; }
   .chat-palma .chat-file button { min-height:40px; white-space:nowrap; }
   @container (max-width: 420px) { .chat-palma .chat-file > * { flex-basis:100%; } }
+  /* ---- Простой режим: кто отвечает клиенту + «Напомнить» (panel_simple_mode_enabled) ---- */
+  .chat-who { display:flex; align-items:center; flex-wrap:wrap; gap:6px 8px; padding:7px 10px; flex:none;
+    background:var(--s-surface-2); border-bottom:1px solid var(--s-line); font-size:13px; color:var(--s-ink); }
+  .chat-who.is-human { background:var(--s-accent-soft); color:var(--s-accent-ink); }
+  .chat-who-text { flex:1 1 auto; min-width:0; font-weight:600; }
+  @container (max-width: 420px) { .chat-who { gap:6px; padding:6px 8px; }
+    .chat-palma .chat-who-btn { padding:0 10px; gap:4px; } }
+  .chat-palma .chat-who-btn { display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 12px;
+    border:1px solid var(--s-chip-line); border-radius:18px; background:var(--s-surface); color:var(--s-chip-ink);
+    font-size:13px; font-weight:600; white-space:nowrap; }
+  .chat-remind { position:static; }
+  .chat-remind[open] > summary { background:var(--s-brand); color:var(--s-on-brand); border-color:var(--s-brand); }
+  .chat-remind-form { position:absolute; z-index:5; left:8px; right:8px; margin-top:6px; padding:10px;
+    display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; align-items:end;
+    background:var(--s-surface); color:var(--s-ink); border:1px solid var(--s-line); border-radius:12px;
+    box-shadow:0 12px 34px -12px rgba(0,0,0,.45); font-size:12.5px; }
+  .chat-remind-form label { display:grid; gap:3px; color:var(--s-ink-2); min-width:0; }
+  .chat-remind-form label.wide { grid-column:1 / -1; }
+  .chat-remind-form input, .chat-remind-form select { width:100%; min-height:36px; }
+  .chat-remind-form button { grid-column:1 / -1; min-height:40px; }
+  @container (max-width: 420px) { .chat-remind-form { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+    .chat-remind-form label:first-child { grid-column:1 / -1; } }
+  .chat-palma .chat-attach { display:grid; place-items:center; width:40px; height:40px; flex:none; border-radius:50%;
+    border:1px solid var(--s-line); color:var(--s-ink-2); cursor:pointer; font-size:19px; }
+  .chat-palma .chat-attach:hover { background:var(--s-surface-2); color:var(--s-ink); }
+  /* Быстрые ответы: на широкой карточке — в две строки целиком, на телефоне — лента
+     с затуханием у правого края, чтобы было видно, что её можно прокрутить. */
+  @container (min-width: 421px) { .chat-quick-replies.is-simple { flex-wrap:wrap; overflow-x:visible; } }
+  @container (max-width: 420px) { .chat-quick-replies.is-simple {
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);
+            mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent); padding-right:22px; } }
+  .chat-palma .chat-chip-ai { color:var(--s-accent-ink); border-color:var(--s-accent-soft); background:var(--s-accent-soft); }
+  .chat-palma .chat-chip-ai svg { margin-right:2px; }
+  .chat-palma .chat-file.is-simple:not(.has-file) { display:none; }
+  .chat-palma .chat-file.is-simple { border-top:1px solid var(--s-line); padding:8px 10px; gap:8px; }
+  .chat-palma .chat-file.is-simple .chat-upload-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+  .chat-palma .chat-file.is-simple .chat-file-name { flex:1 1 100%; display:flex; align-items:center; gap:6px; min-width:0;
+    font-size:13px; color:var(--s-ink); }
+  .chat-palma .chat-file.is-simple .chat-file-name b { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-width:0; }
+  .chat-palma .chat-file.is-simple input[name=caption] { flex:1 1 160px; min-height:40px; }
 </style>
+<script>
+  // Простой режим: выбранный через скрепку файл показываем строкой с именем и кнопкой
+  // «Отправить файл». Пока файл выбран, опрос карточки стоит (см. hx-trigger в чате).
+  function chatFilePicked(input) {
+    var form = input.form, f = input.files && input.files[0];
+    form.classList.toggle('has-file', !!f);
+    var name = form.querySelector('.chat-file-name b');
+    if (name) name.textContent = f ? f.name : '';
+    if (f) { var cap = form.querySelector('input[name=caption]'); if (cap) cap.focus(); }
+  }
+  function chatFileCancel(btn) {
+    var form = btn.form; form.reset(); form.classList.remove('has-file');
+  }
+</script>
 {% endif %}
 {% if new_look %}
 <style>
   /* Список входящих читают весь день: имя, сообщение, затем служебные отметки. */
+  /* Тёмная тема (только новый вид): --hot на выделенной карточке давал 4.04:1 (замер 30.10). */
+  html[data-theme="dark"] .badge.wait-hot { color: #FFB4AD; }
+  @media (prefers-color-scheme: dark) { html:not([data-theme="light"]) .badge.wait-hot { color: #FFB4AD; } }
   .layout { grid-template-columns: minmax(0, 1fr) 440px; gap: 24px; padding: 24px; }
   .inbox-head { gap: 8px 16px; margin-bottom: 18px; }
   .inbox-title { font-size: 20px; font-weight: 600; }
@@ -487,7 +546,7 @@
 <nav class="tabs">
       <button class="tab active" data-tab="inbox"
               hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML" onclick="setTab(this)">
-        {% if new_look %}{% import "_icons.html" as ic %}{{ ic.icon("chat", 16) }} {% else %}📥 {% endif %}Инбокс <span class="tab-badge" id="inbox-badge" hidden>0</span>
+        {% if new_look %}{% import "_icons.html" as ic %}{{ ic.icon("chat", 16) }} {% else %}📥 {% endif %}{% if simple_on %}Входящие{% else %}Инбокс{% endif %} <span class="tab-badge" id="inbox-badge" hidden>0</span>
       </button>
       {% if split_on %}
       {# Доска — только текущего направления. Три воронки в одном экране и были тем,
@@ -499,7 +558,10 @@
       </button>
       {% else %}
       {# Тумблер выключен — поведение дословно прежнее: вкладка на каждую воронку. #}
-      {% for key, label in funnels %}
+      {#- Простой режим, менеджер: доски только своего направления (визовому — «Визы»,
+          туровому — «Туры» и «Билеты»). Чужие доски у него всё равно пустые. -#}
+      {% for key, label in funnels if not (simple_on and not is_admin|default(false))
+                                      or key == direction or (direction == 'tours' and key == 'tickets') %}
       <button class="tab" data-funnel="{{ key }}"
               hx-get="/admin/board/{{ key }}" hx-target="#board" hx-swap="innerHTML"
               onclick="setTab(this)">
