@@ -41,6 +41,8 @@ class FakeWappi:
             raise httpx.ReadTimeout("read timeout", request=req)
         if mode == "drop":
             raise httpx.RemoteProtocolError("server disconnected", request=req)
+        if mode == "cancel":                     # обработчик отменили посреди отправки
+            raise asyncio.CancelledError()
         if mode == "connect":
             self.calls -= 1                      # соединения не было — запрос не ушёл
             raise httpx.ConnectError("connection refused", request=req)
@@ -331,6 +333,34 @@ def test_confirmed_resend_200_without_id_stays_unknown(env):
     _send(c)
     r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}", data=_confirm(c, _last().id))
     assert r.headers["X-Action-Outcome"] == "unknown" and fake.calls == 2
+
+
+# ------------- CancelledError посреди отправки (ревью pdf, п. 3) -------------
+
+def _send_cancelled(c):
+    async def go():
+        transport = httpx.ASGITransport(app=main.app)
+        async with REAL_ASYNC_CLIENT(transport=transport, base_url="https://testserver",
+                                     cookies=c.cookies) as ac:
+            await ac.post(f"/admin/conversation/{UID}/send", data={"text": "Подойти можно с 10:00"})
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(go())
+
+
+def test_cancelled_send_is_unknown_not_eternal_pending(env):
+    _on()
+    fake = _wappi(env, "cancel", "ok")
+    c = _client()
+    _send_cancelled(c)
+    assert _last().sender == "manager" and _last().status == "unknown"
+    r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}", data=_confirm(c, _last().id))
+    assert r.headers["X-Action-Outcome"] == "sent" and fake.calls == 2
+
+
+def test_cancelled_send_flag_off_as_before(env):
+    _wappi(env, "cancel")
+    _send_cancelled(_client())
+    assert _last().sender == "manager" and _last().status == "pending"
 
 
 # ---------------------------- права ----------------------------

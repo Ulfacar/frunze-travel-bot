@@ -2522,6 +2522,17 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
             await panel.mark_message_status(message_id=msg_id, status="sent",
                                             set_provider_msg_id=(provider or None))
             outcome = "sent"
+        except asyncio.CancelledError:
+            # Обработчик отменили посреди отправки: Wappi мог принять. С флагом MSG-02 —
+            # `unknown` с подтверждением повтора, а не вечное `pending` (ревью pdf, п. 3).
+            # Флаг OFF — как было: исключение дальше, статус не трогаем.
+            from app.admin import send_unknown
+
+            async def _mark_unknown():
+                if await send_unknown.enabled():
+                    await panel.mark_message_status(message_id=msg_id, status="unknown")
+            await asyncio.shield(_mark_unknown())
+            raise
         except Exception as exc:  # noqa: BLE001 — не теряем сообщение в логе при сбое канала
             # «неизвестно» вместо «не доставлено», если Wappi мог принять (MSG-02, флаг OFF).
             from app.admin import send_unknown
