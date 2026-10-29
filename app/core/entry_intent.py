@@ -179,9 +179,14 @@ _OUTBOUND_HARD = ("шенген", "schengen", "ds-160", "ds160", "грин ка�
                   "vfs", "визовый центр")
 
 
-def _outbound_evidence(low: str) -> bool:
-    """Твёрдая улика выездного разговора — достаточная, чтобы перебить липкость."""
-    veto = _without_origin(low)
+def _outbound_evidence(low: str, *, routing_v2: bool = False) -> bool:
+    """Твёрдая улика выездного разговора — достаточная, чтобы перебить липкость.
+
+    `routing_v2` убирает из улики названную СВОЮ национальность. Без этого испанец,
+    уже сидящий во въездной ветке, выбивался из неё словом «я испанец»: основа «испан»
+    есть в выездном брендинге. Замечание перепроверки 29.10.
+    """
+    veto = _without_origin_v2(low) if routing_v2 else _without_origin(low)
     return (any(w in veto for w in _OUTBOUND_HARD)
             or any(w in veto for w in _OUTBOUND_SHORT)
             or any(stem in veto for stem in _outbound_stems()))
@@ -207,6 +212,8 @@ def _outbound_evidence(low: str) -> bool:
 #     «entered Kyrgyzstan» мимо: «enter kyrgyzstan» не подстрока «entered kyrgyzstan»;
 #   * «в Бишкеке», «в Манасе» — места, а не направление, и сами по себе ничего не решают;
 #   * кыргызского языка в детекторе нет вообще: «Кыргызстанга виза керекпи?» — мимо.
+#   * национальность прилагательным («я узбек», «мы казахи») не считалась названным
+#     гражданством — найдено перепроверкой 29.10, см. `_NATIONALITY`.
 #
 # Главное отличие v2 — четвёртый исход `ambiguous`. Кыргызстан упомянут, а направление
 # неясно: бот ЗАДАЁТ вопрос «в Кыргызстан или из Кыргызстана?» вместо того, чтобы молча
@@ -302,6 +309,114 @@ _ENTRY_STRONG_BOUNDED = tuple(
 _KG_LOCATIVE = re.compile(r"\bкыргызстанд[аае]\b|\bкыргызда\b", re.IGNORECASE)
 
 
+# Национальность, названная прилагательным или существительным: «я узбек», «мы казахи»,
+# «таджик по национальности». `_ORIGIN_CLAIM` такую форму не ловит — он ждёт «я из
+# Узбекистана» или «я гражданин Узбекистана», а живой клиент пишет короче.
+#
+# Регрессия найдена перепроверкой 29.10 на реплике «Я узбек, работаю на стройке в
+# Бишкеке, нужен патент?»: v1 отвечал `kg_entry` по слабому маркеру «Бишкек», v2 убрал
+# «Бишкек» из слабых — и реплика провалилась в `unknown`, то есть иностранец с рабочим
+# патентом уходил в выездную воронку для граждан КР.
+#
+# Список не претендует на полноту мира: это страны реального въездного потока в КР плюс
+# те, по которым выездной GetVisa и так работает. Неизвестная национальность просто не
+# срабатывает — поведение остаётся прежним, как и велит главное правило файла.
+_NATIONALITY: dict[str, str] = {
+    # Кыргызстан. Нужен здесь ОБЯЗАТЕЛЬНО: «я кыргыз» — это свой гражданин, и он не
+    # имеет права считаться иностранцем ни на одном шаге.
+    "кыргыз": "KGZ", "киргиз": "KGZ",
+    # Центральная Азия и СНГ — основной въездной поток.
+    "узбек": "UZB", "узбечк": "UZB",
+    "казах": "KAZ", "казашк": "KAZ",
+    "таджик": "TJK", "таджичк": "TJK",
+    "туркмен": "TKM",
+    "русск": "RUS", "россиян": "RUS",
+    "белорус": "BLR",
+    "украин": "UKR",
+    "молдаван": "MDA",
+    "азербайджан": "AZE",
+    "армян": "ARM",
+    "грузин": "GEO",
+    # Азия.
+    "китае": "CHN", "китайц": "CHN", "китаянк": "CHN",
+    "индие": "IND", "индийц": "IND", "индианк": "IND", "индус": "IND",
+    "пакистан": "PAK",
+    "афган": "AFG",
+    "иран": "IRN",
+    "ирак": "IRQ",
+    "сири": "SYR",
+    "йемен": "YEM",
+    "бангладеш": "BGD",
+    "непал": "NPL",
+    "вьетнам": "VNM",
+    "монгол": "MNG",
+    "филиппин": "PHL",
+    "индонез": "IDN",
+    "корее": "KOR", "корейц": "KOR", "кореянк": "KOR",
+    "японе": "JPN", "японц": "JPN", "японк": "JPN",
+    "турок": "TUR", "турчанк": "TUR",
+    # Африка и Ближний Восток.
+    "нигери": "NGA",
+    "египт": "EGY",
+    # Запад.
+    "американ": "USA",
+    "британ": "GBR", "англичан": "GBR",
+    "немец": "DEU", "немк": "DEU",
+    "француз": "FRA",
+    "итальян": "ITA",
+    "испан": "ESP",
+    "поляк": "POL", "полячк": "POL",
+    "канад": "CAN",
+    "австрали": "AUS",
+    "австрийц": "AUT",
+}
+
+# Длинные основы проверяем первыми: в Python альтернатива `|` отдаёт первое совпадение,
+# и «казах» иначе перекрыл бы «казашк» на ровном месте.
+_NATIONALITY_ALT = "|".join(
+    re.escape(stem) for stem in sorted(_NATIONALITY, key=len, reverse=True))
+
+# Нужно именно САМОНАЗВАНИЕ. «Виза для узбеков» — это не заявление о своём гражданстве,
+# а вопрос про третьих лиц, и забирать по нему диалог нельзя.
+#
+# Отрицание `(?!\s*язык)` стоит не для красоты: «я русский язык плохо знаю» — реплика
+# кыргызскоязычного клиента, и считать его гражданином России по ней нельзя.
+_NATIONALITY_CLAIM = re.compile(
+    rf"(?:^|[\s.,;:!?()«»\"'—–-])(?:я|мы)\s*(?:[—–-]\s*)?"
+    rf"(?P<self>{_NATIONALITY_ALT})\w{{0,6}}\b(?!\s*язык)"
+    rf"|\b(?P<by>{_NATIONALITY_ALT})\w{{0,6}}\s+по\s+национальност",
+    re.IGNORECASE)
+
+
+def _nationality_origins(low: str) -> list[str]:
+    """Гражданства, названные о себе национальностью: «я узбек» → UZB."""
+    out: list[str] = []
+    for match in _NATIONALITY_CLAIM.finditer(low):
+        word = (match.group("self") or match.group("by") or "").lower()
+        iso = _NATIONALITY.get(word)
+        if iso:
+            out.append(iso)
+    return out
+
+
+def _claimed_origins_v2(low: str) -> list[str]:
+    """Все свои гражданства: и «я из Узбекистана», и «я узбек»."""
+    return _claimed_origins(low) + _nationality_origins(low)
+
+
+def _without_origin_v2(low: str) -> str:
+    """Текст без своего гражданства в обеих формах.
+
+    Зачем убирать и национальность. Основы выездных стран берутся из брендинга, и
+    «испан» в них есть: без этой вырезки «я испанец, хочу приехать на 30 дней» ловилось
+    выездным вето по слову «испанец» и уезжало в воронку для граждан КР. Та же вырезка
+    снимает ложный вопрос о направлении у своего гражданина: «я кыргыз, нужна виза» —
+    страна упомянута только как национальность, спрашивать «в Кыргызстан или из
+    Кыргызстана?» не о чем.
+    """
+    return _NATIONALITY_CLAIM.sub(" ", _without_origin(low))
+
+
 def _kg_mentioned(low: str) -> bool:
     return any(stem in low for stem in _KG_STEM)
 
@@ -318,7 +433,7 @@ def _detect_v2_direction(low: str) -> Intent | None:
     ветку: рядом стоят «Кыргызстана» и «виза». Это худший из возможных промахов —
     гражданка КР получает сценарий для иностранца. Поймано тестом.
     """
-    return "kg_entry" if _KG_TO.search(_without_origin(low)) else None
+    return "kg_entry" if _KG_TO.search(_without_origin_v2(low)) else None
 
 
 def _detect_v2_context(low: str) -> Intent | None:
@@ -333,9 +448,9 @@ def _detect_v2_context(low: str) -> Intent | None:
     Порядок внутри: кыргызский документ, затем направление «отсюда», затем туры и
     билеты, затем места, и лишь в конце — простое упоминание страны.
     """
-    body = _without_origin(low)
+    body = _without_origin_v2(low)
     arrival = any(w in low for w in _ARRIVAL_V2)
-    foreign = any(iso != "KGZ" for iso in _claimed_origins(low))
+    foreign = any(iso != "KGZ" for iso in _claimed_origins_v2(low))
     staying = any(w in low for w in _STAY_IN_KG)
 
     if _KG_IN.search(body):
@@ -384,7 +499,8 @@ def detect(text: str, *, sticky: str | None = None,
         # Липкость не должна запирать диалог в неверной ветке: режим мог быть угадан
         # по косвенным признакам. Прямая улика выездного её перебивает — но только
         # прямая, иначе обычное продолжение въездного разговора будет перескакивать.
-        if sticky == "kg_entry" and low.strip() and _outbound_evidence(low):
+        if sticky == "kg_entry" and low.strip() and _outbound_evidence(
+                low, routing_v2=routing_v2):
             return "outbound"
         return sticky                                  # type: ignore[return-value]
 
@@ -413,7 +529,7 @@ def detect(text: str, *, sticky: str | None = None,
     if routing_v2 and leaving and any(word in low for word in _ARRIVAL_V2):
         leaving = False
 
-    veto = _without_origin(low)
+    veto = _without_origin_v2(low) if routing_v2 else _without_origin(low)
     if any(w in veto for w in _OUTBOUND_WORDS) or any(w in veto for w in _OUTBOUND_SHORT):
         return "outbound"
     if any(stem in veto for stem in _outbound_stems()):
@@ -427,7 +543,8 @@ def detect(text: str, *, sticky: str | None = None,
 
     # Назвал чужое гражданство — дальше смотрим, куда он собрался. Гражданин КР так
     # про себя не пишет, а его собственное гражданство чужим не считается.
-    foreign = any(iso != "KGZ" for iso in _claimed_origins(low))
+    origins = _claimed_origins_v2(low) if routing_v2 else _claimed_origins(low)
+    foreign = any(iso != "KGZ" for iso in origins)
     if foreign and not leaving:
         arrival = _ARRIVAL_V2 if routing_v2 else _ARRIVAL
         if any(word in low for word in arrival):
