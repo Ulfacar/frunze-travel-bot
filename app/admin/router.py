@@ -2514,8 +2514,10 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
                 if not provider:
                     raise RuntimeError("Wappi did not confirm acceptance")
             else:
+                from app.admin import send_unknown
                 provider = await outbound.send_to_client(
-                    conv.channel, conv.bot_id, conv.chat_id or user_id, text)
+                    conv.channel, conv.bot_id, conv.chat_id or user_id, text,
+                    **await send_unknown.send_kwargs(conv.channel))
             mark_own(provider)
             await panel.mark_message_status(message_id=msg_id, status="sent",
                                             set_provider_msg_id=(provider or None))
@@ -2812,7 +2814,8 @@ async def resend(user_id: str, message_id: int, request: Request,
         await panel.mark_message_status(message_id=message_id, status="pending")
         try:
             provider = await outbound.send_to_client(
-                conv.channel, conv.bot_id, conv.chat_id or user_id, target.text)
+                conv.channel, conv.bot_id, conv.chat_id or user_id, target.text,
+                **await send_unknown.send_kwargs(conv.channel))
             mark_own(provider)
             await panel.mark_message_status(message_id=message_id, status="sent",
                                             set_provider_msg_id=(provider or None))

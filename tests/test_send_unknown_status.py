@@ -46,6 +46,12 @@ class FakeWappi:
             raise httpx.ConnectError("connection refused", request=req)
         if mode in ("402", "503"):
             return httpx.Response(int(mode), json={"detail": "x"}, request=req)
+        if mode == "noid":                       # 200, но id сообщения нет
+            return httpx.Response(200, json={"status": "done"}, request=req)
+        if mode == "errbody":                    # 200 с телом-ошибкой
+            return httpx.Response(200, json={"status": "error", "detail": "x"}, request=req)
+        if mode == "nojson":                     # 200, тело не JSON
+            return httpx.Response(200, text="OK", request=req)
         return httpx.Response(200, json={"status": "done", "message_id": "W-1"}, request=req)
 
     async def aclose(self):
@@ -292,6 +298,39 @@ def test_failed_message_still_retries_without_confirmation(env):
     _send(c)
     r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}")
     assert r.headers["X-Action-Outcome"] == "sent" and fake.calls == 2
+
+
+# ------------------ 200 без id у текста (ревью pdf, п. 2) ------------------
+
+@pytest.mark.parametrize("mode", ["noid", "errbody", "nojson"])
+def test_text_200_without_id_is_unknown_when_flag_on(env, mode):
+    """Как у `send_file`: Wappi ответил 2xx, но id нет — мог принять, мог отклонить."""
+    _on()
+    fake = _wappi(env, mode, "ok")
+    c = _client()
+    r = _send(c)
+    assert (r.headers["X-Action-Outcome"], _last().status) == ("unknown", "unknown")
+    assert _last().provider_msg_id in ("", None)
+    r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}")
+    assert r.headers["X-Action-Outcome"] == "confirm_required" and fake.calls == 1
+    r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}", data=_confirm(c, _last().id))
+    assert r.headers["X-Action-Outcome"] == "sent" and fake.calls == 2
+
+
+@pytest.mark.parametrize("mode", ["noid", "errbody", "nojson"])
+def test_text_200_without_id_flag_off_is_sent_as_before(env, mode):
+    _wappi(env, mode)
+    r = _send(_client())
+    assert (r.headers["X-Action-Outcome"], _last().status) == ("sent", "sent")
+
+
+def test_confirmed_resend_200_without_id_stays_unknown(env):
+    _on()
+    fake = _wappi(env, "timeout", "noid")
+    c = _client()
+    _send(c)
+    r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}", data=_confirm(c, _last().id))
+    assert r.headers["X-Action-Outcome"] == "unknown" and fake.calls == 2
 
 
 # ---------------------------- права ----------------------------

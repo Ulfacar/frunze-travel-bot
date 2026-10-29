@@ -12,7 +12,8 @@
   нет соединения (`ConnectError`, `ConnectTimeout`, `PoolTimeout`), ответ 4xx (402 «не
   оплачено», 401, 400), канал не настроен, нет адаптера;
 * **неизвестно** (`unknown`) — запрос мог быть принят: таймаут чтения/записи, обрыв
-  соединения после отправки, ответ 5xx, `SendOutcomeUnknown`, отменённый запрос.
+  соединения после отправки, ответ 5xx, ответ 2xx без id сообщения (тело-ошибка, не
+  JSON — `SendOutcomeUnknown`), отменённый запрос.
 
 Повтор `unknown` сервер выполняет только с явным подтверждением (`confirm=1` в форме):
 менеджер видит «Клиент может получить сообщение дважды». Подтверждение относится к тому
@@ -71,6 +72,18 @@ def attempt_finished(message_id: int) -> None:
 async def enabled() -> bool:
     from app.admin import router as ar
     return await ar._media_flag(FLAG)
+
+
+async def send_kwargs(channel: str) -> dict:
+    """Доп. аргументы `outbound.send_to_client` для текста менеджера.
+
+    Флаг ON и WhatsApp: 2xx без id → `unknown` (как у `send_file`). Флаг OFF — пусто:
+    вызов тот же, что был."""
+    try:
+        on = channel == "whatsapp" and await enabled()
+    except Exception:  # noqa: BLE001 — флаг недоступен: прежнее поведение
+        on = False
+    return {"unknown_without_id": True} if on else {}
 
 
 async def failure_status(exc: BaseException) -> str:
