@@ -23,6 +23,12 @@ def evaluate(document, root=ROOT):
         raise ValueError('Expected 50 criteria / 100 total points')
     points = 0
     review_pending = []
+    # Ревью бывает PASS и при этом не быть независимым. Все ревью этого реестра выполнили
+    # субагенты codex-reviewer/codex-auditor, а это Claude на sonnet/opus, а не внешний
+    # Codex CLI: кросс-вендорной независимости в них нет. Поправка 29.10.2026. Критерий
+    # считается независимо отревьюенным только с явной пометкой `review_vendor:
+    # cross-vendor`; её отсутствие — не повод считать ревью независимым.
+    same_vendor = []
     for row in criteria:
         if row['status'] not in ('PASS', 'FAIL', 'UNKNOWN') or row['review'] not in ('PASS', 'FAIL', 'UNKNOWN'):
             raise ValueError('Invalid evidence status')
@@ -41,10 +47,13 @@ def evaluate(document, root=ROOT):
         points += row['weight']
         if row['review'] != 'PASS':
             review_pending.append(row['id'])
+        elif row.get('review_vendor') != 'cross-vendor':
+            same_vendor.append(row['id'])
     return dict(engineering_points=points, remaining_points=100-points,
                 target_points=document['target_points'], total_points=100,
-                independently_reviewed=False if review_pending else None,
-                review_not_pass=review_pending, production_readiness='UNKNOWN')
+                independently_reviewed=False if (review_pending or same_vendor) else None,
+                review_not_pass=review_pending, review_not_cross_vendor=same_vendor,
+                production_readiness='UNKNOWN')
 
 
 def main():

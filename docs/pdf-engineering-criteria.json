@@ -31,7 +31,8 @@
           "artifact": "ai/handoffs/2026-10-12-2038-e6-24-source-profile-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "A02",
@@ -57,7 +58,8 @@
           "artifact": "ai/handoffs/2026-10-12-2038-e6-24-source-profile-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "A03",
@@ -83,7 +85,8 @@
           "artifact": "ai/handoffs/2026-10-12-2038-e6-24-source-profile-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "A04",
@@ -109,7 +112,8 @@
           "artifact": "ai/handoffs/2026-10-12-2038-e6-24-source-profile-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "B01",
@@ -135,7 +139,8 @@
           "artifact": "ai/handoffs/2026-10-12-2038-e6-24-source-profile-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "B02",
@@ -161,7 +166,8 @@
           "artifact": "ai/handoffs/2026-10-11-0532-e6-17-profile-integrity.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "B03",
@@ -179,7 +185,8 @@
           "artifact": "ai/handoffs/2026-10-11-0325-e6-12-interview-handoff.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "B04",
@@ -197,7 +204,8 @@
           "artifact": "ai/handoffs/2026-10-11-0435-e6-14-channel-handoff.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "C01",
@@ -223,7 +231,8 @@
           "artifact": "ai/reviews/2026-10-12-calculation-final-audit.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "C02",
@@ -249,7 +258,8 @@
           "artifact": "ai/reviews/2026-10-12-calculation-final-audit.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "C03",
@@ -275,7 +285,8 @@
           "artifact": "ai/reviews/2026-10-12-calculation-final-audit.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "C04",
@@ -293,7 +304,8 @@
           "artifact": "ai/handoffs/2026-10-11-0350-e6-13-versioned-quotes.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "C05",
@@ -311,7 +323,8 @@
           "artifact": "ai/handoffs/2026-10-12-2212-e6-28-connected-qualification.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "D01",
@@ -337,7 +350,8 @@
           "artifact": "ai/handoffs/2026-10-12-1915-e6-22a-publication-recovery.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "D02",
@@ -363,7 +377,8 @@
           "artifact": "ai/handoffs/2026-10-12-1915-e6-22a-publication-recovery.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "D03",
@@ -389,7 +404,8 @@
           "artifact": "ai/handoffs/2026-10-12-1915-e6-22a-publication-recovery.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "D04",
@@ -415,7 +431,8 @@
           "artifact": "ai/handoffs/2026-10-12-1915-e6-22a-publication-recovery.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "D05",
@@ -441,7 +458,8 @@
           "artifact": "ai/handoffs/2026-10-12-1915-e6-22a-publication-recovery.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "E01",
@@ -467,7 +485,8 @@
           "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "E02",
@@ -493,7 +512,8 @@
           "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "E03",
@@ -519,7 +539,8 @@
           "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "E04",
@@ -537,7 +558,8 @@
           "artifact": "ai/handoffs/2026-10-11-0150-e6-10-procedural-stages.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "E05",
@@ -563,7 +585,8 @@
           "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "E06",
@@ -581,7 +604,8 @@
           "artifact": "ai/handoffs/2026-10-11-0150-e6-10-procedural-stages.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "E07",
@@ -607,7 +631,8 @@
           "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "F01",
@@ -633,7 +658,8 @@
           "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "F02",
@@ -659,7 +685,8 @@
           "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "F03",
@@ -685,7 +712,8 @@
           "artifact": "ai/handoffs/2026-10-12-2032-e6-25-applications-documents-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "F04",
@@ -703,7 +731,8 @@
           "artifact": "ai/handoffs/2026-10-11-0100-e6-08-reviewed-packages.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "F05",
@@ -721,7 +750,8 @@
           "artifact": "ai/handoffs/2026-10-11-0100-e6-08-reviewed-packages.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "F06",
@@ -739,7 +769,8 @@
           "artifact": "ai/handoffs/2026-10-11-0030-e6-09-document-quarantine.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "F07",
@@ -757,7 +788,8 @@
           "artifact": "ai/handoffs/2026-10-11-0100-e6-08-reviewed-packages.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "G01",
@@ -783,7 +815,8 @@
           "artifact": "ai/handoffs/2026-10-11-0658-e6-20-deadline-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "G02",
@@ -809,7 +842,8 @@
           "artifact": "ai/handoffs/2026-10-11-0658-e6-20-deadline-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "G03",
@@ -835,7 +869,8 @@
           "artifact": "ai/handoffs/2026-10-11-0608-e6-19-deadline-task-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "G04",
@@ -861,7 +896,8 @@
           "artifact": "ai/handoffs/2026-10-11-0608-e6-19-deadline-task-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "H01",
@@ -879,7 +915,8 @@
           "artifact": "ai/handoffs/2026-10-11-0325-e6-12-interview-handoff.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "H02",
@@ -897,7 +934,8 @@
           "artifact": "ai/handoffs/2026-10-12-1840-e6-29c-incoming-dialogue.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "H03",
@@ -915,7 +953,8 @@
           "artifact": "ai/reviews/2026-10-12-e6-21-runtime-evidence.json"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "H04",
@@ -933,7 +972,8 @@
           "artifact": "ai/handoffs/2026-10-11-0435-e6-14-channel-handoff.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "I01",
@@ -951,7 +991,8 @@
           "artifact": "ai/handoffs/2026-10-10-0630-e6-03a-template-preview.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "I02",
@@ -969,7 +1010,8 @@
           "artifact": "ai/handoffs/2026-10-11-0530-e6-16-notification-drafts.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "I03",
@@ -987,7 +1029,8 @@
           "artifact": "ai/handoffs/2026-10-11-0220-e6-11-portal-observations.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "I04",
@@ -1005,7 +1048,8 @@
           "artifact": "ai/handoffs/2026-10-11-0220-e6-11-portal-observations.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "I05",
@@ -1023,7 +1067,8 @@
           "artifact": "ai/handoffs/2026-10-11-0220-e6-11-portal-observations.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "J01",
@@ -1041,7 +1086,8 @@
           "artifact": "ai/reviews/2026-10-13-e6-30c-source-acceptance-review.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "J02",
@@ -1059,7 +1105,8 @@
           "artifact": "ai/handoffs/2026-10-12-2315-e6-30c-golden-acceptance.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "J03",
@@ -1077,7 +1124,8 @@
           "artifact": "ai/reviews/2026-10-13-pdf-affected-final-audit.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "J04",
@@ -1095,7 +1143,8 @@
           "artifact": "ai/handoffs/2026-10-11-0150-e6-10-procedural-stages.md"
         }
       ],
-      "review": "PASS"
+      "review": "PASS",
+      "review_vendor": "same-vendor (Claude)"
     },
     {
       "id": "J05",
@@ -1106,5 +1155,14 @@
       "evidence": [],
       "review": "UNKNOWN"
     }
-  ]
+  ],
+  "review_independence": {
+    "cross_vendor": false,
+    "reviewer_vendor": "same-vendor (Claude)",
+    "reviewer_agents": [
+      "codex-reviewer (sonnet)",
+      "codex-auditor (opus)"
+    ],
+    "note": "Correction of 2026-10-29. Every review and audit behind these PASS marks was run by the subagents codex-reviewer and codex-auditor. Those are Claude subagents on sonnet and opus (C:/Users/alanb/.claude/agents/), not the OpenAI Codex CLI: the name meant 'reviewer of code Codex wrote'. No cross-vendor review exists in this registry. Points, weights and acceptance definitions are untouched; only the vendor of the review is now stated."
+  }
 }
