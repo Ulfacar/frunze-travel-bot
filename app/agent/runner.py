@@ -293,7 +293,9 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
                                           profile=spec.validator_profile,
                                           allowed_claims=allowed,
                                           consent_given=consent,
-                                          quoted_periods=quoted)
+                                          quoted_periods=quoted,
+                                          outbound_isolated=await _entry_isolated(
+                                              state, spec))
         if violations:
             logger.info("validator (%s): %s", spec.name, ", ".join(violations))
             for v in violations:
@@ -891,6 +893,15 @@ async def _entry_speech_allowed(bot_id: str) -> bool:
     from app.core import flags
     return await flags.get_bot_flag("kg_entry_say_confirmed_enabled", bot_id,
                                     settings.kg_entry_say_confirmed_enabled)
+
+
+async def _entry_isolated(state: DialogState, spec: "FunnelSpec") -> bool:
+    """Флаг `kg_entry_outbound_isolation_enabled` — только для въездного профиля."""
+    if spec.validator_profile != "kg_entry":
+        return False
+    from app.core import flags
+    return await flags.get_bot_flag("kg_entry_outbound_isolation_enabled", state.bot_id,
+                                    settings.kg_entry_outbound_isolation_enabled)
 
 
 async def _entry_claim_permissions(state: DialogState, spec: "FunnelSpec"):
