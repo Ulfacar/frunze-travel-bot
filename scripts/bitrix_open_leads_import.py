@@ -11,7 +11,7 @@
     python scripts/bitrix_open_leads_import.py --archive /root/bitrix-archive --dsn "$DSN" \\
         --assignee visa=96451,110841 --assignee tours=155313,155267
     # запись — ТОЛЬКО по слову Алана, сначала на копии; имя базы повторить явно
-    python scripts/bitrix_open_leads_import.py ... --dsn "$DSN" --yes --confirm-db frunze_copy
+    python scripts/bitrix_open_leads_import.py ... --dsn "$DSN" --yes --confirm-db 127.0.0.1:5432/frunze_copy
 
 Телефоны в отчёте маскируются (PII). `--json PATH` — полный план для сверки.
 """
@@ -31,11 +31,11 @@ from app.integrations.crm.bitrix_archive import _jsonl      # noqa: E402
 
 
 def mask(value: str) -> str:
+    """Не больше последних 4 цифр, как `wappi.mask_phone` (ревью pdf, 1.4)."""
     digits = "".join(ch for ch in str(value or "") if ch.isdigit())
     if len(digits) < 10:
         return "***"
-    keep = len(digits) // 3
-    return f"{digits[:keep]}***{digits[-keep:]}"
+    return f"***{digits[-4:]}"
 
 
 def _assignees(pairs: list[str]) -> dict[str, str]:
@@ -50,9 +50,18 @@ def _assignees(pairs: list[str]) -> dict[str, str]:
     return out
 
 
-def _db_name(dsn: str) -> str:
+def _db_target(dsn: str) -> str:
+    """Что подтверждает `--confirm-db`: хост:порт/база (SQLite — полный путь к файлу).
+
+    Одного имени базы мало: копия под тем же именем на другом хосте и прод выглядели
+    одинаково (ревью pdf, 1.2). Пароль и пользователь сюда не входят."""
     from sqlalchemy.engine import make_url
-    return (make_url(dsn).database or "").rsplit("/", 1)[-1]
+    url = make_url(dsn)
+    backend = url.get_backend_name()
+    if backend == "sqlite":
+        return "sqlite:" + str(Path(url.database or "").resolve())
+    port = url.port or {"postgresql": 5432, "mysql": 3306}.get(backend, "")
+    return f"{url.host or 'localhost'}:{port}/{url.database or ''}"
 
 
 def render(plan: imp.Plan, *, limit: int = 40) -> str:
@@ -78,15 +87,17 @@ async def run(argv=None, *, stdout=None) -> int:
                    help="направление по ответственному: visa=96451,110841 (можно несколько раз)")
     p.add_argument("--json", default="", help="куда сохранить полный план (с номерами!)")
     p.add_argument("--yes", action="store_true", help="записать (только с --dsn и --confirm-db)")
-    p.add_argument("--confirm-db", default="", help="имя базы из DSN — защита от не той базы")
+    p.add_argument("--confirm-db", default="",
+                   help="хост:порт/база из DSN (SQLite — sqlite:/полный/путь) — защита от не той базы")
     args = p.parse_args(argv)
     say = (lambda m: print(m, file=stdout)) if stdout is not None else print
     archive = Path(args.archive)
     if not (archive / "leads.jsonl").is_file():
         say(f"Нет {archive / 'leads.jsonl'} — сначала scripts/bitrix_archive_export.py")
         return 2
-    if args.yes and (not args.dsn or args.confirm_db != _db_name(args.dsn)):
-        say("Запись отклонена: нужны --dsn и --confirm-db с ТОЧНЫМ именем базы из DSN.")
+    if args.yes and (not args.dsn or args.confirm_db != _db_target(args.dsn)):
+        say("Запись отклонена: нужны --dsn и --confirm-db с ТОЧНЫМИ хостом, портом и базой "
+            "из DSN — в виде хост:порт/база (для SQLite — sqlite:/полный/путь).")
         return 2
     contacts = {str(c.get("ID")): imp._raw_phones(c) for c in _jsonl(archive / "contacts.jsonl")}
     engine = sm = None
@@ -107,7 +118,12 @@ async def run(argv=None, *, stdout=None) -> int:
                           fh, ensure_ascii=False, indent=1)
         if args.yes:
             changes = await imp.apply_plan(sm, plan)
+            failed = changes.pop("failed", [])
             say("ЗАПИСАНО: " + ", ".join(f"{k}={v}" for k, v in changes.items()))
+            for lead_id, kind in failed[:200]:
+                say(f"  ошибка записи: лид {lead_id}: {kind}")
+            if len(failed) > 200:
+                say(f"  … ещё {len(failed) - 200} ошибок")
         return 0
     finally:
         if engine is not None:
