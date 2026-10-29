@@ -13,6 +13,7 @@ from sqlalchemy import select
 
 import app.admin.router as ar
 from app.admin.kg_entry_form import (FIELDS, FORM_FIELDS, MAX_LENGTHS, FAMILY_LIMIT, FormInvalid, country_options,
+                                    country_options_simple,
                                     report_view, request_from_values, values_from_request)
 from app.admin.kg_review_card import card_view
 from app.admin.workday import _case_or_404, _require_workday, _write_on
@@ -29,6 +30,15 @@ META = ("_kg_key", "_kg_contact", "_kg_base", "_kg_revision", "_kg_version", "_k
 SECURITY = {"_kg_csrf", "_kg_signature"}
 # Includes URL-encoded Unicode at every text bound and all 20 family rows.
 BODY_LIMIT = 65_536
+
+
+def _kg_simple_context(request) -> dict:
+    """`kg_simple` — менеджерский (свёрнутый) вид экранов `kg_*`; у админа всегда False."""
+    return {"kg_simple": bool(getattr(request.state, "kg_simple", False))}
+
+
+if not any(getattr(fn, "__name__", "") == "_kg_simple_context" for fn in ar.templates.context_processors):
+    ar.templates.context_processors.append(_kg_simple_context)
 
 
 async def link_allowed(actor, direction) -> bool:
@@ -112,6 +122,9 @@ async def _gate(request, manager, *, write=False, admin_only=False):
         if not allowed:
             raise HTTPException(403, "admin only")
         actor = replace(actor, kg_entry_operator=True)
+        # Упрощённый вид `kg_*` для оператора-менеджера: шаблоны читают `kg_simple` через
+        # контекст-процессор ниже. Для полного админа признак не ставится — его вид прежний.
+        request.state.kg_simple = True
     try:
         _authorize(actor)
     except PermissionDenied:
@@ -232,7 +245,9 @@ async def _context(request, case, actor, qualification_id=None, attach_history_i
             history_id = attach_history_id
         await _qualification_sources(session, case["contact_id"], version_id, history_id)
         version = await session.get(KnowledgeVersion, version_id)
-        countries = country_options(version.country_aliases)
+        countries = (country_options_simple(version.country_aliases)
+                     if getattr(request.state, "kg_simple", False)
+                     else country_options(version.country_aliases))
         version_label = f"Версия базы №{version.version} · требует проверки"
     base = saved["input"] if saved else {}
     return {"saved": saved, "values": values_from_request(base), "countries": countries,
