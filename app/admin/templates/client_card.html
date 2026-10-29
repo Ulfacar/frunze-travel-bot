@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ name or digits }} — карточка клиента{% endblock %}
+{% block head %}
+<style>
+.cc{max-width:920px;margin:20px auto;padding:0 16px;display:grid;gap:16px}
+.cc-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg,12px);padding:16px 18px}
+.cc-head h1{font-size:22px;margin:0}.cc-head .ph{color:var(--muted);font-family:var(--mono,monospace);margin-top:4px}
+.cc h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 10px}
+.cc-row{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;padding:10px 0;border-top:1px solid var(--border)}
+.cc-row:first-of-type{border-top:0}
+.cc-row .main{flex:1 1 260px;min-width:0}.cc-row .main a{font-weight:600}
+.cc-row .last{color:var(--muted);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.cc-tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);margin-right:4px}
+.cc-meta{font-size:13px;color:var(--muted)}
+.cc-note{padding:10px 0;border-top:1px solid var(--border);white-space:pre-wrap;word-break:break-word}
+.cc-note:first-of-type{border-top:0}
+.cc-empty{color:var(--muted);margin:0}
+@media(min-width:900px){.cc{grid-template-columns:1fr 1fr}.cc-wide{grid-column:1/-1}}
+.cn-space{height:0}
+@media(max-width:600px){.cn-space{height:96px}}
+</style>
+{% endblock %}
+{% block content %}
+<main class="cc">
+  <section class="cc-box cc-head cc-wide">
+    <h1>{{ name or 'Без имени' }}</h1>
+    <div class="ph">{{ digits }}</div>
+  </section>
+
+  <section class="cc-box cc-wide" aria-labelledby="cc-convs">
+    <h2 id="cc-convs">Обращения ({{ convs|length }})</h2>
+    {% for c in convs %}
+    <div class="cc-row">
+      <div class="main">
+        <a href="{{ c.open_url }}">{{ c.funnel }}</a>
+        {% if c.stage %}<span class="cc-tag">{{ c.stage }}</span>{% endif %}
+        {% if c.outcome %}<span class="cc-tag">{{ c.outcome }}</span>{% endif %}
+        {% if c.origin %}<span class="cc-tag">вручную: {{ c.origin }}</span>{% endif %}
+        {% if c.archived %}<span class="cc-tag">в архиве</span>{% endif %}
+        <div class="last">{% if c.last_text %}{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(c.last_sender,'') }}{% if c.last_sender %}: {% endif %}{{ c.last_text }}{% else %}Сообщений пока нет{% endif %}</div>
+      </div>
+      <div class="cc-meta">{{ 'ведёт ' ~ (c.assigned_to|who) if c.assigned_to else 'ничей' }}{% if c.intercepted %} · бот молчит{% endif %}{% if c.last_message_at %} · {{ c.last_message_at|bishkek('%d.%m.%Y') }}{% endif %} · {{ c.bot_id }}</div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="cc-box" aria-labelledby="cc-notes">
+    <h2 id="cc-notes">Заметки ({{ notes|length }})</h2>
+    {% if notes_error %}<p class="cc-empty" role="alert">{{ notes_error }}</p>{% endif %}
+    {% for n in notes %}
+    <div class="cc-note"><div class="cc-meta">{{ n.author|who }}{% if n.created_at %} · {{ n.created_at|bishkek }}{% endif %}</div>{{ n.text }}</div>
+    {% else %}<p class="cc-empty">Заметок нет. Добавить — в переписке, блок «Заметки».</p>{% endfor %}
+  </section>
+
+  <section class="cc-box" aria-labelledby="cc-tasks">
+    <h2 id="cc-tasks">Открытые задачи ({{ tasks|length }})</h2>
+    {% for t in tasks %}
+    <div class="cc-row"><div class="main">{{ t.kind_label or t.kind }}{% if t.comment %} — {{ t.comment }}{% endif %}</div>
+      <div class="cc-meta">{{ t.manager_id|who }} · {{ t.date_label }}{% if t.time %} {{ t.time }}{% endif %}{% if t.overdue %} · <b>просрочено</b>{% endif %}</div></div>
+    {% else %}<p class="cc-empty">Открытых задач нет.</p>{% endfor %}
+  </section>
+
+  <section class="cc-box" aria-labelledby="cc-owners">
+    <h2 id="cc-owners">Ответственные</h2>
+    {% for a in domain.assignments %}
+    <div class="cc-row"><div class="main">{{ a.manager|who }} · {{ a.direction }}{% if a.active %} <span class="cc-tag">сейчас</span>{% endif %}</div>
+      <div class="cc-meta">{% if a.from %}с {{ a.from|bishkek('%d.%m.%Y') }}{% endif %}{% if a.to %} по {{ a.to|bishkek('%d.%m.%Y') }}{% endif %}{% if a.by and a.by != a.manager %} · назначил(а) {{ a.by|who }}{% endif %}</div></div>
+    {% else %}<p class="cc-empty">Закреплений в учёте нет — смотрите «Ведёт» у обращения.</p>{% endfor %}
+  </section>
+
+  <section class="cc-box" aria-labelledby="cc-cases">
+    <h2 id="cc-cases">Услуги ({{ domain.cases|length }})</h2>
+    {% for k in domain.cases %}
+    <div class="cc-row"><div class="main"><a href="/admin/case/{{ k.id }}">Услуга №{{ k.id }}</a> <span class="cc-tag">{{ k.stage }}</span>{% if k.signed %}<span class="cc-tag">договор подписан</span>{% endif %}</div>
+      <div class="cc-meta">{{ k.owner }}{% if k.amount is not none %} · {{ k.amount }} {{ k.currency }}{% endif %}</div></div>
+    {% else %}<p class="cc-empty">Услуг не заведено.</p>{% endfor %}
+  </section>
+
+  <section class="cc-box cc-wide" aria-labelledby="cc-hist">
+    <h2 id="cc-hist">История действий</h2>
+    {% for h in history %}
+    <div class="cc-row"><div class="main">{{ h.who|who }} {{ h.what }}{% if h.detail %} → {{ h.detail|who }}{% endif %}</div>
+      <div class="cc-meta">{{ h.at|bishkek }}</div></div>
+    {% else %}<p class="cc-empty">Действий менеджеров пока не было.</p>{% endfor %}
+  </section>
+</main>
+<div class="cn-space" aria-hidden="true"></div>
+{% endblock %}

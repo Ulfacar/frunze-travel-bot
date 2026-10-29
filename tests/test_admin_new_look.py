@@ -77,6 +77,9 @@ FLAGGED_PATHS = {"/admin/focus", "/admin/work", "/admin/work/list",
                  "/admin/kg-entry/templates", "/admin/kg-entry/publication", "/admin/kg-entry/reviews",
                  "/admin/kg-entry/answers",
                  "/admin/overdue",  # очередь пилота за флагом pilot_reply_queue_enabled (14.10)
+                 # «Новый клиент» вручную за флагом panel_manual_lead_enabled (30.10),
+                 # ON/OFF и права — tests/test_admin_clients.py.
+                 "/admin/clients/new",
                  # Список «нет карточки в Bitrix» за флагом panel_missing_cards_enabled (21.10).
                  # Его OFF/ON, скоуп менеджера и выгрузка — tests/test_panel_missing_cards.py.
                  "/admin/no-card", "/admin/no-card.csv"}

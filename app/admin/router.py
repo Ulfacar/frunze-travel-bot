@@ -42,7 +42,7 @@ _LOOK_TTL = 5.0
 _look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
                                   "focus_on": None, "chat_redesign": None,
                                   "workday_on": None, "cases_write_on": None,
-                                  "simple_on": None}
+                                  "simple_on": None, "manual_lead_on": None}
 
 
 async def _load_new_look(request: Request) -> None:
@@ -61,7 +61,8 @@ async def _load_new_look(request: Request) -> None:
            # Четвёртым — иначе подмена флага в тестах не видна весь TTL, и гейт флапает.
            bool(settings.admin_workday_enabled), bool(settings.service_cases_enabled),
            bool(settings.panel_simple_mode_enabled),
-           bool(settings.panel_missing_cards_enabled))
+           bool(settings.panel_missing_cards_enabled),
+           bool(settings.panel_manual_lead_enabled))
     if (_look_cache["key"] == key and _look_cache["new_look"] is not None
             and now - float(_look_cache["at"]) < _LOOK_TTL):
         request.state.new_look = bool(_look_cache["new_look"])
@@ -71,6 +72,7 @@ async def _load_new_look(request: Request) -> None:
         request.state.cases_write_on = bool(_look_cache["cases_write_on"])
         request.state.simple_on = bool(_look_cache["simple_on"])
         request.state.missing_cards_on = bool(_look_cache["missing_cards_on"])
+        request.state.manual_lead_on = bool(_look_cache["manual_lead_on"])
         return
     try:
         new_look = await _flags.get_flag("admin_new_look_enabled",
@@ -86,12 +88,16 @@ async def _load_new_look(request: Request) -> None:
                                           settings.panel_simple_mode_enabled)
         missing_cards_on = await _flags.get_flag("panel_missing_cards_enabled",
                                                  settings.panel_missing_cards_enabled)
+        # «Новый клиент» в меню. Отдельная CRM — своя форма (`crm_intake`), не эта.
+        manual_lead_on = (not settings.crm_standalone_enabled) and await _flags.get_flag(
+            "panel_manual_lead_enabled", settings.panel_manual_lead_enabled)
         _look_cache.update({"at": now, "key": key, "new_look": new_look,
                             "focus_on": focus_on, "chat_redesign": chat_redesign,
                             "workday_on": workday_on,
                             "cases_write_on": cases_write_on,
                             "simple_on": simple_on,
-                            "missing_cards_on": missing_cards_on})
+                            "missing_cards_on": missing_cards_on,
+                            "manual_lead_on": manual_lead_on})
     except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
         new_look, focus_on = (bool(settings.admin_new_look_enabled),
                               bool(settings.admin_focus_enabled))
@@ -100,6 +106,7 @@ async def _load_new_look(request: Request) -> None:
         cases_write_on = bool(settings.service_cases_enabled)
         simple_on = bool(settings.panel_simple_mode_enabled)
         missing_cards_on = bool(settings.panel_missing_cards_enabled)
+        manual_lead_on = False
     request.state.new_look = bool(new_look)
     request.state.focus_on = bool(focus_on)
     request.state.chat_redesign = bool(chat_redesign)
@@ -107,6 +114,7 @@ async def _load_new_look(request: Request) -> None:
     request.state.cases_write_on = bool(cases_write_on)
     request.state.simple_on = bool(simple_on)
     request.state.missing_cards_on = bool(missing_cards_on)
+    request.state.manual_lead_on = bool(manual_lead_on)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"],
@@ -138,6 +146,8 @@ def _chrome(request: Request) -> dict:
             # Ссылка на список «нет карточки в Bitrix» — только когда экран включён.
             "missing_cards_on": bool(getattr(request.state, "missing_cards_on",
                                              settings.panel_missing_cards_enabled)),
+            # «Новый клиент» (звонок, офис, Instagram) — `app/admin/clients.py`.
+            "manual_lead_on": bool(getattr(request.state, "manual_lead_on", False)),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
                                           settings.admin_chat_redesign_enabled)),
             "workday_on": bool(getattr(request.state, "workday_on",
@@ -1108,6 +1118,22 @@ FEATURE_FLAGS = {
         "default": lambda: settings.panel_missing_cards_enabled,
         "note": lambda: "замер прода 21.10: 811 диалогов без карточки, из них 355 не в архиве",
     },
+    "panel_manual_lead_enabled": {
+        "title": "«Новый клиент» вручную (замена Bitrix)",
+        "desc": ("Кнопка в меню «Ещё»: менеджер заводит клиента, который позвонил, пришёл в "
+                 "офис или написал в Instagram. Карточка — на WhatsApp-номер его направления, "
+                 "закреплена за автором, бот в неё не вмешивается. Клиенту ничего не уходит."),
+        "default": lambda: settings.panel_manual_lead_enabled,
+        "note": lambda: "",
+    },
+    "panel_client_card_enabled": {
+        "title": "Заметки и карточка клиента (замена Bitrix)",
+        "desc": ("Внутренние заметки менеджера в переписке и карточка клиента: все его "
+                 "обращения, задачи, услуги, заметки и история ответственных. Только своё "
+                 "направление. Клиенту ничего не уходит."),
+        "default": lambda: settings.panel_client_card_enabled,
+        "note": lambda: "",
+    },
     "pilot_reply_queue_enabled": {
         "title": "Очередь «ждут ответа» (пилот виз)",
         "desc": ("Отдельный список: клиент ждёт ответа менеджера дольше X рабочих минут "
@@ -2043,7 +2069,18 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
         "task_kinds": TASK_KIND_LABELS,
         "task_priorities": TASK_PRIORITY_LABELS,
         "today_iso": _bishkek_today().isoformat(),
+        # Заметки менеджера (флаг panel_client_card_enabled; None — блока нет).
+        "client_notes": await _client_notes_context(request, conv, manager),
     })
+
+
+async def _client_notes_context(request: Request, conv, manager: dict):
+    from app.admin import clients
+    try:
+        return await clients.notes_context(request, conv, manager)
+    except Exception:  # noqa: BLE001 — заметки не должны ронять переписку
+        log.warning("client notes context failed", exc_info=True)
+        return None
 
 
 async def _require_visible_conversation(user_id: str, manager: dict):
@@ -3298,6 +3335,7 @@ async def _set_intercept(user_id: str, value: bool) -> None:
 # помощникам отсюда, и раньше этой строки они ещё не объявлены.
 from app.admin import workday  # noqa: E402,F401 — side-effect: регистрация маршрутов
 from app.admin import contracts  # noqa: E402,F401 — договор из переписки, за флагами E2-06
+from app.admin import clients  # noqa: E402,F401 — новый клиент вручную, заметки, карточка; флаги OFF
 from app.admin import precontract  # noqa: E402,F401 — предварительная визовая карточка и договор в ней
 from app.admin import kg_entry  # noqa: E402,F401 — пилот анкеты въезда, default OFF
 from app.admin import kg_knowledge  # noqa: E402,F401 — поиск источника за тем же пилотным флагом

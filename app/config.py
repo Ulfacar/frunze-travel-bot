@@ -460,6 +460,9 @@ class Settings(BaseSettings):
     # какую воронку попадёт на боевом номере. Per-bot `kg_entry_routing_v2_enabled:<bot>`.
     kg_entry_routing_v2_enabled: bool = False
     panel_missing_cards_enabled: bool = False
+    # Замена Bitrix (30.10): «Новый клиент» вручную и заметки/карточка клиента. Оба OFF.
+    panel_manual_lead_enabled: bool = False
+    panel_client_card_enabled: bool = False
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False
     crm_bot_send_enabled: bool = False

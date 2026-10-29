@@ -1,0 +1,21 @@
+{# Заметки менеджера к клиенту (флаг panel_client_card_enabled). Клиенту не уходят.
+   Форма с классом composer: автообновление чата раз в 4 с ставится на паузу, пока
+   менеджер пишет. Поле — `note`, а не `text`: иначе скрипты ответа клиенту (быстрые
+   ответы, «Предложить ответ», Enter) нашли бы это поле первым. #}
+{% set notes = client_notes['items'] %}
+<details class="chat-dossier chat-notes" id="chat-notes-{{ c.user_id }}">
+  <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg><strong>Заметки</strong><span>· {{ notes|length }}{% if notes %} — {{ notes[0].text|truncate(70, true, '…') }}{% else %} — только для менеджеров{% endif %}</span></summary>
+  <div class="chat-dossier-body">
+    {% if client_notes.error %}<p role="alert">{{ client_notes.error }}</p>{% endif %}
+    <form class="composer chat-note-form" hx-post="/admin/conversation/{{ c.user_id }}/notes" hx-target="#chat" hx-swap="innerHTML" hx-sync="this:drop" style="display:block;padding:6px 0;border:0">
+      <input type="hidden" name="csrf_token" value="{{ client_notes.csrf_token }}">
+      <input type="hidden" name="note_key" value="{{ client_notes.note_key }}">
+      <textarea name="note" rows="2" maxlength="{{ client_notes.max }}" required aria-label="Заметка к клиенту" placeholder="Заметка для коллег — клиент её не увидит" style="width:100%;box-sizing:border-box"></textarea>
+      <button class="btn btn-ghost" type="submit" style="margin-top:6px">Сохранить заметку</button>
+    </form>
+    {% for n in notes %}
+    <section class="chat-section"><h3 class="chat-section-title">{{ n.author|who }}{% if n.created_at %} <small>{{ n.created_at|bishkek('%d.%m %H:%M') }}</small>{% endif %}</h3><p style="white-space:pre-wrap;word-break:break-word">{{ n.text }}</p></section>
+    {% endfor %}
+    <p><a href="{{ client_notes.card_url }}">Карточка клиента — все обращения</a></p>
+  </div>
+</details>

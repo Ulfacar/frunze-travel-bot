@@ -239,6 +239,7 @@
 
     </div>
   </details>
+  {% if client_notes %}{% include "_client_notes.html" %}{% endif %}
 
   <form class="composer chat-composer" id="composer-{{ c.user_id }}" hx-preserve="true"
         hx-post="/admin/conversation/{{ c.user_id }}/send" hx-target="#chat" hx-swap="innerHTML"{% if crm_bot_mode %} hx-sync="this:drop" data-send-key="1"{% endif %}

@@ -16,6 +16,9 @@ services:
       PANEL_SIMPLE_MODE_ENABLED: ${PANEL_SIMPLE_MODE_ENABLED:-false}
       # Список «нет карточки в Bitrix» (21.10): только чтение, в портал не пишет. OFF.
       PANEL_MISSING_CARDS_ENABLED: ${PANEL_MISSING_CARDS_ENABLED:-false}
+      # Замена Bitrix (30.10): новый клиент вручную; заметки и карточка клиента. Оба OFF.
+      PANEL_MANUAL_LEAD_ENABLED: ${PANEL_MANUAL_LEAD_ENABLED:-false}
+      PANEL_CLIENT_CARD_ENABLED: ${PANEL_CLIENT_CARD_ENABLED:-false}
       # Въездные визы в КР (ТЗ Гриши v1.1). Оба OFF: ветка и отдельно речь бота.
       KG_ENTRY_ENABLED: ${KG_ENTRY_ENABLED:-false}
       KG_ENTRY_SAY_CONFIRMED_ENABLED: ${KG_ENTRY_SAY_CONFIRMED_ENABLED:-false}
