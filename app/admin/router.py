@@ -197,6 +197,9 @@ def _chrome(request: Request) -> dict:
 # процессор вызывается на каждый ответ, то есть уже после загрузки модуля.
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"),
                             context_processors=[lambda r: _chrome(r)])
+# Отметка попытки для кнопки «Отправить ещё раз» у `unknown` (MSG-02, `send_unknown.py`).
+templates.env.globals["unknown_seen"] = lambda message_id: __import__(
+    "app.admin.send_unknown", fromlist=["seen_token"]).seen_token(message_id)
 
 # Доски (вкладки) — по воронкам. Визы и Туры основные, Билеты — третья.
 FUNNELS = [("visa", "Визы"), ("tours", "Туры"), ("tickets", "Билеты")]
@@ -2741,13 +2744,15 @@ _resend_locks: dict[int, "asyncio.Lock"] = {}
 
 @router.post("/conversation/{user_id}/resend/{message_id}", response_class=HTMLResponse)
 async def resend(user_id: str, message_id: int, request: Request,
-                 manager: dict = Depends(require_admin), confirm: str = Form("")):
+                 manager: dict = Depends(require_admin), confirm: str = Form(""),
+                 seen: str = Form("")):
     """Повторить отправку СВОЕГО неотправленного сообщения менеджера.
 
     Раньше повтор брал любое сообщение диалога по id — через него клиенту можно было
     переслать его же текст или реплику бота, мимо проверки владельца (ревью 14.10).
     Сообщение со статусом «неизвестно» (флаг `panel_send_unknown_status_enabled`)
-    повторяется только с `confirm=1`: оно могло уже дойти до клиента.
+    повторяется только с `confirm=1` и отметкой `seen` того `unknown`, которое видел
+    менеджер: оно могло уже дойти до клиента.
     """
     from app.admin import send_unknown
     panel = get_conversation_store()
@@ -2757,7 +2762,8 @@ async def resend(user_id: str, message_id: int, request: Request,
     target = next((m for m in conv.messages if m.id == message_id), None)
     confirmed = confirm == "1"
     status = getattr(target, "status", "") if target is not None else ""
-    if (target is not None and status == "unknown" and not confirmed and target.text
+    stale = seen != send_unknown.seen_token(message_id)
+    if (target is not None and status == "unknown" and (not confirmed or stale) and target.text
             and getattr(target, "sender", "") == "manager"
             and not target.text.startswith(FILE_MESSAGE_PREFIX) and await send_unknown.enabled()):
         resp = await _render_conversation(
@@ -2788,6 +2794,16 @@ async def resend(user_id: str, message_id: int, request: Request,
         # Два клика или два менеджера: второй увидит уже не `failed` и ничего не отправит.
         fresh = await panel.get(user_id)
         current = next((m for m in (fresh.messages if fresh else []) if m.id == message_id), None)
+        if (current is not None and getattr(current, "status", "") == "unknown"
+                and seen != send_unknown.seen_token(message_id) and await send_unknown.enabled()):
+            # Пока ждали блокировку, другой повтор этого сообщения завершился и снова дал
+            # `unknown`: подтверждение относилось к прежнему исходу (ревью pdf, P1c).
+            resp = await _render_conversation(
+                user_id, request, manager,
+                notice="Это сообщение только что отправляли ещё раз, и ответа снова нет. "
+                       "Проверьте переписку в WhatsApp и подтвердите повтор заново.")
+            resp.headers["X-Action-Outcome"] = "confirm_required"
+            return resp
         if current is None or not await send_unknown.retryable(
                 getattr(current, "status", ""), confirmed=confirmed):
             resp = await _render_conversation(user_id, request, manager)
@@ -2812,6 +2828,8 @@ async def resend(user_id: str, message_id: int, request: Request,
             outcome = await send_unknown.failure_status(exc)
             await panel.mark_message_status(message_id=message_id, status=outcome)
             log.warning("resend %s (channel=%s)", outcome, conv.channel, exc_info=True)
+        finally:
+            send_unknown.attempt_finished(message_id)
     if status == "unknown":
         await panel.add_audit(manager["login"], "resend_confirmed", user_id, str(message_id))
     await panel.add_audit(manager["login"], "resend", user_id)
