@@ -151,7 +151,7 @@
         {# Исходы уже есть в меню ⋮. В простом режиме дубль убираем: одно действие — одно место. #}
         {% if not simple_on %}{{ chat_outcomes() }}{% endif %}
       </section>
-      <section class="chat-section"><h3 class="chat-section-title">Контекст</h3><p>{{ c.ai_summary or 'Контекст пока не собран' }}</p></section>
+      <section class="chat-section"><h3 class="chat-section-title">Контекст</h3><p style="white-space:pre-line">{{ c.ai_summary or 'Контекст пока не собран' }}</p></section>
       <section class="chat-section"><h3 class="chat-section-title">Следующий шаг</h3><p>{{ c.manager_next_step or 'Не указан' }}</p></section>
       {% if c.escalation_reason %}<section class="chat-section"><h3 class="chat-section-title">Почему важно</h3><p>{{ c.escalation_reason }}</p></section>{% endif %}
       <section class="chat-section">
@@ -359,7 +359,7 @@
     <div class="brief-row"><span class="k">ИИ-исход</span><span>{{ {'won':'✅ похоже оплатил','lost':'❌ похоже отказ','ghosted':'💤 пропал','active':'⏳ в работе'}.get(c.outcome_inferred, c.outcome_inferred) }}{% if c.outcome_inferred_reason %} — {{ c.outcome_inferred_reason }}{% endif %} <i>(оценка ИИ, поправьте кнопкой)</i></span></div>
     {% endif %}
     {% if c.ai_summary %}
-    <div class="brief-row"><span class="k">Контекст</span><span>{{ c.ai_summary }}</span></div>
+    <div class="brief-row"><span class="k">Контекст</span><span style="white-space:pre-line">{{ c.ai_summary }}</span></div>
     {% endif %}
     {% if c.manager_next_step %}
     <div class="brief-row"><span class="k">Следующий шаг</span><span>{{ c.manager_next_step }}</span></div>
