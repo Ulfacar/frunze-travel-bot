@@ -393,3 +393,36 @@ def test_card_shows_reassign_history(env):
     card = _client("eliza").get(f"/admin/client/{PHONE}").text
     assert "Админ передал(а) → Элиза" in card
     assert "Элиза · Визы" in card and "сейчас" in card       # учёт назначений
+
+
+def test_card_includes_archived_dialogs(env):
+    _on(clients.CARD_FLAG)
+    _seed(VISA_UID, name="Асель")
+    asyncio.run(get_conversation_store().set_archived(VISA_UID, True))
+    card = _client("medina").get(f"/admin/client/{PHONE}")
+    assert card.status_code == 200 and "в архиве" in card.text
+
+
+def test_retry_after_partial_failure_finishes_own_card(env, monkeypatch):
+    """Сбой после создания строки диалога: повтор той же формы доводит карточку,
+    а не показывает её как «номер уже есть»."""
+    _on(clients.MANUAL_FLAG)
+    c = _client("medina")
+    data = dict(_form(c), name="Асель", phone="0555123456", source="call",
+                bot_id="getvisa", funnel="visa")
+    real = admin_router._set_intercept
+    calls = {"n": 0}
+
+    async def flaky(uid, value):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("redis моргнул")
+        await real(uid, value)
+    monkeypatch.setattr(admin_router, "_set_intercept", flaky)
+    with pytest.raises(RuntimeError):
+        c.post("/admin/clients/new", data=data, follow_redirects=False)
+    r = c.post("/admin/clients/new", data=data, follow_redirects=False)
+    assert r.status_code == 303
+    conv = _conv(VISA_UID)
+    assert conv.assigned_to == "medina" and conv.intercepted is True
+    assert len(_audit("manual_lead")) == 1 and not _audit("manual_lead_existing")

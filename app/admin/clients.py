@@ -290,6 +290,8 @@ async def client_new_submit(request: Request, manager: dict = Depends(ar.require
                 if receipt.state == "pending":
                     # Параллельный дубль той же формы: работу делает первый запрос.
                     return RedirectResponse(_open_url(receipt.user_id), status_code=303)
+        # Повтор той же формы после сбоя посередине (квитанция осталась pending).
+        retry = receipt is not None and receipt.state == "pending"
         if receipt is not None:
             if receipt.actor != actor or receipt.payload_hash != payload_hash:
                 raise HTTPException(status_code=409,
@@ -299,7 +301,11 @@ async def client_new_submit(request: Request, manager: dict = Depends(ar.require
 
     store = get_conversation_store()
     existing = await store.get(user_id)
-    if existing is not None:
+    # Карточку, которую начал заводить этот же запрос (повтор после сбоя), доводим до
+    # конца, а не показываем как «уже есть»: в ней ещё нет ни сообщений, ни чужого владельца.
+    own_unfinished = (retry and existing is not None and not (existing.last_sender or "")
+                      and (existing.assigned_to or "") in ("", actor))
+    if existing is not None and not own_unfinished:
         # Номер уже есть: ничего не меняем у чужой или своей карточки — ни владельца,
         # ни перехвата. Заметку сохраняем: её и пришли оставить.
         if not ar._can_view_conversation(existing, manager):
@@ -504,15 +510,31 @@ async def _case_visible(session, case, directions: set[str]) -> bool:
     return product is not None and getattr(product, "direction", "") in directions
 
 
+async def _convs_by_phone(digits: str) -> list:
+    """Все переписки номера, включая архивные: история обращений — и закрытые тоже.
+
+    Один запрос по номеру, а не выгрузка всех диалогов (на проде их тысячи)."""
+    store = get_conversation_store()
+    memory = getattr(store, "_conv", None)
+    if memory is not None:
+        return [c for c in memory.values() if _phone_digits(c) == digits]
+    from sqlalchemy import or_
+
+    from app.integrations.crm.db import Conversation
+    from app.integrations.panel.store import _view
+    async with _sm()() as s:
+        rows = (await s.scalars(select(Conversation).where(or_(
+            Conversation.phone == digits, Conversation.user_id.like(f"%:{digits}"))))).all()
+        return [_view(c) for c in rows if _phone_digits(c) == digits]
+
+
 @ar.router.get("/client/{phone}", response_class=HTMLResponse)
 async def client_card(phone: str, request: Request, manager: dict = Depends(ar.require_admin)):
     await _require_flag(CARD_FLAG)
     digits = re.sub(r"\D", "", phone or "")
     if not digits:
         raise HTTPException(status_code=404)
-    store = get_conversation_store()
-    convs = [c for c in await store.all_conversations_light()
-             if _phone_digits(c) == digits and ar._can_view_conversation(c, manager)]
+    convs = [c for c in await _convs_by_phone(digits) if ar._can_view_conversation(c, manager)]
     if not convs:
         # Нет своих переписок с этим номером — 404, как будто номера нет вовсе.
         raise HTTPException(status_code=404, detail="not found")
