@@ -25,7 +25,7 @@
   <section class="cc-box cc-head cc-wide">
     <h1>{{ name or 'Без имени' }}</h1>
     <div class="ph">{{ digits | phone_h if simple_on else digits }}</div>
-    {% if simple_on and convs %}<p style="margin:12px 0 0"><a class="btn btn-brand" href="{{ convs[0].open_url }}">Открыть переписку</a></p>{% endif %}
+    {% if simple_on and convs %}<p style="margin:12px 0 0"><a class="btn btn-brand" style="text-decoration:none" href="{{ convs[0].open_url }}">Открыть переписку</a></p>{% endif %}
   </section>
 
   <section class="cc-box cc-wide" aria-labelledby="cc-convs">
