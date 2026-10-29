@@ -42,7 +42,8 @@ _LOOK_TTL = 5.0
 _look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
                                   "focus_on": None, "chat_redesign": None,
                                   "workday_on": None, "cases_write_on": None,
-                                  "simple_on": None, "manual_lead_on": None}
+                                  "simple_on": None, "manual_lead_on": None,
+                                  "send_unknown_on": None}
 
 
 async def _load_new_look(request: Request) -> None:
@@ -62,7 +63,8 @@ async def _load_new_look(request: Request) -> None:
            bool(settings.admin_workday_enabled), bool(settings.service_cases_enabled),
            bool(settings.panel_simple_mode_enabled),
            bool(settings.panel_missing_cards_enabled),
-           bool(settings.panel_manual_lead_enabled))
+           bool(settings.panel_manual_lead_enabled),
+           bool(settings.panel_send_unknown_status_enabled))
     if (_look_cache["key"] == key and _look_cache["new_look"] is not None
             and now - float(_look_cache["at"]) < _LOOK_TTL):
         request.state.new_look = bool(_look_cache["new_look"])
@@ -73,6 +75,7 @@ async def _load_new_look(request: Request) -> None:
         request.state.simple_on = bool(_look_cache["simple_on"])
         request.state.missing_cards_on = bool(_look_cache["missing_cards_on"])
         request.state.manual_lead_on = bool(_look_cache["manual_lead_on"])
+        request.state.send_unknown_on = bool(_look_cache["send_unknown_on"])
         return
     try:
         new_look = await _flags.get_flag("admin_new_look_enabled",
@@ -91,13 +94,16 @@ async def _load_new_look(request: Request) -> None:
         # «Новый клиент» в меню. Отдельная CRM — своя форма (`crm_intake`), не эта.
         manual_lead_on = (not settings.crm_standalone_enabled) and await _flags.get_flag(
             "panel_manual_lead_enabled", settings.panel_manual_lead_enabled)
+        send_unknown_on = await _flags.get_flag("panel_send_unknown_status_enabled",
+                                                settings.panel_send_unknown_status_enabled)
         _look_cache.update({"at": now, "key": key, "new_look": new_look,
                             "focus_on": focus_on, "chat_redesign": chat_redesign,
                             "workday_on": workday_on,
                             "cases_write_on": cases_write_on,
                             "simple_on": simple_on,
                             "missing_cards_on": missing_cards_on,
-                            "manual_lead_on": manual_lead_on})
+                            "manual_lead_on": manual_lead_on,
+                            "send_unknown_on": send_unknown_on})
     except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
         new_look, focus_on = (bool(settings.admin_new_look_enabled),
                               bool(settings.admin_focus_enabled))
@@ -107,6 +113,7 @@ async def _load_new_look(request: Request) -> None:
         simple_on = bool(settings.panel_simple_mode_enabled)
         missing_cards_on = bool(settings.panel_missing_cards_enabled)
         manual_lead_on = False
+        send_unknown_on = False
     request.state.new_look = bool(new_look)
     request.state.focus_on = bool(focus_on)
     request.state.chat_redesign = bool(chat_redesign)
@@ -115,6 +122,7 @@ async def _load_new_look(request: Request) -> None:
     request.state.simple_on = bool(simple_on)
     request.state.missing_cards_on = bool(missing_cards_on)
     request.state.manual_lead_on = bool(manual_lead_on)
+    request.state.send_unknown_on = bool(send_unknown_on)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"],
@@ -148,6 +156,8 @@ def _chrome(request: Request) -> dict:
                                              settings.panel_missing_cards_enabled)),
             # «Новый клиент» (звонок, офис, Instagram) — `app/admin/clients.py`.
             "manual_lead_on": bool(getattr(request.state, "manual_lead_on", False)),
+            # Статус «неизвестно» у ручного сообщения (MSG-02) — `app/admin/send_unknown.py`.
+            "send_unknown_on": bool(getattr(request.state, "send_unknown_on", False)),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
                                           settings.admin_chat_redesign_enabled)),
             "workday_on": bool(getattr(request.state, "workday_on",
@@ -1170,6 +1180,16 @@ FEATURE_FLAGS = {
                  "офис или написал в Instagram. Карточка — на WhatsApp-номер его направления, "
                  "закреплена за автором, бот в неё не вмешивается. Клиенту ничего не уходит."),
         "default": lambda: settings.panel_manual_lead_enabled,
+        "note": lambda: "",
+    },
+    "panel_send_unknown_status_enabled": {
+        "title": "«Неизвестно, дошло ли» вместо «не доставлено»",
+        "desc": ("Если WhatsApp не ответил вовремя или оборвал связь уже после отправки, "
+                 "сообщение могло дойти до клиента. Тогда в чате пишется «Не уверены, что "
+                 "дошло — проверьте в WhatsApp», а повтор — только с подтверждением «клиент "
+                 "может получить сообщение дважды». Явный отказ (нет связи, не оплачено) — "
+                 "по-прежнему «не доставлено»."),
+        "default": lambda: settings.panel_send_unknown_status_enabled,
         "note": lambda: "",
     },
     "reassign_moves_tasks_enabled": {
@@ -2541,10 +2561,12 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
             await panel.mark_message_status(message_id=msg_id, status="sent",
                                             set_provider_msg_id=(provider or None))
             outcome = "sent"
-        except Exception:  # noqa: BLE001 — не теряем сообщение в логе при сбое канала
-            await panel.mark_message_status(message_id=msg_id, status="failed")
-            outcome = "failed"
-            log.warning("manager send failed (channel=%s)", conv.channel, exc_info=True)
+        except Exception as exc:  # noqa: BLE001 — не теряем сообщение в логе при сбое канала
+            # «неизвестно» вместо «не доставлено», если Wappi мог принять (MSG-02, флаг OFF).
+            from app.admin import send_unknown
+            outcome = await send_unknown.failure_status(exc)
+            await panel.mark_message_status(message_id=msg_id, status=outcome)
+            log.warning("manager send %s (channel=%s)", outcome, conv.channel, exc_info=True)
         await panel.add_audit(manager["login"], "send", user_id, text[:120])
     # HTTP 200 нужен обычной карточке даже при отказе; «Фокус» сверяет именно исход действия.
     resp = await _render_conversation(user_id, request, manager)
@@ -2763,19 +2785,34 @@ _resend_locks: dict[int, "asyncio.Lock"] = {}
 
 @router.post("/conversation/{user_id}/resend/{message_id}", response_class=HTMLResponse)
 async def resend(user_id: str, message_id: int, request: Request,
-                 manager: dict = Depends(require_admin)):
+                 manager: dict = Depends(require_admin), confirm: str = Form("")):
     """Повторить отправку СВОЕГО неотправленного сообщения менеджера.
 
     Раньше повтор брал любое сообщение диалога по id — через него клиенту можно было
     переслать его же текст или реплику бота, мимо проверки владельца (ревью 14.10).
+    Сообщение со статусом «неизвестно» (флаг `panel_send_unknown_status_enabled`)
+    повторяется только с `confirm=1`: оно могло уже дойти до клиента.
     """
+    from app.admin import send_unknown
     panel = get_conversation_store()
     conv = await panel.get(user_id)
     if conv is None or not _can_view_conversation(conv, manager):
         raise HTTPException(status_code=404, detail="conversation not found")
     target = next((m for m in conv.messages if m.id == message_id), None)
+    confirmed = confirm == "1"
+    status = getattr(target, "status", "") if target is not None else ""
+    if (target is not None and status == "unknown" and not confirmed and target.text
+            and getattr(target, "sender", "") == "manager"
+            and not target.text.startswith(FILE_MESSAGE_PREFIX) and await send_unknown.enabled()):
+        resp = await _render_conversation(
+            user_id, request, manager,
+            notice="Клиент может получить сообщение дважды. Проверьте переписку в WhatsApp "
+                   "и подтвердите повтор.")
+        resp.headers["X-Action-Outcome"] = "confirm_required"
+        return resp
     if (target is None or not target.text or getattr(target, "sender", "") != "manager"
-            or getattr(target, "status", "") != "failed" or target.text.startswith(FILE_MESSAGE_PREFIX)):
+            or not await send_unknown.retryable(status, confirmed=confirmed)
+            or target.text.startswith(FILE_MESSAGE_PREFIX)):
         resp = await _render_conversation(user_id, request, manager,
                                           notice="Повторить можно только неотправленное сообщение менеджера.")
         resp.headers["X-Action-Outcome"] = "denied"
@@ -2795,7 +2832,8 @@ async def resend(user_id: str, message_id: int, request: Request,
         # Два клика или два менеджера: второй увидит уже не `failed` и ничего не отправит.
         fresh = await panel.get(user_id)
         current = next((m for m in (fresh.messages if fresh else []) if m.id == message_id), None)
-        if current is None or getattr(current, "status", "") != "failed":
+        if current is None or not await send_unknown.retryable(
+                getattr(current, "status", ""), confirmed=confirmed):
             resp = await _render_conversation(user_id, request, manager)
             resp.headers["X-Action-Outcome"] = "duplicate"
             return resp
@@ -2809,15 +2847,19 @@ async def resend(user_id: str, message_id: int, request: Request,
             await panel.mark_message_status(message_id=message_id, status="sent",
                                             set_provider_msg_id=(provider or None))
             outcome = "sent"
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as exc:
             # Запрос оборвали посреди отправки: исход неизвестен. Ставим `failed`, чтобы
             # менеджер видел сообщение и решал сам, а не «вечный pending».
-            await panel.mark_message_status(message_id=message_id, status="failed")
+            # С флагом MSG-02 — честное `unknown`.
+            await panel.mark_message_status(message_id=message_id,
+                                            status=await send_unknown.failure_status(exc))
             raise
-        except Exception:  # noqa: BLE001
-            await panel.mark_message_status(message_id=message_id, status="failed")
-            log.warning("resend failed (channel=%s)", conv.channel, exc_info=True)
-            outcome = "failed"
+        except Exception as exc:  # noqa: BLE001
+            outcome = await send_unknown.failure_status(exc)
+            await panel.mark_message_status(message_id=message_id, status=outcome)
+            log.warning("resend %s (channel=%s)", outcome, conv.channel, exc_info=True)
+    if status == "unknown":
+        await panel.add_audit(manager["login"], "resend_confirmed", user_id, str(message_id))
     await panel.add_audit(manager["login"], "resend", user_id)
     resp = await _render_conversation(user_id, request, manager)
     resp.headers["X-Action-Outcome"] = outcome

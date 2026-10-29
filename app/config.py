@@ -477,6 +477,8 @@ class Settings(BaseSettings):
     panel_client_card_enabled: bool = False
     # ТЗ TASK-04: «Передать менеджеру…» переносит и открытые задачи клиента. OFF.
     reassign_moves_tasks_enabled: bool = False
+    # ТЗ MSG-02: таймаут/обрыв после отправки — «неизвестно», повтор только с подтверждением. OFF.
+    panel_send_unknown_status_enabled: bool = False
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False
     crm_bot_send_enabled: bool = False
