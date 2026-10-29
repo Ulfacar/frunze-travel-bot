@@ -26,14 +26,21 @@ def _adapter_for(channel: str, bot):
     return None
 
 
-async def send_to_client(channel: str, bot_id: str, chat_id: str, text: str) -> str | None:
+async def send_to_client(channel: str, bot_id: str, chat_id: str, text: str, *,
+                         unknown_without_id: bool = False) -> str | None:
     """Отправить текст клиенту в его канал. Возвращает provider_msg_id (Wappi) или None.
-    Бросает ValueError при неизвестном канале."""
+    Бросает ValueError при неизвестном канале.
+
+    `unknown_without_id` (только WhatsApp, MSG-02): ответ Wappi 2xx без id сообщения —
+    `SendOutcomeUnknown` вместо пустого id."""
     bot = registry.by_id(bot_id) if bot_id else None
     adapter = _adapter_for(channel, bot)
     if adapter is None:
         raise ValueError(f"нет адаптера для канала '{channel}'")
-    provider_msg_id = await adapter.send(chat_id, text)
+    if unknown_without_id and isinstance(adapter, WappiAdapter):
+        provider_msg_id = await adapter.send(chat_id, text, unknown_without_id=True)
+    else:
+        provider_msg_id = await adapter.send(chat_id, text)
     mark_own(provider_msg_id)
     from app.channels.wappi import mask_phone
     logger.info("manager->client channel=%s chat=%s", channel, mask_phone(chat_id))

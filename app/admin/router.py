@@ -43,7 +43,8 @@ _look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
                                   "focus_on": None, "chat_redesign": None,
                                   "workday_on": None, "cases_write_on": None,
                                   "simple_on": None, "manual_lead_on": None,
-                                  "send_unknown_on": None, "bitrix_archive_on": None}
+                                  "send_unknown_on": None, "bitrix_archive_on": None,
+                                  "pilot_summary_on": None}
 
 
 async def _load_new_look(request: Request) -> None:
@@ -65,7 +66,8 @@ async def _load_new_look(request: Request) -> None:
            bool(settings.panel_missing_cards_enabled),
            bool(settings.panel_manual_lead_enabled),
            bool(settings.panel_send_unknown_status_enabled),
-           bool(settings.panel_bitrix_archive_enabled))
+           bool(settings.panel_bitrix_archive_enabled),
+           bool(settings.panel_pilot_summary_enabled))
     if (_look_cache["key"] == key and _look_cache["new_look"] is not None
             and now - float(_look_cache["at"]) < _LOOK_TTL):
         request.state.new_look = bool(_look_cache["new_look"])
@@ -78,6 +80,7 @@ async def _load_new_look(request: Request) -> None:
         request.state.manual_lead_on = bool(_look_cache["manual_lead_on"])
         request.state.send_unknown_on = bool(_look_cache["send_unknown_on"])
         request.state.bitrix_archive_on = bool(_look_cache["bitrix_archive_on"])
+        request.state.pilot_summary_on = bool(_look_cache["pilot_summary_on"])
         return
     try:
         new_look = await _flags.get_flag("admin_new_look_enabled",
@@ -100,6 +103,8 @@ async def _load_new_look(request: Request) -> None:
                                                 settings.panel_send_unknown_status_enabled)
         bitrix_archive_on = (not settings.crm_standalone_enabled) and await _flags.get_flag(
             "panel_bitrix_archive_enabled", settings.panel_bitrix_archive_enabled)
+        pilot_summary_on = (not settings.crm_standalone_enabled) and await _flags.get_flag(
+            "panel_pilot_summary_enabled", settings.panel_pilot_summary_enabled)
         _look_cache.update({"at": now, "key": key, "new_look": new_look,
                             "focus_on": focus_on, "chat_redesign": chat_redesign,
                             "workday_on": workday_on,
@@ -108,7 +113,8 @@ async def _load_new_look(request: Request) -> None:
                             "missing_cards_on": missing_cards_on,
                             "manual_lead_on": manual_lead_on,
                             "send_unknown_on": send_unknown_on,
-                            "bitrix_archive_on": bitrix_archive_on})
+                            "bitrix_archive_on": bitrix_archive_on,
+                            "pilot_summary_on": pilot_summary_on})
     except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
         new_look, focus_on = (bool(settings.admin_new_look_enabled),
                               bool(settings.admin_focus_enabled))
@@ -120,6 +126,7 @@ async def _load_new_look(request: Request) -> None:
         manual_lead_on = False
         send_unknown_on = False
         bitrix_archive_on = False
+        pilot_summary_on = False
     request.state.new_look = bool(new_look)
     request.state.focus_on = bool(focus_on)
     request.state.chat_redesign = bool(chat_redesign)
@@ -130,10 +137,16 @@ async def _load_new_look(request: Request) -> None:
     request.state.manual_lead_on = bool(manual_lead_on)
     request.state.send_unknown_on = bool(send_unknown_on)
     request.state.bitrix_archive_on = bool(bitrix_archive_on)
+    request.state.pilot_summary_on = bool(pilot_summary_on)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"],
                    dependencies=[Depends(_load_new_look)])
+def _pilot_summary_visible(manager) -> bool:
+    from app.admin.pilot_summary import allowed_directions
+    return bool(manager) and bool(allowed_directions(manager))
+
+
 def _chrome(request: Request) -> dict:
     """Общий контекст шапки для КАЖДОГО шаблона: кто вошёл, админ ли, направление.
 
@@ -167,6 +180,9 @@ def _chrome(request: Request) -> dict:
             "send_unknown_on": bool(getattr(request.state, "send_unknown_on", False)),
             # «Архив Битрикса» в «Ещё» у админа — `app/admin/bitrix_archive.py`.
             "bitrix_archive_on": bool(getattr(request.state, "bitrix_archive_on", False)),
+            # «Сводка пилота» — полному админу и руководителю направления (`pilot_summary.py`).
+            "pilot_summary_on": bool(getattr(request.state, "pilot_summary_on", False))
+                                and _pilot_summary_visible(manager),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
                                           settings.admin_chat_redesign_enabled)),
             "workday_on": bool(getattr(request.state, "workday_on",
@@ -181,6 +197,9 @@ def _chrome(request: Request) -> dict:
 # процессор вызывается на каждый ответ, то есть уже после загрузки модуля.
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"),
                             context_processors=[lambda r: _chrome(r)])
+# Отметка попытки для кнопки «Отправить ещё раз» у `unknown` (MSG-02, `send_unknown.py`).
+templates.env.globals["unknown_seen"] = lambda message_id: __import__(
+    "app.admin.send_unknown", fromlist=["seen_token"]).seen_token(message_id)
 
 # Доски (вкладки) — по воронкам. Визы и Туры основные, Билеты — третья.
 FUNNELS = [("visa", "Визы"), ("tours", "Туры"), ("tickets", "Билеты")]
@@ -1209,6 +1228,16 @@ FEATURE_FLAGS = {
                  "клиента в архиве надёжно не определяется."),
         "default": lambda: settings.panel_bitrix_archive_enabled,
         "note": lambda: ("каталог: " + (settings.bitrix_archive_dir or "не задан (BITRIX_ARCHIVE_DIR)")),
+    },
+    "panel_pilot_summary_enabled": {
+        "title": "Сводка пилота для руководителя направления",
+        "desc": ("Страница в «Ещё»: за сегодня, вчера и 7 дней — новые обращения, ответы из "
+                 "панели, сколько клиентов ждали дольше X минут, ошибки отправки, продажи; по "
+                 "менеджерам, каждая цифра раскрывается в список. Видят полный админ и "
+                 "руководители из PANEL_DIRECTION_LEADS — только своё направление."),
+        "default": lambda: settings.panel_pilot_summary_enabled,
+        "note": lambda: ("руководители: " + (", ".join(f"{d}: {', '.join(v) or '—'}" for d, v in
+                         (settings.panel_direction_leads or {}).items()) or "не заданы")),
     },
     "reassign_moves_tasks_enabled": {
         "title": "Передача клиента переносит его задачи",
@@ -2571,14 +2600,27 @@ async def send_message(user_id: str, request: Request, manager: dict = Depends(r
                 if not provider:
                     raise RuntimeError("Wappi did not confirm acceptance")
             else:
+                from app.admin import send_unknown
                 provider = await outbound.send_to_client(
-                    conv.channel, conv.bot_id, conv.chat_id or user_id, text)
+                    conv.channel, conv.bot_id, conv.chat_id or user_id, text,
+                    **await send_unknown.send_kwargs(conv.channel))
                 if not provider and _whatsapp_unconfigured(conv):
                     raise RuntimeError("WhatsApp-канал бота не настроен — Wappi пропустил отправку")
             mark_own(provider)
             await panel.mark_message_status(message_id=msg_id, status="sent",
                                             set_provider_msg_id=(provider or None))
             outcome = "sent"
+        except asyncio.CancelledError:
+            # Обработчик отменили посреди отправки: Wappi мог принять. С флагом MSG-02 —
+            # `unknown` с подтверждением повтора, а не вечное `pending` (ревью pdf, п. 3).
+            # Флаг OFF — как было: исключение дальше, статус не трогаем.
+            from app.admin import send_unknown
+
+            async def _mark_unknown():
+                if await send_unknown.enabled():
+                    await panel.mark_message_status(message_id=msg_id, status="unknown")
+            await asyncio.shield(_mark_unknown())
+            raise
         except Exception as exc:  # noqa: BLE001 — не теряем сообщение в логе при сбое канала
             # «неизвестно» вместо «не доставлено», если Wappi мог принять (MSG-02, флаг OFF).
             from app.admin import send_unknown
@@ -2803,13 +2845,15 @@ _resend_locks: dict[int, "asyncio.Lock"] = {}
 
 @router.post("/conversation/{user_id}/resend/{message_id}", response_class=HTMLResponse)
 async def resend(user_id: str, message_id: int, request: Request,
-                 manager: dict = Depends(require_admin), confirm: str = Form("")):
+                 manager: dict = Depends(require_admin), confirm: str = Form(""),
+                 seen: str = Form("")):
     """Повторить отправку СВОЕГО неотправленного сообщения менеджера.
 
     Раньше повтор брал любое сообщение диалога по id — через него клиенту можно было
     переслать его же текст или реплику бота, мимо проверки владельца (ревью 14.10).
     Сообщение со статусом «неизвестно» (флаг `panel_send_unknown_status_enabled`)
-    повторяется только с `confirm=1`: оно могло уже дойти до клиента.
+    повторяется только с `confirm=1` и отметкой `seen` того `unknown`, которое видел
+    менеджер: оно могло уже дойти до клиента.
     """
     from app.admin import send_unknown
     panel = get_conversation_store()
@@ -2819,7 +2863,8 @@ async def resend(user_id: str, message_id: int, request: Request,
     target = next((m for m in conv.messages if m.id == message_id), None)
     confirmed = confirm == "1"
     status = getattr(target, "status", "") if target is not None else ""
-    if (target is not None and status == "unknown" and not confirmed and target.text
+    stale = seen != send_unknown.seen_token(message_id)
+    if (target is not None and status == "unknown" and (not confirmed or stale) and target.text
             and getattr(target, "sender", "") == "manager"
             and not target.text.startswith(FILE_MESSAGE_PREFIX) and await send_unknown.enabled()):
         resp = await _render_conversation(
@@ -2850,6 +2895,16 @@ async def resend(user_id: str, message_id: int, request: Request,
         # Два клика или два менеджера: второй увидит уже не `failed` и ничего не отправит.
         fresh = await panel.get(user_id)
         current = next((m for m in (fresh.messages if fresh else []) if m.id == message_id), None)
+        if (current is not None and getattr(current, "status", "") == "unknown"
+                and seen != send_unknown.seen_token(message_id) and await send_unknown.enabled()):
+            # Пока ждали блокировку, другой повтор этого сообщения завершился и снова дал
+            # `unknown`: подтверждение относилось к прежнему исходу (ревью pdf, P1c).
+            resp = await _render_conversation(
+                user_id, request, manager,
+                notice="Это сообщение только что отправляли ещё раз, и ответа снова нет. "
+                       "Проверьте переписку в WhatsApp и подтвердите повтор заново.")
+            resp.headers["X-Action-Outcome"] = "confirm_required"
+            return resp
         if current is None or not await send_unknown.retryable(
                 getattr(current, "status", ""), confirmed=confirmed):
             resp = await _render_conversation(user_id, request, manager)
@@ -2858,7 +2913,8 @@ async def resend(user_id: str, message_id: int, request: Request,
         await panel.mark_message_status(message_id=message_id, status="pending")
         try:
             provider = await outbound.send_to_client(
-                conv.channel, conv.bot_id, conv.chat_id or user_id, target.text)
+                conv.channel, conv.bot_id, conv.chat_id or user_id, target.text,
+                **await send_unknown.send_kwargs(conv.channel))
             if not provider and _whatsapp_unconfigured(conv):
                 raise RuntimeError("WhatsApp-канал бота не настроен — Wappi пропустил отправку")
             mark_own(provider)
@@ -2876,6 +2932,8 @@ async def resend(user_id: str, message_id: int, request: Request,
             outcome = await send_unknown.failure_status(exc)
             await panel.mark_message_status(message_id=message_id, status=outcome)
             log.warning("resend %s (channel=%s)", outcome, conv.channel, exc_info=True)
+        finally:
+            send_unknown.attempt_finished(message_id)
     if status == "unknown":
         await panel.add_audit(manager["login"], "resend_confirmed", user_id, str(message_id))
     await panel.add_audit(manager["login"], "resend", user_id)
@@ -3608,6 +3666,7 @@ from app.admin import workday  # noqa: E402,F401 — side-effect: регистр
 from app.admin import contracts  # noqa: E402,F401 — договор из переписки, за флагами E2-06
 from app.admin import clients  # noqa: E402,F401 — новый клиент вручную, заметки, карточка; флаги OFF
 from app.admin import bitrix_archive  # noqa: E402,F401 — архив Битрикса, только чтение; флаг OFF
+from app.admin import pilot_summary  # noqa: E402,F401 — сводка пилота руководителю; флаг OFF
 from app.admin import precontract  # noqa: E402,F401 — предварительная визовая карточка и договор в ней
 from app.admin import kg_entry  # noqa: E402,F401 — пилот анкеты въезда, default OFF
 from app.admin import kg_knowledge  # noqa: E402,F401 — поиск источника за тем же пилотным флагом

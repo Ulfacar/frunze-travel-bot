@@ -41,11 +41,19 @@ class FakeWappi:
             raise httpx.ReadTimeout("read timeout", request=req)
         if mode == "drop":
             raise httpx.RemoteProtocolError("server disconnected", request=req)
+        if mode == "cancel":                     # обработчик отменили посреди отправки
+            raise asyncio.CancelledError()
         if mode == "connect":
             self.calls -= 1                      # соединения не было — запрос не ушёл
             raise httpx.ConnectError("connection refused", request=req)
         if mode in ("402", "503"):
             return httpx.Response(int(mode), json={"detail": "x"}, request=req)
+        if mode == "noid":                       # 200, но id сообщения нет
+            return httpx.Response(200, json={"status": "done"}, request=req)
+        if mode == "errbody":                    # 200 с телом-ошибкой
+            return httpx.Response(200, json={"status": "error", "detail": "x"}, request=req)
+        if mode == "nojson":                     # 200, тело не JSON
+            return httpx.Response(200, text="OK", request=req)
         return httpx.Response(200, json={"status": "done", "message_id": "W-1"}, request=req)
 
     async def aclose(self):
@@ -99,6 +107,15 @@ def _send(c, text="Подойти можно с 10:00"):
     return c.post(f"/admin/conversation/{UID}/send", data={"text": text})
 
 
+def _confirm(c, mid):
+    """Поля кнопки «Отправить ещё раз» так, как их отправит HTMX со страницы диалога."""
+    import json
+    import re
+    html = c.get(f"/admin/conversation/{UID}").text
+    found = re.search(r"resend/%d\" hx-vals='([^']+)'" % mid, html)
+    return json.loads(found.group(1)) if found else {"confirm": "1"}
+
+
 # ---------------------------- флаг OFF: как было ----------------------------
 
 @pytest.mark.parametrize("mode", ["timeout", "drop", "503"])
@@ -146,7 +163,7 @@ def test_unknown_message_shows_plain_words_and_confirm_button(env):
     html = _send(_client()).text
     assert "Не уверены, что дошло — проверьте в WhatsApp" in html
     assert 'hx-confirm="Клиент может получить сообщение дважды. Отправить ещё раз?"' in html
-    assert """hx-vals='{"confirm": "1"}'""" in html and "Отправить ещё раз" in html
+    assert 'hx-vals=\'{"confirm": "1", "seen": "' in html and "Отправить ещё раз" in html
     assert "'sent','failed','unknown']" in html          # текст не остаётся в поле
 
 
@@ -169,8 +186,9 @@ def test_confirmed_retry_sends_once_even_when_confirmed_twice(env):
     c = _client()
     _send(c)
     mid = _last().id
-    r1 = c.post(f"/admin/conversation/{UID}/resend/{mid}", data={"confirm": "1"})
-    r2 = c.post(f"/admin/conversation/{UID}/resend/{mid}", data={"confirm": "1"})
+    data = _confirm(c, mid)
+    r1 = c.post(f"/admin/conversation/{UID}/resend/{mid}", data=data)
+    r2 = c.post(f"/admin/conversation/{UID}/resend/{mid}", data=data)
     assert r1.headers["X-Action-Outcome"] == "sent"
     assert r2.headers["X-Action-Outcome"] == "denied"    # уже не unknown — ничего не шлём
     assert fake.calls == 2 and _last().status == "sent"
@@ -185,6 +203,7 @@ def test_parallel_confirmations_send_once(env):
     c = _client()
     _send(c)
     mid = _last().id
+    data = _confirm(c, mid)
     fake = _wappi(env, "ok")
     real = fake.post
 
@@ -198,11 +217,58 @@ def test_parallel_confirmations_send_once(env):
         async with REAL_ASYNC_CLIENT(transport=transport, base_url="https://testserver",
                                      cookies=c.cookies) as ac:
             return await asyncio.gather(*(ac.post(f"/admin/conversation/{UID}/resend/{mid}",
-                                                  data={"confirm": "1"}) for _ in range(2)))
+                                                  data=data) for _ in range(2)))
     outcomes = sorted(r.headers["X-Action-Outcome"] for r in asyncio.run(two()))
     # Второй либо отсечён ещё до блокировки (видит `pending`), либо после неё (`duplicate`).
     assert outcomes[1] == "sent" and outcomes[0] in ("denied", "duplicate")
     assert fake.calls == 1
+
+
+def test_parallel_confirmations_after_repeat_timeout_send_once(env):
+    """Ревью pdf, проба P1c: оба подтверждения прочитали `unknown` до блокировки, первый
+    повтор снова упёрся в таймаут — второй не должен слать третью копию."""
+    _on()
+    _wappi(env, "timeout")
+    c = _client()
+    _send(c)
+    mid = _last().id
+    data = _confirm(c, mid)                      # обе вкладки видели одно и то же `unknown`
+    fake = _wappi(env, "timeout")
+    store = panel_store._memory_store
+    real_update = store.update_meta
+
+    async def slow_update(*a, **kw):             # PostgreSQL: десятки мс до блокировки
+        await asyncio.sleep(0.05)
+        return await real_update(*a, **kw)
+    env.setattr(store, "update_meta", slow_update)
+
+    async def two():
+        transport = httpx.ASGITransport(app=main.app)
+        async with REAL_ASYNC_CLIENT(transport=transport, base_url="https://testserver",
+                                     cookies=c.cookies) as ac:
+            return await asyncio.gather(*(ac.post(f"/admin/conversation/{UID}/resend/{mid}",
+                                                  data=data) for _ in range(2)))
+    outcomes = sorted(r.headers["X-Action-Outcome"] for r in asyncio.run(two()))
+    assert fake.calls == 1                       # одна повторная отправка, не две
+    assert outcomes == ["confirm_required", "unknown"]
+    assert _last().status == "unknown"
+
+
+def test_stale_confirmation_after_repeat_timeout_asks_again(env):
+    """Вторая вкладка с прежним `unknown`: после нового таймаута её подтверждение устарело."""
+    _on()
+    _wappi(env, "timeout")
+    c = _client()
+    _send(c)
+    mid = _last().id
+    stale = _confirm(c, mid)
+    fake = _wappi(env, "timeout", "ok")
+    r1 = c.post(f"/admin/conversation/{UID}/resend/{mid}", data=stale)
+    assert r1.headers["X-Action-Outcome"] == "unknown" and fake.calls == 1
+    r2 = c.post(f"/admin/conversation/{UID}/resend/{mid}", data=stale)
+    assert r2.headers["X-Action-Outcome"] == "confirm_required" and fake.calls == 1
+    r3 = c.post(f"/admin/conversation/{UID}/resend/{mid}", data=_confirm(c, mid))
+    assert r3.headers["X-Action-Outcome"] == "sent" and fake.calls == 2
 
 
 def test_confirmed_retry_that_times_out_again_stays_unknown(env):
@@ -210,8 +276,21 @@ def test_confirmed_retry_that_times_out_again_stays_unknown(env):
     fake = _wappi(env, "timeout")
     c = _client()
     _send(c)
-    r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}", data={"confirm": "1"})
+    r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}", data=_confirm(c, _last().id))
     assert r.headers["X-Action-Outcome"] == "unknown" and fake.calls == 2
+
+
+def test_confirmation_without_attempt_mark_is_refused(env):
+    """Прямой POST `confirm=1` без отметки попытки (или с чужой) — подтвердить заново."""
+    _on()
+    fake = _wappi(env, "timeout", "ok")
+    c = _client()
+    _send(c)
+    mid = _last().id
+    for data in ({"confirm": "1"}, {"confirm": "1", "seen": "00000000.0"}):
+        r = c.post(f"/admin/conversation/{UID}/resend/{mid}", data=data)
+        assert r.headers["X-Action-Outcome"] == "confirm_required"
+    assert fake.calls == 1 and _last().status == "unknown"
 
 
 def test_failed_message_still_retries_without_confirmation(env):
@@ -221,6 +300,67 @@ def test_failed_message_still_retries_without_confirmation(env):
     _send(c)
     r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}")
     assert r.headers["X-Action-Outcome"] == "sent" and fake.calls == 2
+
+
+# ------------------ 200 без id у текста (ревью pdf, п. 2) ------------------
+
+@pytest.mark.parametrize("mode", ["noid", "errbody", "nojson"])
+def test_text_200_without_id_is_unknown_when_flag_on(env, mode):
+    """Как у `send_file`: Wappi ответил 2xx, но id нет — мог принять, мог отклонить."""
+    _on()
+    fake = _wappi(env, mode, "ok")
+    c = _client()
+    r = _send(c)
+    assert (r.headers["X-Action-Outcome"], _last().status) == ("unknown", "unknown")
+    assert _last().provider_msg_id in ("", None)
+    r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}")
+    assert r.headers["X-Action-Outcome"] == "confirm_required" and fake.calls == 1
+    r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}", data=_confirm(c, _last().id))
+    assert r.headers["X-Action-Outcome"] == "sent" and fake.calls == 2
+
+
+@pytest.mark.parametrize("mode", ["noid", "errbody", "nojson"])
+def test_text_200_without_id_flag_off_is_sent_as_before(env, mode):
+    _wappi(env, mode)
+    r = _send(_client())
+    assert (r.headers["X-Action-Outcome"], _last().status) == ("sent", "sent")
+
+
+def test_confirmed_resend_200_without_id_stays_unknown(env):
+    _on()
+    fake = _wappi(env, "timeout", "noid")
+    c = _client()
+    _send(c)
+    r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}", data=_confirm(c, _last().id))
+    assert r.headers["X-Action-Outcome"] == "unknown" and fake.calls == 2
+
+
+# ------------- CancelledError посреди отправки (ревью pdf, п. 3) -------------
+
+def _send_cancelled(c):
+    async def go():
+        transport = httpx.ASGITransport(app=main.app)
+        async with REAL_ASYNC_CLIENT(transport=transport, base_url="https://testserver",
+                                     cookies=c.cookies) as ac:
+            await ac.post(f"/admin/conversation/{UID}/send", data={"text": "Подойти можно с 10:00"})
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(go())
+
+
+def test_cancelled_send_is_unknown_not_eternal_pending(env):
+    _on()
+    fake = _wappi(env, "cancel", "ok")
+    c = _client()
+    _send_cancelled(c)
+    assert _last().sender == "manager" and _last().status == "unknown"
+    r = c.post(f"/admin/conversation/{UID}/resend/{_last().id}", data=_confirm(c, _last().id))
+    assert r.headers["X-Action-Outcome"] == "sent" and fake.calls == 2
+
+
+def test_cancelled_send_flag_off_as_before(env):
+    _wappi(env, "cancel")
+    _send_cancelled(_client())
+    assert _last().sender == "manager" and _last().status == "pending"
 
 
 # ---------------------------- права ----------------------------
@@ -256,8 +396,9 @@ def test_colleague_cannot_confirm_owners_message_when_ownership_enforced(env):
     fake = _wappi(env, "timeout", "ok")
     _send(_client("medina"))                              # Медина — владелец
     assert _last().status == "unknown"
-    r = _client("eliza").post(f"/admin/conversation/{UID}/resend/{_last().id}",
-                              data={"confirm": "1"})
+    eliza = _client("eliza")
+    r = eliza.post(f"/admin/conversation/{UID}/resend/{_last().id}",
+                   data=_confirm(eliza, _last().id))
     assert r.headers["X-Action-Outcome"] == "denied" and fake.calls == 1
     assert _last().status == "unknown"
 

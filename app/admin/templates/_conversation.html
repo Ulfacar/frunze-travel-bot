@@ -179,7 +179,7 @@
           {% elif m.status == 'sent' %}<span class="chat-delivery" aria-label="отправлено" title="отправлено">{{ chat_icon('check') }}</span>
           {% elif m.status == 'delivered' %}<span class="chat-delivery chat-ticks" aria-label="доставлено" title="доставлено">{{ chat_icon('checks') }}</span>
           {% elif m.status == 'unknown' %}{% if send_unknown_on and not crm_bot_mode and m.sender == 'manager' and not m.text.startswith('📎 ') %}<span class="chat-failed" title="WhatsApp не ответил вовремя: сообщение могло уйти">{{ chat_icon('info') }}Не уверены, что дошло — проверьте в WhatsApp</span>
-            <button type="button" class="chat-retry" hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-vals='{"confirm": "1"}' hx-confirm="Клиент может получить сообщение дважды. Отправить ещё раз?" hx-target="#chat" hx-swap="innerHTML">Отправить ещё раз</button>{% else %}<span class="chat-failed" title="WhatsApp не ответил вовремя">{{ chat_icon('info') }}неизвестно, дошло ли — проверьте</span>{% endif %}
+            <button type="button" class="chat-retry" hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-vals='{"confirm": "1", "seen": "{{ unknown_seen(m.id) }}"}' hx-confirm="Клиент может получить сообщение дважды. Отправить ещё раз?" hx-target="#chat" hx-swap="innerHTML">Отправить ещё раз</button>{% else %}<span class="chat-failed" title="WhatsApp не ответил вовремя">{{ chat_icon('info') }}неизвестно, дошло ли — проверьте</span>{% endif %}
           {% elif m.status == 'failed' %}<span class="chat-failed">{{ chat_icon('info') }}не доставлено</span>
             {% if not crm_bot_mode and not m.text.startswith('📎 ') %}<button type="button" class="chat-retry" hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-target="#chat" hx-swap="innerHTML">Повторить</button>{% endif %}
           {% endif %}
@@ -549,7 +549,7 @@
           {% elif m.status == 'delivered' %}<span title="доставлено">✓✓</span>
           {% elif m.status == 'unknown' %}{% if send_unknown_on and not crm_bot_mode and m.sender == 'manager' and not m.text.startswith('📎 ') %}<span title="WhatsApp не ответил вовремя: сообщение могло уйти" style="color:var(--hot)">? Не уверены, что дошло — проверьте в WhatsApp</span>
             <button class="btn btn-ghost" style="padding:2px 8px;font-size:12px"
-                    hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-vals='{"confirm": "1"}'
+                    hx-post="/admin/conversation/{{ c.user_id }}/resend/{{ m.id }}" hx-vals='{"confirm": "1", "seen": "{{ unknown_seen(m.id) }}"}'
                     hx-confirm="Клиент может получить сообщение дважды. Отправить ещё раз?"
                     hx-target="#chat" hx-swap="innerHTML">Отправить ещё раз</button>{% else %}<span title="WhatsApp не ответил вовремя" style="color:var(--hot)">? неизвестно, дошло ли</span>{% endif %}
           {% elif m.status == 'failed' %}<span title="не доставлено" style="color:var(--hot)">✗ не доставлено</span>

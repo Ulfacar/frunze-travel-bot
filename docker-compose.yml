@@ -24,6 +24,9 @@ services:
       # Архив Битрикса в панели (30.10): только чтение JSONL, только полный админ. OFF.
       PANEL_BITRIX_ARCHIVE_ENABLED: ${PANEL_BITRIX_ARCHIVE_ENABLED:-false}
       BITRIX_ARCHIVE_DIR: ${BITRIX_ARCHIVE_DIR:-}
+      # Сводка пилота для руководителя направления (30.10). OFF; руководители — JSON по направлениям.
+      PANEL_PILOT_SUMMARY_ENABLED: ${PANEL_PILOT_SUMMARY_ENABLED:-false}
+      PANEL_DIRECTION_LEADS: ${PANEL_DIRECTION_LEADS:-{}}
       # Въездные визы в КР (ТЗ Гриши v1.1). Оба OFF: ветка и отдельно речь бота.
       KG_ENTRY_ENABLED: ${KG_ENTRY_ENABLED:-false}
       KG_ENTRY_SAY_CONFIRMED_ENABLED: ${KG_ENTRY_SAY_CONFIRMED_ENABLED:-false}

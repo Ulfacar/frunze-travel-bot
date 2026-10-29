@@ -455,6 +455,11 @@ class WappiAdapter:
         finally:
             if owns:
                 await client.aclose()
+        if not provider_msg_id and kwargs.get("unknown_without_id") is True:
+            # Ответ менеджера из панели (MSG-02, флаг `panel_send_unknown_status_enabled`):
+            # 2xx без id (тело-ошибка, не JSON) — Wappi мог принять, мог отклонить. Как у
+            # `send_file`: исход неизвестен, а не «отправлено» (ревью pdf 30.10, п. 2).
+            raise SendOutcomeUnknown("Wappi answered without message id")
         logger.info("Wappi send to=%s profile=%s msg_id=%s",
                     mask_phone(_recipient(chat_id)), self._profile_id, provider_msg_id)
         return provider_msg_id

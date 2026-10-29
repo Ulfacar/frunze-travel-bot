@@ -12,20 +12,33 @@
   нет соединения (`ConnectError`, `ConnectTimeout`, `PoolTimeout`), ответ 4xx (402 «не
   оплачено», 401, 400), канал не настроен, нет адаптера;
 * **неизвестно** (`unknown`) — запрос мог быть принят: таймаут чтения/записи, обрыв
-  соединения после отправки, ответ 5xx, `SendOutcomeUnknown`, отменённый запрос.
+  соединения после отправки, ответ 5xx, ответ 2xx без id сообщения (тело-ошибка, не
+  JSON — `SendOutcomeUnknown`), отменённый запрос.
 
 Повтор `unknown` сервер выполняет только с явным подтверждением (`confirm=1` в форме):
-менеджер видит «Клиент может получить сообщение дважды». Флаг
+менеджер видит «Клиент может получить сообщение дважды». Подтверждение относится к тому
+`unknown`, которое менеджер видел: кнопка несёт отметку попытки (`seen`), каждая
+завершённая попытка повтора её меняет. Две вкладки или два клика, оба по одному `unknown`,
+после нового таймаута первого не дают третьей копии — второму нужно подтвердить заново
+(ревью pdf 30.10, проба P1c). Флаг
 `panel_send_unknown_status_enabled`, дефолт OFF: без него всё как было — `failed`.
 """
 from __future__ import annotations
 
 import asyncio
+import secrets
 
 import httpx
 
 FLAG = "panel_send_unknown_status_enabled"
 CONFIRM_FIELD = "confirm"
+SEEN_FIELD = "seen"
+
+# Отметка попытки: «запуск процесса.номер завершённой попытки». Живёт в памяти процесса,
+# как и блокировки повтора в `router.resend` (один воркер uvicorn). После перезапуска
+# меняется первая часть — любая страница, открытая до него, требует нового подтверждения.
+_BOOT = secrets.token_hex(4)
+_attempts: dict[int, int] = {}
 
 # Запрос до провайдера не ушёл — повтор безопасен.
 _NOT_SENT = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout,
@@ -46,9 +59,31 @@ def classify(exc: BaseException) -> str:
     return "failed"            # канал не настроен, нет адаптера, ошибка до сети
 
 
+def seen_token(message_id: int) -> str:
+    """Отметка для кнопки «Отправить ещё раз»: какое именно `unknown` видел менеджер."""
+    return f"{_BOOT}.{_attempts.get(message_id, 0)}"
+
+
+def attempt_finished(message_id: int) -> None:
+    """Попытка повтора завершилась (любым исходом) — прежние подтверждения устарели."""
+    _attempts[message_id] = _attempts.get(message_id, 0) + 1
+
+
 async def enabled() -> bool:
     from app.admin import router as ar
     return await ar._media_flag(FLAG)
+
+
+async def send_kwargs(channel: str) -> dict:
+    """Доп. аргументы `outbound.send_to_client` для текста менеджера.
+
+    Флаг ON и WhatsApp: 2xx без id → `unknown` (как у `send_file`). Флаг OFF — пусто:
+    вызов тот же, что был."""
+    try:
+        on = channel == "whatsapp" and await enabled()
+    except Exception:  # noqa: BLE001 — флаг недоступен: прежнее поведение
+        on = False
+    return {"unknown_without_id": True} if on else {}
 
 
 async def failure_status(exc: BaseException) -> str:

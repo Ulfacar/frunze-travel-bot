@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Сводка пилота — Frunze{% endblock %}
+{% block head %}
+<style>
+.pls{max-width:1040px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.pls-box{min-width:0}
+.pls-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg,12px);padding:16px 18px}
+.pls h1{font-size:22px;margin:0 0 4px}.pls .lead{margin:0;color:var(--muted);line-height:1.5;font-size:14px}
+.pls-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pls-tabs a{padding:8px 12px;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--text);font-size:14px}
+.pls-tabs a.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff)}
+.pls-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pls-card{display:block;padding:12px;border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text)}
+.pls-card b{display:block;font-size:26px;line-height:1.1}.pls-card span{font-size:13px;color:var(--muted)}
+.pls-card.warn b{color:var(--hot)}
+.pls table{width:100%;border-collapse:collapse;font-size:14px}
+.pls th,.pls td{padding:8px 6px;border-top:1px solid var(--border);text-align:right;white-space:nowrap}
+.pls th:first-child,.pls td:first-child{text-align:left}
+.pls-scroll{overflow-x:auto}
+.pls-row{padding:10px 0;border-top:1px solid var(--border)}.pls-row:first-of-type{border-top:0}
+.pls-meta{font-size:13px;color:var(--muted)}
+.pls-space{height:0}@media(max-width:600px){.pls-space{height:96px}}
+</style>
+{% endblock %}
+{% block content %}
+{% set cur = current %}
+<main class="pls">
+  <section class="pls-box">
+    <h1>Сводка пилота</h1>
+    <p class="lead">Цифры по направлению без имён клиентов. Нажмите на цифру — откроется список диалогов. Ожидание считается в рабочих минутах (часы приёма), «долго» — дольше {{ sla }} мин. Продажи: {{ sales_rule }}.</p>
+    {% if directions|length > 1 %}<nav class="pls-tabs" aria-label="Направление">{% for d, label in directions %}<a href="/admin/pilot-summary?direction={{ d }}&period={{ period }}" class="{{ 'on' if d == direction }}">{{ label }}</a>{% endfor %}</nav>{% endif %}
+    <nav class="pls-tabs" aria-label="Период">{% for key, label in periods %}<a href="/admin/pilot-summary?direction={{ direction }}&period={{ key }}" class="{{ 'on' if key == period }}">{{ label }}</a>{% endfor %}</nav>
+  </section>
+
+  <section class="pls-box" aria-label="Итого за период">
+    <div class="pls-cards">
+      {% for key, label in metrics %}
+      <a class="pls-card{% if key in ('over_sla','failed','unknown') and cur.totals[key] %} warn{% endif %}" href="{{ link(metric=key) }}"><b>{{ cur.totals[key] }}</b><span>{{ label }}</span></a>
+      {% endfor %}
+      <div class="pls-card"><b>{{ cur.max_wait|round(0)|int }}</b><span>Дольше всех ждали, мин</span></div>
+    </div>
+  </section>
+
+  <section class="pls-box" aria-labelledby="pls-m">
+    <h2 id="pls-m" class="lead" style="margin-bottom:8px">По менеджерам</h2>
+    <div class="pls-scroll"><table>
+      <thead><tr><th>Менеджер</th>{% for key, label in metrics %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for m in cur.managers %}
+      <tr><td>{{ (m.login|who) if m.login != '—' else 'Ничей' }}</td>{% for key, label in metrics %}<td>{% if m[key] %}<a href="{{ link(metric=key, who=m.login) }}">{{ m[key] }}</a>{% else %}0{% endif %}</td>{% endfor %}</tr>
+      {% else %}<tr><td colspan="7">За период ничего не было.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+    <p class="pls-meta">«Ответили из панели» — по менеджеру, который отправил; остальное — по владельцу диалога. Ответы из Битрикса сюда не попадают.</p>
+  </section>
+
+  <section class="pls-box" aria-label="Сравнение периодов">
+    <div class="pls-scroll"><table>
+      <thead><tr><th>Период</th>{% for key, label in metrics %}<th>{{ label }}</th>{% endfor %}<th>Макс. ожидание</th></tr></thead>
+      <tbody>{% for key, label in periods %}{% set r = results[key] %}<tr><td><a href="/admin/pilot-summary?direction={{ direction }}&period={{ key }}">{{ label }}</a></td>{% for mk, ml in metrics %}<td>{{ r.totals[mk] }}</td>{% endfor %}<td>{{ r.max_wait|round(0)|int }} мин</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+
+  {% if listing %}
+  <section class="pls-box" aria-labelledby="pls-l" id="list">
+    <h2 id="pls-l" class="lead" style="margin-bottom:8px">{{ listing.label }}{% if listing.who %} · {{ (listing.who|who) if listing.who != '—' else 'ничей' }}{% endif %} — {{ listing.total }}</h2>
+    {% for r in listing.rows %}
+    <div class="pls-row"><a href="{{ r.open_url }}"><b>{{ r.name or r.phone }}</b></a>
+      <div class="pls-meta">{{ r.phone }} · {{ ('ведёт ' ~ (r.owner|who)) if r.owner else 'ничей' }}{% if r.last_at %} · {{ r.last_at|bishkek('%d.%m %H:%M') }}{% endif %}</div>
+      {% if r.last_text %}<div class="pls-meta">{{ {'client':'Клиент','bot':'Бот','manager':'Менеджер'}.get(r.last_sender,'') }}{% if r.last_sender %}: {% endif %}{{ r.last_text[:140] }}</div>{% endif %}
+    </div>
+    {% else %}<p class="lead">Пусто.</p>{% endfor %}
+    {% if listing.total > listing.rows|length %}<p class="pls-meta">Показаны первые {{ listing.rows|length }}.</p>{% endif %}
+  </section>
+  {% endif %}
+</main>
+<div class="pls-space" aria-hidden="true"></div>
+{% endblock %}
