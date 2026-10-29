@@ -433,6 +433,9 @@
   .chat-remind-form label.wide { grid-column:1 / -1; }
   .chat-remind-form input, .chat-remind-form select { width:100%; min-height:36px; }
   .chat-remind-form button { grid-column:1 / -1; min-height:40px; }
+  .chat-remind-form label.chat-remind-important { grid-column:1 / -1; display:flex; align-items:center; gap:8px;
+    color:var(--s-ink); font-weight:600; }
+  .chat-remind-form label.chat-remind-important input { width:18px; height:18px; min-height:0; }
   @container (max-width: 420px) { .chat-remind-form { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
     .chat-remind-form label:first-child { grid-column:1 / -1; } }
   .chat-palma .chat-attach { display:grid; place-items:center; width:40px; height:40px; flex:none; border-radius:50%;
@@ -471,6 +474,10 @@
 {% endif %}
 {% if new_look %}
 <style>
+  /* «Новый клиент» в шапке «Диалогов» (простой режим): заметная, но не главная кнопка. */
+  @media (max-width: 760px) { .topbar > .new-client { order: 1; } }
+  .topbar > .new-client { display:inline-flex; align-items:center; gap:6px; color:var(--accent);
+    border:1px solid var(--accent); font-weight:600; text-decoration:none; white-space:nowrap; }
   /* Список входящих читают весь день: имя, сообщение, затем служебные отметки. */
   /* Тёмная тема (только новый вид): --hot на выделенной карточке давал 4.04:1 (замер 30.10). */
   html[data-theme="dark"] .badge.wait-hot { color: #FFB4AD; }
@@ -524,6 +531,7 @@
     /* Общая навигация и инструменты диалогов — две предсказуемые строки. */
     .topbar::after { content: ""; flex-basis: 100%; order: 1; }
     .topbar > .tabs { order: 2; flex: 1; margin-left: 0; }
+  .topbar > .new-client { order: 2; }
     .topbar > .search { order: 2; }
     .topbar > .search input { width: 300px; }
     #chat { top: 132px; max-height: calc(100dvh - 148px); }
@@ -570,11 +578,15 @@
       {% endfor %}
       {% endif %}
     </nav>
+{% if simple_on and manual_lead_on|default(false) %}
+{#- Простой режим: «Новый клиент» — здесь, рядом со списком клиентов (одно место). -#}
+<a class="tab new-client" href="/admin/clients/new">{% if new_look %}{{ ic.icon("plus", 16) }} {% endif %}Новый клиент</a>
+{% endif %}
 <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
       <input type="search" name="q" placeholder="Поиск по имени или номеру…" autocomplete="off"
              aria-label="Поиск диалогов"
-             hx-get="/admin/search" hx-trigger="keyup changed delay:300ms, search"
+             hx-get="/admin/search" hx-trigger="input changed delay:300ms, search"
              hx-target="#board" hx-swap="innerHTML">
     </div>
 {% endblock %}

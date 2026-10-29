@@ -4,7 +4,7 @@
    ответы, «Предложить ответ», Enter) нашли бы это поле первым. #}
 {% set notes = client_notes['items'] %}
 <details class="chat-dossier chat-notes" id="chat-notes-{{ c.user_id }}">
-  <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg><strong>Заметки</strong><span>· {{ notes|length }}{% if notes %} — {{ notes[0].text|truncate(70, true, '…') }}{% else %} — только для менеджеров{% endif %}</span></summary>
+  <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg><strong>{% if simple_on %}Заметки для коллег{% else %}Заметки{% endif %}</strong><span>· {{ notes|length }}{% if notes %} — {{ notes[0].text|truncate(70, true, '…') }}{% else %}{% if simple_on %} — клиент их не видит{% else %} — только для менеджеров{% endif %}{% endif %}</span></summary>
   <div class="chat-dossier-body">
     {% if client_notes.error %}<p role="alert">{{ client_notes.error }}</p>{% endif %}
     <form class="composer chat-note-form" hx-post="/admin/conversation/{{ c.user_id }}/notes" hx-target="#chat" hx-swap="innerHTML" hx-sync="this:drop" style="display:block;padding:6px 0;border:0">
@@ -16,6 +16,6 @@
     {% for n in notes %}
     <section class="chat-section"><h3 class="chat-section-title">{{ n.author|who }}{% if n.created_at %} <small>{{ n.created_at|bishkek('%d.%m %H:%M') }}</small>{% endif %}</h3><p style="white-space:pre-wrap;word-break:break-word">{{ n.text }}</p></section>
     {% endfor %}
-    <p><a href="{{ client_notes.card_url }}">Карточка клиента — все обращения</a></p>
+    {% if not simple_on %}<p><a href="{{ client_notes.card_url }}">Карточка клиента — все обращения</a></p>{% endif %}
   </div>
 </details>

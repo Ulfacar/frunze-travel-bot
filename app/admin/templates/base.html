@@ -399,7 +399,8 @@
         Админ видит прежний набор целиком — ниже. -#}
     {% if focus_on %}{{ nl('/admin/focus','focus','Главная') }}{% endif %}
     {{ nl('/admin','chat','Диалоги') }}
-    {% if manual_lead_on|default(false) %}{{ nl('/admin/clients/new','plus','Новый клиент') }}{% endif %}
+    {#- «Новый клиент» у менеджера — кнопкой в «Диалогах» (там список клиентов), а не шестым
+        пунктом нижнего меню: на телефоне пять пунктов — предел. -#}
     {{ nl('/admin/calendar','calendar','Мои дела') }}
     {% if workday_on %}{{ nl('/admin/work','work','Договоры') }}{% endif %}
     <details class="more-nav">
