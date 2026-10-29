@@ -97,6 +97,9 @@ def test_case_card_shows_bishkek_time_and_a_pay_button(monkeypatch, tmp_path):
     assert "UTC" not in page.split('id="case-panel"')[1].split("</main>")[0]
     assert 'href="?tab=money#pay"' in page and "Внести оплату" in page
     assert "пояснение, не запрет" not in page and "Дальше:" in page
+    money = tw._login(tw.MANAGER_LOGIN).get(f"/admin/case/{case['case_id']}?tab=money").text
+    assert 'href="?tab=money#pay"' not in money and 'id="pay-sheet"' in money, \
+        "во вкладке «Деньги» одна кнопка «Внести оплату», не две" 
     _simple(monkeypatch, False)
     plain = tw._login(tw.MANAGER_LOGIN).get(f"/admin/case/{case['case_id']}").text
     assert "ближайшая задача · UTC" in plain and 'href="?tab=money#pay"' not in plain

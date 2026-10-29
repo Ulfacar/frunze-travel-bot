@@ -264,7 +264,8 @@
     {% endif %}
     {#- Простой режим: «Внести оплату» — рядом с главным действием, а не только во вкладке
         «Деньги». Ссылка открывает ту же форму (тот же POST), JS раскрывает её по #pay. -#}
-    {% if simple_on and write_on and may_pay and b is not none and b.outstanding is not none and b.outstanding > 0 %}
+    {#- Во вкладке «Деньги» своя кнопка «Внести оплату» — второй здесь не нужно (одно место). -#}
+    {% if simple_on and write_on and may_pay and tab != 'money' and b is not none and b.outstanding is not none and b.outstanding > 0 %}
     <p class="cs-pay-cta"><a class="btn btn-soft" href="?tab=money#pay">Внести оплату · осталось {{ b.outstanding }} {{ b.currency or case.currency or '' }}</a></p>
     {% endif %}
   </div>
