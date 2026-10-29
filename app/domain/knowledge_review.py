@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from app.domain.knowledge_import import ImportUnavailable, _authorize, _sessions
+from app.domain.knowledge_import import ImportUnavailable, _authorize_admin, _sessions
 from app.domain.models import DomainError, KnowledgeSet, KnowledgeUnit, KnowledgeVersion
 from app.domain.permissions import Actor
 from app.knowledge.bundle import validate_bundle
@@ -76,7 +76,7 @@ async def review_versions(engine: AsyncEngine, *, actor: Actor, set_id: int,
     Результат содержит выбранные ID/hash, чтобы отчёт не обещал следовать за
     будущим переключением active. Ни commit, ни flush, ни SQL writes здесь нет.
     """
-    _authorize(actor)
+    _authorize_admin(actor)
     if any(type(value) is not int or value < 1 for value in (set_id, candidate_id)) or (
             baseline_id is not None and (type(baseline_id) is not int or baseline_id < 1)):
         raise DomainError("invalid knowledge review identifier")

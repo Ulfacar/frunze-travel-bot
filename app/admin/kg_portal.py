@@ -117,8 +117,8 @@ async def _render(request,manager,actor,case,*,receipt_id=None,before=None,error
 
 
 @ar.router.get('/case/{case_id}/kg-entry/portal',response_class=HTMLResponse)
-async def portal_form(request:Request,case_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager);case=await entry._case(case_id,actor)
+async def portal_form(request:Request,case_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
+    actor=await entry._gate(request,manager);case=await entry._case(case_id,actor)
     try:
         pairs=list(request.query_params.multi_items())
         if len(pairs)>1 or any(k not in ('receipt_id','before') for k,v in pairs): raise ValueError
@@ -132,8 +132,8 @@ async def portal_form(request:Request,case_id:int=Path(ge=1,le=2147483647),manag
 
 
 @ar.router.post('/case/{case_id}/kg-entry/portal',response_class=HTMLResponse)
-async def portal_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager,write=True);case=await entry._case(case_id,actor)
+async def portal_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
+    actor=await entry._gate(request,manager,write=True);case=await entry._case(case_id,actor)
     values=await _form(request,actor,case_id);receipt_id=int(values['_pn_target']) or None;policy=_policy()
     try:
         if values['_pn_action']=='receive':

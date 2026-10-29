@@ -9,8 +9,8 @@ from app.knowledge.retrieval import RetrievalError, load_review_index
 
 
 @ar.router.get("/kg-entry/knowledge", response_class=HTMLResponse)
-def knowledge_search(request: Request, manager=Depends(ar.require_full_admin)):
-    entry._gate(request, manager)
+async def knowledge_search(request: Request, manager=Depends(ar.require_kg_entry_access)):
+    await entry._gate(request, manager)
     query = request.query_params.get("q", "")
     block = request.query_params.get("block", "")
     error, report, status = "", None, 200

@@ -13,7 +13,7 @@ import re
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from app.domain.knowledge_import import _authorize, _sessions
+from app.domain.knowledge_import import _authorize, _authorize_admin, _sessions
 from app.domain.knowledge_review import _plain
 from app.domain.models import (Contact, DomainError, StayHistory, StayInterval, WorkCalendar, WorkCalendarDay, _now)
 from app.knowledge.review import canonical
@@ -248,7 +248,7 @@ async def _calendars(session, ids):
 
 
 async def import_work_calendars(engine, *, actor, document):
-    _authorize(actor)
+    _authorize_admin(actor)        # импорт календарей — администрирование, не работа по делу
     book = WorkCalendars(document)
     docs, infos = book.export()["calendars"], book.describe()
 

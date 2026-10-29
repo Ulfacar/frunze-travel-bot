@@ -13,6 +13,7 @@ from sqlalchemy import select
 
 import app.admin.router as ar
 from app.admin.kg_entry_form import (FIELDS, FORM_FIELDS, MAX_LENGTHS, FAMILY_LIMIT, FormInvalid, country_options,
+                                    country_options_simple,
                                     report_view, request_from_values, values_from_request)
 from app.admin.kg_review_card import card_view
 from app.admin.workday import _case_or_404, _require_workday, _write_on
@@ -31,15 +32,111 @@ SECURITY = {"_kg_csrf", "_kg_signature"}
 BODY_LIMIT = 65_536
 
 
-def _gate(request, manager, *, write=False):
+def _kg_simple_context(request) -> dict:
+    """`kg_simple` — менеджерский (свёрнутый) вид экранов `kg_*`; у админа всегда False."""
+    return {"kg_simple": bool(getattr(request.state, "kg_simple", False))}
+
+
+if not any(getattr(fn, "__name__", "") == "_kg_simple_context" for fn in ar.templates.context_processors):
+    ar.templates.context_processors.append(_kg_simple_context)
+
+
+async def link_allowed(actor, direction) -> bool:
+    """Показывать ли вход во въездную CRM этому актору — та же логика, что в шлюзе.
+
+    Только для ссылок в интерфейсе: право проверяет `require_kg_entry_access`/`_gate`
+    на сервере при переходе, ссылка ничего не открывает сама.
+    """
+    if not ar.settings.admin_kg_entry_enabled or direction != "visa":
+        return False
+    if actor.is_full_admin:
+        return True
+    from app.core import flags
+    return "visa" in actor.allowed_directions and await flags.get_flag(
+        "kg_entry_manager_access_enabled", ar.settings.kg_entry_manager_access_enabled)
+
+
+async def chat_case_link(conv, manager) -> str | None:
+    """Ссылка «Визовая заявка (КР)» из карточки диалога — под тем же флагом доступа.
+
+    Показывается только для въездного диалога (`entry_mode=kg_entry`), у которого
+    уже есть услуга направления «визы», видимая этому менеджеру. Ничего не создаёт:
+    услугу заводит «Открыть карточку до договора». Ошибки поиска — молча None: ссылка
+    не имеет права ронять карточку диалога.
+    """
+    try:
+        if not ar.settings.admin_kg_entry_enabled:
+            return None
+        if (getattr(conv, "funnel", "") != "visa"
+                or (getattr(conv, "qualification", None) or {}).get("entry_mode") != "kg_entry"):
+            return None
+        from app.core import flags
+        if not await flags.get_flag("kg_entry_manager_access_enabled",
+                                    ar.settings.kg_entry_manager_access_enabled):
+            return None
+        from app.admin import contracts
+        from app.domain.models import Product, ServiceCase
+        from app.domain.service_authz import can_view_case
+        actor = actor_for(manager)
+        async with ar._domain_sessionmaker()() as session:
+            contact = await contracts._find_contact(session, contracts._identity(conv))
+            if contact is None:
+                return None
+            rows = await session.execute(
+                select(ServiceCase, Product).join(Product, Product.id == ServiceCase.product_id)
+                .where(ServiceCase.contact_id == contact.id, Product.direction == "visa")
+                .order_by(ServiceCase.id.desc()))
+            for case, product in rows.all():
+                if can_view_case(actor, direction=product.direction, owner_login=case.owner_login):
+                    return f"/admin/case/{case.id}/kg-entry"
+        return None
+    except Exception:  # noqa: BLE001 — см. docstring
+        log.warning("kg entry chat link failed", exc_info=True)
+        return None
+
+
+async def _gate(request, manager, *, write=False, admin_only=False):
+    """Единственный вход во все экраны въездной CRM по PDF (30 модулей `kg_*`).
+
+    Порядок проверок — на сервере, до любого обращения к базе:
+      1. рабочий день и мастер-флаг `ADMIN_KG_ENTRY_ENABLED` (иначе 404);
+      2. полный администратор — как было всегда, без дополнительных обращений к БД;
+      3. иначе — визовый менеджер при `kg_entry_manager_access_enabled`, и только НЕ
+         на админских экранах (`admin_only`): публикация знаний, решения по единицам;
+      4. для путей с `case_id` — услуга обязана быть видна менеджеру
+         (`_case_or_404`: направление «визы» и владение; чужая → 404, не раскрываем);
+      5. запись — только при включённой записи услуг.
+    Признак оператора (`Actor.kg_entry_operator`) ставится здесь и нигде больше.
+    """
     _require_workday(request)
     if not ar.settings.admin_kg_entry_enabled:
         raise HTTPException(404)
     actor = actor_for(manager)
+    if not actor.is_full_admin:
+        from dataclasses import replace
+        from app.core import flags
+        allowed = (not admin_only
+                   and "visa" in actor.allowed_directions
+                   and await flags.get_flag("kg_entry_manager_access_enabled",
+                                            ar.settings.kg_entry_manager_access_enabled))
+        if not allowed:
+            raise HTTPException(403, "admin only")
+        actor = replace(actor, kg_entry_operator=True)
+        # Упрощённый вид `kg_*` для оператора-менеджера: шаблоны читают `kg_simple` через
+        # контекст-процессор ниже. Для полного админа признак не ставится — его вид прежний.
+        request.state.kg_simple = True
     try:
         _authorize(actor)
     except PermissionDenied:
         raise HTTPException(403) from None
+    if not actor.is_full_admin:
+        raw = request.path_params.get("case_id")
+        if raw is not None:
+            try:
+                case_id = int(raw)
+            except (TypeError, ValueError):
+                raise HTTPException(404) from None
+            await _case(case_id, actor)       # 404 для чужой услуги и чужого направления
     if write and not _write_on(request):
         raise HTTPException(403, "Сохранение анкет отключено администратором.")
     return actor
@@ -148,7 +245,9 @@ async def _context(request, case, actor, qualification_id=None, attach_history_i
             history_id = attach_history_id
         await _qualification_sources(session, case["contact_id"], version_id, history_id)
         version = await session.get(KnowledgeVersion, version_id)
-        countries = country_options(version.country_aliases)
+        countries = (country_options_simple(version.country_aliases)
+                     if getattr(request.state, "kg_simple", False)
+                     else country_options(version.country_aliases))
         version_label = f"Версия базы №{version.version} · требует проверки"
     base = saved["input"] if saved else {}
     return {"saved": saved, "values": values_from_request(base), "countries": countries,
@@ -192,8 +291,8 @@ async def _render(request, manager, actor, case, *, qualification_id=None, attac
 @ar.router.get("/case/{case_id}/kg-entry", response_class=HTMLResponse)
 async def qualification_form(case_id: int, request: Request, qualification_id: int | None = Query(None, ge=1),
                              history_id: int | None = Query(None, ge=1, le=2147483647),
-                             manager: dict = Depends(ar.require_full_admin)):
-    actor = _gate(request, manager)
+                             manager: dict = Depends(ar.require_kg_entry_access)):
+    actor = await _gate(request, manager)
     if qualification_id is not None and history_id is not None:
         raise HTTPException(422, "Для новой истории откройте последнюю анкету без выбора старой версии.")
     try:
@@ -206,8 +305,8 @@ async def qualification_form(case_id: int, request: Request, qualification_id: i
 
 
 @ar.router.post("/case/{case_id}/kg-entry", response_class=HTMLResponse)
-async def qualification_submit(case_id: int, request: Request, manager: dict = Depends(ar.require_full_admin)):
-    actor = _gate(request, manager, write=True)
+async def qualification_submit(case_id: int, request: Request, manager: dict = Depends(ar.require_kg_entry_access)):
+    actor = await _gate(request, manager, write=True)
     try:
         case = await _case(case_id, actor)
     except HTTPException:
@@ -250,8 +349,8 @@ async def qualification_submit(case_id: int, request: Request, manager: dict = D
 @ar.router.get("/case/{case_id}/kg-entry/review/{qualification_id}", response_class=HTMLResponse)
 async def qualification_review_card(request: Request, case_id: int = Path(ge=1, le=2147483647),
                                     qualification_id: int = Path(ge=1, le=2147483647),
-                                    manager: dict = Depends(ar.require_full_admin)):
-    actor = _gate(request, manager)
+                                    manager: dict = Depends(ar.require_kg_entry_access)):
+    actor = await _gate(request, manager)
     headers = {"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"}
     try:
         card = await read_qualification_card(_engine(), actor=actor, case_id=case_id,

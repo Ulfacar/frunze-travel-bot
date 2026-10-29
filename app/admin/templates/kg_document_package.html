@@ -1,7 +1,9 @@
 {% extends "kg_document_inventory.html" %}
 {% block title %}Frunze — Полный комплект документов{% endblock %}
 {% block content %}<main class="kg-inventory">
-<nav><a href="/admin/case/{{ case.id }}/kg-entry/applications?application_id={{ application_id }}">К заявке</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/documents">Прежний реестр</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/quarantine">Файлы заявки</a></nav>
+{% if kg_simple %}<nav><a href="/admin/case/{{ case.id }}/kg-entry/applications?application_id={{ application_id }}">К заявке</a></nav>
+<details class="kg-specialist no-print"><summary>Для специалиста</summary><nav><a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/documents">Прежний реестр</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/quarantine">Файлы заявки</a></nav></details>
+{% else %}<nav><a href="/admin/case/{{ case.id }}/kg-entry/applications?application_id={{ application_id }}">К заявке</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/documents">Прежний реестр</a> · <a href="/admin/case/{{ case.id }}/kg-entry/applications/{{ application_id }}/quarantine">Файлы заявки</a></nav>{% endif %}
 <h1>Полный комплект документов</h1><p>Услуга №{{ case.id }} · заявка №{{ application_id }} · {{ case.title }}</p>
 <p class="box notice">Учитываются матрица, общие требования и дополнения по типу документа. Файлы принимаются в отдельный карантин при действующих правилах хранения. До утверждения правил работы с реальными документами используйте тестовые данные. Приёмка комплекта сама по себе не разрешает подачу.</p>
 {% if error %}<p class="box error" role="alert">{{ error }}</p>{% endif %}

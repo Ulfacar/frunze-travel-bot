@@ -90,6 +90,7 @@
         <hr>
         {% if workday_on and cases_write_on %}
         {% if c.funnel=='visa' %}<a class="chat-menu-action" href="/admin/conversation/{{ c.user_id|urlencode }}/preliminary">Открыть карточку до договора</a>{% endif %}
+        {% if kg_entry_case_url %}<a class="chat-menu-action" href="{{ kg_entry_case_url }}">Визовая заявка (КР)</a>{% endif %}
         <a class="chat-menu-action" href="/admin/conversation/{{ c.user_id|urlencode }}/contract">Договор подписан → создать услугу</a>
         {% endif %}{% if c.intercepted %}
         <button type="button" class="chat-menu-action" hx-post="/admin/conversation/{{ c.user_id }}/release" hx-target="#chat" hx-swap="innerHTML">{{ chat_icon('return') }}Вернуть боту</button>
@@ -151,7 +152,7 @@
         {# Исходы уже есть в меню ⋮. В простом режиме дубль убираем: одно действие — одно место. #}
         {% if not simple_on %}{{ chat_outcomes() }}{% endif %}
       </section>
-      <section class="chat-section"><h3 class="chat-section-title">Контекст</h3><p>{{ c.ai_summary or 'Контекст пока не собран' }}</p></section>
+      <section class="chat-section"><h3 class="chat-section-title">Контекст</h3><p style="white-space:pre-line">{{ c.ai_summary or 'Контекст пока не собран' }}</p></section>
       <section class="chat-section"><h3 class="chat-section-title">Следующий шаг</h3><p>{{ c.manager_next_step or 'Не указан' }}</p></section>
       {% if c.escalation_reason %}<section class="chat-section"><h3 class="chat-section-title">Почему важно</h3><p>{{ c.escalation_reason }}</p></section>{% endif %}
       <section class="chat-section">
@@ -315,6 +316,7 @@
 
   <div class="ph-actions">{% if workday_on and cases_write_on %}
     <a class="btn btn-brand" href="/admin/conversation/{{ c.user_id|urlencode }}/contract">Договор подписан → создать услугу</a>
+    {% if kg_entry_case_url %}<a class="btn" href="{{ kg_entry_case_url }}">Визовая заявка (КР)</a>{% endif %}
     {% endif %}
     {% if c.intercepted %}
       <div class="status paused">

@@ -207,15 +207,15 @@ async def form(request,actor,ids,language,rule):
 
 @ar.router.get(ROUTE,response_class=HTMLResponse)
 async def actual_dates_form(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),
-                            application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager);ids=(case_id,applicant_id,application_id);language,rule=query(request)
+                            application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
+    actor=await entry._gate(request,manager);ids=(case_id,applicant_id,application_id);language,rule=query(request)
     return await render(request,manager,actor,ids,language,rule)
 
 
 @ar.router.post(ROUTE,response_class=HTMLResponse)
 async def actual_dates_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),
-                              application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager,write=True);ids=(case_id,applicant_id,application_id);language,rule=query(request)
+                              application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
+    actor=await entry._gate(request,manager,write=True);ids=(case_id,applicant_id,application_id);language,rule=query(request)
     values=await form(request,actor,ids,language,rule);action=values['action']
     try:
         args=dict(actor=actor,case_id=case_id,applicant_id=applicant_id,application_id=application_id)

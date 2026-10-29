@@ -273,7 +273,7 @@
       {% if brief.ai_summary or brief.manager_next_step %}
       <div class="ai-brief">
         <span class="k">Контекст</span>
-        {% if brief.ai_summary %}<div>{{ brief.ai_summary }}</div>{% endif %}
+        {% if brief.ai_summary %}<div style="white-space:pre-line">{{ brief.ai_summary }}</div>{% endif %}
         {% if brief.manager_next_step %}<div><b>Дальше:</b> {{ brief.manager_next_step }}</div>{% endif %}
       </div>
       {% endif %}

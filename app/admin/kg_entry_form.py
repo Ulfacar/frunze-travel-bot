@@ -229,6 +229,41 @@ def country_options(aliases):
                   key=lambda row: row[1])
 
 
+def _english_names():
+    """ISO3 → английское название из справочника источника (для кодов без русского алиаса)."""
+    import json
+    from functools import lru_cache
+    from pathlib import Path as _P
+    path = _P(__file__).resolve().parents[2] / "knowledge" / "kg_entry" / "source_v1_1" / "iso3166.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return {str(k): str(v) for k, v in data.items()} if isinstance(data, dict) else {}
+    except Exception:  # noqa: BLE001 — без справочника остаёмся на кодах
+        return {}
+
+
+def country_options_simple(aliases):
+    """Список стран для менеджера: русское название, иначе английское из ISO-справочника;
+    код в `value` тот же, что и у `country_options`. Сначала русские названия по алфавиту,
+    потом английские. Админский список (`country_options`) не меняется."""
+    english = _english_names()
+    labels = {}
+    for alias, code in aliases.items():
+        if any("а" <= c.lower() <= "я" for c in alias) and len(alias) > len(labels.get(code, "")):
+            labels[code] = alias
+    rows = []
+    for code in sorted(set(aliases.values())):
+        label = labels.get(code)
+        if label:
+            label = label[:1].upper() + label[1:]          # алиасы в базе строчными
+            rows.append((0, label, code, f"{label} ({code})"))
+        elif english.get(code):
+            rows.append((1, english[code], code, f"{english[code]} ({code})"))
+        else:
+            rows.append((2, code, code, code))
+    return [(code, title) for _, _, code, title in sorted(rows)]
+
+
 def report_view(report):
     history_labels = {"history_incomplete": "Полнота истории поездок не подтверждена.",
                       "history_unconfirmed": "Есть неподтверждённые поездки.",

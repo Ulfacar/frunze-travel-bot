@@ -758,6 +758,14 @@ class Orchestrator:
             log.warning("persona greeting failed", exc_info=True)
             return False
 
+    async def _entry_isolated(self) -> bool:
+        """Флаг изоляции въездного клиента от выездных автоответов (дефолт OFF)."""
+        from app.config import settings
+        from app.core import flags
+        return await flags.get_bot_flag("kg_entry_outbound_isolation_enabled",
+                                        self._bot_id,
+                                        settings.kg_entry_outbound_isolation_enabled)
+
     async def _entry_talk(self, msg: Message, state) -> bool:
         """Въездной ли это разговор — по липкому режиму ИЛИ по самой реплике.
 
@@ -818,6 +826,15 @@ class Orchestrator:
                     return True
             except Exception:  # noqa: BLE001
                 log.warning("visa deterministic reply failed", exc_info=True)
+
+        # Тот же гвард над FAQ-записями — за флагом `kg_entry_outbound_isolation_enabled`.
+        # Записи FAQ визовой воронки выездные: «какие документы» отвечает списком для
+        # Шенгена/США, «сколько стоит» обещает назвать прайс, «какие визы» перечисляет
+        # США, Канаду, Шенген. Иностранец, едущий в Кыргызстан, получал их до воронки.
+        # Найдено PM-ревью 30.10.2026 прямым вызовом `_maybe_faq_reply`.
+        if state.funnel == "visa" and await self._entry_isolated() \
+                and await self._entry_talk(msg, state):
+            return False
 
         try:
             from app.core.faq import get_faq_store, match_faq, qualification_question

@@ -97,16 +97,16 @@ async def _render(request,manager,actor,case,applicant_id,interview_id,*,preview
 
 @ar.router.get(ROUTE,response_class=HTMLResponse)
 async def stop_form(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),
-                    interview_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager);case=await entry._case(case_id,actor)
+                    interview_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
+    actor=await entry._gate(request,manager);case=await entry._case(case_id,actor)
     if request.query_params:raise HTTPException(422,headers=HEADERS)
     return await _render(request,manager,actor,case,applicant_id,interview_id)
 
 
 @ar.router.post(ROUTE,response_class=HTMLResponse)
 async def stop_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),
-                      interview_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager,write=True);case=await entry._case(case_id,actor);ids=(case_id,applicant_id,interview_id)
+                      interview_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
+    actor=await entry._gate(request,manager,write=True);case=await entry._case(case_id,actor);ids=(case_id,applicant_id,interview_id)
     values=await _form(request,actor,ids);policy=_policy()
     target=dict(actor=actor,case_id=case_id,applicant_id=applicant_id,interview_id=interview_id,dialog_id=int(values['dialog_id']),resolver=resolve_dialog,policy=policy)
     try:

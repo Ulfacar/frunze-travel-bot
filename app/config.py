@@ -459,6 +459,18 @@ class Settings(BaseSettings):
     # вместо молчаливого ухода в выездную воронку. Дефолт OFF: решает, какой клиент в
     # какую воронку попадёт на боевом номере. Per-bot `kg_entry_routing_v2_enabled:<bot>`.
     kg_entry_routing_v2_enabled: bool = False
+    # Изоляция въездного клиента от ВЫЕЗДНЫХ автоответов на том же номере (PM-ревью
+    # 30.10.2026): выездной FAQ («какие документы» → «страховка, справка с работы»;
+    # «сколько стоит» → «назову официальный прайс») и выездной ремень валидатора
+    # «рабочими визами не занимаемся (США: B1/B2…)» срабатывали на иностранце, который
+    # едет В Кыргызстан. Дефолт OFF: меняет ответы клиенту на боевом номере GetVisa.
+    # Per-bot `kg_entry_outbound_isolation_enabled:<bot_id>`.
+    kg_entry_outbound_isolation_enabled: bool = False
+    # Доступ визового менеджера к въездной CRM по PDF (`/admin/kg-entry/*`,
+    # `/admin/case/{id}/kg-entry/*`). Без него все эти экраны — только полный админ.
+    # При ON менеджер направления «визы» работает по СВОИМ услугам; публикация знаний,
+    # решения по единицам и импорт остаются админскими. Дефолт OFF (права).
+    kg_entry_manager_access_enabled: bool = False
     panel_missing_cards_enabled: bool = False
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False

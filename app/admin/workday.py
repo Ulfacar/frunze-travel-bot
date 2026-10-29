@@ -82,6 +82,12 @@ def _require_workday(request: Request) -> None:
         raise HTTPException(status_code=404)
 
 
+async def _kg_entry_link_allowed(actor, direction) -> bool:
+    """Ссылка «Анкета въезда в Кыргызстан» в карточке услуги — тому, кого пустит шлюз."""
+    from app.admin.kg_entry import link_allowed
+    return await link_allowed(actor, direction)
+
+
 def _write_on(request: Request) -> bool:
     from app.config import settings
     return bool(getattr(request.state, "cases_write_on", settings.service_cases_enabled))
@@ -366,7 +372,7 @@ async def _case_context(request: Request, case_id: int, manager: dict, *,
             "outcome": outcome,
             # Строка после успешной операции (B3: «продажа зафиксирована»). Пусто — ничего.
             "notice": notice,
-            "kg_entry_on": ar.settings.admin_kg_entry_enabled and actor.is_full_admin and direction == "visa",
+            "kg_entry_on": await _kg_entry_link_allowed(actor, direction),
             "preliminary_case": preliminary,
         }
 

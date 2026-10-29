@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 import re
 
-from app.domain.entry_storage import EntryStorageInvalid, _authorize
+from app.domain.entry_storage import EntryStorageInvalid
+from app.domain.knowledge_import import _authorize_admin
 from app.domain.service_authz import PermissionDenied
 
 
@@ -30,7 +31,7 @@ def configured_policy(settings):
 
 
 def authorize_publisher(actor, policy):
-    _authorize(actor)
+    _authorize_admin(actor)
     if not isinstance(policy,PublicationPolicy):raise PermissionDenied('knowledge publication policy is not configured')
     if actor.manager_id not in policy.publishers:raise PermissionDenied('knowledge publisher is not authorized by policy')
 

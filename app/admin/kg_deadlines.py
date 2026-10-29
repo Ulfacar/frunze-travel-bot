@@ -160,8 +160,8 @@ async def _render(request,manager,actor,case,application_id,*,rule='',revision=N
 @ar.router.get('/case/{case_id}/kg-entry/applications/{application_id}/deadlines',response_class=HTMLResponse)
 async def deadline_form(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),
     rule:str=Query('',max_length=80),revision:int|None=Query(None,ge=1,le=service.MAX_REVISIONS+1),
-    version:int|None=Query(None,ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager)
+    version:int|None=Query(None,ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
+    actor=await entry._gate(request,manager)
     pairs=list(request.query_params.multi_items())
     if len({k for k,v in pairs})!=len(pairs) or any(k not in ('rule','revision','version') for k,v in pairs):raise HTTPException(422)
     if rule and not re.fullmatch(r'KG\.DL\.[A-Z0-9_]{1,64}',rule) or revision and not rule or revision and version:
@@ -173,8 +173,8 @@ async def deadline_form(request:Request,case_id:int=Path(ge=1,le=2147483647),app
 
 
 @ar.router.post('/case/{case_id}/kg-entry/applications/{application_id}/deadlines',response_class=HTMLResponse)
-async def deadline_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager,write=True)
+async def deadline_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
+    actor=await entry._gate(request,manager,write=True)
     try:case=await entry._case(case_id,actor)
     except HTTPException:raise
     except Exception:return HTMLResponse('Реестр услуг временно недоступен. Сохранение не выполнено.',status_code=503,headers=HEADERS)

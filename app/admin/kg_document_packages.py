@@ -184,8 +184,8 @@ async def _render(request,manager,actor,case,application_id,*,item_id='',revisio
 
 
 @ar.router.get('/case/{case_id}/kg-entry/applications/{application_id}/document-package',response_class=HTMLResponse)
-async def package_form(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),item:str=Query('',max_length=41),revision:int|None=Query(None,ge=1,le=MAX_REVISIONS),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager)
+async def package_form(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),item:str=Query('',max_length=41),revision:int|None=Query(None,ge=1,le=MAX_REVISIONS),manager=Depends(ar.require_kg_entry_access)):
+    actor=await entry._gate(request,manager)
     pairs=list(request.query_params.multi_items())
     if len({k for k,v in pairs})!=len(pairs) or any(k not in ('item','revision') for k,v in pairs): raise HTTPException(422,headers=HEADERS)
     case=await entry._case(case_id,actor)
@@ -193,8 +193,8 @@ async def package_form(request:Request,case_id:int=Path(ge=1,le=2147483647),appl
 
 
 @ar.router.post('/case/{case_id}/kg-entry/applications/{application_id}/document-package',response_class=HTMLResponse)
-async def package_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager,write=True)
+async def package_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
+    actor=await entry._gate(request,manager,write=True)
     case=await entry._case(case_id,actor); values=await _form(request,actor,case_id,application_id); item=values['_dp_item']
     try:
         await service.record_package_operation(entry._engine(),actor=actor,case_id=case_id,application_id=application_id,

@@ -54,10 +54,10 @@ async def verify_projection(session, version_id, expected):
 
 async def review_projection(engine, *, actor, set_id, version_id, country, document_type="ordinary", facts=None):
     """Read-only; validate stored bundle, materialization and catalog before returning."""
-    from app.domain.knowledge_import import ImportUnavailable, _authorize, _sessions
+    from app.domain.knowledge_import import ImportUnavailable, _authorize_admin, _sessions
     from app.domain.knowledge_review import _snapshot
 
-    _authorize(actor)
+    _authorize_admin(actor)
     if any(type(value) is not int or value < 1 for value in (set_id, version_id)):
         raise DomainError("invalid knowledge projection identifier")
     try:

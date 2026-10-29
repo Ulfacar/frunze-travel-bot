@@ -13,6 +13,7 @@
     <textarea id="{{ field.id }}" name="{{ field.path }}" rows="3" maxlength="{{ field.max_length }}">{{ values.get(field.path,'') }}</textarea>
   {% elif field.kind in ['country','countries'] %}
     {% if field.kind == 'countries' %}<small class="kg-muted" id="kg-citizenship-hint">Можно выбрать несколько гражданств — до пяти.</small>{% endif %}
+    {% if kg_simple %}<input type="search" class="kg-country-search" id="{{ field.id }}-search" data-target="{{ field.id }}" placeholder="Начните вводить страну" aria-label="Поиск страны: {{ field.label }}" autocomplete="off">{% endif %}
     <select id="{{ field.id }}" name="{{ field.path }}" {% if field.kind == 'countries' %}multiple size="5" aria-describedby="kg-citizenship-hint"{% endif %}>
       {% set selected = values.get(field.path,[]) if field.kind == 'countries' else [values.get(field.path,'')] %}
       <option value="" {% if '' in selected or not selected %}selected{% endif %}>Не спрашивали</option>

@@ -359,6 +359,7 @@ def validate_reply(text: str, funnel: str | None,
                    allowed_claims: frozenset[str] = frozenset(),
                    consent_given: bool = False,
                    quoted_periods: frozenset[tuple[int, str]] = frozenset(),
+                   outbound_isolated: bool = False,
                    ) -> tuple[str, list[str]]:
     """Вернуть (очищенный_текст, список_нарушений).
 
@@ -374,6 +375,13 @@ def validate_reply(text: str, funnel: str | None,
     на въезд. `allowed_claims` — поля, которые разрешено произносить (см.
     `EntryVerdict.sayable`); `consent_given` — получено ли согласие на обработку данных.
     При `profile=None` поведение прежних воронок не меняется ни на символ.
+
+    `outbound_isolated` — флаг `kg_entry_outbound_isolation_enabled`: для профиля
+    `kg_entry` отключает ВЫЕЗДНОЙ ремень «рабочими визами не занимаемся». Тот ремень
+    написан для граждан КР, которым фирма рабочие визы за границу не делает; иностранцу,
+    едущему в Кыргызстан, он подменял верное «для работы нужно Единое разрешение» на
+    «не занимаемся… (США: B1/B2, F1, M1)» — против ТЗ 1.1 и Б.7. Для `profile=None`
+    аргумент ничего не меняет.
     """
     violations: list[str] = []
 
@@ -406,7 +414,7 @@ def validate_reply(text: str, funnel: str | None,
         )
         if blocked:
             violations.append("direct_flight_claim_blocked")
-    elif funnel == "visa":
+    elif funnel == "visa" and not (profile == "kg_entry" and outbound_isolated):
         clean, blocked = _replace_sentences(
             clean,
             affirm=_AFFIRM_WORKVISA,

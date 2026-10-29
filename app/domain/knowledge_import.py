@@ -43,11 +43,29 @@ class ImportResult:
     report: dict
 
 
-def _authorize(actor: Actor):
-    if (not isinstance(actor, Actor) or actor.is_full_admin is not True
-            or not isinstance(actor.manager_id, str) or not actor.manager_id.strip()
-            or len(actor.manager_id) > 64 or actor.manager_id.strip().lower() in {"system", "bot"}):
+def _named(actor) -> bool:
+    return (isinstance(actor, Actor) and isinstance(actor.manager_id, str)
+            and bool(actor.manager_id.strip()) and len(actor.manager_id) <= 64
+            and actor.manager_id.strip().lower() not in {"system", "bot"})
+
+
+def _authorize_admin(actor: Actor):
+    """Администрирование знаний: импорт, публикация, решения по единицам, политики."""
+    if not _named(actor) or actor.is_full_admin is not True:
         raise PermissionDenied("knowledge import requires a named full administrator")
+
+
+def _authorize(actor: Actor):
+    """Работа по делу въездной CRM: полный админ ИЛИ оператор (визовый менеджер при
+    включённом `kg_entry_manager_access_enabled`, признак ставит только шлюз панели).
+
+    Исторически здесь был только полный админ; `kg_entry_operator` добавлен PM-ревью
+    30.10.2026, чтобы Медина/Элиза/Гриша вели дела без админской учётки. Направление и
+    владение услугой проверяются выше — `_case_or_404` в шлюзе.
+    """
+    if not _named(actor) or (actor.is_full_admin is not True
+                             and getattr(actor, "kg_entry_operator", False) is not True):
+        raise PermissionDenied("kg entry work requires a named administrator or operator")
 
 
 def _sessions(engine: AsyncEngine):
@@ -58,7 +76,7 @@ def _sessions(engine: AsyncEngine):
 
 async def create_kg_entry_set(engine: AsyncEngine, *, actor: Actor) -> int:
     """Явная регистрация набора; нет seed в миграции и нет придуманного review_period."""
-    _authorize(actor)
+    _authorize_admin(actor)
     sessions = _sessions(engine)
     for attempt in range(3):
         try:
@@ -119,7 +137,7 @@ async def import_bundle(engine: AsyncEngine, *, actor: Actor, set_id: int,
     другого статуса не размножается и не переводится назад в draft. При потере связи
     на COMMIT исход неизвестен; повторный запрос сверяет hash и возвращает draft.
     """
-    _authorize(actor)  # до чтения файлов, создания сессии и любой записи
+    _authorize_admin(actor)  # до чтения файлов, создания сессии и любой записи
     if type(set_id) is not int or set_id < 1:
         raise DomainError("invalid knowledge set")
     sessions = _sessions(engine)

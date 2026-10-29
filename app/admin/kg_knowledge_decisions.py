@@ -84,7 +84,7 @@ async def _render(request,manager,actor,*,version=None,unit='',revision=None,pag
 @ar.router.get('/kg-entry/reviews',response_class=HTMLResponse)
 async def review_form(request:Request,version:int|None=Query(None,ge=1,le=2147483647),unit:str=Query('',max_length=120),
     revision:int|None=Query(None,ge=1,le=250),page:int=Query(1,ge=1,le=250),q:str=Query('',max_length=80),manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager)
+    actor=await entry._gate(request,manager,admin_only=True)
     pairs=request.query_params.multi_items()
     if len(dict(pairs))!=len(pairs) or any(k not in ('version','unit','revision','page','q') for k,v in pairs):raise HTTPException(422)
     if unit and not version or revision and not unit or unit and (q or page!=1) or any(ord(c)<32 for c in q):raise HTTPException(422)
@@ -96,7 +96,7 @@ async def review_form(request:Request,version:int|None=Query(None,ge=1,le=214748
 
 @ar.router.post('/kg-entry/reviews',response_class=HTMLResponse)
 async def review_submit(request:Request,manager=Depends(ar.require_full_admin)):
-    actor=entry._gate(request,manager,write=True);values=await _form(request,actor)
+    actor=await entry._gate(request,manager,write=True,admin_only=True);values=await _form(request,actor)
     try:version=int(values['_kd_version'])
     except ValueError:raise HTTPException(422,headers=HEADERS) from None
     unit=values['_kd_unit']

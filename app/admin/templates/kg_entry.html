@@ -14,17 +14,30 @@
 .kg-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:24px}.kg-submit{font:inherit;font-weight:600;padding:12px 20px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}.kg-submit:disabled{opacity:.55;cursor:not-allowed}
 .kg-check{display:flex;align-items:flex-start;gap:8px;margin-top:14px}.kg-check input{margin-top:4px}.kg-wrap li{line-height:1.5;margin:6px 0}.kg-wrap summary{cursor:pointer;min-height:30px}
 .kg-date{display:grid;grid-template-columns:1fr;gap:6px}.kg-meta{display:flex;gap:12px;flex-wrap:wrap}.kg-history{margin-top:12px}
-@media(max-width:600px){.kg-wrap{padding:14px 10px}.kg-card{padding:15px}.kg-grid{grid-template-columns:1fr}.kg-actions>*{max-width:100%}}
+{% if kg_simple %}.kg-specialist{margin:8px 0}.kg-specialist summary{color:var(--muted,var(--muted))}.kg-specialist a{margin-right:4px}
+.kg-rest>summary{font-size:18px;font-weight:700;margin:18px 0 6px}.kg-country-search{margin-bottom:6px}
+{% endif %}@media(max-width:600px){.kg-wrap{padding:14px 10px}.kg-card{padding:15px}.kg-grid{grid-template-columns:1fr}.kg-actions>*{max-width:100%}}
 </style>
 {% endblock %}
 {% block content %}
 <main class="kg-wrap">
+  {% if kg_simple %}
+  <a href="/admin/case/{{ case.id }}">← К визовой услуге №{{ case.id }}</a>
+  <a href="/admin/case/{{ case.id }}/kg-entry/applications">Заявители и подачи</a>
+  <details class="kg-specialist"><summary>Для специалиста</summary>
+    {% if not individual_profile %}<a href="/admin/case/{{ case.id }}/kg-entry/history">История поездок в Кыргызстан</a> · {% endif %}
+    <a href="/admin/kg-entry/processes">Проверка черновых процессов</a> ·
+    <a href="/admin/kg-entry/templates">Черновики сообщений</a> ·
+    <a href="/admin/kg-entry/documents">Черновой чек-лист документов</a>
+  </details>
+  {% else %}
   <a href="/admin/case/{{ case.id }}">← К визовой услуге №{{ case.id }}</a>
   {% if not individual_profile %}<a href="/admin/case/{{ case.id }}/kg-entry/history">История поездок в Кыргызстан</a>{% endif %}
   <a href="/admin/case/{{ case.id }}/kg-entry/applications">Заявители и подачи</a>
   <a href="/admin/kg-entry/processes">Проверка черновых процессов</a>
   <a href="/admin/kg-entry/templates">Черновики сообщений</a>
   <a href="/admin/kg-entry/documents">Черновой чек-лист документов</a>
+  {% endif %}
   <h1>Анкета въезда в Кыргызстан{% if individual_profile %} · заявитель №{{ applicant.id }}{% endif %}</h1>
   {% if individual_profile %}<p class="kg-muted">{{ case.title }}. Отдельная анкета заявителя №{{ applicant.id }} в этой услуге. Плательщик и заявитель могут быть разными людьми. Сведения и история поездок плательщика сюда не переносятся.</p>
   {% else %}<p class="kg-muted">{{ case.title }}. Анкета общая для визовых услуг этого клиента. Сохраняйте здесь сведения о его поездке в Кыргызстан.</p>{% endif %}
@@ -62,17 +75,28 @@
     <fieldset {% if not editable or not write_on %}disabled{% endif %}>
       {% if editable %}<p class="kg-muted">Новая проверка будет выполнена на дату {{ envelope._kg_asof }}.</p>{% endif %}
       <div class="kg-field"><label for="kg-language">Язык вопросов клиенту</label><select name="language" id="kg-language"><option value="ru" {% if values.language == 'ru' %}selected{% endif %}>Русский</option><option value="en" {% if values.language == 'en' %}selected{% endif %}>English</option></select></div>
+      {% if kg_simple %}
+      {# Главное для передачи по ТЗ 3.4: B1, B3, B8, C1, C3, C4, F1, A5, D3, D4. Остальные вопросы — ниже, свёрнуты. #}
+      {% set key_paths = ['citizenship','document_type','current_location','purpose','entry_date','exit_date','inviting_party.exists','client_type','applicants_count','violations.overstay','violations.deportation_or_ban','previous_refusals_kg'] %}
+      <fieldset><legend>Главное для этого шага</legend>
+      <p class="kg-muted">Что бот или менеджер уже узнал: гражданство, документ, где клиент сейчас, цель, даты, приглашающая сторона, отказы и нарушения. Пустое поле — «не спрашивали», это нормально.</p>
+      <div class="kg-grid">
+      {% for path in key_paths %}{% for field in fields if field.path == path %}{% include '_kg_entry_field.html' %}{% endfor %}{% endfor %}
+      </div></fieldset>
+      <details class="kg-rest"><summary>Остальные вопросы</summary>
+      {% else %}{% set key_paths = [] %}{% endif %}
       {% for group, title in [('party','Обращение и заявители'),('profile','Документ и поездка'),('current','Если клиент уже в Кыргызстане'),('inviter','Приглашающая сторона'),('risks','Нарушения и отказы'),('conversation','Поводы для проверки специалистом')] %}
       <fieldset><legend>{{ title }}</legend>
       {% if group == 'current' %}<p class="kg-muted">При выборе «За рубежом» сведения о текущем пребывании убираются из новой версии. Предыдущая версия сохраняется.</p>{% endif %}
       {% if group == 'inviter' %}<p class="kg-muted">При ответе «Нет» сведения о приглашающей стороне убираются из новой версии. Названия, ИНН и контакты здесь не запрашиваются.</p>{% endif %}
       {% if group == 'conversation' %}<p class="kg-muted">Отметьте только то, что известно из обращения клиента. Причина проверки не означает, что передача уже выполнена.</p>{% endif %}
       <div class="kg-grid">
-      {% for field in fields if field.group == group %}
+      {% for field in fields if field.group == group and field.path not in key_paths %}
         {% include '_kg_entry_field.html' %}
       {% endfor %}
       </div></fieldset>
       {% endfor %}
+      {% if kg_simple %}</details>{% endif %}
       <fieldset><legend>Семья</legend>
         <div class="kg-field"><label for="kg-family-state">Едут ли члены семьи</label><select name="family_state" id="kg-family-state">
           {% for val, text in [('', 'Не спрашивали'), ('unknown', 'Клиент не знает'), ('not_applicable', 'Не применимо'), ('none', 'Члены семьи не едут'), ('value', 'Указать состав семьи')] %}<option value="{{ val }}" {% if values.family_state == val %}selected{% endif %}>{{ text }}</option>{% endfor %}
@@ -110,6 +134,13 @@
     });
   }
   familyState.addEventListener('change',familyUpdate);familyUpdate();
+  {% if kg_simple %}form.querySelectorAll('.kg-country-search').forEach(function(box){
+    const select=document.getElementById(box.dataset.target);if(!select)return;
+    box.addEventListener('input',function(){
+      const q=box.value.trim().toLowerCase();
+      Array.prototype.forEach.call(select.options,function(o){o.hidden=!!q&&!o.selected&&o.value!==''&&o.text.toLowerCase().indexOf(q)<0;});
+    });
+  });{% endif %}
   form.addEventListener('submit',function(){const b=form.querySelector('button[type="submit"]');if(b)b.disabled=true;const s=document.getElementById('kg-save-status');if(s)s.textContent='Сохраняем анкету…';});
 })();
 </script>
