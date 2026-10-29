@@ -43,7 +43,7 @@ _look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
                                   "focus_on": None, "chat_redesign": None,
                                   "workday_on": None, "cases_write_on": None,
                                   "simple_on": None, "manual_lead_on": None,
-                                  "send_unknown_on": None}
+                                  "send_unknown_on": None, "bitrix_archive_on": None}
 
 
 async def _load_new_look(request: Request) -> None:
@@ -64,7 +64,8 @@ async def _load_new_look(request: Request) -> None:
            bool(settings.panel_simple_mode_enabled),
            bool(settings.panel_missing_cards_enabled),
            bool(settings.panel_manual_lead_enabled),
-           bool(settings.panel_send_unknown_status_enabled))
+           bool(settings.panel_send_unknown_status_enabled),
+           bool(settings.panel_bitrix_archive_enabled))
     if (_look_cache["key"] == key and _look_cache["new_look"] is not None
             and now - float(_look_cache["at"]) < _LOOK_TTL):
         request.state.new_look = bool(_look_cache["new_look"])
@@ -76,6 +77,7 @@ async def _load_new_look(request: Request) -> None:
         request.state.missing_cards_on = bool(_look_cache["missing_cards_on"])
         request.state.manual_lead_on = bool(_look_cache["manual_lead_on"])
         request.state.send_unknown_on = bool(_look_cache["send_unknown_on"])
+        request.state.bitrix_archive_on = bool(_look_cache["bitrix_archive_on"])
         return
     try:
         new_look = await _flags.get_flag("admin_new_look_enabled",
@@ -96,6 +98,8 @@ async def _load_new_look(request: Request) -> None:
             "panel_manual_lead_enabled", settings.panel_manual_lead_enabled)
         send_unknown_on = await _flags.get_flag("panel_send_unknown_status_enabled",
                                                 settings.panel_send_unknown_status_enabled)
+        bitrix_archive_on = (not settings.crm_standalone_enabled) and await _flags.get_flag(
+            "panel_bitrix_archive_enabled", settings.panel_bitrix_archive_enabled)
         _look_cache.update({"at": now, "key": key, "new_look": new_look,
                             "focus_on": focus_on, "chat_redesign": chat_redesign,
                             "workday_on": workday_on,
@@ -103,7 +107,8 @@ async def _load_new_look(request: Request) -> None:
                             "simple_on": simple_on,
                             "missing_cards_on": missing_cards_on,
                             "manual_lead_on": manual_lead_on,
-                            "send_unknown_on": send_unknown_on})
+                            "send_unknown_on": send_unknown_on,
+                            "bitrix_archive_on": bitrix_archive_on})
     except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
         new_look, focus_on = (bool(settings.admin_new_look_enabled),
                               bool(settings.admin_focus_enabled))
@@ -114,6 +119,7 @@ async def _load_new_look(request: Request) -> None:
         missing_cards_on = bool(settings.panel_missing_cards_enabled)
         manual_lead_on = False
         send_unknown_on = False
+        bitrix_archive_on = False
     request.state.new_look = bool(new_look)
     request.state.focus_on = bool(focus_on)
     request.state.chat_redesign = bool(chat_redesign)
@@ -123,6 +129,7 @@ async def _load_new_look(request: Request) -> None:
     request.state.missing_cards_on = bool(missing_cards_on)
     request.state.manual_lead_on = bool(manual_lead_on)
     request.state.send_unknown_on = bool(send_unknown_on)
+    request.state.bitrix_archive_on = bool(bitrix_archive_on)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"],
@@ -158,6 +165,8 @@ def _chrome(request: Request) -> dict:
             "manual_lead_on": bool(getattr(request.state, "manual_lead_on", False)),
             # Статус «неизвестно» у ручного сообщения (MSG-02) — `app/admin/send_unknown.py`.
             "send_unknown_on": bool(getattr(request.state, "send_unknown_on", False)),
+            # «Архив Битрикса» в «Ещё» у админа — `app/admin/bitrix_archive.py`.
+            "bitrix_archive_on": bool(getattr(request.state, "bitrix_archive_on", False)),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
                                           settings.admin_chat_redesign_enabled)),
             "workday_on": bool(getattr(request.state, "workday_on",
@@ -1145,6 +1154,15 @@ FEATURE_FLAGS = {
                  "по-прежнему «не доставлено»."),
         "default": lambda: settings.panel_send_unknown_status_enabled,
         "note": lambda: "",
+    },
+    "panel_bitrix_archive_enabled": {
+        "title": "Архив Битрикса: поиск старого клиента",
+        "desc": ("Страница в «Ещё» у администратора: поиск по телефону в выгрузке Битрикса "
+                 "(контакт, лиды, сделки, комментарии). Только чтение файлов архива на "
+                 "сервере, в портал не ходит. Менеджерам пока не открыта: направление "
+                 "клиента в архиве надёжно не определяется."),
+        "default": lambda: settings.panel_bitrix_archive_enabled,
+        "note": lambda: ("каталог: " + (settings.bitrix_archive_dir or "не задан (BITRIX_ARCHIVE_DIR)")),
     },
     "reassign_moves_tasks_enabled": {
         "title": "Передача клиента переносит его задачи",
@@ -3453,6 +3471,7 @@ async def _set_intercept(user_id: str, value: bool) -> None:
 from app.admin import workday  # noqa: E402,F401 — side-effect: регистрация маршрутов
 from app.admin import contracts  # noqa: E402,F401 — договор из переписки, за флагами E2-06
 from app.admin import clients  # noqa: E402,F401 — новый клиент вручную, заметки, карточка; флаги OFF
+from app.admin import bitrix_archive  # noqa: E402,F401 — архив Битрикса, только чтение; флаг OFF
 from app.admin import precontract  # noqa: E402,F401 — предварительная визовая карточка и договор в ней
 from app.admin import kg_entry  # noqa: E402,F401 — пилот анкеты въезда, default OFF
 from app.admin import kg_knowledge  # noqa: E402,F401 — поиск источника за тем же пилотным флагом

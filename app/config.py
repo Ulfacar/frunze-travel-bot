@@ -467,6 +467,10 @@ class Settings(BaseSettings):
     reassign_moves_tasks_enabled: bool = False
     # ТЗ MSG-02: таймаут/обрыв после отправки — «неизвестно», повтор только с подтверждением. OFF.
     panel_send_unknown_status_enabled: bool = False
+    # Страница «Архив Битрикса» (поиск старого клиента по телефону в JSONL-архиве,
+    # `scripts/bitrix_archive_export.py`). Каталог архива на сервере. OFF; только админ.
+    panel_bitrix_archive_enabled: bool = False
+    bitrix_archive_dir: str = ""
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False
     crm_bot_send_enabled: bool = False
