@@ -192,7 +192,7 @@ async def _render(request, manager, actor, case, application_id, *, revision=Non
 
 @ar.router.get('/case/{case_id}/kg-entry/applications/{application_id}/process-journal', response_class=HTMLResponse)
 async def process_form(request:Request, case_id:int=Path(ge=1,le=2147483647),
-                       application_id:int=Path(ge=1,le=2147483647), manager=Depends(entry.require_kg_entry_access)):
+                       application_id:int=Path(ge=1,le=2147483647), manager=Depends(ar.require_kg_entry_access)):
     actor=await entry._gate(request,manager)
     try:
         pairs=list(request.query_params.multi_items())
@@ -206,7 +206,7 @@ async def process_form(request:Request, case_id:int=Path(ge=1,le=2147483647),
 
 @ar.router.post('/case/{case_id}/kg-entry/applications/{application_id}/process-journal', response_class=HTMLResponse)
 async def process_submit(request:Request, case_id:int=Path(ge=1,le=2147483647),
-                         application_id:int=Path(ge=1,le=2147483647), manager=Depends(entry.require_kg_entry_access)):
+                         application_id:int=Path(ge=1,le=2147483647), manager=Depends(ar.require_kg_entry_access)):
     actor=await entry._gate(request,manager,write=True); case=await entry._case(case_id,actor)
     values=await _form(request,actor,case_id,application_id); policy,package=_policies()
     try:

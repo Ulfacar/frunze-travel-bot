@@ -123,14 +123,14 @@ async def _render(request,manager,actor,ids,language,*,status=200,error=None,ret
 
 @ar.router.get(ROUTE,response_class=HTMLResponse)
 async def work_review_form(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),
-                           application_id:int=Path(ge=1,le=2147483647),manager=Depends(entry.require_kg_entry_access)):
+                           application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
     actor=await entry._gate(request,manager);ids=(case_id,applicant_id,application_id);language=_language(request)
     return await _render(request,manager,actor,ids,language)
 
 
 @ar.router.post(ROUTE,response_class=HTMLResponse)
 async def work_review_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),
-                             application_id:int=Path(ge=1,le=2147483647),manager=Depends(entry.require_kg_entry_access)):
+                             application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
     actor=await entry._gate(request,manager,write=True);ids=(case_id,applicant_id,application_id);language=_language(request)
     values=await _form(request,actor,ids,language)
     try:

@@ -140,7 +140,7 @@ async def _render(request, manager, actor, case, *, history_id=None, echo=None, 
 
 @ar.router.get('/case/{case_id}/kg-entry/history', response_class=HTMLResponse)
 async def history_form(case_id: int, request: Request, history_id: int | None = Query(None, ge=1, le=2147483647),
-                       manager=Depends(entry.require_kg_entry_access)):
+                       manager=Depends(ar.require_kg_entry_access)):
     actor = await entry._gate(request, manager)
     try:
         case = await entry._case(case_id, actor)
@@ -152,7 +152,7 @@ async def history_form(case_id: int, request: Request, history_id: int | None = 
 
 
 @ar.router.post('/case/{case_id}/kg-entry/history', response_class=HTMLResponse)
-async def history_submit(case_id: int, request: Request, manager=Depends(entry.require_kg_entry_access)):
+async def history_submit(case_id: int, request: Request, manager=Depends(ar.require_kg_entry_access)):
     actor = await entry._gate(request, manager, write=True)
     try:
         case = await entry._case(case_id, actor)

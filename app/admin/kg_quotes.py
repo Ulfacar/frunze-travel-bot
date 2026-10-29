@@ -106,7 +106,7 @@ async def _render(request,manager,actor,case,application_id,*,preview=None,save_
 
 
 @ar.router.get('/case/{case_id}/kg-entry/applications/{application_id}/quotes',response_class=HTMLResponse)
-async def quote_form(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),manager=Depends(entry.require_kg_entry_access)):
+async def quote_form(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
     actor=await entry._gate(request,manager);case=await entry._case(case_id,actor)
     pairs=list(request.query_params.multi_items());revision=None
     if pairs:
@@ -119,7 +119,7 @@ async def quote_form(request:Request,case_id:int=Path(ge=1,le=2147483647),applic
 
 
 @ar.router.post('/case/{case_id}/kg-entry/applications/{application_id}/quotes',response_class=HTMLResponse)
-async def quote_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),manager=Depends(entry.require_kg_entry_access)):
+async def quote_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),application_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
     actor=await entry._gate(request,manager,write=True);case=await entry._case(case_id,actor)
     values=await _form(request,actor,case_id,application_id);policy=_policy()
     parameters=dict(recipe_id=values['recipe_id'],additional_blocks=int(values['additional_blocks']),urgent=values['urgent']=='1')

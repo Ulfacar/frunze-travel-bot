@@ -13,7 +13,7 @@ HEADERS = {'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer'}
 
 
 @ar.router.get('/kg-entry/answers', response_class=HTMLResponse)
-async def knowledge_answers(request: Request, manager=Depends(entry.require_kg_entry_access)):
+async def knowledge_answers(request: Request, manager=Depends(ar.require_kg_entry_access)):
     actor = await entry._gate(request, manager)
     report = None
     error = ''

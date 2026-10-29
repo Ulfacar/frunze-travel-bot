@@ -84,7 +84,7 @@ async def _render(request, manager, actor, case, applicant_id, *, qualification_
 async def profile_form(request: Request, case_id: int = Path(ge=1, le=2147483647),
                        applicant_id: int = Path(ge=1, le=2147483647),
                        qualification_id: int | None = Query(None, ge=1, le=2147483647),
-                       manager: dict = Depends(interview.require_kg_entry_access)):
+                       manager: dict = Depends(ar.require_kg_entry_access)):
     actor = await interview._gate(request, manager)
     query = list(request.query_params.multi_items())
     if len(query) > 1 or any(key != "qualification_id" for key, _ in query):
@@ -101,7 +101,7 @@ async def profile_form(request: Request, case_id: int = Path(ge=1, le=2147483647
 @ar.router.post("/case/{case_id}/kg-entry/applicants/{applicant_id}/qualification", response_class=HTMLResponse)
 async def profile_submit(request: Request, case_id: int = Path(ge=1, le=2147483647),
                          applicant_id: int = Path(ge=1, le=2147483647),
-                         manager: dict = Depends(interview.require_kg_entry_access)):
+                         manager: dict = Depends(ar.require_kg_entry_access)):
     actor = await interview._gate(request, manager, write=True)
     try:
         case = await interview._case(case_id, actor)

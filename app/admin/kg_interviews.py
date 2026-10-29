@@ -233,7 +233,7 @@ async def _render(request,manager,actor,case,applicant_id,*,field=None,error='',
 
 
 @ar.router.get('/case/{case_id}/kg-entry/applicants/{applicant_id}/interview',response_class=HTMLResponse)
-async def interview_form(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),manager=Depends(entry.require_kg_entry_access)):
+async def interview_form(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
     actor=await entry._gate(request,manager);case=await entry._case(case_id,actor)
     pairs=list(request.query_params.multi_items())
     if len(pairs)>1 or any(k!='field' or len(v)>100 for k,v in pairs):raise HTTPException(422,'Недопустимый вопрос.',headers=HEADERS)
@@ -241,7 +241,7 @@ async def interview_form(request:Request,case_id:int=Path(ge=1,le=2147483647),ap
 
 
 @ar.router.post('/case/{case_id}/kg-entry/applicants/{applicant_id}/interview',response_class=HTMLResponse)
-async def interview_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),manager=Depends(entry.require_kg_entry_access)):
+async def interview_submit(request:Request,case_id:int=Path(ge=1,le=2147483647),applicant_id:int=Path(ge=1,le=2147483647),manager=Depends(ar.require_kg_entry_access)):
     actor=await entry._gate(request,manager,write=True);case=await entry._case(case_id,actor)
     values,paths=await _form(request,actor,case_id,applicant_id);policy=_policy();action=values['_iv_action']
     try:

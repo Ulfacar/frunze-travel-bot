@@ -31,24 +31,6 @@ SECURITY = {"_kg_csrf", "_kg_signature"}
 BODY_LIMIT = 65_536
 
 
-async def require_kg_entry_access(request: Request) -> dict:
-    """Зависимость маршрутов `kg_*`: полный админ ИЛИ визовый менеджер при флаге.
-
-    Заменяет `require_full_admin` на этих маршрутах. Сама по себе только пускает к
-    `_gate`: направление, услуга, админские экраны и запись проверяются там.
-    Без флага поведение дословно прежнее — 403 «admin only» любому не-админу.
-    """
-    manager = ar.require_admin(request)               # 401 без логина
-    actor = actor_for(manager)
-    if actor.is_full_admin:
-        return manager
-    from app.core import flags
-    if "visa" in actor.allowed_directions and await flags.get_flag(
-            "kg_entry_manager_access_enabled", ar.settings.kg_entry_manager_access_enabled):
-        return manager
-    raise HTTPException(status_code=403, detail="admin only")
-
-
 async def link_allowed(actor, direction) -> bool:
     """Показывать ли вход во въездную CRM этому актору — та же логика, что в шлюзе.
 
@@ -294,7 +276,7 @@ async def _render(request, manager, actor, case, *, qualification_id=None, attac
 @ar.router.get("/case/{case_id}/kg-entry", response_class=HTMLResponse)
 async def qualification_form(case_id: int, request: Request, qualification_id: int | None = Query(None, ge=1),
                              history_id: int | None = Query(None, ge=1, le=2147483647),
-                             manager: dict = Depends(require_kg_entry_access)):
+                             manager: dict = Depends(ar.require_kg_entry_access)):
     actor = await _gate(request, manager)
     if qualification_id is not None and history_id is not None:
         raise HTTPException(422, "Для новой истории откройте последнюю анкету без выбора старой версии.")
@@ -308,7 +290,7 @@ async def qualification_form(case_id: int, request: Request, qualification_id: i
 
 
 @ar.router.post("/case/{case_id}/kg-entry", response_class=HTMLResponse)
-async def qualification_submit(case_id: int, request: Request, manager: dict = Depends(require_kg_entry_access)):
+async def qualification_submit(case_id: int, request: Request, manager: dict = Depends(ar.require_kg_entry_access)):
     actor = await _gate(request, manager, write=True)
     try:
         case = await _case(case_id, actor)
@@ -352,7 +334,7 @@ async def qualification_submit(case_id: int, request: Request, manager: dict = D
 @ar.router.get("/case/{case_id}/kg-entry/review/{qualification_id}", response_class=HTMLResponse)
 async def qualification_review_card(request: Request, case_id: int = Path(ge=1, le=2147483647),
                                     qualification_id: int = Path(ge=1, le=2147483647),
-                                    manager: dict = Depends(require_kg_entry_access)):
+                                    manager: dict = Depends(ar.require_kg_entry_access)):
     actor = await _gate(request, manager)
     headers = {"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"}
     try:

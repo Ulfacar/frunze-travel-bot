@@ -304,6 +304,28 @@ def require_admin(request: Request) -> dict:
     return m
 
 
+async def require_kg_entry_access(request: Request) -> dict:
+    """Зависимость маршрутов `kg_*` (въездная CRM по PDF): полный админ ИЛИ визовый
+    менеджер при `kg_entry_manager_access_enabled`.
+
+    Заменила `require_full_admin` на этих маршрутах (PM-ревью 30.10.2026). Сама по себе
+    только пускает к шлюзу `app/admin/kg_entry._gate`: направление, услуга, админские
+    экраны и запись проверяются там. Без флага поведение дословно прежнее — 403
+    «admin only» любому не-админу. Живёт здесь, а не в `kg_entry`, чтобы модули `kg_*`
+    могли ссылаться на неё при импорте в любом порядке.
+    """
+    m = require_admin(request)                 # 401 без логина
+    from app.core import flags as _flags
+    from app.core.live_authz import actor_for
+    actor = actor_for(m)
+    if actor.is_full_admin:
+        return m
+    if "visa" in actor.allowed_directions and await _flags.get_flag(
+            "kg_entry_manager_access_enabled", settings.kg_entry_manager_access_enabled):
+        return m
+    raise HTTPException(status_code=403, detail="admin only")
+
+
 def require_full_admin(request: Request) -> dict:
     """Зависимость: только полный админ (видит все воронки). Скоуп-менеджер → 403.
 

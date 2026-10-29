@@ -135,7 +135,7 @@ async def _case(case_id, actor):
 
 @ar.router.get('/case/{case_id}/kg-entry/applications/overview', response_class=HTMLResponse)
 async def applications_overview(case_id: int, request: Request, page: int = Query(1, ge=1, le=100000),
-                                selection: str = Query('all', max_length=24), manager=Depends(entry.require_kg_entry_access)):
+                                selection: str = Query('all', max_length=24), manager=Depends(ar.require_kg_entry_access)):
     actor = await entry._gate(request, manager)
     if selection not in groups.FILTERS:
         raise HTTPException(422, 'Выберите фильтр сводки.', headers=HEADERS)
@@ -166,14 +166,14 @@ async def applications_overview(case_id: int, request: Request, page: int = Quer
 
 @ar.router.get('/case/{case_id}/kg-entry/applications', response_class=HTMLResponse)
 async def applications_form(case_id: int, request: Request, application_id: int | None = Query(None, ge=1, le=2147483647),
-                            page: int = Query(1, ge=1, le=100000), manager=Depends(entry.require_kg_entry_access)):
+                            page: int = Query(1, ge=1, le=100000), manager=Depends(ar.require_kg_entry_access)):
     actor = await entry._gate(request, manager)
     case = await _case(case_id, actor)
     return await _render(request, manager, actor, case, application_id=application_id, page=page)
 
 
 @ar.router.post('/case/{case_id}/kg-entry/applications', response_class=HTMLResponse)
-async def applications_submit(case_id: int, request: Request, manager=Depends(entry.require_kg_entry_access)):
+async def applications_submit(case_id: int, request: Request, manager=Depends(ar.require_kg_entry_access)):
     actor = await entry._gate(request, manager, write=True)
     case = await _case(case_id, actor)
     values = await _form(request)

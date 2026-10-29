@@ -40,7 +40,7 @@ def _render(request, manager, context, status=200):
 
 
 @ar.router.get('/kg-entry/processes',response_class=HTMLResponse)
-async def process_preview(request:Request,manager=Depends(entry.require_kg_entry_access)):
+async def process_preview(request:Request,manager=Depends(ar.require_kg_entry_access)):
     await entry._gate(request,manager)
     try:
         pairs=list(request.query_params.multi_items())
@@ -55,7 +55,7 @@ async def process_preview(request:Request,manager=Depends(entry.require_kg_entry
 
 
 @ar.router.post('/kg-entry/processes',response_class=HTMLResponse)
-async def process_preview_check(request:Request,manager=Depends(entry.require_kg_entry_access)):
+async def process_preview_check(request:Request,manager=Depends(ar.require_kg_entry_access)):
     await entry._gate(request,manager)  # read-only preview also works with writes disabled
     if request.headers.get('content-type','').split(';',1)[0].strip()!='application/x-www-form-urlencoded':
         raise HTTPException(415,'Используйте форму проверки.',headers=HEADERS)

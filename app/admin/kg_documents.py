@@ -32,7 +32,7 @@ def _error(request,manager,exc):
 
 
 @ar.router.get('/kg-entry/documents',response_class=HTMLResponse)
-async def documents_preview(request:Request,manager=Depends(entry.require_kg_entry_access)):
+async def documents_preview(request:Request,manager=Depends(ar.require_kg_entry_access)):
     await entry._gate(request,manager)
     try:
         pairs=list(request.query_params.multi_items())
@@ -43,7 +43,7 @@ async def documents_preview(request:Request,manager=Depends(entry.require_kg_ent
 
 
 @ar.router.post('/kg-entry/documents',response_class=HTMLResponse)
-async def documents_check(request:Request,manager=Depends(entry.require_kg_entry_access)):
+async def documents_check(request:Request,manager=Depends(ar.require_kg_entry_access)):
     await entry._gate(request,manager)
     if request.headers.get('content-type','').split(';',1)[0].strip()!='application/x-www-form-urlencoded':
         raise HTTPException(415,'Используйте форму.',headers=HEADERS)
