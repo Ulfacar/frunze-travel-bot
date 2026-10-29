@@ -149,6 +149,9 @@
     .qrow[data-wait="hot"] .w { color: var(--hot); }
     .qrow[data-wait="warm"] .w { color: var(--warm); }
     .qrow.is-noise { opacity: .62; }
+    /* Контраст инициалов на градиенте (замер 30.10): светлые точки градиентов давали
+       1.9–2.7:1 с белым текстом. Затемняем фон внутренней тенью, цвета палитры не трогаем. */
+    .lead-av, .qrow .av { box-shadow: inset 0 0 0 100px rgba(0, 0, 0, .45); }
 
     /* ---------- Простой режим: заголовок, «Ещё», мои дела на сегодня ---------- */
     .focus-h { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.01em; color: var(--text); }

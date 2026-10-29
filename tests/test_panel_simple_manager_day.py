@@ -334,3 +334,16 @@ def test_admin_and_flag_off_keep_the_day_calendar(monkeypatch):
     assert "<h1>Мои дела</h1>" not in off_page and ">День</a>" in off_page
     # Явный view=list без простого режима не включает список (тот же день).
     assert "<h1>Мои дела</h1>" not in _client().get("/admin/calendar?view=list").text
+
+
+# ---------------- контраст (замер 30.10, WCAG 4.5:1) ----------------
+def test_contrast_fixes_stay_in_place():
+    """Замер браузером: инициалы на градиенте 1.9–2.7:1, «ждёт» в тёмной теме 4.04:1,
+    «Сделано» на просроченной карточке 3.85:1. После правок минимум 4.73:1."""
+    focus = (TEMPLATES / "focus.html").read_text("utf-8")
+    assert ".lead-av, .qrow .av { box-shadow: inset 0 0 0 100px rgba(0, 0, 0, .45); }" in focus
+    boards = (TEMPLATES / "boards.html").read_text("utf-8")
+    assert 'html[data-theme="dark"] .badge.wait-hot { color: #FFB4AD; }' in boards
+    assert 'html:not([data-theme="light"]) .badge.wait-hot { color: #FFB4AD; }' in boards
+    calendar = (TEMPLATES / "calendar.html").read_text("utf-8")
+    assert ".task.is-overdue .btn:not(.primary), .task.is-overdue .chip { background:var(--surface); }" in calendar

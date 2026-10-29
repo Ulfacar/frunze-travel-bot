@@ -472,6 +472,9 @@
 {% if new_look %}
 <style>
   /* Список входящих читают весь день: имя, сообщение, затем служебные отметки. */
+  /* Тёмная тема (только новый вид): --hot на выделенной карточке давал 4.04:1 (замер 30.10). */
+  html[data-theme="dark"] .badge.wait-hot { color: #FFB4AD; }
+  @media (prefers-color-scheme: dark) { html:not([data-theme="light"]) .badge.wait-hot { color: #FFB4AD; } }
   .layout { grid-template-columns: minmax(0, 1fr) 440px; gap: 24px; padding: 24px; }
   .inbox-head { gap: 8px 16px; margin-bottom: 18px; }
   .inbox-title { font-size: 20px; font-weight: 600; }

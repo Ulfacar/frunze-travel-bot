@@ -68,6 +68,9 @@
     .chip.hi { background:var(--hot-soft); color:var(--hot); }
     .chip.wait { background:var(--warm-soft); color:var(--warm); }
     .chip.mgr { background:var(--accent-soft); color:var(--accent); }
+    /* Просроченная карточка залита --hot-soft: мягкие кнопки и чипы на ней теряли контраст
+       («Сделано» 3.85:1, «ждёт» 4.23:1 — замер 30.10). На красной заливке — светлая подложка. */
+    .task.is-overdue .btn:not(.primary), .task.is-overdue .chip { background:var(--surface); }
     .note { margin-top:6px; font-size:14px; }
     .ctx { margin-top:4px; font-size:13px; color:var(--muted); }
     .ctx .q { font-style:italic; }
