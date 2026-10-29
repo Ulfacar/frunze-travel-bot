@@ -11,7 +11,7 @@ from tests.test_source_sop_products import open_case
 
 
 def test_work_quote_contract_payment_is_combined_and_old_receipts_survive_signing(env,tmp_path,monkeypatch):
-    core.connected.source(env,tmp_path,source_file=core.ROOT/'runs/specialist-source.pdf')
+    core.connected.source(env,tmp_path,source_file=core.connected.specialist_source())
     opening=open_case(env,'REVIEW-WORK-COMMERCIAL')
     person,root,profile=work.setup(env)
     arguments=[]

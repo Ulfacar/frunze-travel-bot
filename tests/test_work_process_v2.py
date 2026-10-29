@@ -19,13 +19,14 @@ from tests.test_entry_process_dependencies import submit
 from tests import test_applicant_profiles as profiles
 from tests import test_entry_document_packages as packages
 from tests import test_applicant_stay_history as histories
+from tests import test_connected_qualification as connected
 
 
 @pytest.fixture
 def env(base_env,tmp_path):
     from app.domain.knowledge_import import create_kg_entry_set,import_bundle
     root=Path(__file__).resolve().parents[1]
-    source=root/'runs/specialist-source.pdf'
+    source=connected.specialist_source()
     assert source.is_file(), 'env-free freezer must provide hash-verified original PDF'
     async def seed():
         sid=await create_kg_entry_set(base_env['engine'],actor=ADMIN)

@@ -61,7 +61,7 @@ def authority(env, rule):
 
 
 def setup(env, tmp_path, kind='registration_period'):
-    connected.source(env, tmp_path, source_file=ROOT/'runs/specialist-source.pdf')
+    connected.source(env, tmp_path, source_file=connected.specialist_source())
     prepared = actual.setup(env, kind)
     if kind == 'registration_period':
         doc=actual.profiles.request();doc['profile'].update(citizenship=['RUS'],entry_passport_country='RUS',purpose='work_hire',
@@ -153,14 +153,14 @@ def test_code_actual_meaning_and_source_authority_fail_closed(env,tmp_path):
     ('KG.DL.REGISTRATION_EXTENSION','2026-10-30'),('KG.DL.DISMISSAL_NOTIFICATION','2026-11-02'),
     ('KG.DL.EXIT_AFTER_EP_END','2026-11-29'),('KG.DL.INTERNAL_DISMISSAL_EXIT_PLAN','2026-11-29')])
 def test_source_offsets_use_explicit_counting(rule,expected,env,tmp_path):
-    connected.source(env,tmp_path,source_file=ROOT/'runs/specialist-source.pdf')
+    connected.source(env,tmp_path,source_file=connected.specialist_source())
     allowed=authority(env,rule)
     result=rules.calculate(allowed.policy,'2026-10-30',allowed.calendars,on='2026-10-13')
     assert result['due']==expected
 
 
 def test_source_absence_29_30_31_is_trigger_not_filing_deadline(env,tmp_path):
-    connected.source(env,tmp_path,source_file=ROOT/'runs/specialist-source.pdf')
+    connected.source(env,tmp_path,source_file=connected.specialist_source())
     allowed=authority(env,'KG.DL.INTERNAL_ABSENCE_REG_REVIEW')
     for returned,count in [('2026-09-30',29),('2026-10-01',30),('2026-10-02',31)]:
         result=rules.absence_threshold(allowed.policy,'2026-09-01',returned)
@@ -182,7 +182,7 @@ def test_real_visa_period_requires_renewal_premises_and_reconciles_identity(env,
 
 
 def test_all_remaining_source_periods_and_events_connect_to_saved_receipts(env,tmp_path):
-    connected.source(env,tmp_path,source_file=ROOT/'runs/specialist-source.pdf')
+    connected.source(env,tmp_path,source_file=connected.specialist_source())
     for index,(kind,rule,due) in enumerate([
         ('permit_period','KG.DL.RC_BEFORE_EP_END','2026-10-19'),
         ('permit_period','KG.DL.INTERNAL_RES_PREPARATION','2026-10-08'),
@@ -202,7 +202,7 @@ def test_all_remaining_source_periods_and_events_connect_to_saved_receipts(env,t
 
 def test_actual_absence_29_30_31_own_history_controls_real_saved_review(env,tmp_path):
     from tests import test_applicant_stay_history as stay
-    connected.source(env,tmp_path,source_file=ROOT/'runs/specialist-source.pdf')
+    connected.source(env,tmp_path,source_file=connected.specialist_source())
     rule='KG.DL.INTERNAL_ABSENCE_REG_REVIEW';allowed=authority(env,rule)
     for count,exited in [(29,'2026-09-14'),(30,'2026-09-13'),(31,'2026-09-12')]:
         subject=actual.person(env,'ABSENCE'+str(count));app=actual.application(env,subject,'RETURN'+str(count),procedure='registration')

@@ -15,7 +15,7 @@ from tests.test_source_sop_products import operator_sop
 
 
 def source(env,tmp_path):
-    core.connected.source(env,tmp_path,source_file=Path(__file__).resolve().parents[1]/'runs/specialist-source.pdf')
+    core.connected.source(env,tmp_path,source_file=core.connected.specialist_source())
 
 
 def review(env,root,key,allowed,monkeypatch,*,process_policy=None,time='16:00'):

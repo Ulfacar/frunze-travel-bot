@@ -12,7 +12,7 @@ from tests.test_entry_channel_stops import activation
 
 
 def test_original_eaeu_registration_sop_actual_certificate_review_task_and_withdrawal(env,tmp_path,monkeypatch):
-    core.connected.source(env,tmp_path,source_file=core.ROOT/'runs/specialist-source.pdf')
+    core.connected.source(env,tmp_path,source_file=core.connected.specialist_source())
     subject=sop.person(env,'CONNECTED-EAEU-WORKER',role='employee')
     document=sop.profiles.request();document['as_of']=sop.process.today()
     document['profile'].update(citizenship=['RUS'],entry_passport_country='RUS',purpose='work_hire',

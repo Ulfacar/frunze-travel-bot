@@ -31,7 +31,7 @@ def authority(env,rule,process=None,package=None):
 
 
 def setup(env,tmp_path,key='LEAD_RESPONSE'):
-    connected.source(env,tmp_path,source_file=ROOT/'runs/specialist-source.pdf')
+    connected.source(env,tmp_path,source_file=connected.specialist_source())
     subject=person(env,'SOP-REVIEW');saved=profiles.save(env,subject)
     app=processes.setup(env,applicant=subject)
     rule=rules.PREFIX+key;allowed=authority(env,rule)

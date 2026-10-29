@@ -17,7 +17,7 @@ from app.domain.models import EntryDeadlineRevision
 
 
 def test_cross_case_quarantine_waits_for_current_sop_admission(env,tmp_path,monkeypatch):
-    core.connected.source(env,tmp_path,source_file=core.ROOT/'runs/specialist-source.pdf')
+    core.connected.source(env,tmp_path,source_file=core.connected.specialist_source())
     other_env=env|dict(cases=env['cases']|dict(visa=env['cases']['other']))
     other=processes.packages.setup(other_env,key='cross-case-upload')
     app,package=processes.visa_ready(env,fingerprint=hashlib.sha256(PDF).hexdigest())

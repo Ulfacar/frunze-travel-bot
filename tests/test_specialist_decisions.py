@@ -25,6 +25,7 @@ from tests.test_applicant_profiles import save as save_profile
 from tests.test_applicant_stay_history import save as save_history,document as history_document
 from tests.test_knowledge_decisions import write as review,data as review_data
 from tests.test_knowledge_publication import POLICY,publish,preview
+from tests import test_connected_qualification as connected
 from tests.test_specialist_facts import source as source_shape,policy_document,example,ON,ROOT
 from tests.test_entry_quotes import policy as quote_policy
 from tests.test_quote_rules import recipe,na
@@ -43,7 +44,7 @@ def clock(monkeypatch):
 
 
 def setup(env,tmp_path,*,language='ru'):
-    pdf=ROOT/'runs/specialist-source.pdf'
+    pdf=connected.specialist_source()
     if not pdf.exists():pytest.skip('explicit original PDF needed; env-free freezer supplies its verified copy')
     bundle,conditions,_=source_shape();folder=tmp_path/'source';folder.mkdir()
     bundle['meta']['source_document']='SYNTHETIC specialist review of supplied PDF; NOT legal approval'

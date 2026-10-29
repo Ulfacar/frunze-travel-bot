@@ -45,6 +45,30 @@ def clock(route_clock, monkeypatch):
         monkeypatch.setattr(mod, '_now', now)
 
 
+def specialist_source() -> Path:
+    """Исходный PDF ТЗ, а нет файла — skip с причиной вместо падения.
+
+    `runs/` стоит в .gitignore, и в CI этого PDF нет НИКОГДА: без обработки тесты падали
+    с FileNotFoundError, а не скипались, и nightly был красным всегда (проверено 29.10
+    прогоном с убранным файлом — 2 падения в test_admin_actual_dates, 1 в
+    test_conditional_deadline_sop).
+
+    Подменить файл синтетическим нельзя, хотя он и участвует только как байты для
+    sha256. Этот хеш прибит в `conditional_deadline_rules.SOURCE_HASH`, и с любым другим
+    файлом условная авторитетность становится недействительной: раздел просто не
+    рисуется, и тест падает на пустой форме — то есть врёт о причине. Проверено тем же
+    прогоном 29.10, подмена была отменена в пользу skip.
+
+    Единственный тест, которому нужен настоящий PDF для сверки хеша, —
+    `test_entry_bundle_pinned`, и он скипается сам по тому же правилу.
+    """
+    pdf = ROOT / 'runs' / 'specialist-source.pdf'
+    if not pdf.is_file():
+        pytest.skip('нет runs/specialist-source.pdf — исходный PDF ТЗ не в рабочем дереве; '
+                    'его sha256 прибит в SOURCE_HASH, подмена файла недопустима')
+    return pdf
+
+
 def source(env, tmp_path, *, additional=(), counting=None, source_file=None):
     folder = tmp_path / 'full-source-shaped'; folder.mkdir()
     bundle = {k: yaml.safe_load((ROOT / 'knowledge/kg_entry/draft-v1.1' / (k + '.yaml')).read_text('utf-8'))

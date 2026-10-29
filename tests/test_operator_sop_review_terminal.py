@@ -9,7 +9,7 @@ from tests.test_entry_process_dependencies import regularization_at_u06
 
 
 def test_u09_approved_own_attempt_ignores_unrelated_new_root(env,tmp_path):
-    core.connected.source(env,tmp_path,source_file=core.ROOT/'runs/specialist-source.pdf')
+    core.connected.source(env,tmp_path,source_file=core.connected.specialist_source())
     root,child,allowed,_=regularization_at_u06(env,'exit_visa','exit_visa','L')
     record(env,child,'approve',status='approved',occurred_on='2026-09-02',reference=f"PS{child['id']:06}")
     issued.file(env,child);issued.review(env,child)

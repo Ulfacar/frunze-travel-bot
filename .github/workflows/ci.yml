@@ -42,7 +42,8 @@ jobs:
             test_validator.py test_validator_safety.py test_visa_pricing.py
             test_tourvisor_query.py test_search_relaxation.py
             test_bitrix_connect_retry.py test_bitrix_error_body.py
-            test_awaiting_cooldown_durable.py"
+            test_awaiting_cooldown_durable.py
+            test_entry_routing_v2.py test_entry_stop_factor_work.py"
         run: |
           python - <<'PY'
           import os, shlex
