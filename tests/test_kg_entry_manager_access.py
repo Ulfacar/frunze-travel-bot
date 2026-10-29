@@ -318,3 +318,16 @@ def test_case_card_shows_entry_link_only_to_allowed(env, monkeypatch):
         assert link in admin.get(f"/admin/case/{env['cases']['mine']}").text
     finally:
         admin.close()
+
+
+def test_operator_cannot_create_knowledge_set_or_import_calendars(env):
+    """Ревью потока bitrix 30.10: оператор создавал набор знаний. Обе точки — только админ."""
+    from app.domain.entry_storage import import_work_calendars
+    from app.domain.knowledge_import import create_kg_entry_set
+    from app.domain.service_authz import PermissionDenied
+    operator = Actor("medina", False, frozenset({"visa"}), kg_entry_operator=True)
+    engine = env["sm"].kw["bind"]
+    with pytest.raises(PermissionDenied):
+        asyncio.run(create_kg_entry_set(engine, actor=operator))
+    with pytest.raises(PermissionDenied):
+        asyncio.run(import_work_calendars(engine, actor=operator, document={}))

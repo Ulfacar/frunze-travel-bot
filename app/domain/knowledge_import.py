@@ -76,7 +76,7 @@ def _sessions(engine: AsyncEngine):
 
 async def create_kg_entry_set(engine: AsyncEngine, *, actor: Actor) -> int:
     """Явная регистрация набора; нет seed в миграции и нет придуманного review_period."""
-    _authorize(actor)
+    _authorize_admin(actor)
     sessions = _sessions(engine)
     for attempt in range(3):
         try:

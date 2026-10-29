@@ -168,7 +168,7 @@ PDF; NOT_IMPLEMENTED — нет; UNKNOWN — проверить не смог (�
 |---|---|---|---|
 | `f9c2cdc` | `app/knowledge/answerable.py`: `_ORPHAN_LABEL` — абзац вида `**[МЕТКА]**.` помечает предыдущий кусок; `answerable/approvable` пересчитываются. Тексты и хеши кусков не меняются, `corpus_hash` тот же. Закреплённые числа: РЕШЕНИЕ 22→23, без метки 616→615, answerable 703→702, approvable 512→511, approvable без меток 457→456 | C (данные знаний) — без флага, прямой запрет PDF | — |
 | `0d0db23` | `config.kg_entry_outbound_isolation_enabled` (OFF, per-bot), тумблер в `FEATURE_FLAGS`, `docker-compose.yml`; `validator.validate_reply(outbound_isolated=…)` пропускает `_AFFIRM_WORKVISA` только для `profile="kg_entry"`; `runner._entry_isolated`; `orchestrator._maybe_faq_reply` — гвард над `match_faq` | B | OFF |
-| `66f63a9` | `_conversation.html` ×2, `focus.html`: `white-space: pre-line` для `ai_summary` | S (простой режим) | — |
+| `66f63a9` | `_conversation.html`, `focus.html`: `white-space: pre-line` для `ai_summary` в новом чате и фокусе. По ревью потока bitrix старая карточка (флаг `admin_chat_redesign_enabled` OFF) возвращена байт-в-байт — `test_off_card_is_byte_for_byte_the_original_render` снова зелёный | S (простой режим) | — |
 | `642f5d6` | `entry_guards._WORK_INTENT` + `подрабат\w*` | B | за `kg_entry_stop_factors_enabled` (OFF) |
 
 ### Тесты
@@ -249,7 +249,7 @@ python scripts/build_answers_approval.py --dry-run            → будет о�
 | Доменный слой | `Actor.kg_entry_operator` ставит только шлюз; `_authorize` пускает админа или оператора; новая `_authorize_admin` — только админ | `app/domain/permissions.py`, `knowledge_import.py` |
 
 **Что менеджеру нельзя (остаётся админским, закреплено тестами):**
-- публикация знаний `/admin/kg-entry/publication` и решения по единицам `/admin/kg-entry/reviews` — `admin_only=True` в шлюзе, в домене `_authorize_admin` на `publication_preview`, `record/read_knowledge_decision`, `review_catalog`, `authorize_publisher`, `review_versions`, `review_projection`, `create_kg_entry_set`, `import_bundle`;
+- публикация знаний `/admin/kg-entry/publication` и решения по единицам `/admin/kg-entry/reviews` — `admin_only=True` в шлюзе, в домене `_authorize_admin` на `publication_preview`, `record/read_knowledge_decision`, `review_catalog`, `authorize_publisher`, `review_versions`, `review_projection`, `create_kg_entry_set`, `import_bundle`, `import_work_calendars`. Поправка после ревью потока bitrix (30.10): `create_kg_entry_set` и `import_work_calendars` в первом коммите остались на ослабленной `_authorize` — ревьюер воспроизвёл создание набора знаний оператором; закрыто коммитом ниже с падающим до правки тестом `test_operator_cannot_create_knowledge_set_or_import_calendars`;
 - подписи кусков базы и оверлеи — файлы в репозитории, UI их не трогает;
 - политики (интервью, расчёт стоимости, уведомления, решение специалиста, остановка канала) — доменные `access()` требуют `existing_full_admins()`/операторов из политики. **Не менял**: это деньги, отправка клиенту и передача специалисту — решение владельца (п. 4.4). Следствие: четыре экрана менеджеру 403 даже при флаге (см. карту).
 
