@@ -777,7 +777,17 @@ class Orchestrator:
                                         settings.kg_entry_enabled):
             return False
         from app.core.entry_intent import detect
-        return detect(msg.text or "") == "kg_entry"
+        # Флаг читаем и ЗДЕСЬ. Это второй вызов распознавателя в системе, и если он
+        # останется на прежней логике, пока воронка ушла на v2, получится ровно тот
+        # дефект, из-за которого этот гвард и написан: воронка уводит немца во въездную
+        # ветку, а выездной прайс стреляет раньше неё и называет ему шенгенские сборы.
+        #
+        # `ambiguous` тоже глушит выездной прайс: направление неизвестно, а назвать
+        # иностранцу цены за Шенген дороже, чем промолчать и задать вопрос.
+        routing_v2 = await flags.get_bot_flag("kg_entry_routing_v2_enabled",
+                                              self._bot_id,
+                                              settings.kg_entry_routing_v2_enabled)
+        return detect(msg.text or "", routing_v2=routing_v2) in ("kg_entry", "ambiguous")
 
     async def _maybe_faq_reply(self, msg: Message, state, store) -> bool:
         """Try deterministic FAQ before LLM/funnel logic. Fail open to the normal flow."""

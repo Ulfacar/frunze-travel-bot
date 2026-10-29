@@ -298,11 +298,20 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
             logger.info("validator (%s): %s", spec.name, ", ".join(violations))
             for v in violations:
                 observ.note_validation(v)
+        if spec.validator_profile == "kg_entry":
+            text = await _enforce_work_stop_factor(state, user_text, text)
         text = _attach_tour_cards(state, text)
         state.history.append({"role": "assistant", "content": text})
         return text or "Расскажите, пожалуйста, подробнее."
 
-    return "Давайте уточню детали ещё раз, чтобы подобрать лучший вариант."
+    # Цикл инструментов исчерпан: модель шесть раз вернула вызов вместо ответа. Стоп-
+    # фактор обязан сработать и здесь — иначе клиент, прямо попросивший туристическую
+    # визу для работы, получает очередное уточнение, и ни запрета, ни заявки нет.
+    # Найдено независимым ревью 28.10: исправление зависело от поведения модели.
+    stuck = "Давайте уточню детали ещё раз, чтобы подобрать лучший вариант."
+    if spec.validator_profile == "kg_entry":
+        return await _enforce_work_stop_factor(state, user_text, stuck)
+    return stuck
 
 
 async def _record_llm_usage(model: str, resp: object, state: DialogState) -> None:
@@ -904,6 +913,64 @@ async def _entry_claim_permissions(state: DialogState, spec: "FunnelSpec"):
     return ((getattr(verdict, "sayable", frozenset()) or frozenset()), consent, quoted)
 
 
+async def _entry_register_handoff(state: DialogState, kg: dict, reason: str,
+                                  *, extra_flags=()) -> frozenset:
+    """Зафиксировать передачу специалисту: причина, стадия, машинный снимок заявки.
+
+    Вынесено из `kg_entry_handoff`, потому что передачу теперь инициирует не только
+    модель. Возвращает то, что боту разрешено произнести, — вызывающему это нужно,
+    чтобы не выбросить уже разрешённый вывод.
+    """
+    from app.core import entry_intake
+
+    kg["handoff_reason"] = reason
+    if extra_flags:
+        kg["flags"] = list(extra_flags)
+    state.stage = "manager"
+    verdict = _entry_verdict(state)
+    allowed = (verdict.sayable if verdict is not None
+               and await _entry_speech_allowed(state.bot_id) else frozenset())
+    entry_intake.store(kg, entry_intake.snapshot(
+        kg, verdict, said_to_client=allowed,
+        handoff_reason=kg.get("handoff_reason") or "", flags=kg.get("flags") or ()))
+    return allowed
+
+
+async def _enforce_work_stop_factor(state: DialogState, user_text: str,
+                                    text: str) -> str:
+    """Стоп-фактор 4.1: клиент просит туристическую визу, чтобы по ней работать.
+
+    Делает ровно две вещи, которых от модели добиться не удалось: произносит запрет и
+    создаёт настоящую заявку специалисту. По записи `ai/STATE.md` от 23.10 на живой
+    модели бот на эту реплику задавал уточняющий вопрос вместо ответа — слова «нельзя»
+    клиент не слышал. Заявку создаём сами, потому что «передаю специалисту» в тексте
+    ответа заявкой не является: её создаёт только вызов инструмента.
+
+    Стоит ПОСЛЕ валидатора сознательно. Последний ремень вырезает предложения с
+    утверждениями о законе, на которые нет разрешения, и запрет попал бы под него,
+    если бы содержал правило. Поэтому формулировка выбрана без таких утверждений —
+    проверяется тестом, а не на слово.
+
+    За флагом `kg_entry_stop_factors_enabled`, дефолт OFF: это поведение, которое
+    клиент увидит, а въездная ветка уже на боевом номере GetVisa.
+    """
+    from app.agent import entry_guards as g
+
+    if not g.declares_work_on_visitor_visa(user_text):
+        return text
+    if not await flags.get_bot_flag("kg_entry_stop_factors_enabled", state.bot_id,
+                                    settings.kg_entry_stop_factors_enabled):
+        return text
+
+    kg = _kg(state)
+    if not kg.get("handoff_reason"):
+        await _entry_register_handoff(state, kg, g.WORK_STOP_HANDOFF_REASON)
+    if g.states_the_prohibition(text):
+        return text                       # модель уже сказала это сама — не повторяем
+    statement = g.work_stop_reply(user_text)
+    return f"{statement}\n\n{text}".strip() if text.strip() else statement
+
+
 def _entry_qual_context(qual: dict) -> dict | None:
     """Компактный контекст: шесть строк, без сырого JSON и без дампа всех полей."""
     kg = (qual or {}).get("kg_entry") or {}
@@ -963,24 +1030,19 @@ async def _kg_entry_exec_tool(name: str, args: dict, state: DialogState, crm=Non
         return await _kg_entry_knowledge(kg, state, str(args.get("question") or ""))
 
     if name == "kg_entry_handoff":
-        kg["handoff_reason"] = args.get("reason") or "квалификация завершена"
-        if args.get("flags"):
-            kg["flags"] = list(args["flags"])
-        state.stage = "manager"
         # Передача — НЕ замена ответу. Прежняя инструкция велела сказать только
         # «специалист свяжется», и модель послушно выбрасывала то, что уже имела право
         # сообщить: серб-удалёнщик не услышал свой лимит 90/180, хотя движок его знал.
+        #
+        # Машинный снимок заявки рядом с текстовой карточкой кладёт
+        # `_entry_register_handoff`: по тексту нельзя восстановить, что бот сказал
+        # клиенту и на каком основании. Он же контракт данных для любого пути в нашу
+        # CRM — см. docs/bot-to-crm-handoff.md.
         from app.core.entry_card import sayable_regime_line
-        from app.core import entry_intake
+        allowed = await _entry_register_handoff(
+            state, kg, args.get("reason") or "квалификация завершена",
+            extra_flags=args.get("flags") or ())
         verdict = _entry_verdict(state)
-        allowed = (verdict.sayable if verdict is not None
-                   and await _entry_speech_allowed(state.bot_id) else frozenset())
-        # Машинный снимок заявки рядом с текстовой карточкой: по тексту нельзя
-        # восстановить, что бот сказал клиенту и на каком основании. Он же контракт
-        # данных для любого пути в нашу CRM — см. docs/bot-to-crm-handoff.md.
-        entry_intake.store(kg, entry_intake.snapshot(
-            kg, verdict, said_to_client=allowed,
-            handoff_reason=kg.get("handoff_reason") or "", flags=kg.get("flags") or ()))
         if allowed:
             line = sayable_regime_line(verdict, allowed)
             return (f"Заявка передана специалисту. СНАЧАЛА сообщи клиенту то, что уже "

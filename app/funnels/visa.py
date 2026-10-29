@@ -45,6 +45,65 @@ ENTRY_HANDOVER = (
 )
 
 
+# Уточняющий вопрос о направлении (маршрутизация v2, флаг `kg_entry_routing_v2_enabled`).
+# Нужен, потому что на одном номере живут два разных бизнеса: выездные визы для граждан
+# КР и въезд иностранцев в КР. Прежде при сомнении диалог молча уходил в выездную
+# воронку — и иностранца спрашивали, в какую страну ему нужна виза.
+ENTRY_DIRECTION_QUESTION = (
+    "Уточню один момент, чтобы не ошибиться: вам нужна виза **в Кыргызстан** — то есть "
+    "вы приезжаете к нам, — или виза **из Кыргызстана** в другую страну?"
+)
+ENTRY_DIRECTION_QUESTION_EN = (
+    "One quick question so I get this right: do you need a visa **to Kyrgyzstan** — "
+    "that is, you are coming here — or a visa **from Kyrgyzstan** to another country?"
+)
+
+
+# Не разобрали ответ про направление — отдаём человеку, а не угадываем.
+ENTRY_DIRECTION_HANDOVER = (
+    "Чтобы точно не ошибиться, передаю ваш вопрос специалисту: он уточнит детали и "
+    "ответит в рабочее время."
+)
+ENTRY_DIRECTION_HANDOVER_EN = (
+    "To make sure we get this right, I am passing your question to a specialist: "
+    "they will check the details and reply during working hours."
+)
+
+# Короткие ответы на вопрос про направление. Клиент отвечает не фразой из ТЗ, а
+# «сюда», «туда», «к вам», «отсюда» — и прежде это давало `unknown`.
+_ANSWER_HERE = (
+    "сюда", "к вам", "в кыргыз", "в киргиз", "кыргызстанга", "приеду", "приехать",
+    "въезд", "въехать", "у вас", "к тебе", "to kyrgyz", "coming here", "to you",
+    "here", "inbound", "entry",
+)
+_ANSWER_AWAY = (
+    "туда", "отсюда", "из кыргыз", "из киргиз", "за границу", "за рубеж", "выезд",
+    "выехать", "уехать", "из страны", "from kyrgyz", "abroad", "outbound", "exit",
+)
+
+
+def _direction_answer(text: str) -> str | None:
+    """Ответ клиента на вопрос «в Кыргызстан или из Кыргызстана?».
+
+    `None` — ответ не разобрали. Проверяем «отсюда» ПЕРВЫМ: во фразе «из Кыргызстана»
+    есть и «кыргыз», и признак отъезда, и верный ответ — выезд.
+    """
+    low = (text or "").strip().lower()
+    if not low:
+        return None
+    if any(w in low for w in _ANSWER_AWAY):
+        return "outbound"
+    if any(w in low for w in _ANSWER_HERE):
+        return "kg_entry"
+    return None
+
+
+def is_english_speaking_text(text: str | None) -> bool:
+    """Латиница без кириллицы — отвечаем по-английски."""
+    from app.core.entry_intent import looks_english
+    return looks_english(text or "")
+
+
 class VisaFunnel:
     name = "visa"
 
@@ -156,7 +215,42 @@ async def _entry_branch(msg: Message, state: DialogState) -> str | None:
         return None
 
     sticky = state.qualification.get("entry_mode")
-    intent = detect(msg.text or "", sticky=sticky)
+    routing_v2 = await flags.get_bot_flag("kg_entry_routing_v2_enabled", state.bot_id,
+                                          settings.kg_entry_routing_v2_enabled)
+    intent = detect(msg.text or "", sticky=sticky, routing_v2=routing_v2)
+
+    # Вопрос про направление уже задан — разбираем ОТВЕТ, прежде чем решать что-либо
+    # ещё. Без этого «туда», «сюда», «не знаю» и смайлик давали `unknown`, и клиент
+    # молча уезжал в выездную воронку: ровно то, чего быть не должно. Найдено
+    # независимым ревью 28.10 последовательными вызовами этой функции.
+    if routing_v2 and state.qualification.get("entry_direction_asked") \
+            and not state.qualification.get("entry_mode"):
+        answered = _direction_answer(msg.text or "")
+        if answered == "kg_entry":
+            intent = "kg_entry"
+        elif answered == "outbound":
+            return None                       # выездной клиент, прежний путь воронки
+        elif intent not in ("kg_entry", "outbound"):
+            # Ответ не разобрали. Угадывать нельзя, спрашивать второй раз бессмысленно —
+            # отдаём человеку.
+            state.stage = "manager"
+            return (ENTRY_DIRECTION_HANDOVER_EN if is_english_speaking_text(msg.text)
+                    else ENTRY_DIRECTION_HANDOVER)
+
+    if intent == "ambiguous":
+        # Кыргызстан назван либо клиент назвал своё иностранное гражданство, а
+        # направление неясно. Прежде такой диалог молча уезжал в выездную воронку, и
+        # бот спрашивал иностранца «в какую страну вам нужна виза?». Спрашиваем прямо.
+        #
+        # Режим НЕ запоминаем: ответ разбирает блок выше и сильный маркер детектора.
+        if state.qualification.get("entry_direction_asked"):
+            state.stage = "manager"
+            return (ENTRY_DIRECTION_HANDOVER_EN if is_english_speaking_text(msg.text)
+                    else ENTRY_DIRECTION_HANDOVER)
+        state.qualification["entry_direction_asked"] = True
+        return ENTRY_DIRECTION_QUESTION_EN if is_english_speaking_text(msg.text) \
+            else ENTRY_DIRECTION_QUESTION
+
     if intent != "kg_entry":
         return None
 

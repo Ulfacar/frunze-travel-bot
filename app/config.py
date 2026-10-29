@@ -449,6 +449,16 @@ class Settings(BaseSettings):
     # речи по единицам: движок режима въезда и база знаний — разные источники с разной
     # приёмкой. Дефолт OFF, per-bot ключ `kg_entry_knowledge_enabled:<bot_id>`.
     kg_entry_knowledge_enabled: bool = False
+    # Стоп-факторы ТЗ 4.1, которые распознаёт КОД по реплике клиента, а не модель по
+    # промпту. Пока только 4.1 «цель работа, а просит туристическую/деловую». Дефолт
+    # OFF: ветка уже на боевом номере GetVisa, и это поведение клиент увидит сразу.
+    # Per-bot ключ `kg_entry_stop_factors_enabled:<bot_id>`.
+    kg_entry_stop_factors_enabled: bool = False
+    # Маршрутизация v2: основы слов вместо точных фраз, «Бишкек» сам по себе ветку не
+    # включает, кыргызский язык, и четвёртый исход — уточняющий вопрос о направлении
+    # вместо молчаливого ухода в выездную воронку. Дефолт OFF: решает, какой клиент в
+    # какую воронку попадёт на боевом номере. Per-bot `kg_entry_routing_v2_enabled:<bot>`.
+    kg_entry_routing_v2_enabled: bool = False
     panel_missing_cards_enabled: bool = False
     pilot_reply_queue_enabled: bool = False
     pilot_reply_alert_enabled: bool = False
