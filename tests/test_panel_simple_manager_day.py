@@ -286,3 +286,51 @@ def test_configured_channel_with_empty_id_stays_sent(monkeypatch):
     monkeypatch.setattr(admin_router.outbound, "send_to_client", AsyncMock(return_value=""))
     r = _client().post(f"/admin/conversation/{VISA}/send", data={"text": "Добрый день"})
     assert r.headers["X-Action-Outcome"] == "sent"
+
+
+# ---------------- «Мои дела»: простой список (30.10, шаг 2) ----------------
+def _calendar_rows():
+    today = admin_router._bishkek_today()
+    return [_task(11, today, comment="Сегодняшнее дело", hhmm="15:00"),
+            _task(12, today - timedelta(days=2), comment="Просроченное дело"),
+            _task(13, today + timedelta(days=1), comment="Завтрашнее дело", hhmm="10:30"),
+            _task(14, today + timedelta(days=3), comment="Через три дня")]
+
+
+def test_my_tasks_default_to_a_simple_list_for_a_manager(monkeypatch):
+    _setup(monkeypatch); _seed()
+    fetch = AsyncMock(return_value=_calendar_rows())
+    monkeypatch.setattr(admin_router, "_fetch_calendar_tasks", fetch)
+    page = _client().get("/admin/calendar").text
+    assert "<h1>Мои дела</h1>" in page
+    over, today, tomorrow = (page.index(f"<h2>{h}</h2>") for h in ("Просрочено", "Сегодня", "Завтра"))
+    assert over < page.index("Просроченное дело") < today < page.index("Сегодняшнее дело") \
+        < tomorrow < page.index("Завтрашнее дело")
+    assert "Через три дня" not in page, "в списке только просрочено/сегодня/завтра"
+    # Те же эндпоинты: «Сделано» — complete, «Перенести на завтра» — snooze mode=tomorrow.
+    assert "/admin/calendar/task/11/complete" in page and "/admin/calendar/task/11/snooze" in page
+    assert 'name="mode" value="tomorrow"' in page and "Перенести на завтра" in page
+    # Неделя — по кнопке; права те же — выборка по менеджеру.
+    assert 'href="/admin/calendar?view=week' in page
+    assert fetch.await_args.args[0]["login"] == "medina"
+
+
+def test_my_tasks_list_keeps_the_list_after_an_action(monkeypatch):
+    _setup(monkeypatch)
+    monkeypatch.setattr(admin_router, "_apply_calendar_action", AsyncMock())
+    r = _client().post("/admin/calendar/task/11/snooze", data={"mode": "tomorrow", "view": "list"},
+                       follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/admin/calendar?view=list"
+
+
+def test_admin_and_flag_off_keep_the_day_calendar(monkeypatch):
+    _setup(monkeypatch)
+    monkeypatch.setattr(admin_router, "_fetch_calendar_tasks", AsyncMock(return_value=[]))
+    admin_page = _client("admin", "frunze").get("/admin/calendar").text
+    assert "<h1>Мои дела</h1>" not in admin_page and ">День</a>" in admin_page
+    _setup(monkeypatch, simple=False)
+    monkeypatch.setattr(admin_router, "_fetch_calendar_tasks", AsyncMock(return_value=[]))
+    off_page = _client().get("/admin/calendar").text
+    assert "<h1>Мои дела</h1>" not in off_page and ">День</a>" in off_page
+    # Явный view=list без простого режима не включает список (тот же день).
+    assert "<h1>Мои дела</h1>" not in _client().get("/admin/calendar?view=list").text

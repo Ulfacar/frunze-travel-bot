@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% import "_icons.html" as ic %}
-{% block title %}Frunze — календарь{% endblock %}
+{% block title %}Frunze — {% if simple_on and not is_admin|default(false) %}мои дела{% else %}календарь{% endif %}{% endblock %}
 {% block head %}
 <style>
 /* 20.10: календарь на токенах оболочки (светлая и тёмная тема), иконки из _icons.html. */
@@ -167,15 +167,25 @@
   <div class="wrap {{ 'wide' if view == 'week' else '' }}">
 
     <div class="bar">
+      {% if simple_list %}
+      {#- Простой режим, менеджер: по умолчанию — список дел; неделя — по кнопке. -#}
+      <div class="seg">
+        <a href="/admin/calendar?view=list" class="{{ 'on' if view == 'list' else '' }}">Мои дела</a>
+        <a href="/admin/calendar?view=week&day={{ anchor_iso }}" class="{{ 'on' if view == 'week' else '' }}">Неделя</a>
+      </div>
+      {% else %}
       <div class="seg">
         <a href="/admin/calendar?view=day&day={{ anchor_iso }}" class="{{ 'on' if view == 'day' else '' }}">День</a>
         <a href="/admin/calendar?view=week&day={{ anchor_iso }}" class="{{ 'on' if view == 'week' else '' }}">Неделя</a>
       </div>
+      {% endif %}
+      {% if view != 'list' %}
       <div class="nav">
         <a href="/admin/calendar?view={{ view }}&day={{ prev_day }}" aria-label="Назад">‹</a>
         <a href="/admin/calendar?view={{ view }}&day={{ today_iso }}">Сегодня</a>
         <a href="/admin/calendar?view={{ view }}&day={{ next_day }}" aria-label="Вперёд">›</a>
       </div>
+      {% endif %}
       <span class="spacer"></span>
       {% if view == 'week' %}<span class="muted">{{ range_label }} · задач: {{ task_total }}</span>{% endif %}
     </div>
@@ -256,7 +266,91 @@
     </article>
     {% endmacro %}
 
-    {% if view == 'day' %}
+    {% macro task_simple(t, section) -%}
+    <article class="task {{ t.kind }} {{ 'is-overdue' if t.overdue else '' }}">
+      <div class="when">
+        {% if t.has_time %}<div class="hh">{{ t.time }}</div>{% else %}<div class="any">в течение дня</div>{% endif %}
+        {% if t.overdue %}<div class="any overdue-date">{{ t.date_label }}</div>{% endif %}
+      </div>
+      <div class="body">
+        <div class="line">
+          <span class="name">{{ t.title }}</span>
+          <span class="chip">{{ t.kind_label.split(' ', 1)[1] if ' ' in t.kind_label else t.kind_label }}</span>
+          {% if t.priority == 'high' %}<span class="chip hi">важно</span>{% endif %}
+          {% if t.waiting %}<span class="chip wait">ждёт {{ t.waiting }}</span>{% endif %}
+        </div>
+        {% if t.comment %}<div class="note">{{ t.comment }}</div>{% endif %}
+        <div class="acts">
+          <form method="post" action="/admin/calendar/task/{{ t.id }}/complete">
+            <input type="hidden" name="view" value="list">
+            <button class="btn ok" type="submit">{{ ic.icon("check", 16) }}Сделано</button>
+          </form>
+          {% if section != 'tomorrow' %}
+          <form method="post" action="/admin/calendar/task/{{ t.id }}/snooze">
+            <input type="hidden" name="mode" value="tomorrow"><input type="hidden" name="view" value="list">
+            <button class="btn" type="submit">{{ ic.icon("calendar", 16) }}Перенести на завтра</button>
+          </form>
+          {% endif %}
+          {% if t.user_id %}<a class="btn" href="/admin?open={{ t.user_id | urlencode }}">Открыть чат</a>{% endif %}
+          {% if t.tel %}<a class="btn" href="{{ t.tel }}">{{ ic.icon("phone", 16) }}Позвонить</a>{% endif %}
+          <details class="task-more"><summary class="btn sm">Ещё</summary><div class="task-more-body">
+            <form method="post" action="/admin/calendar/task/{{ t.id }}/reschedule" style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+              <input type="date" name="scheduled_date" value="{{ t.date_iso }}" required aria-label="Новая дата">
+              <input type="time" name="scheduled_time" value="{{ t.time }}" aria-label="Время">
+              <input type="hidden" name="view" value="list">
+              <button class="btn primary sm" type="submit">Перенести на этот день</button>
+            </form>
+            <form method="post" action="/admin/calendar/task/{{ t.id }}/cancel" onsubmit="return confirm('Отменить это дело?')">
+              <input type="hidden" name="view" value="list">
+              <button class="btn del sm" type="submit">{{ ic.icon("x", 16) }}Отменить дело</button>
+            </form>
+          </div></details>
+        </div>
+      </div>
+    </article>
+    {%- endmacro %}
+
+    {% if view == 'list' %}
+    {# ---------- простой список менеджера: просрочено → сегодня → завтра ---------- #}
+    <div class="dayhead">
+      <div class="row1">
+        <h1>Мои дела</h1>
+        <span class="badge-today">{{ day_title }} · {{ now_hhmm }}</span>
+      </div>
+    </div>
+
+    <details class="add">
+      <summary>{{ ic.icon("plus", 16) }}Добавить дело или звонок</summary>
+      <form method="post" action="/admin/calendar/task/create">
+        <input class="grow" type="tel" name="phone" placeholder="Номер клиента, напр. 0555 12 34 56" aria-label="Телефон клиента" required>
+        <select name="kind" aria-label="Что">
+          {% for key, label in kind_labels %}<option value="{{ key }}">{{ label.split(' ', 1)[1] if ' ' in label else label }}</option>{% endfor %}
+        </select>
+        <input type="date" name="scheduled_date" value="{{ today_iso }}" required aria-label="Когда">
+        <input type="time" name="scheduled_time" aria-label="Время">
+        <input type="hidden" name="priority" value="normal">
+        <input class="grow" type="text" name="comment" placeholder="О чём: «Анталья, 2 взр, до 1500$»" aria-label="О чём">
+        <input type="hidden" name="view" value="list"><input type="hidden" name="day" value="">
+        <button class="btn primary" type="submit">Поставить</button>
+      </form>
+    </details>
+
+    {% if overdue %}
+    <div class="sec danger"><h2>Просрочено</h2><span class="n">{{ overdue|length }}</span></div>
+    {% for t in overdue %}{{ task_simple(t, 'overdue') }}{% endfor %}
+    {% endif %}
+
+    <div class="sec"><h2>Сегодня</h2><span class="n">{{ today_cards|length }}</span></div>
+    {% for t in today_cards %}{{ task_simple(t, 'today') }}{% else %}
+    <div class="empty">На сегодня дел нет. Напоминание ставится в чате кнопкой «Напомнить» или здесь — «Добавить дело или звонок».</div>
+    {% endfor %}
+
+    <div class="sec"><h2>Завтра</h2><span class="n">{{ tomorrow_cards|length }}</span></div>
+    {% for t in tomorrow_cards %}{{ task_simple(t, 'tomorrow') }}{% else %}
+    <div class="empty">На завтра пока ничего.</div>
+    {% endfor %}
+
+    {% elif view == 'day' %}
     <div class="dayhead">
       <div class="row1">
         <h1>{{ day_title }}</h1>

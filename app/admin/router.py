@@ -3071,14 +3071,46 @@ async def _conv_map(user_ids: set[str], manager: dict | None = None) -> dict:
 
 @router.get("/calendar", response_class=HTMLResponse)
 async def calendar_view(request: Request, manager: dict = Depends(require_admin),
-                        view: str = "day", day: str = ""):
+                        view: str = "", day: str = ""):
     """Manager calendar. Day = the working call-list (overdue → now → later → done);
-    week = a planning grid. Scoped manager sees only their tasks; full-admin all."""
+    week = a planning grid. Scoped manager sees only their tasks; full-admin all.
+
+    Простой режим, менеджер (30.10): по умолчанию — список «Просрочено / Сегодня / Завтра»
+    с «Сделано» и «Перенести на завтра»; неделя и день — по кнопке. Данные и права те же
+    (`_fetch_calendar_tasks`), действия — те же эндпоинты complete/snooze/reschedule/cancel.
+    """
     today = _bishkek_today()
     try:
         anchor = date.fromisoformat(day) if day else today
     except Exception:
         anchor = today
+    is_admin = _manager_bot_scope(manager) is None
+    simple_list = (bool(getattr(request.state, "simple_on", settings.panel_simple_mode_enabled))
+                   and not is_admin)
+    if not view:
+        view = "list" if simple_list else "day"
+    if view == "list" and simple_list:
+        tomorrow = today + timedelta(days=1)
+        rows = await _fetch_calendar_tasks(manager, today, tomorrow)
+        convs = await _conv_map({t.user_id for t in rows if t.user_id}, manager)
+        cards = [c for c in (_task_ui(t, today, convs.get(t.user_id or "")) for t in rows)
+                 if c["active"]]
+        def _by_time(items):
+            return sorted(items, key=lambda c: (not c["has_time"], c["time"] or "", c["id"]))
+        overdue = sorted((c for c in cards if c["date"] < today),
+                         key=lambda c: (c["date_iso"], c["time"] or "99:99"))
+        return templates.TemplateResponse(request, "calendar.html", {
+            "manager": manager, "is_admin": is_admin, "view": "list",
+            "anchor_iso": today.isoformat(), "today_iso": today.isoformat(),
+            "tomorrow_iso": tomorrow.isoformat(), "is_today": True,
+            "overdue": overdue,
+            "today_cards": _by_time(c for c in cards if c["date"] == today),
+            "tomorrow_cards": _by_time(c for c in cards if c["date"] == tomorrow),
+            "now_hhmm": (datetime.now(timezone.utc) + timedelta(hours=6)).strftime("%H:%M"),
+            "day_title": f"{_WEEKDAYS_FULL_RU[today.weekday()]}, {today.day} {_MONTHS_RU[today.month - 1]}",
+            "kind_labels": TASK_KIND_LABELS, "priority_labels": TASK_PRIORITY_LABELS,
+            "simple_list": True,
+        }, headers={"Cache-Control": "no-store"})
     if view == "week":
         d_from = anchor - timedelta(days=anchor.weekday())   # Monday
         d_to = d_from + timedelta(days=6)
@@ -3148,13 +3180,14 @@ async def calendar_view(request: Request, manager: dict = Depends(require_admin)
         "task_total": sum(dv["count"] for dv in day_views),
         "kind_labels": TASK_KIND_LABELS,
         "priority_labels": TASK_PRIORITY_LABELS,
+        "simple_list": simple_list,
     }, headers={"Cache-Control": "no-store"})
 
 
 # ---- one-tap actions straight from the calendar (no client-card round-trip) ----------
 
 def _calendar_redirect(view: str, day: str) -> RedirectResponse:
-    v = "week" if view == "week" else "day"
+    v = view if view in ("week", "list") else "day"
     d = (day or "").strip()
     return RedirectResponse(f"/admin/calendar?view={v}" + (f"&day={d}" if d else ""),
                             status_code=303)
