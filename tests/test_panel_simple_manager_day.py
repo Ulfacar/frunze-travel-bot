@@ -246,6 +246,25 @@ def test_visa_manager_sees_only_her_own_board_tab(monkeypatch):
     assert 'data-funnel="tours"' in admin_tabs
 
 
+def test_phone_is_readable_but_data_is_untouched(monkeypatch):
+    _setup(monkeypatch); _seed(minutes_ago=240)
+    client = _client()
+    inbox = client.get("/admin/inbox").text
+    assert "+996 700 00 05 01" in inbox and "Фильтры и архив" in inbox
+    chat = client.get(f"/admin/conversation/{VISA}").text
+    assert "+996 700 00 05 01" in chat
+    assert 'data-phone="996700000501"' in chat, "копируется исходный номер"
+    assert get_conversation_store() and asyncio.run(get_conversation_store().get(VISA)).phone == "996700000501"
+    _setup(monkeypatch, simple=False); _seed(minutes_ago=240)
+    assert "+996 700 00 05 01" not in _client().get("/admin/inbox").text
+
+
+def test_quick_replies_wrap_on_wide_card_and_hint_scroll_on_phone():
+    css = (TEMPLATES / "boards.html").read_text("utf-8")
+    assert re.search(r"@container \(min-width: 421px\) \{ \.chat-quick-replies\.is-simple \{ flex-wrap:wrap", css)
+    assert "mask-image:linear-gradient" in css
+
+
 # ---------------- честный статус отправки ----------------
 def test_whatsapp_without_channel_is_failed_not_sent(monkeypatch):
     """Wappi без токена возвращает "" и ничего не шлёт — галочка «отправлено» была враньём."""

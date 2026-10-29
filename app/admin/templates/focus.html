@@ -282,8 +282,8 @@
       <div class="lead-top">
         <span class="lead-av" style="background: {{ current.avatar }}">{{ current.initials }}</span>
         <span class="lead-id">
-          <div class="lead-name">{{ current.name }}</div>
-          <div class="lead-phone">{{ current.phone }}</div>
+          <div class="lead-name">{{ current.name | phone_h if simple_on else current.name }}</div>
+          <div class="lead-phone">{{ current.phone | phone_h if simple_on else current.phone }}</div>
         </span>
         <span class="lead-wait">
           <div class="t" id="wait-timer">{{ current.wait_label or '—' }}</div>
@@ -433,7 +433,7 @@
        <a class="qrow{% if c.is_noise %} is-noise{% endif %}" data-wait="{{ c.wait_level }}"
           href="/admin/focus?lead={{ c.user_id | urlencode }}">
          <span class="av" style="background: {{ c.avatar }}">{{ c.initials }}</span>
-         <span class="nm">{{ c.name }}</span>
+         <span class="nm">{{ c.name | phone_h if simple_on else c.name }}</span>
          <span class="tx">{{ c.last_text }}</span>
          <span class="w">{{ c.wait_label }}</span>
        </a>

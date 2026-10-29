@@ -49,7 +49,8 @@
     <button type="button" class="chat-icon-button" onclick="closeChatSheet()" title="К списку диалогов" aria-label="К списку диалогов">{{ chat_icon('back') }}</button>
     <span class="chat-avatar" aria-hidden="true">{{ initials }}</span>
     <div class="chat-heading">
-      <div class="chat-name" title="{{ c.qualification.get('name') or c.phone }}">{{ c.qualification.get('name') or c.phone }}</div>
+      {% set shown_name = c.qualification.get('name') or (c.phone | phone_h if simple_on else c.phone) %}
+      <div class="chat-name" title="{{ shown_name }}">{{ shown_name }}</div>
       {#- Строка контекста. Алан 04.10: «уже лучше, но потеряться легко» — убрав чипы
           в меню, мы вместе с ними убрали и ответ на вопрос «что это за клиент».
           Здесь четыре вещи, которые видно без единого клика: продукт и этап, сколько
@@ -83,7 +84,7 @@
     <details class="chat-menu" id="chat-menu-{{ c.user_id }}">
       <summary class="chat-icon-button" title="Ещё действия" aria-label="Ещё действия">{{ chat_icon('more') }}</summary>
       <div class="chat-menu-body">
-        <div class="chat-phone"><span>{{ c.phone }}</span><button type="button" class="chat-chip" data-phone="{{ c.phone }}" onclick="copyChatPhone(this)">копировать</button></div>
+        <div class="chat-phone"><span>{{ c.phone | phone_h if simple_on else c.phone }}</span><button type="button" class="chat-chip" data-phone="{{ c.phone }}" onclick="copyChatPhone(this)">копировать</button></div>
         <div class="chat-tags">
           {% if not simple_on %}<span class="tag">{{ c.channel or '—' }}</span>
           <span class="tag">{{ c.funnel or '—' }} · {{ c.stage }}</span>{% endif %}
@@ -291,7 +292,7 @@
   <form class="composer chat-composer" id="composer-{{ c.user_id }}" hx-preserve="true"
         hx-post="/admin/conversation/{{ c.user_id }}/send" hx-target="#chat" hx-swap="innerHTML"{% if crm_bot_mode %} hx-sync="this:drop" data-send-key="1"{% endif %}
         {% if not crm_bot_mode %}hx-on::after-request="if(event.detail.successful && ['sent','failed'].includes(event.detail.xhr.getResponseHeader('X-Action-Outcome'))) this.reset()"{% endif %}>{% if crm_bot_mode %}<input type="hidden" name="send_key" value="">{% endif %}
-    <div class="chat-quick-replies" aria-label="Быстрые ответы" tabindex="0">
+    <div class="chat-quick-replies{% if simple_on %} is-simple{% endif %}" aria-label="Быстрые ответы" tabindex="0">
       {% if simple_on and not crm_bot_mode %}<button type="button" class="chat-chip chat-chip-ai" data-user-id="{{ c.user_id }}" onclick="suggestChatReply(this.dataset.userId, this)" title="Бот напишет черновик в поле ответа. Проверьте перед отправкой">{{ chat_icon('spark') }} Подсказать ответ</button>{% endif %}
       {% for label, text in quick_replies.items() %}
       <button type="button" class="chat-chip" onclick="fillReply(this.dataset.t)" data-t="{{ text|e }}">{{ label }}</button>

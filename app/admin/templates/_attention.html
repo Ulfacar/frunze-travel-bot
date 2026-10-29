@@ -31,7 +31,8 @@
        и чекбоксы на каждой карточке уезжают под одну раскрывашку; пока она закрыта,
        менеджер видит только клиентов. Разметка и обработчики те же — это показ, не функция. #}
     <details class="inbox-tools">
-      <summary class="tab">Разобрать список</summary>
+      {#- 30.10: «Разобрать список» не говорило, что внутри. Внутри — фильтр и архив. -#}
+      <summary class="tab">Фильтры и архив</summary>
       <div class="inbox-tools-body">
         {#- Простой режим: «Ждут дольше N мин» — тот же список, отфильтрованный по сроку;
             на виду он дублировал заголовок «Ждут ответа». -#}
@@ -92,8 +93,8 @@
       <div class="card-top">
         <span class="avatar" style="background: {{ c.avatar }}">{{ c.initials }}</span>
         <div class="card-id">
-          <div class="nm">{{ c.name }}</div>
-          {% if c.name != c.phone %}<div class="ph">{{ c.phone }}</div>{% endif %}
+          <div class="nm">{{ c.name | phone_h if simple_on else c.name }}</div>
+          {% if c.name != c.phone %}<div class="ph">{{ c.phone | phone_h if simple_on else c.phone }}</div>{% endif %}
         </div>
         <span class="badge funnel-badge" data-funnel="{{ c.funnel }}">{{ c.funnel_label }}</span>
       </div>

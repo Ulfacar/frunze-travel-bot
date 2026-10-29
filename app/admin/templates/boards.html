@@ -438,6 +438,12 @@
   .chat-palma .chat-attach { display:grid; place-items:center; width:40px; height:40px; flex:none; border-radius:50%;
     border:1px solid var(--s-line); color:var(--s-ink-2); cursor:pointer; font-size:19px; }
   .chat-palma .chat-attach:hover { background:var(--s-surface-2); color:var(--s-ink); }
+  /* Быстрые ответы: на широкой карточке — в две строки целиком, на телефоне — лента
+     с затуханием у правого края, чтобы было видно, что её можно прокрутить. */
+  @container (min-width: 421px) { .chat-quick-replies.is-simple { flex-wrap:wrap; overflow-x:visible; } }
+  @container (max-width: 420px) { .chat-quick-replies.is-simple {
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);
+            mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent); padding-right:22px; } }
   .chat-palma .chat-chip-ai { color:var(--s-accent-ink); border-color:var(--s-accent-soft); background:var(--s-accent-soft); }
   .chat-palma .chat-chip-ai svg { margin-right:2px; }
   .chat-palma .chat-file.is-simple:not(.has-file) { display:none; }

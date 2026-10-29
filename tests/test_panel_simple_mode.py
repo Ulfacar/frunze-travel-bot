@@ -79,7 +79,9 @@ def test_inbox_bulk_actions_hide_behind_one_disclosure(monkeypatch):
     plain = _page(monkeypatch, "/admin/inbox", simple=False)
     simple = _page(monkeypatch, "/admin/inbox", simple=True)
     assert "inbox-tools" not in plain, "при выключенном тумблере вид обязан быть прежним"
-    assert "Разобрать список" in simple and "inbox-tools" in simple
+    # 30.10: подпись «Разобрать список» → «Фильтры и архив» (проход менеджера: из
+    # названия не было понятно, что внутри). Раскрывашка и её содержимое те же.
+    assert "Фильтры и архив" in simple and "inbox-tools" in simple
 
 
 @pytest.mark.parametrize("handler", BULK)

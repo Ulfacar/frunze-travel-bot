@@ -2795,6 +2795,19 @@ def _fmt_phone(digits: str) -> str:
     return f"+{d}" if d else ""
 
 
+def _phone_human(value) -> str:
+    """Фильтр шаблонов простого режима: номер читаемо, данные не трогаем.
+
+    Только для строки из одних цифр (номер диалога); всё остальное — как есть, чтобы
+    не превратить имя или служебный ключ в «+».
+    """
+    raw = str(value or "").strip()
+    return _fmt_phone(raw) if raw.isdigit() and len(raw) >= 9 else raw
+
+
+templates.env.filters["phone_h"] = _phone_human
+
+
 def _as_utc(when: datetime | None) -> datetime:
     """Store rows may carry naive UTC timestamps — normalize before any comparison."""
     if when is None:
