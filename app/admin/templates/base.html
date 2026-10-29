@@ -402,6 +402,7 @@
       <summary class="nav-link">{{ ic.icon('list') }}Ещё</summary>
       <div class="more-pop">
         {{ nl('/admin/morning','flame','Горячий лист') }}
+        {% if manual_lead_on|default(false) %}{{ nl('/admin/clients/new','plus','Новый клиент') }}{% endif %}
         {% if missing_cards_on %}{{ nl('/admin/no-card','cards','Нет карточки в Bitrix') }}{% endif %}
         {% if is_admin|default(false) %}
         {{ nl('/admin/faq','faq','FAQ-правила') }}

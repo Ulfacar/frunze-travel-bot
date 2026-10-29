@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Новый клиент — Frunze{% endblock %}
+{% block head %}
+<style>
+.cn{max-width:560px;margin:24px auto;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg,12px)}
+.cn h1{font-size:22px;margin:0 0 6px}.cn .lead{margin:0 0 8px;color:var(--muted);line-height:1.5}
+.cn label{display:block;margin:18px 0 6px;font-weight:600}
+.cn input,.cn select,.cn textarea{width:100%;box-sizing:border-box;padding:12px;font:inherit;font-size:16px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px}
+.cn textarea{min-height:88px;resize:vertical}
+.cn .src{display:flex;flex-wrap:wrap;gap:8px}.cn .src label{margin:0;font-weight:500;display:flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid var(--border);border-radius:999px;cursor:pointer}
+.cn .src input{width:auto;margin:0}.cn .src label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.cn .hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+.cn .err{color:var(--hot);margin:16px 0 0}
+.cn .ok{margin:0 0 16px;padding:14px;border-radius:8px;background:var(--accent-soft);line-height:1.5}
+.cn .ok a{font-weight:600}
+.cn button{margin-top:22px;width:100%;padding:14px 18px;font:inherit;font-size:16px;font-weight:600;border:0;border-radius:8px;background:var(--accent);color:var(--on-accent,#fff);cursor:pointer}
+.cn-space{height:0}
+@media(max-width:600px){.cn{margin:12px 16px;padding:18px}.cn-space{height:96px}}
+</style>
+{% endblock %}
+{% block content %}
+<main class="cn">
+  <h1>Новый клиент</h1>
+  <p class="lead">Клиент позвонил, пришёл в офис или написал не в WhatsApp. Карточка заводится на ваш WhatsApp-номер: когда клиент напишет сам, переписка будет здесь же. Бот в этот диалог не вмешивается.</p>
+  {% if existing %}
+  <div class="ok" role="status">
+    Этот номер уже есть{% if existing.name %} — {{ existing.name }}{% endif %}{% if existing.assigned_to %}, ведёт {{ existing.assigned_to|who }}{% endif %}.
+    Ничего не изменили{% if values.note %}, заметку добавили{% endif %}.<br>
+    <a href="{{ existing.open_url }}">Открыть переписку</a>{% if card_on %} · <a href="/admin/client/{{ existing.user_id.split(':')[-1] }}">Карточка клиента</a>{% endif %}
+  </div>
+  {% endif %}
+  <form method="post" action="/admin/clients/new">
+    {% for key in ('request_key','signature','csrf_token') %}<input type="hidden" name="{{ key }}" value="{{ values[key] }}">{% endfor %}
+    <label for="cn-phone">Телефон</label>
+    <input id="cn-phone" name="phone" type="tel" inputmode="tel" value="{{ values.phone }}" maxlength="32" placeholder="0555 123 456" autocomplete="off" required>
+    <p class="hint">Кыргызский номер можно без кода. Иностранный — с «+» и кодом страны.</p>
+    <label for="cn-name">Имя</label>
+    <input id="cn-name" name="name" value="{{ values.name }}" maxlength="120" autocomplete="off" required>
+    <label id="cn-src-l">Откуда клиент</label>
+    <div class="src" role="radiogroup" aria-labelledby="cn-src-l">
+      {% for key, label in sources %}<label><input type="radio" name="source" value="{{ key }}"{% if values.source == key %} checked{% endif %}>{{ label }}</label>{% endfor %}
+    </div>
+    {% if bots|length > 1 %}
+    <label for="cn-bot">Номер WhatsApp</label>
+    <select id="cn-bot" name="bot_id" onchange="cnFunnels()">
+      {% for b in bots %}<option value="{{ b.id }}"{% if values.bot_id == b.id %} selected{% endif %}>{{ b.label }}</option>{% endfor %}
+    </select>
+    {% else %}<input type="hidden" id="cn-bot" name="bot_id" value="{{ bots[0].id if bots else '' }}">{% endif %}
+    {% set multi = funnels|selectattr('bot_id','equalto',(values.bot_id or (bots[0].id if bots else '')))|list|length > 1 or bots|length > 1 %}
+    <div id="cn-funnel-box"{% if not multi %} hidden{% endif %}>
+      <label for="cn-funnel">Что нужно</label>
+      <select id="cn-funnel" name="funnel">
+        {% for f in funnels %}<option value="{{ f.key }}" data-bot="{{ f.bot_id }}"{% if values.funnel == f.key %} selected{% endif %}>{{ f.label }}</option>{% endfor %}
+      </select>
+    </div>
+    <label for="cn-note">Заметка <span style="font-weight:400;color:var(--muted)">(необязательно)</span></label>
+    <textarea id="cn-note" name="note" maxlength="2000" placeholder="Что хочет клиент, когда перезвонить">{{ values.note }}</textarea>
+    <p class="hint">Заметку видят только менеджеры. Клиенту ничего не отправляется.</p>
+    {% if error %}<p role="alert" class="err">{{ error }}</p>{% endif %}
+    <button type="submit">Сохранить клиента</button>
+  </form>
+</main>
+<div class="cn-space" aria-hidden="true"></div>
+<script>
+function cnFunnels(){
+  var bot=document.getElementById('cn-bot').value, sel=document.getElementById('cn-funnel'), first=null, shown=0;
+  for(var i=0;i<sel.options.length;i++){var o=sel.options[i], ok=o.dataset.bot===bot; o.hidden=!ok; o.disabled=!ok; if(ok){shown++; if(!first)first=o;}}
+  if(sel.selectedOptions.length===0||sel.selectedOptions[0].disabled){if(first)first.selected=true;}
+  document.getElementById('cn-funnel-box').hidden = shown<2 && document.querySelectorAll('#cn-bot option').length<2;
+}
+cnFunnels();
+</script>
+{% endblock %}

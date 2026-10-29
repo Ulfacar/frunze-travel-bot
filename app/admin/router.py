@@ -42,7 +42,7 @@ _LOOK_TTL = 5.0
 _look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
                                   "focus_on": None, "chat_redesign": None,
                                   "workday_on": None, "cases_write_on": None,
-                                  "simple_on": None}
+                                  "simple_on": None, "manual_lead_on": None}
 
 
 async def _load_new_look(request: Request) -> None:
@@ -61,7 +61,8 @@ async def _load_new_look(request: Request) -> None:
            # Четвёртым — иначе подмена флага в тестах не видна весь TTL, и гейт флапает.
            bool(settings.admin_workday_enabled), bool(settings.service_cases_enabled),
            bool(settings.panel_simple_mode_enabled),
-           bool(settings.panel_missing_cards_enabled))
+           bool(settings.panel_missing_cards_enabled),
+           bool(settings.panel_manual_lead_enabled))
     if (_look_cache["key"] == key and _look_cache["new_look"] is not None
             and now - float(_look_cache["at"]) < _LOOK_TTL):
         request.state.new_look = bool(_look_cache["new_look"])
@@ -71,6 +72,7 @@ async def _load_new_look(request: Request) -> None:
         request.state.cases_write_on = bool(_look_cache["cases_write_on"])
         request.state.simple_on = bool(_look_cache["simple_on"])
         request.state.missing_cards_on = bool(_look_cache["missing_cards_on"])
+        request.state.manual_lead_on = bool(_look_cache["manual_lead_on"])
         return
     try:
         new_look = await _flags.get_flag("admin_new_look_enabled",
@@ -86,12 +88,16 @@ async def _load_new_look(request: Request) -> None:
                                           settings.panel_simple_mode_enabled)
         missing_cards_on = await _flags.get_flag("panel_missing_cards_enabled",
                                                  settings.panel_missing_cards_enabled)
+        # «Новый клиент» в меню. Отдельная CRM — своя форма (`crm_intake`), не эта.
+        manual_lead_on = (not settings.crm_standalone_enabled) and await _flags.get_flag(
+            "panel_manual_lead_enabled", settings.panel_manual_lead_enabled)
         _look_cache.update({"at": now, "key": key, "new_look": new_look,
                             "focus_on": focus_on, "chat_redesign": chat_redesign,
                             "workday_on": workday_on,
                             "cases_write_on": cases_write_on,
                             "simple_on": simple_on,
-                            "missing_cards_on": missing_cards_on})
+                            "missing_cards_on": missing_cards_on,
+                            "manual_lead_on": manual_lead_on})
     except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
         new_look, focus_on = (bool(settings.admin_new_look_enabled),
                               bool(settings.admin_focus_enabled))
@@ -100,6 +106,7 @@ async def _load_new_look(request: Request) -> None:
         cases_write_on = bool(settings.service_cases_enabled)
         simple_on = bool(settings.panel_simple_mode_enabled)
         missing_cards_on = bool(settings.panel_missing_cards_enabled)
+        manual_lead_on = False
     request.state.new_look = bool(new_look)
     request.state.focus_on = bool(focus_on)
     request.state.chat_redesign = bool(chat_redesign)
@@ -107,6 +114,7 @@ async def _load_new_look(request: Request) -> None:
     request.state.cases_write_on = bool(cases_write_on)
     request.state.simple_on = bool(simple_on)
     request.state.missing_cards_on = bool(missing_cards_on)
+    request.state.manual_lead_on = bool(manual_lead_on)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"],
@@ -138,6 +146,8 @@ def _chrome(request: Request) -> dict:
             # Ссылка на список «нет карточки в Bitrix» — только когда экран включён.
             "missing_cards_on": bool(getattr(request.state, "missing_cards_on",
                                              settings.panel_missing_cards_enabled)),
+            # «Новый клиент» (звонок, офис, Instagram) — `app/admin/clients.py`.
+            "manual_lead_on": bool(getattr(request.state, "manual_lead_on", False)),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
                                           settings.admin_chat_redesign_enabled)),
             "workday_on": bool(getattr(request.state, "workday_on",
@@ -1154,6 +1164,30 @@ FEATURE_FLAGS = {
         "default": lambda: settings.panel_missing_cards_enabled,
         "note": lambda: "замер прода 21.10: 811 диалогов без карточки, из них 355 не в архиве",
     },
+    "panel_manual_lead_enabled": {
+        "title": "«Новый клиент» вручную (замена Bitrix)",
+        "desc": ("Кнопка в меню «Ещё»: менеджер заводит клиента, который позвонил, пришёл в "
+                 "офис или написал в Instagram. Карточка — на WhatsApp-номер его направления, "
+                 "закреплена за автором, бот в неё не вмешивается. Клиенту ничего не уходит."),
+        "default": lambda: settings.panel_manual_lead_enabled,
+        "note": lambda: "",
+    },
+    "reassign_moves_tasks_enabled": {
+        "title": "Передача клиента переносит его задачи",
+        "desc": ("Когда администратор передаёт клиента другому менеджеру, открытые задачи "
+                 "по этому клиенту (звонки, встречи) уходят новому владельцу. Каждый перенос "
+                 "пишется в историю задачи. Клиенту ничего не уходит."),
+        "default": lambda: settings.reassign_moves_tasks_enabled,
+        "note": lambda: "",
+    },
+    "panel_client_card_enabled": {
+        "title": "Заметки и карточка клиента (замена Bitrix)",
+        "desc": ("Внутренние заметки менеджера в переписке и карточка клиента: все его "
+                 "обращения, задачи, услуги, заметки и история ответственных. Только своё "
+                 "направление. Клиенту ничего не уходит."),
+        "default": lambda: settings.panel_client_card_enabled,
+        "note": lambda: "",
+    },
     "pilot_reply_queue_enabled": {
         "title": "Очередь «ждут ответа» (пилот виз)",
         "desc": ("Отдельный список: клиент ждёт ответа менеджера дольше X рабочих минут "
@@ -2064,8 +2098,7 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
     active_tasks = [t for t in tasks if t["active"]]
     # Sprint 2: полный админ видит контрол «Переназначить» (список логинов менеджеров).
     is_full_admin = _manager_bot_scope(manager) is None
-    reassign_targets = ([m.login for m in settings.manager_list() if (m.login or "").strip()]
-                        if is_full_admin else [])
+    reassign_targets = _reassign_targets(conv) if is_full_admin else []
     return templates.TemplateResponse(request, "_conversation.html", {
         "c": conv,
         "media_view_on": await _media_flag("panel_media_view_enabled"),
@@ -2096,7 +2129,18 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
         "task_kinds": TASK_KIND_LABELS,
         "task_priorities": TASK_PRIORITY_LABELS,
         "today_iso": _bishkek_today().isoformat(),
+        # Заметки менеджера (флаг panel_client_card_enabled; None — блока нет).
+        "client_notes": await _client_notes_context(request, conv, manager),
     })
+
+
+async def _client_notes_context(request: Request, conv, manager: dict):
+    from app.admin import clients
+    try:
+        return await clients.notes_context(request, conv, manager)
+    except Exception:  # noqa: BLE001 — заметки не должны ронять переписку
+        log.warning("client notes context failed", exc_info=True)
+        return None
 
 
 async def _require_visible_conversation(user_id: str, manager: dict):
@@ -2324,6 +2368,26 @@ async def release(user_id: str, request: Request, manager: dict = Depends(requir
     return await _render_conversation(user_id, request, manager)
 
 
+def _manager_session(m) -> dict:
+    """Учётка менеджера из настроек в том виде, в каком она лежит в сессии."""
+    return {"login": m.login, "name": m.name, "admin": bool(m.admin)}
+
+
+def _reassign_targets(conv) -> list[str]:
+    """Кому можно передать диалог: только тем, кто его увидит.
+
+    Раньше список был «все логины», и визовый диалог уходил туровому менеджеру —
+    у неё он не открывается (404), а в панели висит как «ведёт Айсина»: клиент ничей
+    по факту. Найдено при сверке с Bitrix 30.10.
+    """
+    out = []
+    for m in settings.manager_list():
+        login = (m.login or "").strip()
+        if login and _can_view_conversation(conv, _manager_session(m)):
+            out.append(login)
+    return out
+
+
 @router.post("/conversation/{user_id}/reassign", response_class=HTMLResponse)
 async def reassign(user_id: str, request: Request,
                    manager: dict = Depends(require_full_admin), target: str = Form("")):
@@ -2337,6 +2401,12 @@ async def reassign(user_id: str, request: Request,
     known = {(m.login or "").strip().lower() for m in settings.manager_list()}
     if not target or target not in known:
         raise HTTPException(status_code=400, detail="unknown target manager")
+    if target not in {t.lower() for t in _reassign_targets(conv)}:
+        resp = await _render_conversation(
+            user_id, request, manager,
+            notice=f"{target} не видит это направление — передайте менеджеру направления.")
+        resp.headers["X-Action-Outcome"] = "denied"
+        return resp
     direction = _authz_direction(conv)
     if not direction:
         return await _render_conversation(
@@ -2350,6 +2420,16 @@ async def reassign(user_id: str, request: Request,
             await live_assign.assign_locked(
                 s, contact.id, direction, target, assigned_by=manager["login"],
                 reason="admin_reassign", allow_emergency=True)
+            # ТЗ TASK-04: открытые задачи по клиенту уходят новому владельцу в той же
+            # транзакции, что и назначение, — без «карточка у Элизы, звонки у Медины».
+            moved = 0
+            if await _media_flag("reassign_moves_tasks_enabled"):
+                from app.domain.calendar_tasks import CalendarTaskService
+                for task_direction in dict.fromkeys((direction, getattr(conv, "funnel", "") or "")):
+                    if task_direction:
+                        moved += await CalendarTaskService.reassign_open_tasks(
+                            s, contact_id=contact.id, direction=task_direction,
+                            new_manager_id=target, actor=manager["login"])
             await s.commit()
     except Exception:  # noqa: BLE001
         log.warning("reassign failed", exc_info=True)
@@ -2357,8 +2437,9 @@ async def reassign(user_id: str, request: Request,
             user_id, request, manager, notice="Не удалось переназначить — попробуйте ещё раз.")
     await get_conversation_store().update_meta(user_id, assigned_to=target)
     await get_conversation_store().add_audit(manager["login"], "reassign", user_id, target)
+    tail = f" Задач перенесено: {moved}." if moved else ""
     return await _render_conversation(
-        user_id, request, manager, notice=f"Лид передан менеджеру {target}.")
+        user_id, request, manager, notice=f"Лид передан менеджеру {target}.{tail}")
 
 
 @router.post("/conversation/{user_id}/send", response_class=HTMLResponse)
@@ -2906,6 +2987,35 @@ def _manager_can_touch_task(manager: dict, task) -> bool:
     return (task.manager_id or "") == str(manager.get("login") or "").strip().lower()
 
 
+# Команда, которая ведёт направление: билеты ведут туры (как в `_authz_direction`).
+_TASK_TEAM = {"visa": "visa", "tours": "tours", "tickets": "tours"}
+
+
+def _task_direction_for(conv, manager: dict, requested: str) -> str:
+    """Направление задачи по диалогу; значение формы — только уточнение внутри команды.
+
+    Пусто → воронка диалога. Не из списка направлений → 422 (раньше молча терялось:
+    ответ 200, задачи нет). Чужая команда для этого клиента или для этого менеджера →
+    403 — в том числе у полного админа: направление клиента определяет его диалог.
+    """
+    from app.core.live_authz import actor_for
+    from app.domain.models import DIRECTIONS
+    funnel = (getattr(conv, "funnel", "") or "").strip()
+    team = _TASK_TEAM.get(funnel) or _authz_direction(conv)
+    server = funnel if funnel in DIRECTIONS else (team if team in DIRECTIONS else "")
+    if not server:
+        raise HTTPException(status_code=409, detail="Не удалось определить направление клиента")
+    if requested == "":
+        return server
+    if requested not in DIRECTIONS:
+        raise HTTPException(status_code=422, detail="unknown direction")
+    actor = actor_for(manager)
+    if _TASK_TEAM.get(requested) != team or not (
+            actor.is_full_admin or team in actor.allowed_directions):
+        raise HTTPException(status_code=403, detail="direction outside your scope")
+    return requested
+
+
 @router.post("/conversation/{user_id}/task/create", response_class=HTMLResponse)
 async def task_create(user_id: str, request: Request, manager: dict = Depends(require_admin),
                       kind: str = Form("call"), scheduled_date: str = Form(""),
@@ -2914,7 +3024,9 @@ async def task_create(user_id: str, request: Request, manager: dict = Depends(re
     """Create a task for this client. Resolves/creates a domain Contact by phone (explicit
     action — does NOT enable shadow or touch Bitrix)."""
     conv = await _require_visible_conversation(user_id, manager)
-    direction = (direction or getattr(conv, "funnel", "") or "visa").strip()
+    # Направление задачи задаёт сервер (CRITICAL, 30.10): раньше значение формы шло в
+    # задачу как есть, и визовый клиент получал «туровую» задачу.
+    direction = _task_direction_for(conv, manager, direction)
     phone_identity = conv.phone or conv.user_id
     if settings.crm_standalone_enabled:
         from app.admin.contracts import _identity
@@ -3351,6 +3463,7 @@ async def _set_intercept(user_id: str, value: bool) -> None:
 # помощникам отсюда, и раньше этой строки они ещё не объявлены.
 from app.admin import workday  # noqa: E402,F401 — side-effect: регистрация маршрутов
 from app.admin import contracts  # noqa: E402,F401 — договор из переписки, за флагами E2-06
+from app.admin import clients  # noqa: E402,F401 — новый клиент вручную, заметки, карточка; флаги OFF
 from app.admin import precontract  # noqa: E402,F401 — предварительная визовая карточка и договор в ней
 from app.admin import kg_entry  # noqa: E402,F401 — пилот анкеты въезда, default OFF
 from app.admin import kg_knowledge  # noqa: E402,F401 — поиск источника за тем же пилотным флагом
