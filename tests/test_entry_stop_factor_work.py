@@ -127,6 +127,9 @@ def test_review_false_positives_are_gone(line):
     "Нужна туристическая виза, буду строить дома за деньги.",
     "I need a tourist visa. I will work in Bishkek.",
     "I need a business visa. I will be working at a local factory.",
+    # PM-ревью 30.10: «подрабатывать» (несовершенный вид) шаблон `подработа\w*` не ловил.
+    "Хочу туристическую визу, буду там немного подрабатывать.",
+    "Еду туристом, хочу подрабатывать курьером.",
 ])
 def test_review_false_negatives_are_caught(line):
     """Прямой стоп-фактор: категория названа кодом либо работа — будущим временем."""
