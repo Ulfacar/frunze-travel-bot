@@ -162,10 +162,8 @@
   .cs-tab.on { color: var(--accent); border-bottom-color: var(--accent); }
   .cs-tab.on .b { background: var(--accent-soft); color: var(--accent); }
   .cs-pane { padding: 12px 14px 20px; display: grid; gap: 10px; min-width: 0; background: var(--bg); }
-  /* Простой режим: во вкладке «Деньги» кнопка «Внести оплату» — сразу под суммами, до списка
-     оплат. Только визуальный порядок (order): разметка и формы те же. */
-  .cs-pane.is-simple > .cs-money { order: -2; }
-  .cs-pane.is-simple > .cs-forms { order: -1; }
+  /* Простой режим: форма оплаты стоит сразу под суммами прямо в разметке (_case_panel.html,
+     money_forms) — CSS order больше не нужен (ревью pdf 30.10, WCAG 1.3.2). */
   .cs-pay-cta { margin: 8px 0 0; }
   .cs-pay-cta .btn { width: 100%; justify-content: center; text-decoration: none; font-weight: 600; }
   .cs-pane[hidden] { display: none; }
