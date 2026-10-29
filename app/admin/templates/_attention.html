@@ -2,7 +2,7 @@
 {# Единый список «ждут ответа» (инбокс) и результаты поиска — по всем воронкам.
    mode: 'inbox' (авто-обновление 10с) | 'search'. cards — обогащённые карточки. #}
 <div data-attention {% if mode == 'inbox' %}hx-get="/admin/inbox{% if show_all %}?all=1{% endif %}" {% if crm_bot_mode %}hx-trigger="every 10s" data-crm-poll="inbox"{% else %}hx-trigger="every 10s [document.visibilityState==='visible' && !window.hasInboxSelection(){% if simple_on %} && !document.querySelector('.inbox-tools[open]'){% endif %}]"{% endif %} hx-swap="outerHTML" hx-target="this"{% endif %}>
-  <div class="inbox-head">{% if overdue_on and mode != 'search' %}<a class="tab" href="/admin/overdue">Ждут дольше {{ overdue_sla }} мин</a>{% endif %}
+  <div class="inbox-head">{% if overdue_on and mode != 'search' and not simple_on %}<a class="tab" href="/admin/overdue">Ждут дольше {{ overdue_sla }} мин</a>{% endif %}
     {% if mode == 'search' %}
       <div class="inbox-title">Поиск: «{{ query }}» — {{ cards|length }}</div>
       <button class="tab" hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML"
@@ -33,6 +33,9 @@
     <details class="inbox-tools">
       <summary class="tab">Разобрать список</summary>
       <div class="inbox-tools-body">
+        {#- Простой режим: «Ждут дольше N мин» — тот же список, отфильтрованный по сроку;
+            на виду он дублировал заголовок «Ждут ответа». -#}
+        {% if overdue_on and mode != 'search' %}<a class="tab" href="/admin/overdue">Ждут дольше {{ overdue_sla }} мин</a>{% endif %}
         <button type="button" class="tab noise-filter" onclick="toggleNoise(this)">
           Скрыть рекламу/без диалога · {{ noise_count or 0 }}
         </button>

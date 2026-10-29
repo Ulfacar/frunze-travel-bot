@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Frunze — фокус{% endblock %}
-{% block brand_sub %}фокус{% endblock %}
+{% block title %}Frunze — {% if simple_on %}главная{% else %}фокус{% endif %}{% endblock %}
+{% block brand_sub %}{% if simple_on %}главная{% else %}фокус{% endif %}{% endblock %}
 {#
   «Фокус» — один вопрос: кому ответить сейчас. Раньше на него отвечали три экрана с тремя
   разными порядками (доска, «Покупатели сегодня», «Горячий лист»), и менеджер сам выбирал,
@@ -150,6 +150,35 @@
     .qrow[data-wait="warm"] .w { color: var(--warm); }
     .qrow.is-noise { opacity: .62; }
 
+    /* ---------- Простой режим: заголовок, «Ещё», мои дела на сегодня ---------- */
+    .focus-h { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.01em; color: var(--text); }
+    .pulse-bar .focus-h + .pulse { font-size: 14px; }
+    .pulse-bar .focus-h + .pulse b { font-size: 18px; }
+    .act-more { position: relative; }
+    .act-more > summary { list-style: none; }
+    .act-more > summary::-webkit-details-marker { display: none; }
+    .act-more-body { position: absolute; z-index: 5; right: 0; bottom: calc(100% + 6px); display: grid; gap: 6px;
+                     min-width: 240px; padding: 8px; border: 1px solid var(--border); border-radius: var(--r);
+                     background: var(--surface); box-shadow: var(--shadow); }
+    .act-more-body .act { justify-content: flex-start; text-decoration: none; }
+    .queue-h .queue-more { margin-left: auto; font-size: 12px; letter-spacing: 0; text-transform: none;
+                           font-weight: 600; color: var(--accent); }
+    .queue.today { margin-top: 0; }
+    .queue.today + .queue { margin-top: 22px; }
+    .task-row .w { order: -1; margin-left: 0; min-width: 52px; }
+    .task-row.is-overdue .w { color: var(--hot); }
+    .task-row .nm { flex: 1 1 auto; min-width: 0; }
+    /* Элемент grid-списка по умолчанию растягивается под текст: без min-width:0 длинный
+       комментарий давал горизонтальную прокрутку на телефоне (замер: 456 px при 390). */
+    .focus-aside.is-simple .qrow { min-width: 0; }
+    .task-row { flex-wrap: wrap; }
+    .task-row .tx { flex: 1 1 100%; margin-left: 63px; white-space: normal; }
+    .queue-empty { padding: 12px 13px; border: 1px dashed var(--border-2); border-radius: var(--r);
+                   color: var(--muted); font-size: 13px; }
+    /* На узком экране очередь и дела — под основной карточкой (без простого режима
+       очередь на телефоне не показывается вовсе). */
+    @media (max-width: 1099px) { .focus-aside.is-simple { display: block; margin-top: 22px; } }
+
     /* ---------- Пусто и скелетон ---------- */
     .all-clear { display: grid; gap: 10px; justify-items: center; text-align: center;
                  padding: 64px 24px; border: 1px dashed var(--border-2); border-radius: var(--r-lg);
@@ -228,15 +257,22 @@
  <div class="focus-main">
 
   <div class="pulse-bar">
+    {% if simple_on %}
+    {#- Простой режим: одно число и понятные слова. «Ваш ход / ждут / всего» читались
+        как три разные очереди, а это одна. -#}
+    <h1 class="focus-h">Кому ответить сейчас</h1>
+    <span class="pulse warm">Ждут ответа: <b data-pulse="waiting">{{ pulse.waiting }}</b></span>
+    {% else %}
     <span class="pulse hot"><b data-pulse="needs_reply">{{ pulse.needs_reply }}</b> ваш ход</span>
     <span class="pulse warm"><b data-pulse="waiting">{{ pulse.waiting }}</b> ждут</span>
     <span class="pulse"><b data-pulse="total">{{ pulse.total }}</b> всего</span>
+    {% endif %}
     <span class="pulse-sp"></span>
     <span class="pulse" style="font-size:12.5px">{{ direction_label }}</span>
   </div>
 
   {% if current %}
-  <div class="next-label">Следующий</div>
+  <div class="next-label">{% if simple_on %}Дольше всех ждёт ответа{% else %}Следующий{% endif %}</div>
   <article class="lead" id="lead" data-wait="{{ current.wait_level }}"
            data-uid="{{ current.user_id }}"
            {% if brief.wait_since %}data-wait-since="{{ brief.wait_since }}"{% endif %}>
@@ -289,6 +325,29 @@
           <textarea name="text" id="answer-text" placeholder="Ответить клиенту…"
                     oninput="growAnswer(this)"></textarea>
         </div>
+        {% if simple_on %}
+        {#- Простой режим: подсказки клавиш — только во всплывающей подсказке (title),
+            слова вместо жаргона, архив — под «Ещё». Клавиши J/T/A/Ctrl+Enter работают. -#}
+        <div class="act-row">
+          <button class="act act-send" type="submit" title="Ctrl+Enter">Отправить</button>
+          <button class="act" type="button" onclick="suggestReply()"
+                  title="Бот напишет черновик в поле ответа. Проверьте перед отправкой">Подсказать ответ</button>
+          <button class="act" type="button"
+                  hx-post="/admin/conversation/{{ current.user_id }}/takeover"
+                  hx-swap="none" title="Бот замолчит, клиенту будете отвечать вы (клавиша T)">Взять себе</button>
+          <button class="act" type="button" onclick="skipLead()" title="Клавиша J">Следующий клиент</button>
+          <details class="act-more">
+            <summary class="act">Ещё</summary>
+            <div class="act-more-body">
+              <a class="act" href="/admin?open={{ current.user_id | urlencode }}">Открыть чат: файл, напоминание, договор</a>
+              <button class="act" id="act-archive" type="button"
+                      hx-post="/admin/conversation/{{ current.user_id }}/archive"
+                      hx-swap="none" title="Клавиша A"
+                      hx-confirm="Убрать {{ current.name }} из работы?">Убрать в архив</button>
+            </div>
+          </details>
+        </div>
+        {% else %}
         <div class="act-row">
           <button class="act act-send" type="submit">Отправить <kbd>Ctrl+Enter</kbd></button>
           <button class="act" type="button" onclick="suggestReply()">Предложить ответ</button>
@@ -301,6 +360,7 @@
                   hx-swap="none"
                   hx-confirm="Убрать {{ current.name }} из работы?">В архив <kbd>A</kbd></button>
         </div>
+        {% endif %}
       </form>
       {# Причину отказа пишет JS: полная карточка или JSON в этой плашке ломают экран. #}
       <div id="after-send" class="server-say"></div>
@@ -319,7 +379,7 @@
   <section class="thread">
     <div class="thread-h">
       Переписка
-      <a href="/admin?open={{ current.user_id | urlencode }}">Открыть целиком</a>
+      <a href="/admin?open={{ current.user_id | urlencode }}">{% if simple_on %}Открыть чат{% else %}Открыть целиком{% endif %}</a>
     </div>
     {% if history %}
     <div class="thread-body" id="thread-body">
@@ -344,11 +404,30 @@
   {% endif %}
  </div>
 
- {% if queue %}
+ {% if queue or simple_on %}
  {# Очередь — сбоку на широком экране, под работой на узком: она вспомогательная. #}
- <aside class="focus-aside">
+ <aside class="focus-aside{% if simple_on %} is-simple{% endif %}">
+   {% if simple_on %}
+   {#- «Мои дела на сегодня»: просроченные и сегодняшние задачи из календаря. -#}
+   <section class="queue today">
+     <div class="queue-h">Мои дела на сегодня <span style="color:var(--muted)">{{ today_total }}</span>
+       <a class="queue-more" href="/admin/calendar">Все дела</a></div>
+     <div class="queue-list">
+       {% for t in today_tasks %}
+       <a class="qrow task-row{% if t.overdue %} is-overdue{% endif %}" href="{% if t.user_id %}/admin?open={{ t.user_id | urlencode }}{% else %}/admin/calendar{% endif %}">
+         <span class="w">{% if t.overdue %}просрочено{% else %}{{ t.time or 'сегодня' }}{% endif %}</span>
+         <span class="nm">{{ t.kind_label | replace('📞 ', '') | replace('🤝 ', '') | replace('🏢 ', '') | replace('🔁 ', '') | replace('📋 ', '') | replace('🛂 ', '') | replace('✈️ ', '') | replace('⭐ ', '') | replace('🔴 ', '') }} · {{ t.title }}</span>
+         {% if t.comment %}<span class="tx">{{ t.comment }}</span>{% endif %}
+       </a>
+       {% else %}
+       <div class="queue-empty">На сегодня дел нет. Напоминание ставится в чате кнопкой «Напомнить».</div>
+       {% endfor %}
+     </div>
+   </section>
+   {% endif %}
+   {% if queue %}
    <section class="queue">
-     <div class="queue-h">За ним <span style="color:var(--muted)">{{ queue|length }}</span></div>
+     <div class="queue-h">{% if simple_on %}Ещё ждут ответа{% else %}За ним{% endif %} <span style="color:var(--muted)">{{ queue|length }}</span></div>
      <div class="queue-list">
        {% for c in queue %}
        <a class="qrow{% if c.is_noise %} is-noise{% endif %}" data-wait="{{ c.wait_level }}"
@@ -361,6 +440,7 @@
        {% endfor %}
      </div>
    </section>
+   {% endif %}
  </aside>
  {% endif %}
 </main>

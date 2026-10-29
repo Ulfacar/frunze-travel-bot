@@ -263,7 +263,7 @@
         {% if is_today %}<span class="badge-today">сегодня · {{ now_hhmm }}</span>{% endif %}
       </div>
       <div class="stats">
-        <div class="stat"><b>{{ n_left }}</b> <span class="muted">осталось</span></div>
+        <div class="stat"><b>{{ n_left }}</b> <span class="muted">{% if simple_on %}дел осталось{% else %}осталось{% endif %}</span></div>
         {% if overdue %}<div class="stat red"><b>{{ overdue|length }}</b> <span>просрочено</span></div>{% endif %}
         {% if n_done %}<div class="stat green"><b>{{ n_done }}</b> <span>сделано</span></div>{% endif %}
       </div>
@@ -271,7 +271,7 @@
     </div>
 
     <details class="add">
-      <summary>{{ ic.icon("plus", 16) }}Добавить задачу</summary>
+      <summary>{{ ic.icon("plus", 16) }}{% if simple_on %}Добавить дело или звонок{% else %}Добавить задачу{% endif %}</summary>
       <form method="post" action="/admin/calendar/task/create">
         <input class="grow" type="tel" name="phone" placeholder="{% if standalone_crm %}+996 700 123 456{% else %}Номер клиента, напр. 0555 12 34 56{% endif %}" aria-label="Телефон клиента" required>
         <select name="kind">
@@ -279,11 +279,11 @@
         </select>
         <input type="date" name="scheduled_date" value="{{ anchor_iso }}" required>
         <input type="time" name="scheduled_time">
-        <select name="priority">
+        {% if simple_on %}<input type="hidden" name="priority" value="normal">{% else %}<select name="priority">
           <option value="normal">Обычный</option>
           <option value="high">Важно</option>
           <option value="low">Низкий</option>
-        </select>
+        </select>{% endif %}
         <input class="grow" type="text" name="comment" placeholder="О чём: «Анталья, 2 взр, до 1500$»">
         <input type="hidden" name="view" value="day"><input type="hidden" name="day" value="{{ anchor_iso }}">
         <button class="btn primary" type="submit">Поставить</button>
@@ -348,9 +348,10 @@
     </div>
     {% endif %}
 
-    <div class="legend">
+    {#- Простой режим: легенда значков — справка, а не работа; в списке у дела есть подпись. -#}
+    {% if not simple_on %}<div class="legend">
       {% for key, label in kind_labels %}<span>{{ ic.icon({"call":"phone","meeting":"users","office_visit":"building","followup":"refresh","checkin":"plane","departure":"plane","review_request":"star","complaint":"alert"}.get(key, "flag"), 14) }}{{ label.split(" ", 1)[1] if " " in label else label }}</span>{% endfor %}
       <span>· задачи ставятся здесь или в карточке клиента</span>
-    </div>
+    </div>{% endif %}
   </div>
 {% endblock %}

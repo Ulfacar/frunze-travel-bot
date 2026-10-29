@@ -153,7 +153,11 @@ def test_focus_hides_the_hotkey_footnote_but_keeps_the_keys(monkeypatch):
     simple = _page(monkeypatch, "/admin/focus", simple=True)
     assert "следующий ·" in plain
     assert "следующий ·" not in simple
-    assert "Ctrl" in simple, "подпись на кнопке отправки обязана остаться"
+    # 30.10: прежняя проверка `"Ctrl" in simple` была пустой — «Ctrl» находился в `e.ctrlKey`
+    # скрипта, а на пустой очереди кнопки нет вовсе. Подсказка клавиши ушла с кнопки в title
+    # (проход менеджера: «Ctrl+Enter» читался как часть названия), это проверяет
+    # test_panel_simple_manager_day.py на засеянном клиенте. Здесь — что сочетание живо.
+    assert "requestSubmit()" in simple, "обработчик Ctrl+Enter обязан остаться"
 
 
 def test_templates_declare_the_flag_only_through_the_context(monkeypatch):

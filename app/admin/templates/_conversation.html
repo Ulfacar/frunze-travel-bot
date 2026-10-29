@@ -27,6 +27,7 @@
 {% elif name == 'check' %}<path d="M5 12l4 4L19 6"/>
 {% elif name == 'checks' %}<path d="M2 12l4 4L16 6M12 16L22 6"/>
 {% elif name == 'plus' %}<path d="M12 5v14M5 12h14"/>
+{% elif name == 'clip' %}<path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/>
 {% else %}<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>
 {% endif %}</svg>
 {%- endmacro %}
@@ -36,13 +37,13 @@
 <button type="button" class="chat-chip{% if c.outcome == key %} selected{% endif %}"
         aria-pressed="{{ 'true' if c.outcome == key else 'false' }}"
         hx-post="/admin/conversation/{{ c.user_id }}/outcome" hx-vals='{"outcome":"{{ key }}"}'
-        hx-target="#chat" hx-swap="innerHTML">{{ {'won':'Оплатил','office':'Дошёл в офис','lost':'Слился'}.get(key, label) }}</button>
+        hx-target="#chat" hx-swap="innerHTML">{% if simple_on %}{{ {'won':'Продажа состоялась','office':'Пришёл в офис','lost':'Клиент отказался'}.get(key, label) }}{% else %}{{ {'won':'Оплатил','office':'Дошёл в офис','lost':'Слился'}.get(key, label) }}{% endif %}</button>
 {% endfor %}
 </div>
 {%- endmacro %}
 {% set inferred = {'won':'похоже оплатил','lost':'похоже отказ','ghosted':'пропал','active':'в работе'}.get(c.outcome_inferred, c.outcome_inferred or 'не определён') %}
 <div class="panel chat-palma" data-chat-id="{{ c.user_id }}"
-     hx-get="/admin/conversation/{{ c.user_id }}" {% if crm_bot_mode %}hx-trigger="every 4s" data-crm-poll="composer"{% else %}hx-trigger="every 4s [document.visibilityState==='visible' && !(document.activeElement && document.activeElement.closest('.composer'))]"{% endif %}
+     hx-get="/admin/conversation/{{ c.user_id }}" {% if crm_bot_mode %}hx-trigger="every 4s" data-crm-poll="composer"{% else %}hx-trigger="every 4s [document.visibilityState==='visible' && !(document.activeElement && document.activeElement.closest('.composer')) && !document.querySelector('#chat .chat-file.has-file, #chat .chat-remind[open]')]"{% endif %}
      hx-swap="outerHTML" hx-target="this">
   <header class="chat-head">
     <button type="button" class="chat-icon-button" onclick="closeChatSheet()" title="К списку диалогов" aria-label="К списку диалогов">{{ chat_icon('back') }}</button>
@@ -60,6 +61,7 @@
           {{ chat_icon('clock') }}<span class="chat-wait-t"></span>
         </span>
         {% endif %}
+        {% if not simple_on %}{# В простом режиме «кто отвечает» — словами в строке под шапкой. #}
         <span class="chat-lead">
           {#- Цвет точки — единственный носитель состояния бота после того, как строка
               состояния свёрнута в контекст. Поэтому различаем три случая, а не два:
@@ -75,6 +77,7 @@
           {%- elif busy_by %}{{ busy_by }}
           {%- else %}бот{% endif %}
         </span>
+        {% endif %}
       </div>
     </div>
     <details class="chat-menu" id="chat-menu-{{ c.user_id }}">
@@ -82,20 +85,21 @@
       <div class="chat-menu-body">
         <div class="chat-phone"><span>{{ c.phone }}</span><button type="button" class="chat-chip" data-phone="{{ c.phone }}" onclick="copyChatPhone(this)">копировать</button></div>
         <div class="chat-tags">
-          <span class="tag">{{ c.channel or '—' }}</span>
-          <span class="tag">{{ c.funnel or '—' }} · {{ c.stage }}</span>
+          {% if not simple_on %}<span class="tag">{{ c.channel or '—' }}</span>
+          <span class="tag">{{ c.funnel or '—' }} · {{ c.stage }}</span>{% endif %}
           <span class="tag chat-temperature">{{ {'new':'новый','warm':'тёплый','hot':'горячий'}.get(c.lead_temperature, c.lead_temperature) }}</span>
         </div>
         {% if busy_by %}<p class="chat-menu-note">Диалог уже ведёт менеджер {{ busy_by }}</p>{% endif %}
         <hr>
         {% if workday_on and cases_write_on %}
         {% if c.funnel=='visa' %}<a class="chat-menu-action" href="/admin/conversation/{{ c.user_id|urlencode }}/preliminary">Открыть карточку до договора</a>{% endif %}
-        <a class="chat-menu-action" href="/admin/conversation/{{ c.user_id|urlencode }}/contract">Договор подписан → создать услугу</a>
-        {% endif %}{% if c.intercepted %}
+        <a class="chat-menu-action" href="/admin/conversation/{{ c.user_id|urlencode }}/contract">{% if simple_on %}Договор подписан — оформить и внести оплату{% else %}Договор подписан → создать услугу{% endif %}</a>
+        {% endif %}{# Простой режим: перехват и возврат — на виду, в строке «кто отвечает» под шапкой.
+           Одно действие — одно место, поэтому в меню их нет. #}{% if not simple_on %}{% if c.intercepted %}
         <button type="button" class="chat-menu-action" hx-post="/admin/conversation/{{ c.user_id }}/release" hx-target="#chat" hx-swap="innerHTML">{{ chat_icon('return') }}Вернуть боту</button>
         {% else %}
         <button type="button" class="chat-menu-action" hx-post="/admin/conversation/{{ c.user_id }}/takeover" hx-target="#chat" hx-swap="innerHTML">{{ chat_icon('pause') }}Перехватить — бот замолчит</button>
-        {% endif %}
+        {% endif %}{% endif %}
         {% if is_full_admin and reassign_targets %}
         <details class="chat-reassign" id="chat-reassign-{{ c.user_id }}">
           <summary class="chat-menu-action">{{ chat_icon('transfer') }}Передать менеджеру…</summary>
@@ -107,13 +111,49 @@
           </form>
         </details>
         {% endif %}
-        <div class="chat-section-title">Исход диалога</div>
+        <div class="chat-section-title">{% if simple_on %}Чем закончилось{% else %}Исход диалога{% endif %}</div>
         {{ chat_outcomes() }}
         <hr>
         <button type="button" class="chat-menu-action" data-user-id="{{ c.user_id }}" onclick="archiveConversation(this.dataset.userId, event)">{{ chat_icon('archive') }}Архивировать</button>
       </div>
     </details>
   </header>
+  {% if simple_on %}
+  {#- Простой режим: кто сейчас отвечает клиенту — словами, и переключатель рядом.
+      Раньше это была цветная точка в шапке, а «Перехватить» и «Вернуть боту» жили
+      в меню ⋮. Здесь же «Напомнить»: звонок или дело на завтра ставят каждый день. -#}
+  <div class="chat-who{% if c.intercepted %} is-human{% endif %}" id="chat-who-{{ c.user_id }}">
+    <span class="chat-who-text">
+      {%- if c.intercepted and c.assigned_to == manager.login %}Отвечаете вы — бот молчит
+      {%- elif c.intercepted %}Отвечает {{ c.assigned_to or 'менеджер' }} — бот молчит
+      {%- elif busy_by %}Клиент закреплён за {{ busy_by }}
+      {%- else %}Отвечает бот{% endif -%}
+    </span>
+    {% if c.intercepted and (not c.assigned_to or c.assigned_to == manager.login or is_full_admin) %}
+    <button type="button" class="chat-who-btn" hx-post="/admin/conversation/{{ c.user_id }}/release" hx-target="#chat" hx-swap="innerHTML"
+            title="Бот снова будет отвечать этому клиенту">{{ chat_icon('return') }}Вернуть боту</button>
+    {% elif not c.intercepted and not busy_by %}
+    <button type="button" class="chat-who-btn" hx-post="/admin/conversation/{{ c.user_id }}/takeover" hx-target="#chat" hx-swap="innerHTML"
+            title="Бот замолчит, клиенту будете отвечать вы">{{ chat_icon('pause') }}Взять себе</button>
+    {% endif %}
+    {% if not crm_bot_mode %}
+    <details class="chat-remind" id="chat-remind-{{ c.user_id }}">
+      <summary class="chat-who-btn" title="Поставить звонок или дело в календарь">{{ chat_icon('clock') }}Напомнить</summary>
+      {#- Закрываем раскрывашку до ответа: иначе опрос и своп вернут её открытой поверх чата. -#}
+      <form class="chat-remind-form" hx-post="/admin/conversation/{{ c.user_id }}/task/create" hx-target="#chat" hx-swap="innerHTML"
+            hx-on::before-request="this.closest('details').open = false">
+        <label>Что<select name="kind">
+          {% for key, label in task_kinds if key in ('call', 'meeting', 'office_visit', 'followup', 'other') %}<option value="{{ key }}">{{ label | replace('📞 ', '') | replace('🤝 ', '') | replace('🏢 ', '') | replace('🔁 ', '') | replace('📋 ', '') }}</option>{% endfor %}
+        </select></label>
+        <label>Когда<input type="date" name="scheduled_date" value="{{ tomorrow_iso }}" required></label>
+        <label>Время<input type="time" name="scheduled_time"></label>
+        <label class="wide">О чём<input name="comment" placeholder="Например: перезвонить про документы" autocomplete="off"></label>
+        <button class="btn btn-brand" type="submit">Поставить</button>
+      </form>
+    </details>
+    {% endif %}
+  </div>
+  {% endif %}
 
   <div class="msgs panel-scroll chat-log" id="msgs-{{ c.user_id }}" role="log" aria-label="Переписка">
     {% for m in c.messages %}
@@ -143,20 +183,26 @@
   </div>
 
   <details class="chat-dossier" id="chat-dossier-{{ c.user_id }}">
+    {% if simple_on %}
+    <summary>{{ chat_icon('chevron') }}<strong>О клиенте</strong>{% if c.manager_next_step %}<span title="{{ c.manager_next_step }}">· Дальше: {{ c.manager_next_step }}</span>{% endif %}</summary>
+    {% else %}
     <summary>{{ chat_icon('chevron') }}<strong>Досье</strong><span title="ИИ: {{ inferred }} · шаг: {{ c.manager_next_step or 'не указан' }}">· ИИ: {{ inferred }} · шаг: {{ c.manager_next_step or 'не указан' }}</span></summary>
+    {% endif %}
     <div class="chat-dossier-body">
+      {% if not simple_on or c.outcome_inferred %}
       <section class="chat-section">
-        <h3 class="chat-section-title">ИИ-исход <small>оценка ИИ, поправьте кнопкой</small></h3>
+        <h3 class="chat-section-title">{% if simple_on %}Как думает бот{% else %}ИИ-исход{% endif %} <small>оценка ИИ, поправьте кнопкой</small></h3>
         <p>{{ inferred }}{% if c.outcome_inferred_reason %} — {{ c.outcome_inferred_reason }}{% endif %}</p>
         {# Исходы уже есть в меню ⋮. В простом режиме дубль убираем: одно действие — одно место. #}
         {% if not simple_on %}{{ chat_outcomes() }}{% endif %}
       </section>
+      {% endif %}
       <section class="chat-section"><h3 class="chat-section-title">Контекст</h3><p>{{ c.ai_summary or 'Контекст пока не собран' }}</p></section>
       <section class="chat-section"><h3 class="chat-section-title">Следующий шаг</h3><p>{{ c.manager_next_step or 'Не указан' }}</p></section>
       {% if c.escalation_reason %}<section class="chat-section"><h3 class="chat-section-title">Почему важно</h3><p>{{ c.escalation_reason }}</p></section>{% endif %}
       <section class="chat-section">
         <h3 class="chat-section-title">Что узнал бот</h3>
-        <dl>{% for k, v in c.qualification.items() %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% else %}<dt>Пока нет данных</dt>{% endfor %}</dl>
+        <dl>{% for k, v in c.qualification.items() %}<dt>{{ ({'name': 'Имя'}.get(k, k)) if simple_on else k }}</dt><dd>{{ v }}</dd>{% else %}<dt>Пока нет данных</dt>{% endfor %}</dl>
       </section>
       <section class="chat-section">
         <h3 class="chat-section-title">Источник</h3>
@@ -202,6 +248,7 @@
     <div class="muted" style="font-size:13px">Активных задач нет</div>
     {% endfor %}
 
+    {% if not simple_on %}
     <details style="margin-top:8px" id="chat-task-new-{{ c.user_id }}">
       <summary style="cursor:pointer;color:var(--accent);font-size:13px;font-weight:600">{{ chat_icon('plus') }} Новая задача</summary>
       <form hx-post="/admin/conversation/{{ c.user_id }}/task/create"
@@ -221,6 +268,7 @@
         <button class="btn btn-brand" type="submit" style="justify-self:start;padding:6px 14px">Создать задачу</button>
       </form>
     </details>
+    {% endif %}
 
     {% set terminal = tasks | rejectattr('active') | list %}
     {% if terminal %}
@@ -244,23 +292,34 @@
         hx-post="/admin/conversation/{{ c.user_id }}/send" hx-target="#chat" hx-swap="innerHTML"{% if crm_bot_mode %} hx-sync="this:drop" data-send-key="1"{% endif %}
         {% if not crm_bot_mode %}hx-on::after-request="if(event.detail.successful && ['sent','failed'].includes(event.detail.xhr.getResponseHeader('X-Action-Outcome'))) this.reset()"{% endif %}>{% if crm_bot_mode %}<input type="hidden" name="send_key" value="">{% endif %}
     <div class="chat-quick-replies" aria-label="Быстрые ответы" tabindex="0">
+      {% if simple_on and not crm_bot_mode %}<button type="button" class="chat-chip chat-chip-ai" data-user-id="{{ c.user_id }}" onclick="suggestChatReply(this.dataset.userId, this)" title="Бот напишет черновик в поле ответа. Проверьте перед отправкой">{{ chat_icon('spark') }} Подсказать ответ</button>{% endif %}
       {% for label, text in quick_replies.items() %}
       <button type="button" class="chat-chip" onclick="fillReply(this.dataset.t)" data-t="{{ text|e }}">{{ label }}</button>
       {% endfor %}
     </div>
     <div class="chat-compose-row">
-      {% if not crm_bot_mode %}<button type="button" class="chat-suggest" data-user-id="{{ c.user_id }}" onclick="suggestChatReply(this.dataset.userId, this)" title="Предложить ответ — черновик ИИ, проверьте перед отправкой" aria-label="Предложить ответ">{{ chat_icon('spark') }}<span>Предложить ответ</span></button>{% endif %}
+      {% if simple_on and send_media_on %}<label class="chat-attach" for="chat-upload-{{ c.user_id }}" title="Отправить файл: PDF, фото, DOCX, XLSX до {{ send_media_max_mb }} МБ" aria-label="Прикрепить файл">{{ chat_icon('clip') }}</label>
+      {% elif not crm_bot_mode and not simple_on %}<button type="button" class="chat-suggest" data-user-id="{{ c.user_id }}" onclick="suggestChatReply(this.dataset.userId, this)" title="Предложить ответ — черновик ИИ, проверьте перед отправкой" aria-label="Предложить ответ">{{ chat_icon('spark') }}<span>Предложить ответ</span></button>{% endif %}
       <textarea name="text" rows="1" placeholder="Ответить клиенту…" autocomplete="off" aria-label="Ответить клиенту"></textarea>
       <button type="submit" class="chat-send" aria-label="Отправить" title="Отправить">{{ chat_icon('send') }}</button>
     </div>
-  </form>{% if send_media_on %}
+  </form>{% if send_media_on and simple_on %}
+  {#- Простой режим: файл — скрепка в строке ответа, как в WhatsApp. Форма появляется,
+      только когда файл выбран: имя файла, подпись, «Отправить файл» и «Отмена». -#}
+  <form class="composer chat-file is-simple" hx-post="/admin/conversation/{{ c.user_id }}/send-file" hx-encoding="multipart/form-data" hx-target="#chat" hx-swap="innerHTML" hx-sync="this:drop">
+    <input type="file" id="chat-upload-{{ c.user_id }}" name="upload" required class="chat-upload-input" onchange="chatFilePicked(this)" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,application/pdf,image/jpeg,image/png,image/webp" aria-label="Файл клиенту">
+    <span class="chat-file-name">{{ chat_icon('clip') }}<b></b></span>
+    <input type="text" name="caption" maxlength="500" placeholder="Подпись к файлу (можно пусто)" aria-label="Подпись к файлу">
+    <button class="btn btn-brand" type="submit">Отправить файл</button>
+    <button class="btn" type="button" onclick="chatFileCancel(this)">Отмена</button>
+  </form>{% elif send_media_on %}
   <form class="composer chat-file" hx-post="/admin/conversation/{{ c.user_id }}/send-file" hx-encoding="multipart/form-data" hx-target="#chat" hx-swap="innerHTML" hx-sync="this:drop">
     <input type="file" name="upload" required accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,application/pdf,image/jpeg,image/png,image/webp" aria-label="Файл клиенту">
     <input type="text" name="caption" maxlength="500" placeholder="Подпись (необязательно)" aria-label="Подпись к файлу">
     <button class="btn" type="submit">Отправить файл</button>
     <span class="hint">PDF, фото, DOCX, XLSX до {{ send_media_max_mb }} МБ</span>
   </form>{% endif %}
-  <div class="chat-hint">Отправка перехватывает диалог — бот замолкает</div>
+  {% if not simple_on %}<div class="chat-hint">Отправка перехватывает диалог — бот замолкает</div>{% endif %}
   {% set failed = c.messages | selectattr('status', 'equalto', 'failed') | list %}
   <div class="chat-error" role="alert"{% if not notice and not failed %} hidden{% endif %}>
     {{ chat_icon('info') }}<span>{{ notice or ('Не доставлено · Ошибка отправки в канал. Повторите отправку у сообщения.' if failed else '') }}</span>

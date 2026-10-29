@@ -1801,6 +1801,7 @@ async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query:
 
 
 FOCUS_QUEUE_LIMIT = 8      # один в фокусе + семь в очереди: больше за раз не удержать
+FOCUS_TASKS_LIMIT = 6   # «Мои дела на сегодня» на главной; остальное — в календаре
 FOCUS_HISTORY_LIMIT = 10   # хвост переписки рядом с лидом: последний разговор, не весь диалог
 
 
@@ -1870,8 +1871,22 @@ async def focus(request: Request, lead: str = "", manager: dict = Depends(requir
                      # местное время, и в Бишкеке таймер соврёт на шесть часов.
                      "wait_since": _as_utc_iso(conv.last_message_at)}
 
+    # Простой режим: «мои дела на сегодня» на том же стартовом экране, чтобы менеджеру
+    # не ходить в календарь за ответом на второй вопрос дня. Источник и правила доступа —
+    # те же, что у календаря (`_fetch_calendar_tasks`: менеджер видит только свои задачи).
+    today_tasks, today_total = [], 0
+    if bool(getattr(request.state, "simple_on", settings.panel_simple_mode_enabled)):
+        today = _bishkek_today()
+        rows = [t for t in await _fetch_calendar_tasks(manager, today, today)
+                if t.status in ("planned", "rescheduled") and t.scheduled_date <= today]
+        convs = await _conv_map({t.user_id for t in rows if t.user_id}, manager)
+        cards = [_task_ui(t, today, convs.get(t.user_id or "")) for t in rows]
+        cards.sort(key=lambda c: (not c["overdue"], c["time"] or "99:99"))
+        today_total, today_tasks = len(cards), cards[:FOCUS_TASKS_LIMIT]
+
     return templates.TemplateResponse(request, "focus.html",
                                       {"current": current, "brief": brief,
+                                       "today_tasks": today_tasks, "today_total": today_total,
                                        "queue": queue[1:], "history": history,
                                        # Числа считаем на сервере: до первого ответа `/stats`
                                        # экран показывал «0 ваш ход» при восьми ждущих и
@@ -2043,6 +2058,8 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
         "task_kinds": TASK_KIND_LABELS,
         "task_priorities": TASK_PRIORITY_LABELS,
         "today_iso": _bishkek_today().isoformat(),
+        # «Напомнить» в простом режиме: по умолчанию — завтра, это самый частый случай.
+        "tomorrow_iso": (_bishkek_today() + timedelta(days=1)).isoformat(),
     })
 
 
