@@ -1,0 +1,174 @@
+name: Nightly tests
+
+"on":
+  schedule:
+    - cron: '17 21 * * *' # 02:17 Asia/Almaty; cron использует UTC.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  full-tests:
+    name: Full pytest (${{ matrix.database }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, pg16]
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5.6.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            .github/workflows/nightly.yml
+      - name: Install full test dependencies
+        # bs4 — CRM-формы; fitz — PDF; Playwright — два обычных test_* browser-теста.
+        # Версия PyMuPDF жёстко проверяется build_kg_full_source_archive.py.
+        run: |
+          python -m pip install -r requirements.txt pytest==9.0.3 pytest-asyncio==1.3.0 \
+            beautifulsoup4==4.15.0 PyMuPDF==1.27.2.3 playwright==1.63.0
+          python -m playwright install --with-deps chromium
+
+      - name: Start isolated PostgreSQL 16
+        if: matrix.database == 'pg16'
+        run: |
+          python - <<'PY'
+          import asyncio
+          import json
+          import os
+          from pathlib import Path
+          import secrets
+          import subprocess
+          import asyncpg
+
+          password = secrets.token_hex(32)
+          print(f'::add-mask::{password}', flush=True)
+          config = dict(host='127.0.0.1', port=55971, user='local_rehearsal',
+                        password=password, database='postgres')
+          path = Path.cwd() / '.ci-pg-connection.json'
+          with path.open('x', encoding='utf-8') as handle:
+              path.chmod(0o600)
+              json.dump(config, handle)
+          # Обычный -p оставляет inet_server_addr() адресом контейнера, не loopback.
+          # host-сеть и явный listen_addresses сохраняют 127.0.0.1/32 внутри PostgreSQL.
+          subprocess.run([
+              'docker', 'run', '--detach', '--name', 'frunze-ci-pg16',
+              '--network', 'host', '--memory', '1g',
+              '-e', 'POSTGRES_PASSWORD', '-e', 'POSTGRES_HOST_AUTH_METHOD=scram-sha-256',
+              'postgres:16-bookworm', 'postgres', '-p', '55971',
+              '-c', 'listen_addresses=127.0.0.1', '-c', 'shared_buffers=128MB',
+          ], env=dict(os.environ, POSTGRES_PASSWORD=password), check=True)
+
+          async def prepare():
+              admin = dict(config, user='postgres')
+              for attempt in range(60):
+                  try:
+                      conn = await asyncpg.connect(**admin, timeout=2)
+                      break
+                  except (OSError, asyncpg.PostgresError, asyncio.TimeoutError):
+                      await asyncio.sleep(1)
+              else:
+                  raise RuntimeError('PostgreSQL did not become ready')
+              try:
+                  # Пароль — только сгенерированные hex-символы. Роли нужен CREATEDB:
+                  # фикстуры создают, клонируют и удаляют собственные frunze_e610_*.
+                  await conn.execute("CREATE ROLE local_rehearsal LOGIN CREATEDB "
+                                     "NOSUPERUSER NOCREATEROLE PASSWORD '" + password + "'")
+              finally:
+                  await conn.close()
+              conn = await asyncpg.connect(**config)
+              try:
+                  assert await conn.fetchval('SELECT inet_server_addr()::text') == '127.0.0.1/32'
+                  version = int(await conn.fetchval('SHOW server_version_num'))
+                  assert 160000 <= version < 170000, version
+                  assert await conn.fetchval('SELECT rolcreatedb FROM pg_roles WHERE rolname=current_user')
+              finally:
+                  await conn.close()
+          asyncio.run(prepare())
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as handle:
+              handle.write(f'FRUNZE_LOCAL_PG_CONNECTION={path}\n')
+          print('PostgreSQL 16: loopback, credentials and CREATEDB verified')
+          PY
+
+      - name: Run all tests in bounded batches
+        # Новый процесс каждые 20 файлов освобождает накопленную память.
+        # Все стандартные pytest-файлы входят ровно в одну группу, без -x и xdist.
+        # SQLite не получает настроек БД; PG включается только через opt-in JSON.
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import shlex
+          import subprocess
+
+          files = sorted(p for p in Path('tests').rglob('*.py')
+                         if p.name.startswith('test_') or p.name.endswith('_test.py'))
+          if not files:
+              raise SystemExit('No test files found')
+          reports = Path(os.environ['RUNNER_TEMP']) / 'pytest-reports'
+          reports.mkdir(exist_ok=True)   # ревью: без этого повторный запуск шага падал
+          failed = []
+          for offset in range(0, len(files), 20):
+              batch = set(files[offset:offset + 20])
+              number = offset // 20 + 1
+              options = [f'--ignore={p.as_posix()}' for p in files if p not in batch]
+              options += [f'--junitxml={reports / f"batch-{number:03d}.xml"}']
+              env = dict(os.environ, PYTEST_ADDOPTS=shlex.join(options))
+              print(f'Batch {number}: {len(batch)} / {len(files)} files', flush=True)
+              try:
+                  # Тот же вход tests; runs/ никогда не участвует в коллекции.
+                  result = subprocess.run(['python', '-m', 'pytest', 'tests', '-q'],
+                                          env=env, timeout=1200)
+                  if result.returncode:
+                      failed.append(number)
+              except subprocess.TimeoutExpired:
+                  failed.append(number)
+                  print(f'::error::Batch {number} exceeded 20 minutes', flush=True)
+          if failed:
+              raise SystemExit(f'Failed/timed-out batches: {failed}')
+          PY
+
+      - name: Verify PostgreSQL tests actually passed
+        if: always() && matrix.database == 'pg16'
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          reports = Path(os.environ['RUNNER_TEMP']) / 'pytest-reports'
+          cases = [case for report in reports.glob('batch-*.xml')
+                   for case in ET.parse(report).iter('testcase')]
+          # Проверяем каждый PostgreSQL-модуль, включая основной entry_process.
+          # Пустой/отсутствующий отчёт, skip, failure и error дают красный job.
+          modules = sorted(Path('tests').glob('test_*postgres*.py'))
+          if not modules:
+              raise SystemExit('PostgreSQL test modules are missing')
+          for module in modules:
+              prefix = 'tests.' + module.stem
+              selected = [c for c in cases if c.get('classname', '') == prefix
+                          or c.get('classname', '').startswith(prefix + '.')]
+              if not selected or any(c.find(tag) is not None for c in selected
+                                     for tag in ('skipped', 'failure', 'error')):
+                  raise SystemExit(f'{module.name}: missing, skipped or failed PostgreSQL tests')
+              print(f'{module.name}: {len(selected)} passed, 0 skipped')
+          PY
+
+      - name: Remove temporary PostgreSQL resources
+        if: always() && matrix.database == 'pg16'
+        run: |
+          if docker container inspect frunze-ci-pg16 >/dev/null 2>&1; then
+            docker rm --force --volumes frunze-ci-pg16
+          fi
+          rm -f -- "$GITHUB_WORKSPACE/.ci-pg-connection.json"
