@@ -152,6 +152,48 @@ def _is_service(line: str) -> bool:
     return not line or line.startswith(("#", ">", "```"))
 
 
+# Столбец таблицы, в шапке которого названа CRM, — это внутренняя бухгалтерия
+# процесса, а не ответ клиенту: «Статус / воронка CRM» с ячейками «V22 + подзадача
+# „Перенос визы“», «X08 → V04». Он выбрасывается из произносимого текста, а сама
+# строка остаётся целиком. Иначе выбор был бы ложным: либо снять подпись со всей
+# таблицы (блок 17 — это 57 реальных ситуаций клиентов, бот замолчал бы на сорока
+# одной теме), либо оставить боту коды статусов, которые он может процитировать
+# клиенту. Решение Алана 05.11.2026.
+#
+# Шапку у строки данных не отклеить: ячейка «30 дней | Австралия, Австрия…» без
+# шапки не значит ничего (см. докстринг `pieces`). Поэтому режется столбец, а не шапка.
+_SERVICE_COLUMN = re.compile(r"\bCRM\b", re.I)
+
+
+def without_service_columns(text: str) -> str:
+    """Табличный кусок без служебных столбцов. Чистая функция.
+
+    Форма строки сохраняется один в один (пробелы внутри ячеек не трогаются), чтобы
+    дифф читался как удаление столбца, а не как переформатирование таблицы.
+    """
+    lines = text.split("\n")
+    rows = [line for line in lines if line.startswith("|")]
+    if len(rows) < 2:
+        return text
+    header = rows[0].strip().strip("|").split("|")
+    drop = {i for i, cell in enumerate(header) if _SERVICE_COLUMN.search(cell)}
+    if not drop or len(drop) == len(header):
+        return text
+    # Решение по таблице целиком, а не по строке: если у какой-то строки число ячеек
+    # другое, обрезать нельзя даже шапку — иначе шапка окажется без столбца, а строка
+    # с ним, и таблица станет рассогласованной. Поймано собственным тестом.
+    if any(len(line.strip().strip("|").split("|")) != len(header) for line in rows):
+        return text
+    out: list[str] = []
+    for line in lines:
+        if not line.startswith("|"):
+            out.append(line)
+            continue
+        cells = line.strip().strip("|").split("|")
+        out.append("|" + "|".join(c for i, c in enumerate(cells) if i not in drop) + "|")
+    return "\n".join(out).strip() or text
+
+
 def _digest(text: str) -> str:
     return sha256((text or "").encode("utf-8")).hexdigest()
 
@@ -194,6 +236,11 @@ def pieces(fragment: dict[str, Any]) -> list[dict[str, Any]]:
         text = "\n".join(_strip_comments(lines[i].strip()) for i in shown).strip()
         if not text:
             return
+        # ПОРЯДОК ВАЖЕН: метки, деньги и `grants` считаются по ПОЛНОМУ тексту строки,
+        # а произносится усечённый. Наоборот нельзя: метка [РЕШЕНИЕ] или сумма из
+        # служебного столбца после обрезки перестали бы запрещать кусок — то есть
+        # обрезка молча расширила бы то, что боту разрешено говорить.
+        spoken = without_service_columns(text) if kind == "table_row" else text
         own_labels, carry = _labels_with_carry(text, carry)
         orphan = _ORPHAN_LABEL.match(text) if kind == "paragraph" else None
         if orphan and out and out[-1]["kind"] == "paragraph":
@@ -213,8 +260,8 @@ def pieces(fragment: dict[str, Any]) -> list[dict[str, Any]]:
             "title": fragment.get("title"),
             "pdf_pages": pages,
             "kind": kind,
-            "text": text,
-            "text_sha256": _digest(text),
+            "text": spoken,
+            "text_sha256": _digest(spoken),
             "labels": own_labels,
             "inherited_labels": list(inherited),
             # Метка РЕШЕНИЕ запрещает кусок и когда стоит в нём самом, и когда стоит

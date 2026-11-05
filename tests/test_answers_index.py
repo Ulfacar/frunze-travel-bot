@@ -238,3 +238,57 @@ def test_no_inherited_label_is_signed(loaded):
         assert not piece["inherited_labels"], (
             f"{piece_id}: подписан кусок раздела, помеченного в заголовке "
             f"({piece['inherited_labels']})")
+
+
+def test_service_crm_column_is_cut_from_table_rows(loaded):
+    """Блок 17 — это реальные ситуации клиентов, а не служебная таблица.
+
+    До 05.11.2026 к каждой строке приклеивалась шапка со столбцом «Статус / воронка
+    CRM», и кусок выглядел служебным целиком. Выбор был ложный: снять подпись со всей
+    таблицы (бот замолчал бы на 41 теме) или оставить боту коды статусов, которые он
+    может процитировать клиенту. Режем столбец, строку оставляем.
+    """
+    rows = [p for p in loaded._pieces.values()                      # noqa: SLF001
+            if str(p["section"]) == "17.0" and p["kind"] == "table_row"]
+    assert len(rows) == 57
+    for piece in rows:
+        head = piece["text"].split(chr(10))[0]
+        # Служебного СТОЛБЦА нет. Слово CRM в клиентской колонке «Что делать»
+        # остаётся (17.0#015: «запросить PDF из CRM») — это текст ситуации, не столбец.
+        assert head == "| № | Ситуация | Что делать |", piece["piece_id"]
+    # Клиентский смысл не потерян: ситуация и действие на месте.
+    paspo = next(p for p in rows if "Потерян паспорт" in p["text"])
+    assert "Visa transfer" in paspo["text"] and "Недействительные документы" in paspo["text"]
+    assert "V22" not in paspo["text"]        # код статуса из служебного столбца ушёл
+
+
+def test_a_label_in_the_service_column_still_forbids_the_piece():
+    """Обрезка не должна расширять то, что боту разрешено говорить.
+
+    Метка [РЕШЕНИЕ] или сумма, стоящая в служебном столбце, обязана запрещать кусок
+    и после обрезки: предикаты считаются по полному тексту, а не по усечённому.
+    """
+    from app.knowledge.answerable import pieces
+    raw = (
+        "| № | Ситуация | Что делать | Статус / воронка CRM |"
+        + "\n" + "|---|---|---|---|"
+        + "\n" + "| 1 | Клиент просит скидку | Отказать | X01 [РЕШЕНИЕ] |"
+        + "\n" + "| 2 | Клиент просит рассрочку | Отказать | X02, депозит 500 USD |"
+    )
+    out = pieces({"id": "KG.KB.99.0", "section": "99.0", "block": 99,
+                  "title": "", "context_text": "", "raw_text": raw,
+                  "pdf_pages_from_markers": [1]})
+    assert len(out) == 2
+    assert all("CRM" not in p["text"] for p in out)
+    # Метка из обрезанного столбца по-прежнему запрещает произносить.
+    assert out[0]["labels"] == ["РЕШЕНИЕ"] and out[0]["answerable"] is False
+    # Сумма из обрезанного столбца по-прежнему мешает одобрению.
+    assert out[1]["has_money"] is True and out[1]["approvable"] is False
+
+
+def test_a_row_with_a_different_cell_count_is_left_alone():
+    """Непонятно, какой столбец служебный — не угадываем."""
+    from app.knowledge.answerable import without_service_columns
+    text = ("| № | Ситуация | Статус / воронка CRM |" + "\n"
+            + "| 1 | Две ячейки вместо трёх |")
+    assert without_service_columns(text) == text
