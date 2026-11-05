@@ -3,6 +3,7 @@
 Статус: PARTIALLY_READY. Не разрешение на выкат. Класс B для маршрута,
 расчёты не записывают исходы и деньги. Пользователь запретил прод без исключений.
 Ветка feat/reports-conversion-2026-11-05, база 9712080 из локального bundle.
+Код: 1a69b72885f43ba9cbe16f6af4be9960a368a985.
 
 ## Реализация и файлы
 
@@ -26,7 +27,7 @@
 - tests/test_report_metrics.py, test_report_catalog.py, test_report_finance.py:
   расчёты, границы, сохранение справочника, деньги/возвраты/исправления,
   SQL-изоляция владельца и направления, нагрузка 2000 диалогов.
-- ai/tasks/2026-11-05-reports-conversion.md и этот handoff — контекст задачи.
+- ai/tasks/2026-11-05-reports-conversion.md, ai/STATE.md и этот handoff — контекст задачи.
 
 ## Важное для слияния
 
@@ -70,10 +71,12 @@ prod_traps_check: 3 ERROR, 57 WARN. Новые ERROR — настройки от
 ## ПДн существующего раскрытия (не удалено)
 
 app/admin/pilot_summary.py: участок от `phone = conv.phone ...` до `listing = ...`:
+в коммите 1a69b72 телефон — строка 197, имя — 199, текст — 202.
 phone, phone_h, qualification.name, last_text, last_sender, last_at;
 open_url включает user_id, который может содержать телефон.
 app/admin/templates/pilot_summary.html: строки с `r.name or ...`, `r.phone_h`,
 `r.last_text[:140]` в секции listing (точные строки получить rg ниже).
+В коммите 1a69b72 это строки шаблона 104, 105, 106 соответственно.
 Раньше видели полный админ и разрешённые руководители после `_can_view_conversation`.
 Теперь за panel_pilot_summary_enabled менеджер может раскрыть свои диалоги;
 чужой who отвергается, фильтр владельца применяется до агрегирования.
@@ -97,6 +100,9 @@ test_kg_full_source_archive.py НЕ ПРОВЕРЕН: DLL _mupdf не загру
 Базлайн с --ignore=tests/test_kg_full_source_archive.py запущен до основных правок,
 его итог пока UNKNOWN (длительный процесс). Не утверждать отсутствие новых падений.
 Нужно дождаться базлайна и повторить ту же команду на итоговом коммите.
+После коммита также запущен полный прогон с тем же исключением и отдельным
+basetemp/cacheprovider из-за WinError 5. Сессии инструментов текущего диалога:
+baseline 37174, after 70687. Оба результата пока UNKNOWN; не терять эти процессы.
 
 Последние завершённые команды до финального объединённого прогона:
 `python -m pytest tests/test_panel.py -q`: 56 passed, 1 warning in 28.43s.
