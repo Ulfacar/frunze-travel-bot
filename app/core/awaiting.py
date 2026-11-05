@@ -76,15 +76,42 @@ def _aware(dt: datetime | None) -> datetime | None:
     return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
 
 
-def select_awaiting_targets(convs: list, now: datetime, cfg) -> list:
+WORKING_HOURS_FLAG = "awaiting_working_hours_enabled"
+
+
+def waited_minutes(conv, now: datetime, *, working_hours: bool) -> float:
+    """Сколько клиент ждёт: рабочих минут направления либо календарных.
+
+    Ответ заказчика 2.5 от 05.11.2026 — рабочее окно CRM 9:00–19:00, и оно РАЗНОЕ
+    по направлениям: туры с 9:00, визы с 10:00 (`schedule.py`, решение Гриши 09.08).
+    Второй источник правды о часах не заводим: берём тот же `reply_sla.working_minutes`,
+    которым уже считает очередь «ждут ответа» и сводка пилота.
+
+    Зачем: по календарным минутам сторож тикает ночью и у виз с 9 до 10, когда
+    менеджеров нет. Клиент, написавший в 23:00, к 10:05 ждёт 5 рабочих минут, а не
+    одиннадцать часов — и пинг уходит тогда, когда на него может кто-то ответить.
+    """
+    last = _aware(conv.last_message_at)
+    if last is None:
+        return 0.0
+    if not working_hours:
+        return (_aware(now) - last).total_seconds() / 60
+    from app.core.reply_sla import working_minutes
+    return working_minutes(getattr(conv, "bot_id", "") or "", last, _aware(now))
+
+
+def select_awaiting_targets(convs: list, now: datetime, cfg, *,
+                            working_hours: bool = False) -> list:
     """Диалоги, где клиент ждёт ответа человека дольше порога.
 
     Условие: диалог передан человеку (стадия manager/handoff ИЛИ менеджер перехватил),
     последним писал КЛИЕНТ (никто не ответил), исход не финальный, и с последнего
-    сообщения прошло больше cfg.alert_awaiting_minutes.
+    сообщения прошло больше cfg.alert_awaiting_minutes. При `working_hours`
+    ожидание считается в рабочих минутах направления (ответ заказчика 2.5).
     """
     now = _aware(now)
     cutoff = now - timedelta(minutes=cfg.alert_awaiting_minutes)
+    limit = float(cfg.alert_awaiting_minutes)
     out = []
     for c in convs:
         handed_off = (c.stage in _HANDOFF_STAGES) or c.intercepted
@@ -95,13 +122,21 @@ def select_awaiting_targets(convs: list, now: datetime, cfg) -> list:
         if c.outcome in _TERMINAL_OUTCOMES:
             continue
         last = _aware(c.last_message_at)
-        if last is None or last > cutoff:
-            continue                       # ещё не намолчался
+        if last is None:
+            continue
+        # Рабочее окно считаем ТОЛЬКО при включённом флаге: выключен — прежний
+        # календарный отсчёт, строка в строку.
+        if working_hours:
+            if waited_minutes(c, now, working_hours=True) < limit:
+                continue               # ещё не намолчался в рабочие часы
+        elif last > cutoff:
+            continue                   # ещё не намолчался
         out.append(c)
     return out
 
 
-def select_telegram_targets(convs: list, now: datetime, cfg) -> list:
+def select_telegram_targets(convs: list, now: datetime, cfg, *,
+                            working_hours: bool = False) -> list:
     """То же, что `select_awaiting_targets`, но с двумя границами под личный пуш.
 
     Личный телеграм менеджера — канал дорогой: он звонит в кармане. Поэтому сюда
@@ -112,7 +147,7 @@ def select_telegram_targets(convs: list, now: datetime, cfg) -> list:
     * не больше `TELEGRAM_CAP` за тик, самые свежие первыми — накопленный хвост
       разбирается за несколько тиков, а не одним залпом.
     """
-    targets = select_awaiting_targets(convs, now, cfg)
+    targets = select_awaiting_targets(convs, now, cfg, working_hours=working_hours)
     max_age = timedelta(hours=float(getattr(cfg, "awaiting_max_age_hours", 24)))
     fresh = [c for c in targets
              if _aware(c.last_message_at) is not None
@@ -219,14 +254,19 @@ async def run_telegram(*, now: datetime | None = None, cfg=None) -> int:
         if not await flags.get_flag(FLAG, getattr(cfg, "awaiting_telegram_enabled", False)):
             return 0
         now_dt = _aware(now) or datetime.now(timezone.utc)
-        targets = select_telegram_targets(await _all_conversations(), now_dt, cfg)
+        # Ответ заказчика 2.5: ожидание в рабочих минутах направления. Флаг OFF —
+        # прежний календарный отсчёт.
+        work = await flags.get_flag(WORKING_HOURS_FLAG,
+                                    getattr(cfg, "awaiting_working_hours_enabled", False))
+        targets = select_telegram_targets(await _all_conversations(), now_dt, cfg,
+                                          working_hours=work)
         cooldown = float(getattr(cfg, "alert_cooldown_minutes", 60)) * 60
         stamp = now_dt.timestamp()
         sent = 0
         for c in targets:
             if stamp - _alerted.get(c.user_id, 0.0) < cooldown:
                 continue
-            minutes = int((now_dt - _aware(c.last_message_at)).total_seconds() // 60)
+            minutes = int(waited_minutes(c, now_dt, working_hours=work))
             login = (getattr(c, "assigned_to", "") or "").strip()
             try:
                 if await _push_owner(login, render_awaiting_text(c, minutes), c):
@@ -257,14 +297,17 @@ async def run() -> None:
         return  # алерты не настроены (нет номера/бота)
 
     now_dt = datetime.now(timezone.utc)
+    work = await flags.get_flag(WORKING_HOURS_FLAG,
+                                settings.awaiting_working_hours_enabled)
     targets = select_awaiting_targets(
-        await get_conversation_store().all_conversations(), now_dt, settings)
+        await get_conversation_store().all_conversations(), now_dt, settings,
+        working_hours=work)
     now = time.time()
     cooldown = settings.alert_cooldown_minutes * 60
     for c in targets:
         if now - _alerted.get(c.user_id, 0.0) < cooldown:
             continue                       # уже пинговали недавно по этому диалогу
-        mins = int((now_dt - _aware(c.last_message_at)).total_seconds() // 60)
+        mins = int(waited_minutes(c, now_dt, working_hours=work))
         who = c.phone or c.user_id
         text = (f"⏳ Клиент {who} ждёт ответа менеджера ~{mins} мин "
                 f"(воронка: {c.funnel or '—'}). Зайдите в панель и ответьте, "

@@ -13,6 +13,10 @@ from app.core.manager_scope import bot_scope_for
 from app.domain.permissions import Actor
 
 FLAG = "authz_enforce_enabled"
+# Два ОТДЕЛЬНЫХ тумблера по ответам заказчика 2.1 и 2.2 (05.11.2026), оба OFF.
+# Раздельные намеренно: на проде нужно гасить по одному, а не всё разом.
+TEAM_VIEW_FLAG = "manager_sees_direction_cases_enabled"
+TAKE_COLLEAGUE_FLAG = "manager_can_take_colleague_dialog_enabled"
 
 # Fallback на случай, когда бот не зарегистрирован в рантайме (например, TG-бот без
 # токена в env): направление по известным id. Реестр ботов всегда в приоритете.
@@ -27,6 +31,19 @@ async def enforcement_enabled() -> bool:
     return await get_flag(FLAG, settings.authz_enforce_enabled)
 
 
+async def team_view_enabled() -> bool:
+    """Ответ заказчика 2.1: менеджер видит всех клиентов своего направления."""
+    from app.core.flags import get_flag
+    return await get_flag(TEAM_VIEW_FLAG, settings.manager_sees_direction_cases_enabled)
+
+
+async def take_colleague_enabled() -> bool:
+    """Ответ заказчика 2.2: менеджер может забрать клиента коллеги себе."""
+    from app.core.flags import get_flag
+    return await get_flag(TAKE_COLLEAGUE_FLAG,
+                          settings.manager_can_take_colleague_dialog_enabled)
+
+
 def direction_for_bot(bot_id: str) -> str:
     """Направление (сценарий воронки) бота: из реестра, иначе по известным id."""
     try:
@@ -39,7 +56,19 @@ def direction_for_bot(bot_id: str) -> str:
     return _FALLBACK_DIRECTIONS.get(bot_id or "", "")
 
 
-def actor_for(manager: dict | None) -> Actor:
+async def actor_for_request(manager: dict | None) -> Actor:
+    """Актор запроса: права 2.1 и 2.2 читаются из рантайм-флагов ОДИН раз.
+
+    `actor_for` остаётся синхронной и чистой — флаги в неё передаются параметрами.
+    Иначе правило доступа зависело бы от базы, и его нельзя было бы проверить
+    тестом без поднятой базы.
+    """
+    return actor_for(manager, team_view=await team_view_enabled(),
+                     can_take_colleague=await take_colleague_enabled())
+
+
+def actor_for(manager: dict | None, *, team_view: bool = False,
+              can_take_colleague: bool = False) -> Actor:
     """Actor для WP3-проверок из cookie-сессии менеджера панели."""
     scope = bot_scope_for(manager, admin_user=settings.admin_user,
                          strict=settings.crm_standalone_enabled)
@@ -47,4 +76,6 @@ def actor_for(manager: dict | None) -> Actor:
     if scope is None:                                     # полный админ
         return Actor(manager_id=login, is_full_admin=True)
     directions = frozenset(d for d in (direction_for_bot(b) for b in scope) if d)
-    return Actor(manager_id=login, is_full_admin=False, allowed_directions=directions)
+    return Actor(manager_id=login, is_full_admin=False,
+                 allowed_directions=directions, team_view=bool(team_view),
+                 can_take_colleague=bool(can_take_colleague))

@@ -17,7 +17,7 @@ from app.admin.kg_entry_form import (FIELDS, FORM_FIELDS, MAX_LENGTHS, FAMILY_LI
                                     report_view, request_from_values, values_from_request)
 from app.admin.kg_review_card import card_view
 from app.admin.workday import _case_or_404, _require_workday, _write_on
-from app.core.live_authz import actor_for
+from app.core.live_authz import actor_for_request
 from app.domain.entry_qualification import _qualification_sources
 from app.domain.entry_storage import EntryStorageConflict, EntryStorageInvalid, EntryStorageUnavailable, _authorize
 from app.domain.models import DomainError, KnowledgeImport, KnowledgeSet, KnowledgeVersion, StayHistory
@@ -77,7 +77,7 @@ async def chat_case_link(conv, manager) -> str | None:
         from app.admin import contracts
         from app.domain.models import Product, ServiceCase
         from app.domain.service_authz import can_view_case
-        actor = actor_for(manager)
+        actor = await actor_for_request(manager)
         async with ar._domain_sessionmaker()() as session:
             contact = await contracts._find_contact(session, contracts._identity(conv))
             if contact is None:
@@ -111,7 +111,7 @@ async def _gate(request, manager, *, write=False, admin_only=False):
     _require_workday(request)
     if not ar.settings.admin_kg_entry_enabled:
         raise HTTPException(404)
-    actor = actor_for(manager)
+    actor = await actor_for_request(manager)
     if not actor.is_full_admin:
         from dataclasses import replace
         from app.core import flags

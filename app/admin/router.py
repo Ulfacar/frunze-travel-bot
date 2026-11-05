@@ -1239,6 +1239,43 @@ FEATURE_FLAGS = {
         "note": lambda: ("руководители: " + (", ".join(f"{d}: {', '.join(v) or '—'}" for d, v in
                          (settings.panel_direction_leads or {}).items()) or "не заданы")),
     },
+    "awaiting_working_hours_enabled": {
+        "title": "«Клиент ждёт» — считать только рабочие часы",
+        "desc": ("Ответ заказчика 2.5 от 05.11.2026 про рабочее окно CRM. Сейчас сторож "
+                 "считает ожидание по календарю: клиент написал в 23:00 — к утру "
+                 "«ждёт 11 часов», и пинги идут ночью и у виз с 9 до 10, когда "
+                 "менеджеров нет. С тумблером ожидание считается в рабочих минутах "
+                 "направления (туры с 9:00, визы с 10:00, пн–сб) — тем же счётчиком, "
+                 "которым уже считает очередь «ждут ответа» и сводка пилота. "
+                 "ПОРОГ ДЕТЕКТОРА ОТ ЭТОГО МЕНЯЕТСЯ: до включения — калибровка на "
+                 "истории (scripts/alert_replay.py)."),
+        "default": lambda: settings.awaiting_working_hours_enabled,
+        "note": lambda: f"порог X = {settings.alert_awaiting_minutes} мин",
+    },
+    "manager_sees_direction_cases_enabled": {
+        "title": "Менеджер видит всех клиентов своего направления",
+        "desc": ("Ответ заказчика 2.1 от 05.11.2026. До этого менеджер видел в реестре "
+                 "услуг только СВОИХ клиентов: направление считалось командой, а не "
+                 "общим доступом. С тумблером в списке «все» видны услуги коллег по "
+                 "своему направлению — чужое направление по-прежнему закрыто. "
+                 "Видеть — не значит двигать: этап и деньги правит только владелец, "
+                 "для вмешательства клиента нужно сначала забрать себе."),
+        "default": lambda: settings.manager_sees_direction_cases_enabled,
+        "note": lambda: "",
+    },
+    "manager_can_take_colleague_dialog_enabled": {
+        "title": "Менеджер может забрать клиента коллеги",
+        "desc": ("Ответ заказчика 2.2 от 05.11.2026. Отменяет правило «перехват чужого "
+                 "запрещён» ВНУТРИ своего направления: менеджер жмёт «Взять себе» на "
+                 "диалоге коллеги и становится владельцем — и переписки, и услуги. "
+                 "Между направлениями запрет остаётся. Передать клиента ТРЕТЬЕМУ "
+                 "менеджеру по-прежнему может только администратор: это распоряжение "
+                 "чужой работой, а не взятие на себя. Передача пишется в журнал."),
+        "default": lambda: settings.manager_can_take_colleague_dialog_enabled,
+        "note": lambda: ("" if settings.reassign_moves_tasks_enabled else
+                         "ℹ️ «Дела переходят вместе с клиентом» выключен — задачи "
+                         "останутся у прежнего владельца."),
+    },
     "reassign_moves_tasks_enabled": {
         "title": "Передача клиента переносит его задачи",
         "desc": ("Когда администратор передаёт клиента другому менеджеру, открытые задачи "
@@ -2365,7 +2402,7 @@ async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]
         from app.domain import live_assign
         from app.domain.models import DomainError
         from app.domain.permissions import can_reassign, can_send
-        actor = live_authz.actor_for(manager)
+        actor = await live_authz.actor_for_request(manager)
         async with _domain_sessionmaker()() as s:
             contact = await live_assign.contact_for_channel(
                 s, channel=(getattr(conv, "channel", "") or ""),
@@ -2388,12 +2425,20 @@ async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]
             if action == "send" and can_send(actor, asg, direction):
                 await s.commit()
                 return True, ""
+            # Ответ заказчика 2.2 от 05.11.2026: забрать клиента коллеги внутри своего
+            # направления может и менеджер, не только администратор. До этого правило
+            # «перехват запрещён» было безусловным (CLAUDE.md §7). Флаг OFF —
+            # `can_take_colleague` False, и строка читается как прежде.
+            may_take = actor.is_full_admin or actor.can_take_colleague
             if owner and owner != actor.manager_id and not (
-                    action == "claim" and actor.is_full_admin):
+                    action == "claim" and may_take):
                 await s.commit()
                 if actor.is_full_admin:
                     return False, (f"Диалог ведёт {owner}. Сначала передайте лид "
                                    "(кнопка «Переназначить») — затем пишите.")
+                if actor.can_take_colleague:
+                    return False, (f"Диалог ведёт {owner}. Заберите клиента себе "
+                                   "(кнопка «Взять себе») — затем пишите.")
                 return False, (f"Диалог ведёт {owner}. Перехват запрещён — "
                                "передать лид может только администратор.")
             if action == "claim" and asg is not None and owner == actor.manager_id:
@@ -2408,7 +2453,22 @@ async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]
                     s, contact.id, direction, actor.manager_id,
                     assigned_by=actor.manager_id,
                     reason=("takeover" if action == "claim" else "auto_claim_on_send"),
-                    allow_emergency=actor.is_full_admin)
+                    allow_emergency=may_take)
+                # ТЗ TASK-04 и ответ 2.3: открытые задачи уходят новому владельцу
+                # В ТОЙ ЖЕ транзакции. Раньше это делал только админский маршрут
+                # «Переназначить», а взятие лида — нет. С флагом 2.2 взятие стало
+                # вторым способом сменить владельца, и без этой строки у коллеги
+                # остались бы звонки по клиенту, которого у него уже нет.
+                if owner and owner != actor.manager_id and await _media_flag(
+                        "reassign_moves_tasks_enabled"):
+                    from app.domain.calendar_tasks import CalendarTaskService
+                    for task_direction in dict.fromkeys(
+                            (direction, getattr(conv, "funnel", "") or "")):
+                        if task_direction:
+                            await CalendarTaskService.reassign_open_tasks(
+                                s, contact_id=contact.id, direction=task_direction,
+                                new_manager_id=actor.manager_id,
+                                actor=actor.manager_id)
                 await s.commit()
             except DomainError:
                 # Гонка: другой менеджер взял лид между нашим чтением и локом. Это

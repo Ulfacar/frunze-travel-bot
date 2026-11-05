@@ -36,6 +36,16 @@ class Actor:
     # единицам, импорт — только `is_full_admin`. Выставляется ТОЛЬКО шлюзом
     # `app/admin/kg_entry._gate`, никогда из cookie напрямую.
     kg_entry_operator: bool = False
+    # Ответ заказчика 2.1 от 05.11.2026: менеджер видит всех клиентов своего
+    # направления, а не только своих. Флаг `manager_sees_direction_cases_enabled`,
+    # дефолт OFF. Выставляется ТОЛЬКО там, где строится актор запроса
+    # (`live_authz.actor_for`), никогда из cookie напрямую.
+    team_view: bool = False
+    # Ответ заказчика 2.2: менеджер может забрать клиента коллеги ВНУТРИ своего
+    # направления — включая живую переписку. Между направлениями запрет остаётся.
+    # Флаг `manager_can_take_colleague_dialog_enabled`, дефолт OFF. Отменяет прежнее
+    # правило «перехват чужого запрещён» (CLAUDE.md §7) в границах направления.
+    can_take_colleague: bool = False
 
 
 def _has_direction_access(actor: Actor, requested_direction: str | None) -> bool:
@@ -88,7 +98,9 @@ def can_reassign(actor: Actor, assignment, target_manager_id: str,
     * otherwise the actor needs access to the requested direction, and:
         - no active assignment → allowed (a first assignment / claim);
         - assignment already on ``target_manager_id`` → allowed (re-affirm);
-        - taking over a DIFFERENT active owner → emergency, full-admin only → denied.
+        - taking over a DIFFERENT active owner → emergency, full-admin only, UNLESS
+          ``actor.can_take_colleague`` and the actor takes the contact to himself
+          inside his own direction (owner decision 2.2 of 05.11.2026).
     """
     if actor.is_full_admin:
         return True
@@ -97,5 +109,12 @@ def can_reassign(actor: Actor, assignment, target_manager_id: str,
     if assignment is None or not getattr(assignment, "active", False):
         return True
     if getattr(assignment, "manager_id", None) == target_manager_id:
+        return True
+    if actor.can_take_colleague and target_manager_id == actor.manager_id:
+        # Ответ заказчика 2.2 от 05.11.2026: забрать клиента коллеги СЕБЕ внутри
+        # своего направления можно, включая живую переписку. Передать клиента
+        # третьему менеджеру — по-прежнему админское полномочие: это распоряжение
+        # чужой работой, а не взятие на себя. Между направлениями запрет остаётся
+        # (`_has_direction_access` выше).
         return True
     return can_emergency_reassign(actor)

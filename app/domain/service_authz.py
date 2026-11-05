@@ -56,10 +56,16 @@ def _is_owner(actor: Actor, owner_login: str | None) -> bool:
 def can_view_case(actor: Actor, *, direction: str | None, owner_login: str | None) -> bool:
     """Видеть услугу: полный администратор — любую, менеджер — свою в своём направлении.
 
-    Чужая услуга внутри своего направления не видна: направление это команда, а не
-    общий доступ. Для разбора спорных случаев есть администратор.
+    Чужая услуга внутри своего направления видна при `actor.team_view` (решение
+    владельца 2.1 от 05.11.2026); без него — только своя, как было до этого.
     """
     if actor.is_full_admin:
+        return True
+    if actor.team_view and _direction_allowed(actor, direction):
+        # Ответ заказчика 2.1 от 05.11.2026: менеджер видит всех клиентов своего
+        # направления. Прежнее правило («направление — команда, а не общий доступ»)
+        # отменено владельцем; флаг manager_sees_direction_cases_enabled, дефолт OFF.
+        # Видеть — не значит двигать: can_advance_case по-прежнему требует владения.
         return True
     return _direction_allowed(actor, direction) and _is_owner(actor, owner_login)
 
@@ -90,8 +96,9 @@ def can_reassign_case(actor: Actor, *, direction: str | None, owner_login: str |
 
     Логика повторяет `permissions.can_reassign`, чтобы не разошлись два правила:
     администратор может всё; менеджер может взять ничью услугу или подтвердить
-    текущего владельца, но отобрать услугу у другого менеджера — полномочие
-    администратора.
+    текущего владельца. Забрать услугу коллеги СЕБЕ менеджер может при
+    `actor.can_take_colleague` (решение владельца 2.2 от 05.11.2026); отдать её
+    третьему менеджеру — по-прежнему полномочие администратора.
     """
     if actor.is_full_admin:
         return True
@@ -100,6 +107,11 @@ def can_reassign_case(actor: Actor, *, direction: str | None, owner_login: str |
     if not owner_login:
         return True
     if str(owner_login).strip().lower() == str(target_login).strip().lower():
+        return True
+    target = str(target_login).strip().lower()
+    if actor.can_take_colleague and target == str(actor.manager_id).strip().lower():
+        # Ответ заказчика 2.2: забрать услугу коллеги СЕБЕ внутри своего направления.
+        # Отдать её третьему менеджеру — по-прежнему только администратор.
         return True
     return False
 

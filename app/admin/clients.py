@@ -545,8 +545,8 @@ async def client_card(phone: str, request: Request, manager: dict = Depends(ar.r
     convs.sort(key=lambda c: c.last_message_at or datetime.min.replace(tzinfo=timezone.utc),
                reverse=True)
     ids = [c.user_id for c in convs]
-    from app.core.live_authz import actor_for
-    actor = actor_for(manager)
+    from app.core.live_authz import actor_for_request
+    actor = await actor_for_request(manager)
     tasks = []
     for c in convs:
         for t in await ar._load_user_tasks(c.user_id):

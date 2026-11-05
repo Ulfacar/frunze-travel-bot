@@ -137,7 +137,7 @@ async def _case_or_404(session, case_id: int, actor) -> tuple[ServiceCase, Produ
 async def _work_context(request: Request, manager: dict, *, tab: str,
                         mine: bool) -> dict:
     """Собрать данные экрана. Падение реестра не роняет страницу (AC-31)."""
-    actor = live_authz.actor_for(manager)
+    actor = await live_authz.actor_for_request(manager)
     digests: list = []
     claims: list = []
     failed = True
@@ -251,7 +251,7 @@ async def _claim_action(request: Request, task_id: int, manager: dict, *,
     """Разобрать подвисший захват. Оба исхода — решение человека, не таймаут."""
     if not _write_on(request):
         return _outcome(await _claims_response(request, manager), "off")
-    actor = live_authz.actor_for(manager)
+    actor = await live_authz.actor_for_request(manager)
     try:
         async with ar._domain_sessionmaker()() as session:
             task = await session.get(CalendarTask, task_id)
@@ -326,7 +326,7 @@ async def _case_context(request: Request, case_id: int, manager: dict, *,
                         idem_key: str | None = None,
                         outcome: str = "", notice: str = "") -> dict:
     """Данные карточки. Права считает сервер, шаблон получает два булева."""
-    actor = live_authz.actor_for(manager)
+    actor = await live_authz.actor_for_request(manager)
     async with ar._domain_sessionmaker()() as session:
         case, product = await _case_or_404(session, case_id, actor)
         direction = product.direction if product else None
@@ -455,7 +455,7 @@ async def _write(request: Request, case_id: int, manager: dict, *, tab: str,
     if not _write_on(request):
         return await _panel_response(request, case_id, manager, tab=tab,
                                      outcome="off", echo=echo, idem_key=idem_key)
-    actor = live_authz.actor_for(manager)
+    actor = await live_authz.actor_for_request(manager)
     try:
         async with ar._domain_sessionmaker()() as session:
             case, _product = await _case_or_404(session, case_id, actor)

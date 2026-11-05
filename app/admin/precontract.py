@@ -15,7 +15,7 @@ from sqlalchemy.exc import SQLAlchemyError
 import app.admin.router as ar
 from app.admin import contracts
 from app.admin.workday import _require_workday,_write_on,_case_or_404
-from app.core.live_authz import actor_for
+from app.core.live_authz import actor_for_request
 from app.domain import precontract_cases as service
 from app.domain.models import ServiceCaseOpening,DomainError
 from app.domain.services import ContactService
@@ -121,7 +121,7 @@ async def preliminary_submit(user_id:str,request:Request,manager:dict=Depends(ar
 
 @ar.router.get('/case/{case_id}/contract')
 async def signature_form(case_id:int,request:Request,manager:dict=Depends(ar.require_admin)):
-    _require_workday(request);actor=actor_for(manager)
+    _require_workday(request);actor=await actor_for_request(manager)
     try:
         async with ar._domain_sessionmaker()() as s:
             case,product=await _case_or_404(s,case_id,actor)
@@ -138,7 +138,7 @@ async def signature_form(case_id:int,request:Request,manager:dict=Depends(ar.req
 
 @ar.router.post('/case/{case_id}/contract')
 async def signature_submit(case_id:int,request:Request,manager:dict=Depends(ar.require_admin)):
-    _require_workday(request);actor=actor_for(manager)
+    _require_workday(request);actor=await actor_for_request(manager)
     values=await submitted(request,manager,'sign',case_id)
     if not _write_on(request):return render(request,manager,'sign',case_id,values,error='Запись услуг выключена.',status=409)
     try:
