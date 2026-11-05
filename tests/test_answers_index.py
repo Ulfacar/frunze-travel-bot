@@ -63,28 +63,46 @@ def test_the_signed_overlay_is_pinned(loaded):
     assert overlay is not None, "оверлей одобрения исчез — бот перестал отвечать по базе"
     # Число меняется только осознанно, вместе с причиной. История: 534 → 457 (ревью
     # нашло таблицы сборов с валютой в шапке и метки в заголовках 5.5 и 9.4) → 454
-    # (усиление отбора) → 453: 05.11.2026 снята подпись KG.KB.12.3#011, льготная сетка
-    # швейной отрасли истекла 01.11.2026 (ai/tasks/2026-10-29-unsign-kg-kb-12-3-011.md).
-    assert len(overlay.by_piece) == 453
+    # (усиление отбора) → 443: 05.11.2026 снято 11 подписей по решениям владельца —
+    # истёкшая льгота ТПП и 10 служебных формулировок (ответ 5.5). Причина по каждой
+    # подписи — в scripts/build_answers_approval.py, словарь UNSIGNED.
+    assert len(overlay.by_piece) == 443
     assert overlay.corpus_hash == loaded.corpus_hash
     assert overlay.source_hash == loaded.source_hash
-    # Подписи, которые ждут снятия решением Гриши (PM-ревью 30.10.2026). Кусок 6.3#014
-    # получил метку [РЕШЕНИЕ] после починки нарезки (осиротевшая метка относится к
-    # предыдущему абзацу); подпись в файле осталась, но код её не признаёт:
-    # `approvable=False` → `approved()` = False. Снять строку из оверлея — решение
-    # владельца, см. docs/pm-review-2026-10-30/pdf.md.
-    awaiting_unsign = {"KG.KB.6.3#014"}
     for piece_id, digest in overlay.by_piece.items():
         piece = loaded._pieces.get(piece_id)          # noqa: SLF001
         assert piece is not None, f"подписан несуществующий кусок {piece_id}"
         assert digest == piece["text_sha256"], f"{piece_id}: текст правили после подписи"
-        if piece_id in awaiting_unsign:
-            assert not answers_approval.approved(
-                piece, corpus_hash=loaded.corpus_hash, source_hash=loaded.source_hash), \
-                f"{piece_id}: кусок с меткой [РЕШЕНИЕ] всё ещё произносим"
-            continue
         assert not piece["labels"], f"{piece_id}: подписан кусок с меткой ТЗ"
         assert not MONEY.search(piece["text"]), f"{piece_id}: подписан кусок с суммой"
+
+
+def test_pieces_unsigned_by_the_owner_stay_unsigned(loaded):
+    """Снятое решением владельца не возвращается повторным запуском скрипта.
+
+    Правило отбора машинное и о решениях владельца не знает: до 05.11.2026 повторный
+    `build_answers_approval.py` молча вернул бы снятые подписи, и бот снова начал бы
+    произносить служебные формулировки и истёкшую льготу. Список снятых живёт рядом с
+    правилом, и гейт держит обе стороны: в оверлее их нет, и скрипт их не выберет.
+    """
+    import importlib.util
+    from pathlib import Path
+    from app.knowledge import answers_approval
+    spec = importlib.util.spec_from_file_location(
+        "build_answers_approval",
+        Path(__file__).resolve().parents[1] / "scripts" / "build_answers_approval.py")
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    overlay = answers_approval.load()
+    assert len(builder.UNSIGNED) == 11
+    for piece_id, reason in builder.UNSIGNED.items():
+        assert piece_id not in overlay.by_piece, f"{piece_id}: подпись вернулась в оверлей"
+        assert piece_id in loaded._pieces, f"{piece_id}: кусок исчез"   # noqa: SLF001
+        assert reason.strip(), f"{piece_id}: снятие без причины"
+        assert not answers_approval.approved(
+            loaded._pieces[piece_id],                                   # noqa: SLF001
+            corpus_hash=loaded.corpus_hash, source_hash=loaded.source_hash), (
+            f"{piece_id}: снят, но бот всё ещё может произнести")
 
 
 def test_the_signed_overlay_actually_answers(loaded):

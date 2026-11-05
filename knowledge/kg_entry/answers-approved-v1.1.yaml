@@ -30,19 +30,6 @@
       "approved_at": "2026-10-23"
     },
     {
-      "piece_id": "KG.KB.1.1#003",
-      "text_sha256": "43c67f9d1f45b61423995c44d1fd1b51fc038ced027d4b059dd99f6bc66ba7eb",
-      "block": 1,
-      "section": "1.1",
-      "pdf_pages": [
-        11
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
       "piece_id": "KG.KB.1.1#004",
       "text_sha256": "8ec3f27727f44b6e97b034a287da0b9e56f2e0cdc6fa4357e2ba0c1d4f235534",
       "block": 1,
@@ -2355,19 +2342,6 @@
       "approved_at": "2026-10-23"
     },
     {
-      "piece_id": "KG.KB.16.3#001",
-      "text_sha256": "a76c1330d11e48a6b962067f7ca59861171ad30baa97ff42ef062feaad9797f3",
-      "block": 16,
-      "section": "16.3",
-      "pdf_pages": [
-        68
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
       "piece_id": "KG.KB.16.3#002",
       "text_sha256": "4fc481432a329638f3550ea5e3cb1b752b883346d6bb1932555a76f7b570178a",
       "block": 16,
@@ -2548,20 +2522,6 @@
       "approved_at": "2026-10-23"
     },
     {
-      "piece_id": "KG.KB.16.5#001",
-      "text_sha256": "53630bfebb3c02ac5ae990b109e4b563f1daba27ce4855c891bbf184a97611e8",
-      "block": 16,
-      "section": "16.5",
-      "pdf_pages": [
-        68,
-        69
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
       "piece_id": "KG.KB.16.5#002",
       "text_sha256": "6c959523462d070a45a9c6f4e2ada8f384cb9dbf656360a8d1f2309bb5469b19",
       "block": 16,
@@ -2578,20 +2538,6 @@
     {
       "piece_id": "KG.KB.16.5#003",
       "text_sha256": "d8d5577f9d67521b8652309b2bf8b25f9f4278658bb5ea9f5960ac132e95e3bf",
-      "block": 16,
-      "section": "16.5",
-      "pdf_pages": [
-        68,
-        69
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
-      "piece_id": "KG.KB.16.5#004",
-      "text_sha256": "1ae1d40558aac6c5cdf674c7a96c2607768dabaa5c89cfe687ff03d1c540eceb",
       "block": 16,
       "section": "16.5",
       "pdf_pages": [
@@ -2726,21 +2672,6 @@
     {
       "piece_id": "KG.KB.17.0#021",
       "text_sha256": "278cb975097c98e5703abda1972bac4d176911c94d7288c1f86e46e505a4e7c8",
-      "block": 17,
-      "section": "17.0",
-      "pdf_pages": [
-        70,
-        71,
-        72
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
-      "piece_id": "KG.KB.17.0#022",
-      "text_sha256": "c7f935939252bc66b523428ebd86767b0067431bc406d7b6c3236d4a790de16d",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -5418,19 +5349,6 @@
       "approved_at": "2026-10-23"
     },
     {
-      "piece_id": "KG.KB.6.2#003",
-      "text_sha256": "29b007c95653ff91637a7627c66a0406de867ee5a61785de54c7797cc43cd0bd",
-      "block": 6,
-      "section": "6.2",
-      "pdf_pages": [
-        41
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
       "piece_id": "KG.KB.6.3#001",
       "text_sha256": "1e34924318b983592bd1468fae20178fee60faf4c6588a858860dc2014a18db7",
       "block": 6,
@@ -5531,34 +5449,6 @@
     {
       "piece_id": "KG.KB.6.3#011",
       "text_sha256": "5d80b908af51c03483bf7594cd5b24216112d66a159e88292e26fa5a8a5d2cf6",
-      "block": 6,
-      "section": "6.3",
-      "pdf_pages": [
-        41,
-        42
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
-      "piece_id": "KG.KB.6.3#014",
-      "text_sha256": "98b56a2d30e1a3401ac2fd02966865bbb4a38932ee222f9810a5e3ee7b4c9c5e",
-      "block": 6,
-      "section": "6.3",
-      "pdf_pages": [
-        41,
-        42
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
-      "piece_id": "KG.KB.6.3#016",
-      "text_sha256": "125f8def7c3689847a02b5537100fdbe5d5b2a90745259676ff6b4e681001fbd",
       "block": 6,
       "section": "6.3",
       "pdf_pages": [
@@ -5795,20 +5685,6 @@
       "approved_at": "2026-10-23"
     },
     {
-      "piece_id": "KG.KB.7.0#019",
-      "text_sha256": "8f77b04dd5bdaed19c380c6813ce04f7aaf67c0f8ba175c3faa7b18ea96adad5",
-      "block": 7,
-      "section": "7.0",
-      "pdf_pages": [
-        44,
-        45
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
       "piece_id": "KG.KB.7.0#021",
       "text_sha256": "88302d71769f1e420be2857e7d2fdffd1db7ecb7fe791fa16580a048de84a23b",
       "block": 7,
@@ -5825,20 +5701,6 @@
     {
       "piece_id": "KG.KB.7.0#023",
       "text_sha256": "745d5ca6c9fd241ae9dfe2124f1a54c3ac47212b87bf429a488a31bc3c6d2a1b",
-      "block": 7,
-      "section": "7.0",
-      "pdf_pages": [
-        44,
-        45
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
-      "piece_id": "KG.KB.7.0#024",
-      "text_sha256": "139ba76300c5b47d6f4d192219092437c21335427564255eb586e08590d84657",
       "block": 7,
       "section": "7.0",
       "pdf_pages": [
