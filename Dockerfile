@@ -29,6 +29,11 @@ COPY knowledge/kg_entry/interview_catalog_v3_1.json ./knowledge/kg_entry/intervi
 COPY knowledge/kg_entry/templates_v1_1/ ./knowledge/kg_entry/templates_v1_1/
 COPY knowledge/kg_entry/template_renderers/ ./knowledge/kg_entry/template_renderers/
 COPY knowledge/kg_entry/processes_v1_1/catalog.json ./knowledge/kg_entry/processes_v1_1/catalog.json
+# Черновики визовых воронок: их читает scripts/publish_kg_visa_funnel.py, а он может
+# запускаться внутри контейнера (как crm_initialize.py). Без COPY публикация падает
+# на «черновик невалиден» при зелёном /health.
+COPY knowledge/kg_entry/processes_v1_1/visa-funnel-draft.json ./knowledge/kg_entry/processes_v1_1/visa-funnel-draft.json
+COPY knowledge/funnels/ ./knowledge/funnels/
 COPY knowledge/kg_entry/documents_v1_1/catalog.json ./knowledge/kg_entry/documents_v1_1/catalog.json
 COPY knowledge/kg_entry/complete_documents_v1_1/ ./knowledge/kg_entry/complete_documents_v1_1/
 # Бандл правил въезда: по нему движок считает режим и срок регистрации. Без этой

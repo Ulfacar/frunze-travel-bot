@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""Публикация процесса въездной визовой услуги по PDF 14.2–14.3 (V01–V25, X01–X15).
+"""Публикация визовых воронок в реестр услуг: въездной и шенгенской.
 
-Черновик: `knowledge/kg_entry/processes_v1_1/visa-funnel-draft.json` — НЕ опубликован.
-Публикует только это действие и только по слову владельца (Гриша/Алан):
+Черновики (оба НЕ опубликованы):
+  * `knowledge/kg_entry/processes_v1_1/visa-funnel-draft.json` — въездная виза,
+    PDF 14.2–14.3 (V01–V25, X01–X15) плюс добавленный заказчиком V26 «Попросить отзыв»;
+  * `knowledge/funnels/schengen-funnel-draft.json` — шенген после договора
+    (SCH-01–SCH-11 + исключения), по стенограмме встречи 30.10.2026.
+
+Обе воронки едут одним механизмом (`service_cases.publish_version`): версия процесса
+привязана к продукту, поэтому выездному продукту он подходит без изменений.
 
     python scripts/publish_kg_visa_funnel.py                 # сухой режим: проверка и план
     python scripts/publish_kg_visa_funnel.py --yes           # публикация
@@ -31,20 +37,43 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-DRAFT = ROOT / "knowledge" / "kg_entry" / "processes_v1_1" / "visa-funnel-draft.json"
-FORMAT = "kg-entry-visa-funnel-draft/1"
-STAGE_KEYS = {"code", "name", "pdf_page", "responsible", "sla", "auto"}
+# Закрытый список полей этапа: опечатка в имени поля должна падать на проверке
+# черновика, а не превращаться в молча проигнорированное правило. `pdf_page` — для
+# этапов из PDF, `origin` — для добавленных заказчиком (чего в PDF нет).
+STAGE_KEYS = {"code", "name", "pdf_page", "origin", "responsible", "sla", "auto"}
+
+ENTRY_CODES = ([f"V{i:02d}" for i in range(1, 25)] + ["V26", "V25"]
+               + [f"X{i:02d}" for i in range(1, 16)])
+SCHENGEN_CODES = ([f"SCH-{i:02d}" for i in range(1, 12)]
+                  + ["X01", "X02", "X03", "X06", "X07"])
+
+# Воронка = черновик + формат + ЗАМОК на состав и порядок кодов этапов. Замок нужен,
+# чтобы добавление или потеря этапа были видны в диффе кода, а не проезжали молча
+# вместе с правкой данных.
+FUNNELS = {
+    "entry": {
+        "draft": ROOT / "knowledge" / "kg_entry" / "processes_v1_1" / "visa-funnel-draft.json",
+        "format": "kg-entry-visa-funnel-draft/1",
+        "codes": ENTRY_CODES,
+    },
+    "schengen": {
+        "draft": ROOT / "knowledge" / "funnels" / "schengen-funnel-draft.json",
+        "format": "visa-funnel-draft/1",
+        "codes": SCHENGEN_CODES,
+    },
+}
 
 
 class DraftInvalid(ValueError):
     pass
 
 
-def load_draft(path: Path = DRAFT) -> dict:
-    """Черновик с проверкой формы. Не ходит в базу."""
-    doc = json.loads(path.read_text(encoding="utf-8"))
-    if doc.get("format") != FORMAT:
-        raise DraftInvalid(f"format must be {FORMAT}")
+def load_draft(funnel: str = "entry", path: Path | None = None) -> dict:
+    """Черновик воронки с проверкой формы. Не ходит в базу."""
+    spec = FUNNELS[funnel]
+    doc = json.loads(Path(path or spec["draft"]).read_text(encoding="utf-8"))
+    if doc.get("format") != spec["format"]:
+        raise DraftInvalid(f"format must be {spec['format']}")
     if doc.get("status") != "draft_unpublished":
         raise DraftInvalid("status must be draft_unpublished")
     product = doc.get("product") or {}
@@ -55,17 +84,20 @@ def load_draft(path: Path = DRAFT) -> dict:
         raise DraftInvalid("stages must be a non-empty list")
     codes: list[str] = []
     for stage in stages:
-        if not isinstance(stage, dict) or not {"code", "name", "pdf_page"} <= set(stage) \
-                or not set(stage) <= STAGE_KEYS:
+        if (not isinstance(stage, dict) or not {"code", "name"} <= set(stage)
+                or not set(stage) <= STAGE_KEYS):
             raise DraftInvalid(f"bad stage: {stage!r}")
-        if not isinstance(stage["pdf_page"], int) or stage["pdf_page"] <= 0:
-            raise DraftInvalid(f"{stage['code']}: pdf_page must be a positive page number")
+        page = stage.get("pdf_page")
+        origin = str(stage.get("origin") or "").strip()
+        if not origin and (not isinstance(page, int) or page <= 0):
+            raise DraftInvalid(f"{stage['code']}: нужен pdf_page (этап из PDF)"
+                               f" либо origin (этап не из PDF — откуда он)")
         codes.append(stage["code"])
     if len(codes) != len(set(codes)):
         raise DraftInvalid("duplicate stage codes")
-    expected = [f"V{i:02d}" for i in range(1, 26)] + [f"X{i:02d}" for i in range(1, 16)]
+    expected = spec["codes"]
     if codes != expected:
-        raise DraftInvalid("stage codes must be exactly V01–V25 and X01–X15 in PDF order")
+        raise DraftInvalid("состав и порядок кодов этапов должны совпадать с замком воронки " + funnel)
     transitions = doc.get("transitions")
     if not isinstance(transitions, dict) or set(transitions) != set(codes):
         raise DraftInvalid("transitions must list every stage exactly once")
@@ -140,19 +172,22 @@ async def publish(dsn: str, doc: dict, *, published_by: str) -> dict:
 
 
 def run(argv: list[str] | None = None, stdout=None) -> int:
-    p = argparse.ArgumentParser(description="Публикация процесса въездной визовой услуги (PDF 14.2–14.3)")
+    p = argparse.ArgumentParser(description="Публикация визовых воронок (въездная, шенген)")
     p.add_argument("--yes", action="store_true", help="опубликовать (без флага — только проверка и план)")
     p.add_argument("--dsn", default=os.environ.get("DATABASE_URL", ""), help="строка подключения (по умолчанию DATABASE_URL)")
-    p.add_argument("--draft", default=str(DRAFT))
+    p.add_argument("--funnel", choices=sorted(FUNNELS), default="entry",
+                   help="какую воронку публиковать")
+    p.add_argument("--draft", default="", help="путь к черновику (по умолчанию — из реестра)")
     p.add_argument("--by", default=os.environ.get("ADMIN_USER", "admin"), help="кто публикует (полный админ)")
     args = p.parse_args(argv)
     say = (lambda m: print(m, file=stdout)) if stdout is not None else print
     try:
-        doc = load_draft(Path(args.draft))
+        doc = load_draft(args.funnel, Path(args.draft) if args.draft else None)
     except (DraftInvalid, OSError, ValueError) as exc:
         say(f"ЧЕРНОВИК НЕВАЛИДЕН: {exc}")
         return 2
-    say(f"Черновик: {len(doc['stages'])} этапов, {sum(len(v) for v in doc['transitions'].values())} переходов, "
+    say(f"Воронка {args.funnel}: {len(doc['stages'])} этапов, "
+        f"{sum(len(v) for v in doc['transitions'].values())} переходов, "
         f"продукт {doc['product']['code']} «{doc['product']['name']}»")
     if not args.dsn:
         say("Нет базы: задайте DATABASE_URL или --dsn.")
