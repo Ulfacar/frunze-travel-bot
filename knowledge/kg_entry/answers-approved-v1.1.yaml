@@ -1495,20 +1495,6 @@
       "approved_at": "2026-10-23"
     },
     {
-      "piece_id": "KG.KB.12.3#011",
-      "text_sha256": "cce244dd25e0d130bcc39418e78b9feb810d155711e9c8bcfe1cb405c7d2bd63",
-      "block": 12,
-      "section": "12.3",
-      "pdf_pages": [
-        56,
-        57
-      ],
-      "basis": "отбор по правилу scripts/build_answers_approval.py: кусок подлежит одобрению (нет метки РЕШЕНИЕ, нет сумм), блок в области поиска ТЗ, текст непустой",
-      "approved_by": "Алан (владелец проекта), 22.10.2026: «грузи» — одобрение по машинному отбору: без метки ТЗ (своей и унаследованной из заголовка раздела), без денег, блок в области поиска ТЗ",
-      "checked_by": "tests/test_answers_index.py + scripts/run_entry_stories.py",
-      "approved_at": "2026-10-23"
-    },
-    {
       "piece_id": "KG.KB.12.5#009",
       "text_sha256": "32a0e8eae91c938e75e46cc9b3c57f908d990cf305a60aa2aaf58c66fabb54ce",
       "block": 12,

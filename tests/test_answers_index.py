@@ -61,9 +61,11 @@ def test_the_signed_overlay_is_pinned(loaded):
     from app.knowledge import answers_approval
     overlay = answers_approval.load()
     assert overlay is not None, "оверлей одобрения исчез — бот перестал отвечать по базе"
-    # 457, а не 534: независимое ревью нашло таблицы сборов, где валюта стоит в шапке,
-    # и метки в заголовках разделов 5.5 и 9.4. После усиления отбора подписей меньше.
-    assert len(overlay.by_piece) == 454
+    # Число меняется только осознанно, вместе с причиной. История: 534 → 457 (ревью
+    # нашло таблицы сборов с валютой в шапке и метки в заголовках 5.5 и 9.4) → 454
+    # (усиление отбора) → 453: 05.11.2026 снята подпись KG.KB.12.3#011, льготная сетка
+    # швейной отрасли истекла 01.11.2026 (ai/tasks/2026-10-29-unsign-kg-kb-12-3-011.md).
+    assert len(overlay.by_piece) == 453
     assert overlay.corpus_hash == loaded.corpus_hash
     assert overlay.source_hash == loaded.source_hash
     # Подписи, которые ждут снятия решением Гриши (PM-ревью 30.10.2026). Кусок 6.3#014
@@ -91,7 +93,7 @@ def test_the_signed_overlay_actually_answers(loaded):
                   "what documents are needed for a business visa",
                   "почему отказывают в визе"):
         found = loaded.search(query, limit=3)
-        assert found, f"{query!r}: подписано 534 куска, а выдача пуста"
+        assert found, f"{query!r}: оверлей подписан, а выдача пуста"
         for piece in found:
             assert not piece["labels"]
 
