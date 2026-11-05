@@ -47,7 +47,7 @@ def env(monkeypatch):
     monkeypatch.setattr(app.config.settings, "panel_direction_leads",
                         {"visa": ["grisha"], "tours": ["ademi"]})
     monkeypatch.setattr(page, "datetime", FixedDT)
-    import app.core.reply_sla as sla
+    import app.core.report_metrics as sla
     monkeypatch.setattr(sla, "working_minutes", lambda bot, s, e: (e - s).total_seconds() / 60)
     _seed()
     yield monkeypatch
@@ -167,11 +167,14 @@ def test_flag_off_is_404_for_everyone(env):
 
 
 @pytest.mark.parametrize("login", ["medina", "aisina"])
-def test_ordinary_managers_are_forbidden(env, login):
+def test_ordinary_managers_see_only_their_numbers(env, login):
     _on()
     c = _client(login)
-    assert c.get("/admin/pilot-summary").status_code == 403
-    assert c.get("/admin/pilot-summary", params={"direction": "visa", "metric": "new"}).status_code == 403
+    response = c.get("/admin/pilot-summary")
+    assert response.status_code == 200
+    assert _cards(response.text)["Новых обращений"] == (2 if login == "medina" else 1)
+    assert c.get("/admin/pilot-summary", params={"who": "someone-else"}).status_code == 403
+    assert c.post("/admin/pilot-summary/creative", data={"direction": "visa"}).status_code == 403
     assert "/admin/pilot-summary" not in c.get("/admin/calendar").text
 
 
@@ -196,7 +199,80 @@ def test_lead_list_does_not_widen_own_scope(env):
     """В списке руководителей туров стоит визовый Гриша — туры ему всё равно закрыты."""
     _on()
     env.setattr(app.config.settings, "panel_direction_leads", {"visa": [], "tours": ["grisha"]})
-    assert _client("grisha").get("/admin/pilot-summary").status_code == 403
+    c = _client("grisha")
+    assert c.get("/admin/pilot-summary", params={"direction": "tours"}).status_code == 403
+    response = c.get("/admin/pilot-summary")
+    assert response.status_code == 200
+    assert _cards(response.text)["Новых обращений"] == 0
+
+
+def test_creative_editor_csrf_and_persistence(env, tmp_path):
+    import re
+    env.setattr(app.config.settings, "report_catalog_path", str(tmp_path / "catalog.sqlite3"))
+    _on()
+    c = _client("grisha")
+    html = c.get("/admin/pilot-summary").text
+    token = re.search(r'name="csrf_token" value="([^"]+)"', html).group(1)
+    data = {"direction": "visa", "source": "post", "code": "fixture-code", "label": "Fixture creative"}
+    assert c.post("/admin/pilot-summary/creative", data=data).status_code == 403
+    data["csrf_token"] = token
+    assert c.post("/admin/pilot-summary/creative", data=data).status_code == 200
+    from app.core.report_catalog import names
+    assert names(app.config.settings.report_catalog_path, "visa")[("post", "fixture-code")] == "Fixture creative"
+    data["direction"] = "tours"
+    assert c.post("/admin/pilot-summary/creative", data=data).status_code == 403
+
+
+def test_local_leader_page_text(env, capsys):
+    _on()
+    response = _client("grisha").get("/admin/pilot-summary", params={"period": "fortnight"})
+    assert response.status_code == 200
+    assert "Каналы и креативы" in response.text and "14 дней" in response.text
+    with capsys.disabled():
+        print("\nLOCAL ASGI leader /admin/pilot-summary?period=fortnight HTTP 200")
+        print(_cards(response.text))
+
+
+@pytest.mark.parametrize("mode,expected", [("prepayment", 1), ("full_payment", 0)])
+def test_payment_mode_uses_ledger_dates(env, mode, expected):
+    from types import SimpleNamespace
+    from app.core import pilot_summary as ps, report_finance
+    _on()
+    client = _client("grisha")
+    env.setattr(app.config.settings, "report_sale_definition", mode)
+    dialogs, audit = asyncio.run(ps.load({"getvisa"}, NOW - timedelta(days=30), NOW))
+    views = dict(panel_store._memory_store._conv)
+    async def load_dialogs(*args):
+        return dialogs, list(audit)
+    async def cards(*args):
+        return views
+    async def money(*args):
+        return {"currencies": [], "open_tasks": 0, "unknown_contracts": 0,
+                "unconverted_contracts": 0, "broken_contracts": 0,
+                "prepayments": {("phone", V1.split(":")[1]): (1, TODAY)},
+                "full_payments": {}}
+    env.setattr(ps, "load", load_dialogs)
+    env.setattr(ps, "cards", cards)
+    env.setattr(ps, "_sessionmaker", lambda store: None)
+    env.setattr(report_finance, "load", money)
+    env.setattr(panel_store, "get_conversation_store", lambda: SimpleNamespace())
+    response = client.get("/admin/pilot-summary")
+    assert response.status_code == 200
+    assert _cards(response.text)["Продажи"] == expected
+
+
+def test_three_leaders_two_directions_existing_shape(env):
+    from app.core import manager_scope
+    env.setattr(app.config.settings, "panel_direction_leads", {
+        "visa": ["fixture-lead-a", "fixture-lead-b", "fixture-lead-c"],
+        "tours": ["fixture-lead-a", "fixture-lead-b"]})
+    env.setattr(manager_scope, "BOT_SCOPE_BY_MANAGER", {
+        "fixture-lead-a": {"getvisa", "frunze_tours"},
+        "fixture-lead-b": {"getvisa", "frunze_tours"},
+        "fixture-lead-c": {"getvisa"}})
+    assert page.allowed_directions({"login": "fixture-lead-a"}) == ["visa", "tours"]
+    assert page.allowed_directions({"login": "fixture-lead-b"}) == ["visa", "tours"]
+    assert page.allowed_directions({"login": "fixture-lead-c"}) == ["visa"]
 
 
 def test_admin_sees_both_directions_and_menu(env):

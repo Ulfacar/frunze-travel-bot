@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from app.core.budget import bishkek_day_start_utc
 
 # Поддерживаемые окна периода для дашборда (ключ → длительность; None = всё время).
-PERIODS = [("today", "Сегодня"), ("7d", "7 дней"), ("30d", "30 дней"), ("all", "Всё время")]
+PERIODS = [("today", "Сегодня"), ("7d", "7 дней"), ("14d", "14 дней"), ("30d", "30 дней"), ("all", "Всё время")]
 
 
 def _aware(dt: datetime | None) -> datetime | None:
@@ -52,12 +52,9 @@ def _median(values: list[float]) -> float | None:
 
 def _period_start(period: str, now: datetime) -> datetime | None:
     """Начало окна периода. None — без фильтра (всё время / неизвестный ключ)."""
-    if period == "today":
-        return bishkek_day_start_utc(now)
-    if period == "7d":
-        return now - timedelta(days=7)
-    if period == "30d":
-        return now - timedelta(days=30)
+    if period in ("today", "7d", "14d", "30d", "week", "fortnight", "month"):
+        from app.core.report_metrics import period_bounds
+        return period_bounds(period, now)[0]
     return None
 
 

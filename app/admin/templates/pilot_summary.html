@@ -38,16 +38,52 @@
       <a class="pls-card{% if key in ('over_sla','failed','unknown') and cur.totals[key] %} warn{% endif %}" href="{{ link(metric=key) }}"><b>{{ cur.totals[key] }}</b><span>{{ label }}</span></a>
       {% endfor %}
       <div class="pls-card"><b>{{ cur.max_wait|round(0)|int }}</b><span>Дольше всех ждали, мин</span></div>
+      <div class="pls-card"><b>{{ (cur.conversion|string ~ '%') if cur.conversion is not none else '—' }}</b><span>Конверсия из лида в продажу</span></div>
+      <div class="pls-card"><b>{{ online if online is not none else '—' }}</b><span>Консультации онлайн{{ ' — не определено' if online is none else '' }}</span></div>
     </div>
+  </section>
+
+  <section class="pls-box" aria-label="Источники обращений">
+    <h2>Каналы и креативы</h2>
+    <p class="pls-meta">Продажи периода / новые лиды периода. Продажа старого лида может дать конверсию выше 100%. При отсутствии лидов — «—». Источник определяется по ссылке в первом сообщении; отсутствие ссылки не доказывает отсутствие рекламы.</p>
+    {% for title, rows in [('Каналы', cur.acquisition.channels), ('Креативы', cur.acquisition.creatives)] %}
+    <h3>{{ title }}</h3>
+    <div class="pls-scroll"><table><thead><tr><th>Источник</th><th>Лиды</th><th>Продажи</th><th>Конверсия</th></tr></thead>
+      <tbody>{% for r in rows %}<tr><td>{{ r.label if r.label is defined else r.key }}</td><td>{{ r.leads }}</td><td>{{ r.sales }}</td><td>{{ (r.conversion|string ~ '%') if r.conversion is not none else '—' }}</td></tr>
+      {% else %}<tr><td colspan="4">За период нет данных.</td></tr>{% endfor %}</tbody></table></div>
+    {% endfor %}
+    {% if can_edit_creatives %}
+    <details><summary>Назвать креатив</summary>
+      <form method="post" action="/admin/pilot-summary/creative">
+        <input type="hidden" name="csrf_token" value="{{ report_csrf }}">
+        <input type="hidden" name="direction" value="{{ direction }}">
+        <label>Канал <select name="source"><option value="post">Instagram</option><option value="ad">Facebook</option></select></label>
+        <label>Код поста <input name="code" required maxlength="128"></label>
+        <label>Название <input name="label" maxlength="160"></label>
+        <button type="submit">Сохранить</button>
+        <p class="pls-meta">Пустое название возвращает отображение кода. Не вводите данные клиентов.</p>
+      </form>
+    </details>{% endif %}
+  </section>
+
+  <section class="pls-box" aria-label="Договоры и задачи">
+    <h2>Договоры и задачи</h2>
+    {% if finance is not none %}
+    <p class="pls-meta">Накопленные суммы по подписанным договорам на текущий момент; возвраты показаны отдельно. Задачи — открытые сейчас. Эти остатки не ограничены периодом поступления лидов. Валюты не суммируются.</p>
+    <p>Открытые задачи: {{ finance.open_tasks }}</p>
+    <div class="pls-scroll"><table><thead><tr><th>Валюта</th><th>Оплачено</th><th>Возвращено</th><th>Остаток</th><th>Доплата при частичной оплате</th></tr></thead>
+    <tbody>{% for r in finance.currencies %}<tr><td>{{ r.currency }}</td><td>{{ r.paid }}</td><td>{{ r.refunded }}</td><td>{{ r.remaining }}</td><td>{{ r.additional }}</td></tr>{% else %}<tr><td colspan="5">Нет подписанных договоров.</td></tr>{% endfor %}</tbody></table></div>
+    <p class="pls-meta">Неизвестная сумма договора: {{ finance.unknown_contracts }}. Есть платежи без курса: {{ finance.unconverted_contracts }}. Ошибки журнала: {{ finance.broken_contracts }}.</p>
+    {% else %}<p>{{ finance_note }}</p>{% endif %}
   </section>
 
   <section class="pls-box" aria-labelledby="pls-m">
     <h2 id="pls-m" class="lead" style="margin-bottom:8px">По менеджерам</h2>
     <div class="pls-scroll"><table>
-      <thead><tr><th>Менеджер</th>{% for key, label in metrics %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+      <thead><tr><th>Менеджер</th>{% for key, label in metrics %}<th>{{ label }}</th>{% endfor %}<th>Конверсия</th></tr></thead>
       <tbody>
       {% for m in cur.managers %}
-      <tr><td>{{ (m.login|who) if m.login != '—' else 'Ничей' }}</td>{% for key, label in metrics %}<td>{% if m[key] %}<a href="{{ link(metric=key, who=m.login) }}">{{ m[key] }}</a>{% else %}0{% endif %}</td>{% endfor %}</tr>
+      <tr><td>{{ (m.login|who) if m.login != '—' else 'Ничей' }}</td>{% for key, label in metrics %}<td>{% if m[key] %}<a href="{{ link(metric=key, who=m.login) }}">{{ m[key] }}</a>{% else %}0{% endif %}</td>{% endfor %}<td>{{ (m.conversion|string ~ '%') if m.conversion is not none else '—' }}</td></tr>
       {% else %}<tr><td colspan="7">За период ничего не было.</td></tr>{% endfor %}
       </tbody>
     </table></div>

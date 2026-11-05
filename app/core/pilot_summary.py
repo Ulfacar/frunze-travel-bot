@@ -18,13 +18,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
+from app.core.report_metrics import PERIODS as REPORT_PERIODS, period_bounds as report_bounds, conversion, acquisition
 
 BISHKEK = timedelta(hours=6)
-PERIODS = (("today", "Сегодня"), ("yesterday", "Вчера"), ("week", "7 дней"))
+PERIODS = REPORT_PERIODS + (("yesterday", "Вчера"),)
 METRICS = (("new", "Новых обращений"), ("answered", "Ответили из панели"),
            ("over_sla", "Ждали дольше {sla} мин"), ("failed", "Не доставлено"),
            ("unknown", "Неизвестно, дошло ли"), ("sales", "Продажи"))
+METRICS += (("office", "Консультации в офисе"),)
 PANEL_SENDS = ("send", "send_file", "resend")
 NOBODY = "—"
 
@@ -36,16 +38,8 @@ def _aware(at):
 
 
 def period_bounds(period: str, now: datetime) -> tuple[datetime, datetime]:
-    """[start, end) в UTC для местного (Бишкек) периода; сегодня и 7 дней — до «сейчас»."""
-    now = now.astimezone(timezone.utc)
-    local_today = (now + BISHKEK).date()
-
-    def to_utc(d: date) -> datetime:
-        return datetime(d.year, d.month, d.day, tzinfo=timezone.utc) - BISHKEK
-    if period == "yesterday":
-        return to_utc(local_today - timedelta(days=1)), to_utc(local_today)
-    days_back = 6 if period == "week" else 0
-    return to_utc(local_today - timedelta(days=days_back)), now
+    """[start, end) в UTC; 1/7/14/30 местных календарных дней включая сегодня."""
+    return report_bounds(period, now)
 
 
 @dataclass
@@ -55,6 +49,9 @@ class Dialog:
     owner: str
     created_at: datetime | None
     messages: list = field(default_factory=list)        # (sender, status, created_at)
+    source: str = ""
+    source_id: str = ""
+    channel: str = ""
 
 
 def _episodes(d: Dialog, start: datetime, end: datetime) -> list[float]:
@@ -67,7 +64,7 @@ def _episodes(d: Dialog, start: datetime, end: datetime) -> list[float]:
     концу периода — до конца периода. Так «ждал с вечера и до 9:20 утра» — одно долгое
     ожидание, а не два коротких по разные стороны полуночи.
     """
-    from app.core.reply_sla import working_minutes
+    from app.core.report_metrics import working_minutes
     out, since = [], None
     for sender, _status, at in sorted(d.messages, key=lambda m: _aware(m[2])):
         at = _aware(at)
@@ -113,17 +110,26 @@ def compute(dialogs: list[Dialog], audit: list[dict], start: datetime, end: date
             if sender == "manager" and start <= at < end and status in ("failed", "unknown"):
                 put(status, d.owner, d.user_id)
     for row in audit:
+        at = _aware(row.get("created_at"))
+        if at is not None and not start <= at < end:
+            continue
         uid = row.get("user_id") or ""
         if uid not in by_id:
             continue
         action = row.get("action")
+        if action in ("outcome", "stage") and row.get("detail") == "office_visit":
+            put("office", by_id[uid].owner, uid)
         if action in PANEL_SENDS:
             put("answered", row.get("manager") or "", uid)
         elif action == sales_action and (sales_action != "outcome" or row.get("detail") == "won"):
-            put("sales", row.get("manager") or "", uid)
+            put("sales", by_id[uid].owner, uid)
     managers = [{"login": login, **{m: len(v) for m, v in metrics.items()}}
                 for login, metrics in sorted(per.items(), key=lambda kv: (kv[0] == NOBODY, kv[0]))]
+    for row in managers:
+        row["conversion"] = conversion(row["new"], row["sales"])
     return {"totals": {m: len(v) for m, v in ids.items()}, "ids": ids, "managers": managers,
+            "conversion": conversion(len(ids["new"]), len(ids["sales"])),
+            "acquisition": acquisition(dialogs, ids["new"], ids["sales"]),
             "per_ids": per, "max_wait": round(max_wait, 1), "episodes": episodes_total}
 
 
@@ -160,7 +166,8 @@ async def load(bot_ids: set[str], start: datetime, end: datetime) -> tuple[list[
             msgs = [(m.sender, m.status or "", m.created_at) for m in c.messages
                     if m.created_at is not None and window <= _aware(m.created_at) < end]
             first = min((_aware(m.created_at) for m in c.messages if m.created_at), default=None)
-            dialogs.append(Dialog(c.user_id, c.bot_id, c.assigned_to or "", first, msgs))
+            dialogs.append(Dialog(c.user_id, c.bot_id, c.assigned_to or "", first, msgs,
+                                  c.source or "", c.source_id or "", c.channel or ""))
         audit = [r for r in store._audit if start <= _aware(r["created_at"]) < end]
         return dialogs, audit
     from sqlalchemy import select
@@ -170,9 +177,11 @@ async def load(bot_ids: set[str], start: datetime, end: datetime) -> tuple[list[
         return [], []
     async with _sessionmaker(store)() as s:
         convs = (await s.execute(select(Conversation.id, Conversation.user_id, Conversation.bot_id,
-                                        Conversation.assigned_to, Conversation.created_at)
+                                        Conversation.assigned_to, Conversation.created_at,
+                                        Conversation.source, Conversation.source_id, Conversation.channel)
                                  .where(Conversation.bot_id.in_(bots)))).all()
-        by_pk = {pk: Dialog(uid, bot, owner or "", created) for pk, uid, bot, owner, created in convs}
+        by_pk = {pk: Dialog(uid, bot, owner or "", created, source=source or "", source_id=code or "", channel=channel or "")
+                 for pk, uid, bot, owner, created, source, code, channel in convs}
         rows = (await s.execute(select(ConvMessage.conversation_id, ConvMessage.sender,
                                        ConvMessage.status, ConvMessage.created_at)
                                 .join(Conversation, Conversation.id == ConvMessage.conversation_id)

@@ -728,4 +728,12 @@ class Settings(BaseSettings):
         return [ManagerConfig(login=self.admin_user, name="Менеджер", password=self.admin_password)]
 
 
+    # Настройки только отчётов; отдельный блок для ручного слияния.
+    report_catalog_path: str = "data/report-catalog.sqlite3"
+    # legacy сохраняет текущее правило до решения заказчика. Новые определения
+    # меняют только отчёт, не исходы диалогов и не флаги денежных операций.
+    report_sale_definition: str = "legacy"  # legacy | prepayment | full_payment
+    report_online_consultation_outcome: str = ""  # пусто = не считать
+
+
 settings = Settings()
