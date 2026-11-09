@@ -30,6 +30,11 @@ services:
       MANAGER_SEES_DIRECTION_CASES_ENABLED: ${MANAGER_SEES_DIRECTION_CASES_ENABLED:-false}
       MANAGER_CAN_TAKE_COLLEAGUE_DIALOG_ENABLED: ${MANAGER_CAN_TAKE_COLLEAGUE_DIALOG_ENABLED:-false}
       AWAITING_WORKING_HOURS_ENABLED: ${AWAITING_WORKING_HOURS_ENABLED:-false}
+      # Порог сторожа «клиент ждёт». Был только в коде: prod_traps_check давал
+      # NOT_IN_COMPOSE, то есть калибровка требовала релиза. Дефолт прежний.
+      ALERT_AWAITING_MINUTES: ${ALERT_AWAITING_MINUTES:-10}
+      # Потолок свежести личного пуша в РАБОЧИХ часах (только при включённом окне).
+      AWAITING_MAX_AGE_WORKING_HOURS: ${AWAITING_MAX_AGE_WORKING_HOURS:-12}
       # Въездные визы в КР (ТЗ Гриши v1.1). Оба OFF: ветка и отдельно речь бота.
       KG_ENTRY_ENABLED: ${KG_ENTRY_ENABLED:-false}
       KG_ENTRY_SAY_CONFIRMED_ENABLED: ${KG_ENTRY_SAY_CONFIRMED_ENABLED:-false}

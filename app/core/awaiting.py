@@ -146,12 +146,36 @@ def select_telegram_targets(convs: list, now: datetime, cfg, *,
       нему только злит (то же правило, что в догоняющей отправке заявок);
     * не больше `TELEGRAM_CAP` за тик, самые свежие первыми — накопленный хвост
       разбирается за несколько тиков, а не одним залпом.
+
+    **Возраст меряется той же единицей, что и порог.** При `working_hours` это рабочие
+    минуты направления, иначе календарные. Ревью 09.11.2026 нашло разъехавшиеся
+    единицы: порог считался в рабочих минутах, а потолок остался календарным, и клиент,
+    написавший в субботу вечером, не получал личного пуша НИКОГДА — в субботу рабочих
+    минут мало, а к понедельнику его выбрасывал календарный возраст (39 ч > 24 ч). При
+    выключенном флаге он пуш получал.
+
+    Потолок в рабочих часах — ОТДЕЛЬНОЕ число (`awaiting_max_age_working_hours`), а не
+    те же 24: второе ревью показало, что 24 рабочих часа это 2,4 рабочих дня, то есть
+    3–4 календарных, и недельный лид снова начал бы будить менеджера. Замер на пн 11:00
+    по каналу getvisa: субботний вечер — 1 рабочий час, вечер пятницы — 11, четверг —
+    27. Дефолт 12 пропускает первые два и отсекает третий.
     """
     targets = select_awaiting_targets(convs, now, cfg, working_hours=working_hours)
     max_age = timedelta(hours=float(getattr(cfg, "awaiting_max_age_hours", 24)))
+    work_cap_minutes = float(getattr(cfg, "awaiting_max_age_working_hours", 12)) * 60
+
+    def _fresh_enough(conv) -> bool:
+        if not working_hours:
+            return _aware(conv.last_message_at) >= _aware(now) - max_age
+        # Календарный возраст — верхняя оценка рабочего: если он уже в пределах
+        # потолка, считать рабочие минуты незачем (цикл по дням в `working_minutes`).
+        if _aware(conv.last_message_at) >= _aware(now) - timedelta(minutes=work_cap_minutes):
+            return True
+        return waited_minutes(conv, now, working_hours=True) <= work_cap_minutes
+
     fresh = [c for c in targets
              if _aware(c.last_message_at) is not None
-             and _aware(c.last_message_at) >= _aware(now) - max_age
+             and _fresh_enough(c)
              and not _is_closing(getattr(c, "last_text", ""))
              and not _pinged_recently(c, now, cfg)
              and _ping_budget_left(c, cfg)]

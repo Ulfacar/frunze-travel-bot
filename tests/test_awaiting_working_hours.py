@@ -41,6 +41,7 @@ def conv(bot_id, last_at, **kw):
 def cfg(**kw):
     base = dict(alert_awaiting_minutes=30, alert_cooldown_minutes=60,
                 awaiting_telegram_enabled=True, awaiting_max_age_hours=24,
+                awaiting_max_age_working_hours=12,
                 awaiting_working_hours_enabled=False)
     base.update(kw)
     return SimpleNamespace(**base)
@@ -125,3 +126,54 @@ def test_an_unknown_bot_falls_back_to_the_wider_schedule():
     now = _utc(2026, 11, 6, 9, 50)
     c = conv("", wrote)
     assert round(awaiting.waited_minutes(c, now, working_hours=True)) == 40
+
+
+def test_a_saturday_evening_client_still_gets_a_personal_ping_on_monday():
+    """Возраст меряется той же единицей, что и порог, иначе клиент теряется совсем.
+
+    Ревью 09.11.2026: порог считался в рабочих минутах, а потолок свежести
+    `awaiting_max_age_hours` остался календарным. Клиент, написавший в субботу вечером,
+    при включённом окне не получал личного пуша НИКОГДА: в субботу рабочих минут мало,
+    а в понедельник его выбрасывал календарный возраст (39 ч > 24 ч). Без флага пуш
+    уходил в субботу — то есть правка, которая должна была убрать ночные пинги, молча
+    убирала и самого клиента.
+
+    7 ноября 2026 — суббота, 8-е — воскресенье (у виз нерабочее), 9-е — понедельник.
+    """
+    last = _utc(2026, 11, 7, 20, 0)                     # сб 20:00, после закрытия
+    settings = cfg(alert_awaiting_minutes=10, awaiting_working_hours_enabled=True)
+
+    # Суббота поздним вечером: рабочих минут нет — не будим никого, это и есть цель флага.
+    saturday = awaiting.select_telegram_targets([conv("getvisa", last)],
+                                                _utc(2026, 11, 7, 23, 0), settings,
+                                                working_hours=True)
+    assert saturday == []
+
+    # Понедельник, приём виз открыт час: ожидание набрало рабочие минуты → пуш уходит.
+    monday = awaiting.select_telegram_targets([conv("getvisa", last)],
+                                              _utc(2026, 11, 9, 11, 0), settings,
+                                              working_hours=True)
+    assert len(monday) == 1, "клиент выходного дня обязан дождаться напоминания"
+
+    # Мера одна на обе границы, но потолок в рабочих часах СВОЙ (12, не 24): иначе
+    # 24 рабочих часа = 2,4 рабочих дня, и недельный лид снова будил бы менеджера.
+    # Замер на пн 11:00, канал getvisa: вечер пятницы — 11 рабочих часов, четверг — 27.
+    friday = awaiting.select_telegram_targets([conv("getvisa", _utc(2026, 11, 6, 18, 0))],
+                                              _utc(2026, 11, 9, 11, 0), settings,
+                                              working_hours=True)
+    assert len(friday) == 1, "вечер пятницы — ещё живое ожидание"
+    thursday = awaiting.select_telegram_targets([conv("getvisa", _utc(2026, 11, 5, 11, 0))],
+                                                _utc(2026, 11, 9, 11, 0), settings,
+                                                working_hours=True)
+    assert thursday == [], "недельный лид напоминанием только злит"
+
+
+def test_without_the_flag_the_age_ceiling_stays_calendar():
+    """Флаг OFF — прежний календарный потолок, строка в строку."""
+    settings = cfg(alert_awaiting_minutes=10, awaiting_working_hours_enabled=False)
+    old = conv("getvisa", _utc(2026, 11, 7, 20, 0))
+    assert awaiting.select_telegram_targets([old], _utc(2026, 11, 9, 11, 0),
+                                            settings, working_hours=False) == []
+    fresh = conv("getvisa", _utc(2026, 11, 9, 10, 0))
+    assert len(awaiting.select_telegram_targets([fresh], _utc(2026, 11, 9, 11, 0),
+                                                settings, working_hours=False)) == 1
