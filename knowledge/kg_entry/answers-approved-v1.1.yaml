@@ -2552,6 +2552,8 @@
     {
       "piece_id": "KG.KB.17.0#001",
       "text_sha256": "53b0fdf0e160605dec160f07d1f6de8d32ea4d69a8ef4ef05d4096aed5e72679",
+      "derived_from_sha256": "01c1920d271ccfab9cc117df0ec68547171a58fd8d1da71314e5b702a18bc7a7",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2567,6 +2569,8 @@
     {
       "piece_id": "KG.KB.17.0#005",
       "text_sha256": "fea29496ed1793a03be842a094abf3e2709e26889227bd45c7a6b6f9fe42df3b",
+      "derived_from_sha256": "567203e1f6192fab8009265aeb86927ddf6f9e17e6f89316a97aefc5d69e8b3b",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2582,6 +2586,8 @@
     {
       "piece_id": "KG.KB.17.0#007",
       "text_sha256": "1cdb2dc5c3385211fc6aa6636daa8410eb285e4c99c18127670ad2f6be171712",
+      "derived_from_sha256": "55ba50ad51246c1ace560377c69611d74a0f609d6e0be8f6e83c79313ce5411e",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2597,6 +2603,8 @@
     {
       "piece_id": "KG.KB.17.0#010",
       "text_sha256": "127ebe3bddc7b49d60b865c67a1cb197c4d74c484d7d40c6d92c865cef13c4f0",
+      "derived_from_sha256": "deef8ab9067fb7ad1c3ce8803d19bac781a3ce94039319fa346d138fe72a7815",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2612,6 +2620,8 @@
     {
       "piece_id": "KG.KB.17.0#011",
       "text_sha256": "70abe2908a43fb489ad78192c225c7b8a5149d0911f1797f038729bd1ae18ba4",
+      "derived_from_sha256": "a180b75fed086816403da388d9a81ec25d54576e7371445a9eacee97c8dfd643",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2627,6 +2637,8 @@
     {
       "piece_id": "KG.KB.17.0#013",
       "text_sha256": "4fbcbc2a01edaf317f97ce8e4c2d876986e94f87f957db8a0a5d3ea17d1232cf",
+      "derived_from_sha256": "a8f9142d26ab5ab8585b477c614da2a3710ec396af9b4af2dc802309e962a054",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2642,6 +2654,8 @@
     {
       "piece_id": "KG.KB.17.0#015",
       "text_sha256": "643d5b216a3e86c17cdf96da35832f6fe5996804e98b622cad358f5c8c45299c",
+      "derived_from_sha256": "14bdf077de9aab90c510b7076ac137ec69d799a4da82bef85b50c27aed0c3ba2",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2657,6 +2671,8 @@
     {
       "piece_id": "KG.KB.17.0#020",
       "text_sha256": "2e246869c95c1f1c3bed071660d2e1557768f0e6aeb81ccd08e66ce07f232ef5",
+      "derived_from_sha256": "1014db4e10f850a2c184447191234a89414c80c6a064f06bc0737f20a2f1fc5d",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2672,6 +2688,8 @@
     {
       "piece_id": "KG.KB.17.0#021",
       "text_sha256": "278cb975097c98e5703abda1972bac4d176911c94d7288c1f86e46e505a4e7c8",
+      "derived_from_sha256": "a8b7843644d68ad3898442385069ac6115ce82142ccd7dc51361eefdce84ad94",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2687,6 +2705,8 @@
     {
       "piece_id": "KG.KB.17.0#023",
       "text_sha256": "506f478f10fb283e3b0b101bc884c3da034f3f4818a7e86094d02aafe4f14b6d",
+      "derived_from_sha256": "7706e6c6fec82697e826ff0a3fc8f1f5e055121279e7781ad2b6e7361d369251",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2702,6 +2722,8 @@
     {
       "piece_id": "KG.KB.17.0#024",
       "text_sha256": "9d9a954b82530961556ee5acf56e9ff16efef42993784e40e3ce769901db3db9",
+      "derived_from_sha256": "4f70614d746f7a41877f4cb77c9baec44fe5d72f704e12895045be7c3c0bf05d",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2717,6 +2739,8 @@
     {
       "piece_id": "KG.KB.17.0#025",
       "text_sha256": "11954dbfa75a9c883e256948d5e300fe6b4e59088c86b2e50c3626b36116d892",
+      "derived_from_sha256": "2fe60bf9cc55758355b1a21dc600ff22a8d44c63c79844b47170cfe90d2bf40b",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2732,6 +2756,8 @@
     {
       "piece_id": "KG.KB.17.0#026",
       "text_sha256": "06a0d2f3aa83fba3692407c965780286c51dcf6d9d8147eb620c34ed7f24a7c0",
+      "derived_from_sha256": "1e5ce4845b9dc79c72990cfd3cf9b117498525a0f157a47048d216defd4730fc",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2747,6 +2773,8 @@
     {
       "piece_id": "KG.KB.17.0#027",
       "text_sha256": "3b9828e5ca6b4c5973bafb0baeb2b1c23c5696904c3cdab4608461382a15c22b",
+      "derived_from_sha256": "d0f7aefc6b102094014c3ec5d5ac51ad2234fb544ce5716c006ee3594b5acbf7",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2762,6 +2790,8 @@
     {
       "piece_id": "KG.KB.17.0#028",
       "text_sha256": "260a2ecf9c9fca00804b333c0d08eb7a6b9ccf4a9d5a611318e579b5aa7bc77f",
+      "derived_from_sha256": "cbf0d92ebad5f21ecbe348d310db0a1f64b1ac8d7e6421665f1928ec8fa743db",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2777,6 +2807,8 @@
     {
       "piece_id": "KG.KB.17.0#029",
       "text_sha256": "0e604b3cd3a0336c2f37ffe829bc597585f0e84d85f5b8e7521c07f3bb397258",
+      "derived_from_sha256": "0d8e9e7b71afce854e805d4858919cc33022a2b080706832634d6b07f77b25ef",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2792,6 +2824,8 @@
     {
       "piece_id": "KG.KB.17.0#030",
       "text_sha256": "a593cdc532d91f6a16e0c3c265463ed2a310a533950657308b43914ea7e668b3",
+      "derived_from_sha256": "53cbc05891433f06d3b448ba15f0f044b8d3f4449e5c58878c4b844aa2a07e8b",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2807,6 +2841,8 @@
     {
       "piece_id": "KG.KB.17.0#031",
       "text_sha256": "323cfbf49fc81528a952bf87ad5bd7c2fcdb8af23a89396444fabd94a65df841",
+      "derived_from_sha256": "7d6a4d59fcab19e8bea7ffa035a0c054683aab0c84298cbc692b02bf35c6e2fd",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2822,6 +2858,8 @@
     {
       "piece_id": "KG.KB.17.0#032",
       "text_sha256": "40e4c1a39c03c68f6477e0d942c9957566887f0b8fa29244ec29b9f7c13444ac",
+      "derived_from_sha256": "195aa60e086b215d724be5fe33f8bad261cb25bc98b284c6c91e550a0636dcb5",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2837,6 +2875,8 @@
     {
       "piece_id": "KG.KB.17.0#033",
       "text_sha256": "758cbae1be0c70c44c568496adecf8f59cd9ac6ff7a05e0da8490c82cb8c6706",
+      "derived_from_sha256": "4331e753bb1fd7fdd47898bf54b90a3ee25be099ef773e183aac6b3e8b538335",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2852,6 +2892,8 @@
     {
       "piece_id": "KG.KB.17.0#034",
       "text_sha256": "6ac6d582d2f857a5b34130f98b6b168b63b944918b77f102c65af87166fe3ff9",
+      "derived_from_sha256": "09ddd9e3b58acc29a00121e3becc5dc3a9a5151d11380b7276df2d9f33187a44",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2867,6 +2909,8 @@
     {
       "piece_id": "KG.KB.17.0#036",
       "text_sha256": "f76d498c8c8445c06d50341184f979616349b094c7711bc9289b904f99619e21",
+      "derived_from_sha256": "3ede4c30a15774f78558d67301bb1619dbae1896d97fc1636b4e0d22664bb3de",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2882,6 +2926,8 @@
     {
       "piece_id": "KG.KB.17.0#037",
       "text_sha256": "b094888f4682a999360dad438912ef4dc0194af955c5575dd384b1e768b0e634",
+      "derived_from_sha256": "1caf0c9385baf4ad0c46295d80ea990b9cb9c8aa133a7fe1258a76e8e8e26988",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2897,6 +2943,8 @@
     {
       "piece_id": "KG.KB.17.0#038",
       "text_sha256": "aa91148e16723b05343fa3eb8918a23e16f3894bff735afbb335f85da8205676",
+      "derived_from_sha256": "59d13d3dfbba36514ef923592c6002df037d29c557371a0b66a6c954f2ba2666",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2912,6 +2960,8 @@
     {
       "piece_id": "KG.KB.17.0#039",
       "text_sha256": "bdd55d262e1252988c258e8462b669f84e86d7544b954bda675fee2a41491415",
+      "derived_from_sha256": "e7abbf4de50720da7bb1135281de20b91365f03a521190ecc1690fa5674b181f",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2927,6 +2977,8 @@
     {
       "piece_id": "KG.KB.17.0#040",
       "text_sha256": "64e7dd52618854494810b7b2f4d01af943475b1d52cd58e82d9a3e0ac9275ed3",
+      "derived_from_sha256": "bd4a4fc4be8f6e93b11b3518cd5467807ed7f9ba9bd1397da779469f3998825a",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2942,6 +2994,8 @@
     {
       "piece_id": "KG.KB.17.0#042",
       "text_sha256": "cbc2251222e57a7551dd25044c4245506c7fd0e34b49f628df1f9502fc5cc849",
+      "derived_from_sha256": "5cbf0c22d3d9a3ed9a8c286c27fb76bd04559295b32ee3c9ae8792b6893c8233",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2957,6 +3011,8 @@
     {
       "piece_id": "KG.KB.17.0#043",
       "text_sha256": "e76360f789f113f79495cc76b24e0fa8ac94ea16cf995c2d225f07c310b60367",
+      "derived_from_sha256": "82990a5c1663058dda48bdef5c3d870a6b39506d2174a2f8581799c4f0a08809",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2972,6 +3028,8 @@
     {
       "piece_id": "KG.KB.17.0#044",
       "text_sha256": "6d4bee313629a4ed56b49538e6032d03655d92791c49fe03f11cab04c04144a6",
+      "derived_from_sha256": "b0d832d5dcd3005f58a73be63be6df39874639c5e933a50a7d102087261cab36",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -2987,6 +3045,8 @@
     {
       "piece_id": "KG.KB.17.0#045",
       "text_sha256": "76e4bbaaf7019899ed13aa3991a0f86dcf24034e5ebc870f7d9592dea12e2626",
+      "derived_from_sha256": "7f6cd5fb44d061caee31e66d9dc6d39e5c2182088795f063829ef3a82a9b6f23",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -3002,6 +3062,8 @@
     {
       "piece_id": "KG.KB.17.0#046",
       "text_sha256": "d72d3e370b301cdf7282302f3b18d285925f055be055d82b83ce8bd82b06b0c0",
+      "derived_from_sha256": "2144915ea931c2391254005c59c2dc80a4909c70321e8e47465d3bf6544f893f",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -3017,6 +3079,8 @@
     {
       "piece_id": "KG.KB.17.0#047",
       "text_sha256": "6974636638c4d7d3283403bb3133a0d4595e2e349682821efb336d5839988463",
+      "derived_from_sha256": "b280832f93c014b6d7ffe58fff670ee71939050ea0821da258c22b0acb82b3f3",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -3032,6 +3096,8 @@
     {
       "piece_id": "KG.KB.17.0#048",
       "text_sha256": "9d4940d030d82609d7d480cf1a0f92d62e83a46e282afe15c5ceabb6700a1aa0",
+      "derived_from_sha256": "375b5f8de6a6ca8c9e37f3996115fe54ddfd0a39436a21d0d6f2b4d61ce73001",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -3047,6 +3113,8 @@
     {
       "piece_id": "KG.KB.17.0#049",
       "text_sha256": "76ec2c8c93438ab206452b908385fd927257ba74781e496871c9e97ebd1529bb",
+      "derived_from_sha256": "76a772c27677abaf4c9f733896018251e9418d231ef3a8e65b0b63412e6c1453",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -3062,6 +3130,8 @@
     {
       "piece_id": "KG.KB.17.0#050",
       "text_sha256": "fb1dc2ded5a932694bfdeb1fbb2c59f6964b1e8df99cc3ff15309ba7a0a80477",
+      "derived_from_sha256": "c55d5752b707ee4a80c29d119feadcf6862fde6b5bb4890ab646a05148d046c5",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -3077,6 +3147,8 @@
     {
       "piece_id": "KG.KB.17.0#051",
       "text_sha256": "023b67e09c07c4fcf32d35b5c194e703e7bf01e1f80f92816052180ae578d6ca",
+      "derived_from_sha256": "63d57db6761245fb9ce32a2254c53c8897e7cd4a6e0a67f96ea79f58cc167055",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -3092,6 +3164,8 @@
     {
       "piece_id": "KG.KB.17.0#053",
       "text_sha256": "bbf8bba6d432580f1259fe95ac8c2e73f3eafdb2e222578004e5221e59fea1ba",
+      "derived_from_sha256": "21b5d41d01b2e861ef9469874bc843ccfcafd33df437468ceb68bc7d37d66279",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -3107,6 +3181,8 @@
     {
       "piece_id": "KG.KB.17.0#054",
       "text_sha256": "0ce2643065295d215557ee49c5c7431b2c31f8e201c658fc2f318f19acb55314",
+      "derived_from_sha256": "4e28756d180f3bcee4d03692b7780d7be12b58defb2430459b63cb68a224bd3c",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -3122,6 +3198,8 @@
     {
       "piece_id": "KG.KB.17.0#056",
       "text_sha256": "41202085c97b3277f63424beb3a12b511c01c461d8aa2d011dd2d6167838ecb4",
+      "derived_from_sha256": "dcd432815aa5f7796c48c55d6d1d0d3d07b6f786564335157d7b8b9758dd2f9d",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [
@@ -3137,6 +3215,8 @@
     {
       "piece_id": "KG.KB.17.0#057",
       "text_sha256": "8ec7a06f6942e3624c3ded8d8fc861165609e5ce8b8f73e111036bc4346a3417",
+      "derived_from_sha256": "49911c5c71e724be61615da5c32f492bc59e963900f069249b9246fafada790b",
+      "derivation": "without_service_columns @ e9c01aa — вырезан служебный столбец «Статус / воронка CRM»; произносимый текст строго меньше подписанного, пересчёт 05.11.2026, решение Алана",
       "block": 17,
       "section": "17.0",
       "pdf_pages": [

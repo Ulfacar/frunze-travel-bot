@@ -310,3 +310,62 @@ def test_a_row_with_a_different_cell_count_is_left_alone():
     text = ("| № | Ситуация | Статус / воронка CRM |" + "\n"
             + "| 1 | Две ячейки вместо трёх |")
     assert without_service_columns(text) == text
+
+
+# --- E. След вывода: подпись под дорезанным текстом не выглядит прочитанной глазами ---
+
+def test_a_recomputed_signature_carries_its_derivation(loaded):
+    """Инвариант по поставляемым данным: пересчитанный хеш обязан нести, из чего выведен.
+
+    `answers_approval` построен на том, что правка текста аннулирует одобрение — в
+    строке стоит хеш подписанного текста. Коммит `e9c01aa` изменил произносимый текст
+    (вырезан служебный столбец) и переписал 40 хешей, оставив подписанта и дату от
+    22–23.10. Ревью 09.11.2026: так подпись удостоверяет текст, которого человек не
+    видел. Поэтому у каждой такой строки есть `derived_from_sha256` — хеш того, что
+    человек реально подписал, — и он проверяется ЗДЕСЬ, а не на слово: пересчитываем
+    кусок с обрезкой и без неё.
+    """
+    import json
+    from pathlib import Path
+    from app.knowledge import answerable
+    from app.knowledge.answers_approval import OVERLAY
+
+    rows = json.loads(Path(OVERLAY).read_text(encoding="utf-8"))["approved"]
+    derived = [r for r in rows if r.get("derived_from_sha256")]
+    assert len(derived) == 40, "число выведенных подписей меняется только осознанно"
+    assert {r["section"] for r in derived} == {"17.0"}
+
+    # Пересобираем корпус ДВАЖДЫ: с обрезкой и без неё. Хеш без обрезки обязан совпасть
+    # с `derived_from_sha256` — тогда след доказан, а не заявлен.
+    from app.knowledge import answers_index
+    spoken = {pid: p["text_sha256"] for pid, p in loaded._pieces.items()}   # noqa: SLF001
+    original = answerable.without_service_columns
+    try:
+        answerable.without_service_columns = lambda text: text
+        answers_index.reset()
+        unsliced = answers_index.load()
+        full = {pid: p["text_sha256"] for pid, p in unsliced._pieces.items()}  # noqa: SLF001
+    finally:
+        answerable.without_service_columns = original
+        answers_index.reset()
+
+    for row in derived:
+        pid = row["piece_id"]
+        assert row["derivation"], "след без описания вывода бесполезен"
+        assert len(row["derived_from_sha256"]) == 64
+        assert row["derived_from_sha256"] != row["text_sha256"]
+        # Подписано было ПОЛНОЕ, произносится усечённое — ровно это и записано в строке.
+        assert row["derived_from_sha256"] == full[pid], pid
+        assert row["text_sha256"] == spoken[pid], pid
+
+
+def test_a_derivation_without_its_source_hash_is_rejected():
+    """Половинчатый след не считается следом: `derivation` без хеша источника — ошибка."""
+    import json
+    from pathlib import Path
+    from app.knowledge.answers_approval import OVERLAY
+
+    rows = json.loads(Path(OVERLAY).read_text(encoding="utf-8"))["approved"]
+    lame = [r["piece_id"] for r in rows
+            if r.get("derivation") and not r.get("derived_from_sha256")]
+    assert lame == []

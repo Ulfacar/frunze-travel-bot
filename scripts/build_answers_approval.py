@@ -89,6 +89,18 @@ def main() -> int:
     pieces = list(index._pieces.values())              # noqa: SLF001
     rows = []
     skipped: collections.Counter[str] = collections.Counter()
+    # Текущий оверлей читаем ДО перезаписи — только ради следа вывода. Ключ включает
+    # хеш: если текст с тех пор менялся снова, старый след к нему не относится.
+    carried: dict[tuple[str, str], dict[str, str]] = {}
+    if OVERLAY.exists():
+        try:
+            for row in json.loads(OVERLAY.read_text(encoding="utf-8")).get("approved") or ():
+                trail = {k: row[k] for k in ("derived_from_sha256", "derivation") if row.get(k)}
+                if trail:
+                    carried[(str(row.get("piece_id")), str(row.get("text_sha256")))] = trail
+        except (OSError, ValueError) as exc:
+            print(f"ВНИМАНИЕ: текущий оверлей не прочитан ({type(exc).__name__}) — "
+                  "след вывода подписей будет потерян")
     for piece in pieces:
         if piece["piece_id"] in UNSIGNED:
             skipped["снято решением владельца"] += 1
@@ -107,9 +119,15 @@ def main() -> int:
         if not str(piece.get("text") or "").strip():
             skipped["пустой текст"] += 1
             continue
+        # След вывода (`derived_from_sha256`, `derivation`) переносим из текущего
+        # оверлея, если хеш не изменился: иначе перегенерация стёрла бы запись о том,
+        # что подпись человека стоит под ДОРЕЗАННЫМ текстом, и строка снова выглядела
+        # бы прочитанной глазами. Ревью 09.11.2026.
+        trail = carried.get((piece["piece_id"], piece["text_sha256"]), {})
         rows.append({
             "piece_id": piece["piece_id"],
             "text_sha256": piece["text_sha256"],
+            **trail,
             "block": piece["block"],
             "section": piece["section"],
             "pdf_pages": piece["pdf_pages"],
