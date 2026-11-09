@@ -227,3 +227,43 @@ def test_the_new_leads_have_a_bot_scope(monkeypatch):
     assert scope["marsel"] == {"getvisa", "getvisa_tg"}
     # Решение 21.10 не тронуто: менеджерский вход Гриши — только визы.
     assert scope["grisha"] == {"getvisa", "getvisa_tg"}
+
+
+# --- Исправления ревью 09.11.2026 -------------------------------------------
+
+def test_team_view_does_not_grant_the_right_to_change_a_case():
+    """«Видеть» и «менять» — разные права, и расширили только первое (ответ 2.1).
+
+    До 09.11 запись по делу авторизовалась `can_view_case`, поэтому флаг открывал
+    коллеге запись договора с суммой в чужое дело. См. `can_change_case`.
+    """
+    from app.domain.service_authz import can_change_case
+    sees = _medina(team_view=True)
+    assert can_view_case(sees, direction="visa", owner_login="eliza") is True
+    assert can_change_case(sees, direction="visa", owner_login="eliza") is False
+    # Своё дело менять можно, как и раньше.
+    assert can_change_case(sees, direction="visa", owner_login="medina") is True
+    # Чужое направление закрыто даже владельцу-однофамильцу.
+    assert can_change_case(sees, direction="tours", owner_login="medina") is False
+    # Администратор право сохраняет: он оформляет договор за отсутствующего менеджера.
+    assert can_change_case(ADMIN, direction="visa", owner_login="eliza") is True
+
+
+@pytest.mark.parametrize("action,allow_takeover,can_take,admin,expected", [
+    ("claim", True, True, False, True),    # осознанное «Взять себе» — для этого флаг и есть
+    ("send", True, True, False, False),    # отправка НЕ перехватывает: гонка отбирала лид
+    ("release", True, True, False, False), # «вернуть боту» перехватом быть не может
+    ("claim", False, True, False, False),  # лента и ручной лид: взятие = подобрать ничьё
+    ("claim", True, False, False, False),  # флаг 2.2 выключен — прежнее правило
+    ("send", True, False, True, True),     # администратор как раньше
+])
+def test_only_a_deliberate_claim_may_override_an_active_owner(action, allow_takeover,
+                                                              can_take, admin, expected):
+    """Перебить активного владельца вправе только осознанный перехват.
+
+    Ревью 09.11.2026: `allow_emergency` отдавался на любое действие, и авто-захват
+    ничьего лида на ОТПРАВКЕ в гонке молча менял владельца.
+    """
+    from app.admin.router import takeover_allowed
+    actor = ADMIN if admin else _medina(can_take_colleague=can_take)
+    assert takeover_allowed(actor, action, allow_takeover=allow_takeover) is expected

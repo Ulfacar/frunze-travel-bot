@@ -111,7 +111,10 @@ async def _gate(request, manager, *, write=False, admin_only=False):
     _require_workday(request)
     if not ar.settings.admin_kg_entry_enabled:
         raise HTTPException(404)
-    actor = await actor_for_request(manager)
+    # Запись по делу идёт БЕЗ `team_view`: ответ 2.1 дал менеджеру видимость своего
+    # направления, а `_case` ниже авторизуется `can_view_case` — с одним актором на
+    # всё флаг открыл бы 26 POST-маршрутов въездной CRM в дела коллег (ревью 09.11).
+    actor = await actor_for_request(manager, for_write=write)
     if not actor.is_full_admin:
         from dataclasses import replace
         from app.core import flags

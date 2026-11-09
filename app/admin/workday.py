@@ -455,7 +455,8 @@ async def _write(request: Request, case_id: int, manager: dict, *, tab: str,
     if not _write_on(request):
         return await _panel_response(request, case_id, manager, tab=tab,
                                      outcome="off", echo=echo, idem_key=idem_key)
-    actor = await live_authz.actor_for_request(manager)
+    # Запись по делу: актор без `team_view` (ответ 2.1 дал видимость, не правку).
+    actor = await live_authz.actor_for_request(manager, for_write=True)
     try:
         async with ar._domain_sessionmaker()() as session:
             case, _product = await _case_or_404(session, case_id, actor)

@@ -56,14 +56,22 @@ def direction_for_bot(bot_id: str) -> str:
     return _FALLBACK_DIRECTIONS.get(bot_id or "", "")
 
 
-async def actor_for_request(manager: dict | None) -> Actor:
+async def actor_for_request(manager: dict | None, *, for_write: bool = False) -> Actor:
     """Актор запроса: права 2.1 и 2.2 читаются из рантайм-флагов ОДИН раз.
 
     `actor_for` остаётся синхронной и чистой — флаги в неё передаются параметрами.
     Иначе правило доступа зависело бы от базы, и его нельзя было бы проверить
     тестом без поднятой базы.
+
+    `for_write=True` — актор для маршрута, который ЗАПИСЫВАЕТ: `team_view` в него не
+    попадает. Ответ 2.1 дал менеджеру видимость направления, а не право правки, но
+    часть маршрутов авторизуется `can_view_case` (`workday._case_or_404`), и с одним
+    актором на всё флаг открыл бы запись в чужие дела — ревью 09.11.2026. Доменный
+    слой защищён отдельно (`service_authz.can_change_case`): здесь второй контур,
+    чтобы запрос не доходил до операции, а не единственный.
     """
-    return actor_for(manager, team_view=await team_view_enabled(),
+    return actor_for(manager,
+                     team_view=False if for_write else await team_view_enabled(),
                      can_take_colleague=await take_colleague_enabled())
 
 

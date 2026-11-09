@@ -65,7 +65,28 @@ def can_view_case(actor: Actor, *, direction: str | None, owner_login: str | Non
         # Ответ заказчика 2.1 от 05.11.2026: менеджер видит всех клиентов своего
         # направления. Прежнее правило («направление — команда, а не общий доступ»)
         # отменено владельцем; флаг manager_sees_direction_cases_enabled, дефолт OFF.
-        # Видеть — не значит двигать: can_advance_case по-прежнему требует владения.
+        # Видеть — не значит двигать и не значит менять: этап держит `can_advance_case`,
+        # любую запись по делу — `can_change_case`. Эту функцию нельзя использовать для
+        # авторизации записи: с 2.1 она шире владения (ревью 09.11.2026).
+        return True
+    return _direction_allowed(actor, direction) and _is_owner(actor, owner_login)
+
+
+def can_change_case(actor: Actor, *, direction: str | None, owner_login: str | None) -> bool:
+    """МЕНЯТЬ услугу: владелец в своём направлении либо полный администратор.
+
+    Это ровно то правило, которым был `can_view_case` до ответа заказчика 2.1, и
+    существует оно потому, что 2.1 расширил именно ВИДИМОСТЬ. Ревью 09.11.2026 нашло
+    дыру: `precontract_cases.locked_case` авторизовал запись той же `can_view_case`, и
+    с флагом `manager_sees_direction_cases_enabled` любой менеджер направления мог
+    записать в дело коллеги подписанный договор — номер, сумму, валюту, дату. Событие
+    `contract_signed` неизменяемо, сумму правит только администратор, то есть ошибка
+    необратима. «Видеть» и «менять» разъехались — значит и функции должны быть разные.
+
+    Администратор право сохраняет: он оформляет договор за отсутствующего менеджера
+    (`can_open_case`). Этап услуги он по-прежнему двигать не может (`can_advance_case`).
+    """
+    if actor.is_full_admin:
         return True
     return _direction_allowed(actor, direction) and _is_owner(actor, owner_login)
 

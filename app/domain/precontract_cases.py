@@ -12,7 +12,7 @@ from app.config import settings
 from app.domain import service_cases as cases,live_assign
 from app.domain.entry_storage import _hash,_plain
 from app.domain.models import DomainError,Product,ServiceCase,ServiceCaseOpening,ServiceEvent,WorkflowVersion
-from app.domain.service_authz import can_open_case,can_view_case,require
+from app.domain.service_authz import can_change_case,can_open_case,can_view_case,require
 
 OPEN='service-case-opening/1'
 SIGN='existing-case-signature/1'
@@ -47,7 +47,11 @@ async def locked_case(session,case_id,actor):
         can_view_case(actor,direction=product.direction,owner_login=observed.owner_login),'read preliminary case')
     await live_assign.lock_contact(session,observed.contact_id)
     case=await session.scalar(select(ServiceCase).where(ServiceCase.id==case_id).with_for_update().execution_options(populate_existing=True))
-    require(can_view_case(actor,direction=product.direction,owner_login=case.owner_login),'change preliminary case')
+    # ЗАПИСЬ — по владению, а не по видимости. Ответ заказчика 2.1 расширил
+    # `can_view_case` до всего направления, и до ревью 09.11.2026 эта строка пускала
+    # коллегу записать договор с суммой в чужое дело. Чтение выше осталось на
+    # `can_view_case` — читать дело коллеги 2.1 как раз и разрешает.
+    require(can_change_case(actor,direction=product.direction,owner_login=case.owner_login),'change preliminary case')
     return case,product
 
 

@@ -733,9 +733,15 @@ async def buyers_feed(request: Request, manager: dict = Depends(require_admin)):
 
 @router.post("/buyers/{user_id}/claim", response_class=HTMLResponse)
 async def buyers_claim(user_id: str, manager: dict = Depends(require_admin)):
-    """«Взять в работу» из ленты: атомарный claim (гонка менеджеров) + перехват. Карточка исчезает."""
+    """«Взять в работу» из ленты: атомарный claim (гонка менеджеров) + перехват. Карточка исчезает.
+
+    `allow_takeover=False`: в ленте менеджер подбирает ничьё одним кликом, не зная, что
+    по этому контакту может быть доменный владелец с другого номера. Право 2.2 здесь не
+    действует — забрать клиента коллеги можно только осознанно, из диалога.
+    """
     conv = await _require_visible_conversation(user_id, manager)
-    allowed, deny_notice = await _ownership_guard(conv, manager, "claim")
+    allowed, deny_notice = await _ownership_guard(conv, manager, "claim",
+                                                  allow_takeover=False)
     if not allowed:
         from html import escape
         return HTMLResponse(f'<div class="lead-card taken">{escape(deny_notice)}</div>')
@@ -1267,10 +1273,14 @@ FEATURE_FLAGS = {
         "title": "Менеджер может забрать клиента коллеги",
         "desc": ("Ответ заказчика 2.2 от 05.11.2026. Отменяет правило «перехват чужого "
                  "запрещён» ВНУТРИ своего направления: менеджер жмёт «Взять себе» на "
-                 "диалоге коллеги и становится владельцем — и переписки, и услуги. "
-                 "Между направлениями запрет остаётся. Передать клиента ТРЕТЬЕМУ "
-                 "менеджеру по-прежнему может только администратор: это распоряжение "
-                 "чужой работой, а не взятие на себя. Передача пишется в журнал."),
+                 "диалоге коллеги и становится владельцем переписки; открытые задачи "
+                 "уходят с клиентом. Между направлениями запрет остаётся. Передать "
+                 "клиента ТРЕТЬЕМУ менеджеру по-прежнему может только администратор: "
+                 "это распоряжение чужой работой, а не взятие на себя. Передача "
+                 "пишется в журнал. ⚠️ УСЛУГА НЕ ПЕРЕЕЗЖАЕТ: ответ 2.2 требует «вместе "
+                 "с услугой», но механизма переноса в коде нет — владелец дела "
+                 "останется прежним, и новый владелец переписки не сможет двигать "
+                 "этап. Долг записан, нужно решение Алана."),
         "default": lambda: settings.manager_can_take_colleague_dialog_enabled,
         "note": lambda: ("" if settings.reassign_moves_tasks_enabled else
                          "ℹ️ «Дела переходят вместе с клиентом» выключен — задачи "
@@ -2361,12 +2371,40 @@ def _authz_direction(conv) -> str:
     return live_authz.direction_for_bot(getattr(conv, "bot_id", "") or "")
 
 
-async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]:
+def takeover_allowed(actor, action: str, *, allow_takeover: bool) -> bool:
+    """Можно ли ПЕРЕБИТЬ активного владельца этим действием. Чистая функция.
+
+    Вынесена из `_ownership_guard` ради проверяемости: в тестах сторож владения
+    мокают целиком, и ошибка внутри него не ловилась ничем. Ровно эта ошибка и была
+    (ревью 09.11.2026): право 2.2 отдавалось на ЛЮБОЕ действие, включая отправку, и
+    авто-захват ничьего лида в гонке молча отбирал клиента у того, кто успел раньше.
+
+    Правило: администратор — как раньше; менеджер с правом 2.2 — только осознанным
+    «Взять себе» (`claim`) и только там, где взятие вообще означает перехват
+    (`allow_takeover`; в ленте 🟢 и ручном лиде оно означает «подобрать ничьё»).
+    """
+    if getattr(actor, "is_full_admin", False):
+        return True
+    return bool(getattr(actor, "can_take_colleague", False)
+                and allow_takeover and action == "claim")
+
+
+async def _ownership_guard(conv, manager: dict, action: str, *,
+                           allow_takeover: bool = True) -> tuple[bool, str]:
     """Проверка (и фиксация) владения перед действием менеджера. action: send|claim|release.
 
     Возвращает (allowed, notice). Успешный claim / авто-захват ничьего лида пишет
     доменный Assignment под row-lock; панельный assigned_to выставляет вызывающий
     код (легаси-путь сохраняется).
+
+    `allow_takeover=False` — вызов, где взятие означает «подобрать ничьё», а не
+    «забрать у коллеги»: лента 🟢 и ручное завдение лида. Там право 2.2 не действует,
+    и чужой активный владелец остаётся за собой, как было до 05.11.2026. Без этого
+    параметра флаг 2.2 превращал один клик в ленте в перехват (ревью 09.11.2026):
+    лента показывает диалоги с пустым панельным `assigned_to`, а доменный владелец у
+    контакта может быть другой — например, по второму номеру того же клиента.
+    Полного администратора параметр НЕ ограничивает: его аварийный перехват в этих
+    путях был и до 05.11, и правка его не отменяет.
 
     Сбой проверки (14.10, перед переводом менеджеров из Bitrix в панель): отправка и
     перехват ЗАПРЕЩАЮТСЯ — письмо клиенту не отзовёшь, а чужой диалог перехватывать нельзя.
@@ -2429,16 +2467,23 @@ async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]
             # направления может и менеджер, не только администратор. До этого правило
             # «перехват запрещён» было безусловным (CLAUDE.md §7). Флаг OFF —
             # `can_take_colleague` False, и строка читается как прежде.
-            may_take = actor.is_full_admin or actor.can_take_colleague
+            may_take = actor.is_full_admin or (actor.can_take_colleague and allow_takeover)
             if owner and owner != actor.manager_id and not (
                     action == "claim" and may_take):
                 await s.commit()
                 if actor.is_full_admin:
                     return False, (f"Диалог ведёт {owner}. Сначала передайте лид "
                                    "(кнопка «Переназначить») — затем пишите.")
-                if actor.can_take_colleague:
+                if actor.can_take_colleague and allow_takeover:
                     return False, (f"Диалог ведёт {owner}. Заберите клиента себе "
                                    "(кнопка «Взять себе») — затем пишите.")
+                if actor.can_take_colleague:
+                    # Лента 🟢 и ручной лид: здесь взятие означает «подобрать ничьё»,
+                    # а у клиента есть владелец — возможно, по другому его номеру.
+                    # Право 2.2 у менеджера есть, подсказка обязана вести туда, где
+                    # оно работает, а не говорить «только администратор» (ревью 09.11).
+                    return False, (f"Клиента ведёт {owner}. Откройте его диалог и "
+                                   "нажмите «Взять себе».")
                 return False, (f"Диалог ведёт {owner}. Перехват запрещён — "
                                "передать лид может только администратор.")
             if action == "claim" and asg is not None and owner == actor.manager_id:
@@ -2453,7 +2498,14 @@ async def _ownership_guard(conv, manager: dict, action: str) -> tuple[bool, str]
                     s, contact.id, direction, actor.manager_id,
                     assigned_by=actor.manager_id,
                     reason=("takeover" if action == "claim" else "auto_claim_on_send"),
-                    allow_emergency=may_take)
+                    # Перехват активного владельца — только осознанным «Взять себе»,
+                    # никогда побочным эффектом отправки. Ревью 09.11.2026: с
+                    # `allow_emergency` на `send` гонка «A закрепил ничей лид, B в это
+                    # же время пишет в него» молча отбирала клиента у A —
+                    # `models.reassign_manager` с этим флагом перебивает владельца без
+                    # вопросов. Было честным отказом «лид только что взял другой».
+                    allow_emergency=takeover_allowed(
+                        actor, action, allow_takeover=allow_takeover))
                 # ТЗ TASK-04 и ответ 2.3: открытые задачи уходят новому владельцу
                 # В ТОЙ ЖЕ транзакции. Раньше это делал только админский маршрут
                 # «Переназначить», а взятие лида — нет. С флагом 2.2 взятие стало

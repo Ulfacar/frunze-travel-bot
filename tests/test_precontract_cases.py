@@ -130,3 +130,41 @@ def test_unknown_amount_and_existing_explicit_payment_stay_distinct():
             assert case.agreed_amount is None and case.amount_unknown_reason=='Await explicit amount'
             assert (await counts(s))['service_payments']==1
     run_with_db(run)
+
+
+def test_team_view_does_not_let_a_colleague_record_a_contract():
+    """Ответ 2.1 дал видимость направления, а не право записи.
+
+    Ревью 09.11.2026: `locked_case` авторизовал запись той же `can_view_case`, которую
+    расширил флаг `manager_sees_direction_cases_enabled`. Значит коллега мог записать в
+    чужое дело подписанный договор — номер, сумму, дату. Событие `contract_signed`
+    неизменяемо, сумму правит только администратор, то есть ошибка необратима.
+    """
+    from app.domain.service_authz import can_change_case, can_view_case
+
+    async def run(sm):
+        async with sm() as s:
+            command = await prepare(s)
+            opened = await service.open_preliminary(s, **command)
+            await s.commit()
+            peer_sees = Actor('peer', allowed_directions=frozenset({'visa'}), team_view=True)
+            # Видеть дело коллеги — можно (это и есть ответ 2.1).
+            assert can_view_case(peer_sees, direction='visa', owner_login='manager') is True
+            # Менять — нельзя, и это проверяет домен, а не спрятанная кнопка.
+            assert can_change_case(peer_sees, direction='visa', owner_login='manager') is False
+            with pytest.raises(PermissionDenied):
+                await service.record_signed_contract(s, **signing(opened, by=peer_sees))
+            await s.rollback()
+        async with sm() as s:
+            case = await s.scalar(select(ServiceCase))
+            assert case.signed_at is None, 'договор коллеги не должен был записаться'
+            signed_events = await s.scalar(select(func.count()).select_from(ServiceEvent)
+                                           .where(ServiceEvent.event_type == 'contract_signed'))
+            assert signed_events == 0
+        async with sm() as s:
+            # Владелец записывает как раньше — правка не сломала рабочий путь.
+            opened = dict(case_id=case.id, revision=case.revision)
+            signed = await service.record_signed_contract(s, **signing(opened, by=OWNER))
+            await s.commit()
+            assert signed['case_id'] == case.id
+    run_with_db(run)

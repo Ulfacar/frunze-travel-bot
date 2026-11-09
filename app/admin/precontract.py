@@ -121,7 +121,9 @@ async def preliminary_submit(user_id:str,request:Request,manager:dict=Depends(ar
 
 @ar.router.get('/case/{case_id}/contract')
 async def signature_form(case_id:int,request:Request,manager:dict=Depends(ar.require_admin)):
-    _require_workday(request);actor=await actor_for_request(manager)
+    # Форма ЗАПИСИ, поэтому актор тот же, что у submit: иначе коллега при включённом
+    # 2.1 видел бы форму подписания договора, а на отправке получал 404 (ревью 09.11).
+    _require_workday(request);actor=await actor_for_request(manager,for_write=True)
     try:
         async with ar._domain_sessionmaker()() as s:
             case,product=await _case_or_404(s,case_id,actor)
@@ -138,7 +140,7 @@ async def signature_form(case_id:int,request:Request,manager:dict=Depends(ar.req
 
 @ar.router.post('/case/{case_id}/contract')
 async def signature_submit(case_id:int,request:Request,manager:dict=Depends(ar.require_admin)):
-    _require_workday(request);actor=await actor_for_request(manager)
+    _require_workday(request);actor=await actor_for_request(manager,for_write=True)
     values=await submitted(request,manager,'sign',case_id)
     if not _write_on(request):return render(request,manager,'sign',case_id,values,error='Запись услуг выключена.',status=409)
     try:

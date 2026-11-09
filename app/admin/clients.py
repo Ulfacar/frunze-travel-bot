@@ -320,7 +320,11 @@ async def client_new_submit(request: Request, manager: dict = Depends(ar.require
     # есть активный владелец в направлении (например, с другого номера), не отнимаем.
     probe = SimpleNamespace(user_id=user_id, phone=digits, channel="whatsapp",
                             bot_id=bot.id, funnel=funnel, assigned_to="")
-    allowed, notice = await ar._ownership_guard(probe, manager, "claim")
+    # `allow_takeover=False`: право 2.2 («забрать клиента коллеги») к ручному завдению
+    # лида не относится — здесь менеджер думает, что заводит нового человека, а не
+    # отнимает чужого. Прежний предохранитель сохранён и при включённом флаге.
+    allowed, notice = await ar._ownership_guard(probe, manager, "claim",
+                                                allow_takeover=False)
     if not allowed:
         return await _render_new(request, manager, form, error=notice, status=409)
 
@@ -479,6 +483,11 @@ async def _domain_view(digits: str, actor) -> dict:
     (`workday._case_or_404` → `can_view_case`): своё направление И свой клиент.
     Чужая услуга коллеги по направлению там отвечает 404, значит и здесь её нет —
     ни суммы, ни этапа, ни самой строки (ревью потока pdf 30.10, находка №1).
+
+    С 05.11.2026 ответ заказчика 2.1 (`manager_sees_direction_cases_enabled`) делает
+    чужую услугу своего направления ВИДИМОЙ — и там, и здесь, одним и тем же
+    правилом. При выключенном флаге всё читается как выше. Менять такую услугу
+    по-прежнему нельзя: запись держит `can_change_case`.
     """
     from app.domain.service_authz import can_view_case
     directions = None if actor.is_full_admin else set(actor.allowed_directions)
