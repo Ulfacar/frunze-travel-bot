@@ -317,3 +317,71 @@ def test_schengen_publishes_onto_the_product_that_already_exists(publisher, tmp_
             assert case.stage == "SCH-05"
 
     asyncio.run(check())
+
+
+# --- D. Воронка США (ответы Медины 11.11.2026) --------------------------------
+
+@pytest.fixture
+def usa(publisher):
+    return publisher.load_draft("usa")
+
+
+def test_the_usa_draft_follows_the_manager_not_the_old_spec(usa):
+    """Прежняя воронка США собиралась по ТЗ без менеджера — и была неверна.
+
+    В базе лежит версия из девяти линейных этапов, где нет ни предоплаты, ни
+    консульского сбора, ни личного кабинета, ни выдачи паспорта, а проверку анкеты
+    делает КЛИЕНТ. Медина (вопросы 13 и 14) описывает другое: проверяет менеджер,
+    а до записи нужно создать кабинет и оплатить сбор.
+    """
+    work = [s for s in usa["stages"] if s["code"].startswith("USA-")]
+    names = [s["name"] for s in work]
+    assert len(work) == 17
+    assert usa["product"]["code"] == "visa_usa"
+    for required in ("Предоплата получена", "Личный кабинет для записи создан",
+                     "Консульский сбор оплачен", "Паспорт получен"):
+        assert required in names, required
+    check = next(s for s in work if s["code"] == "USA-07")
+    assert check["name"] == "Проверка анкеты"
+    assert "ОТВЕТСТВЕННЫЙ МЕНЕДЖЕР" in check["origin"]
+
+
+def test_ds160_is_its_own_stage_because_the_work_moves_to_marsel(usa):
+    """Передача на DS-160 — отдельная стадия: работу делает другой человек.
+
+    Её вопрос 14: задача уходит Марселю, но основной ответственный за клиента не
+    меняется. Если бы это была не стадия, момент передачи не было бы видно в карточке.
+    """
+    hand_off = next(s for s in usa["stages"] if s["code"] == "USA-05")
+    assert "DS-160" in hand_off["name"]
+    assert hand_off["responsible"] == "Марсель"
+    filled = next(s for s in usa["stages"] if s["code"] == "USA-06")
+    assert filled["responsible"] == "Марсель"
+
+
+def test_administrative_check_is_a_stage_not_an_outcome(usa):
+    """Административная проверка 221g тянется месяцами — заявка всё это время живая.
+
+    Поэтому она этап, а не исход: держать такую заявку в «собеседовании» неправильно,
+    закрывать — тем более. Этап необязательный: из собеседования можно сразу к решению.
+    """
+    assert usa["transitions"]["USA-12"][:2] == ["USA-13", "USA-14"]
+    assert "USA-14" in usa["transitions"]["USA-13"]
+    admin_check = next(s for s in usa["stages"] if s["code"] == "USA-13")
+    assert admin_check["name"] == "Административная проверка"
+
+
+def test_the_usa_funnel_models_refusal_and_cancellation(usa):
+    """У прежней воронки США не было НИ ОДНОГО исключения — отказ не моделировался."""
+    codes = {s["code"] for s in usa["stages"]}
+    assert {"X01", "X02", "X03", "X06", "X07"} <= codes
+    assert usa["transitions"]["X01"] == [], "отказ терминальный"
+    # Из отказа по документам можно вернуться в опросник или закрыть клиента.
+    assert set(usa["transitions"]["X06"]) == {"X07", "USA-03"}
+
+
+def test_the_usa_exception_codes_match_the_schengen_ones(usa, schengen):
+    """Два визовых процесса обязаны читаться одинаково: коды исключений общие."""
+    usa_x = {s["code"] for s in usa["stages"] if s["code"].startswith("X")}
+    sch_x = {s["code"] for s in schengen["stages"] if s["code"].startswith("X")}
+    assert usa_x == sch_x
