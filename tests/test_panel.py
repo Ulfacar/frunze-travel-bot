@@ -1191,3 +1191,66 @@ def test_rescore_sweep_marks_ghosted_dialog_as_noise():
     got = asyncio.run(store.get(uid))
     assert got.readiness_tier == "noise"
     assert "пропал" in got.readiness_reason      # reason обновлён под noise, не остался «тёплым»
+
+
+# --- Колонки доски по направлению (решение Алана 11.11.2026) -----------------
+
+def test_board_layout_is_shared_until_the_flag_is_on():
+    """Флаг OFF — доска прежняя для всех направлений, строка в строку.
+
+    Доска это то, что менеджер видит каждый день, поэтому выкат кода не должен её
+    менять: вид переключается отдельным решением.
+    """
+    from app.admin.router import BOARD_COLUMNS, board_columns_for
+
+    assert board_columns_for("visa", by_direction=False) == BOARD_COLUMNS
+    assert board_columns_for("tours", by_direction=False) == BOARD_COLUMNS
+
+
+def test_visa_board_follows_the_manager_answers():
+    """Ответы Медины 11.11: у виз своя воронка и свой порядок колонок.
+
+    «Квалификации» и «Подбора / оценки» в визовой работе нет — есть «В работе» и
+    «Консультация», а запись в офис стоит ПОСЛЕ касаний (её пункт 8).
+    """
+    from app.admin.router import BOARD_COLUMNS, board_columns_for
+
+    visa = board_columns_for("visa", by_direction=True)
+    assert [label for _, label in visa] == [
+        "Новый лид", "В работе", "Консультация", "Ожидаем ответ",
+        "Касания", "Записан в офис", "У менеджера"]
+    # Туры и билеты остаются на общем наборе: их воронка не менялась.
+    assert board_columns_for("tours", by_direction=True) == BOARD_COLUMNS
+    assert board_columns_for("tickets", by_direction=True) == BOARD_COLUMNS
+
+
+def test_visa_layout_keeps_the_same_stage_keys():
+    """Стадии НЕ новые — иначе перенос карточки мышью и детекторы сломались бы.
+
+    `COLUMN_TO_STAGE` строится по общему набору, и визовый набор обязан пользоваться
+    теми же ключами: меняются названия и порядок, а не машина состояний.
+    """
+    from app.admin.router import BOARD_COLUMNS, board_columns_for
+
+    shared = {key for key, _ in BOARD_COLUMNS}
+    visa = {key for key, _ in board_columns_for("visa", by_direction=True)}
+    assert visa <= shared, visa - shared
+
+
+def test_a_card_whose_stage_is_missing_from_the_layout_is_not_lost():
+    """Карточка не исчезает, если её колонки нет в наборе направления.
+
+    Это защита на будущее: наборы будут меняться, а потерянная карточка — это
+    потерянный клиент, которого никто не увидит.
+    """
+    from datetime import datetime, timezone
+    from app.admin.router import _build_board
+    from app.integrations.panel.store import ConversationView
+
+    conv = ConversationView(user_id="996700999", funnel="visa", stage="office")
+    layout = [("greeting", "Новый лид"), ("manager", "У менеджера")]
+    columns, _ = _build_board([conv], datetime(2026, 11, 11, 12, 0, tzinfo=timezone.utc),
+                              layout)
+
+    assert [c["key"] for c in columns] == ["greeting", "manager"]
+    assert columns[0]["cards"][0]["user_id"] == "996700999"

@@ -234,6 +234,42 @@ BOARD_COLUMNS = [
     ("silent", "Молчат (на дожим)"),
     ("follow_up", "Повторное касание"),
 ]
+
+# Колонки ПО НАПРАВЛЕНИЮ — решение Алана 11.11.2026 по ответам Медины (вопрос 1).
+# Доска была одна на все направления, и визовая воронка в ней не читалась: у виз нет
+# «подбора», зато есть консультация и касания, а порядок другой.
+#
+# Стадии НЕ новые: это те же ключи колонок, только названия и порядок визовые. Так
+# сделано намеренно — её «В работе» это наша `qualification` («менеджер связался и
+# уточняет»), а «Консультация» это `progress`. Новая стадия потребовала бы правки
+# машины состояний и всех детекторов, которые по стадиям судят; если Медина скажет,
+# что «В работе» и «Квалификация» у неё разные вещи — тогда и добавим.
+#
+# Три касания одной колонкой — рекомендация исполнителя: у неё это три стадии, но
+# три колонки заняли бы треть доски ради номера касания, который уже есть на
+# карточке (`followup_pings`). Ждём её ответа; поменять состав — одна правка здесь.
+BOARD_COLUMNS_BY_FUNNEL = {
+    "visa": [
+        ("greeting", "Новый лид"),
+        ("qualification", "В работе"),
+        ("progress", "Консультация"),
+        ("silent", "Ожидаем ответ"),
+        ("follow_up", "Касания"),
+        ("office", "Записан в офис"),
+        ("manager", "У менеджера"),
+    ],
+}
+
+
+def board_columns_for(funnel: str, *, by_direction: bool) -> list[tuple[str, str]]:
+    """Набор колонок доски. Флаг OFF — общий набор, как было до 11.11.2026.
+
+    Ключи колонок у всех наборов одни и те же, поэтому `COLUMN_TO_STAGE`,
+    `STAGE_TO_COLUMN` и перенос карточки мышью не зависят от выбора набора.
+    """
+    if not by_direction:
+        return BOARD_COLUMNS
+    return BOARD_COLUMNS_BY_FUNNEL.get(funnel or "", BOARD_COLUMNS)
 # Обратный маппинг для ручного переноса (drag-and-drop): колонка → каноническая стадия.
 # Стадии-ключи = ключи колонок, чтобы карточка осталась в той колонке, куда её положили.
 COLUMN_TO_STAGE = {key: key for key, _ in BOARD_COLUMNS if key != "silent"}
@@ -612,17 +648,27 @@ async def logout(request: Request):
     return RedirectResponse("/admin/login", status_code=303)
 
 
-def _build_board(cards: list, now: datetime) -> tuple[list[dict], dict]:
-    """Колонки канбана (карточки обогащены и отсортированы: ждут дольше — наверх) + метрики."""
-    buckets: dict[str, list] = {key: [] for key, _ in BOARD_COLUMNS}
+def _build_board(cards: list, now: datetime,
+                 layout: list[tuple[str, str]] | None = None) -> tuple[list[dict], dict]:
+    """Колонки канбана (карточки обогащены и отсортированы: ждут дольше — наверх) + метрики.
+
+    `layout` — набор колонок направления (`board_columns_for`). По умолчанию общий
+    набор: так вызов остаётся совместимым, а поведение при флаге OFF — прежним.
+    """
+    layout = layout or BOARD_COLUMNS
+    buckets: dict[str, list] = {key: [] for key, _ in layout}
     models = [_card_model(c, now) for c in cards]
     for m in models:
         column = "silent" if m["is_silent"] else STAGE_TO_COLUMN.get(m["stage"], "greeting")
+        # Карточка со стадией, которой в наборе направления нет, не должна потеряться:
+        # кладём её в первую колонку, как и неизвестную стадию.
+        if column not in buckets:
+            column = layout[0][0]
         buckets[column].append(m)
     for col in buckets.values():
         col.sort(key=lambda m: m["sort_key"], reverse=True)  # горячие наверх
     columns = [{"key": key, "label": label, "cards": buckets[key], "is_empty": not buckets[key]}
-               for key, label in BOARD_COLUMNS]
+               for key, label in layout]
     metrics = {
         "total": len(cards),
         "waiting": sum(1 for m in models if m["wait_level"] != "none"),
@@ -1244,6 +1290,19 @@ FEATURE_FLAGS = {
         "default": lambda: settings.panel_pilot_summary_enabled,
         "note": lambda: ("руководители: " + (", ".join(f"{d}: {', '.join(v) or '—'}" for d, v in
                          (settings.panel_direction_leads or {}).items()) or "не заданы")),
+    },
+    "board_columns_by_direction_enabled": {
+        "title": "Колонки доски — свои для каждого направления",
+        "desc": ("Решение Алана 11.11.2026 по ответам Медины. Доска была одна на все "
+                 "направления: у виз показывались «Квалификация» и «Подбор / оценка», "
+                 "которых в визовой работе нет. С тумблером у виз свои названия и "
+                 "порядок: Новый лид → В работе → Консультация → Ожидаем ответ → "
+                 "Касания → Записан в офис → У менеджера. Стадии диалога НЕ меняются, "
+                 "поэтому перенос карточки мышью, детекторы и отчёты работают как "
+                 "раньше, а выключение тумблера возвращает прежний вид мгновенно. "
+                 "Туры и билеты остаются на общем наборе."),
+        "default": lambda: settings.board_columns_by_direction_enabled,
+        "note": lambda: "",
     },
     "awaiting_working_hours_enabled": {
         "title": "«Клиент ждёт» — считать только рабочие часы",
@@ -1928,7 +1987,9 @@ async def board(funnel: str, request: Request, manager: dict = Depends(require_a
         login = str(manager.get("login") or "").strip().lower()
         cards = [c for c in cards
                  if (getattr(c, "assigned_to", "") or "").strip().lower() == login]
-    columns, metrics = _build_board(cards, _now())
+    layout = board_columns_for(
+        funnel, by_direction=await _media_flag("board_columns_by_direction_enabled"))
+    columns, metrics = _build_board(cards, _now(), layout)
     return templates.TemplateResponse(request, "_board.html", {
         "funnel": funnel, "columns": columns, "metrics": metrics, "mine": mine,
     })
