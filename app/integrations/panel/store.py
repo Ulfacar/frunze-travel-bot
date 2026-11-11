@@ -169,6 +169,19 @@ class MemoryConversationStore:
         msg._idem = idempotency_key  # type: ignore[attr-defined]
         conv.messages.append(msg)
         conv.archived = False  # новое сообщение возвращает диалог в рабочие списки
+
+        # Возврат клиента снимает АВТОМАТИЧЕСКОЕ закрытие. Без этого обещание
+        # «клиент напишет снова — диалог вернётся в работу» было неправдой:
+        # `_is_auto_downgrade` не даёт авто-исходам перезаписать финал, а
+        # автозакрытие пишет именно `lost`. Клиент возвращался, а сторож «клиент
+        # ждёт», утренний лист и касания его уже не видели — терминальный исход
+        # гасит всех троих (аудит 12.11.2026).
+        # Снимаем только НАШЕ закрытие: признак — причина `no_answer`, её ставит
+        # только бот (`touches.NO_ANSWER_REASON`). Ручной «Слился» менеджера
+        # остаётся нетронутым: человек закрыл — человек и откроет.
+        if sender == "client" and conv.outcome == "lost" and conv.outcome_reason == "no_answer":
+            conv.outcome = ""
+            conv.outcome_reason = ""
         if counts_as_reply:
             conv.last_text = text
             conv.last_sender = sender
@@ -464,6 +477,19 @@ class PostgresConversationStore:
                               idempotency_key=idempotency_key)
             session.add(msg)
             conv.archived = False  # новое сообщение возвращает диалог в рабочие списки
+
+        # Возврат клиента снимает АВТОМАТИЧЕСКОЕ закрытие. Без этого обещание
+        # «клиент напишет снова — диалог вернётся в работу» было неправдой:
+        # `_is_auto_downgrade` не даёт авто-исходам перезаписать финал, а
+        # автозакрытие пишет именно `lost`. Клиент возвращался, а сторож «клиент
+        # ждёт», утренний лист и касания его уже не видели — терминальный исход
+        # гасит всех троих (аудит 12.11.2026).
+        # Снимаем только НАШЕ закрытие: признак — причина `no_answer`, её ставит
+        # только бот (`touches.NO_ANSWER_REASON`). Ручной «Слился» менеджера
+        # остаётся нетронутым: человек закрыл — человек и откроет.
+        if sender == "client" and conv.outcome == "lost" and conv.outcome_reason == "no_answer":
+            conv.outcome = ""
+            conv.outcome_reason = ""
             if sender != "client":
                 conv.reply_alert_at = None  # ответили — следующее ожидание станет новым эпизодом (B2c)
             if counts_as_reply:

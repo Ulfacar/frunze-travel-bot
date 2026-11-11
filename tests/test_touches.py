@@ -336,3 +336,57 @@ def test_without_a_previous_touch_the_gap_does_not_block():
     picked = touches.select_touch_targets([silent], NOW, cfg(), done_by_user={},
                                           last_touch_by_user={})
     assert picked and picked[0]["number"] == 1
+
+
+# --- Возврат клиента снимает автозакрытие (аудит 12.11.2026) ------------------
+
+def test_a_returning_client_reopens_an_auto_closed_dialog():
+    """Обещание «клиент напишет — диалог вернётся в работу» должно быть правдой.
+
+    До фикса оно было ложью: автозакрытие пишет `lost`, а `_is_auto_downgrade` не даёт
+    авто-исходам его перезаписать. Клиент возвращался, а сторож «клиент ждёт»,
+    утренний лист и касания его уже не видели — терминальный исход гасит всех троих.
+    """
+    import asyncio
+    from app.integrations.panel.store import get_conversation_store
+
+    store = get_conversation_store()
+    user_id = "getvisa:996700999001"
+    asyncio.run(store.add_message(user_id, "client", "сколько стоит", channel="whatsapp"))
+    asyncio.run(store.update_meta(user_id, outcome="lost", outcome_reason="no_answer"))
+    assert asyncio.run(store.get(user_id)).outcome == "lost"
+
+    asyncio.run(store.add_message(user_id, "client", "я готов подавать"))
+
+    conv = asyncio.run(store.get(user_id))
+    assert conv.outcome == "" and conv.outcome_reason == ""
+
+
+def test_a_manual_refusal_is_not_reopened_by_the_client():
+    """Ручной «Слился» снимает только человек: он закрыл — ему и решать.
+
+    Признак нашего закрытия — причина `no_answer`, её ставит только бот.
+    """
+    import asyncio
+    from app.integrations.panel.store import get_conversation_store
+
+    store = get_conversation_store()
+    user_id = "getvisa:996700999002"
+    asyncio.run(store.add_message(user_id, "client", "дорого", channel="whatsapp"))
+    asyncio.run(store.update_meta(user_id, outcome="lost", outcome_reason="price"))
+
+    asyncio.run(store.add_message(user_id, "client", "а если скидка?"))
+
+    conv = asyncio.run(store.get(user_id))
+    assert conv.outcome == "lost" and conv.outcome_reason == "price"
+
+
+def test_the_daily_cap_is_a_setting_not_just_a_batch():
+    """Порция — предел на прогон, а прогонов 288 в сутки. Нужен именно суточный.
+
+    В подсказке тумблера «не больше 20» выглядело как суточный предел, хотя им не
+    было: потолок составлял 5760 закрытий в день (аудит 12.11.2026).
+    """
+    from app.config import settings
+    assert settings.auto_close_daily_limit == 20
+    assert settings.auto_close_batch_limit == 20

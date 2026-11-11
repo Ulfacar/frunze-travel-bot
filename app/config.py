@@ -615,6 +615,10 @@ class Settings(BaseSettings):
     auto_close_after_touches_enabled: bool = False
     auto_close_after_days: int = 7        # молчания ПОСЛЕ последнего касания
     auto_close_batch_limit: int = 20      # закрытий за прогон
+    # Предел на СУТКИ. Порция выше — предел на прогон, а прогон идёт каждые пять
+    # минут: 288 раз в сутки. Без этого «не больше 20» в подсказке тумблера было
+    # бы неправдой (аудит 12.11.2026).
+    auto_close_daily_limit: int = 20
     followup_enabled: bool = False
     # Гейт блока дожима и ценовой вилки в системном промпте.
     dozhim_enabled: bool = False

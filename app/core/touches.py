@@ -238,13 +238,58 @@ def select_closable(convs: list, now: datetime, cfg, *,
     return out[:limit] if limit else out
 
 
+async def _answered_after_touches(sessionmaker, user_ids: list[str],
+                                  last_touch: dict) -> set[str]:
+    """Кто из кандидатов писал нам ПОСЛЕ последнего касания.
+
+    Счётчик касаний вечен: три задачи, созданные в октябре, остаются «тремя
+    касаниями» навсегда. Поэтому клиент, который на касание ОТВЕТИЛ, подождал ответа
+    менеджера и снова замолчал, попадал под закрытие с причиной «Не выходит на связь»
+    — хотя на связь он выходил. Такая запись потом идёт в отчёт «почему теряем»
+    (аудит 12.11.2026).
+    """
+    if not user_ids:
+        return set()
+    from sqlalchemy import select
+    from app.integrations.crm.db import ConvMessage, Conversation
+    answered: set[str] = set()
+    async with sessionmaker() as session:
+        rows = (await session.execute(
+            select(Conversation.user_id, ConvMessage.created_at)
+            .join(ConvMessage, ConvMessage.conversation_id == Conversation.id)
+            .where(Conversation.user_id.in_(user_ids),
+                   ConvMessage.sender == "client"))).all()
+    for user_id, created_at in rows:
+        touched_on = last_touch.get(str(user_id))
+        if touched_on is None or created_at is None:
+            continue
+        stamp = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
+        if (stamp + BISHKEK).date() >= touched_on:
+            answered.add(str(user_id))
+    return answered
+
+
+async def _closed_today(sessionmaker, day) -> int:
+    """Сколько диалогов бот закрыл сегодня. Журнал — единственный след автозакрытия."""
+    from sqlalchemy import func, select
+    from app.integrations.crm.db import AuditLog
+    async with sessionmaker() as session:
+        return int(await session.scalar(
+            select(func.count()).select_from(AuditLog)
+            .where(AuditLog.manager == "bot", AuditLog.action == "outcome",
+                   func.date(AuditLog.created_at) == day)) or 0)
+
+
 async def close_stale(now: datetime | None = None, *, sessionmaker=None,
                       dry_run: bool = False) -> int:
     """Перевести отмолчавшихся в «Не реализовано». Возвращает число закрытых.
 
     История переписки остаётся нетронутой — меняются только исход и причина, как она
-    и просила. Повторное обращение клиента снимет исход обычным путём: придёт его
-    сообщение, `last_sender` станет client, и диалог снова попадёт в работу.
+    и просила. Повторное обращение клиента СНИМАЕТ это закрытие: входящее сообщение
+    сбрасывает исход и причину в `store.add_message`, если причина наша (`no_answer`).
+    Раньше это было лишь обещанием в тексте: `_is_auto_downgrade` не даёт авто-исходам
+    переписать финал, и вернувшийся клиент оставался невидимым для сторожа ожидания,
+    утреннего листа и самих касаний (аудит 12.11.2026).
     """
     from app.core import flags
     from app.integrations.panel.store import get_conversation_store
@@ -258,10 +303,30 @@ async def close_stale(now: datetime | None = None, *, sessionmaker=None,
         sessionmaker = get_sessionmaker()
 
     from app.domain.calendar_tasks import bishkek_today
-    done_by_user, _today, _latest = await _counts(sessionmaker, bishkek_today(now_dt))
+    day = bishkek_today(now_dt)
+    done_by_user, _today, last_touch = await _counts(sessionmaker, day)
     store = get_conversation_store()
     targets = select_closable(await store.all_conversations_light(), now_dt, cfg,
                               done_by_user=done_by_user)
+
+    # Клиент, ответивший после касаний, закрывается с ЛОЖНОЙ причиной «не выходит на
+    # связь» — счётчик касаний вечен и об ответе не знает. Спрашиваем базу поимённо,
+    # и только по кандидатам: их единицы, запрос дешёвый.
+    answered = await _answered_after_touches(
+        sessionmaker, [getattr(t["conv"], "user_id", "") for t in targets], last_touch)
+    targets = [t for t in targets
+               if getattr(t["conv"], "user_id", "") not in answered]
+
+    # Суточный предел. Порция `auto_close_batch_limit` — это предел НА ПРОГОН, а
+    # прогон идёт каждые пять минут: 288 раз в сутки. Предохранитель, который в
+    # подсказке тумблера выглядит как «не больше 20», им не был (аудит 12.11.2026).
+    daily = max(0, int(getattr(cfg, "auto_close_daily_limit", 20) or 0))
+    if daily:
+        already = await _closed_today(sessionmaker, day)
+        if already >= daily:
+            return 0
+        targets = targets[:max(0, daily - already)]
+
     if dry_run:
         return len(targets)
 
@@ -296,9 +361,14 @@ async def _counts(sessionmaker, day) -> tuple[dict[str, int], dict[str, int], di
         by_user = (await session.execute(
             select(CalendarTask.user_id, func.count()).where(*is_touch)
             .group_by(CalendarTask.user_id))).all()
+        # Бюджет считаем по дате СОЗДАНИЯ, а не по дате, на которую задача стоит.
+        # Иначе его обходит обычное действие менеджера: «Перенести на завтра»
+        # меняет scheduled_date, задача уходит из сегодняшнего счёта, и через пять
+        # минут приходит новая порция. Медина могла получать их весь день
+        # (аудит 12.11.2026).
         today = (await session.execute(
             select(CalendarTask.manager_id, func.count())
-            .where(*is_touch, CalendarTask.scheduled_date == day)
+            .where(*is_touch, func.date(CalendarTask.created_at) == day)
             .group_by(CalendarTask.manager_id))).all()
         # Дата последнего касания по диалогу — чтобы следующее не ушло в тот же час.
         latest = (await session.execute(
