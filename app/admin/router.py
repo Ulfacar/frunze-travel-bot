@@ -2608,6 +2608,7 @@ async def _ownership_guard(conv, manager: dict, action: str, *,
         log.warning("authz guard: flag read failed — %s (action=%s)",
                     "allow release" if safe else "deny", action, exc_info=True)
         return _release_on_failure() if safe else (False, "Проверка доступа не удалась — попробуйте ещё раз.")
+    user_id_for_panel = str(getattr(conv, "user_id", "") or "")
     direction = _authz_direction(conv)
     if not direction:
         if safe:
@@ -2711,6 +2712,15 @@ async def _ownership_guard(conv, manager: dict, action: str, *,
                 # честный отказ бизнес-правила, НЕ инфраструктурный сбой → блокируем.
                 return False, ("Диалог только что взял другой менеджер — "
                                "обновите карточку.")
+            # Панельное зеркало владения пишем ЗДЕСЬ, сразу после того как домен
+            # подтвердил назначение, а не в вызывающем коде. Прежде `takeover` делал
+            # это сам и безусловно: при одновременном взятии двумя менеджерами домен
+            # отдавал лид одному, а зеркало перезаписывал тот, кто дорисовал карточку
+            # вторым. Дальше `contracts._owner` видел расхождение и блокировал
+            # оформление услуги словами «назначения в переписке и реестре расходятся».
+            # Теперь источник один: кто выиграл у домена, тот и в панели.
+            await get_conversation_store().update_meta(
+                user_id_for_panel, assigned_to=actor.manager_id)
             return True, ""
     except Exception:  # noqa: BLE001 — инфраструктурный сбой, см. докстринг
         log.warning("authz guard failed — %s (action=%s)",
@@ -2728,6 +2738,11 @@ async def takeover(user_id: str, request: Request, manager: dict = Depends(requi
         resp.headers["X-Action-Outcome"] = "denied"
         return resp
     await _set_intercept(user_id, True)
+    # Владельца в панели сторож уже записал, если проверка владения включена. Здесь
+    # пишем ещё раз тем же значением — это нужно для режима, где сторож выходит рано
+    # (проверка выключена) и домена не касается вовсе. Запись идемпотентна, а при
+    # гонке проигравший сюда не доходит: сторож отдаёт ему отказ, и зеркало остаётся
+    # за тем, кого подтвердил домен (аудит 12.11.2026).
     await get_conversation_store().update_meta(user_id, assigned_to=manager["login"])
     await get_conversation_store().add_audit(manager["login"], "takeover", user_id)
     resp = await _render_conversation(user_id, request, manager)
