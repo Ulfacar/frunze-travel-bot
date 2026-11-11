@@ -845,6 +845,11 @@ def _view(conv) -> ConversationView:
         lead_temperature=getattr(conv, "lead_temperature", "new") or "new",
         assigned_to=getattr(conv, "assigned_to", "") or "",
         outcome=getattr(conv, "outcome", "") or "",
+        # Без этой строки причина закрытия писалась в базу и НЕ читалась обратно:
+        # на боевом Postgres карточка всегда показывала «причина не выбрана», менеджер
+        # жал снова и снова. Тесты этого не видели — они шли по memory-хранилищу,
+        # которое отдаёт сам объект. Найдено ревью 12.11.2026.
+        outcome_reason=getattr(conv, "outcome_reason", "") or "",
         sale_check_asked_at=getattr(conv, "sale_check_asked_at", None),
         sale_check_snooze_until=getattr(conv, "sale_check_snooze_until", None),
         awaiting_pinged_at=getattr(conv, "awaiting_pinged_at", None),
