@@ -37,11 +37,38 @@ import shutil
 import string
 from datetime import date
 
-ALPHABET = string.ascii_letters + string.digits      # без спецсимволов: вводить руками
+ALPHABET = string.ascii_letters + string.digits      # для --random: вводить руками
 PASSWORD_LENGTH = 12
+
+# Пароли вида «limon-kedr-okean-42». Просьба Алана 11.11.2026: менеджеры далеки от
+# компьютера, и строку «aB3kX9mQ2wZ1» они будут набирать с ошибками, а в итоге
+# запишут на бумажке у монитора — это хуже любой энтропии. Слова короткие, без
+# похожих букв и без «ы/ъ»-звуков, которые трудно продиктовать по телефону.
+#
+# Запас стойкости: 120 слов в трёх позициях плюс две цифры — порядка 1.5e8 вариантов,
+# и вход в панель ограничен лимитером попыток. Для внутренней панели на семь человек
+# этого достаточно; --random оставлен на случай, если захочется прежние случайные.
+WORDS = (
+    "almaz araket asman bagys balyk bereke bilim birge bulak chabyt chynar daryja "
+    "dastan dubai egiz elbek erkin fakel garaj gazyr gulnar ikram jaiyk jalyn jarkyn "
+    "jebe jolbors kadam kagaz kaimak kairat kanat kapchagai karlygach kedr kerben "
+    "kezek kirgiz kochkor kolibri komuz korgon koshkar kumtor kurak kyial kyzyl "
+    "limon maral marmar meken munara murok naryn nurbek okean olcha orozo osmon "
+    "otton ozgon pamir pishpek rahat rezeda salkyn samal sanjyra sapar sary semetei "
+    "serik shabdal shamal sherne shukur sulu suluu syrga talas talgat tamga tanysh "
+    "tashkent temir tilek tokmok tolkun tulpar turan ulan ulut umut urmat uzak "
+    "vodopad yrys zamir zaman zarina zhibek zhyldyz zhyrgal zooluu zyia aktilek "
+    "ayana baatyr chatyr degen erke firuza gulmira hanska"
+).split()
 
 
 def make_password() -> str:
+    """Три слова и две цифры: «limon-kedr-okean-42». Диктуется по телефону."""
+    words = [secrets.choice(WORDS) for _ in range(3)]
+    return "-".join(words) + f"-{secrets.randbelow(90) + 10}"
+
+
+def make_random_password() -> str:
     return "".join(secrets.choice(ALPHABET) for _ in range(PASSWORD_LENGTH))
 
 
@@ -69,6 +96,8 @@ def main() -> int:
                     help="полный доступ ВСЕМ учёткам запуска (устарело: лучше ':admin' "
                          "у нужной учётки, иначе легко раздать права лишним людям)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--random", action="store_true",
+                    help="прежние случайные пароли вида aB3kX9mQ2wZ1 вместо словесных")
     args = ap.parse_args()
 
     env_path = pathlib.Path(args.env)
@@ -104,7 +133,7 @@ def main() -> int:
             print(f"  {login}: уже есть, пропускаю")
             continue
         full_admin = bool(is_admin or args.admin)
-        password = make_password()
+        password = make_random_password() if args.random else make_password()
         managers.append({"login": login, "name": name, "password": password,
                          "admin": full_admin, "telegram_chat_id": ""})
         created[login] = password
