@@ -140,3 +140,21 @@ def test_with_the_flag_the_buttons_appear():
     assert "Почему не сложилось" in page
     assert "Обратился в другую компанию" in page
     asyncio.run(flags.set_flag("lost_reason_enabled", False))
+
+
+def test_clicking_lost_again_keeps_the_chosen_reason():
+    """Повторный клик «Слился» не должен стирать уже выбранную причину.
+
+    Кнопка исхода и кнопки причин — разные элементы, и нажать «Слился» второй раз
+    легко. Раньше это приходило как outcome=lost без причины и затирало её: менеджер
+    наказан за лишнее нажатие (ревью 12.11.2026).
+    """
+    user_id = _seed()
+    client = _auth_client()
+
+    client.post(f"/admin/conversation/{user_id}/outcome",
+                data={"outcome": "lost", "reason": "price"})
+    client.post(f"/admin/conversation/{user_id}/outcome", data={"outcome": "lost"})
+
+    conv = _conv(user_id)
+    assert conv.outcome == "lost" and conv.outcome_reason == "price"

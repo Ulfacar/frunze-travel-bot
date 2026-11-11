@@ -3290,8 +3290,15 @@ async def set_outcome(user_id: str, request: Request, manager: dict = Depends(re
     reason = reason.strip() if outcome == "lost" else ""
     if reason and reason not in _LOST_REASON_LABELS:
         reason = ""                      # чужой код не пишем: справочник закрытый
-    await get_conversation_store().update_meta(user_id, outcome=outcome,
-                                               outcome_reason=reason)
+    if outcome == "lost" and not reason:
+        # Повторный клик «Слился» приходит без причины. Затирать уже выбранную —
+        # значит наказывать менеджера за лишнее нажатие: он выбрал «Высокая
+        # стоимость», случайно нажал «Слился» ещё раз и потерял её (ревью 12.11).
+        # None означает «не трогать поле», пустая строка — «очистить».
+        await get_conversation_store().update_meta(user_id, outcome=outcome)
+    else:
+        await get_conversation_store().update_meta(user_id, outcome=outcome,
+                                                   outcome_reason=reason)
     note = f"{outcome}:{reason}" if reason else outcome
     await get_conversation_store().add_audit(manager["login"], "outcome", user_id, note)
     return await _render_conversation(user_id, request, manager)

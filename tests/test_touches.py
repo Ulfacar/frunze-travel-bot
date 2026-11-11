@@ -285,3 +285,54 @@ def test_other_directions_are_not_closed():
     tours = conv(funnel="tours", last_message_at=NOW - timedelta(days=30))
     assert touches.select_closable([tours], NOW, closing_cfg(),
                                    done_by_user={tours.user_id: 3}) == []
+
+
+# --- Пауза между касаниями (ревью 12.11.2026) --------------------------------
+
+def test_the_second_touch_waits_for_the_gap_after_the_first():
+    """Касания нельзя слать пачкой: прогон идёт каждые пять минут.
+
+    Срок касания считается от последнего сообщения КЛИЕНТА, поэтому лид, молчащий
+    десять дней, на первом тике получал касание 1, на следующем — касание 2, на
+    третьем — касание 3. Три задачи за четверть часа с текстами «1 день / 3 дня /
+    6 дней», которые клиенту подряд отправлять нельзя.
+    """
+    from datetime import date as _date
+
+    silent = conv(last_message_at=NOW - timedelta(days=10))
+    today = (NOW + timedelta(hours=6)).date()
+
+    # Касание 1 только что создано — второе сегодня не выдаём.
+    right_after = touches.select_touch_targets(
+        [silent], NOW, cfg(), done_by_user={silent.user_id: 1},
+        last_touch_by_user={silent.user_id: today})
+    assert right_after == []
+
+    # Прошло два дня (её график: 1 → 3) — пора.
+    later = touches.select_touch_targets(
+        [silent], NOW, cfg(), done_by_user={silent.user_id: 1},
+        last_touch_by_user={silent.user_id: today - _date.resolution * 2})
+    assert later and later[0]["number"] == 2
+
+
+def test_the_third_touch_waits_longer_than_the_second():
+    """Между вторым и третьим касанием три дня — так стоит в её графике 1/3/6."""
+    assert touches.gap_after_previous(1, cfg()) == 0      # первому ждать нечего
+    assert touches.gap_after_previous(2, cfg()) == 2      # 3 - 1
+    assert touches.gap_after_previous(3, cfg()) == 3      # 6 - 3
+    assert touches.gap_after_previous(4, cfg()) == 0      # касаний больше нет
+
+
+def test_a_flat_schedule_still_keeps_a_day_between_touches():
+    """Если график поправят на одинаковые числа, пачка не должна вернуться."""
+    flat = cfg(touch_after_days=[2, 2, 2])
+    assert touches.gap_after_previous(2, flat) == 1
+    assert touches.gap_after_previous(3, flat) == 1
+
+
+def test_without_a_previous_touch_the_gap_does_not_block():
+    """Первое касание по клиенту не ждёт ничего."""
+    silent = conv(last_message_at=NOW - timedelta(days=5))
+    picked = touches.select_touch_targets([silent], NOW, cfg(), done_by_user={},
+                                          last_touch_by_user={})
+    assert picked and picked[0]["number"] == 1

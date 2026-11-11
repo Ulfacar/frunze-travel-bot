@@ -36,12 +36,13 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from app.config import settings
 
 log = logging.getLogger(__name__)
 
+BISHKEK = timedelta(hours=6)          # задачи живут по календарному дню Бишкека
 FLAG = "visa_touch_tasks_enabled"
 CLOSE_FLAG = "auto_close_after_touches_enabled"
 TERMINAL_OUTCOMES = {"won", "lost"}
@@ -72,6 +73,25 @@ def touch_number(conv, done: int) -> int:
     return done + 1
 
 
+def gap_after_previous(number: int, cfg) -> int:
+    """Сколько дней должно пройти ПОСЛЕ предыдущего касания, прежде чем делать это.
+
+    Без этой паузы касания сыпались пачкой: срок считается от последнего сообщения
+    клиента, а прогон идёт каждые пять минут, поэтому лид, молчащий десять дней,
+    получал касание 1 на одном тике, касание 2 — на следующем и касание 3 — на
+    третьем. Три задачи с текстами «1 день / 3 дня / 6 дней» за четверть часа,
+    которые клиенту подряд отправлять нельзя. Найдено ревью 12.11.2026.
+
+    Пауза берётся из её же графика: между первым и вторым касанием два дня,
+    между вторым и третьим — три. Минимум сутки, чтобы правка графика на
+    одинаковые числа не вернула пачку.
+    """
+    schedule = list(getattr(cfg, "touch_after_days", None) or (1, 3, 6))
+    if number <= 1 or number > len(schedule):
+        return 0
+    return max(1, int(schedule[number - 1]) - int(schedule[number - 2]))
+
+
 def due_after_days(number: int, cfg) -> int | None:
     """Через сколько дней молчания пора делать касание `number`. None — касаний больше нет."""
     schedule = list(getattr(cfg, "touch_after_days", None) or (1, 3, 6))
@@ -83,6 +103,7 @@ def due_after_days(number: int, cfg) -> int | None:
 def select_touch_targets(convs: list, now: datetime, cfg, *,
                          done_by_user: dict[str, int] | None = None,
                          today_by_owner: dict[str, int] | None = None,
+                         last_touch_by_user: dict[str, object] | None = None,
                          allowed_funnels: set[str] | None = None) -> list[dict]:
     """Кому пора напомнить. Чистая функция: ни базы, ни сети.
 
@@ -97,6 +118,7 @@ def select_touch_targets(convs: list, now: datetime, cfg, *,
     now = _aware(now) or datetime.now(timezone.utc)
     done_by_user = done_by_user or {}
     budget = dict(today_by_owner or {})
+    last_touch = last_touch_by_user or {}
     daily_limit = max(0, int(getattr(cfg, "touch_daily_limit", 10) or 0))
     funnels = (allowed_funnels if allowed_funnels is not None
                else set(getattr(cfg, "touch_funnels", None) or ("visa",)))
@@ -111,6 +133,14 @@ def select_touch_targets(convs: list, now: datetime, cfg, *,
             continue
         if str(getattr(c, "outcome", "") or "") in TERMINAL_OUTCOMES:
             continue
+        # Фильтра мусора здесь намеренно НЕТ, хотя ревью 12.11.2026 его предлагало.
+        # Проверено: `leadstate.is_noise` для кандидата касания недостижим — он
+        # требует диалога БЕЗ владельца, а мы ниже берём только диалоги с владельцем;
+        # `looks_unseen_conversation` читает историю сообщений, которой нет в лёгкой
+        # выборке `all_conversations_light`, и всегда вернул бы False. Поставить их
+        # значило бы завести мёртвый код и ложное чувство защиты.
+        # Сам риск здесь мал: касание — это ЗАДАЧА МЕНЕДЖЕРУ, а не сообщение клиенту.
+        # Бот никому не пишет, человек смотрит карточку и решает сам.
         # Касание нужно, когда ждём КЛИЕНТА: последним писали мы. Если последним писал
         # клиент — он ждёт нас, и это работа сторожа «клиент ждёт», а не касания.
         if str(getattr(c, "last_sender", "") or "") not in ("manager", "bot"):
@@ -129,6 +159,14 @@ def select_touch_targets(convs: list, now: datetime, cfg, *,
             continue            # все касания сделаны
         if last > now - timedelta(days=days):
             continue            # срок ещё не подошёл
+        gap = gap_after_previous(number, cfg)
+        previous = last_touch.get(getattr(c, "user_id", ""))
+        if gap and previous is not None:
+            # Дата касания — календарный день Бишкека (так её кладёт задача), поэтому
+            # сравниваем днями, а не метками времени.
+            done_on = previous if isinstance(previous, date) else None
+            if done_on is not None and (now + BISHKEK).date() - done_on < timedelta(days=gap):
+                continue        # предыдущее касание слишком свежее
         out.append({"conv": c, "number": number, "owner": owner,
                     "silent_days": (now - last).days,
                     "text": TOUCH_TEXTS[min(number, len(TOUCH_TEXTS)) - 1]})
@@ -220,7 +258,7 @@ async def close_stale(now: datetime | None = None, *, sessionmaker=None,
         sessionmaker = get_sessionmaker()
 
     from app.domain.calendar_tasks import bishkek_today
-    done_by_user, _today = await _counts(sessionmaker, bishkek_today(now_dt))
+    done_by_user, _today, _latest = await _counts(sessionmaker, bishkek_today(now_dt))
     store = get_conversation_store()
     targets = select_closable(await store.all_conversations_light(), now_dt, cfg,
                               done_by_user=done_by_user)
@@ -243,7 +281,7 @@ async def close_stale(now: datetime | None = None, *, sessionmaker=None,
     return closed
 
 
-async def _counts(sessionmaker, day) -> tuple[dict[str, int], dict[str, int]]:
+async def _counts(sessionmaker, day) -> tuple[dict[str, int], dict[str, int], dict[str, date]]:
     """Сколько касаний сделано по каждому диалогу и сколько создано сегодня по менеджеру.
 
     Читает только задачи. Признак касания — автор `bot` плюс комментарий «Касание …»:
@@ -262,8 +300,13 @@ async def _counts(sessionmaker, day) -> tuple[dict[str, int], dict[str, int]]:
             select(CalendarTask.manager_id, func.count())
             .where(*is_touch, CalendarTask.scheduled_date == day)
             .group_by(CalendarTask.manager_id))).all()
+        # Дата последнего касания по диалогу — чтобы следующее не ушло в тот же час.
+        latest = (await session.execute(
+            select(CalendarTask.user_id, func.max(CalendarTask.scheduled_date))
+            .where(*is_touch).group_by(CalendarTask.user_id))).all()
     return ({str(u): int(c) for u, c in by_user if u},
-            {str(m): int(c) for m, c in today if m})
+            {str(m): int(c) for m, c in today if m},
+            {str(u): d for u, d in latest if u and d})
 
 
 async def run(now: datetime | None = None, *, sessionmaker=None) -> int:
@@ -288,10 +331,11 @@ async def run(now: datetime | None = None, *, sessionmaker=None) -> int:
         sessionmaker = get_sessionmaker()
 
     day = bishkek_today(now_dt)
-    done_by_user, today_by_owner = await _counts(sessionmaker, day)
+    done_by_user, today_by_owner, last_touch_by_user = await _counts(sessionmaker, day)
     convs = await get_conversation_store().all_conversations_light()
     targets = select_touch_targets(convs, now_dt, cfg, done_by_user=done_by_user,
-                                   today_by_owner=today_by_owner)
+                                   today_by_owner=today_by_owner,
+                                   last_touch_by_user=last_touch_by_user)
     if not targets:
         return 0
     created = 0
