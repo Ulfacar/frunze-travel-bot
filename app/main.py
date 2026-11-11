@@ -74,7 +74,7 @@ async def lifespan(app: FastAPI):
     from app.core import reply_alerts
     scheduler.register("reply_alerts", reply_alerts.run)  # B2c, флаг OFF
     scheduler.register("followup", followup.run)
-    scheduler.register("touches", touches.run)   # касания задачами менеджеру (gated OFF)
+    scheduler.register("touches", touches.run_all)  # касания + автозакрытие (оба gated OFF)
     scheduler.register("rescore", rescore.run)          # ghost-ре-скоринг тира готовности
     scheduler.register("outcome_infer", outcome_infer.run)  # LLM-исход (gated OFF)
     scheduler.register("morning_brief", morning_brief.run)  # утренний горячий лист (gated OFF)

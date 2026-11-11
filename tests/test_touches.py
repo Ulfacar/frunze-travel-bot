@@ -208,3 +208,80 @@ def test_the_dead_tail_still_gets_its_turn_later():
 
     assert len(picked) == 3
     assert [t["silent_days"] for t in picked] == [20, 21, 22]
+
+
+# --- Автозакрытие после всех касаний (ответ Медины, вопрос 4) -----------------
+
+def closing_cfg(**kw):
+    base = dict(touch_after_days=[1, 3, 6], touch_funnels=["visa"],
+                auto_close_after_days=7, auto_close_batch_limit=20)
+    base.update(kw)
+    return SimpleNamespace(**base)
+
+
+def test_a_client_is_closed_after_all_touches_and_silence():
+    """Её вопрос 4: три касания сделаны, клиент молчит — «Не реализовано»."""
+    silent = conv(last_message_at=NOW - timedelta(days=10))
+    done = {silent.user_id: 3}
+
+    picked = touches.select_closable([silent], NOW, closing_cfg(), done_by_user=done)
+
+    assert len(picked) == 1
+    assert picked[0]["silent_days"] == 10
+
+
+def test_touches_must_be_finished_first():
+    """Два касания из трёх — рано закрывать, даже если молчит давно."""
+    silent = conv(last_message_at=NOW - timedelta(days=30))
+    assert touches.select_closable([silent], NOW, closing_cfg(),
+                                   done_by_user={silent.user_id: 2}) == []
+
+
+def test_silence_after_the_last_touch_is_required():
+    """Все касания сделаны, но клиент молчит всего день — ещё читает третье сообщение.
+
+    Счётчик касаний говорит лишь о том, что менеджеру поставили задачу. Закрывать
+    по одному счётчику значит хоронить клиента в день последнего письма.
+    """
+    fresh = conv(last_message_at=NOW - timedelta(days=1))
+    assert touches.select_closable([fresh], NOW, closing_cfg(),
+                                   done_by_user={fresh.user_id: 3}) == []
+
+
+def test_a_client_who_answered_is_not_closed():
+    """Последним писал клиент — он не пропал, а ждёт нас."""
+    answered = conv(last_sender="client", last_message_at=NOW - timedelta(days=20))
+    assert touches.select_closable([answered], NOW, closing_cfg(),
+                                   done_by_user={answered.user_id: 3}) == []
+
+
+def test_a_finished_deal_is_never_reopened_as_lost():
+    """Выигранную сделку автозакрытие не трогает — и уже закрытую тоже."""
+    for outcome in ("won", "lost"):
+        done_deal = conv(outcome=outcome, last_message_at=NOW - timedelta(days=30))
+        assert touches.select_closable([done_deal], NOW, closing_cfg(),
+                                       done_by_user={done_deal.user_id: 3}) == [], outcome
+
+
+def test_closing_is_capped_and_oldest_first():
+    """Порция ограничена; первыми уходят те, кто молчит дольше всех.
+
+    Здесь порядок обратный касаниям: касание возвращает клиента, и там важны свежие,
+    а закрытие лишь прибирает хвост — его и разбираем с конца.
+    """
+    many = [conv(user_id=f"getvisa:99670006{i:04d}",
+                 last_message_at=NOW - timedelta(days=10 + i)) for i in range(30)]
+    done = {c.user_id: 3 for c in many}
+
+    picked = touches.select_closable(many, NOW, closing_cfg(auto_close_batch_limit=5),
+                                     done_by_user=done)
+
+    assert len(picked) == 5
+    assert [t["silent_days"] for t in picked] == [39, 38, 37, 36, 35]
+
+
+def test_other_directions_are_not_closed():
+    """Только визы: по турам автозакрытие никто не заказывал."""
+    tours = conv(funnel="tours", last_message_at=NOW - timedelta(days=30))
+    assert touches.select_closable([tours], NOW, closing_cfg(),
+                                   done_by_user={tours.user_id: 3}) == []

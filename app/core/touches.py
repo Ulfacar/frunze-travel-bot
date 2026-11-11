@@ -43,7 +43,11 @@ from app.config import settings
 log = logging.getLogger(__name__)
 
 FLAG = "visa_touch_tasks_enabled"
+CLOSE_FLAG = "auto_close_after_touches_enabled"
 TERMINAL_OUTCOMES = {"won", "lost"}
+# Причина из справочника панели (`router.LOST_REASONS`). Берём код, а не текст:
+# тексты менеджер ещё поправит, а код в отчёте «почему теряем» должен быть стабильным.
+NO_ANSWER_REASON = "no_answer"
 
 # Тексты Медины, 11.11.2026, вопрос 3 — дословно. Менеджер копирует и отправляет сам,
 # поэтому правка текста здесь НЕ меняет того, что получит клиент: она меняет подсказку.
@@ -152,6 +156,93 @@ def select_touch_targets(convs: list, now: datetime, cfg, *,
     return out[:limit] if limit else out
 
 
+def select_closable(convs: list, now: datetime, cfg, *,
+                    done_by_user: dict[str, int] | None = None,
+                    allowed_funnels: set[str] | None = None) -> list[dict]:
+    """Кого пора перевести в «Не реализовано». Чистая функция: ни базы, ни сети.
+
+    Её ответ на вопрос 4: «Если клиент не отвечает, переводим его в стадию
+    „Не реализовано“ с причиной „Не выходит на связь“. При этом сохраняем всю историю
+    переписки, чтобы при повторном обращении можно было продолжить работу».
+
+    Два условия вместе, и второе важнее первого. Мало того, что все касания сделаны —
+    после последнего должно пройти `auto_close_after_days` молчания. Иначе закрытие
+    прилетит клиенту, который как раз сегодня читает третье сообщение; счётчик касаний
+    говорит лишь о том, что менеджеру поставили задачу, а не о том, что клиент успел
+    ответить.
+    """
+    now = _aware(now) or datetime.now(timezone.utc)
+    done_by_user = done_by_user or {}
+    funnels = (allowed_funnels if allowed_funnels is not None
+               else set(getattr(cfg, "touch_funnels", None) or ("visa",)))
+    needed = len(list(getattr(cfg, "touch_after_days", None) or (1, 3, 6)))
+    silence = int(getattr(cfg, "auto_close_after_days", 7) or 0)
+
+    out: list[dict] = []
+    for c in convs:
+        if str(getattr(c, "funnel", "") or "") not in funnels:
+            continue
+        if getattr(c, "archived", False):
+            continue
+        if str(getattr(c, "outcome", "") or "") in TERMINAL_OUTCOMES:
+            continue            # уже закрыт — ни победу, ни отказ не переписываем
+        if str(getattr(c, "last_sender", "") or "") not in ("manager", "bot"):
+            continue            # клиент ответил последним — он не пропал
+        if done_by_user.get(getattr(c, "user_id", ""), 0) < needed:
+            continue            # касания ещё не кончились
+        last = _aware(getattr(c, "last_message_at", None))
+        if last is None or (silence and last > now - timedelta(days=silence)):
+            continue            # молчит не настолько долго
+        out.append({"conv": c, "silent_days": (now - last).days})
+
+    out.sort(key=lambda item: -item["silent_days"])
+    limit = max(0, int(getattr(cfg, "auto_close_batch_limit", 20)))
+    return out[:limit] if limit else out
+
+
+async def close_stale(now: datetime | None = None, *, sessionmaker=None,
+                      dry_run: bool = False) -> int:
+    """Перевести отмолчавшихся в «Не реализовано». Возвращает число закрытых.
+
+    История переписки остаётся нетронутой — меняются только исход и причина, как она
+    и просила. Повторное обращение клиента снимет исход обычным путём: придёт его
+    сообщение, `last_sender` станет client, и диалог снова попадёт в работу.
+    """
+    from app.core import flags
+    from app.integrations.panel.store import get_conversation_store
+
+    cfg = settings
+    if not await flags.get_flag(CLOSE_FLAG, cfg.auto_close_after_touches_enabled):
+        return 0
+    now_dt = _aware(now) or datetime.now(timezone.utc)
+    if sessionmaker is None:
+        from app.integrations.crm.db import get_sessionmaker
+        sessionmaker = get_sessionmaker()
+
+    from app.domain.calendar_tasks import bishkek_today
+    done_by_user, _today = await _counts(sessionmaker, bishkek_today(now_dt))
+    store = get_conversation_store()
+    targets = select_closable(await store.all_conversations_light(), now_dt, cfg,
+                              done_by_user=done_by_user)
+    if dry_run:
+        return len(targets)
+
+    closed = 0
+    for target in targets:
+        user_id = getattr(target["conv"], "user_id", "")
+        try:
+            await store.update_meta(user_id, outcome="lost",
+                                    outcome_reason=NO_ANSWER_REASON)
+            await store.add_audit("bot", "outcome", user_id,
+                                  f"lost:{NO_ANSWER_REASON}")
+            closed += 1
+        except Exception:  # noqa: BLE001 — один диалог не должен валить остальные
+            log.warning("auto-close failed user=%s", user_id, exc_info=True)
+    if closed:
+        log.info("auto-closed after touches: %d", closed)
+    return closed
+
+
 async def _counts(sessionmaker, day) -> tuple[dict[str, int], dict[str, int]]:
     """Сколько касаний сделано по каждому диалогу и сколько создано сегодня по менеджеру.
 
@@ -234,3 +325,13 @@ async def run(now: datetime | None = None, *, sessionmaker=None) -> int:
     if created:
         log.info("touch tasks created=%d", created)
     return created
+
+
+async def run_all(now: datetime | None = None, *, sessionmaker=None) -> None:
+    """Джоба планировщика: сначала касания, потом закрытие отмолчавшихся.
+
+    Порядок важен: закрытие смотрит на число сделанных касаний, и если бы оно шло
+    первым, клиент закрывался бы на один прогон раньше срока.
+    """
+    await run(now, sessionmaker=sessionmaker)
+    await close_stale(now, sessionmaker=sessionmaker)
