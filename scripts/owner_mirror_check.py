@@ -48,7 +48,7 @@ async def collect() -> tuple[list[tuple], dict[str, int]]:
     compared = 0
     async with ar._domain_sessionmaker()() as session:
         rows = (await session.execute(text(
-            "SELECT user_id, bot_id, phone, channel, funnel, assigned_to, last_msg_at "
+            "SELECT user_id, bot_id, phone, channel, funnel, assigned_to, last_message_at "
             "FROM conversations WHERE COALESCE(assigned_to,'') <> ''"))).all()
         total = len(rows)
         for user_id, bot_id, phone, channel, funnel, assigned_to, last_at in rows:
