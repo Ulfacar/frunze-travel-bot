@@ -1254,3 +1254,36 @@ def test_a_card_whose_stage_is_missing_from_the_layout_is_not_lost():
 
     assert [c["key"] for c in columns] == ["greeting", "manager"]
     assert columns[0]["cards"][0]["user_id"] == "996700999"
+
+
+def test_the_visa_board_renders_with_its_own_columns(monkeypatch):
+    """Страница доски обязана отрендериться визовым набором, а не только функцией.
+
+    Набор колонок выбирается в маршруте, а подписи и ключи уезжают в шаблон. Проверка
+    только `board_columns_for` этого не закрывает: падение рендера менеджер увидит
+    пустым экраном, а тумблер уже будет включён.
+    """
+    import asyncio
+    from app.core import flags
+
+    _clear_memory()
+    flags.reset()
+    store = panel_store.get_conversation_store()
+    asyncio.run(store.add_message("u-visa-board", "client", "виза в Италию",
+                                  channel="whatsapp"))
+    asyncio.run(store.update_meta("u-visa-board", funnel="visa", stage="qualification"))
+    asyncio.run(flags.set_flag("board_columns_by_direction_enabled", True))
+
+    client = _auth_client()
+    resp = client.get("/admin/board/visa")
+
+    assert resp.status_code == 200
+    assert "u-visa-board" in resp.text
+    # Визовые подписи на месте, чужих из общего набора нет.
+    assert "В работе" in resp.text and "Консультация" in resp.text
+    assert "Подбор / оценка" not in resp.text
+    # Туры на той же сессии остаются на общем наборе.
+    tours = client.get("/admin/board/tours")
+    assert tours.status_code == 200 and "Подбор / оценка" in tours.text
+    asyncio.run(flags.set_flag("board_columns_by_direction_enabled", False))
+    flags.reset()
