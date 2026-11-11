@@ -79,6 +79,7 @@ class ConversationView:
     readiness_scored_at: datetime | None = None
     estimated_value: float | None = None
     estimated_value_currency: str = ""
+    outcome_reason: str = ""              # причина закрытия из справочника (ответ Медины 5)
     outcome_inferred: str = ""            # LLM-исход (advisory, не затирает ручной outcome)
     outcome_inferred_reason: str = ""
     # Источник лида (Click-to-WhatsApp Ads) — первое касание, write-once.
@@ -228,6 +229,7 @@ class MemoryConversationStore:
                           readiness_signals: dict | None = None,
                           estimated_value: float | None = None,
                           estimated_value_currency: str | None = None,
+                          outcome_reason: str | None = None,
                           outcome_inferred: str | None = None,
                           outcome_inferred_reason: str | None = None,
                           source: str | None = None, source_id: str | None = None,
@@ -286,6 +288,8 @@ class MemoryConversationStore:
             conv.estimated_value = estimated_value
             # валюту пишем только вместе со значением (иначе рассинхрон: число $800, валюта "")
             conv.estimated_value_currency = estimated_value_currency or ""
+        if outcome_reason is not None:
+            conv.outcome_reason = outcome_reason
         if outcome_inferred is not None:
             conv.outcome_inferred = outcome_inferred
         if outcome_inferred_reason is not None:
@@ -555,6 +559,7 @@ class PostgresConversationStore:
                           readiness_signals: dict | None = None,
                           estimated_value: float | None = None,
                           estimated_value_currency: str | None = None,
+                          outcome_reason: str | None = None,
                           outcome_inferred: str | None = None,
                           outcome_inferred_reason: str | None = None,
                           source: str | None = None, source_id: str | None = None,
@@ -614,6 +619,8 @@ class PostgresConversationStore:
             if estimated_value is not None:
                 conv.estimated_value = estimated_value
                 conv.estimated_value_currency = estimated_value_currency or ""
+            if outcome_reason is not None:
+                conv.outcome_reason = outcome_reason
             if outcome_inferred is not None:
                 conv.outcome_inferred = outcome_inferred
             if outcome_inferred_reason is not None:

@@ -290,6 +290,21 @@ WAIT_HOT_MIN = 20    # ждёт долго — горит
 # Исходы диалога для ручной отметки менеджером.
 OUTCOMES = [("won", "✅ Оплатил"), ("office", "🏢 Дошёл в офис"), ("lost", "❌ Слился")]
 
+# Причины закрытия лида — дословно восемь пунктов Медины (ответы 11.11.2026, вопрос 5).
+# Она просила НЕ заводить отдельную стадию «некачественный клиент», а спрашивать
+# причину у отказа: «Лучше сделать отдельные причины закрытия лида». Порядок её.
+LOST_REASONS = [
+    ("no_answer", "Не отвечает"),
+    ("not_interested", "Не заинтересован"),
+    ("price", "Высокая стоимость услуг"),
+    ("changed_mind", "Передумал оформлять визу"),
+    ("competitor", "Обратился в другую компанию"),
+    ("not_eligible", "Не подходит по требованиям"),
+    ("spam", "Ошибочное обращение или спам"),
+    ("postponed", "Отложил поездку"),
+]
+_LOST_REASON_LABELS = dict(LOST_REASONS)
+
 # BOT_SCOPE_BY_MANAGER now lives in app.core.manager_scope (shared with scheduler jobs);
 # re-exported via the import above so existing references keep working.
 
@@ -1290,6 +1305,19 @@ FEATURE_FLAGS = {
         "default": lambda: settings.panel_pilot_summary_enabled,
         "note": lambda: ("руководители: " + (", ".join(f"{d}: {', '.join(v) or '—'}" for d, v in
                          (settings.panel_direction_leads or {}).items()) or "не заданы")),
+    },
+    "lost_reason_enabled": {
+        "title": "Спрашивать причину, когда клиент слился",
+        "desc": ("Ответы Медины 11.11.2026 (вопрос 5): отдельная стадия «некачественный "
+                 "клиент» не нужна, нужна ПРИЧИНА у отказа. С тумблером при нажатии "
+                 "«Слился» менеджер выбирает одну из восьми: не отвечает, не "
+                 "заинтересован, высокая стоимость, передумал, ушёл в другую компанию, "
+                 "не подходит по требованиям, ошибка или спам, отложил поездку. "
+                 "Причина видна в карточке и попадает в журнал рядом с исходом; при "
+                 "смене исхода на другой она стирается. Без тумблера «Слился» "
+                 "работает как раньше, одним нажатием."),
+        "default": lambda: settings.lost_reason_enabled,
+        "note": lambda: f"причин в справочнике: {len(LOST_REASONS)}",
     },
     "visa_touch_tasks_enabled": {
         "title": "Касания до договора — задачи менеджеру",
@@ -2323,6 +2351,10 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
         "is_full_admin": is_full_admin,
         "reassign_targets": reassign_targets,
         "outcomes": OUTCOMES,
+        "lost_reasons": LOST_REASONS,
+        "lost_reason_on": await _media_flag("lost_reason_enabled"),
+        "lost_reason_label": _LOST_REASON_LABELS.get(
+            getattr(conv, "outcome_reason", "") or "", ""),
         "quick_replies": quick_replies_for(conv.funnel),
         "kg_entry_case_url": await _kg_entry_chat_link(conv, manager),
         "funnel_label": FUNNEL_LABELS.get(conv.funnel or "", conv.funnel or "—"),
@@ -3228,13 +3260,25 @@ async def set_stage(user_id: str, manager: dict = Depends(require_admin),
 
 @router.post("/conversation/{user_id}/outcome", response_class=HTMLResponse)
 async def set_outcome(user_id: str, request: Request, manager: dict = Depends(require_admin),
-                      outcome: str = Form(...)):
-    """Менеджер отмечает исход диалога (оплатил / дошёл / слился)."""
+                      outcome: str = Form(...), reason: str = Form("")):
+    """Менеджер отмечает исход диалога (оплатил / дошёл / слился).
+
+    `reason` — причина закрытия из справочника Медины, и она имеет смысл ТОЛЬКО у
+    отказа: у выигранной сделки причины отказа быть не может. При смене исхода с
+    «слился» на любой другой прежняя причина стирается, иначе в карточке осталась бы
+    «обратился в другую компанию» у оплатившего клиента.
+    """
     await _require_visible_conversation(user_id, manager)
     valid = {key for key, _ in OUTCOMES}
-    if outcome in valid:
-        await get_conversation_store().update_meta(user_id, outcome=outcome)
-        await get_conversation_store().add_audit(manager["login"], "outcome", user_id, outcome)
+    if outcome not in valid:
+        return await _render_conversation(user_id, request, manager)
+    reason = reason.strip() if outcome == "lost" else ""
+    if reason and reason not in _LOST_REASON_LABELS:
+        reason = ""                      # чужой код не пишем: справочник закрытый
+    await get_conversation_store().update_meta(user_id, outcome=outcome,
+                                               outcome_reason=reason)
+    note = f"{outcome}:{reason}" if reason else outcome
+    await get_conversation_store().add_audit(manager["login"], "outcome", user_id, note)
     return await _render_conversation(user_id, request, manager)
 
 

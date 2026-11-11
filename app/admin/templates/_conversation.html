@@ -40,6 +40,21 @@
         hx-target="#chat" hx-swap="innerHTML">{% if simple_on %}{{ {'won':'Продажа состоялась','office':'Пришёл в офис','lost':'Клиент отказался'}.get(key, label) }}{% else %}{{ {'won':'Оплатил','office':'Дошёл в офис','lost':'Слился'}.get(key, label) }}{% endif %}</button>
 {% endfor %}
 </div>
+{#- Причина отказа (ответы Медины, вопрос 5). Показываем ТОЛЬКО у «слился»: у
+    оплатившего клиента причины отказа быть не может. Кнопки, а не выпадающий
+    список — на телефоне список открывается поверх чата и закрывает переписку. #}
+{% if lost_reason_on %}
+<div class="chat-outcomes chat-lost-reasons" {% if c.outcome != 'lost' %}hidden{% endif %}>
+  <span class="chat-menu-note">Почему не сложилось:</span>
+  {% for key, label in lost_reasons %}
+  <button type="button" class="chat-chip{% if c.outcome_reason == key %} selected{% endif %}"
+          aria-pressed="{{ 'true' if c.outcome_reason == key else 'false' }}"
+          hx-post="/admin/conversation/{{ c.user_id }}/outcome"
+          hx-vals='{"outcome":"lost","reason":"{{ key }}"}'
+          hx-target="#chat" hx-swap="innerHTML">{{ label }}</button>
+  {% endfor %}
+</div>
+{% endif %}
 {%- endmacro %}
 {% set inferred = {'won':'похоже оплатил','lost':'похоже отказ','ghosted':'пропал','active':'в работе'}.get(c.outcome_inferred, c.outcome_inferred or 'не определён') %}
 <div class="panel chat-palma" data-chat-id="{{ c.user_id }}"
@@ -425,6 +440,23 @@
             hx-target="#chat" hx-swap="innerHTML">{{ label }}</button>
     {% endfor %}
   </div>
+
+  {#- Причина отказа в прежнем виде карточки. Блок продублирован, а не вынесен в
+      макрос: вёрстка здесь своя (btn/btn-ghost вместо chat-chip), и попытка свести
+      их в один макрос сделала бы его набором if-ов по оформлению. #}
+  {% if lost_reason_on %}
+  <div class="outcome-bar" style="display:flex;gap:6px;align-items:center;margin:0 0 10px;flex-wrap:wrap"
+       {% if c.outcome != 'lost' %}hidden{% endif %}>
+    <span style="color:var(--muted);font-size:12px">Почему не сложилось:</span>
+    {% for key, label in lost_reasons %}
+    <button class="btn {% if c.outcome_reason == key %}btn-brand{% else %}btn-ghost{% endif %}"
+            style="padding:4px 9px;font-size:12px"
+            hx-post="/admin/conversation/{{ c.user_id }}/outcome"
+            hx-vals='{"outcome":"lost","reason":"{{ key }}"}'
+            hx-target="#chat" hx-swap="innerHTML">{{ label }}</button>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   {% if c.ai_summary or c.manager_next_step or c.escalation_reason or c.outcome_inferred %}
   <div class="brief manager-brief">

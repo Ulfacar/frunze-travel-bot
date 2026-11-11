@@ -110,6 +110,10 @@ class Conversation(Base):
     estimated_value: Mapped[float | None] = mapped_column(Float, nullable=True)   # оценка чека
     estimated_value_currency: Mapped[str] = mapped_column(String(8), default="")
     # Авто-исход через LLM (advisory, НЕ затирает ручной outcome). Пусто, пока фича выключена.
+    # Причина закрытия лида — справочник из восьми пунктов, которые назвала Медина
+    # (письменные ответы 11.11.2026, вопрос 5). Пусто, пока менеджер не выбрал:
+    # отдельная стадия «некачественный клиент» ей не нужна, нужна причина у отказа.
+    outcome_reason: Mapped[str] = mapped_column(String(24), default="")
     outcome_inferred: Mapped[str] = mapped_column(String(16), default="")       # won|lost|ghosted|active
     outcome_inferred_reason: Mapped[str] = mapped_column(Text, default="")
     # Когда спросили менеджера «клиент оплатил?». Живёт в карточке, а не в памяти
@@ -322,6 +326,7 @@ async def init_models(engine: AsyncEngine) -> None:
             "readiness_scored_at": "TIMESTAMPTZ",
             "estimated_value": "DOUBLE PRECISION",
             "estimated_value_currency": "VARCHAR(8) DEFAULT ''",
+            "outcome_reason": "VARCHAR(24) DEFAULT ''",
             "outcome_inferred": "VARCHAR(16) DEFAULT ''",
             "outcome_inferred_reason": "TEXT DEFAULT ''",
             "sale_check_asked_at": "TIMESTAMPTZ",
