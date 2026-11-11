@@ -25,6 +25,14 @@ services:
       PANEL_BITRIX_ARCHIVE_ENABLED: ${PANEL_BITRIX_ARCHIVE_ENABLED:-false}
       BITRIX_ARCHIVE_DIR: ${BITRIX_ARCHIVE_DIR:-}
       # Сводка пилота для руководителя направления (30.10). OFF; руководители — JSON по направлениям.
+      VISA_TOUCH_TASKS_ENABLED: ${VISA_TOUCH_TASKS_ENABLED:-false}
+      # Списки — JSON-строкой, как PANEL_DIRECTION_LEADS: pydantic парсит JSON,
+      # а YAML без кавычек принял бы [1,3,6] за свой список и сломал подстановку.
+      TOUCH_AFTER_DAYS: '${TOUCH_AFTER_DAYS:-[1,3,6]}'
+      TOUCH_FUNNELS: '${TOUCH_FUNNELS:-["visa"]}'
+      TOUCH_BATCH_LIMIT: ${TOUCH_BATCH_LIMIT:-20}
+      TOUCH_MAX_AGE_DAYS: ${TOUCH_MAX_AGE_DAYS:-30}
+      TOUCH_DAILY_LIMIT: ${TOUCH_DAILY_LIMIT:-10}
       BOARD_COLUMNS_BY_DIRECTION_ENABLED: ${BOARD_COLUMNS_BY_DIRECTION_ENABLED:-false}
       PANEL_PILOT_SUMMARY_ENABLED: ${PANEL_PILOT_SUMMARY_ENABLED:-false}
       PANEL_DIRECTION_LEADS: ${PANEL_DIRECTION_LEADS:-{}}

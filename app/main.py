@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI):
     # джоба сама сверяется с рантайм-флагом (переключается кнопкой в админке без рестарта).
     from app.core import (awaiting, balance_guard, bitrix_pipeline_job, calendar_brief,
                           channel_heartbeat, followup, instant_handoff, manager_sync,
-                          morning_brief, outcome_infer, rescore, scheduler, tours_health,
+                          morning_brief, outcome_infer, rescore, scheduler, touches, tours_health,
                           tours_summary, wappi_health, watchdog)
     scheduler.register("watchdog", watchdog.run)
     # Основной сторож каналов: спрашивает у Wappi, авторизован ли профиль. Точный факт
@@ -74,6 +74,7 @@ async def lifespan(app: FastAPI):
     from app.core import reply_alerts
     scheduler.register("reply_alerts", reply_alerts.run)  # B2c, флаг OFF
     scheduler.register("followup", followup.run)
+    scheduler.register("touches", touches.run)   # касания задачами менеджеру (gated OFF)
     scheduler.register("rescore", rescore.run)          # ghost-ре-скоринг тира готовности
     scheduler.register("outcome_infer", outcome_infer.run)  # LLM-исход (gated OFF)
     scheduler.register("morning_brief", morning_brief.run)  # утренний горячий лист (gated OFF)
