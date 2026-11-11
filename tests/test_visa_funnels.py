@@ -153,34 +153,66 @@ def test_entry_codes_and_names_match_the_pdf_catalog(entry):
 # --- B. Шенгенская воронка ---------------------------------------------------
 
 def test_the_schengen_draft_keeps_the_owner_words(schengen):
-    """Этапы 2 и 3 — две отдельные стадии с перескоком; этап 5 — одна стадия.
+    """Лист ожидания и запись — две стадии с перескоком; подготовка — одна стадия.
 
     Прямые цитаты со встречи 30.10: «первой воронкой идёт лист ожидания, второй —
     клиент записан; если сразу записала, то через воронку она прыгает» и «это всё в
     одной воронке может быть, да? Вот в одной воронке».
+
+    11.11.2026 воронка пересобрана по письменным ответам Медины, и перескок переехал:
+    список документов она отдаёт СРАЗУ после договора и предоплаты, «независимо от
+    того, записан он на подачу или ещё ожидает свободную дату» (вопрос 9). Поэтому
+    развилка «лист ожидания или сразу запись» теперь стоит после SCH-03, а не после
+    договора. Обе цитаты заказчика при этом сохранены — они и проверяются здесь.
     """
     assert schengen["product"]["code"] == "visa_schengen"
     work = [s for s in schengen["stages"] if s["code"].startswith("SCH-")]
-    assert len(work) == 11
-    assert schengen["transitions"]["SCH-01"][:2] == ["SCH-02", "SCH-03"]
-    assert schengen["transitions"]["SCH-02"][0] == "SCH-03"
-    five = next(s for s in work if s["code"] == "SCH-05")
-    assert five["name"] == "Страховка, брони билетов и отелей, переводы"
+    assert len(work) == 14
+    # Перескок: из сбора документов можно в лист ожидания, а можно прямо в запись.
+    assert schengen["transitions"]["SCH-03"][:2] == ["SCH-04", "SCH-05"]
+    assert schengen["transitions"]["SCH-04"][0] == "SCH-05"
+    # Список документов стоит ДО записи — ответ Медины отменил прежнее допущение.
+    names = [s["name"] for s in work]
+    assert names.index("Список документов передан клиенту, клиент собирает") \
+        < names.index("Клиент записан на подачу документов")
+    # Брони, страховка, переводы и анкета — одна стадия, а не четыре.
+    six = next(s for s in work if s["code"] == "SCH-06")
+    assert six["name"] == "Подготовка документов"
+    assert "бронирование отеля" in six["origin"].lower()
     assert [s["name"] for s in work[-2:]] == ["Попросить отзыв", "Завершено"]
+
+
+def test_the_interview_stage_can_be_skipped(schengen):
+    """Собеседование по шенгену Медина не называет — значит этап необязателен.
+
+    В её воронке США собеседование есть двумя стадиями, а в шенгенской нет вовсе.
+    Удалять этап по молчанию нельзя (на встрече 30.10 заказчик его называл), поэтому
+    из финальной проверки разрешены оба пути: через SCH-08 и мимо него. Вопрос ей
+    задан — до ответа держим обе дороги.
+    """
+    assert schengen["transitions"]["SCH-07"][:2] == ["SCH-08", "SCH-09"]
+    assert "НЕТ" in next(s for s in schengen["stages"]
+                         if s["code"] == "SCH-08")["origin"]
 
 
 def test_every_schengen_stage_says_where_it_came_from(schengen):
     """В PDF воронки нет совсем, поэтому источник обязан быть у каждого этапа.
 
-    Этапы 8–11 достроены по смыслу, место этапа 4 — допущение; это должно быть видно
-    в данных, а не только в отчёте.
+    Что откуда взято, должно читаться в данных, а не только в отчёте. После ответов
+    Медины 11.11 источники разделились на три вида, и все три обязаны быть видны:
+    слова заказчика со встречи, письменный ответ менеджера и то, что по-прежнему
+    держится на реконструкции исполнителя.
     """
     for stage in schengen["stages"]:
         assert stage["origin"].strip(), stage["code"]
         assert "pdf_page" not in stage, stage["code"]
-    built = [s["code"] for s in schengen["stages"]
-             if "требует подтверждения" in s["origin"]]
-    assert {"SCH-04", "SCH-08", "SCH-09", "SCH-10", "SCH-11"} <= set(built)
+    by_manager = {s["code"] for s in schengen["stages"] if "Медины" in s["origin"]}
+    # Этапы, которых в черновике 05.11 не было вовсе — они появились из её ответов.
+    assert {"SCH-02", "SCH-10", "SCH-11"} <= by_manager
+    guessed = {s["code"] for s in schengen["stages"]
+               if "требует подтверждения" in s["origin"]}
+    # Исключения она не описывала — они так и остались реконструкцией.
+    assert {"X02", "X03", "X07"} <= guessed
 
 
 # --- C. Публикация и проход заявки ------------------------------------------
@@ -277,8 +309,11 @@ def test_schengen_publishes_onto_the_product_that_already_exists(publisher, tmp_
             case = await sc.open_case(session, contact_id=contact.id,
                                       product_id=product.id, owner_login="medina",
                                       by=ADMIN)
-            # Перескок: из договора можно и в лист ожидания, и прямо в запись.
+            # Договор → предоплата → список документов, затем перескок листа
+            # ожидания: из сбора документов можно сразу в запись на подачу.
+            case = await sc.advance(session, case.id, to_stage="SCH-02", by=MEDINA)
             case = await sc.advance(session, case.id, to_stage="SCH-03", by=MEDINA)
-            assert case.stage == "SCH-03"
+            case = await sc.advance(session, case.id, to_stage="SCH-05", by=MEDINA)
+            assert case.stage == "SCH-05"
 
     asyncio.run(check())
