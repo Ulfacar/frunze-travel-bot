@@ -181,3 +181,30 @@ def test_the_budget_is_per_manager_not_global():
     for target in picked:
         by_owner[target["owner"]] = by_owner.get(target["owner"], 0) + 1
     assert by_owner == {"medina": 4, "eliza": 4}
+
+
+def test_fresh_leads_are_touched_before_the_dead_tail():
+    """Внутри одного касания первыми идут САМЫЕ СВЕЖИЕ, а не самые давние.
+
+    Нашёл сухой прогон на проде 11.11.2026: при обратном порядке первые двадцать задач
+    достались клиентам, молчащим по 29 дней — почти мёртвым. График Медины (1, 3, 6
+    дней) написан для тех, кого ещё можно вернуть. Тот же принцип в дожиме.
+    """
+    fresh = conv(user_id="getvisa:996700005001", last_message_at=NOW - timedelta(days=2))
+    stale = conv(user_id="getvisa:996700005002", last_message_at=NOW - timedelta(days=29))
+
+    picked = touches.select_touch_targets([stale, fresh], NOW, cfg(touch_batch_limit=1))
+
+    assert len(picked) == 1
+    assert picked[0]["silent_days"] == 2, "первым должен идти свежий лид"
+
+
+def test_the_dead_tail_still_gets_its_turn_later():
+    """Хвост не выбрасывается — он разбирается следующими прогонами, когда свежих нет."""
+    stale = [conv(user_id=f"getvisa:99670000{i:04d}",
+                  last_message_at=NOW - timedelta(days=20 + i)) for i in range(3)]
+
+    picked = touches.select_touch_targets(stale, NOW, cfg())
+
+    assert len(picked) == 3
+    assert [t["silent_days"] for t in picked] == [20, 21, 22]
