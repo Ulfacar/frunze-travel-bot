@@ -18,7 +18,12 @@
 
     python3 scripts/add_manager_accounts.py daulet:Даулет marsel:Марсель
     python3 scripts/add_manager_accounts.py --dry-run daulet:Даулет
-    python3 scripts/add_manager_accounts.py --admin grisha-admin2:Гриша
+    python3 scripts/add_manager_accounts.py "daulet-admin:Даулет (админ):admin"
+
+Роль задаётся ТРЕТЬИМ полем у конкретной учётки (`:admin`), а не общим ключом: флаг
+`--admin` действует на все учётки запуска, и одной командой «daulet, marsel и
+daulet-admin» можно было случайно сделать полными админами всех троих. `--admin`
+оставлен для совместимости, но в одной команде с ролями его лучше не смешивать.
 
 `--dry-run` ничего не пишет и показывает, что изменилось бы.
 """
@@ -40,22 +45,29 @@ def make_password() -> str:
     return "".join(secrets.choice(ALPHABET) for _ in range(PASSWORD_LENGTH))
 
 
-def parse_spec(spec: str) -> tuple[str, str]:
-    login, _, name = spec.partition(":")
-    login = login.strip().lower()
+def parse_spec(spec: str) -> tuple[str, str, bool]:
+    """`логин`, `логин:Имя` или `логин:Имя:admin` → (логин, имя, полный ли админ)."""
+    parts = spec.split(":")
+    login = parts[0].strip().lower()
     if not login:
         raise argparse.ArgumentTypeError(f"пустой логин в {spec!r}")
-    return login, (name.strip() or login)
+    name = (parts[1].strip() if len(parts) > 1 else "") or login
+    role = (parts[2].strip().lower() if len(parts) > 2 else "")
+    if role and role != "admin":
+        raise argparse.ArgumentTypeError(
+            f"третьим полем бывает только 'admin', а не {role!r} (в {spec!r})")
+    return login, name, role == "admin"
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("accounts", nargs="+", type=parse_spec,
-                    help="логин:Имя (имя необязательно)")
+                    help="логин[:Имя[:admin]] — роль задаётся у конкретной учётки")
     ap.add_argument("--env", default="/root/frunze-travel/prod.env")
     ap.add_argument("--admin", action="store_true",
-                    help="полный доступ ко всем воронкам (как grisha-admin)")
+                    help="полный доступ ВСЕМ учёткам запуска (устарело: лучше ':admin' "
+                         "у нужной учётки, иначе легко раздать права лишним людям)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -87,15 +99,17 @@ def main() -> int:
     print(f"сейчас учёток: {len(managers)} — {', '.join(sorted(have))}")
 
     created: dict[str, str] = {}
-    for login, name in args.accounts:
+    for login, name, is_admin in args.accounts:
         if login in have:
             print(f"  {login}: уже есть, пропускаю")
             continue
+        full_admin = bool(is_admin or args.admin)
         password = make_password()
         managers.append({"login": login, "name": name, "password": password,
-                         "admin": bool(args.admin), "telegram_chat_id": ""})
+                         "admin": full_admin, "telegram_chat_id": ""})
         created[login] = password
-        print(f"  {login}: будет заведён (имя {name!r}, admin={bool(args.admin)})")
+        flag = "ПОЛНЫЙ АДМИН" if full_admin else "обычный менеджер"
+        print(f"  {login}: будет заведён (имя {name!r}, {flag})")
 
     if not created:
         print("новых учёток нет — файл не тронут")
