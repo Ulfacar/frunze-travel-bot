@@ -715,16 +715,21 @@ async def _follow_assignment(session: AsyncSession, *, contact_id: int, directio
     вокруг неё. Так же сказано в техническом приложении ТЗ: «новый владелец и
     согласованный перенос».
 
-    Отбирать активное назначение у другого менеджера вправе только администратор —
-    то же правило, что в `permissions.can_reassign` для диалогов.
+    Отбирать активное назначение у другого менеджера вправе администратор — и, с
+    05.11.2026 (ответ заказчика 2.2), менеджер, который забирает клиента СЕБЕ внутри
+    своего направления. Прежде здесь стояло только `by.is_full_admin`, и перенос
+    услуги такому менеджеру падал бы на назначении диалога: право у него есть, а
+    выполнить его было нельзя (нашло ревью 09.11.2026).
     """
     if not direction or manager_login == SYSTEM_ACTOR.manager_id:
         return
     from app.domain.services import AssignmentService
+    takes_to_self = (getattr(by, "can_take_colleague", False)
+                     and manager_login == str(by.manager_id or "").strip().lower())
     try:
         await AssignmentService.assign(session, contact_id, direction, manager_login,
                                        assigned_by=by.manager_id, reason=reason,
-                                       allow_emergency=by.is_full_admin)
+                                       allow_emergency=by.is_full_admin or takes_to_self)
     except DomainError:
         # Назначение занято другим менеджером, а прав на перехват нет. Услуга уже
         # передана — расходиться им нельзя, поэтому отказываем целиком.

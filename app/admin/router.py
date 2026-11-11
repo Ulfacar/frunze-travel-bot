@@ -2450,6 +2450,39 @@ def _authz_direction(conv) -> str:
     return live_authz.direction_for_bot(getattr(conv, "bot_id", "") or "")
 
 
+async def _move_cases_to(session, *, contact_id: int, direction: str, actor) -> int:
+    """Передать активные услуги клиента новому владельцу переписки. Ответ 2.2.
+
+    Берём только НЕЗАВЕРШЁННЫЕ услуги своего направления: закрытую сделку передавать
+    незачем, а событие в её истории выглядело бы как возобновление работы.
+
+    Ошибка по одной услуге не должна ронять взятие клиента: переписка уже перешла, и
+    откат оставил бы клиента без владельца вообще. Поэтому каждая услуга отдельно, а
+    сбой уходит в лог — расхождение видно в карточке и чинится переназначением.
+    """
+    from sqlalchemy import select
+    from app.domain.models import DomainError, Product, ServiceCase
+    from app.domain.service_cases import reassign_case
+
+    rows = (await session.execute(
+        select(ServiceCase).join(Product, Product.id == ServiceCase.product_id)
+        .where(ServiceCase.contact_id == contact_id,
+               Product.direction == direction,
+               ServiceCase.outcome.is_(None)))).scalars().all()
+    moved = 0
+    for case in rows:
+        if str(case.owner_login or "").strip().lower() == actor.manager_id:
+            continue
+        try:
+            await reassign_case(session, case.id, target_login=actor.manager_id,
+                                by=actor, reason="клиент забран вместе с услугой (2.2)")
+            moved += 1
+        except DomainError:
+            log.warning("take-over: услуга %s не перешла к %s", case.id,
+                        actor.manager_id, exc_info=True)
+    return moved
+
+
 def takeover_allowed(actor, action: str, *, allow_takeover: bool) -> bool:
     """Можно ли ПЕРЕБИТЬ активного владельца этим действием. Чистая функция.
 
@@ -2600,6 +2633,13 @@ async def _ownership_guard(conv, manager: dict, action: str, *,
                                 s, contact_id=contact.id, direction=task_direction,
                                 new_manager_id=actor.manager_id,
                                 actor=actor.manager_id)
+                # Ответ заказчика 2.2 требует забирать клиента «вместе с перепиской И
+                # УСЛУГОЙ». До 11.11.2026 переезжала только переписка: услуга
+                # оставалась за коллегой, и забравший видел дело, но не мог двигать
+                # этап — то есть ответ владельца был выполнен наполовину.
+                if owner and owner != actor.manager_id and actor.can_take_colleague:
+                    await _move_cases_to(s, contact_id=contact.id, direction=direction,
+                                         actor=actor)
                 await s.commit()
             except DomainError:
                 # Гонка: другой менеджер взял лид между нашим чтением и локом. Это

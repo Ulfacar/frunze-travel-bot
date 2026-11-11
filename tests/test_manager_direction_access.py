@@ -267,3 +267,88 @@ def test_only_a_deliberate_claim_may_override_an_active_owner(action, allow_take
     from app.admin.router import takeover_allowed
     actor = ADMIN if admin else _medina(can_take_colleague=can_take)
     assert takeover_allowed(actor, action, allow_takeover=allow_takeover) is expected
+
+
+def test_taking_a_client_moves_the_service_too(monkeypatch):
+    """Ответ 2.2 требует забирать клиента «вместе с перепиской И УСЛУГОЙ».
+
+    До 11.11.2026 переезжала только переписка: `reassign_case` не вызывался из `app/`
+    вообще. Менеджер забирал клиента, видел его дело и не мог двинуть этап — право
+    на услугу существовало только в чистой функции.
+
+    Здесь проверяется доменная часть: менеджер с правом 2.2 может переназначить
+    услугу СЕБЕ, и назначение диалога идёт за услугой (`_follow_assignment`), где
+    раньше стояло только `is_full_admin`.
+    """
+    from app.domain import service_cases as sc
+    from app.domain.models import Contact, ServiceCase
+    from tests.test_service_cases import run_with_db
+    from app.config import ManagerConfig, settings as app_settings
+    monkeypatch.setattr(app_settings, "managers",
+                        [ManagerConfig(login=name, name=name, password="SYN-ONLY")
+                         for name in ("admin", "medina", "eliza")])
+
+    async def run(sm):
+        async with sm() as s:
+            contact = Contact()
+            s.add(contact)
+            await s.flush()
+            product = await sc.create_product(s, code="synthetic_takeover",
+                                              name="Synthetic visa", direction="visa",
+                                              by=ADMIN)
+            await sc.publish_version(s, product.id,
+                                     [dict(code="S1", name="Первый"),
+                                      dict(code="S2", name="Второй")],
+                                     {"S1": ["S2"], "S2": []}, "admin", by=ADMIN)
+            await s.commit()
+            case = await sc.open_case(s, contact_id=contact.id, product_id=product.id,
+                                      owner_login="eliza", by=ADMIN)
+            await s.commit()
+
+            taker = _medina(can_take_colleague=True)
+            await sc.reassign_case(s, case.id, target_login="medina", by=taker,
+                                   reason="клиент забран вместе с услугой (2.2)")
+            await s.commit()
+
+            moved = await s.get(ServiceCase, case.id, populate_existing=True)
+            assert moved.owner_login == "medina"
+
+    run_with_db(run)
+
+
+def test_without_the_right_the_service_stays_with_the_colleague(monkeypatch):
+    """Без права 2.2 чужая услуга не переезжает — прежнее правило в силе."""
+    from app.domain import service_cases as sc
+    from app.domain.models import Contact
+    from app.domain.service_authz import PermissionDenied
+    from tests.test_service_cases import run_with_db
+    from app.config import ManagerConfig, settings as app_settings
+    monkeypatch.setattr(app_settings, "managers",
+                        [ManagerConfig(login=name, name=name, password="SYN-ONLY")
+                         for name in ("admin", "medina", "eliza")])
+
+    async def run(sm):
+        async with sm() as s:
+            contact = Contact()
+            s.add(contact)
+            await s.flush()
+            product = await sc.create_product(s, code="synthetic_takeover2",
+                                              name="Synthetic visa", direction="visa",
+                                              by=ADMIN)
+            await sc.publish_version(s, product.id,
+                                     [dict(code="S1", name="Первый"),
+                                      dict(code="S2", name="Второй")],
+                                     {"S1": ["S2"], "S2": []}, "admin", by=ADMIN)
+            await s.commit()
+            case = await sc.open_case(s, contact_id=contact.id, product_id=product.id,
+                                      owner_login="eliza", by=ADMIN)
+            await s.commit()
+
+            plain = _medina()          # флаг 2.2 выключен
+            try:
+                await sc.reassign_case(s, case.id, target_login="medina", by=plain)
+                raise AssertionError("услуга не должна была перейти")
+            except PermissionDenied:
+                pass
+
+    run_with_db(run)
