@@ -385,3 +385,51 @@ def test_the_usa_exception_codes_match_the_schengen_ones(usa, schengen):
     usa_x = {s["code"] for s in usa["stages"] if s["code"].startswith("X")}
     sch_x = {s["code"] for s in schengen["stages"] if s["code"].startswith("X")}
     assert usa_x == sch_x
+
+
+# --- E. Общая визовая воронка: Китай, Корея, Япония ---------------------------
+
+@pytest.fixture
+def generic(publisher):
+    return publisher.load_draft("generic")
+
+
+def test_three_countries_share_one_funnel_by_her_request(generic):
+    """Ответ Медины (вопрос 15): общая воронка, а различия стран — задачи внутри.
+
+    Копии файла под каждую страну разошлись бы на первой правке, и три страны начали
+    бы жить по трём чуть разным процессам — ровно то, чего она просила избежать.
+    Поэтому один черновик публикуется на три продукта ключом --product.
+    """
+    work = [s for s in generic["stages"] if s["code"].startswith("VIS-")]
+    assert len(work) == 11
+    prep = next(s for s in work if s["code"] == "VIS-04")
+    assert prep["name"] == "Подготовка документов"
+    # Страновая специфика названа внутри подготовки, а не отдельными этапами.
+    for country in ("Японии", "Кореи", "Китая"):
+        assert country in prep["origin"], country
+
+
+def test_the_generic_funnel_has_no_schengen_only_steps(generic):
+    """Лист ожидания и собеседование Медина назвала только для шенгена и США."""
+    names = [s["name"] for s in generic["stages"]]
+    assert not any("лист ожидания" in n.lower() for n in names)
+    assert not any("собеседован" in n.lower() for n in names)
+
+
+def test_all_visa_funnels_share_the_exception_codes(generic, schengen, usa):
+    """Три визовых процесса читаются одинаково: коды исключений общие."""
+    def exceptions(doc):
+        return {s["code"] for s in doc["stages"] if s["code"].startswith("X")}
+    assert exceptions(generic) == exceptions(schengen) == exceptions(usa)
+
+
+def test_the_product_override_refuses_a_foreign_direction(publisher):
+    """`--product` не даёт опубликовать визовый процесс на туровый продукт.
+
+    Ошибиться тут легко — коды продуктов похожи, а последствие тяжёлое: туровые
+    заявки пошли бы по визовым этапам.
+    """
+    code = publisher.run(["--funnel", "generic", "--product", "tour_package"],
+                         stdout=None)
+    assert code == 2

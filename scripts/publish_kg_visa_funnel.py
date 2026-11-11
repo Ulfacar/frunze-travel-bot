@@ -57,6 +57,11 @@ SCHENGEN_CODES = ([f"SCH-{i:02d}" for i in range(1, 15)]
 # процесса читались одинаково.
 USA_CODES = ([f"USA-{i:02d}" for i in range(1, 18)]
              + ["X01", "X02", "X03", "X06", "X07"])
+# Общая визовая воронка: Китай, Корея, Япония (ответ Медины на вопрос 15 — «общая
+# воронка с индивидуальными задачами для каждой страны»). Публикуется на каждый
+# продукт ключом --product. Италия сюда не входит: она идёт по шенгенской.
+GENERIC_CODES = ([f"VIS-{i:02d}" for i in range(1, 12)]
+                 + ["X01", "X02", "X03", "X06", "X07"])
 
 # Воронка = черновик + формат + ЗАМОК на состав и порядок кодов этапов. Замок нужен,
 # чтобы добавление или потеря этапа были видны в диффе кода, а не проезжали молча
@@ -76,6 +81,11 @@ FUNNELS = {
         "draft": ROOT / "knowledge" / "funnels" / "usa-funnel-draft.json",
         "format": "visa-funnel-draft/1",
         "codes": USA_CODES,
+    },
+    "generic": {
+        "draft": ROOT / "knowledge" / "funnels" / "visa-generic-funnel-draft.json",
+        "format": "visa-funnel-draft/1",
+        "codes": GENERIC_CODES,
     },
 }
 
@@ -194,6 +204,11 @@ def run(argv: list[str] | None = None, stdout=None) -> int:
     p.add_argument("--funnel", choices=sorted(FUNNELS), default="entry",
                    help="какую воронку публиковать")
     p.add_argument("--draft", default="", help="путь к черновику (по умолчанию — из реестра)")
+    p.add_argument("--product", default="",
+                   help="опубликовать этот же процесс на ДРУГОЙ продукт (его код). "
+                        "Нужен для стран, которые по ответу Медины (вопрос 15) идут по "
+                        "общей воронке: один черновик — несколько продуктов, вместо "
+                        "копий файла, которые разойдутся на первой же правке")
     p.add_argument("--by", default=os.environ.get("ADMIN_USER", "admin"), help="кто публикует (полный админ)")
     args = p.parse_args(argv)
     say = (lambda m: print(m, file=stdout)) if stdout is not None else print
@@ -202,6 +217,21 @@ def run(argv: list[str] | None = None, stdout=None) -> int:
     except (DraftInvalid, OSError, ValueError) as exc:
         say(f"ЧЕРНОВИК НЕВАЛИДЕН: {exc}")
         return 2
+    if args.product:
+        # Название берём из каталога продуктов, а не выдумываем: у одного продукта не
+        # должно появиться двух имён (та же причина, что в note черновика).
+        from app.domain.service_cases import INITIAL_PRODUCTS
+        known = {code: (name, direction) for code, name, direction in INITIAL_PRODUCTS}
+        if args.product not in known:
+            say(f"НЕИЗВЕСТНЫЙ ПРОДУКТ: {args.product} (есть: {', '.join(sorted(known))})")
+            return 2
+        name, direction = known[args.product]
+        if direction != doc["product"]["direction"]:
+            say(f"НАПРАВЛЕНИЕ НЕ СОВПАДАЕТ: {args.product} это {direction}, "
+                f"а воронка для {doc['product']['direction']}")
+            return 2
+        doc = {**doc, "product": {**doc["product"], "code": args.product, "name": name}}
+        say(f"продукт переопределён ключом --product: {args.product} «{name}»")
     say(f"Воронка {args.funnel}: {len(doc['stages'])} этапов, "
         f"{sum(len(v) for v in doc['transitions'].values())} переходов, "
         f"продукт {doc['product']['code']} «{doc['product']['name']}»")
