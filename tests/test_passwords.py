@@ -71,3 +71,27 @@ def test_hash_parameters_live_inside_the_string():
     cheap = hash_password("limon-kedr-okean-42", n=2 ** 12)
     assert verify_password("limon-kedr-okean-42", cheap) is True
     assert "$4096$" in cheap
+
+
+def test_login_accepts_both_a_plain_and_a_hashed_manager():
+    """Вход работает и у переведённого менеджера, и у ещё не переведённого.
+
+    Это и есть условие постепенного перевода: пока Медина с хешем, а Элиза с открытым
+    паролем, войти должны обе. Проверяем боевую функцию проверки, а не только модуль.
+    """
+    from app.admin.router import _check_credentials
+    from app.config import ManagerConfig, settings
+
+    original = settings.managers
+    try:
+        settings.managers = [
+            ManagerConfig(login="medina", name="Медина",
+                          password=hash_password("talas-zaman-otton-73")),
+            ManagerConfig(login="eliza", name="Элиза", password="limon-kedr-okean-42"),
+        ]
+        assert _check_credentials("medina", "talas-zaman-otton-73")["login"] == "medina"
+        assert _check_credentials("eliza", "limon-kedr-okean-42")["login"] == "eliza"
+        assert _check_credentials("medina", "limon-kedr-okean-42") is None
+        assert _check_credentials("eliza", "talas-zaman-otton-73") is None
+    finally:
+        settings.managers = original

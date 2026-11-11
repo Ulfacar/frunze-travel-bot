@@ -437,13 +437,23 @@ def require_full_admin(request: Request) -> dict:
 
 
 def _check_credentials(login: str, password: str) -> dict | None:
-    # Стрипаем обе стороны: случайный пробел вокруг логина/пароля (в форме ИЛИ
-    # в env prod.env при копипасте) не должен ронять вход. compare_digest — от таймингов.
+    """Логин и пароль менеджера. Понимает и открытый пароль, и scrypt-хеш.
+
+    Стрипаем обе стороны: случайный пробел вокруг логина или пароля (в форме ИЛИ в
+    prod.env при копипасте) не должен ронять вход. Сравнение — `compare_digest`, от
+    таймингов; хеш проверяет `passwords.verify_password` тем же способом.
+
+    ВАЖНО для вызывающего: при захешированном пароле это ~60 мс чистого счёта, и
+    функция СИНХРОННАЯ. Звать её прямо из async-хендлера нельзя — она заблокирует
+    цикл событий, а в том же процессе живут вебхуки бота. Поэтому `login_submit`
+    зовёт её через `run_in_threadpool` (предупреждение аудита 12.11.2026).
+    """
+    from app.core.passwords import verify_password
     login = (login or "").strip()
     password = (password or "").strip()
     for mgr in settings.manager_list():
         if (secrets.compare_digest(login.encode(), (mgr.login or "").strip().encode())
-                and secrets.compare_digest(password.encode(), (mgr.password or "").strip().encode())):
+                and verify_password(password, mgr.password or "")):
             return {"login": mgr.login, "name": mgr.name or mgr.login, "admin": bool(mgr.admin)}
     return None
 
@@ -633,7 +643,10 @@ async def login_submit(request: Request, login: str = Form(...), password: str =
                                           {"error": "Слишком много попыток. Подождите минуту.",
                                            "demo_managers": _demo_managers(),
                                            "next": target}, status_code=429)
-    manager = _check_credentials(login.strip(), password)
+    # В отдельном потоке: проверка хеша это ~60 мс счёта, и на общем цикле событий
+    # они встали бы поперёк вебхуков бота в том же процессе.
+    from starlette.concurrency import run_in_threadpool
+    manager = await run_in_threadpool(_check_credentials, login.strip(), password)
     if manager is None:
         ratelimit.note_failure(ip)        # к блокировке ведут только провалы
         return templates.TemplateResponse(request, "login.html",
