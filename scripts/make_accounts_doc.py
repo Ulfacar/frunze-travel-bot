@@ -11,8 +11,12 @@
 
 Запускать ЛОКАЛЬНО (в образе бота python-docx нет):
 
-    scp frunze:/root/frunze-travel/new-logins-2026-11-11.json .
-    python scripts/make_accounts_doc.py new-logins-2026-11-11.json -o Доступы.docx
+    scp frunze:/root/frunze-travel/new-logins-2026-11-11.json %TEMP%\
+    python scripts/make_accounts_doc.py %TEMP%\new-logins-2026-11-11.json -o %TEMP%\Доступы.docx
+
+Класть файл паролей и готовый документ ВНЕ каталога проекта: он лежит в OneDrive и
+под git, то есть «просто рядом» означает «в облаке и в истории репозитория». В
+.gitignore эти имена закрыты, но облако о git не знает (аудит 12.11.2026).
 
 Документ содержит пароли в открытом виде — это его смысл. Хранить соответственно:
 не в общий чат, не в облачную папку на всех.

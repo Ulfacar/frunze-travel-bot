@@ -31,11 +31,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import secrets
 import shutil
 import string
-from datetime import date
+from datetime import date, datetime
 
 ALPHABET = string.ascii_letters + string.digits      # для --random: вводить руками
 PASSWORD_LENGTH = 12
@@ -147,10 +148,42 @@ def main() -> int:
         print("\n--dry-run: ничего не записано")
         return 0
 
-    backup = env_path.with_suffix(env_path.suffix + f".bak-{date.today():%Y-%m-%d}-accounts")
+    # Бэкап с ВРЕМЕНЕМ, а не только датой: второй запуск в тот же день перезаписывал
+    # бы копию уже изменённым файлом, и глубина отката становилась нулевой.
+    backup = env_path.with_suffix(
+        env_path.suffix + f".bak-{datetime.now():%Y-%m-%d-%H%M%S}-accounts")
     shutil.copy2(env_path, backup)
     lines[index] = f"MANAGERS={quote}{json.dumps(managers, ensure_ascii=False)}{quote}\n"
-    env_path.write_text("".join(lines), encoding="utf-8")
+
+    # Запись АТОМАРНАЯ: временный файл рядом, fsync, затем os.replace. Прежняя
+    # write_text обрезала боевой файл на месте, и обрыв на середине (нет места,
+    # Ctrl-C, OOM, ребут) оставлял prod.env без ВСЕХ секретов — токенов Wappi, ключа
+    # LLM, вебхука Bitrix, пароля базы. Приложение после такого не поднимется, а
+    # деплой откатывает код, но не этот файл. Найдено аудитом 12.11.2026.
+    tmp = env_path.with_suffix(env_path.suffix + ".tmp-accounts")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write("".join(lines))
+        fh.flush()
+        os.fsync(fh.fileno())
+    shutil.copymode(env_path, tmp)
+    os.replace(tmp, env_path)
+
+    # Перечитываем и разбираем: если запись вышла битой, возвращаем бэкап сами, а не
+    # оставляем человека с нерабочим прод-файлом в руках.
+    try:
+        check = [line for line in env_path.read_text(encoding="utf-8").splitlines()
+                 if line.startswith("MANAGERS=")]
+        if len(check) != 1:
+            raise ValueError(f"строк MANAGERS= стало {len(check)}, должна быть одна")
+        probe = check[0][len("MANAGERS="):].strip()
+        if probe[:1] in ("'", chr(34)) and probe[-1:] == probe[:1]:
+            probe = probe[1:-1]
+        if len(json.loads(probe)) != len(managers):
+            raise ValueError("после записи в MANAGERS другое число учёток")
+    except Exception as exc:  # noqa: BLE001 — любая беда = возвращаем как было
+        shutil.copy2(backup, env_path)
+        print(f"ЗАПИСЬ НЕ УДАЛАСЬ ({exc}) — файл возвращён из {backup.name}")
+        return 2
 
     out = env_path.with_name(f"new-logins-{date.today():%Y-%m-%d}.json")
     existing = {}
@@ -159,9 +192,12 @@ def main() -> int:
             existing = json.loads(out.read_text(encoding="utf-8"))
         except ValueError:
             existing = {}
-    out.write_text(json.dumps({**existing, **created}, ensure_ascii=False, indent=2) + "\n",
-                   encoding="utf-8")
-    out.chmod(0o600)
+    # Открываем сразу с 0600: между записью и chmod файл с паролями был бы читаем
+    # по umask — короткое, но настоящее окно (аудит 12.11.2026).
+    payload = json.dumps({**existing, **created}, ensure_ascii=False, indent=2) + "\n"
+    fd = os.open(out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(payload)
 
     print(f"\nготово: учёток стало {len(managers)}, копия прежнего файла — {backup.name}")
     print(f"пароли записаны в {out} (права 0600); в этот вывод они не попадают")
