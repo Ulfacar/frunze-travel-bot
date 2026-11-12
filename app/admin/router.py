@@ -305,6 +305,42 @@ LOST_REASONS = [
 ]
 _LOST_REASON_LABELS = dict(LOST_REASONS)
 
+# Поля визовой карточки (ответ Медины 6: «отдельные поля вместо свободной анкеты»,
+# и вопрос 21: отчёт «клиенты по странам»). Заполняет менеджер руками: автозаполнения
+# из переписки нет, потому что замер 12.11.2026 на 2418 боевых визовых диалогах показал,
+# что туровый разбор даёт для виз мусор — страны «Турция/Таиланд» (куда визы
+# кыргызстанцу не нужны: это пересказ прошлых поездок) и даты в 2027 году.
+#
+# Справочник типов — закрытый, как у причин закрытия: свободный ввод убивает
+# группировку в отчёте, ради которой поля и заводились.
+VISA_TYPES = [
+    ("tourist", "Туристическая"),
+    ("guest", "Гостевая"),
+    ("work", "Рабочая"),
+    ("study", "Учебная"),
+    ("business", "Деловая"),
+    ("transit", "Транзитная"),
+    ("medical", "Лечение"),
+    ("immigration", "Иммиграционная"),
+]
+_VISA_TYPE_LABELS = dict(VISA_TYPES)
+
+# Гражданство: список, а не свободная строка, по той же причине. КР первым — это
+# подавляющее большинство клиентов бишкекского агентства; в замере гражданство назвали
+# прямо всего 9 клиентов из 2418, так что угадывать его по переписке нечем.
+VISA_CITIZENSHIPS = [
+    ("KG", "Кыргызстан"),
+    ("RU", "Россия"),
+    ("KZ", "Казахстан"),
+    ("UZ", "Узбекистан"),
+    ("TJ", "Таджикистан"),
+    ("other", "Другое"),
+]
+_VISA_CITIZENSHIP_LABELS = dict(VISA_CITIZENSHIPS)
+
+# Валюты из визового прайса (официальный прайс: 250$ / 100€ и т.д.).
+VISA_CURRENCIES = ["USD", "EUR", "KGS", "RUB"]
+
 # BOT_SCOPE_BY_MANAGER now lives in app.core.manager_scope (shared with scheduler jobs);
 # re-exported via the import above so existing references keep working.
 
@@ -1350,6 +1386,20 @@ FEATURE_FLAGS = {
         "default": lambda: settings.lost_reason_enabled,
         "note": lambda: f"причин в справочнике: {len(LOST_REASONS)}",
     },
+    "visa_card_fields_enabled": {
+        "title": "Отдельные поля визовой карточки",
+        "desc": ("Ответы Медины 11.11.2026 (вопрос 6): гражданство, страна назначения, "
+                 "тип визы, даты поездки и стоимость вместо свободной анкеты — чтобы по "
+                 "ним можно было фильтровать и собрать её отчёт «клиенты по странам» "
+                 "(вопрос 21). Заполняет МЕНЕДЖЕР руками в карточке; бот сюда ничего не "
+                 "пишет. Замер 12.11.2026 по 2418 боевым визовым диалогам: анкета пуста "
+                 "у 94%, а туровый разбор переписки даёт для виз неверные данные — "
+                 "страны «Турция/Таиланд», куда виза кыргызстанцу не нужна, и даты в "
+                 "2027 году. Поэтому автозаполнение не подключено: пустое поле честнее "
+                 "неверного. Блок виден только в визовой воронке."),
+        "default": lambda: settings.visa_card_fields_enabled,
+        "note": lambda: f"типов визы в справочнике: {len(VISA_TYPES)}",
+    },
     "visa_touch_tasks_enabled": {
         "title": "Касания до договора — задачи менеджеру",
         "desc": ("Ответы Медины 11.11.2026 (вопросы 2 и 3): «хотелось бы, чтобы система "
@@ -2386,6 +2436,14 @@ async def _render_conversation(user_id: str, request: Request, manager: dict, *,
         "lost_reason_on": await _media_flag("lost_reason_enabled"),
         "lost_reason_label": _LOST_REASON_LABELS.get(
             getattr(conv, "outcome_reason", "") or "", ""),
+        # Поля визовой карточки (ответ Медины 6). Блок показываем только в визовой
+        # воронке: туровому менеджеру тип визы и гражданство ни к чему, а лишние пять
+        # полей в карточке — это пять полей, которые никто не заполнит.
+        "visa_fields_on": (conv.funnel == "visa"
+                           and await _media_flag("visa_card_fields_enabled")),
+        "visa_types": VISA_TYPES,
+        "visa_citizenships": VISA_CITIZENSHIPS,
+        "visa_currencies": VISA_CURRENCIES,
         "quick_replies": quick_replies_for(conv.funnel),
         "kg_entry_case_url": await _kg_entry_chat_link(conv, manager),
         "funnel_label": FUNNEL_LABELS.get(conv.funnel or "", conv.funnel or "—"),
@@ -3333,6 +3391,100 @@ async def set_outcome(user_id: str, request: Request, manager: dict = Depends(re
     note = f"{outcome}:{reason}" if reason else outcome
     await get_conversation_store().add_audit(manager["login"], "outcome", user_id, note)
     return await _render_conversation(user_id, request, manager)
+
+
+def _visa_cost(raw: str) -> tuple[float | None, bool, str]:
+    """Разобрать сумму из формы: (значение, стирать ли, текст ошибки).
+
+    Пустое поле означает «стереть»: менеджер мог записать сумму по ошибке, и у него
+    должен быть способ её убрать. Поэтому `clear` отдельным признаком — у числа `None`
+    неотличимо от «не трогать».
+
+    Запятая как разделитель — норма при вводе с телефона, поэтому принимаем. Отрицательную
+    и нечисловую сумму отклоняем с ошибкой, а не тихо: «стоимость услуги −100» в отчёте
+    по странам хуже, чем пустое поле.
+    """
+    raw = (raw or "").strip().replace(",", ".").replace(" ", "")
+    if not raw:
+        return None, True, ""
+    try:
+        value = float(raw)
+    except ValueError:
+        return None, False, "Стоимость: введите число или оставьте поле пустым."
+    if value < 0:
+        return None, False, "Стоимость не может быть отрицательной."
+    if value > 1_000_000:
+        return None, False, "Стоимость выглядит ошибочной — проверьте порядок цифр."
+    return round(value, 2), False, ""
+
+
+@router.post("/conversation/{user_id}/visa-fields", response_class=HTMLResponse)
+async def set_visa_fields(user_id: str, request: Request,
+                          manager: dict = Depends(require_admin),
+                          citizenship: str = Form(""), country: str = Form(""),
+                          visa_type: str = Form(""), travel_dates: str = Form(""),
+                          cost: str = Form(""), cost_currency: str = Form("")):
+    """Менеджер заполняет отдельные поля визовой карточки (ответ Медины 6).
+
+    Справочники закрытые: чужой код гражданства или типа визы не пишем, иначе отчёт
+    «клиенты по странам» (её вопрос 21) рассыпается на опечатки. Страна назначения и
+    даты — свободный текст: стран много, а даты клиент называет как умеет («в конце
+    августа»), и подсовывать ему календарь здесь не наше дело.
+
+    Пустые значения ОЧИЩАЮТ поля, а не игнорируются: это форма целиком, а не отдельная
+    кнопка на поле, и менеджер должен уметь стереть ошибку. Отличие от «Слился», где
+    пустая причина означает «не трогать»: там приходит повторный клик кнопки, тут —
+    осознанное сохранение формы.
+    """
+    conv = await _require_visible_conversation(user_id, manager)
+    # Проверка владения — такая же, как у формы договора (`contracts._conversation`), и
+    # НАМЕРЕННО не через `_ownership_guard`: тот знает три действия (release/send/claim),
+    # а с любым другим на ничьём лиде доходит до `assign_locked` — то есть сохранение
+    # полей молча закрепляло бы клиента за тем, кто просто заполнил карточку. Правка
+    # данных карточки владельца не меняет.
+    from app.core import live_authz
+    actor = live_authz.actor_for(manager)
+    owner = (getattr(conv, "assigned_to", "") or "").strip().lower()
+    if not actor.is_full_admin and owner and owner != actor.manager_id:
+        resp = await _render_conversation(
+            user_id, request, manager,
+            notice=f"Диалог ведёт {owner} — поля карточки заполняет владелец.")
+        resp.headers["X-Action-Outcome"] = "denied"
+        return resp
+
+    citizenship = citizenship.strip()
+    if citizenship and citizenship not in _VISA_CITIZENSHIP_LABELS:
+        citizenship = ""
+    visa_type = visa_type.strip()
+    if visa_type and visa_type not in _VISA_TYPE_LABELS:
+        visa_type = ""
+    cost_currency = cost_currency.strip().upper()
+    if cost_currency and cost_currency not in VISA_CURRENCIES:
+        cost_currency = ""
+
+    amount, clear_cost, error = _visa_cost(cost)
+    if error:
+        # Сумму не приняли — не пишем НИЧЕГО. Иначе менеджер видит «сохранено», а
+        # сохранились только четыре поля из пяти, и он об этом не узнает.
+        resp = await _render_conversation(user_id, request, manager, notice=error)
+        resp.headers["X-Action-Outcome"] = "denied"
+        return resp
+
+    await get_conversation_store().set_visa_fields(
+        user_id, citizenship=citizenship, country=country.strip()[:64],
+        visa_type=visa_type, travel_dates=travel_dates.strip()[:64],
+        cost=amount, clear_cost=clear_cost,
+        cost_currency=cost_currency if (amount is not None or clear_cost) else "")
+    filled = [name for name, value in (("гражданство", citizenship),
+                                       ("страна", country.strip()),
+                                       ("тип", visa_type),
+                                       ("даты", travel_dates.strip()),
+                                       ("стоимость", "" if amount is None else str(amount)))
+              if value]
+    await get_conversation_store().add_audit(
+        manager["login"], "visa_fields", user_id, ",".join(filled) or "очищено")
+    return await _render_conversation(user_id, request, manager,
+                                      notice="Поля карточки сохранены.")
 
 
 # ==================== Sprint 1: calendar tasks ====================

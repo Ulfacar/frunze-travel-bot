@@ -458,6 +458,65 @@
   </div>
   {% endif %}
 
+  {#- Отдельные поля визовой карточки (ответ Медины 6). Заполняет менеджер: бот сюда
+      ничего не пишет, потому что разбор переписки для виз даёт неверные страны и даты
+      (замер 12.11.2026, подробности в описании тумблера). Одна форма, а не кнопка на
+      поле: сохранять по одному полю — пять запросов там, где нужен один. #}
+  {% if visa_fields_on %}
+  <form class="brief" hx-post="/admin/conversation/{{ c.user_id }}/visa-fields"
+        hx-target="#chat" hx-swap="innerHTML" style="margin:0 0 10px">
+    <div class="brief-title">Данные по визе</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">
+        Гражданство
+        <select name="citizenship" style="padding:5px;font-size:13px">
+          <option value="">— не указано —</option>
+          {% for key, label in visa_citizenships %}
+          <option value="{{ key }}"{% if c.visa_citizenship == key %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">
+        Страна назначения
+        <input name="country" value="{{ c.visa_country }}" maxlength="64"
+               placeholder="например, Германия" style="padding:5px;font-size:13px">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">
+        Тип визы
+        <select name="visa_type" style="padding:5px;font-size:13px">
+          <option value="">— не указан —</option>
+          {% for key, label in visa_types %}
+          <option value="{{ key }}"{% if c.visa_type == key %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">
+        Даты поездки
+        <input name="travel_dates" value="{{ c.visa_travel_dates }}" maxlength="64"
+               placeholder="как сказал клиент" style="padding:5px;font-size:13px">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">
+        Стоимость услуги
+        <span style="display:flex;gap:4px">
+          <input name="cost" value="{{ '' if c.visa_cost is none else c.visa_cost }}"
+                 inputmode="decimal" placeholder="пусто — стереть"
+                 style="padding:5px;font-size:13px;flex:1;min-width:0">
+          <select name="cost_currency" style="padding:5px;font-size:13px">
+            <option value="">—</option>
+            {% for code in visa_currencies %}
+            <option value="{{ code }}"{% if c.visa_cost_currency == code %} selected{% endif %}>{{ code }}</option>
+            {% endfor %}
+          </select>
+        </span>
+      </label>
+    </div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-brand" type="submit" style="padding:5px 12px;font-size:13px">Сохранить</button>
+      <span style="color:var(--muted);font-size:11px">Пустое поле стирает значение.</span>
+    </div>
+  </form>
+  {% endif %}
+
   {% if c.ai_summary or c.manager_next_step or c.escalation_reason or c.outcome_inferred %}
   <div class="brief manager-brief">
     <div class="brief-title">AI для менеджера</div>

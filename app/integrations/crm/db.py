@@ -132,6 +132,24 @@ class Conversation(Base):
     # Это НЕ бюджет из разговора: бюджет — пожелание, а в отчёте о выручке нужна оплата.
     sale_amount: Mapped[Any] = mapped_column(Float, nullable=True)
     sale_currency: Mapped[str] = mapped_column(String(8), default="")
+    # Поля визовой карточки, которые просила Медина (письменные ответы 11.11.2026,
+    # вопрос 6: «отдельные поля вместо свободной анкеты», и вопрос 21: отчёт
+    # «клиенты по странам»). По свободному `qualification` ни отфильтровать, ни
+    # сгруппировать нельзя, поэтому они вынесены в колонки.
+    #
+    # Заполняет их МЕНЕДЖЕР руками в карточке. Автозаполнение из переписки сюда
+    # НЕ подключено осознанно: замер 12.11.2026 на 2418 боевых визовых диалогах
+    # показал, что туровый `facts.extract` даёт для виз неверные данные — страны
+    # «Турция/Таиланд» (куда виза кыргызстанцу не нужна: это пересказ прошлых
+    # поездок) и даты в 2027 году (туровый парсер переносит прошлое в будущее).
+    # Заполнить карточку такими значениями хуже, чем оставить пустой. Визовому
+    # разбору нужен свой парсер — отдельная работа, за своим флагом.
+    visa_citizenship: Mapped[str] = mapped_column(String(32), default="")      # КР | РФ | УЗ | …
+    visa_country: Mapped[str] = mapped_column(String(64), default="")          # страна назначения
+    visa_type: Mapped[str] = mapped_column(String(32), default="")             # см. VISA_TYPES
+    visa_travel_dates: Mapped[str] = mapped_column(String(64), default="")     # как сказал клиент
+    visa_cost: Mapped[Any] = mapped_column(Float, nullable=True)               # стоимость услуги
+    visa_cost_currency: Mapped[str] = mapped_column(String(8), default="")
     # Источник лида (Click-to-WhatsApp Ads): откуда пришёл клиент. Write-once — первое касание.
     source: Mapped[str] = mapped_column(String(16), default="")        # ad | post | "" (organic/неизвестно)
     source_id: Mapped[str] = mapped_column(String(128), default="")    # id объявления/поста
@@ -335,6 +353,12 @@ async def init_models(engine: AsyncEngine) -> None:
             "awaiting_ping_count": "INTEGER DEFAULT 0",
             "sale_amount": "DOUBLE PRECISION",
             "sale_currency": "VARCHAR(8) DEFAULT ''",
+            "visa_citizenship": "VARCHAR(32) DEFAULT ''",
+            "visa_country": "VARCHAR(64) DEFAULT ''",
+            "visa_type": "VARCHAR(32) DEFAULT ''",
+            "visa_travel_dates": "VARCHAR(64) DEFAULT ''",
+            "visa_cost": "DOUBLE PRECISION",
+            "visa_cost_currency": "VARCHAR(8) DEFAULT ''",
             "source": "VARCHAR(16) DEFAULT ''",
             "source_id": "VARCHAR(128) DEFAULT ''",
             "source_headline": "VARCHAR(300) DEFAULT ''",

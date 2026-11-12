@@ -80,6 +80,14 @@ class ConversationView:
     estimated_value: float | None = None
     estimated_value_currency: str = ""
     outcome_reason: str = ""              # причина закрытия из справочника (ответ Медины 5)
+    # Визовая карточка: отдельные поля вместо свободной анкеты (ответ Медины 6).
+    # Заполняет менеджер руками; автозаполнения нет — см. db.py, там замер.
+    visa_citizenship: str = ""
+    visa_country: str = ""
+    visa_type: str = ""
+    visa_travel_dates: str = ""
+    visa_cost: float | None = None
+    visa_cost_currency: str = ""
     outcome_inferred: str = ""            # LLM-исход (advisory, не затирает ручной outcome)
     outcome_inferred_reason: str = ""
     # Источник лида (Click-to-WhatsApp Ads) — первое касание, write-once.
@@ -375,6 +383,38 @@ class MemoryConversationStore:
     async def list_audit(self, limit: int = 200) -> list[dict]:
         """Последние записи аудита (новые сверху)."""
         return list(reversed(self._audit[-limit:]))
+
+    async def set_visa_fields(self, user_id: str, *, citizenship: str | None = None,
+                              country: str | None = None, visa_type: str | None = None,
+                              travel_dates: str | None = None, cost: float | None = None,
+                              cost_currency: str | None = None,
+                              clear_cost: bool = False) -> None:
+        """Отдельные поля визовой карточки — их заполняет МЕНЕДЖЕР руками.
+
+        `None` значит «не трогать поле», пустая строка — «очистить». Та же договорённость,
+        что у `outcome_reason`: иначе повторное открытие формы без одного поля стирало бы
+        уже введённое (ревью 12.11.2026 поймало это на кнопке «Слился»).
+
+        Стоимость числовая, поэтому для неё нужен отдельный `clear_cost`: `None` у числа
+        неотличимо от «не трогать», а менеджеру надо уметь и стереть ошибочную сумму.
+        """
+        conv = self._conv.get(user_id)
+        if conv is None:
+            return
+        if citizenship is not None:
+            conv.visa_citizenship = citizenship
+        if country is not None:
+            conv.visa_country = country
+        if visa_type is not None:
+            conv.visa_type = visa_type
+        if travel_dates is not None:
+            conv.visa_travel_dates = travel_dates
+        if clear_cost:
+            conv.visa_cost = None
+        elif cost is not None:
+            conv.visa_cost = cost
+        if cost_currency is not None:
+            conv.visa_cost_currency = cost_currency
 
     async def claim_outcome(self, user_id: str, outcome: str) -> bool:
         """Атомарно поставить ФИНАЛЬНЫЙ исход (`won`/`lost`), если его ещё нет.
@@ -692,6 +732,38 @@ class PostgresConversationStore:
             await session.commit()
             return int(result.rowcount or 0)
 
+    async def set_visa_fields(self, user_id: str, *, citizenship: str | None = None,
+                              country: str | None = None, visa_type: str | None = None,
+                              travel_dates: str | None = None, cost: float | None = None,
+                              cost_currency: str | None = None,
+                              clear_cost: bool = False) -> None:
+        """Отдельные поля визовой карточки — их заполняет МЕНЕДЖЕР руками.
+
+        `None` значит «не трогать поле», пустая строка — «очистить». Та же договорённость,
+        что у `outcome_reason`: иначе повторное открытие формы без одного поля стирало бы
+        уже введённое (ревью 12.11.2026 поймало это на кнопке «Слился»).
+
+        Стоимость числовая, поэтому для неё нужен отдельный `clear_cost`: `None` у числа
+        неотличимо от «не трогать», а менеджеру надо уметь и стереть ошибочную сумму.
+        """
+        async with self._sm()() as session:
+            conv = await self._ensure_row(session, user_id, "", "")
+            if citizenship is not None:
+                conv.visa_citizenship = citizenship
+            if country is not None:
+                conv.visa_country = country
+            if visa_type is not None:
+                conv.visa_type = visa_type
+            if travel_dates is not None:
+                conv.visa_travel_dates = travel_dates
+            if clear_cost:
+                conv.visa_cost = None
+            elif cost is not None:
+                conv.visa_cost = cost
+            if cost_currency is not None:
+                conv.visa_cost_currency = cost_currency
+            await session.commit()
+
     async def claim_outcome(self, user_id: str, outcome: str) -> bool:
         """Атомарно поставить ФИНАЛЬНЫЙ исход (`won`/`lost`), если его ещё нет.
 
@@ -876,6 +948,12 @@ def _view(conv) -> ConversationView:
         # жал снова и снова. Тесты этого не видели — они шли по memory-хранилищу,
         # которое отдаёт сам объект. Найдено ревью 12.11.2026.
         outcome_reason=getattr(conv, "outcome_reason", "") or "",
+        visa_citizenship=getattr(conv, "visa_citizenship", "") or "",
+        visa_country=getattr(conv, "visa_country", "") or "",
+        visa_type=getattr(conv, "visa_type", "") or "",
+        visa_travel_dates=getattr(conv, "visa_travel_dates", "") or "",
+        visa_cost=getattr(conv, "visa_cost", None),
+        visa_cost_currency=getattr(conv, "visa_cost_currency", "") or "",
         sale_check_asked_at=getattr(conv, "sale_check_asked_at", None),
         sale_check_snooze_until=getattr(conv, "sale_check_snooze_until", None),
         awaiting_pinged_at=getattr(conv, "awaiting_pinged_at", None),
