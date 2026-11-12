@@ -605,6 +605,13 @@ class Settings(BaseSettings):
     # Заполняет менеджер руками — автозаполнения нет осознанно, см. замер в
     # `app/integrations/crm/db.py` над колонками. Дефолт OFF.
     visa_card_fields_enabled: bool = False
+    # Правка Медины 12.11.2026: «комбинированный вариант» — когда менеджер начал
+    # общение, система сама переводит лид из «Новый лид» во «В работе», остальные
+    # стадии менеджер меняет сам. Признак — сообщение с отправителем `manager`
+    # (в том числе зеркало из WhatsApp и Битрикса). Дефолт OFF: замер на проде
+    # 12.11.2026 — переедет 1279 карточек из 2239.
+    auto_stage_on_manager_reply_enabled: bool = False
+    auto_stage_funnels: list[str] = ["visa"]   # её правка про визы; туры отдельно
     visa_touch_tasks_enabled: bool = False
     touch_after_days: list[int] = [1, 3, 6]   # её график: 1 день, 3 дня, 5–7 дней
     touch_funnels: list[str] = ["visa"]       # её направление; туры отдельным решением

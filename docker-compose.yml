@@ -27,6 +27,8 @@ services:
       # Сводка пилота для руководителя направления (30.10). OFF; руководители — JSON по направлениям.
       LOST_REASON_ENABLED: ${LOST_REASON_ENABLED:-false}
       VISA_CARD_FIELDS_ENABLED: ${VISA_CARD_FIELDS_ENABLED:-false}
+      AUTO_STAGE_ON_MANAGER_REPLY_ENABLED: ${AUTO_STAGE_ON_MANAGER_REPLY_ENABLED:-false}
+      AUTO_STAGE_FUNNELS: ${AUTO_STAGE_FUNNELS:-["visa"]}
       VISA_TOUCH_TASKS_ENABLED: ${VISA_TOUCH_TASKS_ENABLED:-false}
       # Списки — JSON-строкой, как PANEL_DIRECTION_LEADS: pydantic парсит JSON,
       # а YAML без кавычек принял бы [1,3,6] за свой список и сломал подстановку.

@@ -103,6 +103,30 @@ _AUTO_OUTCOMES = {"in_progress", "office", "manager"}
 _MANUAL_OUTCOMES = {"won", "lost"}
 
 
+async def _maybe_advance_stage(conv) -> None:
+    """«Новый лид» → «В работе», если тумблер включён. Сбой НЕ роняет сообщение.
+
+    Запись сообщения клиента важнее перевода стадии: если флаг не прочитался (база
+    недоступна), лучше оставить стадию как есть, чем потерять реплику.
+    """
+    from app.config import settings
+    from app.core.lead_stage import stage_after_manager_message
+
+    target = stage_after_manager_message(getattr(conv, "funnel", ""),
+                                         getattr(conv, "stage", ""),
+                                         settings.auto_stage_funnels)
+    if target is None:
+        return
+    try:
+        from app.core import flags
+        on = await flags.get_flag("auto_stage_on_manager_reply_enabled",
+                                  settings.auto_stage_on_manager_reply_enabled)
+    except Exception:  # noqa: BLE001 — стадия не стоит потерянного сообщения
+        return
+    if on:
+        conv.stage = target
+
+
 def _is_auto_downgrade(new_outcome: str, current: str) -> bool:
     """True, если авто-исход пытается перезатереть ручной финал (won/lost) — не даём."""
     return new_outcome in _AUTO_OUTCOMES and current in _MANUAL_OUTCOMES
@@ -190,6 +214,16 @@ class MemoryConversationStore:
         if sender == "client" and conv.outcome == "lost" and conv.outcome_reason == "no_answer":
             conv.outcome = ""
             conv.outcome_reason = ""
+
+        # Правка Медины 12.11.2026 («комбинированный вариант»): менеджер начал
+        # общение — лид сам уходит из «Новый лид» во «В работе». Остальные стадии
+        # двигает менеджер, это её условие.
+        #
+        # Флаг читается ТОЛЬКО при редком совпадении (сообщение менеджера по лиду,
+        # который ещё в «Новый лид»): `get_flag` ходит в базу без кэша, и читать его
+        # на каждом сообщении значило бы лишний запрос на каждую реплику бота.
+        if sender == "manager":
+            await _maybe_advance_stage(conv)
         if counts_as_reply:
             conv.last_text = text
             conv.last_sender = sender
@@ -532,6 +566,16 @@ class PostgresConversationStore:
                 conv.outcome_reason = ""
             if sender != "client":
                 conv.reply_alert_at = None  # ответили — следующее ожидание новое (B2c)
+
+            # Правка Медины 12.11.2026 («комбинированный вариант»): менеджер начал
+            # общение — лид сам уходит из «Новый лид» во «В работе». Остальные стадии
+            # двигает менеджер, это её условие.
+            #
+            # Флаг читается ТОЛЬКО при редком совпадении (сообщение менеджера по лиду,
+            # который ещё в «Новый лид»): `get_flag` ходит в базу без кэша, и читать его
+            # на каждом сообщении значило бы лишний запрос на каждую реплику бота.
+            if sender == "manager":
+                await _maybe_advance_stage(conv)
             if counts_as_reply:
                 conv.last_text = text
                 conv.last_sender = sender
