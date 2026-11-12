@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Отчёты{% endblock %}
+{% block content %}
+{#- Отчёты по списку Медины. Главное правило этой страницы: метрика без данных
+    показывает ПРИЧИНУ, а не ноль. Ноль и «нечем мерить» выглядят одинаково, а
+    значат противоположное — по нулю руководитель решит, что клиентов нет. #}
+<div class="page-head">
+  <h1>Отчёты</h1>
+  <form method="get" class="period-switch">
+    {% for key, label in directions %}
+    <button name="direction" value="{{ key }}"
+            class="btn {% if direction == key %}btn-brand{% else %}btn-ghost{% endif %}">{{ label }}</button>
+    {% endfor %}
+  </form>
+</div>
+
+<section class="report-grid">
+  <div class="report-card">
+    <div class="report-title">Новые лиды</div>
+    <div class="report-rows">
+      {% for label, value in r['новые_лиды'].items() %}
+      <div class="report-row"><span class="k">за {{ label }}</span><b>{{ value }}</b></div>
+      {% endfor %}
+      <div class="report-row muted"><span class="k">карточек всего</span><b>{{ r['всего_карточек'] }}</b></div>
+    </div>
+  </div>
+
+  <div class="report-card">
+    <div class="report-title">Источники обращений</div>
+    <div class="report-rows">
+      {% for name, value in r['источники'].items() %}
+      <div class="report-row"><span class="k">{{ name }}</span><b>{{ value }}</b></div>
+      {% else %}
+      <div class="report-empty">Нет данных об источниках.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="report-card">
+    <div class="report-title">Задачи</div>
+    <div class="report-rows">
+      <div class="report-row"><span class="k">открыто</span><b>{{ r['задачи']['открыто'] }}</b></div>
+      <div class="report-row{% if r['задачи']['просрочено'] %} danger{% endif %}">
+        <span class="k">просрочено</span><b>{{ r['задачи']['просрочено'] }}</b>
+      </div>
+      {% for mgr, row in r['задачи']['по_менеджерам'].items() %}
+      <div class="report-row muted">
+        <span class="k">{{ mgr }}</span><b>{{ row['открыто'] }} / {{ row['просрочено'] }}</b>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="report-note">открыто / из них просрочено</div>
+  </div>
+
+  <div class="report-card">
+    <div class="report-title">Клиенты по странам</div>
+    <div class="report-rows">
+      {% for name, value in r['клиенты_по_странам'].items() %}
+      <div class="report-row"><span class="k">{{ name }}</span><b>{{ value }}</b></div>
+      {% else %}
+      {#- Именно тут ноль обманывает сильнее всего: клиенты есть, а страна у них
+          не заполнена. Поэтому пишем, сколько карточек ждёт заполнения. #}
+      <div class="report-empty">
+        Страна не заполнена ни у одной карточки из {{ r['всего_карточек'] }}.
+        Поле заполняет менеджер в карточке клиента.
+      </div>
+      {% endfor %}
+      {% if r['страна_заполнена_у'] %}
+      <div class="report-row muted"><span class="k">заполнена у</span><b>{{ r['страна_заполнена_у'] }}</b></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="report-card">
+    <div class="report-title">По менеджерам</div>
+    <div class="report-rows">
+      {% for mgr, row in r['по_менеджерам'].items() %}
+      <div class="report-row">
+        <span class="k">{{ mgr }}</span><b>{{ row['всего'] }} · {{ row['оплатил'] }} · {{ row['слился'] }}</b>
+      </div>
+      {% else %}
+      <div class="report-empty">Ни одна карточка не закреплена за менеджером.</div>
+      {% endfor %}
+    </div>
+    <div class="report-note">всего · оплатил · слился</div>
+  </div>
+
+  <div class="report-card">
+    <div class="report-title">Причины закрытия</div>
+    <div class="report-rows">
+      {% for code, value in r['причины_закрытия'].items() %}
+      <div class="report-row"><span class="k">{{ lost_reason_labels.get(code, code) }}</span><b>{{ value }}</b></div>
+      {% else %}
+      <div class="report-empty">Ни одного закрытого лида с причиной.</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="report-blocked">
+  <div class="report-title">Пока не считается</div>
+  <ul>
+    {% for key, why in r['пока_не_считается'].items() %}
+    <li>{{ why }}</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<style>
+  .page-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap }
+  .period-switch { display:flex; gap:6px }
+  .report-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin:14px 0 }
+  .report-card { background:var(--card,#fff); border:1px solid var(--line,#e3e3e3); border-radius:10px; padding:14px 16px }
+  .report-title { font-weight:600; margin-bottom:10px }
+  .report-rows { display:flex; flex-direction:column; gap:6px }
+  .report-row { display:flex; justify-content:space-between; gap:10px; font-variant-numeric:tabular-nums }
+  .report-row .k { color:var(--muted,#6b6b6b) }
+  .report-row.muted { font-size:13px; opacity:.8 }
+  .report-row.danger b { color:#b03a32 }
+  .report-empty { color:var(--muted,#6b6b6b); font-size:13px; line-height:1.5 }
+  .report-note { color:var(--muted,#6b6b6b); font-size:12px; margin-top:8px }
+  .report-blocked { background:var(--card,#fff); border:1px solid var(--line,#e3e3e3);
+                    border-radius:10px; padding:14px 16px; margin-bottom:20px }
+  .report-blocked ul { margin:0; padding-left:18px; color:var(--muted,#6b6b6b); line-height:1.6 }
+</style>
+{% endblock %}

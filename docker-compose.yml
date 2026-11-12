@@ -27,6 +27,7 @@ services:
       # Сводка пилота для руководителя направления (30.10). OFF; руководители — JSON по направлениям.
       LOST_REASON_ENABLED: ${LOST_REASON_ENABLED:-false}
       VISA_CARD_FIELDS_ENABLED: ${VISA_CARD_FIELDS_ENABLED:-false}
+      PANEL_REPORTS_ENABLED: ${PANEL_REPORTS_ENABLED:-false}
       AUTO_STAGE_ON_MANAGER_REPLY_ENABLED: ${AUTO_STAGE_ON_MANAGER_REPLY_ENABLED:-false}
       AUTO_STAGE_FUNNELS: ${AUTO_STAGE_FUNNELS:-["visa"]}
       VISA_TOUCH_TASKS_ENABLED: ${VISA_TOUCH_TASKS_ENABLED:-false}

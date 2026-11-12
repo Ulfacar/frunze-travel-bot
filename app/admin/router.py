@@ -45,7 +45,7 @@ _look_cache: dict[str, object] = {"at": 0.0, "key": None, "new_look": None,
                                   "workday_on": None, "cases_write_on": None,
                                   "simple_on": None, "manual_lead_on": None,
                                   "send_unknown_on": None, "bitrix_archive_on": None,
-                                  "pilot_summary_on": None}
+                                  "pilot_summary_on": None, "reports_on": None}
 
 
 async def _load_new_look(request: Request) -> None:
@@ -82,6 +82,7 @@ async def _load_new_look(request: Request) -> None:
         request.state.send_unknown_on = bool(_look_cache["send_unknown_on"])
         request.state.bitrix_archive_on = bool(_look_cache["bitrix_archive_on"])
         request.state.pilot_summary_on = bool(_look_cache["pilot_summary_on"])
+        request.state.reports_on = bool(_look_cache["reports_on"])
         return
     try:
         new_look = await _flags.get_flag("admin_new_look_enabled",
@@ -106,6 +107,8 @@ async def _load_new_look(request: Request) -> None:
             "panel_bitrix_archive_enabled", settings.panel_bitrix_archive_enabled)
         pilot_summary_on = (not settings.crm_standalone_enabled) and await _flags.get_flag(
             "panel_pilot_summary_enabled", settings.panel_pilot_summary_enabled)
+        reports_on = await _flags.get_flag("panel_reports_enabled",
+                                           settings.panel_reports_enabled)
         _look_cache.update({"at": now, "key": key, "new_look": new_look,
                             "focus_on": focus_on, "chat_redesign": chat_redesign,
                             "workday_on": workday_on,
@@ -115,7 +118,8 @@ async def _load_new_look(request: Request) -> None:
                             "manual_lead_on": manual_lead_on,
                             "send_unknown_on": send_unknown_on,
                             "bitrix_archive_on": bitrix_archive_on,
-                            "pilot_summary_on": pilot_summary_on})
+                            "pilot_summary_on": pilot_summary_on,
+                            "reports_on": reports_on})
     except Exception:  # noqa: BLE001 — база моргнула: показываем прежний вид, не 500
         new_look, focus_on = (bool(settings.admin_new_look_enabled),
                               bool(settings.admin_focus_enabled))
@@ -182,7 +186,8 @@ def _chrome(request: Request) -> dict:
             # «Архив Битрикса» в «Ещё» у админа — `app/admin/bitrix_archive.py`.
             "bitrix_archive_on": bool(getattr(request.state, "bitrix_archive_on", False)),
             # «Сводка пилота» — полному админу и руководителю направления (`pilot_summary.py`).
-            "pilot_summary_on": bool(getattr(request.state, "pilot_summary_on", False))
+            "pilot_summary_on": bool(getattr(request.state, "pilot_summary_on", False)),
+            "reports_on": bool(getattr(request.state, "reports_on", False))
                                 and _pilot_summary_visible(manager),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
                                           settings.admin_chat_redesign_enabled)),
@@ -781,6 +786,47 @@ async def set_direction(request: Request, direction: str = Form(""),
     request.session["direction"] = value
     await get_conversation_store().add_audit(manager["login"], "direction", value)
     return RedirectResponse("/admin", status_code=303)
+
+
+@router.get("/reports", response_class=HTMLResponse)
+async def reports(request: Request, direction: str = "",
+                  manager: dict = Depends(require_admin)):
+    """Отчёты по списку Медины (её ответы по воронкам, раздел «Отчёты и доступ»).
+
+    Доступна менеджеру, а не только полному админу: её просьба была видеть свои
+    цифры, и прятать от неё число собственных лидов смысла нет. Направление по
+    умолчанию берётся из её же скоупа ботов, поэтому визовый менеджер видит визы.
+
+    Считает `panel.reports.compute_reports`, который для метрик без данных отдаёт
+    ПРИЧИНУ, а не ноль: ноль и «нечем мерить» выглядят одинаково, а значат
+    противоположное.
+    """
+    if not await _media_flag("panel_reports_enabled"):
+        raise HTTPException(status_code=404, detail="reports are off")
+
+    from app.integrations.panel.reports import compute_reports
+
+    scope_direction = _direction_from_scope(_manager_bot_scope(manager))
+    chosen = direction if direction in DIRECTION_KEYS else (scope_direction or DEFAULT_DIRECTION)
+
+    convs = _filter_conversations(await get_conversation_store().all_conversations(), manager)
+    tasks = []
+    try:
+        from app.domain.calendar_tasks import CalendarTaskService
+        async with _domain_sessionmaker()() as s:
+            # Диапазон заведомо широкий: просроченные задачи тянутся с 31.07, и
+            # узкое окно спрятало бы ровно то, ради чего отчёт и нужен.
+            tasks = await CalendarTaskService.list_all(
+                s, date_from=date(2020, 1, 1), date_to=_bishkek_today() + timedelta(days=730))
+    except Exception:  # noqa: BLE001 — доменной базы может не быть; отчёт обязан открыться
+        log.warning("reports: задачи не прочитались", exc_info=True)
+
+    data = compute_reports(convs, tasks, direction=chosen)
+    return templates.TemplateResponse(
+        request, "reports.html",
+        {"r": data, "manager": manager, "direction": chosen,
+         "directions": DIRECTIONS, "lost_reason_labels": _LOST_REASON_LABELS},
+        headers={"Cache-Control": "no-store"})
 
 
 @router.get("/analytics", response_class=HTMLResponse)
