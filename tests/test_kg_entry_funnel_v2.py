@@ -80,3 +80,14 @@ def test_the_exceptions_survived_in_full(work):
     """Пятнадцать исключений X01–X15 он подтвердил целиком, их трогать не просили."""
     x = sorted(s["code"] for s in work["stages"] if s["code"].startswith("X"))
     assert x == [f"X{i:02d}" for i in range(1, 16)]
+
+
+def test_the_work_funnel_is_copied_into_the_image():
+    """Без строки COPY файл не доедет до контейнера, а /health останется зелёным.
+
+    В Dockerfile про это стоит предупреждение рядом с черновиком: публикация тогда
+    падает на «черновик невалиден», и причина не видна. Проверено на выкате 13.11:
+    файла в образе не было.
+    """
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert "visa-funnel-work-v2.json" in dockerfile

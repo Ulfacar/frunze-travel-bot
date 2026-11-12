@@ -33,6 +33,9 @@ COPY knowledge/kg_entry/processes_v1_1/catalog.json ./knowledge/kg_entry/process
 # запускаться внутри контейнера (как crm_initialize.py). Без COPY публикация падает
 # на «черновик невалиден» при зелёном /health.
 COPY knowledge/kg_entry/processes_v1_1/visa-funnel-draft.json ./knowledge/kg_entry/processes_v1_1/visa-funnel-draft.json
+# Рабочая версия въездной воронки после устных правок Гриши 05.11.2026 — её же
+# читает публикация, и без COPY она не найдётся ровно так же, как черновик выше.
+COPY knowledge/kg_entry/visa-funnel-work-v2.json ./knowledge/kg_entry/visa-funnel-work-v2.json
 COPY knowledge/funnels/ ./knowledge/funnels/
 COPY knowledge/kg_entry/documents_v1_1/catalog.json ./knowledge/kg_entry/documents_v1_1/catalog.json
 COPY knowledge/kg_entry/complete_documents_v1_1/ ./knowledge/kg_entry/complete_documents_v1_1/
