@@ -747,7 +747,15 @@ class PostgresConversationStore:
         неотличимо от «не трогать», а менеджеру надо уметь и стереть ошибочную сумму.
         """
         async with self._sm()() as session:
-            conv = await self._ensure_row(session, user_id, "", "")
+            # `get`, а не `_ensure_row`: строки нет — значит диалога нет, и
+            # создавать пустую `Conversation` без канала незачем. Memory-хранилище
+            # ведёт себя так же, расхождения между реализациями быть не должно
+            # (ревью 12.11.2026).
+            from app.integrations.crm.db import Conversation
+            conv = await session.scalar(
+                select(Conversation).where(Conversation.user_id == user_id))
+            if conv is None:
+                return
             if citizenship is not None:
                 conv.visa_citizenship = citizenship
             if country is not None:

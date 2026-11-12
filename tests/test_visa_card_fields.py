@@ -116,15 +116,23 @@ def test_the_citizenship_catalogue_is_closed():
     assert _conv(user_id).visa_citizenship == ""
 
 
-def test_an_unknown_currency_is_dropped_but_the_amount_stays():
-    """Валюта из закрытого списка; сумма при этом не теряется."""
+def test_an_unknown_currency_is_refused_and_nothing_is_written():
+    """Валюта из закрытого списка, и кривая валюта отклоняет форму целиком.
+
+    Раньше этот тест закреплял обратное — «валюту молча отбросить, сумму сохранить».
+    Ревью 12.11.2026 показало, почему так нельзя: пустая валюта здесь ОЧИЩАЕТ поле,
+    значит молчаливый сброс затирал бы уже сохранённую валюту у ранее введённой суммы,
+    и менеджеру при этом писали «сохранено». Сумма без валюты — это к тому же число
+    без смысла в её отчёте по странам.
+    """
     user_id = _seed()
     client = _auth_client()
 
-    _post(client, user_id, cost="250", cost_currency="ДОЛЛАРЫ")
+    resp = _post(client, user_id, cost="250", cost_currency="ДОЛЛАРЫ")
 
+    assert resp.headers.get("X-Action-Outcome") == "denied"
     conv = _conv(user_id)
-    assert conv.visa_cost == 250.0
+    assert conv.visa_cost is None
     assert conv.visa_cost_currency == ""
 
 
@@ -269,3 +277,205 @@ def test_the_flag_hides_the_block():
     page = client.get(f"/admin/conversation/{user_id}").text
 
     assert "Данные по визе" not in page
+
+
+# --- флаг и воронка в самом маршруте ---------------------------------------
+
+def test_a_post_with_the_flag_off_writes_nothing():
+    """«Флаг OFF — поведение не меняется» должно быть правдой и для POST.
+
+    Блок в карточке при OFF не рисуется, но форма могла остаться открытой в чужой
+    вкладке, да и правило `CLAUDE.md` §2.3 — про выключенную функцию, а не про
+    спрятанную кнопку. Ревью 12.11.2026 нашло, что маршрут писал колонки при OFF.
+    """
+    from app.core import flags
+    user_id = _seed()
+    asyncio.run(flags.set_flag("visa_card_fields_enabled", False))
+    client = _auth_client()
+
+    resp = _post(client, user_id, country="Германия", visa_type="work")
+
+    assert resp.status_code == 404
+    conv = _conv(user_id)
+    assert conv.visa_country == "" and conv.visa_type == ""
+
+
+def test_a_post_to_a_tours_card_is_refused():
+    """Поля визовые: в туровую карточку они попадать не должны даже POST'ом."""
+    user_id = _seed(user_id="frunze_tours:996700888003", funnel="tours")
+    client = _auth_client()
+
+    resp = _post(client, user_id, country="Германия")
+
+    assert resp.status_code == 404
+    assert _conv(user_id).visa_country == ""
+
+
+# --- суммы, которые проходили мимо порогов ---------------------------------
+
+@pytest.mark.parametrize("raw", ["nan", "NaN", "inf", "-inf", "Infinity", "1_0"])
+def test_a_non_finite_amount_is_refused(raw):
+    """`float("nan")` разбирается, а `nan < 0` и `nan > 1e6` оба False.
+
+    То есть пороги NaN пропускают, и он уезжает в DOUBLE PRECISION — после чего любая
+    SUM или AVG в отчёте «клиенты по странам» становится NaN целиком. Подчёркивание
+    тоже отсекаем: `float("1_0")` это 10.0, а менеджер имел в виду другое.
+    """
+    user_id = _seed()
+    client = _auth_client()
+
+    resp = _post(client, user_id, cost=raw)
+
+    assert resp.headers.get("X-Action-Outcome") == "denied", raw
+    assert _conv(user_id).visa_cost is None, raw
+
+
+def test_a_refused_amount_leaves_all_five_fields_untouched():
+    """Отказ означает «не сохранено НИЧЕГО» — проверяем все пять полей, не одно.
+
+    Прежний тест смотрел только страну и сумму: если бы код сохранял гражданство,
+    тип и даты до проверки суммы, он бы прошёл (ревью 12.11.2026).
+    """
+    user_id = _seed()
+    client = _auth_client()
+    _post(client, user_id, citizenship="KG", country="Германия", visa_type="work",
+          travel_dates="март", cost="100", cost_currency="USD")
+
+    resp = _post(client, user_id, citizenship="RU", country="Польша", visa_type="study",
+                 travel_dates="апрель", cost="nan", cost_currency="EUR")
+
+    assert resp.headers.get("X-Action-Outcome") == "denied"
+    conv = _conv(user_id)
+    assert conv.visa_citizenship == "KG"
+    assert conv.visa_country == "Германия"
+    assert conv.visa_type == "work"
+    assert conv.visa_travel_dates == "март"
+    assert conv.visa_cost == 100.0
+    assert conv.visa_cost_currency == "USD"
+
+
+def test_an_unknown_catalogue_code_is_refused_not_silently_cleared():
+    """Пустое значение здесь СТИРАЕТ, поэтому кривой код нельзя превращать в пустой.
+
+    Иначе устаревшая вкладка после смены справочника затирала бы сохранённое, а
+    менеджеру писали «сохранено» (ревью 12.11.2026).
+    """
+    user_id = _seed()
+    client = _auth_client()
+    _post(client, user_id, visa_type="work")
+
+    resp = _post(client, user_id, visa_type="рабочая-наверное")
+
+    assert resp.headers.get("X-Action-Outcome") == "denied"
+    assert _conv(user_id).visa_type == "work", "сохранённое значение должно уцелеть"
+
+
+def test_a_value_with_markup_is_escaped_in_the_card():
+    """Значения приходят из формы и печатаются обратно в атрибут value."""
+    user_id = _seed()
+    client = _auth_client()
+    _post(client, user_id, country='Герм"><script>alert(1)</script>')
+
+    page = client.get(f"/admin/conversation/{user_id}").text
+
+    assert "<script>alert(1)</script>" not in page
+    assert "&lt;script&gt;" in page or "&#34;" in page or "&gt;" in page
+
+
+# --- реальный путь: Postgres-хранилище -------------------------------------
+
+def test_the_fields_survive_the_real_postgres_path():
+    """Запись и чтение через PostgresConversationStore, а не через память.
+
+    Ночью 12.11 причина закрытия писалась в базу и НЕ читалась обратно: поле забыли в
+    `_view`, а тесты шли по memory-хранилищу, которое отдаёт сам объект. Памятка
+    проекта «тест обязан идти реальным путём» — ровно про это.
+    """
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+    from sqlalchemy.pool import StaticPool
+
+    from app.integrations.crm.db import init_models
+    from app.integrations.panel.store import PostgresConversationStore
+
+    async def scenario():
+        engine = create_async_engine("sqlite+aiosqlite://",
+                                     connect_args={"check_same_thread": False},
+                                     poolclass=StaticPool)
+        await init_models(engine)
+        sm = async_sessionmaker(engine, expire_on_commit=False)
+        store = PostgresConversationStore(sessionmaker=sm)
+        uid = "getvisa:996700888009"
+        await store.add_message(uid, "client", "виза в Германию",
+                                channel="whatsapp", bot_id="getvisa")
+        await store.update_meta(uid, funnel="visa")
+
+        await store.set_visa_fields(uid, citizenship="KG", country="Германия",
+                                    visa_type="tourist", travel_dates="конец августа",
+                                    cost=250.0, cost_currency="USD")
+        conv = await store.get(uid)
+        assert conv.visa_citizenship == "KG"
+        assert conv.visa_country == "Германия"
+        assert conv.visa_type == "tourist"
+        assert conv.visa_travel_dates == "конец августа"
+        assert conv.visa_cost == 250.0
+        assert conv.visa_cost_currency == "USD"
+
+        # поля доезжают и до списка карточек, не только до одного диалога
+        card = (await store.list_cards("visa"))[0]
+        assert card.visa_country == "Германия"
+
+        # стирание суммы отдельным признаком
+        await store.set_visa_fields(uid, clear_cost=True)
+        assert (await store.get(uid)).visa_cost is None
+        # ...а остальные поля при этом на месте
+        assert (await store.get(uid)).visa_country == "Германия"
+
+        # несуществующий диалог не создаётся молча
+        await store.set_visa_fields("getvisa:000000000", country="Польша")
+        assert await store.get("getvisa:000000000") is None
+
+        await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+def test_a_manager_without_the_visa_direction_is_refused(monkeypatch):
+    """Второй контур: доступ к БОТУ ещё не значит право на НАПРАВЛЕНИЕ.
+
+    Обычно одно следует из другого — направление считается из того же скоупа ботов.
+    Но `direction_for_bot` отдаёт пустое для бота, которого нет ни в реестре, ни в
+    карте направлений, и тогда менеджер видит диалог (бот в скоупе), а направления у
+    него нет ни одного. Это настроечная ошибка — завели нового визового бота и забыли
+    в карте, — и форма договора в такой ситуации отвечает 404. Поля карточки обязаны
+    вести себя так же.
+
+    Мутация показала, что без этого теста проверка прав была непроверенной: выключаешь
+    её — все 28 тестов зелёные (ревью 12.11.2026 это и предсказало).
+    """
+    from app.core import manager_scope
+    unknown_bot = "visa_new_channel"      # нет ни в реестре, ни в _FALLBACK_DIRECTIONS
+    monkeypatch.setitem(manager_scope.BOT_SCOPE_BY_MANAGER, "eliza", {unknown_bot})
+    user_id = _seed(user_id=f"{unknown_bot}:996700888004")
+    client = _client_as("eliza", monkeypatch)
+
+    resp = _post(client, user_id, country="Германия")
+
+    assert resp.status_code == 404
+    assert _conv(user_id).visa_country == ""
+
+
+def test_the_same_manager_with_a_mapped_bot_can_edit(monkeypatch):
+    """Парный тест: с нормально настроенным визовым ботом та же Элиза поля правит.
+
+    Без него предыдущий тест мог бы проходить по любой другой причине — например если
+    маршрут отказывает всем, кто не полный админ.
+    """
+    from app.core import manager_scope
+    monkeypatch.setitem(manager_scope.BOT_SCOPE_BY_MANAGER, "eliza", {"getvisa"})
+    user_id = _seed(user_id="getvisa:996700888005")
+    client = _client_as("eliza", monkeypatch)
+
+    resp = _post(client, user_id, country="Германия")
+
+    assert resp.status_code == 200
+    assert _conv(user_id).visa_country == "Германия"

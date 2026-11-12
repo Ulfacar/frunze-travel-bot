@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import re
 import secrets
 import time
@@ -3403,14 +3404,25 @@ def _visa_cost(raw: str) -> tuple[float | None, bool, str]:
     Запятая как разделитель — норма при вводе с телефона, поэтому принимаем. Отрицательную
     и нечисловую сумму отклоняем с ошибкой, а не тихо: «стоимость услуги −100» в отчёте
     по странам хуже, чем пустое поле.
+
+    `nan` и `inf` отсекаются отдельной проверкой, а не порогами: `float("nan")` разбирается
+    без ошибки, а `nan < 0` и `nan > 1_000_000` оба False — то есть пороги его пропускают,
+    и в `DOUBLE PRECISION` уезжает NaN. Дальше любая SUM или AVG в её отчёте «клиенты по
+    странам» становится NaN целиком (ревью 12.11.2026). Подчёркивания тоже отсекаем:
+    `float("1_0")` это 10.0, а менеджер имел в виду другое.
     """
     raw = (raw or "").strip().replace(",", ".").replace(" ", "")
     if not raw:
         return None, True, ""
+    bad_number = "Стоимость: введите число или оставьте поле пустым."
+    if "_" in raw:
+        return None, False, bad_number
     try:
         value = float(raw)
     except ValueError:
-        return None, False, "Стоимость: введите число или оставьте поле пустым."
+        return None, False, bad_number
+    if not math.isfinite(value):
+        return None, False, bad_number
     if value < 0:
         return None, False, "Стоимость не может быть отрицательной."
     if value > 1_000_000:
@@ -3437,13 +3449,26 @@ async def set_visa_fields(user_id: str, request: Request,
     осознанное сохранение формы.
     """
     conv = await _require_visible_conversation(user_id, manager)
+    # Флаг и воронка проверяются ЗДЕСЬ, а не только в шаблоне. Без этого «флаг OFF —
+    # поведение не меняется» было неправдой: блок в карточке не рисовался, а POST всё
+    # равно писал колонки и запись в журнал, в том числе по туровому диалогу (ревью
+    # 12.11.2026). Правило `CLAUDE.md` §2.3 — про выключенную функцию, а не про
+    # спрятанную кнопку.
+    if not await _media_flag("visa_card_fields_enabled") or conv.funnel != "visa":
+        raise HTTPException(status_code=404, detail="visa fields are off")
+
     # Проверка владения — такая же, как у формы договора (`contracts._conversation`), и
     # НАМЕРЕННО не через `_ownership_guard`: тот знает три действия (release/send/claim),
     # а с любым другим на ничьём лиде доходит до `assign_locked` — то есть сохранение
     # полей молча закрепляло бы клиента за тем, кто просто заполнил карточку. Правка
     # данных карточки владельца не меняет.
     from app.core import live_authz
+    from app.domain.service_authz import can_open_case
     actor = live_authz.actor_for(manager)
+    # Право на направление — как у договора. Менеджер с доступом к боту, но без визового
+    # направления, иначе мог бы править поля ничьего лида (ревью 12.11.2026).
+    if not can_open_case(actor, direction="visa"):
+        raise HTTPException(status_code=404, detail="no access to visa direction")
     owner = (getattr(conv, "assigned_to", "") or "").strip().lower()
     if not actor.is_full_admin and owner and owner != actor.manager_id:
         resp = await _render_conversation(
@@ -3452,15 +3477,21 @@ async def set_visa_fields(user_id: str, request: Request,
         resp.headers["X-Action-Outcome"] = "denied"
         return resp
 
+    # Неизвестный код справочника — ОТКАЗ, а не тихое пустое значение: пустое здесь
+    # означает «очистить», то есть опечатка в коде (устаревшая вкладка после смены
+    # справочника) стирала бы уже сохранённое, и менеджеру при этом писали «сохранено».
     citizenship = citizenship.strip()
-    if citizenship and citizenship not in _VISA_CITIZENSHIP_LABELS:
-        citizenship = ""
     visa_type = visa_type.strip()
-    if visa_type and visa_type not in _VISA_TYPE_LABELS:
-        visa_type = ""
     cost_currency = cost_currency.strip().upper()
-    if cost_currency and cost_currency not in VISA_CURRENCIES:
-        cost_currency = ""
+    for value, catalogue, what in ((citizenship, _VISA_CITIZENSHIP_LABELS, "Гражданство"),
+                                   (visa_type, _VISA_TYPE_LABELS, "Тип визы"),
+                                   (cost_currency, set(VISA_CURRENCIES), "Валюта")):
+        if value and value not in catalogue:
+            resp = await _render_conversation(
+                user_id, request, manager,
+                notice=f"{what}: такого значения нет в справочнике. Обновите страницу.")
+            resp.headers["X-Action-Outcome"] = "denied"
+            return resp
 
     amount, clear_cost, error = _visa_cost(cost)
     if error:
