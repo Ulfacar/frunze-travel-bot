@@ -151,3 +151,20 @@ def test_the_message_is_saved_even_if_the_flag_read_fails(monkeypatch):
     conv = asyncio.run(store.get(user_id))
     assert conv.stage == STAGE_NEW_LEAD
     assert conv.messages[-1].text == "Здравствуйте!"
+
+
+def test_the_backfill_script_uses_the_same_stage_keys():
+    """Скрипт переноса дублирует две константы, чтобы показ работал до выката.
+
+    Дубликат допустим, расхождение — нет: если ключи стадий разойдутся, скрипт
+    молча двинет карточки не туда.
+    """
+    import pathlib
+    import re
+
+    src = (pathlib.Path(__file__).resolve().parents[1]
+           / "scripts" / "backfill_lead_stage.py").read_text(encoding="utf-8")
+    m = re.search(r'STAGE_NEW_LEAD, STAGE_IN_WORK = "([a-z_]+)", "([a-z_]+)"', src)
+    assert m, "в скрипте нет запасных значений — проверьте, не переписан ли импорт"
+    assert m.group(1) == STAGE_NEW_LEAD
+    assert m.group(2) == STAGE_IN_WORK
