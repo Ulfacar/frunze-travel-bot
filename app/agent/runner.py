@@ -27,7 +27,7 @@ from app.config import settings
 from app.core import budget, flags, observ, tours_health
 from app.core.branding import GETVISA_OFFICE_ADDRESS, PRICE_DISCLAIMER
 from app.core.state import DialogState
-from app.core.visa_pricing import self_visa_reply, visa_price_reply
+from app.core.visa_pricing import mentions_usa, self_visa_reply, visa_price_reply
 from app.funnels.visa import score_visa, visa_category
 from app.integrations.crm import get_crm
 from app.integrations.tourvisor.client import TourVisorClient, TourVisorError
@@ -176,6 +176,13 @@ _SHIELD_HEADER = (
 _SHIELD_ACK = "Понял, это служебная справка. Отвечаю только клиенту и вслух её не упоминаю."
 
 
+USA_BUSINESS_NOTE = (
+    "[Прайс, уточнение к США: сопровождение туристической визы 250$, деловой поездки "
+    "600$; консульский сбор 185$ с человека отдельно. Называй только если клиент "
+    "спрашивает цену по США.]"
+)
+
+
 def _shielded_prefix(notes: list[dict]) -> list[dict]:
     """Схлопнуть служебные заметки в один ход и закрыть их ответом ассистента."""
     if not notes:
@@ -240,6 +247,16 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
     shield_notes = await flags.get_flag("service_notes_shield_enabled",
                                         settings.service_notes_shield_enabled)
     kb_note_done = False
+    # Прайс в системном промпте знает по США только 250$. Правим заметкой, а не
+    # промптом: system кэшируется, и текст, зависящий от флага, ломал бы кэш.
+    # Только когда США уже звучали в разговоре: иначе заметка ехала бы в каждый
+    # визовый ход и оплачивалась токенами впустую.
+    usa_business_note = (
+        spec.name == "visa" and spec.validator_profile is None
+        and mentions_usa(" ".join(str(m.get("content")) for m in state.history[-8:]
+                                  if isinstance(m.get("content"), str)))
+        and await flags.get_flag("visa_usa_business_price_enabled",
+                                 settings.visa_usa_business_price_enabled))
 
     for _ in range(MAX_TOOL_ITERATIONS):
         model = choose_model(spec.name, escalated)
@@ -261,6 +278,8 @@ async def run_turn(state: DialogState, user_text: str, spec: FunnelSpec) -> str 
                 state.history.insert(len(state.history) - 1, kb_note)
                 window = _windowed_history(state.history,
                                           settings.llm_history_max_messages)
+        if usa_business_note:
+            notes.append({"role": "user", "content": USA_BUSINESS_NOTE})
         prefix = _shielded_prefix(notes) if shield_notes else notes
         messages = prefix + window
         resp = await client().messages.create(
@@ -711,7 +730,9 @@ VISA_SPEC = FunnelSpec(
 
 async def run_visa_turn(state: DialogState, user_text: str) -> str | None:
     """Один ход клиента в воронке «Визы»."""
-    price_reply = visa_price_reply(user_text)
+    usa_business = await flags.get_flag("visa_usa_business_price_enabled",
+                                        settings.visa_usa_business_price_enabled)
+    price_reply = visa_price_reply(user_text, usa_business=usa_business)
     if price_reply:
         state.history.append({"role": "user", "content": user_text})
         state.history.append({"role": "assistant", "content": price_reply})
@@ -1085,4 +1106,16 @@ async def run_kg_entry_turn(state: DialogState, user_text: str) -> str | None:
     kg_turn = _kg(state)
     kg_turn.pop("_kb_calls", None)
     kg_turn.pop("_kb_periods", None)
+    # Фактический сбор за e-Visa — кодом, до модели: промпт и ремень валидатора суммы
+    # запрещают, и это остаётся так для всего, чего нет в таблице Марселя от 13.11.2026.
+    # Перехваченный диалог не трогаем: там отвечает менеджер.
+    if not state.intercepted and await flags.get_bot_flag(
+            "kg_entry_fees_reply_enabled", state.bot_id,
+            settings.kg_entry_fees_reply_enabled):
+        from app.knowledge.entry_fees import entry_fee_reply
+        fee_reply = entry_fee_reply(user_text)
+        if fee_reply:
+            state.history.append({"role": "user", "content": user_text})
+            state.history.append({"role": "assistant", "content": fee_reply})
+            return fee_reply
     return await run_turn(state, user_text, KG_ENTRY_SPEC)

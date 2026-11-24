@@ -804,8 +804,13 @@ class Orchestrator:
         # получил бы цены по Шенгену и США. Находка проектирования 21.10.
         if state.funnel == "visa" and not await self._entry_talk(msg, state):
             try:
+                from app.core import flags
                 from app.core.visa_pricing import self_visa_reply, visa_price_reply
-                answer = visa_price_reply(msg.text)
+                answer = visa_price_reply(
+                    msg.text,
+                    usa_business=await flags.get_flag(
+                        "visa_usa_business_price_enabled",
+                        settings.visa_usa_business_price_enabled))
                 if answer is None:
                     answer = self_visa_reply(
                         msg.text,

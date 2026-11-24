@@ -19,10 +19,39 @@ SELF_VISA_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Деловая поездка в США: 600 $ вместо туристических 250 $. Подтверждено дважды: устно
+# Гришей 05.11.2026 («можно говорить 600, будут торговаться») и письменно Марселем
+# 13.11.2026 («туризм 250 долларов, деловая 600 долларов»). Работает только при
+# включённом флаге `visa_usa_business_price_enabled`; без него ответ по США прежний.
+# Консульский сбор 185 $ — тот же, что у туристической: категория визы одна, B1/B2.
+_USA_ALIASES = ("сша", "америк", "usa", "us visa", "штаты", "американ")
+_USA_BUSINESS_RE = re.compile(
+    r"(делов|бизнес|business|командиров|конференц|переговор|выставк|\bb-?1\b)",
+    re.IGNORECASE,
+)
+# Деловую ставку одну называем только при чистом деловом вопросе. Отрицание («не
+# бизнес», «нет бизнеса»), туристические слова рядом и категория B1/B2 целиком — это
+# сомнение, и при сомнении клиент получает обе ставки: назвать туристу только 600$
+# хуже прежнего ответа (ревью 19.11.2026).
+_USA_NOT_ONLY_BUSINESS_RE = re.compile(
+    r"(\bне\b|\bнет\b|\bбез\b|турист|туризм|отдых|отпуск|гост|путешеств|tourist|tourism|"
+    r"vacation|holiday|\bnot?\b|b-?1\s*/\s*b-?2|\bb-?2\b)",
+    re.IGNORECASE,
+)
+USA_BUSINESS_REPLY = (
+    "По США, деловая поездка: сопровождение 600$, консульский сбор 185$ с человека "
+    "оплачивается отдельно. Итоговую сумму по записи подтвердит менеджер."
+)
+USA_BOTH_REPLY = (
+    "По США: сопровождение туристической визы 250$, деловой поездки 600$; консульский "
+    "сбор 185$ с человека оплачивается отдельно. Итоговую сумму по типу визы и записи "
+    "подтвердит менеджер."
+)
+
 _COUNTRY_PRICES: list[tuple[str, tuple[str, ...], str]] = [
     (
         "США",
-        ("сша", "америк", "usa", "us visa", "штаты", "американ"),
+        _USA_ALIASES,
         "По США: сопровождение 250$, консульский сбор 185$ с человека оплачивается отдельно. "
         "Итоговую сумму по типу визы и записи подтвердит менеджер.",
     ),
@@ -67,11 +96,27 @@ _COUNTRY_PRICES: list[tuple[str, tuple[str, ...], str]] = [
 ]
 
 
-def visa_price_reply(text: str) -> str | None:
-    """Return a scoped visa price answer, or None when the message is not a price question."""
+def mentions_usa(text: str) -> bool:
+    """Названы ли США — теми же основами, по которым выбирается строка прайса."""
+    lowered = (text or "").lower()
+    return any(alias in lowered for alias in _USA_ALIASES)
+
+
+def visa_price_reply(text: str, *, usa_business: bool = False) -> str | None:
+    """Return a scoped visa price answer, or None when the message is not a price question.
+
+    `usa_business` — флаг `visa_usa_business_price_enabled`. При False функция отвечает
+    ровно как до 19.11.2026. При True вопрос о цене по США получает деловую ставку,
+    если клиент назвал деловую цель, и обе ставки, если цель не названа: иначе на
+    «сколько стоит виза в США» деловой клиент услышал бы 250$ и пришёл в офис к 600$.
+    """
     lowered = (text or "").lower()
     if not PRICE_INTENT_RE.search(lowered):
         return None
+    if usa_business and any(alias in lowered for alias in _USA_ALIASES):
+        business_only = (_USA_BUSINESS_RE.search(lowered)
+                         and not _USA_NOT_ONLY_BUSINESS_RE.search(lowered))
+        return USA_BUSINESS_REPLY if business_only else USA_BOTH_REPLY
     for _country, aliases, reply in _COUNTRY_PRICES:
         if any(alias in lowered for alias in aliases):
             return reply
