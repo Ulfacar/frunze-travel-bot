@@ -184,6 +184,12 @@ def test_admin_pages_render_as_on_base_templates(env, monkeypatch, tmp_path, fla
     src = Path(ar.templates.env.loader.searchpath[0])
     base_dir = tmp_path / "base"
     shutil.copytree(src, base_dir)
+    # Базовый коммит 74ba9b5 есть не в каждой копии репо (в origin и prod его нет:
+    # ветку переписали). Нет коммита — пропуск; есть коммит, а шаблона нет — падение.
+    try:
+        subprocess.run(["git", "cat-file", "-e", "74ba9b5^{commit}"], capture_output=True, check=True)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        pytest.skip("нужен git с коммитом 74ba9b5")
     for name in CHANGED_TEMPLATES:
         text = subprocess.run(["git", "show", f"74ba9b5:app/admin/templates/{name}"],
                               capture_output=True, text=True, check=True).stdout

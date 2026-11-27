@@ -28,13 +28,16 @@ def test_work_pin_additive_empty_cycle_and_full_metadata(config):
         command.upgrade(config,CURRENT)
         with engine.connect() as conn:
             assert [c['name'] for c in inspect(conn).get_columns('entry_process_pins')]==old_columns+['stay_history_id']
-            assert compare_metadata(MigrationContext.configure(conn,opts={'compare_type':True}),DomainBase.metadata)==[]
         command.downgrade(config,PREVIOUS)
         with engine.connect() as conn:assert [c['name'] for c in inspect(conn).get_columns('entry_process_pins')]==old_columns
         command.upgrade(config,CURRENT)
         with engine.connect() as conn:
             after={name:ddl for name,ddl in conn.execute(text("SELECT name,sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '%entry_process_pins%'"))}
             assert before==after
+        # Сверка с моделями — на голове цепочки. Пока 0040 была последней, это совпадало;
+        # с 0041–0043 модели ушли вперёд, и сверка на 0040 падала без дефекта (27.11.2026).
+        command.upgrade(config,'head')
+        with engine.connect() as conn:
             assert compare_metadata(MigrationContext.configure(conn,opts={'compare_type':True}),DomainBase.metadata)==[]
     finally:engine.dispose()
 

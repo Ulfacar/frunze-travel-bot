@@ -18,13 +18,16 @@ from tests import test_entry_issued as issued
 from tests import test_entry_processes as processes
 from app.domain.entry_process_evidence import Evidence,Sources
 from app.domain.models import _now
+from app.knowledge.process_preview import CATALOG_SHA256
 
 
 def evidence(env,app,method,fact,policy=None,observed=None):
     async def run(session):
         case=await packages.service.applications._case(session,env['cases']['visa'],lock=True)
         subject=await packages.service.applications._application(session,case.id,app['id'],lock=True)
-        context=Evidence(Sources(session,case,subject),{'links':{'visa':app['id']}},[],None,policy,
+        # catalog_digest обязателен в состоянии процесса с 43ba1cc (13.10): Evidence.prefix
+        # читает его всегда. Помощник отставал и падал KeyError → stored_data_invalid.
+        context=Evidence(Sources(session,case,subject),{'links':{'visa':app['id']},'catalog_digest':CATALOG_SHA256},[],None,policy,
             at=_now(),historical=observed is not None,observed=observed)
         packet=await getattr(context,method)(subject,fact)
         return packet,context.observed

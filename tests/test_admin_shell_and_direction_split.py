@@ -92,7 +92,10 @@ FLAGGED_PATHS = {"/admin/focus", "/admin/work", "/admin/work/list",
                  "/admin/overdue",  # очередь пилота за флагом pilot_reply_queue_enabled (14.10)
                  "/admin/clients/new",  # флаг panel_manual_lead_enabled, см. test_admin_clients.py
                  "/admin/bitrix-archive",  # флаг panel_bitrix_archive_enabled
-                 "/admin/pilot-summary"}  # флаг panel_pilot_summary_enabled
+                 "/admin/pilot-summary",  # флаг panel_pilot_summary_enabled
+                 # «Нет карточки в Bitrix» за panel_missing_cards_enabled (21.10): test_panel_missing_cards.py.
+                 "/admin/no-card", "/admin/no-card.csv",
+                 "/admin/reports"}  # флаг panel_reports_enabled (12.11), OFF/ON — test_reports_page.py
 # Answer-page OFF/ON, workday and role gates: test_admin_kg_answers.py.
 # Knowledge review/publication OFF/ON and role gates have dedicated HTTP coverage
 # in test_admin_kg_knowledge_decisions.py and test_admin_kg_knowledge_publication.py.

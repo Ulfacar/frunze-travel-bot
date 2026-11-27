@@ -12,6 +12,7 @@ from tests.test_admin_kg_knowledge_publication import publisher, form, post, url
 from tests.test_knowledge_decisions import write
 from tests.test_knowledge_publication import IDS, activate, publish, release, runtime
 from tests.test_publication_recovery import journal_size
+from tests.floating_dates import FAR_DAY, FAR_DUE
 
 
 @pytest.mark.parametrize('bound', ['count', 'bytes'])
@@ -38,7 +39,7 @@ def large_source(env, tmp_path):
         unit = deepcopy(base)
         unit.update(unit_id=f'KG.DL.LARGE{index}', effective_from='2026-01-01',
             verified_at='2026-09-01T00:00:00Z', verified_by='synthetic-reviewer',
-            review_due_at='2026-12-01T00:00:00Z', owner='synthetic-owner', source_ref='SYNTHETIC LARGE PUBLICATION')
+            review_due_at=FAR_DUE, owner='synthetic-owner', source_ref='SYNTHETIC LARGE PUBLICATION')
         units.append(unit)
     (folder/'units.yaml').write_text(yaml.safe_dump(units), 'utf-8')
     async def load():

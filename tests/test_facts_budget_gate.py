@@ -14,6 +14,7 @@
 Гейт написан ДО правки и исполнителем НЕ редактируется.
 """
 import asyncio
+from datetime import date, timedelta
 
 import pytest
 
@@ -66,8 +67,14 @@ def test_per_bot_toggle_wins():
 
 def test_nothing_else_is_filtered():
     """Ложное срабатывание дороже: остальные шесть полей проходят всегда."""
+    # Даты — в будущем относительно сегодня: «20.10 до 10.11» после ноября 2026
+    # стали прошедшими, и поле dates законно выпадало (разбор 27.11.2026).
+    # Гейт «исполнителем не редактируется»: тронуты ТОЛЬКО входные даты, проверка та же;
+    # правка вынесена Алану на подтверждение (отчёт 28.11.2026).
+    start = date.today() + timedelta(days=30)
+    end = start + timedelta(days=21)
     got = run(facts.allowed(facts.extract(
-        "Нячанг 20.10 до 10.11, вылет из Бишкека, 2 взрослых с ребенком 5 лет"),
+        f"Нячанг {start:%d.%m} до {end:%d.%m}, вылет из Бишкека, 2 взрослых с ребенком 5 лет"),
         bot_id="frunze_tours"))
     for field in ("destination", "region", "dates", "tourists", "departure_city"):
         assert got.get(field), f"поле {field} не должно фильтроваться"

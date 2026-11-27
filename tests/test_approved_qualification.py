@@ -2,6 +2,7 @@
 import asyncio
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from tests.floating_dates import FAR_DAY, FAR_DUE
 import shutil
 
 import pytest
@@ -52,7 +53,7 @@ def load(env, tmp_path, *, tag='route', extra=None, changes=None):
     for unit in units:
         if unit['kind'] in ('visa_free_regime', 'visa_required_regime', 'deadline', 'special_regime'):
             unit.update(effective_from='2026-01-01', verified_at='2026-09-01T00:00:00Z',
-                verified_by='synthetic-reviewer', review_due_at='2026-12-01T00:00:00Z', owner='synthetic-owner',
+                verified_by='synthetic-reviewer', review_due_at=FAR_DUE, owner='synthetic-owner',
                 source_ref='Synthetic route fixture only')
         if changes and unit['unit_id'] in changes:
             unit.update(changes[unit['unit_id']])
@@ -78,7 +79,7 @@ def policy(env, units):
     return QualificationPolicy(dict(format='kg-qualification-policy/1', algorithm=service.FORMAT,
         reference='SYNTHETIC-ROUTE-ONLY', proof='a'*64, source_hash=asyncio.run(source()),
         bundle_hash=manifest['bundle_hash'], projection_hash=manifest['projection_hash'],
-        catalog_hash=manifest['catalog_hash'], valid_from='2026-01-01', review_due_on='2026-12-01',
+        catalog_hash=manifest['catalog_hash'], valid_from='2026-01-01', review_due_on=FAR_DAY,
         complete_regime_set=True, rules=[dict(unit_id=u['unit_id'], all=[
             dict(type='passport_country_in', countries=u['value']['countries']),
             dict(type='document_type_is', value='ordinary')], routes=[dict(purpose='tourism', product='NO_VISA')])

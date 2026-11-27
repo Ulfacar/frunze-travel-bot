@@ -22,12 +22,18 @@ from tests.test_entry_interviews import start, correct, read, action, counts
 from tests.test_admin_kg_entry import ADMIN
 from tests.test_knowledge_publication import POLICY
 from app.domain.knowledge_publication import _policy as publication_document
+from tests.floating_dates import FAR_DAY, FAR_DUE
 
 
 @pytest.fixture(autouse=True)
 def persistent_panel(monkeypatch):
     from app.config import settings
     monkeypatch.setattr(settings,'panel_backend','postgres')
+    # Флаги — в памяти. С panel_backend=postgres flags.get_flag шёл в НАСТОЯЩУЮ базу из
+    # настроек (тест подменяет только хранилище переписки): локально «database does not
+    # exist», в CI без сети — зависание до таймаута (разбор 27.11.2026).
+    from app.core import flags
+    monkeypatch.setattr(flags,'_store',lambda:flags._memory)
 
 
 @pytest.fixture(autouse=True)
@@ -67,12 +73,12 @@ def setup(env, tmp_path, *, language='ru', **kw):
     env['fact_doc']['interview'] = dict(id=iv['interview_id'], header_hash=current['interview']['snapshot_hash'], head_hash=current['history'][-1]['snapshot_hash'])
     cp = channel_policy()
     dp = DialoguePolicy(dict(format='kg-dialogue-policy/1', reference='SYN-DIALOGUE', proof='a'*64,
-        privacy_reference='SYN-PRIVACY', privacy_proof='b'*64, valid_from='2026-01-01', review_due_on='2027-01-01',
+        privacy_reference='SYN-PRIVACY', privacy_proof='b'*64, valid_from='2026-01-01', review_due_on=FAR_DAY,
         triage_version='kg-dialogue-interrupts/1', interview_policy_hash=ip.digest, channel_policy_hash=cp.digest,
         assignments=[dict(route=ROUTE, case_id=env['cases']['visa'], applicant_id=env['person']['id'], interview_id=iv['interview_id'],
             dialog_id=did, actor='admin', header_hash=current['interview']['snapshot_hash'], reference='SYN-ASSIGNMENT', proof='c'*64)]))
     sp = SessionPolicy(dict(format='kg-dialogue-session-policy/1', reference='SYN-TYPED', proof='d'*64,
-        valid_from='2026-01-01', review_due_on='2027-01-01', algorithm=VERSION,
+        valid_from='2026-01-01', review_due_on=FAR_DAY, algorithm=VERSION,
         question_map_hash=dialogue_questions.MAP_HASH, reconciliation_map_hash=dialogue_reconciliation.MAP_HASH,
         dialogue_policy_hash=dp.digest, current_stay_policy_hash=env['current_policy'].digest,
         qualification_policy_hash=env['qualification_policy'].digest, publication_policy_hash=_hash(publication_document(POLICY)),

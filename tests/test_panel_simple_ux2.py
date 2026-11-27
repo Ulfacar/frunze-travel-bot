@@ -86,14 +86,18 @@ def test_client_card_speaks_plainly_in_simple_mode(clients_env, monkeypatch):  #
 
 
 def test_case_card_shows_bishkek_time_and_a_pay_button(monkeypatch, tmp_path):
-    from datetime import datetime, timezone
+    from datetime import datetime, timedelta, timezone
     tw._clear(); tw._managers(monkeypatch); tw._on(monkeypatch)
     sm = tw._make_domain_sm(tmp_path)
     monkeypatch.setattr(admin_router, "_domain_sessionmaker", lambda: sm)
-    case = tw._seed_case(sm, reference="UX2-T", task_at=datetime(2026, 11, 2, 4, 30, tzinfo=timezone.utc))
+    # Задача в будущем относительно сегодня: фиксированное 02.11.2026 после этой даты
+    # становилось просрочкой, и карточка рисовала другой блок «Дальше» (разбор 27.11).
+    day = (datetime.now(timezone.utc) + timedelta(days=30)).date()
+    case = tw._seed_case(sm, reference="UX2-T",
+                         task_at=datetime(day.year, day.month, day.day, 4, 30, tzinfo=timezone.utc))
     _simple(monkeypatch)
     page = tw._login(tw.MANAGER_LOGIN).get(f"/admin/case/{case['case_id']}").text
-    assert "02.11 10:30" in page and "время Бишкека" in page, "04:30 UTC = 10:30 Бишкек"
+    assert f"{day:%d.%m} 10:30" in page and "время Бишкека" in page, "04:30 UTC = 10:30 Бишкек"
     assert "UTC" not in page.split('id="case-panel"')[1].split("</main>")[0]
     assert 'href="?tab=money#pay"' in page and "Внести оплату" in page
     assert "пояснение, не запрет" not in page and "Дальше:" in page

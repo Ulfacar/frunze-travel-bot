@@ -2,6 +2,7 @@
 import json,re,socket,threading,time
 from pathlib import Path
 from urllib.parse import urlsplit
+import pytest
 from tests import test_admin_operator_sop as native
 from tests.test_admin_operator_sop import env,enforce_sqlite_foreign_keys
 from app.domain.entry_storage import EntryStorageUnavailable
@@ -11,7 +12,8 @@ def luminance(rgb):
     return sum((x/12.92 if x<=.04045 else ((x+.055)/1.055)**2.4)*w for x,w in zip(numbers,(.2126,.7152,.0722)))
 
 def test_actual_sop_nojs_themes_time_print_and_authority(env,tmp_path,monkeypatch):
-    from playwright.sync_api import sync_playwright
+    # Браузер — необязательная зависимость: без playwright тест пропускается, а не падает.
+    sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
     from fastapi import FastAPI
     from starlette.middleware.sessions import SessionMiddleware
     import uvicorn,fitz

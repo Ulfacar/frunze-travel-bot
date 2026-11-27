@@ -17,6 +17,7 @@ from app.domain.service_authz import PermissionDenied
 from tests.test_admin_kg_entry import ADMIN, FIX, env
 from tests.test_knowledge_decisions import data, sql, write as review
 from tests.test_knowledge_publication import IDS, POLICY, activate, load_source, preview, publish, release
+from tests.floating_dates import FAR_DUE
 
 
 @pytest.fixture(autouse=True)
@@ -91,7 +92,8 @@ def test_current_version_and_exact_expiry_boundary(release, tmp_path, monkeypatc
     assert current['version_id'] == second != original['version_id']
     assert next(f['value'] for f in current['answers'][0]['facts'] if f['label'] == 'Значение') == '9'
     assert next(f['value'] for f in original['answers'][0]['facts'] if f['label'] == 'Значение') == '3'
-    monkeypatch.setattr(knowledge_publication, '_now', lambda: datetime(2026, 12, 1, tzinfo=timezone.utc))
+    # «Сейчас» = срок пересмотра правил фикстуры (FAR_DUE из tests/floating_dates.py).
+    monkeypatch.setattr(knowledge_publication, '_now', lambda: datetime.fromisoformat(FAR_DUE.replace('Z', '+00:00')))
     expired = answer(release)
     assert not expired['answers'] and all('source_review_expired' in row['reasons'] for row in expired['unavailable'])
 
@@ -167,7 +169,7 @@ def load_all_families(env, tmp_path, *, with_catalog=False, with_gaps=False):
                 unit['value'].update(text='Обратитесь к специалисту.', placeholders=[])
         if unit['confirmation_status'] == 'confirmed':
             unit.update(effective_from='2026-01-01', verified_at='2026-09-01T00:00:00Z',
-                verified_by='synthetic-reviewer', review_due_at='2026-12-01T00:00:00Z', owner='synthetic-owner',
+                verified_by='synthetic-reviewer', review_due_at=FAR_DUE, owner='synthetic-owner',
                 source_ref='SYNTHETIC official source', source_text='SYNTHETIC source qualification.')
     (folder / 'units.yaml').write_text(yaml.safe_dump(units, allow_unicode=True), 'utf-8')
     catalog = None

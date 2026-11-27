@@ -255,9 +255,13 @@ def test_size_limit_rolls_back_and_refuses_oversize_stored_read(env,monkeypatch,
 @pytest.mark.parametrize('lock',['service_cases','entry_applications'])
 @pytest.mark.parametrize('expiry',[True,False])
 def test_policy_day_is_checked_after_row_lock(env,monkeypatch,lock,expiry):
-    app=subject(env);initial=datetime(2026,10,11,17,59,59,tzinfo=timezone.utc)
+    # «Сейчас» — завтра за секунду до полуночи по Бишкеку (17:59:59 UTC), а не 11.10.2026:
+    # заявку subject() создаёт по настоящим часам, и фиксированная дата в прошлом давала
+    # notification_clock_moved_backwards вместо проверяемого перехода через сутки (27.11.2026).
+    day=(datetime.now(timezone.utc)+timedelta(days=1)).date()
+    app=subject(env);initial=datetime(day.year,day.month,day.day,17,59,59,tzinfo=timezone.utc)
     current=[initial];monkeypatch.setattr(service,'_now',lambda:current[0])
-    allowed=policy(review_due_on='2026-10-11' if expiry else '2027-01-01')
+    allowed=policy(review_due_on=day.isoformat() if expiry else (day+timedelta(days=365)).isoformat())
     shown=preview(env,app,policy=allowed);a=args(env,app,previewed=shown,policy=allowed)
     original=AsyncSession.scalar
     async def waited(self,statement,*pos,**kw):

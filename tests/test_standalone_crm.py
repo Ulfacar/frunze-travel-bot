@@ -41,6 +41,9 @@ def configured(monkeypatch,tmp_path):
 
 @pytest.fixture
 def crm(configured,monkeypatch):
+    # Боевой выпуск грузится из PDF Гриши; в репозитории его нет и быть не должно.
+    if not Path('release-source.pdf').exists():
+        pytest.skip('нет release-source.pdf (PDF заказчика вне репозитория)')
     url=configured
     engine=create_async_engine(url)
     sm=async_sessionmaker(engine,expire_on_commit=False)

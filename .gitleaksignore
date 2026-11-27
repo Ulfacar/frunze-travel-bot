@@ -1,0 +1,11 @@
+# Ложные срабатывания gitleaks (generic-api-key), разобраны 27.11.2026.
+# Каждое проверено руками; новые находки сканер по-прежнему ловит.
+#
+# SHA256 файлов в отчётах ревью — не секреты:
+d5886b7b0d5104f9dbe4ec04afd4c340e928b9f3:ai/reviews/2026-10-13-standalone-crm-evidence.json:generic-api-key:28
+d1d5138c15e9101b3ef73d1f38126c98e2f716a0:ai/reviews/2026-10-13-e6-30d-snapshot-evidence.json:generic-api-key:81
+8575f1f278659cc0d92c8342dbf25262afce5dc7:ai/reviews/2026-10-11-e6-11-final-audit.md:generic-api-key:35
+# Фейковый токен в тесте редакции секретов:
+cdedfd84502fa13b6bb358cd2df316274872029b:tests/test_secret_redaction.py:generic-api-key:19
+# Тестовый пароль; сверен с боевыми логинами 27.11 — не совпадает ни с одним из 9:
+fca71a507009fbc1abfa63e56d9b545c29e16a73:tests/test_passwords.py:generic-api-key:90

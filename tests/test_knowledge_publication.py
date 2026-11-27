@@ -1,6 +1,6 @@
 import asyncio
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import shutil
 
 import pytest
@@ -13,6 +13,7 @@ from app.domain.permissions import Actor
 from app.domain.service_authz import PermissionDenied
 from tests.test_admin_kg_entry import ADMIN, FIX, env
 from tests.test_knowledge_decisions import data, sql, write as review
+from tests.floating_dates import FAR_DAY, FAR_DUE
 
 POLICY = PublicationPolicy('SYNTHETIC-DEC-07', 'a'*64, ('admin',))
 IDS = ['KG.DL.TEST', 'KG.VF.TEST']
@@ -26,7 +27,7 @@ def load_source(env, tmp_path, *, changes=None, tag='release'):
     for unit in units:
         if unit['unit_id'] in IDS:
             unit.update(effective_from='2026-01-01', verified_at='2026-09-01T00:00:00Z',
-                verified_by='synthetic-reviewer', review_due_at='2026-12-01T00:00:00Z', owner='synthetic-owner',
+                verified_by='synthetic-reviewer', review_due_at=FAR_DUE, owner='synthetic-owner',
                 source_ref='Synthetic official-source test evidence '+tag)
             if changes and unit['unit_id'] in changes:
                 unit.update(changes[unit['unit_id']])
@@ -130,7 +131,7 @@ def test_changed_review_blocks_only_one_unit_and_expiry_is_per_rule(release, mon
 
 
 @pytest.mark.parametrize('changes,reason', [
-    ({'effective_from':'2027-01-01'}, 'not_yet_effective'),
+    ({'effective_from':FAR_DAY}, 'not_yet_effective'),
     ({'effective_from':None}, 'effective_date_unknown'),
     ({'review_due_at':'2026-09-01T00:00:00Z'}, 'source_review_expired'),
     ({'owner':'UNASSIGNED'}, 'source_owner_unknown'),
@@ -168,7 +169,8 @@ def test_retry_cas_manifest_and_policy_changes(release):
 
 def test_expiry_boundary_does_not_rewrite_history(release, monkeypatch):
     activate(release)
-    monkeypatch.setattr(publication, '_now', lambda:datetime(2026,12,1,tzinfo=timezone.utc))
+    # «Сейчас» = срок пересмотра правил фикстуры (FAR_DUE), то есть ровно граница истечения.
+    monkeypatch.setattr(publication, '_now', lambda:datetime.fromisoformat(FAR_DUE.replace('Z', '+00:00')))
     result = runtime(release)
     assert not result['available']
     assert all('source_review_expired' in r['reasons'] for r in result['unavailable'])
@@ -252,10 +254,19 @@ def test_ordinary_orm_cannot_edit_source_or_publication_audit(release):
     assert preview(release)['version']['status'] == 'review'
 
 
+def _due():
+    """Срок пересмотра правила — в будущем относительно сегодня. Было 01.11.2026:
+    после этой даты правило истекало ДО активации, и тесты падали на
+    publication_rules_unavailable, не дойдя до проверяемой границы (27.11.2026)."""
+    day = (datetime.now(timezone.utc) + timedelta(days=10)).date()
+    return datetime(day.year, day.month, day.day, tzinfo=timezone.utc)
+
+
 def test_one_expired_rule_leaves_the_other_available(env, tmp_path, monkeypatch):
-    env['release'] = load_source(env, tmp_path, changes={IDS[0]:{'review_due_at':'2026-11-01T00:00:00Z'}})
+    due = _due()
+    env['release'] = load_source(env, tmp_path, changes={IDS[0]:{'review_due_at':f'{due:%Y-%m-%dT%H:%M:%SZ}'}})
     activate(env)
-    monkeypatch.setattr(publication, '_now', lambda:datetime(2026,11,1,tzinfo=timezone.utc))
+    monkeypatch.setattr(publication, '_now', lambda:due)
     result = runtime(env)
     assert [r['unit_id'] for r in result['available']] == [IDS[1]]
     assert result['unavailable'][0]['reasons'] == ['source_review_expired']
@@ -304,15 +315,16 @@ def test_new_version_preview_includes_old_cases_and_preserves_calculation_replay
 
 
 def test_publication_uses_one_instant_when_source_expires_during_transaction(env, tmp_path, monkeypatch):
-    env['release'] = load_source(env, tmp_path, changes={IDS[0]:{'review_due_at':'2026-11-01T00:00:00Z'}})
+    due = _due()
+    env['release'] = load_source(env, tmp_path, changes={IDS[0]:{'review_due_at':f'{due:%Y-%m-%dT%H:%M:%SZ}'}})
     publish(env, 'review'); publish(env, 'approve'); current = preview(env)
-    stamps = [datetime(2026,10,31,23,59,59,999999,tzinfo=timezone.utc), datetime(2026,11,1,tzinfo=timezone.utc)]
+    stamps = [due - timedelta(microseconds=1), due]
     def advancing():
         return stamps.pop(0) if len(stamps)>1 else stamps[0]
     monkeypatch.setattr(publication, '_now', advancing)
     row = asyncio.run(publication.publish_knowledge(env['engine'], actor=ADMIN, policy=POLICY, version_id=env['release'],
         action='activate', expected_revision=2, request_key='boundary', unit_ids=IDS, manifest_hash=current['manifest_hash']))
-    assert row['created_at'].startswith('2026-10-31T23:59:59.999999')
+    assert row['created_at'].startswith(f'{due - timedelta(microseconds=1):%Y-%m-%dT%H:%M:%S.%f}')
     # Journal remains valid at its recorded instant; current read expires only the affected rule.
     result = runtime(env)
     assert len(result['available']) == 1 and result['unavailable'][0]['reasons'] == ['source_review_expired']

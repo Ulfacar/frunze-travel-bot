@@ -84,7 +84,8 @@ FLAGGED_PATHS = {"/admin/focus", "/admin/work", "/admin/work/list",
                  "/admin/pilot-summary",    # флаг panel_pilot_summary_enabled, test_admin_pilot_summary.py
                  # Список «нет карточки в Bitrix» за флагом panel_missing_cards_enabled (21.10).
                  # Его OFF/ON, скоуп менеджера и выгрузка — tests/test_panel_missing_cards.py.
-                 "/admin/no-card", "/admin/no-card.csv"}
+                 "/admin/no-card", "/admin/no-card.csv",
+                 "/admin/reports"}  # флаг panel_reports_enabled (12.11), OFF/ON — test_reports_page.py
 # Answer-page OFF/ON, workday and role gates: test_admin_kg_answers.py.
 # Knowledge review/publication OFF/ON and role gates have dedicated HTTP coverage
 # in test_admin_kg_knowledge_decisions.py and test_admin_kg_knowledge_publication.py.

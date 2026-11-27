@@ -6,6 +6,7 @@ from app.domain.entry_storage import EntryStorageUnavailable
 from tests.test_admin_kg_entry import Form, env
 from tests.test_admin_workday import _login
 from tests.test_knowledge_decisions import read
+from tests.floating_dates import FAR_DAY, FAR_DUE
 
 
 def url(env):return ui.URL+f"?version={env['version']}&unit=KG.DL.TEST"
@@ -15,7 +16,7 @@ def form(env,verdict='confirmed'):
     page=env['client'].get(url(env));assert page.status_code==200,page.text[-1000:]
     data=Form(page.text,'kg-review-'+verdict).data;assert data
     data.update(evidence_ref='SYNTHETIC-01',proof='a'*64,verified_on='2026-09-01',confirmed='yes')
-    if verdict=='confirmed':data['review_due_on']='2026-12-01'
+    if verdict=='confirmed':data['review_due_on']=FAR_DAY
     return data
 
 
@@ -32,7 +33,7 @@ def test_catalog_native_confirmation_rejection_history_and_exact_retry(env):
     page=env['client'].get(url(env));assert 'Сведения устарели' in page.text
     old=env['client'].get(url(env)+'&revision=1')
     assert old.status_code==200 and 'Предыдущая запись доступна' in old.text
-    assert not Form(old.text,'kg-review-confirmed').data and '2026-12-01' in old.text
+    assert not Form(old.text,'kg-review-confirmed').data and FAR_DAY in old.text
     assert read(env)['unit']['value'] is not None and not read(env)['publication_approved']
 
 

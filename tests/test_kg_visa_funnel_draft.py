@@ -52,14 +52,21 @@ def test_draft_is_valid_and_matches_pdf_codes():
     doc = pub.load_draft()
     assert doc["status"] == "draft_unpublished"
     codes = [s["code"] for s in doc["stages"]]
-    assert codes == [f"V{i:02d}" for i in range(1, 26)] + [f"X{i:02d}" for i in range(1, 16)]
-    assert all(62 <= s["pdf_page"] <= 64 for s in doc["stages"])
+    # V26 «попросить отзыв» — этап заказчика со встречи 30.10 (коммит 463e706), стоит
+    # между V24 и V25. Список явный, а не pub.ENTRY_CODES: иначе тест сверял бы замок
+    # с самим собой.
+    assert codes == ([f"V{i:02d}" for i in range(1, 25)] + ["V26", "V25"]
+                     + [f"X{i:02d}" for i in range(1, 16)])
+    from_pdf = [s for s in doc["stages"] if "pdf_page" in s]
+    assert all(62 <= s["pdf_page"] <= 64 for s in from_pdf)
+    assert {s["code"] for s in doc["stages"] if "pdf_page" not in s} == {"V26"}
+    assert doc["stages"][codes.index("V26")]["origin"].strip()
     # Явные переходы PDF 14.2 присутствуют.
     t = doc["transitions"]
     for src, dst in [("V01", "V02"), ("V02", "V04"), ("V02", "V03"), ("V03", "X08"), ("V04", "V06"),
                      ("V04", "V05"), ("V06", "V07"), ("V10", "V12"), ("V10", "X06"), ("V12", "V13"),
                      ("V13", "V12"), ("V15", "X09"), ("V17", "V20"), ("V17", "V18"), ("V17", "X01"),
-                     ("V18", "V19"), ("V19", "V17"), ("V21", "X13"), ("V21", "X14"), ("V24", "V25"),
+                     ("V18", "V19"), ("V19", "V17"), ("V21", "X13"), ("V21", "X14"), ("V24", "V26"), ("V26", "V25"),
                      ("X05", "X04"), ("X08", "V04")]:
         assert dst in t[src], (src, dst)
     assert t["V25"] == [] and t["X15"] == []
@@ -79,12 +86,12 @@ def test_draft_does_not_contain_fields_the_mechanism_cannot_take():
     lambda d: d["stages"][0].__setitem__("sla_minutes", 5),         # чужое поле
 ])
 def test_invalid_drafts_are_rejected(tmp_path, mutate):
-    doc = json.loads(pub.DRAFT.read_text(encoding="utf-8"))
+    doc = json.loads(pub.FUNNELS["entry"]["draft"].read_text(encoding="utf-8"))
     mutate(doc)
     path = tmp_path / "draft.json"
     path.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(pub.DraftInvalid):
-        pub.load_draft(path)
+        pub.load_draft(path=path)
 
 
 # --- публикация ---------------------------------------------------------------------
@@ -132,7 +139,7 @@ def test_publish_creates_product_and_one_immutable_version(dsn, capsys):
 
 def test_changed_draft_publishes_new_version_old_stays(dsn, tmp_path, capsys):
     assert pub.run(["--dsn", dsn, "--yes"]) == 0
-    doc = json.loads(pub.DRAFT.read_text(encoding="utf-8"))
+    doc = json.loads(pub.FUNNELS["entry"]["draft"].read_text(encoding="utf-8"))
     doc["transitions"]["X15"] = ["V01"]            # владелец добавил возврат
     path = tmp_path / "draft2.json"
     path.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")

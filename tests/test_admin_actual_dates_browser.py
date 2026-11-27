@@ -2,6 +2,7 @@
 from pathlib import Path
 import json,re,socket,threading,time
 from urllib.parse import urlsplit
+import pytest
 from tests import test_admin_actual_dates as native
 from tests.test_admin_actual_dates import env,clock,enforce_sqlite_foreign_keys
 from app.domain.entry_storage import EntryStorageUnavailable
@@ -13,7 +14,8 @@ def luminance(rgb):
 
 
 def test_real_native_themes_nojs_print_and_withdrawn_authority(env,tmp_path,monkeypatch):
-    from playwright.sync_api import sync_playwright
+    # Браузер — необязательная зависимость: без playwright тест пропускается, а не падает.
+    sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
     from fastapi import FastAPI
     from starlette.middleware.sessions import SessionMiddleware
     import uvicorn,fitz

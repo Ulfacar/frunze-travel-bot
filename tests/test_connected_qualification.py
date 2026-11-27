@@ -27,6 +27,7 @@ from tests.test_entry_applications import person, enforce_sqlite_foreign_keys
 from tests.test_entry_interviews import policy as interview_policy, admins, OWNER
 from tests.test_knowledge_decisions import write as review, data as review_data
 from tests.test_knowledge_publication import POLICY, publish, preview
+from tests.floating_dates import FAR_DAY, FAR_DUE
 
 ROOT = Path(__file__).resolve().parents[1]
 EXECUTABLE = ('KG.VF.EAEU', 'KG.VF.ANNEX1_30_60', 'KG.VF.CIS_BILATERAL', 'KG.VF.NINETY_180', 'KG.VF.UZB')
@@ -87,7 +88,7 @@ def source(env, tmp_path, *, additional=(), counting=None, source_file=None):
     ids = list(dict.fromkeys(uid for uid in ids if uid in actual and actual[uid]['value'] is not None))
     for uid in ids:
         actual[uid].update(effective_from='2026-01-01', verified_at='2026-09-01T00:00:00Z',
-            verified_by='synthetic-reviewer', review_due_at='2027-01-01T00:00:00Z', owner='synthetic-owner',
+            verified_by='synthetic-reviewer', review_due_at=FAR_DUE, owner='synthetic-owner',
             source_ref='SYNTHETIC authority only; original source shape retained', label='none', confirmation_status='confirmed',
             blocked_value=None, conflict_ref=None)
     normalized = validate_bundle(**bundle, source_hash=bundle['meta']['source_hash'])

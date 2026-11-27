@@ -186,9 +186,12 @@ def _chrome(request: Request) -> dict:
             # «Архив Битрикса» в «Ещё» у админа — `app/admin/bitrix_archive.py`.
             "bitrix_archive_on": bool(getattr(request.state, "bitrix_archive_on", False)),
             # «Сводка пилота» — полному админу и руководителю направления (`pilot_summary.py`).
-            "pilot_summary_on": bool(getattr(request.state, "pilot_summary_on", False)),
-            "reports_on": bool(getattr(request.state, "reports_on", False))
+            # Проверка прав относится к сводке. 12.11 строку отчётов вставили между
+            # флагом и `and`, и проверка уехала к отчётам: обычный менеджер видел
+            # «Сводку пилота» в меню и получал 403. Отчёты — менеджеру тоже (см. `reports`).
+            "pilot_summary_on": bool(getattr(request.state, "pilot_summary_on", False))
                                 and _pilot_summary_visible(manager),
+            "reports_on": bool(getattr(request.state, "reports_on", False)),
             "chat_redesign": bool(getattr(request.state, "chat_redesign",
                                           settings.admin_chat_redesign_enabled)),
             "workday_on": bool(getattr(request.state, "workday_on",

@@ -10,11 +10,12 @@ from app.domain.permissions import Actor
 from app.domain.service_authz import PermissionDenied
 from tests.test_admin_kg_entry import ADMIN, env
 from tests.test_entry_applications import enforce_sqlite_foreign_keys
+from tests.floating_dates import FAR_DAY, FAR_DUE
 
 
 def data():
     return dict(verdict='confirmed',reason='source_matches',evidence_kind='official_source',evidence_ref='SYNTHETIC-REVIEW-01',
-                proof='a'*64,verified_on='2026-09-01',review_due_on='2026-12-01',confirmed=True)
+                proof='a'*64,verified_on='2026-09-01',review_due_on=FAR_DAY,confirmed=True)
 
 
 def read(env,unit='KG.DL.TEST',version=None,**kwargs):

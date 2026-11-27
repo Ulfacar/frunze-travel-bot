@@ -30,6 +30,9 @@ def test_additive_empty_cycle_and_model_parity(config):
         for fn,target in ((command.upgrade,CURRENT),(command.downgrade,PREVIOUS),(command.upgrade,CURRENT)):
             fn(config,target)
             with engine.connect() as conn:assert schema(conn)==before
+        # Сверка таблицы с моделью — на голове цепочки: колонку expected_at добавила 0043,
+        # и на 0022 модель её уже содержит (27.11.2026).
+        command.upgrade(config,'head')
         with engine.connect() as conn:
             context=MigrationContext.configure(conn,opts={'compare_type':True,
                 'include_object':lambda obj,name,kind,reflected,other:kind!='table' or name==TABLE})

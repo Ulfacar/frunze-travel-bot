@@ -24,6 +24,48 @@ import pytest
 
 from app.config import settings
 
+
+# --- кеш validate_bundle (только тесты) -----------------------------------------
+# Разбор 27.11.2026 (docs/test-debt-2026-11-27.md): тесты въездной CRM по 40–170 с,
+# и больше половины времени — повторная проверка ОДНОГО И ТОГО ЖЕ пакета знаний
+# через jsonschema (128 вызовов на тест). validate_bundle — чистая функция: читает
+# только аргументы, не трогает время, диск и окружение. Поэтому в тестах её
+# результат кешируется по точному содержимому входа. Боевой код не меняется.
+# Выключить: FT_TEST_NO_BUNDLE_CACHE=1.
+def _install_bundle_cache() -> None:
+    import copy
+    import hashlib
+    import json
+    import os
+
+    if os.environ.get("FT_TEST_NO_BUNDLE_CACHE") == "1":
+        return
+    import app.knowledge.bundle as kb
+
+    original = kb.validate_bundle
+    cache: dict = {}
+
+    def typed(o):
+        # Тип в ключе: строка '2026-01-01' и date(2026, 1, 1) — разные входы.
+        return {"__t": type(o).__name__, "__v": repr(o)}
+
+    def cached(meta, countries, units, *, source_hash):
+        try:
+            key = hashlib.sha256(json.dumps(
+                [meta, countries, units, source_hash], default=typed,
+                ensure_ascii=False, sort_keys=False).encode("utf-8")).hexdigest()
+        except (TypeError, ValueError):
+            return original(meta, countries, units, source_hash=source_hash)
+        if key not in cache:
+            cache[key] = original(meta, countries, units, source_hash=source_hash)
+        return copy.deepcopy(cache[key])
+
+    cached.__wrapped__ = original
+    kb.validate_bundle = cached
+
+
+_install_bundle_cache()
+
 _ALLOWED_HOSTNAMES = {"localhost", "localhost.localdomain", "ip6-localhost"}
 
 

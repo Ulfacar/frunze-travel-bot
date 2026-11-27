@@ -25,6 +25,8 @@ def test_actual_pre_d_writer_receipts_read_retry_and_explicit_replay_drift(env,m
         assert original['summary']['operational_due_on']=='2026-10-20'
     upgraded=helpers.read(env,app)
     assert upgraded.pop('conditional_current') is None
+    # Наложение SOP оператора появилось позже фикстуры (как и conditional_current): у старой записи оно пустое.
+    assert upgraded.pop('operator_current') is None
     assert upgraded==retained
     retry=helpers.write(env,app,'manual',helpers.manual(),revision=1,key='manual-1')
     assert retry==original
@@ -35,6 +37,7 @@ def test_actual_pre_d_writer_receipts_read_retry_and_explicit_replay_drift(env,m
     helpers.write(env,app,'clear',dict(reason='wrong_document'))
     assert task_helpers.read(env,app)['current']['task']['status']=='cancelled'
     assert helpers.write(env,app,'manual',helpers.manual(),revision=1,key='manual-1')==original
+    Path('runs').mkdir(exist_ok=True)  # в чистой копии (CI) каталога runs/ нет
     Path('runs/audit-actual-legacy-upgrade.json').write_text(json.dumps(dict(
         seed_commit='5e91ddb',actual_archived_handler=True,original_runtime=old._runtime(),
         current_runtime=current._runtime(),historical_read_equal=True,old_retry_equal=True,

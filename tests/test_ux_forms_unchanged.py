@@ -125,8 +125,11 @@ def _case_env(monkeypatch, tmp_path):
 def test_manager_case_forms_are_unchanged(monkeypatch, tmp_path, simple, tab):
     sm = _case_env(monkeypatch, tmp_path)
     from datetime import datetime, timedelta, timezone
+    # Задача — в будущем относительно СЕГОДНЯ. Раньше стояло 31.10.2026: после этой даты
+    # задача становилась просроченной, карточка выносила её главной кнопкой вместо
+    # «следующего этапа», и тест падал, хотя формы не менялись (разбор 27.11.2026).
     case = tw._seed_case(sm, reference="UX-FORMS",
-                         task_at=datetime(2026, 10, 30, 9, 0, tzinfo=timezone.utc) + timedelta(days=1))
+                         task_at=datetime.now(timezone.utc).replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=30))
     html = tw._login(tw.MANAGER_LOGIN).get(f"/admin/case/{case['case_id']}?tab={tab}").text
     _check(f"case-manager/{tab}/{'simple' if simple else 'plain'}", html)
 
