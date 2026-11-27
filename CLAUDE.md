@@ -275,7 +275,7 @@ panel_reports_enabled                    страница отчётов по с
 manager_sees_direction_cases_enabled     менеджер видит всех в своём направлении
 manager_can_take_colleague_dialog_enabled  забрать клиента коллеги
 reassign_moves_tasks_enabled             задачи переходят вместе с клиентом
-cases_write_enabled                      создавать и двигать дела по услугам
+service_cases_enabled                    дела по услугам (ON с 19.10; «cases_write_enabled» не существует)
 kg_entry_fees_reply_enabled              сбор за e-Visa в КР на вопрос о цене (19.11, не выкачено)
 visa_usa_business_price_enabled          США: деловая поездка 600$ (19.11, не выкачено)
 kg_entry_enabled / kg_entry_manager_access_enabled  36 экранов CRM по PDF Гриши
@@ -380,7 +380,7 @@ snap-docker не видит `/tmp` хоста: SQL подавать через s
 | `panel_reports_enabled` | страница отчётов по списку Медины |
 | `auto_close_after_touches_enabled` | автозакрытие после трёх касаний; калибровка СДЕЛАНА (см. ниже), порог за владельцем |
 | `manager_sees_direction_cases_enabled`, `manager_can_take_colleague_dialog_enabled`, `reassign_moves_tasks_enabled` | три прямых ответа Гриши от 05.11, построены и не включены |
-| `cases_write_enabled` | без неё дело завести нельзя, поэтому `service_cases` = 0 и пять отчётов не считаются |
+| ~~`cases_write_enabled`~~ | такого тумблера нет: дела пишет `service_cases_enabled`, он ON с 19.10. Дел 0 потому, что их никто не заводит |
 
 ### Сделано 19.11, лежит на GitHub, на прод НЕ выкачено, тумблеры OFF
 
@@ -423,7 +423,7 @@ B2B, 5–6 горячих лидов в месяц — требований по
 воронка из одного этапа; клиентов, дел и заявок — ноль.
 
 Экраны CRM по PDF (36 модулей `app/admin/kg_*.py`, ~5500 строк) живут в ОСНОВНОМ
-приложении и закрыты флагами `kg_entry_enabled` и `kg_entry_manager_access_enabled` —
+приложении и закрыты флагами `admin_kg_entry_enabled` (env, не рантайм) и `kg_entry_manager_access_enabled` (`kg_entry_enabled` — это въездная ветка БОТА, ON на getvisa с 23.10) —
 оба OFF.
 
 ### Числа, которые меняют решения
@@ -461,6 +461,8 @@ B2B, 5–6 горячих лидов в месяц — требований по
 **Устарело и в самом CLAUDE.md** — его разделы 1–7 и 10 писались летом и осенью; они про
 устройство и правила, и это по-прежнему верно. Текущее состояние живёт ТОЛЬКО в разделе 8 и
 в `ai/STATE.md`. Если числа в разных местах расходятся — верить разделу 8, он датирован.
+
+**История CRM (27.11.2026) — читать первым по CRM:** `docs/crm-chronology.md` (хронология с источниками, ключ к ответам 30.10), `docs/crm-course-and-next.md` (курс, что осталось, вопросы без ответа), приложения `docs/crm-history/`, первоисточники `docs/sources/2026-11/`.
 
 **Актуальное читать здесь:** `docs/project-journey.md` (**полный путь проекта: хронология,
 грабли по системам, уроки — читать первым, если садишься за проект впервые**),
