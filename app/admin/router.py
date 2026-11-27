@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from urllib.parse import quote
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import (HTMLResponse, JSONResponse, PlainTextResponse,
                                RedirectResponse, Response)
 from fastapi.templating import Jinja2Templates
@@ -741,11 +741,14 @@ async def logout(request: Request):
 
 def _build_board(cards: list, now: datetime,
                  layout: list[tuple[str, str]] | None = None,
-                 fresh_first: bool = False) -> tuple[list[dict], dict]:
+                 fresh_first: bool = False,
+                 column_cap: int = 0) -> tuple[list[dict], dict]:
     """Колонки канбана (карточки обогащены и отсортированы: ждут дольше — наверх) + метрики.
 
     `layout` — набор колонок направления (`board_columns_for`). По умолчанию общий
     набор: так вызов остаётся совместимым, а поведение при флаге OFF — прежним.
+    `column_cap` > 0 — в колонке рисуются первые N карточек (после сортировки);
+    `total` колонки и метрики считаются по всем, `hidden` — сколько не нарисовано.
     """
     layout = layout or BOARD_COLUMNS
     buckets: dict[str, list] = {key: [] for key, _ in layout}
@@ -762,8 +765,16 @@ def _build_board(cards: list, now: datetime,
             col.sort(key=_last_key)          # свежий последний ответ/вопрос — наверх
         else:
             col.sort(key=lambda m: m["sort_key"], reverse=True)  # дольше ждёт — наверх
-    columns = [{"key": key, "label": label, "cards": buckets[key], "is_empty": not buckets[key]}
-               for key, label in layout]
+    cap = max(0, int(column_cap or 0))
+    columns = []
+    for key, label in layout:
+        full = buckets[key]
+        # Первые N плюс все «требуют ответа» за обрезкой (порядок прежний): иначе фильтр
+        # «Требуют ответа» показывал бы пустую колонку при сотне ждущих за кнопкой «Ещё».
+        shown = ([m for i, m in enumerate(full) if i < cap or m["needs_reply"]]
+                 if cap else full)
+        columns.append({"key": key, "label": label, "cards": shown, "is_empty": not full,
+                        "total": len(full), "hidden": len(full) - len(shown)})
     metrics = {
         "total": len(cards),
         "waiting": sum(1 for m in models if m["wait_level"] != "none"),
@@ -1523,6 +1534,16 @@ FEATURE_FLAGS = {
         "default": lambda: settings.panel_fresh_first_enabled,
         "note": lambda: f"потолок ожидания {settings.panel_fresh_wait_cap_hours} ч",
     },
+    "panel_board_column_cap_enabled": {
+        "title": "Доска: не больше N карточек в колонке",
+        "desc": ("Замер 27.11.2026: доска виз — 6.5 МБ и 2692 карточки одной страницей, "
+                 "опрос перерисовывает её каждые 15 секунд — панель лагает. С тумблером в "
+                 "колонке видны первые N (по текущей сортировке; вместе со «Свежие лиды "
+                 "сверху» — самые свежие), счётчик колонки и метрики — по всем, кнопка "
+                 "«Показать все» снимает обрезку. Ничего не скрывается из базы."),
+        "default": lambda: settings.panel_board_column_cap_enabled,
+        "note": lambda: f"N = {settings.panel_board_column_cap}",
+    },
     "board_columns_by_direction_enabled": {
         "title": "Колонки доски — свои для каждого направления",
         "desc": ("Решение Алана 11.11.2026 по ответам Медины. Доска была одна на все "
@@ -2211,10 +2232,11 @@ async def faq_test(request: Request, manager: dict = Depends(require_admin),
 
 @router.get("/board/{funnel}", response_class=HTMLResponse)
 async def board(funnel: str, request: Request, manager: dict = Depends(require_admin),
-                mine: int = 0):
+                mine: int = 0, show_all: int = Query(0, alias="all")):
     """HTMX-партиал одной доски: колонки по стадиям с карточками.
 
-    ?mine=1 — Sprint 2: показать только лиды, закреплённые за текущим менеджером."""
+    ?mine=1 — Sprint 2: показать только лиды, закреплённые за текущим менеджером.
+    ?all=1 — снять обрезку колонок (`panel_board_column_cap_enabled`)."""
     panel = get_conversation_store()
     cards = _filter_conversations(await panel.list_cards(funnel), manager)
     if mine:
@@ -2223,10 +2245,14 @@ async def board(funnel: str, request: Request, manager: dict = Depends(require_a
                  if (getattr(c, "assigned_to", "") or "").strip().lower() == login]
     layout = board_columns_for(
         funnel, by_direction=await _media_flag("board_columns_by_direction_enabled"))
+    cap_on = await _media_flag("panel_board_column_cap_enabled")
+    cap = max(1, int(settings.panel_board_column_cap or 50)) if cap_on and not show_all else 0
     columns, metrics = _build_board(
-        cards, _now(), layout, fresh_first=await _media_flag("panel_fresh_first_enabled"))
+        cards, _now(), layout, fresh_first=await _media_flag("panel_fresh_first_enabled"),
+        column_cap=cap)
     return templates.TemplateResponse(request, "_board.html", {
         "funnel": funnel, "columns": columns, "metrics": metrics, "mine": mine,
+        "show_all": 1 if (cap_on and show_all) else 0, "cap_on": cap_on,
     })
 
 
@@ -2297,7 +2323,7 @@ async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query:
                                        "mode": mode, "cards": cards, "query": query,
                                        "noise_count": noise_count, "total": total,
                                        "truncated": truncated, "show_all": show_all,
-                                       "page_size": page_size})
+                                       "page_size": page_size, "fresh_first": fresh_first})
 
 
 FOCUS_QUEUE_LIMIT = 8      # один в фокусе + семь в очереди: больше за раз не удержать

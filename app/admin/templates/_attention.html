@@ -13,12 +13,12 @@
       <div class="inbox-title">Ждут ответа — {{ total if total is not none else cards|length }}</div>
       {% if truncated %}
       {# Молча обрезанный список — вранье: менеджер должен видеть, что перед ним часть. #}
-      <span class="inbox-sub">Показаны первые {{ cards|length }} · кто дольше ждёт — выше</span>
+      <span class="inbox-sub">Показаны первые {{ cards|length }} · {% if fresh_first %}свежие — выше{% else %}кто дольше ждёт — выше{% endif %}</span>
       <button class="tab" hx-get="/admin/inbox?all=1" hx-target="#board" hx-swap="innerHTML">
         Показать все ({{ total }})
       </button>
       {% else %}
-      {% if not simple_on %}<span class="inbox-sub">Все воронки · кто дольше ждёт — выше</span>{% endif %}
+      {% if not simple_on %}<span class="inbox-sub">Все воронки · {% if fresh_first %}свежие — выше{% else %}кто дольше ждёт — выше{% endif %}</span>{% endif %}
       {% if show_all and page_size %}
       <button class="tab" hx-get="/admin/inbox" hx-target="#board" hx-swap="innerHTML">
         Свернуть до {{ page_size }}

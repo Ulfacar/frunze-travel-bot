@@ -506,6 +506,13 @@ class Settings(BaseSettings):
     # сообщения. Доска и поиск — по свежести. Ничего не скрывается. Дефолт OFF.
     panel_fresh_first_enabled: bool = False
     panel_fresh_wait_cap_hours: int = 72
+    # Замер 27.11.2026: доска виз под Гришей — 6.5 МБ HTML, 2692 карточки одной
+    # страницей, и опрос перерисовывает её целиком каждые 15 с. Отсюда «панель лагает»
+    # на показе. С тумблером в колонке рисуются первые `panel_board_column_cap`
+    # карточек, счётчик колонки — полный, кнопка «Показать все» снимает обрезку.
+    # Метрики считаются по всем карточкам. Дефолт OFF.
+    panel_board_column_cap_enabled: bool = False
+    panel_board_column_cap: int = 50
     panel_pilot_summary_enabled: bool = False
     panel_direction_leads: dict[str, list[str]] = {}
     # Ответы заказчика 2.1 и 2.2 от 05.11.2026. Два ОТДЕЛЬНЫХ флага, оба OFF — чтобы

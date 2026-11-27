@@ -853,11 +853,20 @@
       if (!form) return;
       setTimeout(function () { _resizeComposerInput(form.querySelector('textarea[name="text"]')); }, 0);
     });
+    // localStorage может быть заблокирован (приватный режим, политика браузера) — не падаем.
+    var _lsOk = (function () { try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); return true; } catch (_) { return false; } })();
+    function _lsGet(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
+    function _lsSet(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
     // Фильтр доски «только требующие ответа».
+    // Показ 13–14.11: фильтр «слетал» — опрос доски каждые 15 с заменяет её целиком
+    // (outerHTML), и класс фильтра пропадал вместе со старым узлом. Теперь выбор помнится
+    // в localStorage и возвращается после каждой замены — так же, как «Скрыть рекламу».
     function toggleNeedsReply(stat) {
       var board = stat.closest('[data-board]');
-      var on = board.classList.toggle('only-needs');
-      stat.classList.toggle('active-filter', on);
+      var on = !board.classList.contains('only-needs');
+      _lsSet('onlyNeeds', on ? '1' : '0');
+      if (!_lsOk) board.classList.toggle('only-needs', on);   // хранилище недоступно — как раньше
+      _applyNoiseFilter(board);
     }
     function _filterRoot(el) {
       return el.closest('[data-board]') || el.closest('[data-attention]');
@@ -865,15 +874,22 @@
     function _applyNoiseFilter(root) {
       if (!root) root = document.querySelector('#board [data-board], #board [data-attention]');
       if (!root) return;
-      var on = localStorage.getItem('hideNoise') === '1';
+      if (!_lsOk) return;                        // без хранилища — фильтры живут на узле, как раньше
+      var on = _lsGet('hideNoise') === '1';
       root.classList.toggle('hide-noise', on);
       var btn = root.querySelector('.noise-filter');
       if (btn) btn.classList.toggle('active-filter', on);
+      if (root.hasAttribute('data-board')) {
+        var needs = _lsGet('onlyNeeds') === '1';
+        root.classList.toggle('only-needs', needs);
+        var stat = root.querySelector('.stat.needs-reply');
+        if (stat) stat.classList.toggle('active-filter', needs);
+      }
     }
     function toggleNoise(el) {
       var root = _filterRoot(el);
       var on = !(root && root.classList.contains('hide-noise'));
-      localStorage.setItem('hideNoise', on ? '1' : '0');
+      _lsSet('hideNoise', on ? '1' : '0');
       _applyNoiseFilter(root);
     }
     function _activeBoardUrl() {
@@ -881,6 +897,9 @@
       if (s && s.value.trim()) return '/admin/search?q=' + encodeURIComponent(s.value.trim());
       var active = document.querySelector('.tab.active');
       var funnel = active && active.getAttribute('data-funnel');
+      var board = document.querySelector('#board [data-board]');
+      if (funnel && board && board.getAttribute('data-funnel') === funnel && board.getAttribute('hx-get'))
+        return board.getAttribute('hx-get');     // сохраняет ?mine и ?all текущей доски
       return funnel ? '/admin/board/' + encodeURIComponent(funnel) : '/admin/inbox';
     }
     function refreshCurrentList() {
@@ -1081,7 +1100,9 @@
       // Перерисовать доску: пересчитать счётчики колонок и порядок (ждут дольше — наверх).
       var board = document.querySelector('#board [data-board]');
       var funnel = board && board.getAttribute('data-funnel');
-      if (funnel && window.htmx) htmx.ajax('GET', '/admin/board/' + funnel, { target: '#board', swap: 'innerHTML' });
+      // URL — из hx-get самой доски: там уже ?mine и ?all (иначе перенос сбрасывал «показать все»).
+      var url = (board && board.getAttribute('hx-get')) || (funnel ? '/admin/board/' + funnel : '');
+      if (url && window.htmx) htmx.ajax('GET', url, { target: '#board', swap: 'innerHTML' });
     }
     // (Пере)инициализируем DnD после каждой подгрузки доски; не дёргаем во время перетаскивания.
     document.body.addEventListener('htmx:afterSettle', function () { _applyNoiseFilter(); updateInboxSelection(); if (!_dragging && !window.__boardDragging) initBoardDnD(); });

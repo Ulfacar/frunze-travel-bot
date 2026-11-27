@@ -1,6 +1,6 @@
 {% import "_icons.html" as ic %}
 {# Доска: метрики + колонки канбана. Авто-обновление каждые 15с (только на видимой вкладке). #}
-<div hx-get="/admin/board/{{ funnel }}{% if mine %}?mine=1{% endif %}" {% if crm_bot_mode %}hx-trigger="every 15s" data-crm-poll="board"{% else %}hx-trigger="every 15s [document.visibilityState==='visible' && !window.__boardDragging]"{% endif %} hx-swap="outerHTML" hx-target="this" data-board data-funnel="{{ funnel }}">
+<div hx-get="/admin/board/{{ funnel }}{% if mine %}?mine=1{% if show_all %}&all=1{% endif %}{% elif show_all %}?all=1{% endif %}" {% if crm_bot_mode %}hx-trigger="every 15s" data-crm-poll="board"{% else %}hx-trigger="every 15s [document.visibilityState==='visible' && !window.__boardDragging]"{% endif %} hx-swap="outerHTML" hx-target="this" data-board data-funnel="{{ funnel }}">
   <div class="metrics">
     <div class="stat"><div class="n">{{ metrics.total }}</div><div class="l">Всего диалогов</div></div>
     <div class="stat waiting"><div class="n">{{ metrics.waiting }}</div><div class="l">Ждут ответа</div></div>
@@ -12,9 +12,15 @@
     <div class="stat intercepted"><div class="n">{{ metrics.intercepted }}</div><div class="l">Перехвачено</div></div>
     <div class="stat mine-filter" title="Показать только лиды, закреплённые за вами"
          style="cursor:pointer{% if mine %};outline:2px solid var(--accent){% endif %}"
-         hx-get="/admin/board/{{ funnel }}?mine={{ 0 if mine else 1 }}"
+         hx-get="/admin/board/{{ funnel }}?mine={{ 0 if mine else 1 }}{% if show_all %}&all=1{% endif %}"
          hx-target="closest [data-board]" hx-swap="outerHTML">
       <div class="n">{{ ic.icon("user",22) }}</div><div class="l">{{ 'Все лиды' if mine else 'Мои лиды' }}</div></div>
+    {% if show_all %}
+    <div class="stat col-collapse" style="cursor:pointer" title="Снова показывать первые карточки в колонке"
+         hx-get="/admin/board/{{ funnel }}{% if mine %}?mine=1{% endif %}"
+         hx-target="closest [data-board]" hx-swap="outerHTML">
+      <div class="n">{{ ic.icon("x",22) }}</div><div class="l">Свернуть колонки</div></div>
+    {% endif %}
   </div>
 
   <div class="board">
@@ -22,7 +28,7 @@
     <div class="col {% if col.is_empty %}empty{% endif %}" data-col="{{ col.key }}">
       <div class="col-head">
         <span class="col-title"><span class="dot"></span>{{ col.label }}</span>
-        <span class="count">{{ col.cards|length }}</span>
+        <span class="count">{{ col.total if col.total is defined else col.cards|length }}</span>
       </div>
       {% for c in col.cards %}
       <div class="card" tabindex="0" data-wait="{{ c.wait_level }}" data-needs="{{ '1' if c.needs_reply else '0' }}" data-noise="{{ '1' if c.is_noise else '0' }}"
@@ -85,6 +91,12 @@
       {% else %}
       {% if not col.is_empty %}<div class="col-empty">—</div>{% endif %}
       {% endfor %}
+      {% if col.hidden %}
+      {#- Обрезка колонки (panel_board_column_cap_enabled): молча обрезанный список — враньё. -#}
+      <button type="button" class="tab col-more"
+              hx-get="/admin/board/{{ funnel }}?mine={{ 1 if mine else 0 }}&all=1"
+              hx-target="closest [data-board]" hx-swap="outerHTML">Ещё {{ col.hidden }} · показать все</button>
+      {% endif %}
     </div>
     {% endfor %}
   </div>
