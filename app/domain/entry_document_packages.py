@@ -237,7 +237,6 @@ async def _record_package_operation(session,*,actor,case_id,application_id,expec
         authorize_acceptance(actor,policy,catalog_digest=state['catalog_digest'],day=day); _policy_scope(policy)
         if data['on']!=day.isoformat(): _invalid('invalid_package_approval_date')
         approval_policy=policy
-        assert_acceptable(state,definition,policy,passport_changed_on=passport_on)
     if action in ('review','approve'):
         # Imported lazily to keep the metadata journal usable before migration0026.
         from app.domain.entry_quarantine import metadata
@@ -245,6 +244,10 @@ async def _record_package_operation(session,*,actor,case_id,application_id,expec
         fingerprints={data['fingerprint']} if action=='review' else {
             item['fingerprint'] for item in state['items'].values() if item['status']!='withdrawn'}
         if await quarantined_fingerprints(session,fingerprints): _invalid('document_in_quarantine')
+    if action=='approve':
+        # Полнота — после карантина: файл в карантине нельзя отметить проверенным, поэтому
+        # иначе оператор видел бы «пакет неполный» вместо настоящей причины (с e01c5b0).
+        assert_acceptable(state,definition,policy,passport_changed_on=passport_on)
     next_state=apply_operation(state,operation,actor=actor.manager_id,definition=definition,legacy=legacy,policy=approval_policy)
     row=EntryDocumentPackageEvent(case_id=case_id,application_id=application_id,revision=len(rows)+1,action=action,
         previous_id=rows[-1].id if rows else None,legacy_inventory_id=old[-1].id if old else None,

@@ -46,7 +46,9 @@ def test_migrated_worker_foreign_scope_and_populated_downgrade(config):
     from tests.test_admin_workday import _seed_case
     from tests.test_admin_kg_entry import ADMIN, FIX
     from tests.test_entry_deadlines import manual
-    command.upgrade(config,CURRENT)
+    # Боевой сервис — на голове цепочки: он читает expected_at из 0043. Проверка отката
+    # с данными ниже — по-прежнему с ревизии 0022 (разбор 28.11.2026).
+    command.upgrade(config,'head')
     engine=create_async_engine(config.get_main_option('sqlalchemy.url').replace('sqlite:','sqlite+aiosqlite:',1),poolclass=NullPool)
     def enable(dbapi,record):
         cursor=dbapi.cursor();cursor.execute('PRAGMA foreign_keys=ON');cursor.close()
@@ -79,14 +81,31 @@ def test_migrated_worker_foreign_scope_and_populated_downgrade(config):
                     with pytest.raises(IntegrityError):await conn.execute(text(sql),{**defaults,**override})
         finally:await engine.dispose()
     asyncio.run(run())
+    # С данными откат с головы останавливает уже 0033 (история сроков) — так и задумано.
     with pytest.raises(RuntimeError,match='preserve populated'):command.downgrade(config,PREVIOUS)
     engine=create_engine(config.get_main_option('sqlalchemy.url'))
     try:
+        # Защиту самой 0022 проверяю её собственным downgrade() на заполненной таблице.
+        from alembic.operations import Operations
+        with engine.begin() as conn:
+            with Operations.context(MigrationContext.configure(conn)):
+                with pytest.raises(RuntimeError,match='preserve populated deadline task bindings'):_migration_0022().downgrade()
         with engine.connect() as conn:
             assert TABLE in inspect(conn).get_table_names()
             assert conn.scalar(text('SELECT count(*) FROM entry_deadline_tasks'))==1
-            assert conn.scalar(text('SELECT version_num FROM alembic_version'))==CURRENT
+            # Пустые миграции выше сняты, откат встал на защищённой 0033.
+            assert conn.scalar(text('SELECT version_num FROM alembic_version'))=='e6_deadline_clear_0033'
     finally:engine.dispose()
+
+
+def _migration_0022():
+    import importlib.util
+    from pathlib import Path
+    path=next((Path(__file__).resolve().parents[1]/'alembic/versions').glob('e6_deadline_tasks_0022*.py'))
+    spec=importlib.util.spec_from_file_location('deadline_tasks_0022',path)
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module
+
 
 
 def test_postgres_ddl_and_offline_downgrade(config):
