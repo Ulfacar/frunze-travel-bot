@@ -427,7 +427,28 @@ def _card_model(conv, now: datetime) -> dict:
         "source": getattr(conv, "source", "") or "",
         "source_headline": getattr(conv, "source_headline", "") or "",
         "sort_key": (wait_min if wait_min is not None else -1),
+        # Минут с последнего сообщения (любого отправителя): ключ «свежие сверху».
+        "last_min": since,
     }
+
+
+def _fresh_cap_min() -> float:
+    return max(1, int(settings.panel_fresh_wait_cap_hours or 72)) * 60.0
+
+
+def _last_key(m: dict) -> float:
+    """Свежее — меньше. Диалог без даты — в самый конец."""
+    last = m.get("last_min")
+    return float("inf") if last is None else float(last)
+
+
+def _fresh_rank(m: dict, cap_min: float) -> tuple:
+    """Ждёт ответа не дольше потолка — первая группа, дольше ждёт — выше. Остальное
+    (ответили или брошено давно) — вторая группа, по свежести последнего сообщения."""
+    wait = m["sort_key"]
+    if 0 <= wait <= cap_min:
+        return (0, -wait)
+    return (1, _last_key(m))
 
 
 # ---------------- авторизация (сессия менеджера) ----------------
@@ -719,7 +740,8 @@ async def logout(request: Request):
 
 
 def _build_board(cards: list, now: datetime,
-                 layout: list[tuple[str, str]] | None = None) -> tuple[list[dict], dict]:
+                 layout: list[tuple[str, str]] | None = None,
+                 fresh_first: bool = False) -> tuple[list[dict], dict]:
     """Колонки канбана (карточки обогащены и отсортированы: ждут дольше — наверх) + метрики.
 
     `layout` — набор колонок направления (`board_columns_for`). По умолчанию общий
@@ -736,7 +758,10 @@ def _build_board(cards: list, now: datetime,
             column = layout[0][0]
         buckets[column].append(m)
     for col in buckets.values():
-        col.sort(key=lambda m: m["sort_key"], reverse=True)  # горячие наверх
+        if fresh_first:
+            col.sort(key=_last_key)          # свежий последний ответ/вопрос — наверх
+        else:
+            col.sort(key=lambda m: m["sort_key"], reverse=True)  # дольше ждёт — наверх
     columns = [{"key": key, "label": label, "cards": buckets[key], "is_empty": not buckets[key]}
                for key, label in layout]
     metrics = {
@@ -1486,6 +1511,18 @@ FEATURE_FLAGS = {
                          + ("" if not settings.followup_enabled else
                             " | ⚠️ автодожим бота тоже включён — клиент получит два касания")),
     },
+    "panel_fresh_first_enabled": {
+        "title": "Свежие лиды сверху (Входящие, Фокус, доска, поиск)",
+        "desc": ("Показ Грише 14.11.2026: панель показывала старые лиды, а не свежие. "
+                 "Сортировка «дольше всех ждёт — выше» поднимала брошенные диалоги "
+                 "месячной давности, свежие уходили за обрезку страницы. С тумблером: "
+                 "ждущие ответа не дольше потолка — наверху (дольше ждёт — выше), "
+                 "остальное — по свежести последнего сообщения; доска и поиск — по "
+                 "свежести. Ничего не скрывается и не архивируется. Выключение "
+                 "возвращает прежний порядок мгновенно."),
+        "default": lambda: settings.panel_fresh_first_enabled,
+        "note": lambda: f"потолок ожидания {settings.panel_fresh_wait_cap_hours} ч",
+    },
     "board_columns_by_direction_enabled": {
         "title": "Колонки доски — свои для каждого направления",
         "desc": ("Решение Алана 11.11.2026 по ответам Медины. Доска была одна на все "
@@ -2186,7 +2223,8 @@ async def board(funnel: str, request: Request, manager: dict = Depends(require_a
                  if (getattr(c, "assigned_to", "") or "").strip().lower() == login]
     layout = board_columns_for(
         funnel, by_direction=await _media_flag("board_columns_by_direction_enabled"))
-    columns, metrics = _build_board(cards, _now(), layout)
+    columns, metrics = _build_board(
+        cards, _now(), layout, fresh_first=await _media_flag("panel_fresh_first_enabled"))
     return templates.TemplateResponse(request, "_board.html", {
         "funnel": funnel, "columns": columns, "metrics": metrics, "mine": mine,
     })
@@ -2203,10 +2241,16 @@ async def _all_models(now: datetime, manager: dict | None = None) -> list[dict]:
     return [_card_model(c, now) for c in _filter_conversations(convs, manager)]
 
 
-def _waiting_sorted(models: list[dict]) -> list[dict]:
-    """Кто ждёт ответа (последним писал клиент), дольше всех — наверх."""
+def _waiting_sorted(models: list[dict], fresh_first: bool = False) -> list[dict]:
+    """Кто ждёт ответа (последним писал клиент), дольше всех — наверх.
+
+    `fresh_first`: брошенные дольше потолка уходят вниз, по свежести (см. `_fresh_rank`)."""
     cards = [m for m in models if m["wait_level"] != "none"]
-    cards.sort(key=lambda m: m["sort_key"], reverse=True)
+    if fresh_first:
+        cap = _fresh_cap_min()
+        cards.sort(key=lambda m: _fresh_rank(m, cap))
+    else:
+        cards.sort(key=lambda m: m["sort_key"], reverse=True)
     return cards
 
 
@@ -2216,6 +2260,7 @@ async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query:
     # Инбокс и поиск живут в пределах направления, когда тумблер включён: смешанный
     # список и был тем, что «невозможно читать».
     models = await _visible_models(request, manager)
+    fresh_first = await _media_flag("panel_fresh_first_enabled")
     query = query.strip()
     if mode == "search" and query:
         ql = query.lower()
@@ -2224,9 +2269,12 @@ async def _render_inbox_partial(request: Request, *, mode: str = "inbox", query:
         cards = [m for m in models
                  if ql in (m["name"] or "").lower() or ql in (m["phone"] or "").lower()
                  or ql in (m["last_text"] or "").lower()]
-        cards.sort(key=lambda m: m["sort_key"], reverse=True)
+        if fresh_first:
+            cards.sort(key=_last_key)
+        else:
+            cards.sort(key=lambda m: m["sort_key"], reverse=True)
     else:
-        cards = _waiting_sorted(models)
+        cards = _waiting_sorted(models, fresh_first=fresh_first)
         mode = "inbox"
         query = ""
 
@@ -2265,7 +2313,7 @@ def _as_utc_iso(dt: datetime | None) -> str:
     return (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).isoformat()
 
 
-def _focus_sorted(models: list[dict]) -> list[dict]:
+def _focus_sorted(models: list[dict], fresh_first: bool = False) -> list[dict]:
     """Очередь «кому ответить сейчас»: дольше ждёт — выше, но мусор не возглавляет.
 
     Простая сортировка по времени ожидания ставит первым рекламный лид со ссылкой из
@@ -2278,7 +2326,11 @@ def _focus_sorted(models: list[dict]) -> list[dict]:
     # всех именно потому, что отвечать ему нечего. Пропускаем его вперёд только когда
     # живых вопросов не осталось. Замер на демо-данных: иначе первым в фокусе оказывался
     # именно он, а человек с вопросом про визу стоял четвёртым.
-    waiting.sort(key=lambda m: (m["is_noise"], m["is_silent"], -m["sort_key"]))
+    if fresh_first:
+        cap = _fresh_cap_min()
+        waiting.sort(key=lambda m: (m["is_noise"], m["is_silent"], _fresh_rank(m, cap)))
+    else:
+        waiting.sort(key=lambda m: (m["is_noise"], m["is_silent"], -m["sort_key"]))
     return waiting
 
 
@@ -2296,7 +2348,7 @@ async def focus(request: Request, lead: str = "", manager: dict = Depends(requir
     if not bool(getattr(request.state, "focus_on", settings.admin_focus_enabled)):
         raise HTTPException(status_code=404, detail="not found")
     models = await _visible_models(request, manager)
-    ranked = _focus_sorted(models)
+    ranked = _focus_sorted(models, fresh_first=await _media_flag("panel_fresh_first_enabled"))
     # `lead` — «Позже» и клик по очереди: менеджер выбирает, с кем говорить сейчас.
     # Ищем ТОЛЬКО среди видимых ему: чужой или устаревший id молча падает в начало
     # очереди, а не показывает лид за границей скоупа.
