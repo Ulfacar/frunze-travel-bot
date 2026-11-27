@@ -1,3 +1,28 @@
+# 27.11.2026 поздно — поля визы видны в новом чате + 3 дефекта + инструкция онбординга (НЕ выкачено)
+
+- BROKEN→исправлено: форма «Данные по визе» была только в старом виде чата, на проде новый
+  (`admin_chat_redesign`) → тумблер `visa_card_fields_enabled` ON с 12.11, а менеджер полей не видел.
+  Теперь `_visa_fields.html` в обеих ветках; опрос чата встаёт на паузу, пока фокус в форме или
+  есть несохранённые правки (вместо hx-preserve — он снимал фокус). Проверено в браузере на стенде.
+- `_workday_note` берёт рантайм-флаг; `reports.py` без несуществующего `cases_write_enabled`;
+  `deploy_prod.sh` требует ветку.
+- Ревью: Codex — токен истёк (нужно `codex logout && codex login`); ревью отдельным контекстом
+  Claude, **без кросс-вендора**: FIX_REQUIRED (фокус, прокрутка досье, устаревшие значения, '%g') →
+  всё исправлено, добавлены тесты.
+- Инструкция: `docs/onboarding/kak-rabotat-v-paneli.md` + `img/`; стенд `scripts/onboarding/`.
+- Деплой — только по слову Алана.
+
+# 27.11.2026 вечер — учётки daulet и marsel заведены на проде (слово Алана «2 сделай»)
+
+- `scripts/add_manager_accounts.py daulet:Даулет marsel:Марсель` на сервере (blob `f674995` = репо),
+  dry-run → запись; учёток 7 → 9; бэкап `prod.env.bak-2026-11-27-094900-accounts`;
+  пароли — `/root/frunze-travel/new-logins-2026-11-27.json` (0600), лист Word собран локально у Алана.
+- Рестарт: `docker compose -f docker-compose.yml -f docker-compose.vps.yml --env-file prod.env up -d app`.
+- PROD_FUNCTIONALLY_VERIFIED: POST /admin/login в боевом контейнере — верный пароль 303 → /admin/focus,
+  неверный 401, для обоих. Две строки login в audit_log от этой проверки.
+- Обе учётки — обычные менеджеры: daulet видит туровые боты, marsel — getvisa (`manager_scope.py`).
+- У Медины учётка `medina` есть (последний вход 21.10); пароль не трогали.
+
 # Current state — 27.11.2026 (вечер): история CRM восстановлена
 
 **По CRM начинать с `docs/crm-chronology.md` и `docs/crm-course-and-next.md`.**

@@ -183,7 +183,7 @@ docs/                планы, ТЗ, разборы — см. §9
 # локально: отдать код на сервер (прод тянет НЕ с GitHub, а со своего bare-репо)
 git push prod <branch>
 # на сервере:
-/root/frunze-travel/scripts/deploy_prod.sh <branch>     # дефолт: fix/tours-search-quality
+/root/frunze-travel/scripts/deploy_prod.sh <branch>     # ветка обязательна (с 27.11 без неё скрипт отказывает)
 /root/frunze-travel/scripts/rollback_prod.sh [commit]   # откат, если поломка логическая
 ```
 

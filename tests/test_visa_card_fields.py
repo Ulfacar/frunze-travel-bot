@@ -479,3 +479,92 @@ def test_the_same_manager_with_a_mapped_bot_can_edit(monkeypatch):
 
     assert resp.status_code == 200
     assert _conv(user_id).visa_country == "Германия"
+
+
+# --- новый вид чата (на проде включён admin_chat_redesign) -----------------
+# До 27.11.2026 форма жила только в старом виде чата: на проде тумблер полей был ON с
+# 12.11, а менеджер полей не видел. Эти тесты держат именно новый вид.
+
+def _redesign_on(monkeypatch):
+    from app.core import flags
+    monkeypatch.setattr(admin_router, "_look_cache", {
+        "at": 0.0, "key": None, "new_look": None, "focus_on": None, "chat_redesign": None,
+    })
+    asyncio.run(flags.set_flag("admin_new_look_enabled", True))
+    asyncio.run(flags.set_flag("admin_chat_redesign_enabled", True))
+
+
+def test_the_block_is_shown_in_the_redesigned_chat(monkeypatch):
+    user_id = _seed()
+    _redesign_on(monkeypatch)
+    client = _auth_client()
+
+    page = client.get(f"/admin/conversation/{user_id}").text
+
+    assert 'chat-palma" data-chat-id' in page, "тест должен смотреть новый вид чата"
+    assert f'id="chat-visa-{user_id}"' in page
+    assert "Данные по визе" in page and "Страна назначения" in page
+    assert "не заполнено" in page
+    # Опрос чата каждые 4 с не должен ни стирать набранное, ни снимать фокус. hx-preserve
+    # снимал фокус (переносит форму в DOM) — поэтому опрос встаёт на паузу, пока фокус в
+    # форме или в ней есть несохранённые правки.
+    assert 'hx-preserve' not in page.split(f'id="visa-form-{user_id}"')[1].split('>')[0]
+    assert "this.dataset.dirty='1'" in page
+    trigger = page.split('hx-trigger="every 4s [', 1)[1].split(']"', 1)[0]
+    assert "closest('.composer, .visa-form')" in trigger
+    assert ".visa-form[data-dirty]" in trigger
+
+
+def test_the_redesigned_summary_shows_what_is_filled(monkeypatch):
+    user_id = _seed()
+    client = _auth_client()
+    assert _post(client, user_id, country="Германия", visa_type="tourist").status_code == 200
+    _redesign_on(monkeypatch)
+
+    page = client.get(f"/admin/conversation/{user_id}").text
+
+    assert "· Германия · Туристическая" in page
+    assert "не заполнено" not in page
+
+
+def test_the_flag_hides_the_block_in_the_redesigned_chat(monkeypatch):
+    from app.core import flags
+    user_id = _seed()
+    asyncio.run(flags.set_flag("visa_card_fields_enabled", False))
+    _redesign_on(monkeypatch)
+    client = _auth_client()
+
+    page = client.get(f"/admin/conversation/{user_id}").text
+
+    assert 'chat-palma" data-chat-id' in page
+    assert "Данные по визе" not in page
+
+
+@pytest.mark.parametrize("raw, shown", [("123456.78", "123456.78"), ("1000000", "1000000"),
+                                        ("250", "250"), ("99.5", "99.5")])
+def test_the_cost_is_shown_without_rounding(raw, shown, monkeypatch):
+    """Форма отправляет все поля разом: округлённое на экране число молча записалось бы
+    обратно при сохранении другого поля (ревью 27.11: '%g' давал 123457 и 1e+06)."""
+    user_id = _seed()
+    client = _auth_client()
+    assert _post(client, user_id, cost=raw, cost_currency="USD").status_code == 200
+    _redesign_on(monkeypatch)
+
+    page = client.get(f"/admin/conversation/{user_id}").text
+
+    assert f'name="cost" value="{shown}"' in page
+
+
+def test_a_refused_save_shows_what_is_really_stored(monkeypatch):
+    """После отказа форма приходит с сервера заново: менеджер видит сохранённое, а не
+    своё несохранённое (раньше hx-preserve оставлял в полях то, чего в базе нет)."""
+    user_id = _seed()
+    client = _auth_client()
+    assert _post(client, user_id, country="Германия").status_code == 200
+    _redesign_on(monkeypatch)
+
+    resp = _post(client, user_id, country="Италия", cost="250", cost_currency="ДОЛЛАРЫ")
+
+    assert resp.headers.get("X-Action-Outcome") == "denied"
+    assert 'name="country" value="Германия"' in resp.text
+    assert "Италия" not in resp.text.split('id="visa-form-', 1)[1]

@@ -1077,7 +1077,7 @@ def _sale_check_note() -> str:
 
 
 # Тумблеры фич для менеджера: ключ → заголовок, описание, дефолт (из env), примечание.
-def _workday_note() -> str:
+def _workday_note(cases_on: bool | None = None) -> str:
     """Сказать правду о предпосылке: включать экран рано, если запись выключена.
 
     «Рабочий день» может оказаться пуст не потому, что работы нет, а потому что
@@ -1085,7 +1085,11 @@ def _workday_note() -> str:
     `sign_contract` отказывает и услуг не появится. Тумблер обязан это сказать,
     иначе экран выглядит сломанным.
     """
-    if not settings.service_cases_enabled:
+    # Состояние записи — рантайм-флаг (тумблер в админке, живёт в БД), а не env:
+    # тумблер, включённый кнопкой, env не меняет, и подсказка по env могла врать.
+    if cases_on is None:
+        cases_on = settings.service_cases_enabled
+    if not cases_on:
         return "Запись в реестр услуг выключена отдельным тумблером — действия недоступны."
     return ""
 
@@ -1967,11 +1971,16 @@ FEATURE_FLAGS = {
 async def _flag_views() -> list[dict]:
     """Состояние всех тумблеров для рендера (значение из БД, дефолт из env)."""
     from app.core import flags
+    states = {key: await flags.get_flag(key, spec["default"]())
+              for key, spec in FEATURE_FLAGS.items()}
     views = []
     for key, spec in FEATURE_FLAGS.items():
-        on = await flags.get_flag(key, spec["default"]())
+        # Подсказка «Рабочего дня» зависит от соседнего тумблера — берём его настоящее
+        # состояние, а не env-дефолт.
+        note = (_workday_note(states["service_cases_enabled"])
+                if key == "admin_workday_enabled" else spec["note"]())
         views.append({"key": key, "title": spec["title"], "desc": spec["desc"],
-                      "on": on, "note": spec["note"]()})
+                      "on": states[key], "note": note})
     return views
 
 

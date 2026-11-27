@@ -89,7 +89,8 @@ def test_metrics_without_data_say_why_on_the_page():
     page = client.get("/admin/reports").text
 
     assert "Пока не считается" in page
-    assert "cases_write_enabled" in page
+    assert "cases_write_enabled" not in page
+    assert "Договоры пока не считаются" in page
 
 
 def test_the_direction_switch_changes_the_numbers():

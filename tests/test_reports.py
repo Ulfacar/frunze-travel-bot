@@ -92,7 +92,8 @@ def test_metrics_without_data_say_why():
     blocked = r["пока_не_считается"]
     assert set(blocked) == {"contracts", "payments", "debts", "visa_outcomes",
                             "consultations"}
-    assert "cases_write_enabled" in blocked["contracts"]
+    assert "cases_write_enabled" not in blocked["contracts"]   # такого тумблера нет
+    assert "Битрикс" in blocked["contracts"]
     for text in blocked.values():
         assert len(text) > 20, "объяснение должно быть человеческим, а не меткой"
 

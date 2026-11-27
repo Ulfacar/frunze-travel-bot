@@ -217,7 +217,11 @@ def test_polling_draft_and_intercept_hint_survive(monkeypatch, on):
     trigger = panel.get("hx-trigger")
     assert "every 4s" in trigger
     assert "document.visibilityState==='visible'" in trigger
-    assert "!(document.activeElement && document.activeElement.closest('.composer'))" in trigger
+    # Новый вид дополнительно ждёт, пока менеджер заполняет «Данные по визе» (27.11.2026);
+    # старый — байт в байт прежний (см. test_off_card_is_byte_for_byte_the_original_render).
+    composer_guard = ("!(document.activeElement && document.activeElement.closest('.composer, .visa-form'))"
+                      if on else "!(document.activeElement && document.activeElement.closest('.composer'))")
+    assert composer_guard in trigger
     form = dom.nodes("composer", tag="form")[0]
     assert form.get("id") == f"composer-{USER}"
     assert form.get("hx-preserve") == "true"

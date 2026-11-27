@@ -1,0 +1,62 @@
+{#- Поля визовой карточки (ответ Медины 6). Один кусок на оба вида чата: до 27.11.2026
+    форма жила только в старом виде, а на проде включён новый (`admin_chat_redesign`), и
+    менеджер её не видел при включённом `visa_card_fields_enabled`.
+    Чат опрашивается каждые 4 с. hx-preserve НЕ ставим: он переносит форму в новую разметку,
+    и браузер снимает фокус с поля посреди набора. Вместо этого опрос встаёт на паузу, пока
+    фокус в форме или в ней есть несохранённые правки (data-dirty) — см. hx-trigger чата.
+    После «Сохранить» форма приходит с сервера заново и показывает то, что реально записано. -#}
+  <style>.visa-dirty-hint{display:none}.visa-form[data-dirty] .visa-dirty-hint{display:inline}</style>
+  <form class="brief visa-form" id="visa-form-{{ c.user_id }}"
+        hx-on:input="this.dataset.dirty='1'" hx-on:change="this.dataset.dirty='1'" hx-post="/admin/conversation/{{ c.user_id }}/visa-fields"
+        hx-target="#chat" hx-swap="innerHTML" style="margin:0 0 10px">
+    <div class="brief-title">Данные по визе</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">
+        Гражданство
+        <select name="citizenship" style="padding:5px;font-size:13px">
+          <option value="">— не указано —</option>
+          {% for key, label in visa_citizenships %}
+          <option value="{{ key }}"{% if c.visa_citizenship == key %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">
+        Страна назначения
+        <input name="country" value="{{ c.visa_country }}" maxlength="64"
+               placeholder="например, Германия" style="padding:5px;font-size:13px">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">
+        Тип визы
+        <select name="visa_type" style="padding:5px;font-size:13px">
+          <option value="">— не указан —</option>
+          {% for key, label in visa_types %}
+          <option value="{{ key }}"{% if c.visa_type == key %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">
+        Даты поездки
+        <input name="travel_dates" value="{{ c.visa_travel_dates }}" maxlength="64"
+               placeholder="как сказал клиент" style="padding:5px;font-size:13px">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">
+        Стоимость услуги
+        <span style="display:flex;gap:4px">
+          <input name="cost" value="{{ '' if c.visa_cost is none else ('%.2f' % c.visa_cost).rstrip('0').rstrip('.') }}"
+                 inputmode="decimal" placeholder="пусто — стереть"
+                 style="padding:5px;font-size:13px;flex:1;min-width:0">
+          <select name="cost_currency" style="padding:5px;font-size:13px">
+            <option value="">—</option>
+            {% for code in visa_currencies %}
+            <option value="{{ code }}"{% if c.visa_cost_currency == code %} selected{% endif %}>{{ code }}</option>
+            {% endfor %}
+          </select>
+        </span>
+      </label>
+    </div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-brand" type="submit" style="padding:5px 12px;font-size:13px">Сохранить</button>
+      <span style="color:var(--muted);font-size:11px">Пустое поле стирает значение.</span>
+      <span class="visa-dirty-hint" style="color:#b45309;font-size:11px">Не сохранено — пока не нажмёте «Сохранить», переписка не обновляется.</span>
+    </div>
+  </form>

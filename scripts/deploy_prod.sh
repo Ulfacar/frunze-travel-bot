@@ -1,7 +1,7 @@
 #!/bin/bash
 # Деплой Frunze Travel на боевом сервере. Запускается НА СЕРВЕРЕ:
 #
-#     /root/frunze-travel/scripts/deploy_prod.sh
+#     /root/frunze-travel/scripts/deploy_prod.sh <ветка>     (ветка обязательна)
 #
 # Что делает: подтягивает код из репозитория, бэкапит prod.env, пересобирает контейнер,
 # ждёт здоровья — и САМ ОТКАТЫВАЕТСЯ, если приложение не поднялось.
@@ -20,7 +20,9 @@ set -euo pipefail
 
 APP_DIR=/root/frunze-travel
 BACKUP_DIR=/root/backups
-BRANCH="${1:-fix/tours-search-quality}"
+# Ветку указывать ЯВНО. Раньше был дефолт fix/tours-search-quality: запуск без аргумента
+# молча выкатил бы ветку месячной давности (нашли при восстановлении истории 27.11.2026).
+BRANCH="${1:?укажите ветку: deploy_prod.sh <ветка> (рабочая — см. CLAUDE.md §4)}"
 HEALTH_URL=http://localhost:8000/health
 HEALTH_TRIES=20        # 20 попыток по 3 секунды = минута на подъём
 HEALTH_SLEEP=3
