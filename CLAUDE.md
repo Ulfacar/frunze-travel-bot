@@ -315,6 +315,12 @@ ssh frunze 'docker exec frunze-travel-app-1 python -c "import asyncio; from app.
 
 ## 8. Состояние на 24.11.2026
 
+> **Обновление 27.11.2026:** прод на `67762ee` (сборы e-Visa / США 600$ выкачены, тумблеры
+> OFF). Включены `panel_fresh_first_enabled` и `panel_board_column_cap_enabled` (ответ на
+> показ Грише 13.11: лаги, старые лиды сверху). Тумблера `cases_write_enabled` НЕ существует —
+> дела пишет `service_cases_enabled`, он ON с 19.10, дел 0. Подробно — `ai/STATE.md`,
+> `ai/handoffs/2026-11-27-laptop-handoff.md` §7.
+
 Прод на `22b8416` (ветка `feat/owner-answers-2026-11-05`). Работа от 19.11 (сбор за
 e-Visa и деловая США, оба тумблера OFF) закоммичена и отправлена на GitHub 24.11 —
 до этого она пять дней лежала НЕЗАКОММИЧЕННОЙ в рабочем дереве одной машины, и с
